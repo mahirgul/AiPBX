@@ -91,7 +91,7 @@ ob_start(); ?>
         <button type="button" class="btn btn-outline-primary" id="btnPasskeyLogin" onclick="loginWithPasskey()" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 8px; border-radius: 10px;">
             <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey'); ?>
         </button>
-<?php elseif (!empty($googleLoginEnabled) || !empty($oidcLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled()) || (class_exists('OidcAuthService') && OidcAuthService::isEnabled())): ?>
+<?php elseif (!empty($googleLoginEnabled) || !empty($oidcLoginEnabled) || !empty($samlLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled()) || (class_exists('OidcAuthService') && OidcAuthService::isEnabled()) || (class_exists('SamlAuthService') && SamlAuthService::isEnabled())): ?>
         <div style="display: flex; align-items: center; margin: 16px 0 12px 0; gap: 10px;">
             <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
             <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider'); ?></span>
@@ -120,6 +120,18 @@ ob_start(); ?>
         <a href="/auth/oidc" class="btn btn-outline-primary" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 10px; border-radius: 10px; margin-top: 10px; text-decoration: none; display: inline-flex; align-items: center; transition: all 0.2s;">
             <i class="<?php echo $oidcIcon; ?> u-fs-16"></i>
             <span><?php echo $oidcLabel; ?></span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (!empty($samlLoginEnabled) || (class_exists('SamlAuthService') && SamlAuthService::isEnabled())): ?>
+            <?php
+            $samlMeta = !empty($samlPublicSettings) ? $samlPublicSettings : (class_exists('SamlAuthService') ? SamlAuthService::getPublicSettings() : ['provider_name' => 'Single Sign-On (SAML)', 'icon' => 'fas fa-shield-alt']);
+            $samlLabel = htmlspecialchars((string)($samlMeta['provider_name'] ?? 'Single Sign-On (SAML)'));
+            $samlIcon = htmlspecialchars((string)($samlMeta['icon'] ?? 'fas fa-shield-alt'));
+            ?>
+        <a href="/auth/saml" class="btn btn-outline-primary" style="width: 100%; justify-content: center; padding: 11px 14px; font-size: 13.5px; font-weight: 700; gap: 10px; border-radius: 10px; margin-top: 10px; text-decoration: none; display: inline-flex; align-items: center; transition: all 0.2s;">
+            <i class="<?php echo $samlIcon; ?> u-fs-16"></i>
+            <span><?php echo $samlLabel; ?></span>
         </a>
         <?php endif; ?>
 

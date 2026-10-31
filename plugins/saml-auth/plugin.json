@@ -1,0 +1,228 @@
+{
+    "slug": "saml-auth",
+    "name": "SAML 2.0 & Corporate SSO",
+    "name_i18n": {
+        "tr": "SAML 2.0 ve Kurumsal SSO",
+        "en": "SAML 2.0 & Corporate SSO"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "author_url": "https://github.com/mahirgul/AiPBX",
+    "type": "official",
+    "category": "integration",
+    "icon": "fas fa-shield-alt",
+    "icon_style": "color: #0284c7;",
+    "description": "Enterprise Single Sign-On (SSO) via SAML 2.0 with JIT auto-provisioning for Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, and ADFS.",
+    "description_i18n": {
+        "tr": "Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik ve ADFS gibi kurumsal kimlik sağlayıcılar için SAML 2.0 ile tek noktadan giriş (SSO) ve otomatik kullanıcı açma (auto-provisioning) sağlar.",
+        "en": "Enterprise Single Sign-On (SSO) via SAML 2.0 with JIT auto-provisioning for Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, and ADFS."
+    },
+    "scopes": [
+        "users:read",
+        "users:write"
+    ],
+    "hooks": {
+        "auth_provider": true,
+        "admin_page": {
+            "group": "integrations"
+        }
+    },
+    "settings_schema": [
+        {
+            "key": "enabled",
+            "type": "boolean",
+            "default": "0",
+            "label": "Enable SAML 2.0 SSO",
+            "label_i18n": {
+                "tr": "SAML 2.0 Kurumsal Girişini Etkinleştir",
+                "en": "Enable SAML 2.0 SSO"
+            },
+            "help": "Show the SAML SSO button on the web login page and allow corporate sign-in.",
+            "help_i18n": {
+                "tr": "Web giriş sayfasında SAML SSO ile giriş butonunu gösterir ve kurumsal kimlik doğrulamayı etkinleştirir.",
+                "en": "Show the SAML SSO button on the web login page and allow corporate sign-in."
+            }
+        },
+        {
+            "key": "provider_name",
+            "type": "text",
+            "default": "Single Sign-On (SAML)",
+            "label": "Provider / Button Label",
+            "label_i18n": {
+                "tr": "Sağlayıcı / Buton Başlığı",
+                "en": "Provider / Button Label"
+            },
+            "placeholder": "e.g. Single Sign-On (SAML), Entra ID SAML, Okta SAML",
+            "help": "Label displayed on the login button.",
+            "help_i18n": {
+                "tr": "Giriş butonunda gösterilecek isim (ör. 'SAML ile Giriş').",
+                "en": "Label displayed on the login button."
+            }
+        },
+        {
+            "key": "idp_entity_id",
+            "type": "text",
+            "default": "",
+            "label": "IdP Entity ID (Issuer)",
+            "label_i18n": {
+                "tr": "IdP Entity ID (Yayıncı Kimliği)",
+                "en": "IdP Entity ID (Issuer)"
+            },
+            "placeholder": "https://sts.windows.net/... or https://idp.example.com",
+            "help": "Unique identifier of your Identity Provider (EntityID / Issuer).",
+            "help_i18n": {
+                "tr": "Kimlik sağlayıcınızın benzersiz Entity ID veya Issuer adresi.",
+                "en": "Unique identifier of your Identity Provider (EntityID / Issuer)."
+            }
+        },
+        {
+            "key": "idp_sso_url",
+            "type": "text",
+            "default": "",
+            "label": "IdP Single Sign-On (SSO) URL",
+            "label_i18n": {
+                "tr": "IdP Tek Noktadan Giriş (SSO) URL",
+                "en": "IdP Single Sign-On (SSO) URL"
+            },
+            "placeholder": "https://login.microsoftonline.com/.../saml2 or https://idp.example.com/sso",
+            "help": "The SingleSignOnService URL where users are redirected to authenticate.",
+            "help_i18n": {
+                "tr": "Kullanıcıların giriş yapmak üzere yönlendirileceği SingleSignOnService adresi.",
+                "en": "The SingleSignOnService URL where users are redirected to authenticate."
+            }
+        },
+        {
+            "key": "idp_x509_cert",
+            "type": "textarea",
+            "default": "",
+            "label": "IdP X.509 Public Certificate",
+            "label_i18n": {
+                "tr": "IdP X.509 Genel Sertifikası",
+                "en": "IdP X.509 Public Certificate"
+            },
+            "placeholder": "-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----",
+            "help": "Public X.509 certificate used to verify SAML response and assertion digital signatures.",
+            "help_i18n": {
+                "tr": "SAML yanıtı ve assertion dijital imzasını doğrulamak için kullanılan IdP genel sertifikası.",
+                "en": "Public X.509 certificate used to verify SAML response and assertion digital signatures."
+            }
+        },
+        {
+            "key": "sp_entity_id",
+            "type": "text",
+            "default": "",
+            "label": "Custom SP Entity ID",
+            "label_i18n": {
+                "tr": "Özel SP Entity ID",
+                "en": "Custom SP Entity ID"
+            },
+            "placeholder": "Leave empty for default (https://your-domain/auth/saml/metadata)",
+            "help": "AiPBX Service Provider Entity ID. Leave blank to automatically use /auth/saml/metadata.",
+            "help_i18n": {
+                "tr": "AiPBX Servis Sağlayıcı Entity ID kimliği. Boş bırakırsanız /auth/saml/metadata varsayılan olarak kullanılır.",
+                "en": "AiPBX Service Provider Entity ID. Leave blank to automatically use /auth/saml/metadata."
+            }
+        },
+        {
+            "key": "custom_acs_url",
+            "type": "text",
+            "default": "",
+            "label": "Custom ACS (Callback) URL",
+            "label_i18n": {
+                "tr": "Özel ACS (Dönüş) URL",
+                "en": "Custom ACS (Callback) URL"
+            },
+            "placeholder": "Leave empty for default (https://your-domain/auth/saml/acs)",
+            "help": "Override Assertion Consumer Service URL (useful behind reverse proxies).",
+            "help_i18n": {
+                "tr": "Özel ACS URL adresi (reverse proxy arkasında özel domain kullanıyorsanız).",
+                "en": "Override Assertion Consumer Service URL (useful behind reverse proxies)."
+            }
+        },
+        {
+            "key": "auto_provision",
+            "type": "boolean",
+            "default": "1",
+            "label": "Auto-Provision New Users (JIT)",
+            "label_i18n": {
+                "tr": "Otomatik Kullanıcı Açma (JIT)",
+                "en": "Auto-Provision New Users (JIT)"
+            },
+            "help": "Automatically create a user account in AiPBX when an authorized corporate user logs in for the first time.",
+            "help_i18n": {
+                "tr": "Yetkili bir kurumsal kullanıcı ilk kez giriş yaptığında AiPBX sisteminde otomatik hesap oluşturur.",
+                "en": "Automatically create a user account in AiPBX when an authorized corporate user logs in for the first time."
+            }
+        },
+        {
+            "key": "default_role",
+            "type": "select",
+            "default": "user",
+            "options": [
+                {"value": "user", "label": "User"},
+                {"value": "admin", "label": "Admin"},
+                {"value": "cc_manager", "label": "Call Center Manager"},
+                {"value": "cc_agent", "label": "Call Center Agent"},
+                {"value": "read_only_admin", "label": "Read-Only Admin"}
+            ],
+            "label": "Default User Role",
+            "label_i18n": {
+                "tr": "Varsayılan Kullanıcı Rolü",
+                "en": "Default User Role"
+            },
+            "help": "Role assigned to new auto-provisioned users if no admin claim matches.",
+            "help_i18n": {
+                "tr": "Otomatik açılan yeni kullanıcılara verilecek varsayılan yetki rolü.",
+                "en": "Role assigned to new auto-provisioned users if no admin claim matches."
+            }
+        },
+        {
+            "key": "role_attribute",
+            "type": "text",
+            "default": "role",
+            "label": "Role Attribute Name",
+            "label_i18n": {
+                "tr": "Rol Öznitelik (Attribute) Adı",
+                "en": "Role Attribute Name"
+            },
+            "placeholder": "e.g. role, groups, or http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+            "help": "SAML attribute name to inspect for admin role mapping.",
+            "help_i18n": {
+                "tr": "Yönetici rolü eşleştirmesi için kontrol edilecek SAML attribute adı.",
+                "en": "SAML attribute name to inspect for admin role mapping."
+            }
+        },
+        {
+            "key": "admin_role_value",
+            "type": "text",
+            "default": "aipbx_admin",
+            "label": "Admin Role Match Value",
+            "label_i18n": {
+                "tr": "Yönetici Rol Eşleşme Değeri",
+                "en": "Admin Role Match Value"
+            },
+            "placeholder": "e.g. aipbx_admin or Global Administrator",
+            "help": "If user has this value in their role attribute, they are granted admin privileges.",
+            "help_i18n": {
+                "tr": "Kullanıcının rol özniteliği bu değere eşitse kullanıcıya tam admin yetkisi verilir.",
+                "en": "If user has this value in their role attribute, they are granted admin privileges."
+            }
+        },
+        {
+            "key": "allowed_domains",
+            "type": "text",
+            "default": "",
+            "label": "Allowed Email Domains",
+            "label_i18n": {
+                "tr": "İzin Verilen E-posta Alan Adları (Domains)",
+                "en": "Allowed Email Domains"
+            },
+            "placeholder": "company.com, subsidiary.com",
+            "help": "Comma-separated domain list to restrict sign-ins. Leave blank to allow any valid domain from this IdP.",
+            "help_i18n": {
+                "tr": "Giriş yapılabilecek e-posta alan adları (virgülle ayrılmış). Boş bırakılırsa IdP tarafından onaylanan tüm alan adları kabul edilir.",
+                "en": "Comma-separated domain list to restrict sign-ins. Leave blank to allow any valid domain from this IdP."
+            }
+        }
+    ]
+}

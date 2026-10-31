@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/LoginService.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
 require_once __DIR__ . '/../services/OidcAuthService.php';
+require_once __DIR__ . '/../services/SamlAuthService.php';
 
 /**
  * Sign-in page (/login), public: password with a small sum captcha, Google and passkey
@@ -50,6 +51,8 @@ class LoginController extends BaseController
         $googleLoginEnabled = GoogleAuthService::isEnabled();
         $oidcLoginEnabled = OidcAuthService::isEnabled();
         $oidcPublicSettings = $oidcLoginEnabled ? OidcAuthService::getPublicSettings() : [];
+        $samlLoginEnabled = SamlAuthService::isEnabled();
+        $samlPublicSettings = $samlLoginEnabled ? SamlAuthService::getPublicSettings() : [];
 
         static::renderAuthPage('login/index', [
             'error' => $error,
@@ -68,6 +71,8 @@ class LoginController extends BaseController
             'googleLoginEnabled' => $googleLoginEnabled,
             'oidcLoginEnabled' => $oidcLoginEnabled,
             'oidcPublicSettings' => $oidcPublicSettings,
+            'samlLoginEnabled' => $samlLoginEnabled,
+            'samlPublicSettings' => $samlPublicSettings,
         ], ['title' => t('login.page_title'), 'inline_lang_switch' => true]);
     }
 }
