@@ -49,7 +49,12 @@
                         <tr data-id="<?php echo (int)$r['id']; ?>">
                             <?php if ($can_reorder): ?><td class="row-drag-handle" title="<?php echo htmlspecialchars(t('common.drag_to_reorder')); ?>"><i class="fas fa-grip-vertical"></i></td><?php endif; ?>
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
-                            <td class="u-strong"><?php echo htmlspecialchars($r['route_name']); ?></td>
+                            <td class="u-strong">
+                                <?php echo htmlspecialchars($r['route_name']); ?>
+                                <?php if (!empty($r['is_emergency'])): ?>
+                                    <span class="badge badge-danger" title="<?php echo htmlspecialchars($r['geolocation_uri'] ?? ''); ?>"><i class="fas fa-ambulance"></i> <?php echo t('outbound.badge_emergency'); ?></span>
+                                <?php endif; ?>
+                            </td>
                             <td><span class="badge badge-info"><code><?php echo htmlspecialchars($r['match_pattern']); ?></code></span></td>
                             <td class="col-hide-mobile u-fs-11">
                                 <?php if (!empty($r['strip_front'])): ?><span class="badge badge-secondary"><?php echo t('outbound.strip_front'); ?>: <?php echo intval($r['strip_front']); ?></span><?php endif; ?>
@@ -178,6 +183,29 @@
                         <span class="u-fw-600"><?php echo t('outbound.field_internal'); ?></span>
                     </label>
                     <small class="u-hint u-fs-11"><?php echo t('outbound.internal_help'); ?></small>
+                </div>
+
+                <div class="form-group u-mt-10" style="border: 1px dashed var(--border-color); border-radius: 6px; padding: 12px; background: rgba(var(--primary-rgb, 46, 125, 246), 0.03);">
+                    <label class="form-label u-check-label" style="margin-bottom: 6px;">
+                        <input type="checkbox" name="is_emergency" id="modal_is_emergency" value="1" class="u-check" onchange="toggleEmergencyFields(this.checked)">
+                        <span class="u-fw-600"><i class="fas fa-ambulance text-danger"></i> <?php echo t('outbound.field_is_emergency'); ?></span>
+                    </label>
+                    <small class="u-hint u-fs-11" style="display: block; margin-bottom: 8px;"><?php echo t('outbound.emergency_help'); ?></small>
+
+                    <div id="emergency_geo_fields" style="display: none; flex-direction: column; gap: 10px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label u-fs-12"><?php echo t('outbound.field_geolocation_uri'); ?></label>
+                            <input type="text" name="geolocation_uri" id="modal_geolocation_uri" class="form-control" placeholder="<?php echo t('outbound.geolocation_uri_ph'); ?>">
+                            <small class="u-hint u-fs-11">RFC 6442 Geolocation (SIP INVITE Header: &lt;geo:...&gt;)</small>
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label class="form-label u-fs-12"><?php echo t('outbound.field_geolocation_routing'); ?></label>
+                            <select name="geolocation_routing" id="modal_geolocation_routing" class="form-control">
+                                <option value="yes"><?php echo t('outbound.geolocation_routing_yes'); ?></option>
+                                <option value="no"><?php echo t('outbound.geolocation_routing_no'); ?></option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group u-mt-10">

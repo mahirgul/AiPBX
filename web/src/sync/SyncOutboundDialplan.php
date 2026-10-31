@@ -95,6 +95,12 @@ function __syncOutboundDialplanBody() {
             $strip_front = intval($r['strip_front'] ?? 0);
             $strip_back = intval($r['strip_back'] ?? 0);
             $is_internal = !empty($r['is_internal']);
+            $is_emergency = !empty($r['is_emergency']);
+            $geo_uri = trim((string)($r['geolocation_uri'] ?? ''));
+            $geo_routing = trim((string)($r['geolocation_routing'] ?? 'yes'));
+            if ($geo_uri === '' && $is_emergency) {
+                $geo_uri = trim((string)getSystemSetting('emergency_default_geolocation_uri', ''));
+            }
 
             // Trunk list: no primary/backup split — a chain of trunks added one
             // by one and tried in order. Every entry can have its own caller ID
@@ -120,6 +126,15 @@ function __syncOutboundDialplanBody() {
             $conf .= "; Outbound Route: {$name} (Pattern: {$pattern} -> Trunk: {$trunk_label})\n";
             $conf .= "exten => {$pattern},1,NoOp(Outbound Call via Route {$name} -> Trunk {$trunk_label})\n";
             $conf .= " same => n,Set(CDR(direction)=outbound)\n";
+            if ($is_emergency || $geo_uri !== '') {
+                $conf .= " same => n,Set(CDR(accountcode)=EMERGENCY)\n";
+                if ($geo_uri !== '') {
+                    $cleanGeo = (str_starts_with($geo_uri, '<') && str_ends_with($geo_uri, '>')) ? $geo_uri : "<{$geo_uri}>";
+                    $routingVal = ($geo_routing === 'no') ? 'no' : 'yes';
+                    $conf .= " same => n,Set(__AIPBX_GEOLOCATION_URI={$cleanGeo})\n";
+                    $conf .= " same => n,Set(__AIPBX_GEOLOCATION_ROUTING={$routingVal})\n";
+                }
+            }
             $conf .= " same => n,Gosub(sub-check-dial-permission,s,1(\${CALLERID(num)},\${EXTEN}))\n";
 
             if (empty($trunk_chain)) {

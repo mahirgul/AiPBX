@@ -40,6 +40,7 @@ final class Fixtures
         'pbx_phones',
         'pbx_phones_waiting',
         'pbx_phone_discoveries',
+        'pbx_inbound_blacklist',
         'sip',
         'sys_pending_sync',
     ];

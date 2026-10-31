@@ -32,6 +32,7 @@ return [
     '/chat'            => ['controller' => ChatController::class, 'action' => 'index', 'module' => 'chat.php'],
     '/trunks'          => ['controller' => TrunkController::class, 'action' => 'index', 'module' => 'trunks.php'],
     '/did-routes'      => ['controller' => DidRouteController::class, 'action' => 'index', 'module' => 'did_routes.php'],
+    '/blacklist'       => ['controller' => InboundBlacklistController::class, 'action' => 'index', 'module' => 'blacklist.php'],
     '/outbound-routes' => ['controller' => OutboundRouteController::class, 'action' => 'index', 'module' => 'outbound_routes.php'],
     '/dialplan-rules'  => ['controller' => DialplanRuleController::class, 'action' => 'index', 'module' => 'dialplan_rules.php'],
     '/dial-permissions' => ['controller' => DialPermissionController::class, 'action' => 'index', 'module' => 'dial_permissions.php'],
