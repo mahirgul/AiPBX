@@ -85,7 +85,12 @@ The 🤖 **Android** and 🍎 **iOS** apps are built by GitHub Actions and attac
 username and password (plus 2FA when enabled), by scanning the QR code on *My Phone*, or with the
 link in their invitation e-mail.
 
-## 🗺️ Roadmap
+## 🗺️ Roadmap & Specifications
+
+| Page | What it covers |
+|------|----------------|
+| 📜 [SDD Guide & Constitution](specs/README.md) | Specification-Driven Development (SDD) guide, core architectural rules (zero regressions, circuit breakers, pure generators), and living specifications index |
+| 🗺️ [Roadmap](roadmap.md) | Planned work across future waves with detailed requirements and milestone criteria |
 
 Planned work (website call widget, chat message deletion, S3 storage, video calls, local AI models,
 busy lamps on desk phones, phone provisioning, DHCP/TFTP …) with a short explanation of each: [Roadmap](roadmap.md).
