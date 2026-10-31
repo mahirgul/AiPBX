@@ -2,7 +2,7 @@
 
 # AiPBX Documentation
 
-Administrator documentation for AiPBX on Ubuntu 26.04 LTS. Start with the
+Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian 13+, Raspberry Pi OS 64-bit, and Armbian on x86_64 & ARM64). Start with the
 [installation guide](../INSTALL.md), then use the pages below while configuring the system.
 
 > 💡 **Quick Diagnosis:** When something does not work, start with the 🗺️ [system map](system-map.md) (where everything is) and 🛠️ [troubleshooting](troubleshooting.md) (symptom → fix).
@@ -61,6 +61,7 @@ Optional applications and integrations bundled with AiPBX (`plugins/`: official 
 | Page | Plugin slug | What it covers |
 |------|-------------|----------------|
 | 🧩 [Plugin system & developer guide](plugin-development.md) | — | The bundled plugin catalog (`plugins/`), `plg_*` database tables, enabling/disabling integrations (`google-auth`, `ms-teams`, …), and building custom `.zip` plugins |
+| 🔑 [Corporate SSO: OpenID Connect & SAML 2.0 (Plugins)](sso.md) | `oidc-auth`, `saml-auth` | Enterprise Single Sign-On (SSO) with Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, Google Workspace, and ADFS with JIT auto-provisioning |
 | 🤖 [Auto dialer & AMD campaigns (Plugin)](auto-dialer.md) | `auto-dialer` | Automated outbound calling campaigns with Answering Machine Detection (`AMD`), queue free-agent pacing, voicemail drop, and CSV call results |
 | 🌐 [Website call widget (Plugin)](web-widgets.md) | `web-widgets` | "Call us" button for websites (WebRTC in the browser), call-back form, allowed websites and limits, WordPress plugin |
 | ☁️ [Cloud AI services (Plugin)](cloud-ai.md) | `ai-cloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
