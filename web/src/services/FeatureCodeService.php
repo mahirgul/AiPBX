@@ -20,9 +20,12 @@ class FeatureCodeService {
             $allowed_roles = !empty($roles_in) ? implode(',', $roles_in) : null;
             $is_active = PBXHelper::boolFlag($data, 'is_active', 0);
 
-            // Normal codes start with '*' (e.g. *78). Codes with a variable parameter (e.g. *81/*80
-            // with a queue ID dialed) start with '_*' in Asterisk pattern syntax (e.g. _*81.).
-            $starts_ok = ($code !== '') && (($code[0] === '*') || (strpos($code, '_*') === 0));
+            // Normal codes start with '*' (e.g. *78) or '#' (e.g. #9). Codes with a variable parameter (e.g. *81/*80
+            // with a queue ID dialed, or #9 with a conference room) start with '_*' or '_#' in Asterisk pattern syntax (e.g. _*81. or _#9.).
+            $starts_ok = ($code !== '') && (
+                ($code[0] === '*' || $code[0] === '#') ||
+                (strpos($code, '_*') === 0 || strpos($code, '_#') === 0)
+            );
             if (empty($title) || !$starts_ok) {
                 throw new \Exception(t('srv_fc.err_code'));
             }

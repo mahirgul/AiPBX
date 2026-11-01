@@ -2,10 +2,16 @@
 
 let currentActiveRoomNumber = '';
 
+function updateConfDialPreview(val) {
+    const el = document.getElementById('modal_conf_number_preview');
+    if (el) el.textContent = val ? val.replace(/[^0-9]/g, '') : '...';
+}
+
 function openCreateConfModal() {
     document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-plus-circle u-primary"></i> ' + __('js.conf.new_room') + '';
     document.getElementById('modal_conf_id').value = '0';
     document.getElementById('modal_conf_number').value = '';
+    updateConfDialPreview('');
     document.getElementById('modal_conf_title').value = '';
     document.getElementById('modal_conf_user_pin').value = '';
     document.getElementById('modal_conf_admin_pin').value = '';
@@ -27,6 +33,7 @@ function openEditConfModal(cf) {
     document.getElementById('confModalTitle').innerHTML = '<i class="fas fa-edit u-primary"></i> ' + __('js.conf.edit_room') + '' + escapeHtml(cf.title || '');
     document.getElementById('modal_conf_id').value = cf.id || '0';
     document.getElementById('modal_conf_number').value = cf.room_number || '';
+    updateConfDialPreview(cf.room_number || '');
     document.getElementById('modal_conf_title').value = cf.title || '';
     document.getElementById('modal_conf_user_pin').value = cf.user_pin || '';
     document.getElementById('modal_conf_admin_pin').value = cf.admin_pin || '';

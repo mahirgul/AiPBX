@@ -143,3 +143,27 @@ class PBXHelper {
     }
 }
 
+/**
+ * Quick conference dial prefix (e.g. '#9' or '*9').
+ * Reads from pbx_feature_codes (feature_key='conference_join'), falling back to '#9'.
+ */
+function getConferencePrefix(): string {
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+    try {
+        $code = DBHelper::fetchColumn("SELECT code FROM pbx_feature_codes WHERE feature_key = 'conference_join' AND is_active = 1 LIMIT 1");
+        if (!empty($code)) {
+            $cleaned = rtrim(ltrim((string)$code, '_'), '.X');
+            if ($cleaned !== '') {
+                $cached = $cleaned;
+                return $cached;
+            }
+        }
+    } catch (\Throwable $e) {}
+    $cached = '#9';
+    return $cached;
+}
+
+
