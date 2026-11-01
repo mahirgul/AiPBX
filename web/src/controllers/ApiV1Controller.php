@@ -55,9 +55,9 @@ final class ApiV1Controller
                 case 'users':
                     self::handleUsers($method, $idOrSub, $subAction);
                 case 'roles':
-                    self::handleRoles($method);
+                    self::handleRoles($method, $idOrSub);
                 case 'extensions':
-                    ApiV1PbxHandlers::handleExtensions($method, $idOrSub);
+                    ApiV1PbxHandlers::handleExtensions($method, $idOrSub, $subAction);
                 case 'trunks':
                     ApiV1PbxHandlers::handleTrunks($method, $idOrSub, $subAction);
                 case 'did-routes':
@@ -69,35 +69,35 @@ final class ApiV1Controller
                 case 'time-conditions':
                     ApiV1PbxHandlers::handleTimeConditions($method, $idOrSub, $subAction);
                 case 'time-groups':
-                    ApiV1PbxHandlers::handleTimeGroups($method, $idOrSub);
+                    ApiV1PbxHandlers::handleTimeGroups($method, $idOrSub, $subAction);
                 case 'ring-groups':
-                    ApiV1PbxHandlers::handleRingGroups($method, $idOrSub);
+                    ApiV1PbxHandlers::handleRingGroups($method, $idOrSub, $subAction);
                 case 'conferences':
                     ApiV1PbxHandlers::handleConferences($method, $idOrSub, $subAction);
                 case 'meetings':
                     ApiV1PbxHandlers::handleMeetings($method, $idOrSub, $subAction);
                 case 'boss-secretary':
-                    ApiV1PbxHandlers::handleBossSecretary($method, $idOrSub);
+                    ApiV1PbxHandlers::handleBossSecretary($method, $idOrSub, $subAction);
                 case 'dial-permissions':
-                    ApiV1PbxHandlers::handleDialPermissions($method, $idOrSub);
+                    ApiV1PbxHandlers::handleDialPermissions($method, $idOrSub, $subAction);
                 case 'feature-codes':
-                    ApiV1PbxHandlers::handleFeatureCodes($method, $idOrSub);
+                    ApiV1PbxHandlers::handleFeatureCodes($method, $idOrSub, $subAction);
                 case 'hangup-actions':
-                    ApiV1PbxHandlers::handleHangupActions($method, $idOrSub);
+                    ApiV1PbxHandlers::handleHangupActions($method, $idOrSub, $subAction);
                 case 'queues':
                     ApiV1PbxHandlers::handleQueues($method, $idOrSub, $subAction);
                 case 'calls':
-                    ApiV1PbxHandlers::handleCalls($method, (string)$idOrSub);
+                    ApiV1PbxHandlers::handleCalls($method, (string)$idOrSub, $subAction);
                 case 'cdr':
-                    ApiV1PbxHandlers::handleCdr($method);
+                    ApiV1PbxHandlers::handleCdr($method, $idOrSub);
                 case 'voicemails':
-                    ApiV1PbxHandlers::handleVoicemails($method);
+                    ApiV1PbxHandlers::handleVoicemails($method, $idOrSub);
                 case 'announcements':
-                    self::handleAnnouncements($method, $idOrSub);
+                    self::handleAnnouncements($method, $idOrSub, $subAction);
                 case 'phones':
-                    self::handlePhones($method, $idOrSub);
+                    self::handlePhones($method, $idOrSub, $subAction);
                 case 'web-widgets':
-                    self::handleWebWidgets($method, $idOrSub);
+                    self::handleWebWidgets($method, $idOrSub, $subAction);
                 case 'webhooks':
                     self::handleWebhooks($method, $idOrSub, $subAction);
                 case 'plugins':
@@ -201,9 +201,9 @@ final class ApiV1Controller
 
     // ------------------------------------------------------------------ Users & Roles
 
-    private static function handleUsers(string $method, ?string $idStr, ?string $subAction): never
+    private static function handleUsers(string $method, ?string $idStr, ?string $subAction = null): never
     {
-        if ($method === 'GET' && $idStr === null) {
+        if ($method === 'GET' && $idStr === null && $subAction === null) {
             ApiRequestContext::requireScope('users:read');
             $pg = ApiRequestContext::pagination(50, 200);
             $where = '1=1';
@@ -229,7 +229,7 @@ final class ApiV1Controller
             ]);
         }
 
-        if ($method === 'GET') {
+        if ($method === 'GET' && $idStr !== null && $subAction === null) {
             ApiRequestContext::requireScope('users:read');
             $row = DBHelper::fetchOne('SELECT * FROM sys_users WHERE id = ?', [(int)$idStr]);
             if (!$row) {
@@ -238,7 +238,7 @@ final class ApiV1Controller
             ApiResponse::success(ResourceNormalizer::sanitizeRow($row));
         }
 
-        if ($method === 'POST' && $idStr === null) {
+        if ($method === 'POST' && $idStr === null && $subAction === null) {
             ApiRequestContext::requireScope('users:write');
             $body = ApiRequestContext::jsonBody();
             $body['user_id'] = 0;
@@ -249,14 +249,14 @@ final class ApiV1Controller
             ApiResponse::fromServiceResult($res, $saved ? ResourceNormalizer::sanitizeRow($saved) : null, 201);
         }
 
-        if ($method === 'POST' && $subAction === 'toggle') {
+        if ($method === 'POST' && $idStr !== null && $subAction === 'toggle') {
             ApiRequestContext::requireScope('users:write');
             $res = PBXHelper::toggleStatus('sys_users', (int)$idStr, ApiRequestContext::csrfToken());
             $saved = DBHelper::fetchOne('SELECT * FROM sys_users WHERE id = ?', [(int)$idStr]);
             ApiResponse::fromServiceResult($res, $saved ? ResourceNormalizer::sanitizeRow($saved) : null);
         }
 
-        if (in_array($method, ['PUT', 'PATCH'], true) && $idStr !== null) {
+        if (in_array($method, ['PUT', 'PATCH'], true) && $idStr !== null && $subAction === null) {
             ApiRequestContext::requireScope('users:write');
             $existing = DBHelper::fetchOne('SELECT * FROM sys_users WHERE id = ?', [(int)$idStr]);
             if (!$existing) {
@@ -268,17 +268,24 @@ final class ApiV1Controller
             ApiResponse::fromServiceResult($res, $saved ? ResourceNormalizer::sanitizeRow($saved) : null);
         }
 
-        if ($method === 'DELETE' && $idStr !== null) {
+        if ($method === 'DELETE' && $idStr !== null && $subAction === null) {
             ApiRequestContext::requireScope('users:write');
             $res = UserService::deleteUser((int)$idStr, ApiRequestContext::csrfToken());
             ApiResponse::fromServiceResult($res);
         }
 
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
+        }
+
         ApiResponse::error('METHOD_NOT_ALLOWED', "Unsupported method {$method} for /api/v1/users", 405);
     }
 
-    private static function handleRoles(string $method): never
+    private static function handleRoles(string $method, ?string $sub = null): never
     {
+        if ($sub !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$sub}", 404);
+        }
         if ($method === 'GET') {
             ApiRequestContext::requireScope('users:read');
             require_once dirname(__DIR__) . '/repositories/RoleRepository.php';
@@ -292,8 +299,11 @@ final class ApiV1Controller
 
     // ------------------------------------------------------------------ Announcements & Phones
 
-    private static function handleAnnouncements(string $method, ?string $idStr): never
+    private static function handleAnnouncements(string $method, ?string $idStr, ?string $subAction = null): never
     {
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
+        }
         if ($method === 'GET') {
             ApiRequestContext::requireScope('sounds:read');
             ApiResponse::success(DBHelper::fetchAll('SELECT * FROM pbx_announcements ORDER BY id ASC'));
@@ -313,8 +323,11 @@ final class ApiV1Controller
         ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/announcements', 405);
     }
 
-    private static function handlePhones(string $method, ?string $idStr): never
+    private static function handlePhones(string $method, ?string $idStr, ?string $subAction = null): never
     {
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
+        }
         if ($method === 'GET' && $idStr === null) {
             ApiRequestContext::requireScope('devices:read');
             ApiResponse::success(ResourceNormalizer::sanitizeList(DBHelper::fetchAll('SELECT * FROM pbx_phones ORDER BY id ASC')));
@@ -332,29 +345,32 @@ final class ApiV1Controller
 
     // ------------------------------------------------------------------ Webhooks
 
-    private static function handleWebhooks(string $method, ?string $idStr, ?string $subAction): never
+    private static function handleWebhooks(string $method, ?string $idStr, ?string $subAction = null): never
     {
-        if ($method === 'GET' && $idStr === null) {
+        if ($method === 'GET' && $idStr === null && $subAction === null) {
             ApiRequestContext::requireScope('system:read');
             ApiResponse::success([
                 'webhooks'         => WebhookService::all(),
                 'supported_events' => WebhookService::SUPPORTED_EVENTS,
             ]);
         }
-        if ($method === 'POST' && $idStr === null) {
+        if ($method === 'POST' && $idStr === null && $subAction === null) {
             ApiRequestContext::requireScope('system:write');
             $res = WebhookService::save(ApiRequestContext::jsonBody());
             ApiResponse::fromServiceResult($res, null, 201);
         }
-        if ($method === 'POST' && $subAction === 'test') {
+        if ($method === 'POST' && $idStr !== null && $subAction === 'test') {
             ApiRequestContext::requireScope('system:write');
             $res = WebhookService::sendTestPing((int)$idStr, ApiRequestContext::csrfToken());
             ApiResponse::fromServiceResult($res);
         }
-        if ($method === 'DELETE' && $idStr !== null) {
+        if ($method === 'DELETE' && $idStr !== null && $subAction === null) {
             ApiRequestContext::requireScope('system:write');
             $res = WebhookService::delete((int)$idStr, ApiRequestContext::csrfToken());
             ApiResponse::fromServiceResult($res);
+        }
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
         }
         ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/webhooks', 405);
     }
@@ -454,8 +470,11 @@ final class ApiV1Controller
 
     // ------------------------------------------------------------------ Web Widgets
 
-    private static function handleWebWidgets(string $method, ?string $idStr): never
+    private static function handleWebWidgets(string $method, ?string $idStr, ?string $subAction = null): never
     {
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
+        }
         require_once dirname(__DIR__) . '/services/WebWidgetService.php';
         if ($method === 'GET' && $idStr === null) {
             ApiRequestContext::requireScope('pbx:read');

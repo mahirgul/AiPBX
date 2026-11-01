@@ -583,4 +583,23 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
         $this->assertNotNull($res['json']);
         $this->assertSame('METHOD_NOT_ALLOWED', $res['json']['error']['code']);
     }
+
+    public function testUnknownSubActionReturns404(): void
+    {
+        $res = $this->apiRequest('GET', '/api/v1/extensions/1/invalid_subaction');
+        $this->assertSame(404, $res['status']);
+        $this->assertSame('NOT_FOUND', $res['json']['error']['code']);
+
+        $res2 = $this->apiRequest('GET', '/api/v1/trunks/1/invalid_subaction');
+        $this->assertSame(404, $res2['status']);
+        $this->assertSame('NOT_FOUND', $res2['json']['error']['code']);
+
+        $res3 = $this->apiRequest('GET', '/api/v1/conferences/1/invalid_subaction');
+        $this->assertSame(404, $res3['status']);
+        $this->assertSame('NOT_FOUND', $res3['json']['error']['code']);
+
+        $res4 = $this->apiRequest('POST', '/api/v1/meetings/1/invalid_subaction', []);
+        $this->assertSame(404, $res4['status']);
+        $this->assertSame('NOT_FOUND', $res4['json']['error']['code']);
+    }
 }
