@@ -221,6 +221,17 @@ function check_rbac(): void
         '/scheduled-tasks',
         '/external-dbs',
         '/ivr-data-steps',
+        '/reverse-proxy',
+        '/network-settings',
+        '/network-services',
+        '/phone-logs',
+        '/custom-dialplan',
+        '/privacy',
+        '/ai-cloud',
+        '/assistant',
+        '/mail-templates',
+        '/conferences',
+        '/meetings',
     ];
     $n = 0;
 
@@ -294,6 +305,7 @@ function check_api(): void
         ['api/assistant.php', 'action=changes'],
         ['api/sound_packs.php', 'action=status'],
         ['api/system_update.php', 'action=status'],
+        ['api/conferences.php', 'action=members&room=1001'],
     ];
     $n = 0;
 

@@ -469,11 +469,19 @@ final class ApiV1PbxHandlers
         ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/ring-groups', 405);
     }
 
-    public static function handleConferences(string $method, ?string $idStr): never
+    public static function handleConferences(string $method, ?string $idStr, ?string $subAction = null): never
     {
         if ($method === 'GET' && $idStr === null) {
             ApiRequestContext::requireScope('pbx:read');
             ApiResponse::success(ConferenceService::getConferences());
+        }
+        if ($method === 'GET' && $subAction === 'members') {
+            ApiRequestContext::requireScope('pbx:read');
+            $row = ConferenceService::getConference((int)$idStr);
+            if (!$row) {
+                ApiResponse::error('NOT_FOUND', 'Conference room not found.', 404);
+            }
+            ApiResponse::success(ConferenceService::getLiveMembers((string)$row['room_number']));
         }
         if ($method === 'GET') {
             ApiRequestContext::requireScope('pbx:read');
@@ -506,6 +514,93 @@ final class ApiV1PbxHandlers
             ApiResponse::fromServiceResult($res);
         }
         ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/conferences', 405);
+    }
+
+    public static function handleMeetings(string $method, ?string $idStr, ?string $subAction = null): never
+    {
+        if ($method === 'GET' && $idStr === null) {
+            ApiRequestContext::requireScope('pbx:read');
+            $status = isset($_GET['status']) && is_string($_GET['status']) && $_GET['status'] !== '' ? $_GET['status'] : null;
+            $rows = MeetingService::getMeetings($status);
+            foreach ($rows as &$r) {
+                $r['join_url'] = MeetingService::getMeetingUrl((string)($r['meeting_token'] ?? ''));
+            }
+            unset($r);
+            ApiResponse::success($rows);
+        }
+        if ($method === 'GET') {
+            ApiRequestContext::requireScope('pbx:read');
+            $row = MeetingService::getMeeting($idStr);
+            if (!$row) {
+                ApiResponse::error('NOT_FOUND', 'Meeting not found.', 404);
+            }
+            $row['join_url'] = MeetingService::getMeetingUrl((string)($row['meeting_token'] ?? ''));
+            $row['invites'] = MeetingService::getInvites((int)$row['id']);
+            ApiResponse::success($row);
+        }
+        if ($method === 'POST' && $idStr === null) {
+            ApiRequestContext::requireScope('pbx:write');
+            $body = ApiRequestContext::jsonBody();
+            $body['id'] = 0;
+            $res = MeetingService::saveMeeting($body, isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null);
+            $saved = null;
+            if (!empty($res['success']) && !empty($res['meeting_id'])) {
+                $saved = MeetingService::getMeeting((int)$res['meeting_id']);
+                if ($saved) {
+                    $saved['join_url'] = MeetingService::getMeetingUrl((string)($saved['meeting_token'] ?? ''));
+                    $saved['invites'] = MeetingService::getInvites((int)$saved['id']);
+                }
+            }
+            ApiResponse::fromServiceResult($res, $saved, 201);
+        }
+        if ($method === 'POST' && $subAction === 'invites') {
+            ApiRequestContext::requireScope('pbx:write');
+            $existing = MeetingService::getMeeting($idStr);
+            if (!$existing) {
+                ApiResponse::error('NOT_FOUND', 'Meeting not found.', 404);
+            }
+            $body = ApiRequestContext::jsonBody();
+            $res = MeetingService::addInvite(
+                (int)$existing['id'],
+                (string)($body['email'] ?? ''),
+                (string)($body['name'] ?? '')
+            );
+            $inviteData = null;
+            if (!empty($res['success']) && !empty($res['guest_token'])) {
+                $inviteData = [
+                    'invite_id'   => $res['invite_id'] ?? null,
+                    'guest_token' => $res['guest_token'],
+                    'join_url'    => MeetingService::getMeetingUrl((string)$res['guest_token']),
+                ];
+            }
+            ApiResponse::fromServiceResult($res, $inviteData, 201);
+        }
+        if (in_array($method, ['PUT', 'PATCH'], true) && $idStr !== null && $subAction === null) {
+            ApiRequestContext::requireScope('pbx:write');
+            $existing = MeetingService::getMeeting($idStr);
+            if (!$existing) {
+                ApiResponse::error('NOT_FOUND', 'Meeting not found.', 404);
+            }
+            $payload = array_merge($existing, ApiRequestContext::jsonBody());
+            $payload['id'] = (int)$existing['id'];
+            $res = MeetingService::saveMeeting($payload, isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null);
+            $saved = MeetingService::getMeeting((int)$existing['id']);
+            if ($saved) {
+                $saved['join_url'] = MeetingService::getMeetingUrl((string)($saved['meeting_token'] ?? ''));
+                $saved['invites'] = MeetingService::getInvites((int)$saved['id']);
+            }
+            ApiResponse::fromServiceResult($res, $saved);
+        }
+        if ($method === 'DELETE' && $idStr !== null && $subAction === null) {
+            ApiRequestContext::requireScope('pbx:write');
+            $existing = MeetingService::getMeeting($idStr);
+            if (!$existing) {
+                ApiResponse::error('NOT_FOUND', 'Meeting not found.', 404);
+            }
+            $ok = MeetingService::cancelMeeting((int)$existing['id'], isset($_SESSION['user_id']) ? (int)$_SESSION['user_id'] : null);
+            ApiResponse::fromServiceResult(['success' => $ok, 'error' => $ok ? null : 'Failed to cancel meeting'], ['id' => (int)$existing['id'], 'status' => 'cancelled']);
+        }
+        ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/meetings', 405);
     }
 
     public static function handleBossSecretary(string $method, ?string $idStr): never

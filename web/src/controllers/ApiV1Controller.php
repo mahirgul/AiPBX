@@ -10,6 +10,7 @@ require_once dirname(__DIR__) . '/core/PluginManager.php';
 require_once dirname(__DIR__) . '/services/WebhookService.php';
 require_once dirname(__DIR__) . '/services/RingGroupService.php';
 require_once dirname(__DIR__) . '/services/ConferenceService.php';
+require_once dirname(__DIR__) . '/services/MeetingService.php';
 require_once dirname(__DIR__) . '/services/BossSecretaryService.php';
 require_once dirname(__DIR__) . '/services/DialPermissionService.php';
 require_once __DIR__ . '/api/ApiV1OpenApi.php';
@@ -72,7 +73,9 @@ final class ApiV1Controller
                 case 'ring-groups':
                     ApiV1PbxHandlers::handleRingGroups($method, $idOrSub);
                 case 'conferences':
-                    ApiV1PbxHandlers::handleConferences($method, $idOrSub);
+                    ApiV1PbxHandlers::handleConferences($method, $idOrSub, $subAction);
+                case 'meetings':
+                    ApiV1PbxHandlers::handleMeetings($method, $idOrSub, $subAction);
                 case 'boss-secretary':
                     ApiV1PbxHandlers::handleBossSecretary($method, $idOrSub);
                 case 'dial-permissions':

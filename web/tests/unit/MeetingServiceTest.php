@@ -197,4 +197,44 @@ final class MeetingServiceTest extends TestCase
         $this->assertStringContainsString('Weekly Team Sync', $rendered['html']);
         $this->assertStringContainsString('/meet/g_sample_token', $rendered['html']);
     }
+
+    public function testRoomNumberConflictAndConferenceReferenceProtection(): void
+    {
+        // 1. Find an existing user extension if any, or insert a temporary feature code to test collision
+        $ext = $this->db->query("SELECT extension FROM sys_users WHERE extension IS NOT NULL AND extension != '' LIMIT 1")->fetchColumn();
+        if ($ext) {
+            $res = MeetingService::saveMeeting([
+                'title'       => 'Collision Test',
+                'starts_at'   => date('Y-m-d H:i:s', time() + 3600),
+                'room_number' => (string)$ext,
+            ], 1);
+            $this->assertFalse($res['success']);
+            $this->assertNotEmpty($res['error']);
+        }
+
+        // 2. Schedule a meeting on room 8995 and verify ConferenceService::deleteConference blocks deletion while active
+        $res2 = MeetingService::saveMeeting([
+            'title'       => 'Active Room Protection Test',
+            'starts_at'   => date('Y-m-d H:i:s', time() + 3600),
+            'room_number' => '8995',
+        ], 1);
+        $this->assertTrue($res2['success']);
+        $meetingId = (int)$res2['meeting_id'];
+        $this->createdMeetingIds[] = $meetingId;
+
+        $confStmt = $this->db->prepare('SELECT id FROM pbx_conferences WHERE room_number = ? LIMIT 1');
+        $confStmt->execute(['8995']);
+        $confId = (int)$confStmt->fetchColumn();
+        $this->assertGreaterThan(0, $confId);
+
+        $_SESSION['csrf_token'] = 'test_csrf_token';
+        $delRes = ConferenceService::deleteConference($confId, 'test_csrf_token');
+        $this->assertFalse($delRes['success']);
+        $this->assertStringContainsString('Video meetings', (string)($delRes['error'] ?? ''));
+
+        // After cancelling the meeting, deleting the conference room succeeds
+        MeetingService::cancelMeeting($meetingId, 1);
+        $delResAfter = ConferenceService::deleteConference($confId, 'test_csrf_token');
+        $this->assertTrue($delResAfter['success']);
+    }
 }

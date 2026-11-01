@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../audit_log.php';
+require_once __DIR__ . '/../internal_numbers.php';
+require_once __DIR__ . '/ConferenceService.php';
 require_once __DIR__ . '/MailTemplateService.php';
 require_once __DIR__ . '/ForgotPasswordService.php';
 
@@ -190,13 +192,18 @@ class MeetingService
             $token = 'm_' . bin2hex(random_bytes(16));
             $customRoom = preg_replace('/[^0-9]/', '', (string)($input['room_number'] ?? '')) ?? '';
             if ($customRoom !== '') {
+                $existingConfStmt = $db->prepare('SELECT id FROM pbx_conferences WHERE room_number = ? LIMIT 1');
+                $existingConfStmt->execute([$customRoom]);
+                $existingConfId = (int)$existingConfStmt->fetchColumn();
+                $owner = internalNumberOwner($customRoom, 'conference', $existingConfId);
+                if ($owner !== null) {
+                    return ['success' => false, 'error' => sprintf(t('internal_number.err_used'), $customRoom, $owner)];
+                }
                 $roomNumber = $customRoom;
             } else {
                 $roomNumber = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
-                $checkStmt = $db->prepare('SELECT COUNT(*) FROM pbx_conferences WHERE room_number = ?');
-                for ($attempt = 0; $attempt < 20; $attempt++) {
-                    $checkStmt->execute([$roomNumber]);
-                    if ((int)$checkStmt->fetchColumn() === 0) {
+                for ($attempt = 0; $attempt < 30; $attempt++) {
+                    if (internalNumberOwner($roomNumber) === null) {
                         break;
                     }
                     $roomNumber = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
@@ -298,7 +305,7 @@ class MeetingService
                     $confStmt = $db->prepare('SELECT id, title FROM pbx_conferences WHERE room_number = ? LIMIT 1');
                     $confStmt->execute([$roomNumber]);
                     $confRow = $confStmt->fetch(PDO::FETCH_ASSOC);
-                    if ($confRow) {
+                    if ($confRow && !ConferenceService::isReferencedByRouting((int)$confRow['id'])) {
                         $db->prepare('UPDATE pbx_conferences SET is_active = 0 WHERE id = ?')->execute([(int)$confRow['id']]);
                         markPendingSync('conferences', 'conference', (int)$confRow['id'], "{$confRow['title']} ({$roomNumber})", 'delete', $userId);
                         markPendingSync('internal_numbers', 'conference', (int)$confRow['id'], "{$confRow['title']} ({$roomNumber})", 'delete', $userId);
