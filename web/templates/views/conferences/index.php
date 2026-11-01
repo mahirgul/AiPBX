@@ -78,6 +78,9 @@
                                     <?php if ((int)$cf['announce_join_leave'] === 1): ?>
                                         <span class="badge badge-info" title="<?php echo t('conferences.announce_t'); ?>"><i class="fas fa-volume-up"></i> <?php echo t('conferences.announce'); ?></span>
                                     <?php endif; ?>
+                                    <?php if (!empty($cf['video_mode']) && $cf['video_mode'] !== 'none'): ?>
+                                        <span class="badge badge-purple" title="<?php echo t('conferences.video_mode'); ?>: <?php echo htmlspecialchars($cf['video_mode']); ?>"><i class="fas fa-video"></i> <?php echo strtoupper($cf['video_mode'] === 'follow_talker' ? 'talker' : $cf['video_mode']); ?></span>
+                                    <?php endif; ?>
                                 </div>
                             </td>
                             <td><span class="badge badge-secondary"><i class="fas fa-users"></i> <?php echo t('cc_board.max'); ?> <?php echo (int)$cf['max_members']; ?></span></td>
@@ -192,6 +195,22 @@
                     <div class="form-group">
                         <label class="form-label"><?php echo t('conferences.moh_class'); ?></label>
                         <input type="text" name="music_on_hold" id="modal_conf_moh" class="form-control" value="default" placeholder="default">
+                    </div>
+                </div>
+
+                <div class="u-grid-2">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-video text-primary"></i> <?php echo t('conferences.video_mode'); ?></label>
+                        <select name="video_mode" id="modal_conf_video_mode" class="form-control">
+                            <option value="none"><?php echo t('conferences.video_mode_none'); ?></option>
+                            <option value="sfu"><?php echo t('conferences.video_mode_sfu'); ?></option>
+                            <option value="follow_talker"><?php echo t('conferences.video_mode_talker'); ?></option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('conferences.max_video_streams'); ?></label>
+                        <input type="number" name="max_video_streams" id="modal_conf_max_video_streams" class="form-control" value="10" min="1" max="20">
                     </div>
                 </div>
 

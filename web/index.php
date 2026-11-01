@@ -113,6 +113,14 @@ if (preg_match('#^/plugins/([a-z0-9][a-z0-9-]{1,48})$#', $path, $_pluginMatch)) 
     exit;
 }
 
+// 0g. Public Video Meeting Lobby (/meet and /meet/<token>)
+if ($path === '/meet' || str_starts_with($path, '/meet/')) {
+    $meetToken = trim(substr($path, strlen('/meet')), '/');
+    require_once __DIR__ . '/src/controllers/MeetingLobbyController.php';
+    MeetingLobbyController::index($meetToken);
+    exit;
+}
+
 // 1. Old URLs → permanent redirect (exact-match whitelist)
 $LEGACY = [
     '/admin'                   => '/',

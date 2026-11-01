@@ -30,6 +30,7 @@ class MailTemplateService
         'health_alarm' => ['count', 'checks', '*problems', 'host', 'date', 'brand', 'portal_link'],
         'health_recovered' => ['count', 'checks', '*problems', 'host', 'date', 'brand', 'portal_link'],
         'health_summary' => ['day', 'state', 'alarms', '*calls', '*checks', 'host', 'date', 'brand', 'portal_link'],
+        'meeting_invite' => ['name', 'title', 'start_time', 'end_time', 'host_name', 'join_link', '*join_button', 'pin', 'brand'],
         'test' => ['brand', 'date', 'from_name', 'from_address', 'to', 'host'],
     ];
 

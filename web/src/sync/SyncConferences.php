@@ -26,6 +26,7 @@ function __syncConferencesBody() {
         $record = !empty($cf['record_conference']) ? 'yes' : 'no';
         $mute = !empty($cf['mute_on_join']) ? 'yes' : 'no';
         $moh = preg_replace('/[^a-zA-Z0-9_-]/', '', $cf['music_on_hold'] ?? 'default') ?: 'default';
+        $video_mode = in_array($cf['video_mode'] ?? 'none', ['sfu', 'follow_talker', 'talker'], true) ? $cf['video_mode'] : 'none';
 
         $conf .= "; ---- Conference #{$id}: {$title} ({$num}) ----\n";
         $conf .= "[app-confbridge-{$id}]\n";
@@ -35,6 +36,12 @@ function __syncConferencesBody() {
 
         // ConfBridge dynamic settings
         $conf .= " same => n,Set(CONFBRIDGE(bridge,record_conference)={$record})\n";
+        if ($video_mode !== 'none') {
+            $conf .= " same => n,Set(CONFBRIDGE(bridge,video_mode)={$video_mode})\n";
+            $conf .= " same => n,Set(CONFBRIDGE(bridge,video_update_discard)=0)\n";
+            $conf .= " same => n,Set(CONFBRIDGE(bridge,remb_send_interval)=1000)\n";
+            $conf .= " same => n,Set(CONFBRIDGE(bridge,remb_behavior)=average)\n";
+        }
         $conf .= " same => n,Set(CONFBRIDGE(user,music_on_hold_class)={$moh})\n";
         $conf .= " same => n,Set(CONFBRIDGE(user,wait_marked)={$wait_marked})\n";
         $conf .= " same => n,Set(CONFBRIDGE(user,end_marked)={$end_marked})\n";

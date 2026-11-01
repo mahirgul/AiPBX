@@ -11,6 +11,8 @@ function openCreateConfModal() {
     document.getElementById('modal_conf_admin_pin').value = '';
     document.getElementById('modal_conf_max_members').value = '50';
     document.getElementById('modal_conf_moh').value = 'default';
+    if (document.getElementById('modal_conf_video_mode')) document.getElementById('modal_conf_video_mode').value = 'none';
+    if (document.getElementById('modal_conf_max_video_streams')) document.getElementById('modal_conf_max_video_streams').value = '10';
     document.getElementById('modal_conf_wait_marked').checked = false;
     document.getElementById('modal_conf_end_marked').checked = false;
     document.getElementById('modal_conf_record').checked = false;
@@ -30,6 +32,8 @@ function openEditConfModal(cf) {
     document.getElementById('modal_conf_admin_pin').value = cf.admin_pin || '';
     document.getElementById('modal_conf_max_members').value = cf.max_members || 50;
     document.getElementById('modal_conf_moh').value = cf.music_on_hold || 'default';
+    if (document.getElementById('modal_conf_video_mode')) document.getElementById('modal_conf_video_mode').value = cf.video_mode || 'none';
+    if (document.getElementById('modal_conf_max_video_streams')) document.getElementById('modal_conf_max_video_streams').value = cf.max_video_streams || 10;
     document.getElementById('modal_conf_wait_marked').checked = (cf.wait_marked == 1);
     document.getElementById('modal_conf_end_marked').checked = (cf.end_marked == 1);
     document.getElementById('modal_conf_record').checked = (cf.record_conference == 1);

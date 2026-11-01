@@ -153,6 +153,36 @@ final class SyncConferencesCoverageTest extends TestCase
         $this->assertStringContainsString("same => n(cf_enter_{$id}),ConfBridge(7925)", $section);
     }
 
+    public function testConferenceVideoModeSfuAndTalker(): void
+    {
+        $id1 = 7927;
+        $id2 = 7928;
+        $this->createdConfIds[] = $id1;
+        $this->createdConfIds[] = $id2;
+
+        $stmt = $this->db->prepare(
+            "INSERT INTO pbx_conferences (id, room_number, title, video_mode, is_active)
+             VALUES (?, ?, ?, ?, 1)"
+        );
+        $stmt->execute([$id1, '7927', 'zz_cov_conf_7927', 'sfu']);
+        $stmt->execute([$id2, '7928', 'zz_cov_conf_7928', 'follow_talker']);
+
+        syncConferences();
+
+        $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_conferences.conf');
+
+        // SFU room check
+        $this->assertStringContainsString("[app-confbridge-{$id1}]", $conf);
+        $this->assertStringContainsString('same => n,Set(CONFBRIDGE(bridge,video_mode)=sfu)', $conf);
+        $this->assertStringContainsString('same => n,Set(CONFBRIDGE(bridge,video_update_discard)=0)', $conf);
+        $this->assertStringContainsString('same => n,Set(CONFBRIDGE(bridge,remb_send_interval)=1000)', $conf);
+        $this->assertStringContainsString('same => n,Set(CONFBRIDGE(bridge,remb_behavior)=average)', $conf);
+
+        // Follow-talker room check
+        $this->assertStringContainsString("[app-confbridge-{$id2}]", $conf);
+        $this->assertStringContainsString('same => n,Set(CONFBRIDGE(bridge,video_mode)=follow_talker)', $conf);
+    }
+
     public function testInactiveConferenceOmittedFromDialplan(): void
     {
         $id = 7926;

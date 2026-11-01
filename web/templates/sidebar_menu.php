@@ -77,6 +77,7 @@ return [
             ['href' => '/ring-groups', 'icon' => 'fas fa-users', 'label' => 'sidebar.item_ring_groups', 'show' => $can('ring_groups'), 'pages' => ['ring_groups.php'], 'uri' => '/ring-groups'],
             ['href' => '/queues', 'icon' => 'fas fa-layer-group', 'label' => 'sidebar.item_queues', 'show' => $can('queues'), 'pages' => ['queues.php']],
             ['href' => '/conferences', 'icon' => 'fas fa-users-rectangle', 'label' => 'sidebar.item_conferences', 'show' => $can('conferences'), 'pages' => ['conferences.php'], 'uri' => '/conferences'],
+            ['href' => '/meetings', 'icon' => 'fas fa-video', 'label' => 'sidebar.item_meetings', 'show' => $can('conferences') || $can('my_phone') || $isAdmin, 'pages' => ['meetings.php'], 'uri' => '/meetings'],
             ['href' => '/boss-secretary', 'icon' => 'fas fa-user-tie', 'label' => 'sidebar.item_boss_secretary', 'show' => $can('boss_secretary'), 'pages' => ['boss_secretary.php'], 'uri' => '/boss-secretary'],
             ['href' => '/end-call', 'icon' => 'fas fa-phone-slash', 'label' => 'sidebar.item_end_call', 'show' => $can('end_call'), 'pages' => ['end_call.php']],
             ['href' => '/sounds', 'icon' => 'fas fa-music', 'label' => 'sidebar.item_sounds', 'show' => $can('sounds'), 'pages' => ['sounds.php']],

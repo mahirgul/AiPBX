@@ -497,6 +497,9 @@ function check_conventions(): void
         // REST API v1 authenticates stateless Bearer tokens (apbx_...), IP
         // allowlists, rate limits and scopes via ApiRequestContext::authenticate().
         'ApiV1Controller.php',
+        // Video meeting lobby (/meet/{token}) allows external anonymous guests
+        // to join video conferences without registration.
+        'MeetingLobbyController.php',
     ];
     $n++;
     foreach (glob(SMOKE_ROOT . '/src/controllers/*.php') as $f) {

@@ -44,6 +44,7 @@ return [
     '/phone-keys'      => ['controller' => PhoneKeysController::class, 'action' => 'index', 'module' => 'phone_keys.php'],
     '/ring-groups'      => ['controller' => RingGroupController::class, 'action' => 'index', 'module' => 'ring_groups.php'],
     '/conferences'      => ['controller' => ConferenceController::class, 'action' => 'index', 'module' => 'conferences.php'],
+    '/meetings'         => ['controller' => MeetingController::class, 'action' => 'index', 'module' => 'conferences.php'],
     '/boss-secretary'   => ['controller' => BossSecretaryController::class, 'action' => 'index', 'module' => 'boss_secretary.php'],
     '/queues'          => ['controller' => QueueController::class, 'action' => 'index', 'module' => 'queues.php'],
     '/sounds'          => ['controller' => SoundController::class, 'action' => 'index', 'module' => 'sounds.php'],
