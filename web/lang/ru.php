@@ -5725,4 +5725,10 @@ return [
     'meetings.lobby_ended_desc' => 'Спасибо за участие. Вы можете подключиться снова в любое время.',
     'meetings.lobby_rejoin' => 'Подключиться снова',
     'meetings.allow_guests_lbl' => 'Разрешить внешних гостей (вход по ссылке)',
+    'roles.module_meetings' => 'Видеовстречи',
+    'roles.module_scheduled_tasks' => 'Запланированные задачи',
+    'roles.module_health' => 'Состояние системы',
+    'roles.module_custom_dialplan' => 'Пользовательский диалплан',
+    'roles.module_assistant' => 'Редактор диалплана',
+    'roles.module_external_dbs' => 'Внешние базы данных',
 ];

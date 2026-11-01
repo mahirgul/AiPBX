@@ -2,6 +2,8 @@
 /**
  * Video Meetings & Guest Conferences View (/meetings)
  */
+$canEdit = $can_edit ?? hasModulePermission('meetings', 'edit');
+$canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
 ?>
 
 <div class="card">
@@ -14,9 +16,11 @@
             <button type="button" class="btn-help" onclick="toggleModuleHelp('meetingsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
                 <i class="fas fa-question-circle"></i>
             </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateMeetingModal()" title="<?php echo t('meetings.btn_new_meeting', 'Schedule Meeting'); ?>">
-                <i class="fas fa-calendar-plus"></i> <span class="u-ml-4"><?php echo t('meetings.btn_new_meeting', 'Schedule Meeting'); ?></span>
-            </button>
+            <?php if ($canEdit): ?>
+                <button class="btn btn-primary btn-sm" onclick="openCreateMeetingModal()" title="<?php echo t('meetings.btn_new_meeting', 'Schedule Meeting'); ?>">
+                    <i class="fas fa-calendar-plus"></i> <span class="u-ml-4"><?php echo t('meetings.btn_new_meeting', 'Schedule Meeting'); ?></span>
+                </button>
+            <?php endif; ?>
         </div>
     </div>
 
@@ -134,23 +138,27 @@
                                         <button type="button" class="btn btn-secondary btn-sm" onclick="copyGuestLink(<?php echo jsArg($guestUrl); ?>)" title="<?php echo t('meetings.btn_copy_link', 'Copy Link'); ?>">
                                             <i class="fas fa-link"></i>
                                         </button>
-                                        <button type="button" class="btn btn-info btn-sm" onclick="openInviteModal(<?php echo jsArg($m); ?>)" title="<?php echo t('meetings.btn_invite_guest', 'Invite Guest'); ?>">
-                                            <i class="fas fa-envelope"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="openEditMeetingModal(<?php echo jsArg($m); ?>)" title="<?php echo t('common.edit'); ?>">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
+                                        <?php if ($canEdit): ?>
+                                            <button type="button" class="btn btn-info btn-sm" onclick="openInviteModal(<?php echo jsArg($m); ?>)" title="<?php echo t('meetings.btn_invite_guest', 'Invite Guest'); ?>">
+                                                <i class="fas fa-envelope"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-secondary btn-sm" onclick="openEditMeetingModal(<?php echo jsArg($m); ?>)" title="<?php echo t('common.edit'); ?>">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        <?php endif; ?>
                                         <a href="/meetings?ics=<?php echo (int)$m['id']; ?>" class="btn btn-secondary btn-sm" title="<?php echo t('meetings.btn_download_ics', 'Download .ics'); ?>">
                                             <i class="fas fa-calendar-alt"></i>
                                         </a>
-                                        <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('meetings.confirm_cancel', 'Cancel this scheduled meeting?')), ENT_QUOTES); ?>);">
-                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
-                                            <input type="hidden" name="cancel_meeting" value="1">
-                                            <input type="hidden" name="meeting_id" value="<?php echo (int)$m['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.cancel'); ?>">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
+                                        <?php if ($canDelete): ?>
+                                            <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('meetings.confirm_cancel', 'Cancel this scheduled meeting?')), ENT_QUOTES); ?>);">
+                                                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                                <input type="hidden" name="cancel_meeting" value="1">
+                                                <input type="hidden" name="meeting_id" value="<?php echo (int)$m['id']; ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.cancel'); ?>">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </div>
                             </td>
