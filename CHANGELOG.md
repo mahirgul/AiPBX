@@ -5,7 +5,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
-## 1.50.38
+## 1.60.0
 
 - **Web Video Meetings & Guest Conference Scheduling System (`/meetings`) (Spec 004):**
   - **Calendar & Meeting Scheduler (`/meetings`):**
