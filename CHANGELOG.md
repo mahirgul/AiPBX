@@ -5,6 +5,28 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.36
+
+- **Reverse Proxy Architecture & Management (`/reverse-proxy`) (#148):**
+  - Dedicated management interface under **Network → Reverse Proxy** for configuring external FQDN, TLS termination modes (Edge TLS Termination, Re-encrypt TLS, No TLS), and trusted proxy CIDR ranges.
+  - Spoof-proof client IP resolution (`ReverseProxyService::resolveClientIp` & global `getClientIP()`): traverses `X-Forwarded-For` right-to-left only when incoming packets originate from trusted CIDRs (`127.0.0.1`, `::1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), falling back to `X-Real-IP`. Direct untrusted connections never honor forwarded headers.
+  - Live reverse proxy configuration generator producing production-ready snippets for **Nginx**, **Caddy**, **Traefik**, **HAProxy**, and **Apache 2.4** with WebRTC WebSocket (`/ws` and `/chat/ws`) pass-through.
+  - Interactive Network Ports & Firewall Matrix detailing public VoIP bypass ports (SIP 5060/5061, RTP 10000-20000 UDP, STUN/TURNS 3478/5349) vs proxied HTTP/HTTPS web ports, with copyable shell setups for **UFW**, **firewalld**, and **iptables**.
+  - Real-time HTTP header diagnostic inspector verifying incoming client IP, proxy trust status, forwarded proto, host, and port.
+- **Let's Encrypt Cloudflare DNS-01 Validation & Wildcards (#148):**
+  - Added Cloudflare DNS-01 challenge support in **System → Certificates** (`/certificates`) and `conf/sbin/aipbx-cert` via `certbot-dns-cloudflare`.
+  - Enables SSL/TLS issuance for internal/private servers without public port 80 exposure.
+  - One-click wildcard certificate support (`*.<domain>`).
+  - Hardened staging mechanism with restricted permissions (`0600`) and private temp directories (`mktemp -d`), preserving saved tokens across test dry-runs and live issue requests.
+- **Security Hardening & SSO Callback Improvements:**
+  - Integrated `ReverseProxyService::isHttps()` and `isHttpsRequest()` across Web Chat session cookies, OIDC redirect URIs, and SAML metadata generators to automatically detect `X-Forwarded-Proto: https` behind Edge TLS terminators.
+  - Unified `getClientIP()` across all authentication surfaces (2FA challenge, Forgot Password, Google OAuth, OIDC, SAML SSO, WebAuthn Passkeys, QR Login, and Mobile API), preventing reverse proxy IP lockouts during brute-force mitigation.
+  - Hardened Apache port 80 virtual host in `install.sh` to prevent redirect loops when reverse proxy terminates TLS at edge, and enabled `/ws` and `/chat/*` reverse proxying on port 80.
+- **Internationalization & Testing:**
+  - 100% translation key parity across all 22 supported languages (5,632 / 5,632 strings, 0 problems).
+  - Comprehensive unit test suite in `ReverseProxyTest.php` covering CIDR parsing (IPv4/IPv6), spoofing protection, HTTPS detection, and configuration generators.
+  - 1,045 PHPUnit tests passing with 0 errors, 0 PHPStan issues, and clean smoke test verification.
+
 ## 1.50.35
 
 - **Custom Asterisk Dialplan Contexts & Code Injection (`/custom-dialplan`):**
