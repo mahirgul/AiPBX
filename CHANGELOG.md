@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.37
+
+- **Configuration Directory Structure Consolidation (`conf/asterisk/`):**
+  - Consolidated all static Asterisk 22 configuration files and seed dialplans from the legacy `asterisk-config/` root directory into `conf/asterisk/`.
+  - Updated `install.sh`, systemd service scripts, provisioning templates, and test harnesses with backward-compatible fallbacks.
+  - Enhanced `scripts/asterisk-restart-needed.sh` to recognize pure Git `R100` directory rename events between `asterisk-config/` and `conf/asterisk/`, ensuring seamless updates without unnecessary Asterisk daemon restarts or in-flight call drops.
+- **Repository Decoupling & Mobile Directory Cleanup:**
+  - Removed deprecated `android/` and `ios/` root stubs from the core PBX repository in favor of their dedicated standalone repositories ([`AiPBX-Android`](https://github.com/mahirgul/AiPBX-Android) and [`AiPBX-ios`](https://github.com/mahirgul/AiPBX-ios)).
+  - Cleaned up obsolete build, packaging, and CI scope rules in `.gitignore`, `.github/workflows/pr-scope.yml`, `scripts/release.sh`, and system documentation.
+- **Documentation & Specifications:**
+  - Published Specification 003 ([`docs/specs/003-reverse-proxy.md`](docs/specs/003-reverse-proxy.md)) covering reverse proxy architecture, network firewall port matrix, and Cloudflare DNS-01 validation.
+  - Updated living specification index (`docs/specs/README.md`), roadmap (`docs/roadmap.md`), system map (`docs/system-map.md`), and main `README.md`.
+
 ## 1.50.36
 
 - **Reverse Proxy Architecture & Management (`/reverse-proxy`) (#148):**
