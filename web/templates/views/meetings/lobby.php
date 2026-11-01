@@ -30,6 +30,14 @@ $meetingConfig = [
     'has_pin' => $hasPin,
     'ws_path' => defined('PJSIP_WS_PATH') ? PJSIP_WS_PATH : '/ws',
     'ice_servers' => $iceServers,
+    'sip_user' => 'meeting-guest',
+    'sip_password' => getMeetingGuestSipSecret(),
+    'i18n' => [
+        'you' => t('meetings.lobby_you', 'You'),
+        'participant' => t('meetings.col_participants', 'Participant'),
+        'link_copied' => t('js.meetings.link_copied', 'Meeting link copied to clipboard!'),
+        'copy_prompt' => t('js.meetings.copy_prompt', 'Copy meeting link:'),
+    ],
 ];
 ?>
 <!DOCTYPE html>
@@ -351,13 +359,13 @@ $meetingConfig = [
                 <video id="lobbyVideo" autoplay playsinline muted></video>
                 <div id="previewPlaceholder" class="preview-placeholder hidden">
                     <i class="fas fa-video-slash fa-3x"></i>
-                    <span>Camera is off</span>
+                    <span><?php echo t('meetings.lobby_cam_off', 'Camera is off'); ?></span>
                 </div>
                 <div class="preview-controls">
-                    <button id="lobbyMicBtn" class="round-btn" title="Toggle Microphone" type="button">
+                    <button id="lobbyMicBtn" class="round-btn" title="Microphone" type="button">
                         <i class="fas fa-microphone"></i>
                     </button>
-                    <button id="lobbyCamBtn" class="round-btn" title="Toggle Camera" type="button">
+                    <button id="lobbyCamBtn" class="round-btn" title="Camera" type="button">
                         <i class="fas fa-video"></i>
                     </button>
                 </div>
@@ -365,22 +373,22 @@ $meetingConfig = [
 
             <div class="form-pane">
                 <h2><?php echo htmlspecialchars($meeting['title'] ?? 'Video Conference'); ?></h2>
-                <p>Check your audio and video before entering the room.</p>
+                <p><?php echo t('meetings.lobby_subtitle', 'Check your audio and video before entering the room.'); ?></p>
 
                 <div class="input-group">
-                    <label for="userNameInput">Your Name</label>
-                    <input type="text" id="userNameInput" class="input-control" placeholder="Enter your display name" value="<?php echo htmlspecialchars($defaultName); ?>" required>
+                    <label for="userNameInput"><?php echo t('meetings.lobby_your_name', 'Your Name'); ?></label>
+                    <input type="text" id="userNameInput" class="input-control" placeholder="<?php echo htmlspecialchars(t('meetings.lobby_name_ph', 'Enter your display name')); ?>" value="<?php echo htmlspecialchars($defaultName); ?>" required>
                 </div>
 
                 <?php if ($hasPin): ?>
                     <div class="input-group">
-                        <label for="pinInput">Room PIN</label>
-                        <input type="password" id="pinInput" class="input-control" placeholder="Enter PIN if required" pattern="[0-9]*">
+                        <label for="pinInput"><?php echo t('conferences.user_pin_lbl', 'Room PIN'); ?></label>
+                        <input type="password" id="pinInput" class="input-control" placeholder="<?php echo htmlspecialchars(t('meetings.ph_optional', 'Optional PIN')); ?>" pattern="[0-9]*" inputmode="numeric">
                     </div>
                 <?php endif; ?>
 
                 <button id="btnJoinRoom" class="btn-join" type="button">
-                    <i class="fas fa-sign-in-alt"></i> Join Meeting
+                    <i class="fas fa-sign-in-alt"></i> <?php echo t('meetings.btn_join_meeting', 'Join Video Meeting'); ?>
                 </button>
             </div>
         </div>
@@ -393,26 +401,26 @@ $meetingConfig = [
                     <video id="localVideo" autoplay playsinline muted></video>
                     <div class="tile-name">
                         <i class="fas fa-microphone" id="localMicIcon"></i>
-                        <span id="localNameTag">You</span>
+                        <span id="localNameTag"><?php echo t('meetings.lobby_you', 'You'); ?></span>
                     </div>
                 </div>
             </div>
 
             <!-- Bottom Floating Dock -->
             <div class="controls-bar">
-                <button id="roomMicBtn" class="round-btn" title="Microphone (M)" type="button">
+                <button id="roomMicBtn" class="round-btn" title="Microphone" type="button">
                     <i class="fas fa-microphone"></i>
                 </button>
-                <button id="roomCamBtn" class="round-btn" title="Camera (V)" type="button">
+                <button id="roomCamBtn" class="round-btn" title="Camera" type="button">
                     <i class="fas fa-video"></i>
                 </button>
-                <button id="roomShareBtn" class="round-btn" title="Share Screen" type="button">
+                <button id="roomShareBtn" class="round-btn" title="<?php echo htmlspecialchars(t('meetings.lobby_share_screen', 'Share Screen')); ?>" type="button">
                     <i class="fas fa-desktop"></i>
                 </button>
-                <button id="roomCopyBtn" class="round-btn" title="Copy Meeting Link" type="button">
+                <button id="roomCopyBtn" class="round-btn" title="<?php echo htmlspecialchars(t('meetings.btn_copy_link', 'Copy Link')); ?>" type="button">
                     <i class="fas fa-link"></i>
                 </button>
-                <button id="roomLeaveBtn" class="round-btn btn-leave" title="Leave Meeting" type="button">
+                <button id="roomLeaveBtn" class="round-btn btn-leave" title="<?php echo htmlspecialchars(t('meetings.lobby_leave', 'Leave Meeting')); ?>" type="button">
                     <i class="fas fa-phone-slash"></i>
                 </button>
             </div>
@@ -421,10 +429,10 @@ $meetingConfig = [
         <!-- SCREEN 3: MEETING ENDED -->
         <div id="endedScreen" class="ended-card hidden">
             <i class="fas fa-door-open"></i>
-            <h2>You left the meeting</h2>
-            <p>Thank you for participating. You can rejoin at any time.</p>
+            <h2><?php echo t('meetings.lobby_ended_title', 'You left the meeting'); ?></h2>
+            <p><?php echo t('meetings.lobby_ended_desc', 'Thank you for participating. You can rejoin at any time.'); ?></p>
             <button class="btn-join" onclick="location.reload()" type="button">
-                <i class="fas fa-redo"></i> Rejoin Meeting
+                <i class="fas fa-redo"></i> <?php echo t('meetings.lobby_rejoin', 'Rejoin Meeting'); ?>
             </button>
         </div>
 

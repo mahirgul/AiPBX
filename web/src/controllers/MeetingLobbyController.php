@@ -30,6 +30,18 @@ class MeetingLobbyController
         $invite = $info['invite'];
         $role = $info['role'];
 
+        if (empty($meeting['allow_guests']) && $role !== 'guest' && empty($_SESSION['user_id'])) {
+            http_response_code(403);
+            require_once __DIR__ . '/../../config.php';
+            renderFatalErrorPage(
+                t('meetings.err_not_found_title', 'Access Denied'),
+                t('meetings.err_not_found_desc', 'External guest access is disabled for this video meeting.'),
+                "Guest access disabled for meeting token: {$token}",
+                403
+            );
+            return;
+        }
+
         $defaultName = $invite['name'] ?? ($_SESSION['full_name'] ?? '');
 
         // Render standalone WebRTC meeting room layout

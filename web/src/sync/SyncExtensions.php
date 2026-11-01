@@ -411,6 +411,28 @@ function __syncAllExtensionsBody() {
         $conf .= "[{$ext}](aor-dual)\nmax_contacts={$max_c}\n\n";
     }
 
+    // 3. Dedicated WebRTC endpoint for /meet/{token} browser conference participants.
+    // Strictly isolated to [app-confbridge-dispatch] so guests can only dial
+    // conference rooms and can never place outbound or internal extension calls.
+    $guest_audio = pbxAudioCodecs(getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722'));
+    $guest_video = $video_codecs ?: ['vp8', 'h264'];
+    $guest_codecs = implode(',', array_unique(array_merge($guest_audio, $guest_video)));
+    $guest_secret = getMeetingGuestSipSecret();
+
+    $conf .= "; Video Meeting Guest WebRTC Endpoint (isolated to app-confbridge-dispatch)\n";
+    $conf .= "[meeting-guest](endpoint-wss)\n";
+    $conf .= "auth=auth-meeting-guest\n";
+    $conf .= "context=app-confbridge-dispatch\n";
+    $conf .= "disallow=all\n";
+    $conf .= "allow={$guest_codecs}\n";
+    $conf .= "rtp_timeout=0\n";
+    $conf .= "rtp_timeout_hold=0\n";
+    $conf .= "set_var=AIPBX_CLIENT_TYPE=web-guest\n\n";
+
+    $conf .= "[auth-meeting-guest](auth-userpass)\n";
+    $conf .= "username=meeting-guest\n";
+    $conf .= "password={$guest_secret}\n\n";
+
     // Clean up old individual files if any exist
     $old_files = glob(ASTERISK_PBX_DIR . '/pjsip_ext_*.conf');
     if (is_array($old_files)) {

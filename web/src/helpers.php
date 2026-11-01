@@ -166,4 +166,16 @@ function getConferencePrefix(): string {
     return $cached;
 }
 
+/**
+ * Deterministic SIP secret for the isolated [meeting-guest] WebRTC endpoint.
+ * Used by browser participants joining a conference via /meet/{token}.
+ */
+function getMeetingGuestSipSecret(): string {
+    $seed = (defined('TURN_SECRET') && TURN_SECRET !== '')
+        ? (string)TURN_SECRET
+        : (defined('DB_PASS') ? (string)DB_PASS : 'aipbx-meeting-guest');
+    return substr(hash_hmac('sha256', 'aipbx-webrtc-meeting-guest-v1', $seed), 0, 32);
+}
+
+
 
