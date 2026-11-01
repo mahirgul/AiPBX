@@ -9,7 +9,7 @@ require_once __DIR__ . '/../modules/destinations/DestinationRegistry.php';
 // the 2026-08-21 audit). The data itself is low-sensitivity (just name/id
 // lists, no passwords), but for consistency a user without access to at least
 // one of these three modules (e.g. a pure cc_agent) can no longer call it.
-if (!hasModulePermission('did_routes', 'view') && !hasModulePermission('ivrs', 'view') && !hasModulePermission('time_conditions', 'view') && !hasModulePermission('ring_groups', 'view') && !hasModulePermission('boss_secretary', 'view')) {
+if (!hasModulePermission('did_routes', 'view') && !hasModulePermission('ivrs', 'view') && !hasModulePermission('time_conditions', 'view') && !hasModulePermission('ring_groups', 'view') && !hasModulePermission('boss_secretary', 'view') && !hasModulePermission('announcements', 'view') && !hasModulePermission('ivr_data_steps', 'view')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => t('api.err_unauthorized')]);
     exit;

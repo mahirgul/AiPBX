@@ -53,25 +53,66 @@ class ConferenceService {
             internalNumberValidate($room_number, 'conference', $id);
 
             $db = getDB();
-            if ($id > 0) {
+            $isUpdate = ($id > 0);
+            $oldRoomNumber = null;
+            if ($isUpdate) {
+                $existing = self::getConference($id);
+                $oldRoomNumber = $existing['room_number'] ?? null;
                 $stmt = $db->prepare("UPDATE pbx_conferences SET room_number = ?, internal_number = ?, title = ?, user_pin = ?, admin_pin = ?, wait_marked = ?, end_marked = ?, max_members = ?, announce_join_leave = ?, announce_user_count = ?, record_conference = ?, mute_on_join = ?, video_mode = ?, max_video_streams = ?, music_on_hold = ?, is_active = ? WHERE id = ?");
                 $stmt->execute([$room_number, $room_number, $title, $user_pin, $admin_pin, $wait_marked, $end_marked, $max_members, $announce_join_leave, $announce_user_count, $record_conference, $mute_on_join, $video_mode, $max_video_streams, $music_on_hold, $is_active, $id]);
+                if ($oldRoomNumber !== null && $oldRoomNumber !== '' && $oldRoomNumber !== $room_number) {
+                    $db->prepare("UPDATE pbx_meetings SET room_number = ? WHERE BINARY room_number = BINARY ?")
+                       ->execute([$room_number, $oldRoomNumber]);
+                }
             } else {
                 $stmt = $db->prepare("INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, wait_marked, end_marked, max_members, announce_join_leave, announce_user_count, record_conference, mute_on_join, video_mode, max_video_streams, music_on_hold, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
                 $stmt->execute([$room_number, $room_number, $title, $user_pin, $admin_pin, $wait_marked, $end_marked, $max_members, $announce_join_leave, $announce_user_count, $record_conference, $mute_on_join, $video_mode, $max_video_streams, $music_on_hold, $is_active]);
                 $id = (int)$db->lastInsertId();
             }
 
-            markPendingSync('conferences', 'conference', $id, "{$title} ({$room_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
-            markPendingSync('internal_numbers', 'conference', $id, "{$title} ({$room_number})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
+            $actionType = $isUpdate ? 'update' : 'create';
+            markPendingSync('conferences', 'conference', $id, "{$title} ({$room_number})", $actionType, $_SESSION['user_id'] ?? null);
+            markPendingSync('internal_numbers', 'conference', $id, "{$title} ({$room_number})", $actionType, $_SESSION['user_id'] ?? null);
             return t('srv_conf.saved');
         });
+    }
+
+    public static function isReferencedByRouting(int $id): bool {
+        $db = getDB();
+        $dids = $db->prepare("SELECT COUNT(*) FROM pbx_dids WHERE dest_type = 'conference' AND dest_id = ?");
+        $dids->execute([$id]);
+        if ((int)$dids->fetchColumn() > 0) {
+            return true;
+        }
+        $sid = (string)$id;
+        $count = (int)DBHelper::fetchColumn(
+            "SELECT COUNT(*) FROM (
+                SELECT id FROM pbx_ivr_entries WHERE dest_type = 'conference' AND dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'conference' AND timeout_dest_id = ?) OR (invalid_dest_type = 'conference' AND invalid_dest_id = ?)
+                UNION ALL
+                SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'conference' AND match_dest_id = ?) OR (nomatch_dest_type = 'conference' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
+                UNION ALL
+                SELECT id FROM pbx_announcements WHERE post_dest_type = 'conference' AND post_dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
+                UNION ALL
+                SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'conference' AND found_dest_id = ?) OR (not_found_dest_type = 'conference' AND not_found_dest_id = ?) OR (timeout_dest_type = 'conference' AND timeout_dest_id = ?)
+                UNION ALL
+                SELECT id FROM pbx_web_widgets WHERE dest_type = 'conference' AND dest_id = ?
+            ) refs",
+            [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"conference","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"conference","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid, $sid]
+        );
+        return $count > 0;
     }
 
     public static function deleteConference($id, $csrf_token = '') {
         return PBXHelper::handleAction($csrf_token, function() use ($id) {
             $id = intval($id);
             $db = getDB();
+            $cf = self::getConference($id);
 
             // Reference check
             $refs = [];
@@ -104,12 +145,19 @@ class ConferenceService {
             if ($count > 0) {
                 $refs[] = "IVR / time condition / announcement / fallback destinations ({$count})";
             }
+            if ($cf && !empty($cf['room_number'])) {
+                $mStmt = $db->prepare("SELECT COUNT(*) FROM pbx_meetings WHERE BINARY room_number = BINARY ? AND status != 'cancelled'");
+                $mStmt->execute([$cf['room_number']]);
+                $mCount = (int)$mStmt->fetchColumn();
+                if ($mCount > 0) {
+                    $refs[] = "Video meetings ({$mCount})";
+                }
+            }
 
             if (!empty($refs)) {
                 throw new \Exception(sprintf(t('srv_conf.err_in_use'), implode(', ', $refs)));
             }
 
-            $cf = self::getConference($id);
             $label = $cf ? "{$cf['title']} ({$cf['room_number']})" : "Room #{$id}";
 
             $del = $db->prepare("DELETE FROM pbx_conferences WHERE id = ?");

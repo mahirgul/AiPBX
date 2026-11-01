@@ -113,6 +113,8 @@
                                         <button type="button" class="btn btn-secondary btn-sm" onclick='openEditConfModal(<?php echo jsArg($cf); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
+                                    <?php endif; ?>
+                                    <?php if (hasModulePermission('conferences', 'delete')): ?>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('conferences.confirm_delete')), ENT_QUOTES); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_conference" value="1">
