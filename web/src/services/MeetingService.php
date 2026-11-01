@@ -221,7 +221,7 @@ class MeetingService
             }
         }
 
-        return ['success' => true, 'meeting_id' => $meetingId];
+        return ['success' => true, 'meeting_id' => $meetingId, 'message' => t('meetings.msg_saved')];
     }
 
     /**
@@ -255,7 +255,7 @@ class MeetingService
         // Send email
         self::sendInviteEmail($meetingId, $email, $guestToken, $name);
 
-        return ['success' => true, 'invite_id' => $inviteId, 'guest_token' => $guestToken];
+        return ['success' => true, 'invite_id' => $inviteId, 'guest_token' => $guestToken, 'message' => t('meetings.msg_invite_sent')];
     }
 
     /**
