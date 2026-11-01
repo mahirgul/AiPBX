@@ -192,7 +192,7 @@ class QrLoginService
         $token = bin2hex(random_bytes(32));
         $expTimestamp = time() + $ttlSeconds;
         $expiresAt = date('Y-m-d H:i:s', $expTimestamp);
-        $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
         $ins = $db->prepare('INSERT INTO sys_user_qr_tokens (user_id, token, purpose, expires_at, ip_address) VALUES (?, ?, ?, ?, ?)');
         $ins->execute([$userId, $token, $purpose, $expiresAt, $clientIp]);

@@ -240,4 +240,43 @@ final class ReverseProxyTest extends TestCase
         $this->assertStringContainsString('iptables -A INPUT -p udp --dport 5060 -j ACCEPT', $iptables);
         $this->assertStringContainsString('iptables -A INPUT -p udp --dport 10000:20000 -j ACCEPT', $iptables);
     }
+
+    public function testIsHttpsDetection(): void
+    {
+        // Direct HTTPS via $_SERVER['HTTPS'] or SERVER_PORT 443
+        $this->assertTrue(ReverseProxyService::isHttps(['HTTPS' => 'on', 'REMOTE_ADDR' => '198.51.100.10']));
+        $this->assertTrue(ReverseProxyService::isHttps(['SERVER_PORT' => '443', 'REMOTE_ADDR' => '198.51.100.10']));
+        $this->assertFalse(ReverseProxyService::isHttps(['HTTPS' => 'off', 'REMOTE_ADDR' => '198.51.100.10']));
+
+        // X-Forwarded-Proto ignored when reverse proxy is disabled
+        $this->assertFalse(ReverseProxyService::isHttps([
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ]));
+
+        // Enable reverse proxy with trusted 10.0.0.0/8
+        ReverseProxyService::saveSettings([
+            'enabled' => 1,
+            'trusted_proxies' => '127.0.0.1, 10.0.0.0/8',
+            'external_fqdn' => 'pbx.example.com',
+        ]);
+
+        // Trusted proxy sending X-Forwarded-Proto: https -> true
+        $this->assertTrue(ReverseProxyService::isHttps([
+            'REMOTE_ADDR' => '10.0.0.5',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ]));
+
+        // Multi-hop X-Forwarded-Proto: "https, http" from trusted proxy -> true
+        $this->assertTrue(ReverseProxyService::isHttps([
+            'REMOTE_ADDR' => '127.0.0.1',
+            'HTTP_X_FORWARDED_PROTO' => 'https, http',
+        ]));
+
+        // Untrusted remote spoofing X-Forwarded-Proto: https -> false
+        $this->assertFalse(ReverseProxyService::isHttps([
+            'REMOTE_ADDR' => '198.51.100.77',
+            'HTTP_X_FORWARDED_PROTO' => 'https',
+        ]));
+    }
 }

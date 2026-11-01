@@ -8,7 +8,7 @@ mobileApiStart('GET, POST, OPTIONS');
 
 require_once __DIR__ . '/../../src/services/QrLoginService.php';
 
-$client_ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+$client_ip = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
 $json = mobileInput();
 

@@ -37,7 +37,9 @@ class ChatController extends BaseController
             : ['message' => '', 'error' => ''];
 
         $token = generateMobileToken($user, 86400); // valid for 24 hours for the web chat session
-        $isSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
+        $isSecure = function_exists('isHttpsRequest')
+            ? isHttpsRequest()
+            : ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443));
         setcookie('chat_token', $token, [
             'expires' => time() + 86400,
             'path' => '/',

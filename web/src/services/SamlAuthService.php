@@ -120,7 +120,10 @@ class SamlAuthService
         }
 
         $domain = function_exists('getSystemSetting') ? getSystemSetting('portal_domain', '127.0.0.1') : '127.0.0.1';
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $isHttps = function_exists('isHttpsRequest')
+            ? isHttpsRequest()
+            : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        $scheme = $isHttps ? 'https' : 'http';
         return "{$scheme}://{$domain}";
     }
 
@@ -952,7 +955,7 @@ XML;
             session_regenerate_id(true);
             $_SESSION['pending_reset_user_id'] = $user['id'];
             unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
-            $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+            $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
             if (function_exists('logLoginAttempt')) {
                 logLoginAttempt($clientIp, (string)$user['username'], 'SUCCESS');
             }
@@ -983,7 +986,7 @@ XML;
 
         unset($_SESSION['captcha_num1'], $_SESSION['captcha_num2']);
 
-        $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
         if (function_exists('logLoginAttempt')) {
             logLoginAttempt($clientIp, (string)$user['username'], 'SUCCESS');

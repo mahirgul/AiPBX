@@ -374,6 +374,16 @@ function getClientIP(): string {
     return ReverseProxyService::resolveClientIp($remote, $_SERVER);
 }
 
+/**
+ * Checks if the incoming request is over HTTPS (directly or via a trusted reverse proxy).
+ */
+function isHttpsRequest(): bool {
+    if (!class_exists('ReverseProxyService', false)) {
+        require_once __DIR__ . '/src/services/ReverseProxyService.php';
+    }
+    return ReverseProxyService::isHttps($_SERVER);
+}
+
 function checkBruteForceLockout($ip, $username) {
     $db = getDB();
 

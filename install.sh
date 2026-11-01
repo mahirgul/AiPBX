@@ -1131,6 +1131,7 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     # /login); internal redirects to index.php (REDIRECT_STATUS set) are skipped,
     # otherwise /provision/ would be redirected on its second pass.
     RewriteEngine On
+    RewriteCond %{HTTP:X-Forwarded-Proto} !^https\$ [NC]
     RewriteCond %{REQUEST_URI} !^/\.well-known/acme-challenge/
     RewriteCond %{ENV:REDIRECT_STATUS} ^\$
     RewriteCond %{REQUEST_URI} !^/provision/
@@ -1141,6 +1142,16 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$) [OR]
     RewriteCond %{REMOTE_ADDR} !^(127\.0\.0\.1|::1)\$
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
+
+    # Asterisk WebRTC & Go Chat Reverse Proxy (for edge-terminated reverse proxies forwarding to port 80)
+    ProxyPass /ws ws://127.0.0.1:8088/ws retry=0 timeout=3600
+    ProxyPassReverse /ws ws://127.0.0.1:8088/ws
+    ProxyPass /chat/ws ws://127.0.0.1:8086/ws retry=0 timeout=3600 keepalive=On
+    ProxyPassReverse /chat/ws ws://127.0.0.1:8086/ws
+    ProxyPass /chat/api/ http://127.0.0.1:8086/api/
+    ProxyPassReverse /chat/api/ http://127.0.0.1:8086/api/
+    ProxyPass /chat/media/ http://127.0.0.1:8086/media/
+    ProxyPassReverse /chat/media/ http://127.0.0.1:8086/media/
 
     ErrorLog \${APACHE_LOG_DIR}/aipbx_error.log
     CustomLog \${APACHE_LOG_DIR}/aipbx_access.log combined

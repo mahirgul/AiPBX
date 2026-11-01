@@ -29,7 +29,7 @@ class TwoFactorLoginController extends BaseController
         }
 
         $error = '';
-        $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
         if (static::isPost()) {
             $action = $_POST['action'] ?? 'verify';
