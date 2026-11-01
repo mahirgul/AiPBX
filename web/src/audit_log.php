@@ -18,7 +18,7 @@ function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action
             $username->execute([$user_id]);
             $username = $username->fetchColumn() ?: null;
         }
-        $ip = $_SERVER['REMOTE_ADDR'] ?? null;
+        $ip = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? null);
         $stmt = $db->prepare(
             "INSERT INTO sys_audit_log (domain, entity_type, entity_id, entity_label, action, user_id, username, ip_address, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW())"

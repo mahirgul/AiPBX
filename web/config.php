@@ -361,6 +361,19 @@ function verifyLoginPassword(string $input, string $hash): bool
 }
 
 // Rate Limiting & Brute Force Tracker
+/**
+ * Resolves the client IP address. When reverse proxy support is enabled and the
+ * immediate connection (REMOTE_ADDR) is in the trusted proxies list, X-Forwarded-For
+ * or X-Real-IP headers are inspected.
+ */
+function getClientIP(): string {
+    $remote = (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+    if (!class_exists('ReverseProxyService', false)) {
+        require_once __DIR__ . '/src/services/ReverseProxyService.php';
+    }
+    return ReverseProxyService::resolveClientIp($remote, $_SERVER);
+}
+
 function checkBruteForceLockout($ip, $username) {
     $db = getDB();
 

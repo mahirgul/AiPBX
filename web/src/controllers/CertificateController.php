@@ -19,9 +19,13 @@ class CertificateController extends BaseController
             if (!static::verifyCsrf()) {
                 $res = ['success' => false, 'error' => t('common.invalid_csrf')];
             } else {
+                $valMethod = (string) ($_POST['validation_method'] ?? 'http01');
+                $cfToken = (string) ($_POST['cf_api_token'] ?? '');
+                $wildcard = !empty($_POST['cf_wildcard']);
+
                 $res = match ($_POST['action'] ?? '') {
-                    'le_test' => CertificateService::letsEncrypt(true, $_POST['email'] ?? ''),
-                    'le_issue' => CertificateService::letsEncrypt(false, $_POST['email'] ?? ''),
+                    'le_test' => CertificateService::letsEncrypt(true, (string) ($_POST['email'] ?? ''), $valMethod, $cfToken, $wildcard),
+                    'le_issue' => CertificateService::letsEncrypt(false, (string) ($_POST['email'] ?? ''), $valMethod, $cfToken, $wildcard),
                     'renew_test' => CertificateService::renew(true),
                     'renew' => CertificateService::renew(false),
                     'selfsigned' => CertificateService::selfSigned(),

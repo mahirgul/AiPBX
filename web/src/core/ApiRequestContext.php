@@ -73,7 +73,7 @@ final class ApiRequestContext
             ApiResponse::error('TOKEN_EXPIRED', 'API token has expired.', 401);
         }
 
-        $clientIp = (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+        $clientIp = function_exists('getClientIP') ? getClientIP() : (string)($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
         if (!self::isIpAllowed($clientIp, (string)($row['allowed_ips'] ?? ''))) {
             ApiResponse::error('IP_NOT_ALLOWED', "Client IP ({$clientIp}) is not in the token's allowlist.", 403);
         }

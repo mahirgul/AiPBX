@@ -180,4 +180,17 @@ CNF);
         $this->assertFalse(CertificateService::letsEncryptPossible('localhost'));
         $this->assertFalse(CertificateService::letsEncryptPossible(''));
     }
+
+    public function testLetsEncryptCloudflareTokenValidation(): void
+    {
+        // Rejects invalid or empty Cloudflare API tokens
+        $resEmpty = CertificateService::letsEncrypt(true, 'admin@example.com', 'dns_cloudflare', '');
+        $this->assertFalse($resEmpty['success']);
+
+        $resShort = CertificateService::letsEncrypt(true, 'admin@example.com', 'dns_cloudflare', 'short_token');
+        $this->assertFalse($resShort['success']);
+
+        $resInvalidChars = CertificateService::letsEncrypt(true, 'admin@example.com', 'dns_cloudflare', 'bad token with spaces!');
+        $this->assertFalse($resInvalidChars['success']);
+    }
 }

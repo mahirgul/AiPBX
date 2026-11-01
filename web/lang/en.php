@@ -1,57 +1,54 @@
 <?php
 /**
- * English translation strings. Key format: "page.item" (e.g. "dashboard.title").
- * The reference language: every other lang/<code>.php uses these keys, and
- * a key missing there shows this English text (config.php::t()).
- * Translating: docs/translating.md.
+ * English translation strings — same keys as en.php.
+ * A key missing here shows the English text (config.php::t()).
+ * Corrections are welcome: see docs/translating.md.
  */
 return [
-    // AI → Dialplan editor (the assistant)
-    'assistant.title'            => 'Dialplan editor',
-    'assistant.intro'            => 'Say what you want changed in plain language. You always see the change BEFORE it happens, and it goes through the same services as doing it by hand — a wrong answer is refused, not carried out.',
-    'assistant.placeholder'      => 'e.g. "forward 101 to 203" or "turn off voicemail for 102"',
-    'assistant.ask'              => 'Show the change',
-    'assistant.working'          => 'Working…',
-    'assistant.preview_title'    => 'The change',
-    'assistant.preview_apply'    => 'Apply',
-    'assistant.preview_discard'  => 'Discard',
-    'assistant.applied'          => 'Applied.',
-    'assistant.undo'             => 'Undo',
-    'assistant.undo_done'        => 'Undone.',
-    'assistant.echo_title'       => 'Ask about the phone system',
+    'assistant.title' => 'Dialplan editor',
+    'assistant.intro' => 'Say what you want changed in plain language. You always see the change BEFORE it happens, and it goes through the same services as doing it by hand — a wrong answer is refused, not carried out.',
+    'assistant.placeholder' => 'e.g. "forward 101 to 203" or "turn off voicemail for 102"',
+    'assistant.ask' => 'Show the change',
+    'assistant.working' => 'Working…',
+    'assistant.preview_title' => 'The change',
+    'assistant.preview_apply' => 'Apply',
+    'assistant.preview_discard' => 'Discard',
+    'assistant.applied' => 'Applied.',
+    'assistant.undo' => 'Undo',
+    'assistant.undo_done' => 'Undone.',
+    'assistant.echo_title' => 'Ask about the phone system',
     'assistant.echo_placeholder' => 'e.g. "how many calls today?" or "signaling errors?"',
-    'assistant.echo_ask'         => 'Ask',
-    'assistant.echo_askable'     => 'I can answer',
-    'assistant.changes_title'    => 'Applied changes',
-    'assistant.no_changes'       => 'Nothing applied yet.',
-    'assistant.col_when'         => 'When',
-    'assistant.col_request'      => 'You asked',
-    'assistant.col_change'       => 'Change',
-    'assistant.col_status'       => 'Status',
-    'assistant.col_source'       => 'Resolved by',
-    'assistant.status_applied'   => 'Applied',
+    'assistant.echo_ask' => 'Ask',
+    'assistant.echo_askable' => 'I can answer',
+    'assistant.changes_title' => 'Applied changes',
+    'assistant.no_changes' => 'Nothing applied yet.',
+    'assistant.col_when' => 'When',
+    'assistant.col_request' => 'You asked',
+    'assistant.col_change' => 'Change',
+    'assistant.col_status' => 'Status',
+    'assistant.col_source' => 'Resolved by',
+    'assistant.status_applied' => 'Applied',
     'assistant.status_rolled_back' => 'Undone',
-    'assistant.risk_medium'      => 'changes ring behaviour',
-    'echo.q_calls_today'         => 'Calls today',
-    'echo.q_calls_hour'          => 'Calls, last hour',
-    'echo.q_answered_rate'       => 'Answered today',
-    'echo.q_calls_top'           => 'Busiest callers today',
-    'echo.q_noanswer_hour'       => 'Unanswered calls, last hour',
-    'echo.q_signaling_count'     => 'Captured SIP messages, 24 h',
-    'echo.q_signaling_errors'    => 'SIP error responses, 24 h',
-    'echo.lbl_calls'             => 'calls',
-    'echo.lbl_minutes'           => 'talk minutes',
-    'echo.lbl_total'             => 'total',
-    'echo.lbl_answered'          => 'answered',
-    'echo.lbl_caller'            => 'caller',
-    'echo.lbl_called'            => 'called',
-    'echo.lbl_seconds'           => 'seconds',
-    'echo.lbl_packets'           => 'messages',
-    'echo.lbl_code'              => 'code',
-    'echo.lbl_seen'              => 'seen',
-    'ai_assistant.err_no_row'      => 'That change is not in the log.',
+    'assistant.risk_medium' => 'changes ring behaviour',
+    'echo.q_calls_today' => 'Calls today',
+    'echo.q_calls_hour' => 'Calls, last hour',
+    'echo.q_answered_rate' => 'Answered today',
+    'echo.q_calls_top' => 'Busiest callers today',
+    'echo.q_noanswer_hour' => 'Unanswered calls, last hour',
+    'echo.q_signaling_count' => 'Captured SIP messages, 24 h',
+    'echo.q_signaling_errors' => 'SIP error responses, 24 h',
+    'echo.lbl_calls' => 'calls',
+    'echo.lbl_minutes' => 'talk minutes',
+    'echo.lbl_total' => 'total',
+    'echo.lbl_answered' => 'answered',
+    'echo.lbl_caller' => 'caller',
+    'echo.lbl_called' => 'called',
+    'echo.lbl_seconds' => 'seconds',
+    'echo.lbl_packets' => 'messages',
+    'echo.lbl_code' => 'code',
+    'echo.lbl_seen' => 'seen',
+    'ai_assistant.err_no_row' => 'That change is not in the log.',
     'ai_assistant.err_not_undoable' => 'This change cannot be undone automatically.',
-
     'common.cancel' => 'Cancel',
     'common.save' => 'Save',
     'common.close' => 'Close',
@@ -64,14 +61,10 @@ return [
     'common.copy' => 'Copy',
     'common.module_guide' => 'Module Guide',
     'common.invalid_csrf' => 'Invalid security token (CSRF). Please refresh the page and try again.',
-
-    // Internal target number (shared by 5 pages)
     'internal_number.field' => 'Internal Number (optional)',
     'internal_number.help' => 'If set, this destination can be dialled directly from internal phones. Leave empty for no number.',
     'internal_number.col' => 'Ext.',
     'internal_number.none' => '—',
-
-    // Dashboard
     'dashboard.title' => 'Dashboard',
     'dashboard.system_status' => 'System Status',
     'dashboard.status_active' => 'PBX Active',
@@ -109,7 +102,7 @@ return [
     'dashboard.metric_disk' => 'Disk',
     'dashboard.metric_uptime' => 'Uptime',
     'dashboard.service_control' => 'Service & System Control',
-    'dashboard.confirm_restart_asterisk' => 'Are you sure you want to restart the Asterisk PBX service?\n\nThis will immediately drop ALL active calls and temporarily log every call-center agent out of their queues (dynamic membership is reset by the restart). Agents with the screen open are automatically re-added within about 1 minute, no action needed on their part. Prefer doing this during low-traffic hours.',
+    'dashboard.confirm_restart_asterisk' => 'Are you sure you want to restart the Asterisk PBX service?\\n\\nThis will immediately drop ALL active calls and temporarily log every call-center agent out of their queues (dynamic membership is reset by the restart). Agents with the screen open are automatically re-added within about 1 minute, no action needed on their part. Prefer doing this during low-traffic hours.',
     'dashboard.confirm_restart_httpd' => 'Are you sure you want to restart the Apache web server?',
     'dashboard.confirm_restart_mariadb' => 'Are you sure you want to restart the MariaDB database?',
     'dashboard.confirm_restart_postfix' => 'Are you sure you want to restart the Postfix mail service?',
@@ -132,8 +125,6 @@ return [
     'dashboard.service_mariadb_name' => 'MariaDB Database',
     'dashboard.service_postfix_name' => 'Postfix Mail Service',
     'dashboard.not_configured' => 'Not configured',
-
-    // Trunks
     'common.drag_to_reorder' => 'Drag to reorder',
     'trunks.title' => 'Trunk Settings',
     'trunks.header' => 'SIP Trunk Management',
@@ -241,8 +232,6 @@ return [
     'trunks.allow_outbound_routing_help' => 'When enabled, calls arriving on this trunk without a matching Inbound Route (DID) can transit through defined Outbound Routes to other trunks.',
     'trunks.field_outbound_route_group' => 'Transit Outbound Route Group',
     'trunks.outbound_route_group_help' => 'Selects which outbound route group will be used for transit calls (Default: Group 1).',
-
-    // DID Routes
     'did.title' => 'Inbound Routes',
     'did.help_title' => 'Inbound Routes Guide',
     'did.help_body' => 'Routes DID numbers coming from the external PBX (e.g. 3000, 7880, 8960) to the relevant module. Optionally, enabling Force Call Recording automatically records all calls on this line as a .wav file.',
@@ -270,8 +259,6 @@ return [
     'did.field_record_call' => 'Force Call Recording (Record All Incoming Calls on This Line)',
     'did.field_active' => 'Inbound Route (DID) Active',
     'did.confirm_delete' => 'Are you sure you want to delete this DID route?',
-
-    // Outbound Routes
     'outbound.title' => 'Outbound Routes',
     'outbound.help_title' => 'Outbound Routes Guide',
     'outbound.help_body' => 'Controls how internal extensions dial out (Emergency 112, Local/Long Distance 0NXX..., Prefixed Calls 9+Number).',
@@ -322,8 +309,6 @@ return [
     'outbound.field_geolocation_routing' => 'Geolocation-Routing (RFC 6443)',
     'outbound.geolocation_routing_yes' => 'yes (Public Safety Answering Point routing)',
     'outbound.geolocation_routing_no' => 'no (Location convey only)',
-
-    // Inbound Blacklist / Spam
     'blacklist.title' => 'Inbound Blacklist & Spam Blocker',
     'blacklist.new_entry' => 'Block New Number / Pattern',
     'blacklist.edit_entry' => 'Edit Block Rule',
@@ -372,8 +357,6 @@ return [
     'blacklist.msg_deleted' => 'Entry removed from blacklist.',
     'blacklist.msg_status_changed' => 'Status updated.',
     'blacklist.msg_import_done' => '%d numbers imported successfully, %d skipped.',
-
-    // Custom Dialplan
     'sidebar.item_custom_dialplan' => 'Custom Dialplan',
     'sync.ctx_custom_dialplan' => 'custom dialplan sync',
     'custom_dialplan.title' => 'Custom Dialplan Contexts',
@@ -442,8 +425,6 @@ return [
     'custom_dialplan.tpl_vip_desc' => 'Tags incoming calls from VIP caller numbers and modifies Caller ID name.',
     'custom_dialplan.tpl_disa_title' => 'PIN Protected Direct Outward Dialing (DISA)',
     'custom_dialplan.tpl_disa_desc' => 'Provides dial tone to dial outbound through PBX after PIN authentication.',
-
-    // Time Conditions
     'tc.title' => 'Time Conditions',
     'tc.tab_conditions' => 'Time Conditions',
     'tc.tab_groups' => 'Time Groups',
@@ -487,10 +468,13 @@ return [
     'tc.field_holidays' => 'Public Holidays (Comma-Separated YYYY-MM-DD)',
     'tc.holidays_help' => 'The system automatically switches to After-Hours mode on these dates.',
     'tc.field_group_active' => 'Time Group Active',
-    'tc.day_mon' => 'Mon', 'tc.day_tue' => 'Tue', 'tc.day_wed' => 'Wed', 'tc.day_thu' => 'Thu',
-    'tc.day_fri' => 'Fri', 'tc.day_sat' => 'Sat', 'tc.day_sun' => 'Sun',
-
-    // IVRs
+    'tc.day_mon' => 'Mon',
+    'tc.day_tue' => 'Tue',
+    'tc.day_wed' => 'Wed',
+    'tc.day_thu' => 'Thu',
+    'tc.day_fri' => 'Fri',
+    'tc.day_sat' => 'Sat',
+    'tc.day_sun' => 'Sun',
     'ivr.title' => 'IVR Menus',
     'ivr.help_title' => 'IVR Voice Menu Guide',
     'ivr.help_body' => 'An interactive voice response system that greets callers and offers dial options.',
@@ -548,8 +532,6 @@ return [
     'ivr.field_target_type' => 'Target Type *',
     'ivr.field_target' => 'Target *',
     'ivr.add_entry_tooltip' => 'Add / Update Digit',
-
-    // Extensions
     'extensions.title' => 'Extension Management',
     'extensions.sync_all_tooltip' => 'Regenerate All Extension Configs & Reload PJSIP',
     'extensions.new_tooltip' => 'Add New Extension',
@@ -606,8 +588,6 @@ return [
     'extensions.cid_placeholder' => 'Default is used if left blank',
     'extensions.cid_help' => 'Caller ID sent for outbound calls from this extension — which one is used is determined by the "Internal" flag on Outbound Routes (a fixed Caller ID Mask on the route takes priority if set).',
     'extensions.field_active' => 'Account & PJSIP Subscriber Active',
-
-    // Queues
     'queues.title' => 'Queues',
     'queues.tab_basic' => 'Basic',
     'queues.tab_strategy' => 'Strategy',
@@ -712,8 +692,6 @@ return [
     'queues.member_mode_help' => 'Dynamic: the agent logs in/out of the queue themselves (panel or *81/*80 codes). Static: the agent is permanently in the queue and cannot log out, only take breaks. Takes effect after sending from the Apply page. Only users with the Agent role are listed.',
     'queues.no_agents' => 'No extension users with the Agent role.',
     'queues.no_managers' => 'No extension users with the Queue Manager or Admin role.',
-
-    // Sounds
     'sounds.title' => 'Announcements & MOH',
     'sounds.tab_announcements' => 'Announcements & Greetings',
     'sounds.tab_moh' => 'Music on Hold (MOH)',
@@ -766,8 +744,6 @@ return [
     'sounds.back5s_tooltip' => 'Back 5 Seconds',
     'sounds.forward5s_tooltip' => 'Forward 5 Seconds',
     'sounds.download' => 'Download',
-
-    // Feature Codes
     'fc.title' => 'Feature Code Management',
     'fc.header_title' => 'Feature Code (Star Code) Management',
     'fc.help_title' => 'Feature Code Module Guide',
@@ -791,8 +767,6 @@ return [
     'fc.allowed_roles_placeholder' => 'Blank = everyone',
     'fc.available_roles' => 'Available roles:',
     'fc.field_active' => 'Active',
-
-    // End Call
     'end_call.title' => 'End Call',
     'end_call.header_title' => 'Call Termination Options',
     'end_call.new_tooltip' => 'Add New',
@@ -824,8 +798,6 @@ return [
     'end_call.option_congestion' => '⚠️ Network Congestion (Congestion)',
     'end_call.field_announcement' => 'Announcement to Play First (Optional)',
     'end_call.no_announcement_option' => '-- No Announcement --',
-
-    // CC Agent
     'cc_agent.title' => 'Agent Screen',
     'cc_agent.restricted_title' => 'Access Restricted',
     'cc_agent.restricted_body' => 'This screen is for <strong>Call Center Agents</strong>. Use the <strong>Queue Monitoring</strong> page for queue monitoring.',
@@ -861,8 +833,6 @@ return [
     'cc_agent.field_note_placeholder' => 'Your notes about the call...',
     'cc_agent.cancel' => 'Cancel',
     'cc_agent.save' => 'Save',
-
-    // CC Board
     'cc_board.title' => 'Call Center Board',
     'cc_board.restricted_title' => 'Access Denied',
     'cc_board.restricted_body' => 'You do not have permission to access the Call Center Board screen.',
@@ -890,8 +860,6 @@ return [
     'cc_board.answered_rate' => 'Answer Rate',
     'cc_board.missed_rate' => 'Miss Rate',
     'cc_board.abandon_rate' => 'Abandon Rate',
-
-    // CC Supervisor
     'cc_supervisor.title' => 'Queue Monitoring',
     'cc_supervisor.restricted_title' => 'Access Denied',
     'cc_supervisor.restricted_body' => 'You do not have permission to access the Queue Monitoring screen. This screen is only for <strong>Queue Supervisors</strong> and authorized users.',
@@ -921,8 +889,6 @@ return [
     'cc_supervisor.col_active_queues' => 'Active Queues',
     'cc_supervisor.col_pause_detail' => 'Break / Call Detail',
     'cc_supervisor.loading_agents' => 'Loading agent data...',
-
-    // Pause Reports
     'pause_reports.title' => 'Break Reports',
     'pause_reports.other' => 'Other',
     'pause_reports.stat_total_breaks' => 'Total Breaks',
@@ -953,8 +919,6 @@ return [
     'pause_reports.ongoing' => 'Ongoing',
     'pause_reports.status_active' => 'On Break',
     'pause_reports.status_completed' => 'Completed',
-
-    // Queue Logs
     'queue_logs.title' => 'Queue Logs',
     'queue_logs.stat_entered' => 'Entered Queue',
     'queue_logs.stat_connected' => 'Connected Calls',
@@ -1038,9 +1002,6 @@ return [
     'queue_logs.detail_ring_sec' => 'Rang for %s sec, no answer',
     'queue_logs.btn_expand_all' => 'Expand All',
     'queue_logs.btn_collapse_all' => 'Collapse All',
-
-
-    // CDR Reports
     'cdr_reports.title' => 'Call Reports & Recordings',
     'cdr_reports.stat_total' => 'Total Calls',
     'cdr_reports.stat_total_desc' => 'Calls Queried',
@@ -1119,8 +1080,6 @@ return [
     'cdr_reports.journey_talk' => 'Talk',
     'cdr_reports.journey_total' => 'Total',
     'cdr_reports.single_leg' => 'Single Step',
-
-    // Fax Inbox
     'fax_inbox.title' => 'Incoming Faxes',
     'fax_inbox.header_title' => 'Incoming Fax List',
     'fax_inbox.total_prefix' => 'Total',
@@ -1155,8 +1114,6 @@ return [
     'fax_inbox.next' => 'Next',
     'fax_inbox.preview_title' => 'Fax Preview',
     'fax_inbox.close' => 'Close',
-
-    // Fax Send
     'fax_send.title' => 'Send Fax',
     'fax_send.header_title' => 'Send New Fax',
     'fax_send.help_title' => 'Fax Sending Guide',
@@ -1174,8 +1131,6 @@ return [
     'fax_send.text_help' => 'The text you write is automatically converted to a PDF and sent as a fax.',
     'fax_send.text_placeholder' => 'Type the text to send as a fax here...',
     'fax_send.send_tooltip' => 'Send Fax',
-
-    // Fax Sent
     'fax_sent.title' => 'Sent Faxes',
     'fax_sent.header_title' => 'Outgoing Fax History',
     'fax_sent.help_title' => 'Sent Faxes Guide',
@@ -1201,8 +1156,6 @@ return [
     'fax_sent.delete_tooltip' => 'Delete',
     'fax_sent.preview_title' => 'Sent Fax Preview',
     'fax_sent.close' => 'Close',
-
-    // Fax Settings
     'fax_settings.title' => 'Fax Units',
     'fax_settings.new_tooltip' => 'Define New Fax Unit',
     'fax_settings.help_title' => 'Fax Units Guide',
@@ -1227,8 +1180,6 @@ return [
     'fax_settings.fax_user_help' => 'Records created with the "Fax User" type in Extension Management are listed here. If the notification email is blank, this user\'s email is used.',
     'fax_settings.field_email' => 'Notification Email Address *',
     'fax_settings.field_active' => 'Fax Unit Active',
-
-    // Fax Mail Settings
     'fax_mail_settings.title' => 'Fax Settings',
     'fax_mail_settings.tab_email' => 'E-Mail',
     'fax_mail_settings.tab_device' => 'Device',
@@ -1264,8 +1215,6 @@ return [
     'fax_mail_settings.field_wait_time' => 'Initial Attempt Wait Time (sec)',
     'fax_mail_settings.wait_time_help' => 'Maximum time to wait for the call to be answered on the first attempt.',
     'fax_mail_settings.save_tooltip' => 'Save',
-
-    // System Users
     'system_users.title' => 'User Management',
     'system_users.import_button' => 'Import CSV',
     'system_users.import_title' => 'Bulk User Import (CSV)',
@@ -1367,8 +1316,6 @@ return [
     'system_users.field_role_desc' => 'Description',
     'system_users.role_desc_placeholder' => 'Permission description for this user type',
     'system_users.save_role' => 'Save Role',
-
-    // Roles
     'roles.title' => 'User Roles & Permission Management',
     'roles.header_title' => 'User Roles & Module Permission Management',
     'roles.new_tooltip' => 'Create New Role',
@@ -1408,8 +1355,6 @@ return [
     'roles.col_perm_edit' => '✏️ Edit',
     'roles.col_perm_delete' => '🗑️ Delete',
     'roles.save_permissions' => 'Save Role Permissions',
-
-    // Roles - Module titles
     'roles.module_dashboard' => 'Dashboard',
     'roles.module_my_phone' => 'My Phone',
     'roles.module_chat' => 'Chat',
@@ -1445,8 +1390,6 @@ return [
     'roles.module_pause_reports' => 'Pause Reports',
     'roles.module_queue_logs' => 'Queue Logs',
     'roles.module_ms_teams' => 'Microsoft Teams',
-
-    // Roles - Group names
     'roles.group_general' => 'General',
     'roles.group_trunk_mgmt' => 'Outbound Line Management',
     'roles.group_pbx_mgmt' => 'PBX Management',
@@ -1455,8 +1398,6 @@ return [
     'roles.group_fax_system' => 'Fax System',
     'roles.group_call_center' => 'Call Center',
     'roles.group_integrations' => 'Integrations',
-
-    // Asterisk Settings
     'asterisk_settings.title' => 'PBX Settings',
     'asterisk_settings.tab_pjsip' => 'PJSIP & Net',
     'asterisk_settings.tab_rtp' => 'RTP',
@@ -1602,8 +1543,6 @@ return [
     'asterisk_settings.field_default_lang' => 'System Default Language',
     'asterisk_settings.lang_packs_help' => 'Installed sound packs are auto-detected from folders under /var/lib/asterisk/sounds/.',
     'asterisk_settings.save_all_tooltip' => 'Save All Settings',
-
-    // Brand Settings
     'brand_settings.title' => 'Branding & Appearance',
     'brand_settings.tab_identity' => 'Identity',
     'brand_settings.tab_logo' => 'Logo & Icon',
@@ -1656,8 +1595,6 @@ return [
     'brand_settings.save' => 'Save',
     'brand_settings.reset_all' => 'Reset All Branding to Defaults (AiPBX)',
     'brand_settings.reset_all_confirm' => 'Titles, logo, favicon and colors will be reset to AiPBX defaults and uploaded logo/favicon files will be deleted. Are you sure?',
-
-    // Feature Codes Status
     'fc_status.title' => 'Active Feature Codes',
     'fc_status.header_title' => 'Status by User',
     'fc_status.col_extension' => 'Extension',
@@ -1668,8 +1605,6 @@ return [
     'fc_status.empty' => 'No active extension found',
     'fc_status.dnd_on' => 'On',
     'fc_status.dnd_off' => 'Off',
-
-    // Login
     'login.page_title' => 'Sign In',
     'login.too_many_attempts' => 'Too many failed attempts! Your account and IP address are locked for 15 minutes.',
     'login_2fa.too_many_failures' => 'Too many invalid verification codes. Please sign in again.',
@@ -1680,8 +1615,6 @@ return [
     'login.submit_tooltip' => 'Sign In',
     'login.mobile_app_desc' => 'Download the Android app to use your PBX extension from your mobile device.',
     'login.csrf_error' => 'Security verification (CSRF) failed! Please refresh the page and try again.',
-
-    // Force Reset
     'force_reset.page_title' => 'Password Reset Required',
     'force_reset.heading' => 'Password Reset Required',
     'force_reset.sent_prefix' => 'A reset link was sent to',
@@ -1691,8 +1624,6 @@ return [
     'force_reset.intro_no_email' => 'no registered address',
     'force_reset.intro_suffix' => '. If you do not have access to this email, you cannot change your password — contact your system administrator.',
     'force_reset.send_button' => 'Send Reset Link',
-
-    // Reset Password
     'reset_password.page_title' => 'Reset Password',
     'reset_password.success_message' => 'Your password has been updated successfully. You can now log in with your new password.',
     'reset_password.login_button' => 'Sign In',
@@ -1719,8 +1650,6 @@ return [
     'reset_password.field_new_password' => 'New Password',
     'reset_password.field_confirm_password' => 'New Password (Confirm)',
     'reset_password.update_button' => 'Update Password',
-
-    // Sidebar
     'sidebar.toggle_tooltip' => 'Collapse / Expand Menu',
     'sidebar.group_dashboard' => 'Panel',
     'sidebar.item_dashboard_overview' => 'Overview',
@@ -1784,8 +1713,6 @@ return [
     'sidebar.pending_sync_label' => 'Apply',
     'sidebar.pending_sync_tooltip' => 'There are pending PBX changes — click to push them to Asterisk',
     'sidebar.other_admin_active' => 'Another admin is currently active',
-
-    // Topbar
     'topbar.mobile_menu_tooltip' => 'Main Menu',
     'topbar.phone_status_tooltip' => 'Live Phone Status / Settings',
     'topbar.phone_mode_selector_tooltip' => 'Phone Mode Selection',
@@ -1817,15 +1744,11 @@ return [
     'topbar.review_apply_desc' => 'View the change list before applying',
     'topbar.applying' => 'Applying...',
     'topbar.pending_changes_title' => 'Pending Changes',
-
-    // Footer status bar
     'footer.fax_server' => 'Fax Server:',
     'footer.status_active' => 'Active',
     'footer.call_center' => 'Call Center:',
     'footer.status_online' => 'Online',
     'footer.loading' => 'Loading...',
-
-    // Phone settings modal
     'phone_settings.title' => 'Phone Settings',
     'phone_settings.field_mic' => 'Microphone',
     'phone_settings.loading' => 'Loading...',
@@ -1834,14 +1757,10 @@ return [
     'phone_settings.test_sound_tooltip' => 'Play Test Sound',
     'phone_settings.speaker_unsupported' => 'This browser does not support speaker selection (use Chrome/Edge). The system default speaker will be used.',
     'phone_settings.field_ring_volume' => 'Ring Volume',
-
-    // Softphone keypad drawer
     'softphone_drawer.title' => 'Keypad',
     'softphone_drawer.close_tooltip' => 'Close',
     'softphone_drawer.clear_tooltip' => 'Clear',
     'softphone_drawer.clear_label' => 'Clear',
-
-    // Apply (deferred Asterisk reload) page
     'pending_sync.title' => 'Pending Changes',
     'pending_sync.header_title' => 'Pending Changes — Apply',
     'pending_sync.help_title' => 'What is this page?',
@@ -1876,8 +1795,6 @@ return [
     'pending_sync.domain_udptl' => 'UDPTL (Fax) Settings',
     'pending_sync.domain_internal_numbers' => 'Internal Destination Numbers',
     'pending_sync.domain_custom_dialplan' => 'Custom Dialplan',
-
-    // Audit Log page
     'audit_log.title' => 'Audit Log',
     'audit_log.header_title_pbx' => 'PBX Setting Changes',
     'audit_log.header_title_logins' => 'Login Attempts',
@@ -1934,8 +1851,6 @@ return [
     'audit_log.action_two_factor_regen_codes' => 'New recovery codes',
     'audit_log.action_unban' => 'Unbanned',
     'audit_log.action_voicemail_email_notify' => 'Voicemail e-mail setting',
-
-    // Firewall (Security)
     'firewall.title' => 'Firewall',
     'firewall.header_title' => 'Firewall (firewalld) Management',
     'firewall.service_active' => 'Service Active',
@@ -1958,8 +1873,6 @@ return [
     'firewall.field_source' => 'Source IP/Subnet (optional)',
     'firewall.source_help' => 'Leave blank to open the port to everyone; enter a subnet (e.g. 192.0.2.0/24) to only allow traffic from that source.',
     'firewall.add_rule_submit' => 'Add Rule',
-
-    // Fail2ban (Security)
     'fail2ban.title' => 'Fail2ban',
     'fail2ban.header_title' => 'Fail2ban Jail Management',
     'fail2ban.help_title' => 'Fail2ban Management Guide',
@@ -1980,8 +1893,6 @@ return [
     'fail2ban.remove_ignoreip_confirm' => 'Are you sure you want to remove this IP/subnet from the whitelist?',
     'fail2ban.remove_ignoreip_tooltip' => 'Remove from Whitelist',
     'fail2ban.field_add_ignoreip' => 'Add IP/Subnet to Whitelist',
-
-    // RTP (medya) ayarlari — 2026-09-01
     'asterisk_settings.rtp_section_title' => 'RTP (Media) Settings',
     'asterisk_settings.rtp_help_body' => 'Controls which port range carries audio (RTP) and whether Asterisk rejects audio arriving from an unexpected source. This file (<code>/etc/asterisk/rtp.conf</code>) is now generated by the panel; manual edits on the server are lost on the next "Apply".',
     'asterisk_settings.field_rtp_start' => 'RTP Start Port',
@@ -1993,8 +1904,6 @@ return [
     'asterisk_settings.rtp_strict_yes' => 'Enabled (recommended)',
     'asterisk_settings.rtp_strict_no' => 'Disabled (for diagnosis)',
     'asterisk_settings.rtp_restart_warning' => 'The Strict RTP setting takes effect with "Apply". A PORT RANGE change, however, requires a full Asterisk restart — the port pool is allocated once when the module loads.',
-
-    // T.38 UDPTL (fax media) settings
     'asterisk_settings.udptl_section_title' => 'T.38 UDPTL (Fax Media) Settings',
     'asterisk_settings.udptl_help_body' => 'Defines UDP port ranges and forward error correction (FEC / Checksum) parameters for T.38 fax packets (UDPTL). This file (<code>/etc/asterisk/udptl.conf</code>) is dynamically managed.',
     'asterisk_settings.field_udptl_start' => 'UDPTL Start Port',
@@ -2004,20 +1913,14 @@ return [
     'asterisk_settings.field_udptl_checksums' => 'UDPTL Checksums',
     'asterisk_settings.field_udptl_fec_entries' => 'FEC Redundant Entries',
     'asterisk_settings.field_udptl_fec_span' => 'FEC Span',
-
-    // Trunk baglanti modu — 2026-09-01
     'trunks.field_connection_mode' => 'Connection Mode',
     'trunks.connection_mode_ip' => 'IP based (peer has a static IP)',
     'trunks.connection_mode_register' => 'Inbound registration (peer registers to us)',
     'trunks.connection_mode_help' => 'IP based: the peer is identified by its IP address and its contact is kept static — the recommended mode for a peer with a fixed IP on the same network. Inbound registration: the peer sends us a SIP REGISTER and its address is learned from that registration. This mode requires a username and password; the peer authenticates both its registration and its calls with them.',
     'trunks.connection_mode_warning' => 'Switching to registration mode removes the static contact: we cannot call that trunk UNTIL the peer registers with us. Make this change in sync with the registration setting on the peer side.',
-
-    // IVR tuslama listesi/silme — 2026-09-01
     'ivr.entry_delete_confirm' => 'Delete the routing for key %s?',
     'ivr.entry_delete_tooltip' => 'Delete this keypress option',
     'ivr.entry_overwrite_warning' => 'This key is already mapped — saving will overwrite the existing routing.',
-
-    // MOH muzik yukleme modali — 2026-09-01
     'sounds.moh_upload_title' => 'Upload Hold Music',
     'sounds.moh_upload_class' => 'Music Class',
     'sounds.moh_upload_file' => 'Audio File',
@@ -2053,8 +1956,6 @@ return [
     'sound_packs.invalid' => 'Invalid pack selection.',
     'sound_packs.already_running' => 'Another sound pack operation is running.',
     'sound_packs.start_failed' => 'Could not start the operation.',
-
-    // Personal Phone & Call Management (my_phone)
     'my_phone.title' => 'My Phone',
     'my_phone.extension_info' => 'My Extension Info',
     'my_phone.no_extension' => 'No extension assigned to your account yet.',
@@ -2134,8 +2035,6 @@ return [
     'my_phone.sip_status_offline' => 'Offline',
     'my_phone.mobile_status_online' => 'Online',
     'my_phone.mobile_status_offline' => 'Offline',
-
-    // Microsoft Teams Integration
     'ms_teams.title' => 'Microsoft Teams Integration',
     'ms_teams.badge_dr_active' => 'Direct Routing Active',
     'ms_teams.badge_dr_inactive' => 'Direct Routing Inactive',
@@ -2275,8 +2174,6 @@ return [
     'ms_teams.msg_err_ext_exists' => 'A mapping already exists for this extension.',
     'ms_teams.msg_err_upn_exists' => 'This Teams user (UPN) is already mapped to another extension.',
     'ms_teams.msg_mapping_saved' => 'User mapping saved successfully.',
-
-    // Two-Factor Authentication (2FA) & Passkey & Security
     'sidebar.security_settings' => 'Security (2FA)',
     'login.or_divider' => 'OR',
     'login.btn_passkey' => 'Sign in with a Passkey',
@@ -2312,7 +2209,6 @@ return [
     'security.enable_google_login' => 'Enable Sign in with Google',
     'security.google_redirect_uri_info' => 'Google Cloud Console Authorized Redirect URI:',
     'security.btn_save_google' => 'Save Google Settings',
-
     'login_2fa.page_title' => 'Two-Factor Authentication',
     'login_2fa.title' => 'Two-Factor Authentication (2FA)',
     'login_2fa.account_label' => 'Account:',
@@ -2327,7 +2223,6 @@ return [
     'login_2fa.invalid_recovery_code' => 'Invalid or already used recovery code!',
     'login_2fa.enter_valid_totp' => 'Please enter the complete 6-digit verification code.',
     'login_2fa.invalid_totp_code' => 'Invalid or expired verification code! Please enter the current code from your phone.',
-
     'security.page_title' => 'Account Security',
     'security.page_subtitle' => 'Two-factor authentication (2FA), biometric Passkey credentials, and password management.',
     'security.status_enabled' => 'Enabled',
@@ -2383,7 +2278,6 @@ return [
     'security.password_min_length' => 'New password must be at least 8 characters long.',
     'security.password_mismatch' => 'New passwords do not match.',
     'security.password_changed_success' => 'Password updated successfully.',
-
     'system_users.2fa_reset_success' => 'User two-factor authentication (2FA) reset successfully.',
     'system_users.2fa_active_tooltip' => '2FA Active',
     'system_users.2fa_inactive_tooltip' => '2FA Inactive',
@@ -2395,8 +2289,6 @@ return [
     'system_users.bulk_mail_confirm' => 'Activation and password setup email will be sent to %d selected user(s). Are you sure?',
     'system_users.no_email_tooltip' => 'No email address registered',
     'system_users.select_users_warning' => 'Please select at least one user to proceed!',
-
-    // E-Mail & Mail Relay Settings
     'mail_settings.title' => 'E-Mail & Mail Relay Settings',
     'mail_settings.tab_smtp' => 'SMTP & Relay',
     'mail_settings.tab_sender' => 'Sender',
@@ -2431,24 +2323,16 @@ return [
     'mail_settings.test_title' => 'Send Test E-Mail',
     'mail_settings.test_desc' => 'Send a test message using current settings to verify relay connectivity.',
     'mail_settings.btn_send_test' => 'Send Test',
-
-    // Push Settings (Mobile Push)
     'push_settings.title' => 'Mobile Push',
     'push_settings.tab_config' => 'Configuration',
     'push_settings.tab_test' => 'Test & Dispatch',
-
-    // Sidebar items
     'sidebar.item_dial_permissions' => 'Calling Permissions',
     'sidebar.item_ring_groups' => 'Ring Groups',
     'sidebar.item_boss_secretary' => 'Boss - Secretary',
     'sidebar.item_conferences' => 'Conference Rooms',
-
-    // Extensions
     'extensions.col_perm_role' => 'Permission / Group',
     'extensions.field_permission_group' => 'Calling Permission Group',
     'extensions.field_boss_secretary_group' => 'Boss - Secretary Group',
-
-    // Dial Permissions
     'dial_permissions.title' => 'Calling Permission Groups',
     'dial_permissions.subtitle' => 'Define allowed and denied destinations, prefixes, and exact numbers on a group basis.',
     'dial_permissions.new_group_btn' => 'New Permission Group',
@@ -2478,8 +2362,6 @@ return [
     'dial_permissions.type_exact' => 'Exact Match',
     'dial_permissions.action_allow' => 'ALLOW',
     'dial_permissions.action_deny' => 'BLOCK',
-
-    // Boss - Secretary
     'boss_secretary.title' => 'Boss - Secretary Groups',
     'boss_secretary.subtitle' => 'Intercepts executive calls to secretaries, allowing only authorized parties to reach directly.',
     'boss_secretary.new_group_btn' => 'New Boss Group',
@@ -2493,8 +2375,6 @@ return [
     'boss_secretary.help_strategy_desc' => 'Simultaneous (all secretaries ring together) or Sequential (rings one by one).',
     'boss_secretary.list_title' => 'Configured Boss - Secretary Groups',
     'boss_secretary.empty' => 'No boss-secretary groups defined yet.',
-
-    // Ring Groups
     'ring_groups.title' => 'Ring Groups',
     'ring_groups.subtitle' => 'Rings multiple internal extensions and external phone numbers simultaneously or sequentially.',
     'ring_groups.new_group_btn' => 'New Ring Group',
@@ -2508,8 +2388,6 @@ return [
     'ring_groups.help_internal_ext_desc' => 'Each ring group has its own virtual extension number (e.g. 7000), dialable from IVR, time conditions, and phones.',
     'ring_groups.list_title' => 'Configured Ring Groups',
     'ring_groups.empty' => 'No ring groups defined yet.',
-
-    // Conferences
     'conferences.title' => 'Conference Rooms (ConfBridge)',
     'conferences.subtitle' => 'Create multi-party voice conference rooms with PIN codes and moderator controls.',
     'conferences.new_conf_btn' => 'New Conference Room',
@@ -2523,12 +2401,8 @@ return [
     'conferences.help_live_ctrl_desc' => 'View live participants in real-time, mute individuals, or kick them from the conference.',
     'conferences.list_title' => 'Configured Conference Rooms',
     'conferences.empty' => 'No conference rooms defined yet.',
-
-    // My Phone
     'my_phone.tab_voicemail' => 'Voicemail',
     'my_phone.voicemail_inbox' => 'Voicemail Inbox',
-
-    // Sistem Güncelleme
     'sidebar.item_system_update' => 'System Update',
     'system_update.page_title' => 'System Update',
     'system_update.help_title' => 'How does updating work?',
@@ -2554,8 +2428,6 @@ return [
     'system_update.unreachable' => 'Could not get version information (GitHub may be unreachable).',
     'system_update.already_running' => 'An update is already running.',
     'system_update.start_failed' => 'The update could not be started.',
-
-    // Scheduled tasks (Roadmap 2.1)
     'sidebar.item_scheduled_tasks' => 'Scheduled Tasks',
     'scheduled_tasks.page_title' => 'Scheduled Tasks',
     'scheduled_tasks.btn_new' => 'New Task',
@@ -2586,8 +2458,6 @@ return [
     'scheduled_tasks.version_history' => 'Script Versions',
     'scheduled_tasks.saved_successfully' => 'Scheduled task saved successfully.',
     'scheduled_tasks.deleted_successfully' => 'Scheduled task deleted.',
-
-    // External Databases (Roadmap 2.2)
     'sidebar.item_external_dbs' => 'Database Connections',
     'external_dbs.page_title' => 'External Databases',
     'external_dbs.btn_new' => 'New Connection',
@@ -2609,8 +2479,6 @@ return [
     'external_dbs.confirm_delete' => 'Are you sure you want to delete this database connection?',
     'external_dbs.saved_successfully' => 'Database connection saved successfully.',
     'external_dbs.deleted_successfully' => 'Database connection deleted.',
-
-    // IVR Data Steps (Roadmap 2.3)
     'ivr_data.page_title' => 'IVR Data Steps',
     'ivr_data.btn_new' => 'New Data Step',
     'ivr_data.dest_name' => 'IVR Data Step',
@@ -2635,8 +2503,6 @@ return [
     'ivr_data.saved_successfully' => 'IVR data step saved successfully.',
     'ivr_data.deleted_successfully' => 'IVR data step deleted.',
     'ivr_data.nav_button' => 'Data Steps',
-
-    // Asterisk Settings Fine Tuning & Maintenance (Roadmap 2.5 & 2.6)
     'asterisk_settings.tab_tuning' => 'Tuning & Ops',
     'asterisk_settings.tuning_title' => 'PBX Fine Tuning & Maintenance',
     'asterisk_settings.tuning_help_title' => 'PBX Fine Tuning Guide',
@@ -2677,14 +2543,10 @@ return [
     'asterisk_settings.sip_debug_enabled' => 'SIP debug logging enabled for 10 minutes.',
     'asterisk_settings.sip_debug_disabled' => 'SIP debug logging disabled.',
     'asterisk_settings.logs_rotated' => 'Asterisk logs rotated successfully.',
-
-    // Health Checks (Roadmap 2.6)
     'health.check_failed_registrations' => 'Failed Registrations',
     'health.desc_failed_registrations' => 'Monitors failed SIP registration and authentication attempts against the configured security threshold.',
     'health.msg_failed_reg_ok' => 'Normal: %d failed registration(s) in the last 15 minutes',
     'health.msg_failed_reg_warn' => 'High rate: %d failed registration(s) in the last 15 minutes (threshold: %d)',
-
-    // Certificates (Security → Certificates)
     'sidebar.item_certificates' => 'Certificates',
     'certificates.title' => 'Certificates',
     'certificates.header_title' => 'TLS Certificate',
@@ -2768,8 +2630,6 @@ return [
     'certificates.msg_renew_ok' => 'Certificate renewed and applied.',
     'certificates.msg_selfsigned_ok' => 'Self-signed certificate active.',
     'certificates.msg_upload_ok' => 'Certificate checked and applied.',
-
-    // Call reports: direction, trunks and call path
     'cdr_reports.dir_inbound' => 'Inbound',
     'cdr_reports.dir_outbound' => 'Outbound',
     'cdr_reports.dir_internal' => 'Internal',
@@ -2806,8 +2666,6 @@ return [
     'cdr_reports.leg_app' => 'Step: %s (%s)',
     'cdr_reports.leg_app_detail' => 'Duration: %d s • Talk: %d s',
     'cdr_reports.leg_transferred_by' => 'Transferred by %s',
-
-    // Queue Report Centre
     'sidebar.item_queue_reports' => 'Queue Report Centre',
     'queue_reports.title' => 'Queue Report Centre',
     'queue_reports.help_title' => 'Queue reports guide',
@@ -2902,8 +2760,6 @@ return [
     'roles.module_certificates' => 'Certificates',
     'roles.module_google_integration' => 'Google Sign-in',
     'roles.module_queue_reports' => 'Queue Report Centre',
-
-    // Report export (PDF / Excel)
     'export.generated_by' => 'Generated: %s · %s',
     'export.filters' => 'Filters',
     'export.summary' => 'Summary',
@@ -2939,8 +2795,6 @@ return [
     'export.f_trunk' => 'Trunk',
     'export.col_in_trunk' => 'Incoming trunk',
     'export.col_out_trunk' => 'Outgoing trunk',
-
-    // AI → Cloud TTS
     'sidebar.group_ai' => 'AI',
     'sidebar.item_ai_tts' => 'Cloud TTS',
     'ai_models.title' => 'Local AI models',
@@ -4620,7 +4474,6 @@ Your phone will ring.',
     'js.phones.key_park' => 'Call park',
     'js.phones.key_dnd' => 'Do not disturb',
     'js.phones.key_line' => 'Line',
-    // System → File storage (chat files on local disk or S3)
     'storage.title' => 'File Storage',
     'storage.header_title' => 'Chat file storage',
     'storage.chat_unreachable' => 'Chat service not reachable',
@@ -4671,8 +4524,6 @@ Your phone will ring.',
     'storage.saved_s3' => 'Connection works and the settings are saved. New chat files go to the bucket.',
     'storage.test_ok' => 'Connection works: a test file was written, read back and deleted.',
     'storage.migrate_started' => 'Moving the files has started. Reload the page to see the progress.',
-
-    // Network & devices → Network services (roadmap 10)
     'sidebar.item_network_services' => 'Network Services',
     'netsvc.title' => 'Network Services',
     'netsvc.header_title' => 'DHCP and TFTP for desk phones',
@@ -5243,7 +5094,6 @@ Your phone will ring.',
     'dest.ivr' => 'IVR menu',
     'dest.ring_group' => 'Ring group',
     'dest.time_condition' => 'Time condition',
-    // Network settings (roadmap 12-14)
     'netset.phones_title' => 'Addresses for desk phones',
     'roles.group_network' => 'Network & devices',
     'sidebar.group_network' => 'Network & devices',
@@ -5409,8 +5259,6 @@ Your phone will ring.',
     'webhooks.col_attempts' => 'Attempts',
     'webhooks.col_created' => 'Created',
     'webhooks.queue_empty' => 'Delivery queue is empty.',
-
-    // Open Source License & Telecom Disclaimer
     'license.modal_title' => 'Open Source License & Telecom Disclaimer',
     'license.intro' => 'AiPBX is free and open-source software released under the MIT License and provided "AS IS" without warranty of any kind. By operating this PBX system, you acknowledge and agree to the following terms:',
     'license.item_oss' => 'No Warranty (MIT License): The authors and contributors shall not be liable for any direct, indirect, or consequential damages arising from the use of this software.',
@@ -5421,10 +5269,6 @@ Your phone will ring.',
     'license.accept_btn' => 'Accept & Continue',
     'license.close_btn' => 'Close',
     'license.accepted_info' => 'Accepted on',
-
-    // AI → Assistant (src/services/ai/AssistantPlanner.php). The action titles
-    // name a change in the administrator's words; the errors say what to do
-    // next. None of them mention a configuration file or a dialplan.
     'ai_assistant.act_extension_forward' => 'Forward an extension',
     'ai_assistant.act_extension_voicemail' => 'Voicemail for an extension',
     'ai_assistant.act_extension_rename' => 'Rename an extension',
@@ -5440,8 +5284,6 @@ Your phone will ring.',
     'ai_assistant.err_missing' => 'A value is missing (%s).',
     'ai_assistant.err_unknown_field' => 'That change does not take %s.',
     'ai_assistant.err_bad_value' => 'That is not a %s I can use.',
-
-    // Security -> GDPR & Data Privacy (EN) / KVKK ve Veri Gizliligi (TR)
     'sidebar.item_privacy' => 'GDPR & Data Privacy',
     'roles.module_privacy' => 'GDPR & Data Privacy',
     'privacy.title' => 'GDPR & Data Privacy',
@@ -5644,8 +5486,6 @@ Your phone will ring.',
     'phones.firmware_armed' => 'SIP firmware armed:',
     'phones.firmware_fetched' => 'SIP firmware taken:',
     'phones.firmware_incomplete' => 'SIP firmware not on this server:',
-
-    // --- Phones found on the network (engine/aipbx_engine) ------------------
     'phonedisc.title' => 'Discovered on the network',
     'phonedisc.desc' => 'Desk phones the engine found on the network without anybody typing a MAC address. A phone that is already provisioned is listed here and never provisioned again.',
     'phonedisc.badge_new' => '%d new',
@@ -5742,4 +5582,60 @@ Your phone will ring.',
     'saml.err_empty_metadata' => 'Please paste the XML metadata from your Identity Provider.',
     'saml.err_metadata_parse_failed' => 'Failed to parse IdP XML metadata: %s',
     'saml.msg_metadata_imported' => '✓ IdP metadata parsed and applied successfully! EntityID: %s | SSO URL: %s | Certificate: extracted (%d bytes)',
+    'sidebar.item_reverse_proxy' => 'Reverse Proxy',
+    'reverse_proxy.title' => 'Reverse Proxy & Network Ports',
+    'reverse_proxy.header_title' => 'Reverse Proxy Configuration',
+    'reverse_proxy.help_title' => 'Reverse Proxy and Network Setup Guide',
+    'reverse_proxy.help_body' => 'Configure AiPBX to safely run behind existing HTTP/HTTPS reverse proxies (such as Nginx, Caddy, Traefik, HAProxy, or Apache). Manage trusted proxy IPs to safely forward real client IP addresses, generate sample configurations, and inspect required network ports and firewall scripts.',
+    'reverse_proxy.voip_boundary_title' => 'VoIP & Media Boundary Notice (SIP / RTP)',
+    'reverse_proxy.voip_boundary_desc' => 'Standard HTTP/HTTPS reverse proxies can terminate web management traffic and proxy WebRTC WebSocket signaling (/ws on port 8089). However, SIP signaling (ports 5060/5061 UDP/TCP) and audio/video RTP media streams (ports 10000-20000 UDP) CANNOT be routed through an HTTP reverse proxy. They must reach the AiPBX host directly via port forwarding, direct 1:1 NAT, or Layer 4 routing.',
+    'reverse_proxy.diag_title' => 'Real-Time Request Diagnostics',
+    'reverse_proxy.diag_remote_addr' => 'Immediate Remote IP (REMOTE_ADDR)',
+    'reverse_proxy.diag_trusted' => 'Trusted Proxy',
+    'reverse_proxy.diag_untrusted' => 'Direct / Untrusted',
+    'reverse_proxy.diag_forwarded_for' => 'Forwarded IP (X-Forwarded-For)',
+    'reverse_proxy.diag_forwarded_proto' => 'Protocol (X-Forwarded-Proto)',
+    'reverse_proxy.diag_resolved_ip' => 'Resolved Client IP (Effective)',
+    'reverse_proxy.enable_label' => 'Enable Reverse Proxy Mode',
+    'reverse_proxy.enable_hint' => 'When enabled, AiPBX inspects X-Forwarded-For and X-Forwarded-Proto headers coming strictly from trusted proxies.',
+    'reverse_proxy.field_external_fqdn' => 'External FQDN / Domain',
+    'reverse_proxy.fqdn_hint' => 'Public hostname clients use to access this PBX (e.g., pbx.example.com).',
+    'reverse_proxy.field_external_port' => 'External HTTPS Port',
+    'reverse_proxy.port_hint' => 'Public port on the reverse proxy (default 443).',
+    'reverse_proxy.field_tls_mode' => 'TLS Termination Mode',
+    'reverse_proxy.tls_mode_hint' => 'Choose how SSL/TLS encryption is handled between the proxy and AiPBX.',
+    'reverse_proxy.tls_edge' => 'Edge Termination (Proxy decrypts SSL, speaks HTTP to AiPBX)',
+    'reverse_proxy.tls_re_encrypt' => 'Re-encryption / End-to-End (Proxy speaks HTTPS to AiPBX)',
+    'reverse_proxy.tls_none' => 'None / Plain HTTP (Internal / Lab)',
+    'reverse_proxy.field_proxy_type' => 'Preferred Reverse Proxy',
+    'reverse_proxy.field_trusted_proxies' => 'Trusted Reverse Proxy IPs / CIDRs',
+    'reverse_proxy.trusted_proxies_hint' => 'Comma-separated list of proxy IPs or CIDR networks (e.g., 127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16). Headers from unlisted IPs will be ignored.',
+    'reverse_proxy.msg_saved_ok' => 'Reverse proxy settings saved successfully.',
+    'reverse_proxy.err_save_failed' => 'Failed to save reverse proxy settings.',
+    'reverse_proxy.err_invalid_fqdn' => 'Invalid domain name or FQDN format.',
+    'reverse_proxy.gen_title' => 'Live Configuration Generator',
+    'reverse_proxy.gen_desc' => 'Pre-configured, production-ready configuration snippets including WebRTC WebSocket (/ws) upgrade handling and client IP headers.',
+    'reverse_proxy.sample_config_for' => 'Sample Configuration for %s',
+    'reverse_proxy.ports_title' => 'Network Ports & Firewall Matrix',
+    'reverse_proxy.ports_desc' => 'Comprehensive matrix of all network ports used by AiPBX, showing protocols, required exposure, and reverse proxy bypass status.',
+    'reverse_proxy.th_port' => 'Port Range',
+    'reverse_proxy.th_proto' => 'Protocol',
+    'reverse_proxy.th_service' => 'Service / Purpose',
+    'reverse_proxy.th_scope' => 'Access Scope',
+    'reverse_proxy.th_bypass' => 'Proxy Bypass',
+    'reverse_proxy.th_desc' => 'Description & Notes',
+    'reverse_proxy.bypass_yes' => 'Direct (Bypass)',
+    'reverse_proxy.bypass_no' => 'Proxied (HTTP/WS)',
+    'reverse_proxy.bypass_badge_hint' => 'This traffic must connect directly to the PBX server and cannot pass through an HTTP proxy.',
+    'reverse_proxy.fw_scripts_title' => 'Ready-to-Use Firewall Rules',
+    'reverse_proxy.fw_rules_for' => 'Firewall Script for %s',
+    'certificates.field_validation_method' => 'Validation Challenge Method',
+    'certificates.val_http01_desc' => 'Standard Let\'s Encrypt challenge (requires port 80 open to the internet)',
+    'certificates.val_dns_cloudflare_desc' => 'DNS-01 challenge via Cloudflare API (no port 80 needed, supports wildcards)',
+    'certificates.field_cf_token' => 'Cloudflare API Token',
+    'certificates.cf_token_hint' => 'Create a token in Cloudflare Dashboard with Zone:DNS:Edit permission.',
+    'certificates.cf_wildcard_label' => 'Include wildcard (*.%s) in certificate',
+    'certificates.err_invalid_cf_token' => 'Invalid Cloudflare API token format.',
+    'certificates.err_stage_failed' => 'Could not stage credentials for certificate issuance.',
+    'common.copied_to_clipboard' => 'Copied to clipboard!',
 ];

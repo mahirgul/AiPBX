@@ -115,16 +115,52 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <p class="u-fs-12 u-mt-0"><?php echo sprintf(t('certificates.le_requirements'), $h($domain)); ?></p>
             <form method="POST" class="cert-form" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
-                <div class="form-group" style="max-width: 420px;">
+
+                <div class="form-group" style="max-width: 520px; margin-bottom: 14px;">
+                    <label class="form-label"><?php echo t('certificates.field_validation_method'); ?></label>
+                    <div style="display: flex; gap: 16px; margin-top: 6px;">
+                        <label class="u-check-label u-fs-12" style="cursor: pointer;">
+                            <input type="radio" name="validation_method" value="http01" checked onchange="toggleValMethod(this.value)">
+                            <strong>HTTP-01</strong> (<?php echo t('certificates.val_http01_desc'); ?>)
+                        </label>
+                        <label class="u-check-label u-fs-12" style="cursor: pointer;">
+                            <input type="radio" name="validation_method" value="dns_cloudflare" onchange="toggleValMethod(this.value)">
+                            <strong>DNS-01 Cloudflare</strong> (<?php echo t('certificates.val_dns_cloudflare_desc'); ?>)
+                        </label>
+                    </div>
+                </div>
+
+                <div id="cfDnsFields" style="display: none; background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 6px; padding: 14px; margin-bottom: 16px; max-width: 520px;">
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label class="form-label"><?php echo t('certificates.field_cf_token'); ?> <span class="u-danger">*</span></label>
+                        <input type="password" name="cf_api_token" id="cfApiTokenInput" class="form-control" placeholder="Cloudflare API Token" autocomplete="new-password">
+                        <div class="u-hint"><?php echo t('certificates.cf_token_hint'); ?></div>
+                    </div>
+                    <label class="u-check-label u-fs-12" style="display: block;">
+                        <input type="checkbox" name="cf_wildcard" value="1" class="u-accent">
+                        <?php echo sprintf(t('certificates.cf_wildcard_label'), $h($domain)); ?>
+                    </label>
+                </div>
+
+                <div class="form-group" style="max-width: 520px;">
                     <label class="form-label"><?php echo t('certificates.field_email'); ?></label>
                     <input type="email" name="email" class="form-control" placeholder="admin@<?php echo $h($domain); ?>">
                     <div class="u-hint"><?php echo t('certificates.email_hint'); ?></div>
                 </div>
+
                 <div class="u-flex-gap" style="flex-wrap: wrap;">
                     <button type="submit" name="action" value="le_test" class="btn btn-secondary"><i class="fas fa-vial"></i> <?php echo t('certificates.btn_le_test'); ?></button>
                     <button type="submit" name="action" value="le_issue" class="btn btn-primary" data-confirm="<?php echo $h(t('certificates.confirm_switch')); ?>"><i class="fas fa-certificate"></i> <?php echo t('certificates.btn_le_issue'); ?></button>
                 </div>
             </form>
+            <script>
+            function toggleValMethod(m) {
+                var el = document.getElementById('cfDnsFields');
+                if (el) {
+                    el.style.display = (m === 'dns_cloudflare') ? 'block' : 'none';
+                }
+            }
+            </script>
         <?php endif; ?>
     </div>
 </div>

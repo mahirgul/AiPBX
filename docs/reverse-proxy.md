@@ -1,0 +1,240 @@
+# Running AiPBX Behind a Reverse Proxy
+
+This guide covers deploying AiPBX behind existing reverse proxies such as **Nginx**, **Caddy**, **Traefik**, **HAProxy**, or **Apache**.
+
+---
+
+## 1. Architecture & The VoIP Boundary
+
+AiPBX delivers two distinct categories of network traffic:
+
+```
+                  +-----------------------------------+
+                  |           Internet / WAN          |
+                  +-----------------+-----------------+
+                                    |
+            +-----------------------+-----------------------+
+            | HTTP / HTTPS / WSS                            | SIP & RTP Media
+            v                                               v
+   +--------------------+                         +-------------------+
+   |   Reverse Proxy    |                         | Direct L4 Bypass  |
+   | (Nginx/Caddy/etc.) |                         | (1:1 NAT / Router)|
+   +---------+----------+                         +---------+---------+
+             |                                              |
+             | HTTP (80/8080) & WS (8089)                   | SIP (5060/5061 UDP/TCP)
+             v                                              | RTP (10000-20000 UDP)
+   +--------------------------------------------------------+---------+
+   |                            AiPBX Server                          |
+   +------------------------------------------------------------------+
+```
+
+### Critical VoIP Rule:
+Standard reverse proxies operate on **Layer 7 (HTTP/HTTPS/WebSocket)**. They **CANNOT** proxy SIP signaling (UDP/TCP 5060/5061) or RTP audio/video media (UDP 10000-20000).
+- **HTTP / HTTPS / WebSockets**: Route through your reverse proxy.
+- **SIP & RTP Traffic**: **MUST bypass the reverse proxy** and reach the AiPBX server host directly via port forwarding or Layer 4 routing.
+
+For complete port details, see [Network Ports & Firewall Matrix](network-ports.md).
+
+---
+
+## 2. Portal Configuration
+
+Log in to the AiPBX portal as an administrator and navigate to **Network → Reverse Proxy** (`/reverse-proxy`):
+
+1. **Enable Reverse Proxy Mode**: Check the toggle.
+2. **External FQDN**: Enter your public domain (e.g., `pbx.example.com`).
+3. **External Port**: Enter `443` (or your public HTTPS port).
+4. **TLS Termination Mode**:
+   - `Edge Termination` (recommended): The reverse proxy handles SSL certificates and connects to AiPBX via HTTP.
+   - `Re-encryption`: The reverse proxy terminates external SSL and connects to AiPBX via internal HTTPS.
+5. **Trusted Reverse Proxies**: Add the IP addresses or CIDR ranges of your reverse proxies (e.g., `127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16`).
+
+### Security: Spoofing Prevention
+AiPBX enforces strict header validation. It will **ONLY** honor `X-Forwarded-For` and `X-Forwarded-Proto` headers when the immediate TCP connection originates from an address explicitly listed in **Trusted Reverse Proxies**. Direct connections from unauthorized IPs will have their headers stripped.
+
+---
+
+## 3. WebRTC WebSocket (`/ws`) Requirements
+
+In-browser calling via WebRTC relies on persistent WebSocket connections for SIP signaling:
+- **Path**: `/ws`
+- **Backend Port**: `8089` (Asterisk WSS)
+- **Timeouts**: Reverse proxies typically terminate idle connections after 60 seconds. Set `proxy_read_timeout` to at least `3600s` (1 hour) so softphones do not disconnect while idle.
+
+---
+
+## 4. Configuration Examples
+
+### A. Nginx
+```nginx
+# /etc/nginx/sites-available/aipbx.conf
+
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
+
+upstream aipbx_web {
+    server 127.0.0.1:80;
+    keepalive 32;
+}
+
+server {
+    listen 80;
+    listen [::]:80;
+    server_name pbx.example.com;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name pbx.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/pbx.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/pbx.example.com/privkey.pem;
+
+    client_max_body_size 64M;
+
+    # 1. WebRTC WebSocket Signaling
+    location /ws {
+        proxy_pass http://127.0.0.1:8089/ws;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # Keepalive timeout for softphone standby
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
+    }
+
+    # 2. Web Portal & Auto-Provisioning
+    location / {
+        proxy_pass http://aipbx_web;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Port $server_port;
+
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 300s;
+        proxy_read_timeout 300s;
+        proxy_buffering off;
+    }
+}
+```
+
+### B. Caddy
+```caddyfile
+# /etc/caddy/Caddyfile
+
+pbx.example.com {
+    encode zstd gzip
+
+    # WebRTC WebSocket Signaling
+    @websocket {
+        path /ws*
+        header Connection *Upgrade*
+        header Upgrade websocket
+    }
+    reverse_proxy @websocket 127.0.0.1:8089 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+
+    # Web Portal & Phone Provisioning
+    reverse_proxy 127.0.0.1:80 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+}
+```
+
+### C. Traefik (Dynamic File Provider)
+```yaml
+# traefik-dynamic.yaml
+
+http:
+  routers:
+    aipbx-ws:
+      rule: "Host(`pbx.example.com`) && PathPrefix(`/ws`)"
+      entryPoints: ["websecure"]
+      service: "aipbx-ws-svc"
+      tls:
+        certResolver: "letsencrypt"
+
+    aipbx-web:
+      rule: "Host(`pbx.example.com`)"
+      entryPoints: ["websecure"]
+      service: "aipbx-web-svc"
+      tls:
+        certResolver: "letsencrypt"
+
+  services:
+    aipbx-web-svc:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://127.0.0.1:80"
+
+    aipbx-ws-svc:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://127.0.0.1:8089"
+```
+
+### D. HAProxy
+```haproxy
+# /etc/haproxy/haproxy.cfg
+
+frontend http_in
+    bind *:80
+    bind *:443 ssl crt /etc/ssl/certs/pbx.example.com.pem alpn h2,http/1.1
+    redirect scheme https code 301 if !{ ssl_fc }
+
+    acl is_aipbx hdr(host) -i pbx.example.com
+    acl is_websocket hdr(Upgrade) -i WebSocket
+    acl is_ws_path path_beg /ws
+
+    use_backend aipbx_ws if is_aipbx is_websocket or is_aipbx is_ws_path
+    use_backend aipbx_web if is_aipbx
+
+backend aipbx_web
+    mode http
+    option forwardfor
+    http-request set-header X-Forwarded-Proto https if { ssl_fc }
+    http-request set-header X-Forwarded-Host %[req.hdr(host)]
+    server aipbx1 127.0.0.1:80 check
+
+backend aipbx_ws
+    mode http
+    option forwardfor
+    timeout tunnel 3600s
+    http-request set-header X-Forwarded-Proto https if { ssl_fc }
+    server aipbx_ws1 127.0.0.1:8089 check
+```
+
+---
+
+## 5. Verification & Diagnostics
+
+Once your reverse proxy is active:
+1. Open **Network → Reverse Proxy** in your browser.
+2. Check the **Real-Time Request Diagnostics** panel:
+   - **Immediate Remote IP**: Shows your proxy's internal IP.
+   - **Status**: Must indicate `Trusted Proxy` (green badge).
+   - **Resolved Client IP**: Must show your actual client workstation's public/LAN IP, matching `X-Forwarded-For`.
+3. Test a WebRTC call from the portal or mobile app to confirm WebSocket connectivity.

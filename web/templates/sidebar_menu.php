@@ -92,6 +92,7 @@ return [
         'items' => [
             ['href' => '/network-settings', 'icon' => 'fas fa-network-wired', 'label' => 'sidebar.item_network_settings', 'show' => $isAdmin, 'pages' => ['network_settings.php']],
             ['href' => '/network-services', 'icon' => 'fas fa-ethernet', 'label' => 'sidebar.item_network_services', 'show' => $isAdmin, 'pages' => ['network_services.php']],
+            ['href' => '/reverse-proxy', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_reverse_proxy', 'show' => $isAdmin, 'pages' => ['reverse_proxy.php'], 'uri' => '/reverse-proxy'],
             ['href' => '/phones', 'icon' => 'fas fa-phone', 'label' => 'sidebar.item_phones', 'show' => $can('phones'), 'pages' => ['phones.php', 'phone_keys.php']],
             ['href' => '/phone-logs', 'icon' => 'fas fa-scroll', 'label' => 'sidebar.item_phone_logs', 'show' => $isAdmin, 'pages' => ['phone_logs.php']],
         ],
