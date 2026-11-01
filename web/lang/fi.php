@@ -5740,4 +5740,5 @@ Puhelimesi soi.',
     'meetings.err_ended_desc' => 'Tämä videokokous on päättynyt, eikä siihen voi enää liittyä.',
     'meetings.err_room_in_use' => 'Huone %s on jo toisen konferenssin tai kokouksen käytössä. Valitse toinen numero tai jätä kenttä tyhjäksi.',
     'meetings.err_no_free_room' => 'Vapaata huonenumeroa ei löytynyt. Anna huonenumero itse.',
+    'srv_route.err_geolocation_uri' => 'Virheellinen geolokaation URI. Syötä yksi URI, kuten https://example.com/location.xml, ilman välilyöntejä tai merkkejä ( ) $ { } [ ].',
 ];

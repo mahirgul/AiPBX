@@ -29,6 +29,8 @@ try {
     // Non-fatal
 }
 
+ScheduledTaskRunner::removeDeletedTaskFolders();
+
 if (!ScheduledTaskService::isEnabled()) {
     // Feature switched off: no task runs, a pending "run now" is dropped.
     ScheduledTaskRepository::takeRunRequests();

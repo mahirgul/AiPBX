@@ -5740,4 +5740,5 @@ Il suo telefono squillerà.',
     'meetings.err_ended_desc' => 'Questa riunione video è terminata e non è più possibile partecipare.',
     'meetings.err_room_in_use' => 'La stanza %s è già utilizzata da una conferenza o da un\'altra riunione. Scegli un altro numero o lascialo vuoto.',
     'meetings.err_no_free_room' => 'Nessun numero di stanza libero trovato. Inserisci manualmente un numero di stanza.',
+    'srv_route.err_geolocation_uri' => 'URI di geolocalizzazione non valido. Inserire un URI, come https://example.com/location.xml, senza spazi o i caratteri ( ) $ { } [ ].',
 ];

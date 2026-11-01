@@ -5740,4 +5740,5 @@ Je telefoon gaat over.',
     'meetings.err_ended_desc' => 'Deze videovergadering is beëindigd en kan niet meer worden bijgewoond.',
     'meetings.err_room_in_use' => 'Ruimte %s is al in gebruik door een conferentie of een andere vergadering. Kies een ander nummer of laat het veld leeg.',
     'meetings.err_no_free_room' => 'Er is geen vrij ruimtenummer gevonden. Voer zelf een ruimtenummer in.',
+    'srv_route.err_geolocation_uri' => 'Ongeldige geolocatie-URI. Voer één URI in, zoals https://example.com/location.xml, zonder spaties of de tekens ( ) $ { } [ ].',
 ];

@@ -5740,4 +5740,5 @@ Ihr Telefon wird klingeln.',
     'meetings.err_ended_desc' => 'Dieses Videomeeting wurde beendet und ein Beitritt ist nicht mehr möglich.',
     'meetings.err_room_in_use' => 'Raum %s wird bereits von einer Konferenz oder einem anderen Meeting verwendet. Wählen Sie eine andere Nummer oder lassen Sie das Feld leer.',
     'meetings.err_no_free_room' => 'Es wurde keine freie Raumnummer gefunden. Geben Sie selbst eine Raumnummer ein.',
+    'srv_route.err_geolocation_uri' => 'Ungültige Geolokalisierungs-URI. Geben Sie eine URI ein, wie z. B. https://example.com/location.xml, ohne Leerzeichen oder die Zeichen ( ) $ { } [ ].',
 ];

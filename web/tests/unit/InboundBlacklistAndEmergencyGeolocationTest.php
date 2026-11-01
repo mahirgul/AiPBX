@@ -104,7 +104,7 @@ final class InboundBlacklistAndEmergencyGeolocationTest extends TestCase
         $conf = file_get_contents($confFile);
         $this->assertStringContainsString('exten => 112,1,NoOp(Outbound Call via Route Unit_Emergency_Test', $conf);
         $this->assertStringContainsString('same => n,Set(CDR(accountcode)=EMERGENCY)', $conf);
-        $this->assertStringContainsString('same => n,Set(__AIPBX_GEOLOCATION_URI=<geo:41.0082,28.9784;u=15>)', $conf);
+        $this->assertStringContainsString('same => n,Set(__AIPBX_GEOLOCATION_URI=<geo:41.0082,28.9784\\;u=15>)', $conf);
         $this->assertStringContainsString('same => n,Set(__AIPBX_GEOLOCATION_ROUTING=yes)', $conf);
 
         // General dialplan sub-callee-jb check
@@ -224,5 +224,27 @@ final class InboundBlacklistAndEmergencyGeolocationTest extends TestCase
         @unlink($tempFile);
         $this->db->exec("DELETE FROM pbx_inbound_blacklist WHERE number IN ('08509990001', '08509990002')");
         unset($_FILES['csv_file'], $_POST['default_action']);
+    }
+
+    public function testGeolocationUriCannotInjectDialplan(): void
+    {
+        foreach (["<cid:x>)\nexten => 7777,1,System(id)", 'cid:${SHELL(id)}', 'https://a/b(c)', "cid:x\r\nfoo", 'no scheme', ''] as $bad) {
+            $this->assertNull(cleanGeolocationUri($bad), json_encode($bad));
+        }
+        $this->assertSame('https://example.com/loc.xml?a=1&b=2', cleanGeolocationUri('https://example.com/loc.xml?a=1&b=2'));
+        $this->assertSame('cid:loc@example.com', cleanGeolocationUri('<cid:loc@example.com>'));
+        $this->assertSame('geo:39.9334,32.8597;u=15', cleanGeolocationUri('geo:39.9334,32.8597;u=15'));
+
+        $db = getDB();
+        $db->prepare("INSERT INTO pbx_outbound_routes (route_name, match_pattern, trunks_json, is_emergency, geolocation_uri, is_active) VALUES ('geo_evil', '_112', '[]', 1, ?, 1)")
+            ->execute(["<cid:x>)\nexten => 7777,1,System(id > /tmp/pwned)"]);
+        try {
+            require_once dirname(__DIR__, 2) . '/src/sync/SyncOutboundDialplan.php';
+            syncOutboundDialplan();
+            $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
+            $this->assertStringNotContainsString('System(id', $conf);
+        } finally {
+            $db->exec("DELETE FROM pbx_outbound_routes WHERE route_name = 'geo_evil'");
+        }
     }
 }

@@ -5740,4 +5740,5 @@ Telefonul dvs. va suna.',
     'meetings.err_ended_desc' => 'Această întâlnire video s-a încheiat și nu mai este posibilă participarea.',
     'meetings.err_room_in_use' => 'Camera %s este deja utilizată de o conferință sau o altă întâlnire. Alegeți un alt număr sau lăsați câmpul liber.',
     'meetings.err_no_free_room' => 'Nu a fost găsit niciun număr de cameră liber. Introduceți manual un număr de cameră.',
+    'srv_route.err_geolocation_uri' => 'URI de geolocalizare nevalid. Introduceți un URI, cum ar fi https://example.com/location.xml, fără spații sau caracterele ( ) $ { } [ ].',
 ];

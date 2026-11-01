@@ -599,7 +599,7 @@ XML;
         $adminMatch = trim(self::getSetting('admin_role_value', 'aipbx_admin'));
         $defaultRole = self::getSetting('default_role', 'user');
 
-        $validRoles = ['user', 'manager', 'operator', 'admin'];
+        $validRoles = ['user', 'admin', 'cc_manager', 'cc_agent', 'read_only_admin'];
         if (!in_array($defaultRole, $validRoles, true)) {
             $defaultRole = 'user';
         }

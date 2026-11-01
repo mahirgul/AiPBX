@@ -5740,4 +5740,5 @@ Vaš će telefon zazvoniti.',
     'meetings.err_ended_desc' => 'Ovaj videosastanak je završio i više mu se nije moguće pridružiti.',
     'meetings.err_room_in_use' => 'Soba %s već se koristi za konferenciju ili drugi sastanak. Odaberite drugi broj ili ostavite prazno.',
     'meetings.err_no_free_room' => 'Nije pronađen nijedan slobodan broj sobe. Sami unesite broj sobe.',
+    'srv_route.err_geolocation_uri' => 'Nevažeći URI geolokacije. Unesite jedan URI, kao što je https://example.com/location.xml, bez razmaka ili znakova ( ) $ { } [ ].',
 ];

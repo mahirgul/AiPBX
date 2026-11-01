@@ -5740,4 +5740,5 @@ Telefon zadzwoni.',
     'meetings.err_ended_desc' => 'To spotkanie wideo zostało zakończone i nie można już do niego dołączyć.',
     'meetings.err_room_in_use' => 'Pokój %s jest już zajęty przez konferencję lub inne spotkanie. Wybierz inny numer lub pozostaw pole puste.',
     'meetings.err_no_free_room' => 'Nie znaleziono wolnego numeru pokoju. Wprowadź numer pokoju samodzielnie.',
+    'srv_route.err_geolocation_uri' => 'Nieprawidłowy identyfikator URI geolokalizacji. Wprowadź jeden identyfikator URI, taki jak https://example.com/location.xml, bez spacji ani znaków ( ) $ { } [ ].',
 ];

@@ -574,6 +574,7 @@ PACKAGES=(
   mailutils
   certbot
   python3-certbot-apache
+  python3-certbot-dns-cloudflare
   openssl
   # Health checks (Admin -> Health checks) shell out to curl; a minimal
   # Ubuntu image does not have it, and the check then reports a false FAIL.
@@ -732,7 +733,15 @@ chmod 644 /etc/cron.d/aipbx
 # systemd sandbox where nothing but their own folder is writable.
 id -u aipbx-task >/dev/null 2>&1 || useradd --system --no-create-home --home-dir /nonexistent \
     --shell /usr/sbin/nologin --user-group aipbx-task
-install -d -o root -g root -m 0755 /var/lib/aipbx/tasks
+# Root's own folder, not under /var/lib/aipbx: www-data owns that one and could swap
+# what the root dispatcher works on. Task data of older versions moves along.
+install -d -o root -g root -m 0755 /var/lib/aipbx-tasks
+if [[ -d /var/lib/aipbx/tasks && ! -L /var/lib/aipbx/tasks ]]; then
+    find /var/lib/aipbx/tasks -mindepth 1 -maxdepth 1 -type d -regex '.*/[0-9]+' -exec mv -n -t /var/lib/aipbx-tasks {} +
+    find /var/lib/aipbx-tasks -mindepth 1 -type l -name '.run_*' -delete
+    rm -rf --one-file-system /var/lib/aipbx/tasks
+fi
+chown -R -h aipbx-task:aipbx-task /var/lib/aipbx-tasks/* 2>/dev/null || true
 
 mkdir -p /var/www/faxes
 mkdir -p /var/spool/asterisk/fax/outgoing
