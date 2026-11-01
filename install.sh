@@ -655,15 +655,13 @@ step "4. Creating Directory Structure"
 if [[ "$(realpath "$SCRIPT_DIR")" != "$(realpath "$INSTALL_DIR")" ]]; then
     mkdir -p "$INSTALL_DIR"
     rsync -a \
-        --exclude='/android' \
-        --exclude='/ios' \
         --exclude='/.git' \
         --exclude='/.claude' \
         --exclude='/rapor' \
         --exclude='*.jks' \
         --exclude='keystore.properties' \
         "$SCRIPT_DIR"/ "$INSTALL_DIR"/
-    rm -rf "$INSTALL_DIR/android" "$INSTALL_DIR/ios" "$INSTALL_DIR/rapor" "$INSTALL_DIR/.claude" 2>/dev/null || true
+    rm -rf "$INSTALL_DIR/android" "$INSTALL_DIR/ios" "$INSTALL_DIR/asterisk-config" "$INSTALL_DIR/rapor" "$INSTALL_DIR/.claude" 2>/dev/null || true
     find "$INSTALL_DIR" \( -name '*.jks' -o -name 'keystore.properties' \) -delete 2>/dev/null || true
 fi
 
@@ -1624,7 +1622,8 @@ mkdir -p /etc/asterisk/pbx
 # Asterisk restart with no extensions, hints or queue members: phones dropped
 # their registration and static queue members stayed "Invalid" (never rung)
 # because their hints did not exist yet when the queues were loaded.
-for f in "$INSTALL_DIR/conf/asterisk/pbx/"*.conf; do
+for f in "$INSTALL_DIR/conf/asterisk/pbx/"*.conf "$INSTALL_DIR/asterisk-config/pbx/"*.conf; do
+    [[ -f "$f" ]] || continue
     [[ -e "/etc/asterisk/pbx/$(basename "$f")" ]] || cp "$f" /etc/asterisk/pbx/
 done
 
