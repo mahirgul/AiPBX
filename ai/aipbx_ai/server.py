@@ -364,10 +364,17 @@ class Handler(BaseHTTPRequestHandler):
         if manager.disk()["used_mb"] + spec.download_mb > manager.disk_limit_mb:
             raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded")
         catalog.save(spec)
-        manager.add(spec)
+        try:
+            manager.add(spec)
+        except ValueError as e:
+            raise ApiError(HTTPStatus.CONFLICT, str(e)) from None
         try:
             state = manager.install(spec.id)
         except DiskLimit:
+            try:
+                manager.remove(spec.id)
+            except Exception:
+                pass
             raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded") from None
         return self._json(HTTPStatus.ACCEPTED, {"id": spec.id, "state": state})
 

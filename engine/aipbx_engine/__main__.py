@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 
 from . import __version__, config, detect, log, oui, sources
@@ -76,7 +77,7 @@ def cmd_check(args) -> int:
     if not sources.read_leases() and not sources.read_arp() and not sources.read_journal():
         problems.append("no source produced a single device: check the DHCP lease file and /proc/net/arp")
 
-    if not log.tail(1):
+    if not log._ensure_dir() or not os.access(config.state_dir(), os.W_OK):
         problems.append(f"{config.state_dir()} is not writable, so the engine can keep no log or state")
 
     for problem in problems:

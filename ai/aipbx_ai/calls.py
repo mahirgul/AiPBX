@@ -1080,9 +1080,9 @@ class VoiceRequestsCall:
                 result = "not_understood" if heard else "silence"
                 pcm = self.prompt("not_understood")
             played = self.play(pcm, mark_reply=True)
-            self.save(result)
             if not played:
-                return "hangup"
+                return self.save("hangup")
+            self.save(result)
             if self.reader.gone.wait(TAIL_SECONDS):       # silence frames go on meanwhile
                 return result
             self._stop_pump.set()

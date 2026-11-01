@@ -187,7 +187,7 @@ class MeetingService
                 WHERE id = ?');
             $stmt->execute([$title, $desc, $pin, $start, $end, $videoMode, $maxParticipants, $allowGuests, $id]);
             $meetingId = $id;
-            writeAuditLog('pbx', 'meeting', 'update', "Updated video meeting {$title} (ID: {$meetingId})", 'update', $hostUserId);
+            writeAuditLog('pbx', 'meeting', (string)$meetingId, "Updated video meeting {$title} (ID: {$meetingId})", 'update', $hostUserId);
         } else {
             $token = 'm_' . bin2hex(random_bytes(16));
             $customRoom = preg_replace('/[^0-9]/', '', (string)($input['room_number'] ?? '')) ?? '';
@@ -218,7 +218,7 @@ class MeetingService
                 $start, $end, $videoMode, $maxParticipants, $allowGuests
             ]);
             $meetingId = (int)$db->lastInsertId();
-            writeAuditLog('pbx', 'meeting', 'create', "Created video meeting {$title} (Token: {$token})", 'create', $hostUserId);
+            writeAuditLog('pbx', 'meeting', (string)$meetingId, "Created video meeting {$title} (Token: {$token})", 'create', $hostUserId);
         }
 
         // Keep pbx_conferences in sync so ConfBridge dialplan and bridge profile exist
@@ -312,7 +312,7 @@ class MeetingService
                     }
                 }
             }
-            writeAuditLog('pbx', 'meeting', 'delete', "Cancelled video meeting ID {$meetingId}", 'delete', $userId);
+            writeAuditLog('pbx', 'meeting', (string)$meetingId, "Cancelled video meeting ID {$meetingId}", 'delete', $userId);
         }
         return $ok;
     }
