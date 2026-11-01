@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -200,7 +201,15 @@ func attachmentStillUsed(url string) bool {
 		UNION ALL
 		SELECT 1 FROM chat_conversations WHERE avatar_url = ? AND is_deleted = 0
 		LIMIT 1`, url, url).Scan(&one)
-	return err == nil
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false
+		}
+		// On transient DB error, fail-safe: preserve the attachment file
+		log.Printf("[Chat] attachmentStillUsed query error for %s: %v", url, err)
+		return true
+	}
+	return true
 }
 
 // removeAttachmentFiles deletes an attachment and its thumbnail from disk.

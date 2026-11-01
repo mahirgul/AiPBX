@@ -75,6 +75,12 @@ final class MeetingServiceTest extends TestCase
         $this->assertSame('9999', $meeting['host_pin']);
         $this->assertSame(0, (int)$meeting['allow_guests']);
 
+        // Verify audit log has proper entity_id and action
+        $auditRow = $this->db->query("SELECT * FROM sys_audit_log WHERE entity_type = 'meeting' ORDER BY id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+        $this->assertNotEmpty($auditRow);
+        $this->assertSame((string)$meetingId, (string)$auditRow['entity_id']);
+        $this->assertSame('create', (string)$auditRow['action']);
+
         // Verify synced conference in pbx_conferences
         $confStmt = $this->db->prepare('SELECT * FROM pbx_conferences WHERE room_number = ?');
         $confStmt->execute(['8991']);

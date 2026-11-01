@@ -48,9 +48,16 @@ def pcm16_from_wav(data):
         rate, channels, frames = w.getframerate(), w.getnchannels(), w.getnframes()
         if not 8000 <= rate <= 48000 or channels not in (1, 2):
             raise ValueError("unsupported WAV format")
+        if frames == 0 or rate == 0:
+            raise ValueError("empty WAV audio")
         if frames / rate > MAX_SECONDS:
             raise ValueError(f"audio longer than {MAX_SECONDS} s")
         raw_frames = w.readframes(frames)
+    frame_bytes = 2 * channels
+    if len(raw_frames) % frame_bytes:
+        raw_frames = raw_frames[:-(len(raw_frames) % frame_bytes)]
+    if not raw_frames:
+        raise ValueError("empty or corrupted WAV audio")
     x = np.frombuffer(raw_frames, dtype="<i2").astype(np.float32) / 32768.0
     if channels == 2:
         x = x.reshape(-1, 2).mean(axis=1)

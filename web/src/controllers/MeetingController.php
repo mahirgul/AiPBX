@@ -35,12 +35,14 @@ class MeetingController extends BaseController
                 if (!static::verifyCsrf()) {
                     return ['success' => false, 'error' => t('common.invalid_csrf')];
                 }
+                static::requireModule('meetings', 'edit');
                 return MeetingService::saveMeeting($_POST, $userId ? (int)$userId : null);
             },
             'cancel_meeting' => function() use ($userId) {
                 if (!static::verifyCsrf()) {
                     return ['success' => false, 'error' => t('common.invalid_csrf')];
                 }
+                static::requireModule('meetings', 'delete');
                 $meetingId = (int)($_POST['meeting_id'] ?? 0);
                 $ok = MeetingService::cancelMeeting($meetingId, $userId ? (int)$userId : null);
                 return $ok ? ['success' => true, 'message' => t('meetings.msg_cancelled')] : ['success' => false, 'error' => t('meetings.err_cancel_failed')];
@@ -49,6 +51,7 @@ class MeetingController extends BaseController
                 if (!static::verifyCsrf()) {
                     return ['success' => false, 'error' => t('common.invalid_csrf')];
                 }
+                static::requireModule('meetings', 'edit');
                 $meetingId = (int)($_POST['meeting_id'] ?? 0);
                 $email = (string)($_POST['email'] ?? '');
                 $name = (string)($_POST['name'] ?? '');

@@ -5,6 +5,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.3
+
+- **Security & RBAC Authorization Enforcement:**
+  - Enforced strict module permissions (`meetings:edit`, `meetings:delete`) inside `MeetingController` POST action dispatchers (`save_meeting`, `cancel_meeting`, `add_invite`), preventing unauthorized meeting creation, modification, or cancellation.
+- **Audit Logging Alignment:**
+  - Corrected parameter ordering in `MeetingService::saveMeeting` and `cancelMeeting` so that entity IDs are logged to `entity_id` and action strings to `action`.
+- **Chat Service Concurrency & Sync Hardening:**
+  - Fixed read/delivered marker initialization in `AddGroupMembers`: newly added group participants inherit the conversation's `MAX(id)`, preventing spurious unread counts and read receipt regression.
+  - Wrapped `UpdateGroupMemberRole` in a database transaction with `FOR UPDATE` row locking to prevent race conditions during concurrent admin role changes.
+  - Eliminated data races in `hub.go` by copying message instances before concurrent broadcasts and preserving delivery statuses.
+  - Secured attachment cleanup in `message_delete.go` by safely retaining files upon transient database connection failures.
+- **Engine Diagnostic Resilience:**
+  - Fixed `aipbx_engine check` false-positive failure on newly provisioned systems without existing log lines.
+- **AI Service Robustness & Stability:**
+  - Ensured atomic rollback in model catalog and manager if `DiskLimit` is reached during model installation.
+  - Aligned call disposition recording in `VoiceRequestsCall` to reflect `"hangup"` when callers disconnect during playback.
+  - Hardened Vosk/Whisper `pcm16_from_wav` audio decoding against empty or unaligned byte payloads.
+
 ## 1.60.2
 
 - **WebRTC Meeting Lobby & Asset Path Fix:**

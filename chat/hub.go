@@ -488,11 +488,12 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	})
 	h.SendToExtension(user.Extension, senderPayload)
 
-	saved.IsMe = false
-	saved.Status = ""
+	otherMsg := *saved
+	otherMsg.IsMe = false
+	otherMsg.Status = ""
 	otherPayload, _ := json.Marshal(map[string]interface{}{
 		"event": "new_message",
-		"data":  saved,
+		"data":  &otherMsg,
 	})
 
 	conv, _ := GetConversationByID(convID)
@@ -512,12 +513,14 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	}
 	bodyPreview = truncateRunes(bodyPreview, 100)
 
+	anyDelivered := false
 	for _, ext := range participants {
 		if ext == user.Extension {
 			continue
 		}
 		if h.SendToExtension(ext, otherPayload) {
 			_ = MarkDelivered(convID, ext, saved.ID)
+			anyDelivered = true
 		}
 
 		// Push even when a device got it live: the mobile app may be in the background
@@ -542,7 +545,11 @@ func (h *Hub) SendMessage(user *User, in *InMessage) (*Message, *sendError) {
 	h.PushReceipts(convID)
 
 	saved.IsMe = true
-	saved.Status = "sent"
+	if anyDelivered && (!isGroup || len(participants) <= 2) {
+		saved.Status = "delivered"
+	} else {
+		saved.Status = "sent"
+	}
 	return saved, nil
 }
 

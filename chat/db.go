@@ -953,13 +953,18 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 	}
 	defer tx.Rollback()
 
+	var lastMsgID int64
+	_ = tx.QueryRow(`SELECT COALESCE(MAX(id), 0) FROM chat_messages WHERE conversation_id = ?`, convID).Scan(&lastMsgID)
+
 	var added []string
 	for _, e := range validExts {
 		_, err = tx.Exec(`
-			INSERT INTO chat_participants (conversation_id, extension, role, added_by, joined_at, left_at)
-			VALUES (?, ?, 'member', ?, NOW(), NULL)
-			ON DUPLICATE KEY UPDATE left_at = NULL, role = 'member', added_by = VALUES(added_by), joined_at = NOW()
-		`, convID, e, actorExt)
+			INSERT INTO chat_participants (conversation_id, extension, role, added_by, joined_at, left_at, last_read_message_id, last_delivered_message_id)
+			VALUES (?, ?, 'member', ?, NOW(), NULL, ?, ?)
+			ON DUPLICATE KEY UPDATE left_at = NULL, role = 'member', added_by = VALUES(added_by), joined_at = NOW(),
+			                        last_read_message_id = IF(last_read_message_id < VALUES(last_read_message_id), VALUES(last_read_message_id), last_read_message_id),
+			                        last_delivered_message_id = IF(last_delivered_message_id < VALUES(last_delivered_message_id), VALUES(last_delivered_message_id), last_delivered_message_id)
+		`, convID, e, actorExt, lastMsgID, lastMsgID)
 		if err == nil {
 			added = append(added, e)
 		}
@@ -994,6 +999,14 @@ func AddGroupMembers(convID int, actorExt string, exts []string) ([]string, *Mes
 		return nil, nil, err
 	}
 	sysMsgID, _ := sRes.LastInsertId()
+
+	for _, ae := range added {
+		_, _ = tx.Exec(`
+			UPDATE chat_participants
+			SET last_read_message_id = ?, last_delivered_message_id = ?
+			WHERE conversation_id = ? AND extension = ?
+		`, sysMsgID, sysMsgID, convID, ae)
+	}
 
 	_, _ = tx.Exec(`
 		UPDATE chat_conversations
@@ -1185,12 +1198,18 @@ func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) erro
 		return userError(fmt.Sprintf("Invalid role: %s", newRole))
 	}
 
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
 	var currentRole string
-	err = db.QueryRow(`
+	err = tx.QueryRow(`
 		SELECT COALESCE(role, 'member')
 		FROM chat_participants
 		WHERE conversation_id = ? AND extension = ? AND left_at IS NULL
-		LIMIT 1
+		FOR UPDATE
 	`, convID, targetExt).Scan(&currentRole)
 	if err == sql.ErrNoRows {
 		return userError("The user is not an active member of the group")
@@ -1204,10 +1223,11 @@ func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) erro
 
 	if newRole == "member" && currentRole == "admin" {
 		var otherAdmins int
-		if err := db.QueryRow(`
+		if err := tx.QueryRow(`
 			SELECT COUNT(*)
 			FROM chat_participants
 			WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL AND extension != ?
+			FOR UPDATE
 		`, convID, targetExt).Scan(&otherAdmins); err != nil {
 			return err
 		}
@@ -1216,12 +1236,15 @@ func UpdateGroupMemberRole(convID int, actorExt, targetExt, newRole string) erro
 		}
 	}
 
-	_, err = db.Exec(`
+	_, err = tx.Exec(`
 		UPDATE chat_participants
 		SET role = ?
 		WHERE conversation_id = ? AND extension = ? AND left_at IS NULL
 	`, newRole, convID, targetExt)
-	return err
+	if err != nil {
+		return err
+	}
+	return tx.Commit()
 }
 
 // DeleteGroup soft-deletes a group conversation
