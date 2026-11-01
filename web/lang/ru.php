@@ -5731,4 +5731,13 @@ return [
     'roles.module_custom_dialplan' => 'Пользовательский диалплан',
     'roles.module_assistant' => 'Редактор диалплана',
     'roles.module_external_dbs' => 'Внешние базы данных',
+    'custom_dialplan.err_directive_forbidden' => 'Строка %d: Директивы #include и #exec запрещены.',
+    'meetings.err_guests_disabled_title' => 'Гости не разрешены',
+    'meetings.err_guests_disabled_desc' => 'Внешний гостевой доступ отключен для этой видеовстречи. Войдите на портал, чтобы присоединиться.',
+    'meetings.err_not_started_title' => 'Встреча еще не началась',
+    'meetings.err_not_started_desc' => 'Эта видеовстреча начнется в %s. Вы сможете присоединиться незадолго до начала.',
+    'meetings.err_ended_title' => 'Встреча завершена',
+    'meetings.err_ended_desc' => 'Эта видеовстреча завершена, и к ней больше нельзя присоединиться.',
+    'meetings.err_room_in_use' => 'Комната %s уже занята конференцией или другой встречей. Выберите другой номер или оставьте поле пустым.',
+    'meetings.err_no_free_room' => 'Свободных номеров комнат не найдено. Введите номер комнаты вручную.',
 ];

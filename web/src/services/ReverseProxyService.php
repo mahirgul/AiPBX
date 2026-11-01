@@ -11,7 +11,7 @@ require_once dirname(__DIR__) . '/audit_log.php';
  */
 final class ReverseProxyService
 {
-    public const DEFAULT_TRUSTED_PROXIES = '127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16';
+    public const DEFAULT_TRUSTED_PROXIES = '127.0.0.1, ::1';
 
     /**
      * Settings keys stored in sys_settings.

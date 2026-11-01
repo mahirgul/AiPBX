@@ -5731,4 +5731,13 @@ return [
     'roles.module_custom_dialplan' => 'Custom Dialplan',
     'roles.module_assistant' => 'Dialplan Editor',
     'roles.module_external_dbs' => 'External Databases',
+    'custom_dialplan.err_directive_forbidden' => 'Ред %d: Директивите #include и #exec не са разрешени.',
+    'meetings.err_guests_disabled_title' => 'Гостите не са разрешени',
+    'meetings.err_guests_disabled_desc' => 'Външният достъп за гости е забранен за тази видеосреща. Влезте в портала, за да се присъедините.',
+    'meetings.err_not_started_title' => 'Срещата все още не е започнала',
+    'meetings.err_not_started_desc' => 'Тази видеосреща започва в %s. Можете да се присъедините малко преди това.',
+    'meetings.err_ended_title' => 'Срещата е приключила',
+    'meetings.err_ended_desc' => 'Тази видеосреща е приключила и вече не може да се присъедините към нея.',
+    'meetings.err_room_in_use' => 'Стая %s вече се използва от конференция или друга среща. Изберете друг номер или оставете празно.',
+    'meetings.err_no_free_room' => 'Няма намерен свободен номер на стая. Въведете номер на стая ръчно.',
 ];

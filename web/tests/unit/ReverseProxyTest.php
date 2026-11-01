@@ -279,4 +279,9 @@ final class ReverseProxyTest extends TestCase
             'HTTP_X_FORWARDED_PROTO' => 'https',
         ]));
     }
+
+    public function testDefaultTrustsOnlyThisHost(): void
+    {
+        $this->assertSame('127.0.0.1, ::1', ReverseProxyService::DEFAULT_TRUSTED_PROXIES);
+    }
 }

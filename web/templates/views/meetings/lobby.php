@@ -22,6 +22,7 @@ if (defined('TURN_SECRET') && TURN_SECRET !== '' && defined('TURN_HOST') && defi
 
 $meetingConfig = [
     'token' => $token,
+    'join_token' => $joinToken,
     'room_number' => $roomNumber,
     'title' => $meeting['title'] ?? 'Video Meeting',
     'video_mode' => $videoMode,

@@ -46,8 +46,14 @@ class SamlAuthController extends BaseController
      */
     public static function acs(): void
     {
+        // A plugin that was switched off must not keep signing people in with its stored certificate.
+        if (!SamlAuthService::isEnabled()) {
+            notify(t('saml.err_disabled', 'SAML 2.0 Single Sign-On is not enabled on this PBX.'), 'warning');
+            static::redirect('/login');
+            return;
+        }
+
         $samlResponse = trim((string)($_POST['SAMLResponse'] ?? ''));
-        $relayState = isset($_POST['RelayState']) ? (string)$_POST['RelayState'] : null;
 
         if (empty($samlResponse)) {
             notify(t('saml.err_no_response', 'No SAMLResponse received from Identity Provider.'), 'danger');
@@ -55,7 +61,7 @@ class SamlAuthController extends BaseController
             return;
         }
 
-        $result = SamlAuthService::processResponse($samlResponse, $relayState);
+        $result = SamlAuthService::processResponse($samlResponse);
         $isMobile = !empty($result['is_mobile']);
 
         if (!$result['success'] || empty($result['user'])) {

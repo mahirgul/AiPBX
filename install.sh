@@ -1137,7 +1137,7 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     # the PBX itself (Asterisk CURL() to http://127.0.0.1/api/...; CURL() does
     # not follow a redirect); everyone else is sent to HTTPS like the rest of
     # the portal (sign-in callbacks, widgets).
-    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$) [OR]
+    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$|meeting_join_check\.php\$) [OR]
     RewriteCond %{REMOTE_ADDR} !^(127\.0\.0\.1|::1)\$
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 
@@ -1825,7 +1825,7 @@ vm.swappiness = 10
 vm.dirty_background_ratio = 5
 vm.dirty_ratio = 10
 # Security: disable Linux MPTCP (MultiPath TCP) at kernel level
-# Mitigates CVE-2026-98432 and eliminates exposure to MPTCP subflow attacks
+# Reduces exposure to CVE-2026-98432 (the kernel update is the fix)
 net.mptcp.enabled = 0
 SYSCTL
 sysctl --system >/dev/null 2>&1 || sysctl -p /etc/sysctl.d/99-aipbx.conf >/dev/null 2>&1 || true

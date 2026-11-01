@@ -24,7 +24,7 @@ vm.swappiness = 10
 vm.dirty_background_ratio = 5
 vm.dirty_ratio = 10
 # Security: disable Linux MPTCP (MultiPath TCP) at kernel level
-# Mitigates CVE-2026-98432 and eliminates exposure to MPTCP subflow attacks
+# Reduces exposure to CVE-2026-98432 (the kernel update is the fix)
 net.mptcp.enabled = 0
 ```
 
@@ -56,7 +56,7 @@ Disk swapping introduces random latency spikes ranging from 5 to 50 milliseconds
 ## 3. Security: Kernel MPTCP Disabling (`net.mptcp.enabled = 0`)
 
 * **Background:** Linux kernel MultiPath TCP (MPTCP) was designed to split TCP connections across multiple network interfaces. However, VoIP systems (SIP, RTP, WebSockets) rely on direct single-path IP connections and have no use for MPTCP.
-* **Vulnerability Mitigation (CVE-2026-98432):** In 2026, research revealed a critical Use-After-Free race condition in the Linux IPv4 TCP option handler specifically exploitable via MPTCP subflow handshakes to achieve remote root access. Furthermore, Go 1.24+ began enabling MPTCP listeners by default on Linux.
+* **Reducing exposure to CVE-2026-98432:** this is a use-after-free race in the Linux IPv4 TCP option handling, and the published exploit uses an MPTCP listener. Turning MPTCP off removes that setup but **not the kernel bug: install your distribution's fixed kernel and reboot.** Furthermore, Go 1.24+ began enabling MPTCP listeners by default on Linux.
 * **AiPBX Defense-in-Depth:**
   1. **Kernel Level:** `net.mptcp.enabled = 0` is enforced in `/etc/sysctl.d/99-aipbx.conf`, closing the MPTCP attack surface entirely across all applications on the server.
   2. **Go Binary Level:** The chat service (`chat/go.mod`) compiles with `godebug multipathtcp=0`, embedding the disablement into the executable's `DefaultGODEBUG`.

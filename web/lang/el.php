@@ -5731,4 +5731,13 @@ return [
     'roles.module_custom_dialplan' => 'Custom Dialplan',
     'roles.module_assistant' => 'Dialplan Editor',
     'roles.module_external_dbs' => 'External Databases',
+    'custom_dialplan.err_directive_forbidden' => 'Γραμμή %d: Οι οδηγίες #include και #exec δεν επιτρέπονται.',
+    'meetings.err_guests_disabled_title' => 'Δεν επιτρέπονται επισκέπτες',
+    'meetings.err_guests_disabled_desc' => 'Η εξωτερική πρόσβαση επισκεπτών είναι απενεργοποιημένη για αυτήν την τηλεδιάσκεψη. Συνδεθείτε στην πύλη για να συμμετάσχετε.',
+    'meetings.err_not_started_title' => 'Η σύσκεψη δεν έχει ξεκινήσει ακόμα',
+    'meetings.err_not_started_desc' => 'Αυτή η τηλεδιάσκεψη ξεκινά στις %s. Μπορείτε να συνδεθείτε λίγο πριν από αυτήν την ώρα.',
+    'meetings.err_ended_title' => 'Η σύσκεψη ολοκληρώθηκε',
+    'meetings.err_ended_desc' => 'Αυτή η τηλεδιάσκεψη έχει ολοκληρωθεί και δεν μπορείτε πλέον να συμμετάσχετε.',
+    'meetings.err_room_in_use' => 'Η αίθουσα %s χρησιμοποιείται ήδη από άλλη διάσκεψη ή σύσκεψη. Επιλέξτε άλλον αριθμό ή αφήστε το πεδίο κενό.',
+    'meetings.err_no_free_room' => 'Δεν βρέθηκε διαθέσιμος αριθμός αίθουσας. Εισαγάγετε έναν αριθμό αίθουσας μόνοι σας.',
 ];

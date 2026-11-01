@@ -71,6 +71,8 @@ The SAML plugin operates as an enterprise **Service Provider (SP)**, receiving a
 
 ---
 
+> **Start the sign-in from the AiPBX login page.** A SAML response must answer a request started in the same browser and is accepted once, so a sign-in started from the Identity Provider's own portal (IdP-initiated) is refused. Assertions must carry a bearer subject confirmation and an audience restriction, as the SAML Web Browser SSO profile requires.
+
 ## Just-In-Time (JIT) Auto-Provisioning & Role Mapping
 
 When a user signs in through corporate SSO for the first time:

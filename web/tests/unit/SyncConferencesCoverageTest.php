@@ -279,4 +279,21 @@ final class SyncConferencesCoverageTest extends TestCase
         $this->assertStringContainsString('Goto(app-confbridge-dispatch,${CONF_TARGET},1)', $conf);
         $this->assertStringContainsString('Read(CONF_TARGET,conf-getchannel', $conf);
     }
+
+    public function testMeetingGuestContextChecksTheTokenAndFailsClosed(): void
+    {
+        $src = (string)file_get_contents(dirname(__DIR__, 2) . '/src/sync/SyncConferences.php');
+        $this->assertStringContainsString('[app-meeting-guest]', $src);
+        $this->assertStringContainsString('PJSIP_HEADER(read,X-Meeting-Token)', $src);
+        $this->assertStringContainsString('api/meeting_join_check.php', $src);
+        $this->assertStringContainsString('n(deny),Hangup(21)', $src);
+        $this->assertStringContainsString('MEET_CHECK:0:5', $src, 'digits in an error page must not pass for a limit');
+
+        $install = (string)file_get_contents(dirname(__DIR__, 3) . '/install.sh');
+        $this->assertStringContainsString('meeting_join_check', $install, 'the loopback call must not get the HTTPS redirect');
+
+        $ext = (string)file_get_contents(dirname(__DIR__, 2) . '/src/sync/SyncExtensions.php');
+        $this->assertStringContainsString('context=app-meeting-guest', $ext);
+        $this->assertStringNotContainsString('context=app-confbridge-dispatch', $ext);
+    }
 }
