@@ -5,6 +5,19 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.2
+
+- **WebRTC Meeting Lobby & Asset Path Fix:**
+  - Fixed runtime fatal error in `/meet/{token}` lobby view caused by undefined `currentLang()` call; switched to system-standard `getUserLanguage()`.
+  - Corrected FontAwesome CSS asset path to `/assets/css/fontawesome.min.css`.
+- **REST API v1 Sub-Action Routing & 404 Guards:**
+  - Enforced strict sub-action validation across PBX resource handlers (`/api/v1/extensions`, `/api/v1/trunks`, `/api/v1/conferences`, `/api/v1/ring-groups`, `/api/v1/time-conditions`, `/api/v1/time-groups`, `/api/v1/boss-secretary`, `/api/v1/dial-permissions`, `/api/v1/hangup-actions`).
+  - Prevented unsupported sub-action calls from falling through to single-entity handlers, returning HTTP 404 (`NOT_FOUND`) as expected by REST specifications.
+- **Database Test Fixture Isolation:**
+  - Added `pbx_conferences`, `pbx_meetings`, `pbx_meeting_invites`, `pbx_ring_groups`, and `pbx_ai_apps` to `Fixtures::TABLES` cleanup list, preventing cross-test data pollution.
+- **Regression Test Suite:**
+  - Added automated tests for clean lobby view rendering and API v1 sub-action 404 responses.
+
 ## 1.60.1
 
 - **Conference Voice Quick Dial & Interactive Join (`#9` / `*9`):**
