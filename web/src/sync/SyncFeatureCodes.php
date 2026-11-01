@@ -10,6 +10,8 @@
  * the system-wide "DB -> generate config -> reload" pattern.
  */
 
+require_once __DIR__ . '/../helpers.php';
+
 function syncFeatureCodes() {
     return withSyncLock('featurecodes', '__syncFeatureCodesBody');
 }

@@ -205,7 +205,6 @@ final class InboundBlacklistAndEmergencyGeolocationTest extends TestCase
         $_POST['default_action'] = 'busy';
 
         $ref = new ReflectionMethod(InboundBlacklistController::class, 'handleCsvImport');
-        $ref->setAccessible(true);
         /** @var array{message: string, error: string} $res */
         $res = $ref->invoke(null);
 
