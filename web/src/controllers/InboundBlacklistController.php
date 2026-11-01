@@ -126,7 +126,7 @@ class InboundBlacklistController extends BaseController
             rewind($handle);
         }
 
-        while (($row = fgetcsv($handle, 1000, $delimiter)) !== false) {
+        while (($row = fgetcsv($handle, 1000, $delimiter, '"', '')) !== false) {
             if (!isset($row[0]) || trim((string)$row[0]) === '') {
                 continue;
             }

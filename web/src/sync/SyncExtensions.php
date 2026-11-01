@@ -4,6 +4,7 @@
  * Consolidates all active subscriber endpoints into a single master configuration file reading from `sip` key-value table.
  */
 
+require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../sip_helper.php';
 
 /**

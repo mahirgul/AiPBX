@@ -40,7 +40,7 @@ class ConferenceService {
             $announce_user_count = isset($data['announce_user_count']) ? intval($data['announce_user_count']) : 1;
             $record_conference = isset($data['record_conference']) ? intval($data['record_conference']) : 0;
             $mute_on_join = isset($data['mute_on_join']) ? intval($data['mute_on_join']) : 0;
-            $video_mode = in_array($data['video_mode'] ?? 'none', ['none', 'sfu', 'follow_talker'], true) ? $data['video_mode'] : 'none';
+            $video_mode = in_array($data['video_mode'] ?? 'none', ['none', 'sfu', 'follow_talker'], true) ? (string)($data['video_mode'] ?? 'none') : 'none';
             $max_video_streams = max(1, min(20, (int)($data['max_video_streams'] ?? 10)));
             $music_on_hold = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['music_on_hold'] ?? 'default')) ?: 'default';
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
