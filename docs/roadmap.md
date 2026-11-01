@@ -628,3 +628,13 @@ pages. Proposed groups:
 Old addresses keep working (the routes do not change, only the menu). The role matrix and the
 module keys stay as they are.
 
+## 15. Reverse proxy architecture & Cloudflare DNS-01 validation
+
+**Done in 1.50.36** (*Network → Reverse Proxy* & *Security → Certificates*). Planned for issue [#148](https://github.com/mahirgul/AiPBX/issues/148) and delivered under [Spec 003](specs/003-reverse-proxy.md):
+
+- Dedicated management page under **Network → Reverse Proxy** (`/reverse-proxy`) with trusted CIDR proxy configuration, TLS termination modes, and live HTTP header inspection.
+- Production-ready reverse proxy config snippet generation for Nginx, Caddy, Traefik, HAProxy, and Apache 2.4 with WebRTC `/ws` and `/chat/ws` pass-through.
+- Interactive Network Ports & Firewall Matrix with copyable bash setup commands for UFW, firewalld, and iptables.
+- Cloudflare DNS-01 challenge support with wildcard certificates (`*.<domain>`) in `/certificates` and `conf/sbin/aipbx-cert`, enabling SSL/TLS issuance on private/internal PBX installations without public port 80 exposure.
+
+
