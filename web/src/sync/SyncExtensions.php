@@ -182,6 +182,8 @@ function __syncAllExtensionsBody() {
     $conf .= "rtp_timeout={$wss_timeout}\n";
     $conf .= "rtp_timeout_hold=" . ($video_codecs ? 0 : 300) . "\n";
     $conf .= "webrtc=yes\n";
+    $conf .= "max_audio_streams=10\n";
+    $conf .= "max_video_streams=10\n";
     $conf .= "rtcp_mux=yes\n";
     $conf .= "direct_media={$direct_media}\n";
     $conf .= "media_use_received_transport=yes\n";

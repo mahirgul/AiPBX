@@ -40,6 +40,8 @@ class ConferenceService {
             $announce_user_count = isset($data['announce_user_count']) ? intval($data['announce_user_count']) : 1;
             $record_conference = isset($data['record_conference']) ? intval($data['record_conference']) : 0;
             $mute_on_join = isset($data['mute_on_join']) ? intval($data['mute_on_join']) : 0;
+            $video_mode = in_array($data['video_mode'] ?? 'none', ['none', 'sfu', 'follow_talker'], true) ? $data['video_mode'] : 'none';
+            $max_video_streams = max(1, min(20, (int)($data['max_video_streams'] ?? 10)));
             $music_on_hold = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['music_on_hold'] ?? 'default')) ?: 'default';
             $is_active = isset($data['is_active']) ? intval($data['is_active']) : 1;
 
@@ -52,11 +54,11 @@ class ConferenceService {
 
             $db = getDB();
             if ($id > 0) {
-                $stmt = $db->prepare("UPDATE pbx_conferences SET room_number = ?, internal_number = ?, title = ?, user_pin = ?, admin_pin = ?, wait_marked = ?, end_marked = ?, max_members = ?, announce_join_leave = ?, announce_user_count = ?, record_conference = ?, mute_on_join = ?, music_on_hold = ?, is_active = ? WHERE id = ?");
-                $stmt->execute([$room_number, $room_number, $title, $user_pin, $admin_pin, $wait_marked, $end_marked, $max_members, $announce_join_leave, $announce_user_count, $record_conference, $mute_on_join, $music_on_hold, $is_active, $id]);
+                $stmt = $db->prepare("UPDATE pbx_conferences SET room_number = ?, internal_number = ?, title = ?, user_pin = ?, admin_pin = ?, wait_marked = ?, end_marked = ?, max_members = ?, announce_join_leave = ?, announce_user_count = ?, record_conference = ?, mute_on_join = ?, video_mode = ?, max_video_streams = ?, music_on_hold = ?, is_active = ? WHERE id = ?");
+                $stmt->execute([$room_number, $room_number, $title, $user_pin, $admin_pin, $wait_marked, $end_marked, $max_members, $announce_join_leave, $announce_user_count, $record_conference, $mute_on_join, $video_mode, $max_video_streams, $music_on_hold, $is_active, $id]);
             } else {
-                $stmt = $db->prepare("INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, wait_marked, end_marked, max_members, announce_join_leave, announce_user_count, record_conference, mute_on_join, music_on_hold, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$room_number, $room_number, $title, $user_pin, $admin_pin, $wait_marked, $end_marked, $max_members, $announce_join_leave, $announce_user_count, $record_conference, $mute_on_join, $music_on_hold, $is_active]);
+                $stmt = $db->prepare("INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, wait_marked, end_marked, max_members, announce_join_leave, announce_user_count, record_conference, mute_on_join, video_mode, max_video_streams, music_on_hold, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$room_number, $room_number, $title, $user_pin, $admin_pin, $wait_marked, $end_marked, $max_members, $announce_join_leave, $announce_user_count, $record_conference, $mute_on_join, $video_mode, $max_video_streams, $music_on_hold, $is_active]);
                 $id = (int)$db->lastInsertId();
             }
 
