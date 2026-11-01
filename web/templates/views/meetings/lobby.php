@@ -443,7 +443,7 @@ $meetingConfig = [
     <audio id="remoteAudio" autoplay></audio>
 
     <script>
-        window.MEETING_CONFIG = <?php echo json_encode($meetingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE); ?>;
+        window.MEETING_CONFIG = <?php echo json_encode($meetingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     </script>
     <script src="/assets/js/jssip.min.js"></script>
     <script src="/assets/js/meeting_room.js"></script>

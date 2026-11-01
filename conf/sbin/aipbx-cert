@@ -161,8 +161,11 @@ do_letsencrypt() {
         local cf_cred="/etc/letsencrypt/cloudflare.ini"
         mkdir -p /etc/letsencrypt || die "cannot create /etc/letsencrypt"
         if [ -f "$STAGE_DIR/cloudflare.ini" ]; then
-            local tmp; tmp="$(mktemp -d)" || exit 1
-            trap 'rm -rf "$tmp"' EXIT
+            # Global: the EXIT trap runs after this function, where a local would be unset
+            # and, with set -u, turn a successful run into a failed one.
+            CF_TMP="$(mktemp -d)" || exit 1
+            trap 'rm -rf "${CF_TMP:-}"' EXIT
+            local tmp="$CF_TMP"
             read_staged "$STAGE_DIR/cloudflare.ini" "$tmp/cloudflare.ini" 1024
             rm -f "$STAGE_DIR/cloudflare.ini"
             if ! grep -qE '^[[:space:]]*dns_cloudflare_api_token[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{20,100}[[:space:]]*$' "$tmp/cloudflare.ini"; then

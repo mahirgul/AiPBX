@@ -167,6 +167,19 @@ function getConferencePrefix(): string {
 }
 
 /**
+ * A Geolocation URI that is safe in generated dialplan, without its angle brackets; null if invalid.
+ * Letters a URI needs, and none that mean something to Asterisk: no line breaks, ( ) $ { } [ ]. geo: URIs need the comma and the semicolon;
+ * the writer of the dialplan has to escape the semicolon, which starts a comment there.
+ */
+function cleanGeolocationUri(string $uri): ?string {
+    $uri = trim($uri);
+    if (str_starts_with($uri, '<') && str_ends_with($uri, '>')) {
+        $uri = substr($uri, 1, -1);
+    }
+    return preg_match('/^[A-Za-z][A-Za-z0-9+.\-]*:[A-Za-z0-9\-._~:\/?#@!&*+=%,;]{1,480}$/D', $uri) === 1 ? $uri : null;
+}
+
+/**
  * Deterministic SIP secret for the isolated [meeting-guest] WebRTC endpoint.
  * Used by browser participants joining a conference via /meet/{token}.
  */

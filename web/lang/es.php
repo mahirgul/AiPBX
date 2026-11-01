@@ -5740,4 +5740,5 @@ Su teléfono sonará.',
     'meetings.err_ended_desc' => 'Esta videoconferencia ha finalizado y ya no es posible unirse.',
     'meetings.err_room_in_use' => 'La sala %s ya está en uso por una conferencia u otra reunión. Elija otro número o déjelo vacío.',
     'meetings.err_no_free_room' => 'No se encontró ningún número de sala libre. Ingrese un número de sala usted mismo.',
+    'srv_route.err_geolocation_uri' => 'URI de geolocalización no válido. Introduzca un URI, como https://example.com/location.xml, sin espacios ni los caracteres ( ) $ { } [ ].',
 ];

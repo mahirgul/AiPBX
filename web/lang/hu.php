@@ -5740,4 +5740,5 @@ A telefonja csörögni fog.',
     'meetings.err_ended_desc' => 'Ez a videóértekezlet véget ért, és már nem lehet hozzá csatlakozni.',
     'meetings.err_room_in_use' => 'A(z) %s szobát már használja egy konferencia vagy egy másik értekezlet. Válasszon másik számot, vagy hagyja üresen.',
     'meetings.err_no_free_room' => 'Nem található szabad szobaszám. Adjon meg egy szobaszámot kézzel.',
+    'srv_route.err_geolocation_uri' => 'Érvénytelen geolokációs URI. Adjon meg egy URI-t, például https://example.com/location.xml, szóközök vagy a(z) ( ) $ { } [ ] karakterek nélkül.',
 ];

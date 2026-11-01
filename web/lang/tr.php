@@ -5740,4 +5740,5 @@ Telefonunuz çaldırılacak.',
     'meetings.err_ended_desc' => 'Bu video toplantısı sona erdi ve artık katılınamaz.',
     'meetings.err_room_in_use' => '%s numaralı oda zaten bir konferans veya başka bir toplantı tarafından kullanılıyor. Başka bir numara seçin veya boş bırakın.',
     'meetings.err_no_free_room' => 'Boş oda numarası bulunamadı. Kendiniz bir oda numarası girin.',
+    'srv_route.err_geolocation_uri' => 'Geçersiz Coğrafi Konum URI\'si. https://example.com/location.xml gibi boşluk veya ( ) $ { } [ ] karakterleri içermeyen tek bir URI girin.',
 ];

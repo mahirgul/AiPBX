@@ -68,6 +68,12 @@ class RouteService {
             $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
             $is_emergency = PBXHelper::boolFlag($data, 'is_emergency', 0);
             $geolocation_uri = trim((string)($data['geolocation_uri'] ?? ''));
+            if ($geolocation_uri !== '') {
+                $geolocation_uri = cleanGeolocationUri($geolocation_uri);
+                if ($geolocation_uri === null) {
+                    throw new \Exception(t('srv_route.err_geolocation_uri'));
+                }
+            }
             $geolocation_routing = trim((string)($data['geolocation_routing'] ?? 'yes'));
             if (!in_array($geolocation_routing, ['yes', 'no'], true)) {
                 $geolocation_routing = 'yes';

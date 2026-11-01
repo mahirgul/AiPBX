@@ -105,8 +105,8 @@ final class ScheduledTasksTest extends TestCase
     public function testSandboxRunsAsTheTaskUserWithOnlyItsFolderWritable(): void
     {
         $cmd = ScheduledTaskRunner::sandboxCommand(['id' => 7, 'timeout_sec' => 60, 'memory_limit_mb' => 128, 'cpu_limit_pct' => 20, 'network_access' => 0],
-            3, '/var/lib/aipbx/tasks/7', '/var/lib/aipbx/tasks/7/.run_3.sh', '/bin/bash');
-        foreach (["--uid=aipbx-task", "'ProtectSystem=strict'", "'ReadWritePaths=/var/lib/aipbx/tasks/7'", "'ProtectHome=yes'",
+            3, '/var/lib/aipbx-tasks/7', '/run/aipbx-tasks/x.sh', '/bin/bash');
+        foreach (["--uid=aipbx-task", "'ProtectSystem=strict'", "'ReadWritePaths=/var/lib/aipbx-tasks/7'", "'TemporaryFileSystem=/var/lib/aipbx-tasks'", "'BindPaths=/var/lib/aipbx-tasks/7'", "'InaccessiblePaths=-/etc/asterisk'", "'InaccessiblePaths=-/var/www'", "'InaccessiblePaths=-/var/lib/aipbx'", "'ProtectHome=yes'",
                   "'NoNewPrivileges=yes'", "'MemoryMax=128M'", "'CPUQuota=20%'", "'RuntimeMaxSec=60'", "'PrivateNetwork=yes'"] as $part) {
             $this->assertStringContainsString($part, $cmd);
         }
@@ -122,5 +122,16 @@ final class ScheduledTasksTest extends TestCase
         $taken = array_column(ScheduledTaskRepository::takeRunRequests(), 'id');
         $this->assertContains((string) $this->taskId, array_map('strval', $taken));
         $this->assertSame([], ScheduledTaskRepository::takeRunRequests(), 'taken once');
+    }
+
+    public function testRootNeverWorksInAFolderTheTaskOrThePortalCanWrite(): void
+    {
+        $src = (string) file_get_contents(dirname(__DIR__, 2) . '/src/services/ScheduledTaskRunner.php');
+        $this->assertStringNotContainsString('/var/lib/aipbx/tasks', $src);
+        $this->assertStringNotContainsString("'.run_'", $src, 'the script must not be written into the task folder');
+        $this->assertStringStartsNotWith('/var/lib/aipbx/', ScheduledTaskRunner::BASE_DIR . '/');
+
+        $install = (string) file_get_contents(dirname(__DIR__, 3) . '/install.sh');
+        $this->assertStringContainsString('install -d -o root -g root -m 0755 /var/lib/aipbx-tasks', $install);
     }
 }

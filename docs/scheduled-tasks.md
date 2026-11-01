@@ -52,7 +52,8 @@ Tasks run in a hardened `systemd-run` transient service unit:
   directories (`ProtectHome=yes`) and devices (`PrivateDevices=yes`) are completely hidden. The task
   has a private `/tmp` directory (`PrivateTmp=yes`).
 - **Writable directory:** The only directory writable by the script is its own dedicated working
-  directory: `/var/lib/aipbx/tasks/<id>/`.
+  directory: `/var/lib/aipbx-tasks/<id>/`. Other tasks' folders, the portal, Asterisk's configuration
+  and recordings are hidden from it.
 - **Network isolation:** When network access is disabled (default), the task runs in its own network
   namespace (`PrivateNetwork=yes`) containing only loopback. It cannot access the internet, local
   subnets, or internal PBX services.

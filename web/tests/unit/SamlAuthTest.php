@@ -442,4 +442,14 @@ XML;
         $this->assertSame($req['id'], $pending['id']);
         $this->assertTrue($pending['mobile']);
     }
+
+    public function testDefaultRoleOffersTheRolesThePluginLists(): void
+    {
+        foreach (['cc_manager', 'cc_agent', 'read_only_admin', 'user'] as $role) {
+            PluginManager::setSetting('saml-auth', 'default_role', $role);
+            $this->assertSame($role, SamlAuthService::resolveRoleFromAttributes([]));
+        }
+        PluginManager::setSetting('saml-auth', 'default_role', 'nonsense');
+        $this->assertSame('user', SamlAuthService::resolveRoleFromAttributes([]));
+    }
 }

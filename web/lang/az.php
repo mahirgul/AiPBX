@@ -5740,4 +5740,5 @@ Telefonunuz çalacaq.',
     'meetings.err_ended_desc' => 'Bu video görüş başa çatıb və artıq qoşulmaq mümkün deyil.',
     'meetings.err_room_in_use' => '%s otağı artıq konfrans və ya başqa bir görüş tərəfindən istifadə olunur. Başqa bir nömrə seçin və ya boş saxlayın.',
     'meetings.err_no_free_room' => 'Heç bir boş otaq nömrəsi tapılmadı. Otaq nömrəsini özünüz daxil edin.',
+    'srv_route.err_geolocation_uri' => 'Yanlış Geolokasiya URI-si. https://example.com/location.xml kimi, boşluq və ya ( ) $ { } [ ] simvolları olmayan bir URI daxil edin.',
 ];

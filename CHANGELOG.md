@@ -7,6 +7,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.4
 
+- **Command execution through the emergency Geolocation URI fixed (security, update now):** the URI of an outbound route went into the dialplan unchecked, so anyone allowed to edit outbound routes, or an API key with `pbx:write`, could run commands as the `asterisk` user. The URI is now validated on save and when the dialplan is generated.
+- **Emergency location was cut short:** a `geo:` URI with parameters (`geo:41.00,28.97;u=15`) lost everything from the semicolon on, and the closing bracket with it, because a semicolon starts a comment in the dialplan. It now reaches the carrier whole.
+- **Scheduled tasks can no longer become root (security):** the root runner wrote each script into the folder the task itself can write to, so a task could plant a link there and take over any file on the next run. The task folders moved to `/var/lib/aipbx-tasks` (root's, existing data moves along) and scripts to a root-only place. Tasks can no longer read Asterisk's configuration (with SIP passwords), the portal or other tasks' folders. A deleted task's folder is removed within a minute.
+- **Stored XSS on the meeting page fixed (security):** a meeting title could run script on the public `/meet` page, in the session of whoever opened the link.
 - **SAML 2.0 sign-in bypass fixed (security, update if the SAML plugin is on):**
   - Anyone with an account at the Identity Provider could sign in as any other user, administrators included, by adding an unsigned NameID inside an extra `ds:Signature` element. The signature check now accepts one signature only and reads only the signed content.
   - A response must answer a sign-in started in the same browser and is accepted once. **Sign-ins started from the Identity Provider's own portal (IdP-initiated) are no longer accepted:** start from the AiPBX login page.
@@ -20,6 +24,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Video meetings no longer take over conference rooms:** scheduling a meeting on an existing room number replaced that room's title and PINs, and cancelling the meeting deactivated the room. Such a number is now refused.
 - **Custom dialplan:** `#include`/`#exec` directives and extending reserved contexts (`[from-internal-pbx-ortak](+)`) are refused. The supervisor listen/whisper and DISA templates now carry a random PIN; the DISA template had `1234`. **Review recipes you already inserted from these templates:** existing entries are not changed.
 - **Reverse proxy:** the default list of trusted proxies is now this host only. With private networks in it, any device on the LAN could spoof `X-Forwarded-For` and avoid sign-in lockouts. A saved list is not changed: **if yours holds whole private networks, reduce it to your proxy's address.**
+- **SAML default role:** the roles the plugin offers (Call Center Manager, Call Center Agent, Read-Only Admin) were silently replaced by `user`.
+- **Let's Encrypt with Cloudflare DNS:** the certbot plugin is now installed, without which the feature could not work; a successful run with a new token no longer ended in an error.
 - **Docs:** turning MPTCP off reduces exposure to CVE-2026-98432; the fix is the distribution's kernel update.
 
 ## 1.60.3

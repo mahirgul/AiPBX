@@ -365,4 +365,14 @@ final class MeetingServiceTest extends TestCase
         $this->assertSame('ended', MeetingService::joinState($m, $end + MeetingService::JOIN_LATE_SECONDS + 1));
         $this->assertSame('cancelled', MeetingService::joinState(['status' => 'cancelled'] + $m, $start));
     }
+
+    public function testLobbyTitleCannotBreakOutOfTheScript(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/controllers/MeetingLobbyController.php';
+        $m = $this->meeting(['title' => '</script><script>alert(1)</script>', 'room_number' => '8994']);
+        ob_start();
+        \MeetingLobbyController::index((string)$m['meeting_token']);
+        $html = (string)ob_get_clean();
+        $this->assertStringNotContainsString('<script>alert(1)', $html);
+    }
 }

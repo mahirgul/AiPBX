@@ -101,6 +101,8 @@ function __syncOutboundDialplanBody() {
             if ($geo_uri === '' && $is_emergency) {
                 $geo_uri = trim((string)getSystemSetting('emergency_default_geolocation_uri', ''));
             }
+            // Also here: rows saved by older versions, and the system setting, were never checked.
+            $geo_uri = $geo_uri === '' ? '' : (string)(cleanGeolocationUri($geo_uri) ?? '');
 
             // Trunk list: no primary/backup split — a chain of trunks added one
             // by one and tried in order. Every entry can have its own caller ID
@@ -129,7 +131,8 @@ function __syncOutboundDialplanBody() {
             if ($is_emergency || $geo_uri !== '') {
                 $conf .= " same => n,Set(CDR(accountcode)=EMERGENCY)\n";
                 if ($geo_uri !== '') {
-                    $cleanGeo = (str_starts_with($geo_uri, '<') && str_ends_with($geo_uri, '>')) ? $geo_uri : "<{$geo_uri}>";
+                    // In a .conf file a bare semicolon starts a comment.
+                    $cleanGeo = '<' . str_replace(';', '\\;', $geo_uri) . '>';
                     $routingVal = ($geo_routing === 'no') ? 'no' : 'yes';
                     $conf .= " same => n,Set(__AIPBX_GEOLOCATION_URI={$cleanGeo})\n";
                     $conf .= " same => n,Set(__AIPBX_GEOLOCATION_ROUTING={$routingVal})\n";

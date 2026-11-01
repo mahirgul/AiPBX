@@ -18,7 +18,19 @@ require_once __DIR__ . '/NoticeService.php';
 class ScheduledTaskRunner
 {
     public const USER = 'aipbx-task';
-    public const BASE_DIR = '/var/lib/aipbx/tasks';
+    /**
+     * Owned by root, and not under /var/lib/aipbx: that folder belongs to www-data, who could
+     * swap anything in it. This runner works in here as root.
+     */
+    public const BASE_DIR = '/var/lib/aipbx-tasks';
+    /** Scripts of running tasks. Root's alone: a task cannot plant anything for root to write through. */
+    public const SCRIPT_DIR = '/run/aipbx-tasks';
+
+    /** What no task needs: configuration with SIP passwords, recordings, the portal and its data. */
+    private const HIDDEN_PATHS = [
+        '/etc/asterisk', '/etc/aipbx', '/etc/letsencrypt', '/etc/ssl/aipbx', '/var/www', '/opt/aipbx',
+        '/var/lib/aipbx', '/var/lib/asterisk', '/var/spool/asterisk', '/var/log/asterisk', '/var/log/aipbx',
+    ];
 
     /** Null when tasks can run here, else why not (translated). */
     public static function sandboxProblem(): ?string
@@ -60,26 +72,17 @@ class ScheduledTaskRunner
             return ['ok' => false, 'run_id' => $runId, 'exit_code' => -1, 'output' => '', 'error' => $problem];
         }
 
-        // The task's own folder: the only writable place, owned by aipbx-task.
-        $dir = self::BASE_DIR . '/' . $taskId;
-        if (!is_dir($dir)) {
-            @mkdir($dir, 0750, true);
+        $dir = self::prepareTaskDir($taskId);
+        $scriptFile = $dir === null ? null : self::writeScript($task);
+        if ($dir === null || $scriptFile === null) {
+            $problem = 'Task folder or script could not be prepared safely';
+            ScheduledTaskRepository::recordRunFinish($runId, -1, '', $problem);
+            self::notify($task, -1, $problem);
+            return ['ok' => false, 'run_id' => $runId, 'exit_code' => -1, 'output' => '', 'error' => $problem];
         }
-        @chown($dir, self::USER);
-        @chgrp($dir, self::USER);
-        @chmod($dir, 0750);
 
         $scriptType = (string) ($task['script_type'] ?? 'shell');
         $timeoutSec = max(5, min(3600, (int) ($task['timeout_sec'] ?? 300)));
-        $ext = match ($scriptType) {
-            'php' => 'php',
-            'python' => 'py',
-            default => 'sh',
-        };
-        $scriptFile = $dir . '/.run_' . $runId . '.' . $ext;
-        file_put_contents($scriptFile, (string) ($task['script_content'] ?? ''));
-        @chown($scriptFile, self::USER);
-        @chmod($scriptFile, 0500);
         $interpreter = match ($scriptType) {
             'php' => '/usr/bin/php',
             'python' => '/usr/bin/python3',
@@ -106,6 +109,76 @@ class ScheduledTaskRunner
         ];
     }
 
+    /**
+     * The task's own folder: the only writable place, owned by aipbx-task. Root works on it only
+     * after checking what it is; the parent is root's, so it cannot be swapped afterwards.
+     */
+    private static function prepareTaskDir(int $taskId): ?string
+    {
+        $base = self::BASE_DIR;
+        if (!is_dir($base) && !@mkdir($base, 0755, true)) {
+            return null;
+        }
+        clearstatcache();
+        $baseStat = @lstat($base);
+        if ($baseStat === false || is_link($base) || $baseStat['uid'] !== 0 || ($baseStat['mode'] & 0022) !== 0) {
+            return null;
+        }
+        $dir = $base . '/' . $taskId;
+        if (is_link($dir) || (file_exists($dir) && !is_dir($dir))) {
+            return null;
+        }
+        if (!is_dir($dir) && !@mkdir($dir, 0750)) {
+            return null;
+        }
+        return (@chown($dir, self::USER) && @chgrp($dir, self::USER) && @chmod($dir, 0750)) ? $dir : null;
+    }
+
+    /**
+     * The script, outside the folder the task can write to, under a name other tasks cannot guess.
+     * Root-owned and read-only; the directory cannot be listed.
+     *
+     * @param array<string, mixed> $task
+     */
+    private static function writeScript(array $task): ?string
+    {
+        $dir = self::SCRIPT_DIR;
+        if (!is_dir($dir) && !@mkdir($dir, 0711, true)) {
+            return null;
+        }
+        clearstatcache();
+        $stat = @lstat($dir);
+        if ($stat === false || is_link($dir) || $stat['uid'] !== 0 || ($stat['mode'] & 0777) !== 0711) {
+            return null;
+        }
+        $ext = match ((string) ($task['script_type'] ?? 'shell')) {
+            'php' => 'php',
+            'python' => 'py',
+            default => 'sh',
+        };
+        $file = $dir . '/' . bin2hex(random_bytes(16)) . '.' . $ext;
+        if (file_put_contents($file, (string) ($task['script_content'] ?? '')) === false) {
+            return null;
+        }
+        @chmod($file, 0444);
+        return $file;
+    }
+
+    /** Folders of deleted tasks: the portal may not touch them, so the root dispatcher removes them. */
+    public static function removeDeletedTaskFolders(): void
+    {
+        if (!function_exists('posix_getuid') || posix_getuid() !== 0) {
+            return;
+        }
+        $known = array_map('intval', array_column(ScheduledTaskRepository::findAll('id ASC'), 'id'));
+        foreach (glob(self::BASE_DIR . '/*', GLOB_NOSORT) ?: [] as $path) {
+            $name = basename($path);
+            if (ctype_digit($name) && !in_array((int) $name, $known, true) && !is_link($path) && is_dir($path)) {
+                exec('rm -rf --one-file-system -- ' . escapeshellarg($path));
+            }
+        }
+    }
+
     /** The systemd-run command line of one run (pure, so the sandbox is tested). */
     public static function sandboxCommand(array $task, int $runId, string $dir, string $scriptFile, string $interpreter): string
     {
@@ -113,11 +186,15 @@ class ScheduledTaskRunner
         $memoryMb = max(32, min(4096, (int) ($task['memory_limit_mb'] ?? 256)));
         $cpuPct = max(5, min(100, (int) ($task['cpu_limit_pct'] ?? 50)));
         $props = [
-            'ProtectSystem=strict', 'ReadWritePaths=' . $dir, 'ProtectHome=yes', 'PrivateTmp=yes',
+            'ProtectSystem=strict', 'TemporaryFileSystem=' . self::BASE_DIR, 'BindPaths=' . $dir,
+            'ReadWritePaths=' . $dir, 'ProtectHome=yes', 'PrivateTmp=yes', 'ProtectProc=invisible',
             'PrivateDevices=yes', 'NoNewPrivileges=yes', 'RestrictSUIDSGID=yes', 'ProtectKernelTunables=yes',
             'ProtectKernelModules=yes', 'ProtectControlGroups=yes', 'LockPersonality=yes',
             'MemoryMax=' . $memoryMb . 'M', 'CPUQuota=' . $cpuPct . '%', 'RuntimeMaxSec=' . $timeoutSec,
         ];
+        foreach (self::HIDDEN_PATHS as $path) {
+            $props[] = 'InaccessiblePaths=-' . $path;
+        }
         // Its own network namespace with only loopback: unlike IPAddressDeny
         // (cgroup BPF, missing in containers and some kernels) it always holds.
         if (empty($task['network_access'])) {
@@ -200,6 +277,14 @@ class ScheduledTaskRunner
                 proc_terminate($process, 9);
                 $exitCode = 124;
                 break;
+            }
+        }
+
+        // What the process wrote just before it exited.
+        foreach ([$pipes[1], $pipes[2]] as $stream) {
+            $rest = stream_get_contents($stream);
+            if (is_string($rest) && $rest !== '') {
+                $output = substr($output . $rest, -65536);
             }
         }
 

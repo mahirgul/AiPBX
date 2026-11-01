@@ -5740,4 +5740,5 @@ Váš telefon zazvoní.',
     'meetings.err_ended_desc' => 'Tato videoschůzka skončila a již se k ní nelze připojit.',
     'meetings.err_room_in_use' => 'Místnost %s již používá jiná konference nebo schůzka. Zvolte jiné číslo nebo jej nechte prázdné.',
     'meetings.err_no_free_room' => 'Nebylo nalezeno žádné volné číslo místnosti. Zadejte číslo místnosti ručně.',
+    'srv_route.err_geolocation_uri' => 'Neplatný identifikátor URI zeměpisné polohy. Zadejte jeden identifikátor URI, například https://example.com/location.xml, bez mezer nebo znaků ( ) $ { } [ ].',
 ];

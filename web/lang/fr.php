@@ -5740,4 +5740,5 @@ Votre téléphone va sonner.',
     'meetings.err_ended_desc' => 'Cette visioconférence est terminée et il n\'est plus possible de la rejoindre.',
     'meetings.err_room_in_use' => 'La salle %s est déjà utilisée par une conférence ou une autre réunion. Choisissez un autre numéro ou laissez le champ vide.',
     'meetings.err_no_free_room' => 'Aucun numéro de salle libre n\'a été trouvé. Saisissez vous-même un numéro de salle.',
+    'srv_route.err_geolocation_uri' => 'URI de géolocalisation non valide. Entrez un URI, tel que https://example.com/location.xml, sans espaces ni les caractères ( ) $ { } [ ].',
 ];

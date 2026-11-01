@@ -5740,4 +5740,5 @@ Din telefon vil ringe.',
     'meetings.err_ended_desc' => 'Dette videomøde er afsluttet og kan ikke længere tilgås.',
     'meetings.err_room_in_use' => 'Rum %s er allerede i brug af en konference eller et andet møde. Vælg et andet nummer, eller lad feltet være tomt.',
     'meetings.err_no_free_room' => 'Der blev ikke fundet noget ledigt rumnummer. Indtast et rumnummer selv.',
+    'srv_route.err_geolocation_uri' => 'Ugyldig geolokaliserings-URI. Indtast én URI, f.eks. https://example.com/location.xml, uden mellemrum eller tegnene ( ) $ { } [ ].',
 ];
