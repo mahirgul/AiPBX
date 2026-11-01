@@ -37,7 +37,13 @@
                                 $clean_c = rtrim(ltrim($fc['code'], '_'), '.X');
                                 $suffix = '';
                                 if (strpos($fc['code'], '_') === 0) {
-                                    $suffix = ($fc['feature_key'] === 'queue_pause') ? '<mola id>' : '<kuyruk id>';
+                                    if ($fc['feature_key'] === 'conference_join') {
+                                        $suffix = '<' . t('fc.room_id_suffix', 'oda no') . '>';
+                                    } elseif ($fc['feature_key'] === 'queue_pause') {
+                                        $suffix = '<mola id>';
+                                    } else {
+                                        $suffix = '<kuyruk id>';
+                                    }
                                 }
                                 echo htmlspecialchars($clean_c . $suffix);
                             ?></code></td>

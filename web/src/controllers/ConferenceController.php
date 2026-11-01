@@ -32,6 +32,7 @@ class ConferenceController extends BaseController
         $page_title = t('conferences.title');
         static::renderPage('conferences/index', [
             'conferences' => $conferences,
+            'confPrefix' => getConferencePrefix(),
         ], ['title' => $page_title] + $notices);
     }
 }

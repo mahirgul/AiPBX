@@ -234,4 +234,49 @@ final class SyncConferencesCoverageTest extends TestCase
         // Music on hold stripped of malicious characters
         $this->assertStringContainsString('Set(CONFBRIDGE(user,music_on_hold_class)=mohSystemevil)', $conf);
     }
+
+    public function testAppConfbridgeDispatchContextAndDynamicFallback(): void
+    {
+        $id = 7928;
+        $this->createdConfIds[] = $id;
+
+        $stmt = $this->db->prepare(
+            "INSERT INTO pbx_conferences (id, room_number, title, is_active)
+             VALUES (?, '7928', 'zz_cov_dispatch_7928', 1)"
+        );
+        $stmt->execute([$id]);
+
+        $this->assertTrue(syncConferences());
+
+        $file = ASTERISK_PBX_DIR . '/extensions_conferences.conf';
+        $this->assertFileExists($file);
+        $conf = (string)file_get_contents($file);
+
+        // Check dispatch context and routing
+        $this->assertStringContainsString('[app-confbridge-dispatch]', $conf);
+        $this->assertStringContainsString("exten => 7928,1,Goto(app-confbridge-{$id},s,1)", $conf);
+        $this->assertStringContainsString('exten => _.,1,NoOp(Dynamic/Ad-hoc Conference Room ${EXTEN}', $conf);
+        $this->assertStringContainsString('same => n,ConfBridge(${EXTEN})', $conf);
+    }
+
+    public function testConferencePrefixHelperAndFeatureCodeDialplan(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/sync/SyncFeatureCodes.php';
+        require_once dirname(__DIR__, 2) . '/src/helpers.php';
+
+        // Check helper function
+        $prefix = getConferencePrefix();
+        $this->assertContains($prefix, ['#9', '*9']);
+
+        // Check feature codes dialplan generation
+        syncFeatureCodes();
+        $file = ASTERISK_PBX_DIR . '/extensions_featurecodes.conf';
+        $this->assertFileExists($file);
+        $conf = (string)file_get_contents($file);
+
+        // Should include interactive room prompt and direct room dialplan for conference_join
+        $this->assertStringContainsString('conference_join', $conf);
+        $this->assertStringContainsString('Goto(app-confbridge-dispatch,${CONF_TARGET},1)', $conf);
+        $this->assertStringContainsString('Read(CONF_TARGET,conf-getchannel', $conf);
+    }
 }

@@ -30,6 +30,51 @@ function __syncFeatureCodesBody() {
         $allowed = trim($c['allowed_roles'] ?? '');
         $gated = $allowed !== '';
 
+        if ($key === 'conference_join') {
+            $base_code = rtrim(ltrim($code, '_'), '.X');
+            $pattern_code = '_' . $base_code . '.';
+            $prefix_len = strlen($base_code);
+
+            // 1. Standalone code dialed (#9 or *9): prompt user for room number
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - interactive room prompt)\n";
+            $conf .= "exten => {$base_code},1,NoOp(Conference Room Prompt ({$base_code}) by \${CALLERID(num)})\n";
+            if ($gated) {
+                $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
+                $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
+                $conf .= " same => n,GotoIf(\$[" . implode(' | ', $conds) . "]?allowed_{$key}_base)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(conf-invalid)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(allowed_{$key}_base),NoOp(Permission verified: \${USER_ROLE})\n";
+            }
+            $conf .= " same => n,Answer()\n";
+            $conf .= " same => n,Read(CONF_TARGET,conf-getchannel,10,,3,10)\n";
+            $conf .= " same => n,Set(CONF_TARGET=\${FILTER(0-9,\${CONF_TARGET})})\n";
+            $conf .= " same => n,GotoIf(\$[\"\${CONF_TARGET}\" = \"\"]?{$key}_empty)\n";
+            $conf .= " same => n,Goto(app-confbridge-dispatch,\${CONF_TARGET},1)\n";
+            $conf .= " same => n({$key}_empty),Playback(conf-invalid)\n";
+            $conf .= " same => n,Hangup()\n\n";
+
+            // 2. Direct room dialed (#91001 or *91001):
+            $conf .= "; " . toCleanAscii($c['title']) . " ({$key} - direct room)\n";
+            $conf .= "exten => {$pattern_code},1,NoOp(Conference Direct Dial \${EXTEN} by \${CALLERID(num)})\n";
+            if ($gated) {
+                $roles = array_filter(array_map(function ($r) { return preg_replace('/[^a-zA-Z0-9_]/', '', trim($r)); }, explode(',', $allowed)));
+                $conds = array_map(function ($r) { return "\"\${USER_ROLE}\" = \"{$r}\""; }, $roles);
+                $conf .= " same => n,GotoIf(\$[" . implode(' | ', $conds) . "]?allowed_{$key}_pat)\n";
+                $conf .= " same => n,Answer()\n";
+                $conf .= " same => n,Playback(conf-invalid)\n";
+                $conf .= " same => n,Hangup()\n";
+                $conf .= " same => n(allowed_{$key}_pat),NoOp(Permission verified: \${USER_ROLE})\n";
+            }
+            $conf .= " same => n,Set(CONF_TARGET=\${FILTER(0-9,\${EXTEN:{$prefix_len}})})\n";
+            $conf .= " same => n,GotoIf(\$[\"\${CONF_TARGET}\" = \"\"]?{$key}_pat_empty)\n";
+            $conf .= " same => n,Goto(app-confbridge-dispatch,\${CONF_TARGET},1)\n";
+            $conf .= " same => n({$key}_pat_empty),Playback(conf-invalid)\n";
+            $conf .= " same => n,Hangup()\n\n";
+            continue;
+        }
+
         if ($key === 'queue_login' || $key === 'queue_logout') {
             $base_code = rtrim(ltrim($code, '_'), '.X');
             $pattern_code = '_' . $base_code . '.';

@@ -27,6 +27,7 @@
         <h4><i class="fas fa-info-circle"></i> <?php echo t('conferences.help_title'); ?></h4>
         <p><?php echo t('conferences.help_body'); ?></p>
         <ul>
+            <li><strong><?php echo t('conferences.help_quick_dial'); ?></strong> <?php $p = htmlspecialchars($confPrefix ?? '#9'); echo sprintf(t('conferences.help_quick_dial_desc'), $p, $p); ?></li>
             <li><strong><?php echo t('conferences.help_pins'); ?></strong> <?php echo t('conferences.help_pins_desc'); ?></li>
             <li><strong><?php echo t('conferences.help_wait_leader'); ?></strong> <?php echo t('conferences.help_wait_leader_desc'); ?></li>
             <li><strong><?php echo t('conferences.help_live_ctrl'); ?></strong> <?php echo t('conferences.help_live_ctrl_desc'); ?></li>
@@ -53,7 +54,12 @@
                 <?php else: ?>
                     <?php foreach ($conferences as $cf): ?>
                         <tr>
-                            <td><span class="badge badge-info u-fs-13"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($cf['room_number']); ?></span></td>
+                            <td>
+                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                    <span class="badge badge-info u-fs-13"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($cf['room_number']); ?></span>
+                                    <span class="badge badge-secondary u-fs-11" title="<?php echo t('conferences.quick_dial'); ?>" style="font-family: monospace; letter-spacing: 0.5px;"><?php echo htmlspecialchars(($confPrefix ?? '#9') . $cf['room_number']); ?></span>
+                                </div>
+                            </td>
                             <td class="u-strong"><?php echo htmlspecialchars($cf['title']); ?></td>
                             <td>
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px;">
@@ -165,7 +171,10 @@
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('conferences.room_number'); ?></label>
-                        <input type="text" name="room_number" id="modal_conf_number" class="form-control" placeholder="<?php echo t('common.eg'); ?> 6000" pattern="[0-9]{3,6}" required>
+                        <input type="text" name="room_number" id="modal_conf_number" class="form-control" placeholder="<?php echo t('common.eg'); ?> 1001" pattern="[0-9]{3,6}" required oninput="updateConfDialPreview(this.value)">
+                        <small class="u-muted" style="display: block; margin-top: 4px; font-size: 11px;">
+                            <?php echo t('conferences.quick_dial'); ?>: <strong class="u-primary"><?php echo htmlspecialchars($confPrefix ?? '#9'); ?><span id="modal_conf_number_preview">1001</span></strong>
+                        </small>
                     </div>
 
                     <div class="form-group">
