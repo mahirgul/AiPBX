@@ -321,13 +321,19 @@ final class MeetingServiceTest extends TestCase
     public function testJoinCheckRefusesCancelledAndClosedMeetings(): void
     {
         $m = $this->meeting();
-        $this->db->exec('UPDATE pbx_meetings SET scheduled_start = NOW() + INTERVAL 1 DAY, scheduled_end = NOW() + INTERVAL 2 DAY WHERE id = ' . (int)$m['id']);
+        // PHP's clock, as saveMeeting writes them: the database may be in another time zone.
+        $schedule = function (int $startOffset, int $endOffset) use ($m): void {
+            $this->db->prepare('UPDATE pbx_meetings SET scheduled_start = ?, scheduled_end = ? WHERE id = ?')
+                ->execute([date('Y-m-d H:i:s', time() + $startOffset), date('Y-m-d H:i:s', time() + $endOffset), (int)$m['id']]);
+        };
+
+        $schedule(86400, 172800);
         $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'), 'not started');
 
-        $this->db->exec('UPDATE pbx_meetings SET scheduled_start = NOW() - INTERVAL 3 DAY, scheduled_end = NOW() - INTERVAL 2 DAY WHERE id = ' . (int)$m['id']);
+        $schedule(-259200, -172800);
         $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'), 'ended');
 
-        $this->db->exec('UPDATE pbx_meetings SET scheduled_start = NOW(), scheduled_end = NOW() + INTERVAL 1 HOUR WHERE id = ' . (int)$m['id']);
+        $schedule(0, 3600);
         $this->assertGreaterThan(0, MeetingService::joinCheck($m['meeting_token'], '8991'));
         MeetingService::cancelMeeting((int)$m['id']);
         $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'), 'cancelled');
