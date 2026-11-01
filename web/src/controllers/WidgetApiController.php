@@ -19,7 +19,7 @@ class WidgetApiController
         $action = trim(substr($path, strlen('/widget-api')), '/');
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $origin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
-        $ip = (string) ($_SERVER['REMOTE_ADDR'] ?? '');
+        $ip = getClientIP();
         $ua = (string) ($_SERVER['HTTP_USER_AGENT'] ?? '');
         $publicId = (string) ($_GET['w'] ?? $_POST['w'] ?? '');
 

@@ -284,4 +284,13 @@ final class ReverseProxyTest extends TestCase
     {
         $this->assertSame('127.0.0.1, ::1', ReverseProxyService::DEFAULT_TRUSTED_PROXIES);
     }
+
+    public function testProvisioningAndWidgetSeeTheRealClientBehindAProxy(): void
+    {
+        foreach (['ProvisionController', 'WidgetApiController'] as $c) {
+            $src = (string)file_get_contents(dirname(__DIR__, 2) . "/src/controllers/{$c}.php");
+            $this->assertStringContainsString('getClientIP()', $src, $c);
+            $this->assertStringNotContainsString("\$_SERVER['REMOTE_ADDR']", $src, $c);
+        }
+    }
 }

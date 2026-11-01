@@ -47,7 +47,7 @@ Log in to the AiPBX portal as an administrator and navigate to **Network → Rev
 4. **TLS Termination Mode**:
    - `Edge Termination` (recommended): The reverse proxy handles SSL certificates and connects to AiPBX via HTTP.
    - `Re-encryption`: The reverse proxy terminates external SSL and connects to AiPBX via internal HTTPS.
-5. **Trusted Reverse Proxies**: The IP addresses of your reverse proxies; the default is this host only (`127.0.0.1, ::1`). Add the exact address of a proxy on another machine, and avoid whole private networks: every device in a trusted range can claim any client IP in `X-Forwarded-For` and so avoid sign-in lockouts.
+5. **Trusted Reverse Proxies**: The IP addresses of your reverse proxies; the default is this host only (`127.0.0.1, ::1`). Add the exact address of a proxy on another machine, and avoid whole private networks: every device in a trusted range can claim any client IP in `X-Forwarded-For`, which avoids sign-in lockouts and passes the allowed networks of phone provisioning.
 
 ### Security: Spoofing Prevention
 AiPBX enforces strict header validation. It will **ONLY** honor `X-Forwarded-For` and `X-Forwarded-Proto` headers when the immediate TCP connection originates from an address explicitly listed in **Trusted Reverse Proxies**. Direct connections from unauthorized IPs will have their headers stripped.

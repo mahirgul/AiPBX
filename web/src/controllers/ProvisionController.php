@@ -27,7 +27,9 @@ class ProvisionController
         $res = PhoneProvisionService::handleRequest(
             $token,
             rawurldecode($file),
-            (string) ($_SERVER['REMOTE_ADDR'] ?? ''),
+            // The real client behind a trusted proxy: the proxy's own address could be inside the
+            // allowed networks, which would open the phones' files (SIP passwords) to the internet.
+            getClientIP(),
             (string) ($_SERVER['HTTP_USER_AGENT'] ?? '')
         );
         http_response_code($res['status']);
