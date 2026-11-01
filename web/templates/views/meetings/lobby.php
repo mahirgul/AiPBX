@@ -41,13 +41,13 @@ $meetingConfig = [
 ];
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo htmlspecialchars(currentLang()); ?>">
+<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <title><?php echo $pageTitle; ?></title>
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
-    <link rel="stylesheet" href="/assets/css/fontawesome/all.min.css">
+    <link rel="stylesheet" href="/assets/css/fontawesome.min.css">
     <style>
         :root {
             --bg-dark: #0f172a;

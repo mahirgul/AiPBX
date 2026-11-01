@@ -237,4 +237,33 @@ final class MeetingServiceTest extends TestCase
         $delResAfter = ConferenceService::deleteConference($confId, 'test_csrf_token');
         $this->assertTrue($delResAfter['success']);
     }
+
+    public function testMeetingLobbyRendersCleanly(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/controllers/MeetingLobbyController.php';
+
+        $res = MeetingService::saveMeeting([
+            'title'        => 'Lobby Render Test',
+            'starts_at'    => date('Y-m-d H:i:s', time() + 3600),
+            'room_number'  => '8994',
+            'allow_guests' => 1,
+        ], 1);
+        $this->assertTrue($res['success']);
+        $meetingId = (int)$res['meeting_id'];
+        $this->createdMeetingIds[] = $meetingId;
+
+        $meeting = MeetingService::getMeeting($meetingId);
+        $this->assertNotNull($meeting);
+        $token = (string)$meeting['meeting_token'];
+
+        ob_start();
+        MeetingLobbyController::index($token);
+        $html = (string)ob_get_clean();
+
+        $this->assertNotEmpty($html);
+        $this->assertStringContainsString('<!DOCTYPE html>', $html);
+        $this->assertStringContainsString('Lobby Render Test', $html);
+        $this->assertStringContainsString('/assets/css/fontawesome.min.css', $html);
+        $this->assertStringNotContainsString('Fatal error', $html);
+    }
 }
