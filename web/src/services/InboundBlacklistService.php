@@ -43,11 +43,32 @@ class InboundBlacklistService
     }
 
     /**
+     * Find an existing entry matching $cleanNumber or its E.164 +/- variant
+     * so '+90850...' and '90850...' cannot collide on the same AstDB key.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function findExistingOrVariant(string $cleanNumber): ?array
+    {
+        $existing = InboundBlacklistRepository::findByNumber($cleanNumber);
+        if ($existing !== null) {
+            return $existing;
+        }
+        if (!str_starts_with($cleanNumber, '_')) {
+            $alt = str_starts_with($cleanNumber, '+') ? substr($cleanNumber, 1) : '+' . $cleanNumber;
+            if ($alt !== '' && $alt !== '+') {
+                return InboundBlacklistRepository::findByNumber($alt);
+            }
+        }
+        return null;
+    }
+
+    /**
      * Add a caller number or pattern to blacklist.
      *
      * @return array{success: bool, id?: int, error?: string}
      */
-    public static function add(string $number, ?string $title = null, string $action = 'busy', bool $isActive = true): array
+    public static function add(string $number, ?string $title = null, string $action = 'busy', bool $isActive = true, bool $deferSync = false): array
     {
         $cleanNumber = self::normalizeNumber($number);
         if ($cleanNumber === '' || $cleanNumber === '_') {
@@ -58,7 +79,7 @@ class InboundBlacklistService
             $action = 'busy';
         }
 
-        $existing = InboundBlacklistRepository::findByNumber($cleanNumber);
+        $existing = self::findExistingOrVariant($cleanNumber);
         if ($existing !== null) {
             return ['success' => false, 'error' => t('blacklist.err_duplicate', 'Bu numara zaten kara listede kayıtlı.')];
         }
@@ -70,9 +91,11 @@ class InboundBlacklistService
             'is_active' => $isActive ? 1 : 0,
         ]);
 
-        self::syncAstDb($cleanNumber, $action, $isActive);
-        if (function_exists('markPendingSync')) {
-            markPendingSync('inbound_dialplan', 'blacklist', $cleanNumber, "Inbound blacklist: {$cleanNumber}", 'create', $_SESSION['user_id'] ?? null);
+        if (!$deferSync) {
+            self::syncAstDb($cleanNumber, $action, $isActive);
+            if (function_exists('markPendingSync')) {
+                markPendingSync('inbound_dialplan', 'blacklist', $cleanNumber, "Inbound blacklist: {$cleanNumber}", 'create', $_SESSION['user_id'] ?? null);
+            }
         }
 
         return ['success' => true, 'id' => $id];
@@ -99,7 +122,7 @@ class InboundBlacklistService
             $action = 'busy';
         }
 
-        $duplicate = InboundBlacklistRepository::findByNumber($cleanNumber);
+        $duplicate = self::findExistingOrVariant($cleanNumber);
         if ($duplicate !== null && (int)$duplicate['id'] !== $id) {
             return ['success' => false, 'error' => t('blacklist.err_duplicate', 'Bu numara zaten kara listede kayıtlı.')];
         }

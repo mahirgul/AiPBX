@@ -97,9 +97,17 @@ class CustomDialplanService
                 $errors[] = sprintf(t('custom_dialplan.err_unbalanced_var'), $lineNum);
             }
 
+            // Prevent reserved system [context] redefinition inside dialplan body
+            if (preg_match('/^\[([a-zA-Z0-9_\-]+)\]$/', $line, $m)) {
+                $inlineCtx = $m[1];
+                if (in_array(strtolower($inlineCtx), self::RESERVED_CONTEXTS, true)) {
+                    $errors[] = sprintf(t('custom_dialplan.err_context_reserved'), $inlineCtx);
+                }
+                continue;
+            }
+
             // Check valid Asterisk statement start
-            $isValidStatement = preg_match('/^(exten|same|include|ignorepat|switch)\s*=>/i', $line)
-                || preg_match('/^\[[a-zA-Z0-9_\-]+\]$/', $line);
+            $isValidStatement = (bool)preg_match('/^(exten|same|include|ignorepat|switch)\s*=>/i', $line);
 
             if (!$isValidStatement) {
                 $warnings[] = sprintf(t('custom_dialplan.warn_unknown_statement'), $lineNum, htmlspecialchars(mb_substr($line, 0, 40)));
@@ -285,7 +293,9 @@ class CustomDialplanService
                 'include_in_internal' => 0,
                 'content' => "; " . t('custom_dialplan.tpl_crm_title') . "\n"
                     . "exten => s,1,NoOp(CRM Webhook Trigger for Caller \${CALLERID(num)})\n"
-                    . " same => n,System(curl -s -X POST -d \"caller=\${CALLERID(num)}&did=\${CDR(did)}\" http://127.0.0.1:8080/api/call-notify &)\n"
+                    . " same => n,Set(SAFE_CALLER=\${FILTER(0123456789+,\${CALLERID(num)})})\n"
+                    . " same => n,Set(SAFE_DID=\${FILTER(0123456789+,\${CDR(did)})})\n"
+                    . " same => n,System(curl -s -X POST -d \"caller=\${SAFE_CALLER}&did=\${SAFE_DID}\" http://127.0.0.1:8080/api/call-notify &)\n"
                     . " same => n,Return()\n",
             ],
             'vip_inbound' => [

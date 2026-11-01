@@ -141,7 +141,7 @@ class InboundBlacklistController extends BaseController
                 ? trim($row[2])
                 : $defaultAction;
 
-            $res = InboundBlacklistService::add($num, $title, $act, true);
+            $res = InboundBlacklistService::add($num, $title, $act, true, true);
             if ($res['success']) {
                 $imported++;
             } else {
@@ -149,6 +149,13 @@ class InboundBlacklistController extends BaseController
             }
         }
         fclose($handle);
+
+        if ($imported > 0) {
+            InboundBlacklistService::rebuildAstDb();
+            if (function_exists('markPendingSync')) {
+                markPendingSync('inbound_dialplan', 'blacklist', 'csv', "Inbound blacklist CSV import: {$imported} added", 'create', $_SESSION['user_id'] ?? null);
+            }
+        }
 
         return [
             'message' => sprintf(t('blacklist.msg_import_done', '%d numara başarıyla içe aktarıldı, %d kayıt atlandı.'), $imported, $skipped),

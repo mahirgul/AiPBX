@@ -88,7 +88,8 @@ class OidcAuthController extends BaseController
         // 5. Fetch user profile from UserInfo / ID Token
         $userInfo = OidcAuthService::getUserInfo(
             (string)$tokenData['access_token'],
-            isset($tokenData['id_token']) ? (string)$tokenData['id_token'] : null
+            isset($tokenData['id_token']) ? (string)$tokenData['id_token'] : null,
+            $stateResult['nonce']
         );
 
         if (!$userInfo || empty($userInfo['email'])) {

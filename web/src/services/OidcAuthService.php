@@ -385,7 +385,7 @@ class OidcAuthService
      *
      * @return array{email: string, full_name: string, preferred_username: string, sub: string, claims: array<string, mixed>}|null
      */
-    public static function getUserInfo(string $accessToken, ?string $idToken = null): ?array
+    public static function getUserInfo(string $accessToken, ?string $idToken = null, ?string $expectedNonce = null): ?array
     {
         $claims = [];
 
@@ -393,6 +393,33 @@ class OidcAuthService
         if (!empty($idToken)) {
             $idClaims = self::parseJwtClaims($idToken);
             if (is_array($idClaims)) {
+                // Validate expiration (exp) with 120s clock skew tolerance
+                if (isset($idClaims['exp']) && is_numeric($idClaims['exp'])) {
+                    if ((time() - 120) >= (int)$idClaims['exp']) {
+                        self::setLastError('OIDC ID Token has expired');
+                        return null;
+                    }
+                }
+
+                // Validate audience (aud) if client_id is configured
+                $clientId = self::getSetting('client_id', '');
+                if ($clientId !== '' && isset($idClaims['aud'])) {
+                    $audList = is_array($idClaims['aud']) ? $idClaims['aud'] : [(string)$idClaims['aud']];
+                    if (!in_array($clientId, $audList, true)) {
+                        self::setLastError('OIDC ID Token audience mismatch');
+                        return null;
+                    }
+                }
+
+                // Validate nonce if expectedNonce was supplied
+                if ($expectedNonce !== null && $expectedNonce !== '') {
+                    $tokenNonce = (string)($idClaims['nonce'] ?? '');
+                    if ($tokenNonce === '' || !hash_equals($expectedNonce, $tokenNonce)) {
+                        self::setLastError('OIDC ID Token nonce mismatch');
+                        return null;
+                    }
+                }
+
                 $claims = array_merge($claims, $idClaims);
             }
         }

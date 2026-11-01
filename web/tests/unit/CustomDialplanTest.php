@@ -299,4 +299,15 @@ final class CustomDialplanTest extends TestCase
         $pendingAfterDelete = getPendingSyncList();
         $this->assertArrayHasKey('custom_dialplan', $pendingAfterDelete);
     }
+
+    public function testRejectsInlineReservedContextInBodyAndSanitizesCrmTemplate(): void
+    {
+        $res = CustomDialplanService::validateSyntax("exten => *90,1,NoOp(Ok)\n[from-internal-pbx]\nexten => *91,1,Hangup()\n");
+        $this->assertFalse($res['valid']);
+        $this->assertNotEmpty($res['errors']);
+
+        $templates = CustomDialplanService::getTemplates();
+        $this->assertArrayHasKey('crm_webhook', $templates);
+        $this->assertStringContainsString('FILTER(0123456789+', $templates['crm_webhook']['content']);
+    }
 }
