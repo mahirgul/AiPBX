@@ -1,58 +1,55 @@
 <?php
 /**
- * Türkçe çeviri dizisi. Anahtar biçimi: "sayfa.öğe" (ör. "dashboard.title").
- * Bir anahtar burada yoksa t() İngilizce metni gösterir (config.php::t()).
- * Çeviri rehberi: docs/translating.md.
+ * Türkçe translation strings — same keys as en.php.
+ * A key missing here shows the English text (config.php::t()).
+ * Corrections are welcome: see docs/translating.md.
  */
 return [
-    // Genel
     'common.save' => 'Kaydet',
-    // AI → Çevirici plan editörü (asistan)
-    'assistant.title'            => 'Çevirici plan editörü',
-    'assistant.intro'            => 'Değişikliği düz dilde söyleyin. Değişikliği her zaman OLMADAN ÖNCE görürsünüz ve el ile yapmak için kullanılan hizmetlerin aynısından geçer — yanlış bir cevap uygulanmaz, reddedilir.',
-    'assistant.placeholder'      => 'örn. "101\'i 203\'e yönlendir" ya da "102 için telesekreteri kapat"',
-    'assistant.ask'              => 'Değişikliği göster',
-    'assistant.working'          => 'Çalışıyor…',
-    'assistant.preview_title'    => 'Değişiklik',
-    'assistant.preview_apply'    => 'Uygula',
-    'assistant.preview_discard'  => 'Vazgeç',
-    'assistant.applied'          => 'Uygulandı.',
-    'assistant.undo'             => 'Geri al',
-    'assistant.undo_done'        => 'Geri alındı.',
-    'assistant.echo_title'       => 'Telefon sistemini sorun',
+    'assistant.title' => 'Çevirici plan editörü',
+    'assistant.intro' => 'Değişikliği düz dilde söyleyin. Değişikliği her zaman OLMADAN ÖNCE görürsünüz ve el ile yapmak için kullanılan hizmetlerin aynısından geçer — yanlış bir cevap uygulanmaz, reddedilir.',
+    'assistant.placeholder' => 'örn. "101\'i 203\'e yönlendir" ya da "102 için telesekreteri kapat"',
+    'assistant.ask' => 'Değişikliği göster',
+    'assistant.working' => 'Çalışıyor…',
+    'assistant.preview_title' => 'Değişiklik',
+    'assistant.preview_apply' => 'Uygula',
+    'assistant.preview_discard' => 'Vazgeç',
+    'assistant.applied' => 'Uygulandı.',
+    'assistant.undo' => 'Geri al',
+    'assistant.undo_done' => 'Geri alındı.',
+    'assistant.echo_title' => 'Telefon sistemini sorun',
     'assistant.echo_placeholder' => 'örn. "bugün kaç arama var?" ya da "sinyalleşme hataları?"',
-    'assistant.echo_ask'         => 'Sor',
-    'assistant.echo_askable'     => 'Şunları yanıtlayabilirim',
-    'assistant.changes_title'    => 'Uygulanan değişiklikler',
-    'assistant.no_changes'       => 'Henüz bir şey uygulanmadı.',
-    'assistant.col_when'         => 'Ne zaman',
-    'assistant.col_request'      => 'Siz istediniz',
-    'assistant.col_change'       => 'Değişiklik',
-    'assistant.col_status'       => 'Durum',
-    'assistant.col_source'       => 'Çözen',
-    'assistant.status_applied'   => 'Uygulandı',
+    'assistant.echo_ask' => 'Sor',
+    'assistant.echo_askable' => 'Şunları yanıtlayabilirim',
+    'assistant.changes_title' => 'Uygulanan değişiklikler',
+    'assistant.no_changes' => 'Henüz bir şey uygulanmadı.',
+    'assistant.col_when' => 'Ne zaman',
+    'assistant.col_request' => 'Siz istediniz',
+    'assistant.col_change' => 'Değişiklik',
+    'assistant.col_status' => 'Durum',
+    'assistant.col_source' => 'Çözen',
+    'assistant.status_applied' => 'Uygulandı',
     'assistant.status_rolled_back' => 'Geri alındı',
-    'assistant.risk_medium'      => 'çalma davranışını değiştirir',
-    'echo.q_calls_today'         => 'Bugünkü aramalar',
-    'echo.q_calls_hour'          => 'Aramalar (son bir saat)',
-    'echo.q_answered_rate'       => 'Bugün cevaplananlar',
-    'echo.q_calls_top'           => 'Bugün en yoğun arayanlar',
-    'echo.q_noanswer_hour'       => 'Cevapsız aramalar (son bir saat)',
-    'echo.q_signaling_count'     => 'Yakalanan SIP mesajları (24 sa)',
-    'echo.q_signaling_errors'    => 'SIP hata yanıtları (24 sa)',
-    'echo.lbl_calls'             => 'arama',
-    'echo.lbl_minutes'           => 'konuşma dakikası',
-    'echo.lbl_total'             => 'toplam',
-    'echo.lbl_answered'          => 'cevaplanan',
-    'echo.lbl_caller'            => 'arayan',
-    'echo.lbl_called'            => 'aranan',
-    'echo.lbl_seconds'           => 'saniye',
-    'echo.lbl_packets'           => 'mesaj',
-    'echo.lbl_code'              => 'kod',
-    'echo.lbl_seen'              => 'adet',
-    'ai_assistant.err_no_row'      => 'Bu değişiklik kayıtta yok.',
+    'assistant.risk_medium' => 'çalma davranışını değiştirir',
+    'echo.q_calls_today' => 'Bugünkü aramalar',
+    'echo.q_calls_hour' => 'Aramalar (son bir saat)',
+    'echo.q_answered_rate' => 'Bugün cevaplananlar',
+    'echo.q_calls_top' => 'Bugün en yoğun arayanlar',
+    'echo.q_noanswer_hour' => 'Cevapsız aramalar (son bir saat)',
+    'echo.q_signaling_count' => 'Yakalanan SIP mesajları (24 sa)',
+    'echo.q_signaling_errors' => 'SIP hata yanıtları (24 sa)',
+    'echo.lbl_calls' => 'arama',
+    'echo.lbl_minutes' => 'konuşma dakikası',
+    'echo.lbl_total' => 'toplam',
+    'echo.lbl_answered' => 'cevaplanan',
+    'echo.lbl_caller' => 'arayan',
+    'echo.lbl_called' => 'aranan',
+    'echo.lbl_seconds' => 'saniye',
+    'echo.lbl_packets' => 'mesaj',
+    'echo.lbl_code' => 'kod',
+    'echo.lbl_seen' => 'adet',
+    'ai_assistant.err_no_row' => 'Bu değişiklik kayıtta yok.',
     'ai_assistant.err_not_undoable' => 'Bu değişiklik otomatik olarak geri alınamaz.',
-
     'common.cancel' => 'İptal',
     'common.close' => 'Kapat',
     'common.yes' => 'Evet',
@@ -64,14 +61,10 @@ return [
     'common.copy' => 'Kopyala',
     'common.module_guide' => 'Modül Rehberi',
     'common.invalid_csrf' => 'Geçersiz güvenlik doğrulaması (CSRF). Lütfen sayfayı yenileyip tekrar deneyin.',
-
-    // Dahili hedef numarası (5 sayfada ortak)
     'internal_number.field' => 'Dahili Numara (isteğe bağlı)',
     'internal_number.help' => 'Doldurulursa bu hedef, dahili telefonlardan doğrudan aranabilir. Boş bırakılırsa numara atanmaz.',
     'internal_number.col' => 'Dahili No',
     'internal_number.none' => '—',
-
-    // Dashboard
     'dashboard.title' => 'Kontrol Paneli',
     'dashboard.system_status' => 'Sistem Durumu',
     'dashboard.status_active' => 'Santral Aktif',
@@ -109,7 +102,7 @@ return [
     'dashboard.metric_disk' => 'Disk',
     'dashboard.metric_uptime' => 'Uptime',
     'dashboard.service_control' => 'Servis & Sistem Kontrolü',
-    'dashboard.confirm_restart_asterisk' => 'Asterisk PBX servisini yeniden başlatmak istediğinize emin misiniz?\n\nBu işlem TÜM aktif çağrıları anında keser ve çağrı merkezi temsilcilerini kuyruklardan geçici olarak düşürür (dinamik üyelik bilgisi restart ile sıfırlanır). Ekranı açık tutan temsilciler en geç 1 dakika içinde otomatik olarak kuyruğa geri eklenir, elle bir şey yapmaları gerekmez. Mümkünse düşük trafikli bir saatte yapın.',
+    'dashboard.confirm_restart_asterisk' => 'Asterisk PBX servisini yeniden başlatmak istediğinize emin misiniz?\\n\\nBu işlem TÜM aktif çağrıları anında keser ve çağrı merkezi temsilcilerini kuyruklardan geçici olarak düşürür (dinamik üyelik bilgisi restart ile sıfırlanır). Ekranı açık tutan temsilciler en geç 1 dakika içinde otomatik olarak kuyruğa geri eklenir, elle bir şey yapmaları gerekmez. Mümkünse düşük trafikli bir saatte yapın.',
     'dashboard.confirm_restart_httpd' => 'Apache Web sunucusunu yeniden başlatmak istediğinize emin misiniz?',
     'dashboard.confirm_restart_mariadb' => 'MariaDB veritabanını yeniden başlatmak istediğinize emin misiniz?',
     'dashboard.confirm_restart_postfix' => 'Postfix Mail servisini yeniden başlatmak istediğinize emin misiniz?',
@@ -132,8 +125,6 @@ return [
     'dashboard.service_mariadb_name' => 'MariaDB Veritabanı',
     'dashboard.service_postfix_name' => 'Postfix Mail Servisi',
     'dashboard.not_configured' => 'Yapılandırılmamış',
-
-    // Trunks (Dış Hat Ayarları)
     'common.drag_to_reorder' => 'Sıralamak için sürükleyin',
     'trunks.title' => 'Dış Hat Ayarları',
     'trunks.header' => 'SIP Dış Hat Yönetimi',
@@ -238,8 +229,6 @@ return [
     'trunks.allow_outbound_routing_help' => 'Aktif edildiğinde, bu trunktan gelen çağrılar DID eşleşmesi bulunamazsa tanımlı Giden Rotalar üzerinden diğer trunklara/dış hatlara aktarılabilir.',
     'trunks.field_outbound_route_group' => 'Transit Giden Rota Grubu',
     'trunks.outbound_route_group_help' => 'Transit geçişte kullanılacak giden rota grubunu belirler (Varsayılan: Grup 1).',
-
-    // DID Routes (Gelen Rotalar)
     'did.title' => 'Gelen Rotalar',
     'did.help_title' => 'Gelen Rotalar Rehberi',
     'did.help_body' => 'Dış santralden gelen DID numaralarını (ör: 3000, 7880, 8960) ilgili modüle yönlendirir. İsteğe bağlı olarak Zorunlu Ses Kaydı Alınsın seçeneği ile bu hatta gelen tüm aramalar otomatik olarak ses dosyası (.wav) olarak kaydedilir.',
@@ -267,8 +256,6 @@ return [
     'did.field_record_call' => 'Zorunlu Ses Kaydı Alınsın (Tüm Gelen Aramaları Kaydet)',
     'did.field_active' => 'Gelen Rota (DID) Aktif',
     'did.confirm_delete' => 'Bu DID rotasını silmek istediğinize emin misiniz?',
-
-    // Outbound Routes (Giden Rotalar)
     'outbound.title' => 'Giden Rotalar',
     'outbound.help_title' => 'Giden Rotalar Rehberi',
     'outbound.help_body' => 'Dahili abonelerin dış hat aramalarını (Acil Çağrılar 112, Şehir İçi/Şehirler Arası 0NXX..., Ön Ekli Aramalar 9+Numara) düzenler.',
@@ -319,8 +306,6 @@ return [
     'outbound.field_geolocation_routing' => 'Geolocation-Routing (RFC 6443)',
     'outbound.geolocation_routing_yes' => 'yes (Acil Çağrı Merkezi Yönlendirmesi)',
     'outbound.geolocation_routing_no' => 'no (Sadece Bilgi Amaçlı Konum)',
-
-    // Inbound Blacklist / Spam (Kara Liste)
     'blacklist.title' => 'Gelen Çağrı Kara Listesi & Spam Engelleme',
     'blacklist.new_entry' => 'Yeni Numara / Desen Engelle',
     'blacklist.edit_entry' => 'Engelleme Kuralını Düzenle',
@@ -369,8 +354,6 @@ return [
     'blacklist.msg_deleted' => 'Kayıt kara listeden silindi.',
     'blacklist.msg_status_changed' => 'Durum güncellendi.',
     'blacklist.msg_import_done' => '%d numara başarıyla içe aktarıldı, %d kayıt atlandı.',
-
-    // Custom Dialplan
     'sidebar.item_custom_dialplan' => 'Özel Arama Planı',
     'sync.ctx_custom_dialplan' => 'özel arama planı eşitlemesi',
     'custom_dialplan.title' => 'Özel Arama Planı Context\'leri',
@@ -439,8 +422,6 @@ return [
     'custom_dialplan.tpl_vip_desc' => 'VIP müşterilerden gelen çağrıları tespit eder ve Arayan İsmi (CallerID Name) önüne VIP ekler.',
     'custom_dialplan.tpl_disa_title' => 'Şifreli Uzaktan Dış Hat Çıkışı (DISA)',
     'custom_dialplan.tpl_disa_desc' => 'PIN doğrulamasından sonra arayana santral çevir sesi vererek dış hat araması yaptırır.',
-
-    // Time Conditions (Zaman Koşulları)
     'tc.title' => 'Zaman Koşulları',
     'tc.tab_conditions' => 'Zaman Koşulları',
     'tc.tab_groups' => 'Zaman Grupları',
@@ -484,10 +465,13 @@ return [
     'tc.field_holidays' => 'Resmi Tatil Günleri (YYYY-AA-GG Virgülle Ayrılmış)',
     'tc.holidays_help' => 'Bu tarihlerde sistem otomatik olarak Mesai Dışı moduna geçer.',
     'tc.field_group_active' => 'Zaman Grubu Aktif',
-    'tc.day_mon' => 'Pzt', 'tc.day_tue' => 'Sal', 'tc.day_wed' => 'Çar', 'tc.day_thu' => 'Per',
-    'tc.day_fri' => 'Cum', 'tc.day_sat' => 'Cmt', 'tc.day_sun' => 'Paz',
-
-    // IVRs
+    'tc.day_mon' => 'Pzt',
+    'tc.day_tue' => 'Sal',
+    'tc.day_wed' => 'Çar',
+    'tc.day_thu' => 'Per',
+    'tc.day_fri' => 'Cum',
+    'tc.day_sat' => 'Cmt',
+    'tc.day_sun' => 'Paz',
     'ivr.title' => 'IVR Menüleri',
     'ivr.help_title' => 'IVR Sesli Karşılama Menüleri Rehberi',
     'ivr.help_body' => 'Arayan kişileri karşılayan ve tuşlama seçeneği sunan etkileşimli sesli yanıt sistemidir.',
@@ -543,8 +527,6 @@ return [
     'ivr.field_target_type' => 'Hedef Türü *',
     'ivr.field_target' => 'Hedef *',
     'ivr.add_entry_tooltip' => 'Tuşlama Ekle / Güncelle',
-
-    // Extensions (Dahili Abone Yönetimi)
     'extensions.title' => 'Dahili Yönetimi',
     'extensions.sync_all_tooltip' => 'Tüm Dahili Konfigürasyonlarını Yeniden Üret & PJSIP Reload',
     'extensions.new_tooltip' => 'Yeni Dahili Ekle',
@@ -601,8 +583,6 @@ return [
     'extensions.cid_placeholder' => 'Boşsa varsayılan kullanılır',
     'extensions.cid_help' => 'Bu dahiliden yapılan giden aramalarda gönderilecek Caller ID — hangisinin kullanılacağı Giden Rotalar\'daki "Kurum İçi" işaretine göre belirlenir (rotada sabit Caller ID Maskeleme varsa o önceliklidir).',
     'extensions.field_active' => 'Hesap & PJSIP Abonesi Aktif',
-
-    // Queues (Kuyruk Yönetimi)
     'queues.title' => 'Kuyruklar',
     'queues.tab_basic' => 'Temel',
     'queues.tab_strategy' => 'Strateji',
@@ -700,8 +680,6 @@ return [
     'queues.member_mode_help' => 'Dinamik: temsilci kuyruğa panelden / *81-*80 kodlarıyla kendisi girip çıkar. Statik: temsilci kuyrukta sabittir, kuyruktan çıkamaz, sadece mola verebilir. Değişiklik Uygula sayfasından gönderilince geçerli olur. Listede sadece Temsilci rolündeki kullanıcılar görünür.',
     'queues.no_agents' => 'Temsilci rolünde dahili kullanıcı yok.',
     'queues.no_managers' => 'Kuyruk Yönetici veya Admin rolünde dahili kullanıcı yok.',
-
-    // Sounds (Anons & MOH)
     'sounds.title' => 'Anons & MOH',
     'sounds.tab_announcements' => 'Ses Anonsları & Karşılama',
     'sounds.tab_moh' => 'Bekleme Müzikleri (Music on Hold - MOH)',
@@ -754,8 +732,6 @@ return [
     'sounds.back5s_tooltip' => '5 Saniye Geri',
     'sounds.forward5s_tooltip' => '5 Saniye İleri',
     'sounds.download' => 'İndir',
-
-    // Feature Codes (Star Code Yönetimi)
     'fc.title' => 'Feature Code\'lar',
     'fc.header_title' => 'Feature Code Yönetimi',
     'fc.help_title' => 'Feature Code Modülü Rehberi',
@@ -779,8 +755,6 @@ return [
     'fc.allowed_roles_placeholder' => 'Boş = herkes',
     'fc.available_roles' => 'Mevcut roller:',
     'fc.field_active' => 'Aktif',
-
-    // End Call (Çağrı Sonlandırma)
     'end_call.title' => 'Çağrı Sonlandırma',
     'end_call.header_title' => 'Çağrı Sonlandırma',
     'end_call.new_tooltip' => 'Yeni Ekle',
@@ -812,8 +786,6 @@ return [
     'end_call.option_congestion' => '⚠️ Şebeke Meşgul (Congestion)',
     'end_call.field_announcement' => 'Öncesinde Çalınacak Anons (Opsiyonel)',
     'end_call.no_announcement_option' => '-- Anons Yok --',
-
-    // CC Agent (Temsilci Ekranı)
     'cc_agent.title' => 'Temsilci Ekranı',
     'cc_agent.restricted_title' => 'Erişim Kısıtlaması',
     'cc_agent.restricted_body' => 'Bu ekran <strong>Müşteri Temsilcileri</strong> içindir. Kuyruk izleme için <strong>Kuyruk İzleme</strong> sayfasını kullanınız.',
@@ -849,8 +821,6 @@ return [
     'cc_agent.field_note_placeholder' => 'Görüşme ile ilgili notunuz...',
     'cc_agent.cancel' => 'İptal',
     'cc_agent.save' => 'Kaydet',
-
-    // CC Board (Çağrı Merkezi Panosu)
     'cc_board.title' => 'Çağrı Merkezi Panosu',
     'cc_board.restricted_title' => 'Erişim Engellendi',
     'cc_board.restricted_body' => 'Çağrı Merkezi Panosu ekranına erişim yetkiniz bulunmamaktadır.',
@@ -878,8 +848,6 @@ return [
     'cc_board.answered_rate' => 'Cevaplama Oranı',
     'cc_board.missed_rate' => 'Cevapsız Oranı',
     'cc_board.abandon_rate' => 'Terk Oranı',
-
-    // CC Supervisor (Kuyruk İzleme)
     'cc_supervisor.title' => 'Kuyruk İzleme',
     'cc_supervisor.restricted_title' => 'Erişim Engellendi',
     'cc_supervisor.restricted_body' => 'Kuyruk İzleme ekranına erişim yetkiniz bulunmamaktadır. Bu ekran yalnızca <strong>Kuyruk Yöneticileri</strong> ve yetkilendirilmiş kullanıcılar içindir.',
@@ -909,8 +877,6 @@ return [
     'cc_supervisor.col_active_queues' => 'Aktif Kuyruklar',
     'cc_supervisor.col_pause_detail' => 'Mola / Görüşme Detayı',
     'cc_supervisor.loading_agents' => 'Temsilci verileri yükleniyor...',
-
-    // Pause Reports (Mola Raporları)
     'pause_reports.title' => 'Mola Raporları',
     'pause_reports.other' => 'Diğer',
     'pause_reports.stat_total_breaks' => 'Toplam Mola Adedi',
@@ -941,8 +907,6 @@ return [
     'pause_reports.ongoing' => 'Devam Ediyor',
     'pause_reports.status_active' => 'Aktif Molada',
     'pause_reports.status_completed' => 'Tamamlandı',
-
-    // Queue Logs (Kuyruk Logları)
     'queue_logs.title' => 'Kuyruk Logları',
     'queue_logs.stat_entered' => 'Kuyruğa Giren',
     'queue_logs.stat_connected' => 'Bağlanan Çağrı',
@@ -1026,9 +990,6 @@ return [
     'queue_logs.detail_ring_sec' => '%s sn çaldı, açılmadı',
     'queue_logs.btn_expand_all' => 'Tümünü Genişlet',
     'queue_logs.btn_collapse_all' => 'Tümünü Daralt',
-
-
-    // CDR Reports (Çağrı Raporları & Ses Kayıtları)
     'cdr_reports.title' => 'Çağrı Raporları',
     'cdr_reports.stat_total' => 'Toplam Çağrı',
     'cdr_reports.stat_total_desc' => 'Sorgulanan Arama',
@@ -1107,8 +1068,6 @@ return [
     'cdr_reports.journey_talk' => 'Konuşma',
     'cdr_reports.journey_total' => 'Toplam',
     'cdr_reports.single_leg' => 'Tek Adım',
-
-    // Fax Inbox (Gelen Fakslar)
     'fax_inbox.title' => 'Gelen Fakslar',
     'fax_inbox.header_title' => 'Gelen Faks Listesi',
     'fax_inbox.total_prefix' => 'Toplam',
@@ -1143,8 +1102,6 @@ return [
     'fax_inbox.next' => 'Sonraki',
     'fax_inbox.preview_title' => 'Faks Önizleme',
     'fax_inbox.close' => 'Kapat',
-
-    // Fax Send (Faks Gönder)
     'fax_send.title' => 'Faks Gönder',
     'fax_send.header_title' => 'Yeni Faks Gönder',
     'fax_send.help_title' => 'Faks Gönderme Rehberi',
@@ -1162,8 +1119,6 @@ return [
     'fax_send.text_help' => 'Yazdığınız metin otomatik olarak PDF\'e çevrilip faks olarak gönderilir.',
     'fax_send.text_placeholder' => 'Faks olarak gönderilecek metni buraya yazın...',
     'fax_send.send_tooltip' => 'Faksı Gönder',
-
-    // Fax Sent (Giden Fakslar)
     'fax_sent.title' => 'Giden Fakslar',
     'fax_sent.header_title' => 'Giden Fakslar',
     'fax_sent.help_title' => 'Giden Fakslar Rehberi',
@@ -1189,8 +1144,6 @@ return [
     'fax_sent.delete_tooltip' => 'Sil',
     'fax_sent.preview_title' => 'Giden Faks Önizleme',
     'fax_sent.close' => 'Kapat',
-
-    // Fax Settings (Faks Birimleri)
     'fax_settings.title' => 'Faks Birimleri',
     'fax_settings.new_tooltip' => 'Yeni Faks Birimi Tanımla',
     'fax_settings.help_title' => 'Faks Birimleri Rehberi',
@@ -1215,8 +1168,6 @@ return [
     'fax_settings.fax_user_help' => 'Dahili Abone Yönetimi\'nde "Faks Kullanıcısı" tipiyle oluşturulmuş kayıtlar listelenir. Bildirim e-postası boşsa bu kullanıcının e-postası kullanılır.',
     'fax_settings.field_email' => 'Bildirim E-Posta Adresi *',
     'fax_settings.field_active' => 'Faks Birimi Aktif',
-
-    // Fax Mail Settings (Faks Ayarları)
     'fax_mail_settings.title' => 'Faks Ayarları',
     'fax_mail_settings.tab_email' => 'E-Posta',
     'fax_mail_settings.tab_device' => 'Cihaz',
@@ -1252,8 +1203,6 @@ return [
     'fax_mail_settings.field_wait_time' => 'İlk Deneme Bekleme Süresi (sn)',
     'fax_mail_settings.wait_time_help' => 'Aramanın cevaplanması için ilk denemede beklenecek azami süre.',
     'fax_mail_settings.save_tooltip' => 'Kaydet',
-
-    // System Users (Kullanıcı Yönetimi)
     'system_users.title' => 'Kullanıcı Yönetimi',
     'system_users.import_button' => 'CSV ile İçe Aktar',
     'system_users.import_title' => 'CSV ile Toplu Kullanıcı Ekleme',
@@ -1355,8 +1304,6 @@ return [
     'system_users.field_role_desc' => 'Açıklama',
     'system_users.role_desc_placeholder' => 'Kullanıcı tipinin yetki tanımı',
     'system_users.save_role' => 'Rolü Kaydet',
-
-    // Roles (Kullanıcı Rolleri & İzin Yönetimi)
     'roles.title' => 'Kullanıcı Rolleri',
     'roles.header_title' => 'Kullanıcı Rolleri',
     'roles.new_tooltip' => 'Yeni Rol Oluştur',
@@ -1396,8 +1343,6 @@ return [
     'roles.col_perm_edit' => '✏️ Düzenle',
     'roles.col_perm_delete' => '🗑️ Sil',
     'roles.save_permissions' => 'Rol İzinlerini Kaydet',
-
-    // Roles - Module titles
     'roles.module_dashboard' => 'Kontrol Paneli',
     'roles.module_my_phone' => 'Telefonum',
     'roles.module_chat' => 'Sohbet',
@@ -1432,8 +1377,6 @@ return [
     'roles.module_pause_reports' => 'Mola Raporları',
     'roles.module_queue_logs' => 'Kuyruk Logları',
     'roles.module_ms_teams' => 'Microsoft Teams',
-
-    // Roles - Group names
     'roles.group_general' => 'Genel',
     'roles.group_trunk_mgmt' => 'Dış Hat Yönetimi',
     'roles.group_pbx_mgmt' => 'PBX Yönetimi',
@@ -1442,8 +1385,6 @@ return [
     'roles.group_fax_system' => 'Faks Sistemi',
     'roles.group_call_center' => 'Çağrı Merkezi',
     'roles.group_integrations' => 'Entegrasyonlar',
-
-    // Asterisk Settings (Santral Ayarları)
     'asterisk_settings.title' => 'Santral Ayarları',
     'asterisk_settings.tab_pjsip' => 'PJSIP & Ağ',
     'asterisk_settings.tab_rtp' => 'RTP',
@@ -1544,8 +1485,6 @@ return [
     'asterisk_settings.field_default_lang' => 'Sistem Varsayılan Dili',
     'asterisk_settings.lang_packs_help' => 'Kurulu ses paketleri: /var/lib/asterisk/sounds/ altındaki klasörlerden otomatik algılanır.',
     'asterisk_settings.save_all_tooltip' => 'Tüm Ayarları Kaydet',
-
-    // Brand Settings (Marka & Görünüm)
     'brand_settings.title' => 'Marka & Görünüm',
     'brand_settings.tab_identity' => 'Kimlik',
     'brand_settings.tab_logo' => 'Logo & İkon',
@@ -1598,8 +1537,6 @@ return [
     'brand_settings.save' => 'Kaydet',
     'brand_settings.reset_all' => 'Tüm Markalamayı Varsayılana Döndür (AiPBX)',
     'brand_settings.reset_all_confirm' => 'Başlıklar, logo, favicon ve renkler AiPBX varsayılanlarına döndürülecek ve yüklenmiş logo/favicon dosyaları silinecek. Emin misiniz?',
-
-    // Feature Codes Status (Aktif Feature Code'lar)
     'fc_status.title' => 'Aktif Feature Code\'lar',
     'fc_status.header_title' => 'Kullanıcı Bazında Durum',
     'fc_status.col_extension' => 'Dahili',
@@ -1610,8 +1547,6 @@ return [
     'fc_status.empty' => 'Aktif dahili bulunamadı',
     'fc_status.dnd_on' => 'Açık',
     'fc_status.dnd_off' => 'Kapalı',
-
-    // Login
     'login.page_title' => 'Giriş Yap',
     'login.too_many_attempts' => 'Çok fazla hatalı deneme yapıldı! Hesabınız ve IP adresiniz 15 dakika süreyle kilitlenmiştir.',
     'login_2fa.too_many_failures' => 'Çok fazla hatalı doğrulama kodu girildi. Lütfen yeniden giriş yapın.',
@@ -1622,8 +1557,6 @@ return [
     'login.submit_tooltip' => 'Giriş Yap',
     'login.mobile_app_desc' => 'Dahilinizi cep telefonunuzdan kullanmak için Android uygulamasını indirin.',
     'login.csrf_error' => 'Güvenlik doğrulaması (CSRF) başarısız! Lütfen sayfayı yenileyip tekrar deneyin.',
-
-    // Force Reset (Zorunlu Şifre Sıfırlama)
     'force_reset.page_title' => 'Şifre Sıfırlama Gerekli',
     'force_reset.heading' => 'Şifre Sıfırlama Gerekli',
     'force_reset.sent_prefix' => 'Sıfırlama bağlantısı',
@@ -1633,8 +1566,6 @@ return [
     'force_reset.intro_no_email' => 'kayıtlı adres yok',
     'force_reset.intro_suffix' => 'bir sıfırlama bağlantısı göndereceğiz. Bu e-postaya erişiminiz yoksa şifrenizi değiştiremezsiniz — sistem yöneticinizle iletişime geçin.',
     'force_reset.send_button' => 'Sıfırlama Bağlantısı Gönder',
-
-    // Reset Password (Şifre Sıfırla)
     'reset_password.page_title' => 'Şifre Sıfırla',
     'reset_password.success_message' => 'Şifreniz başarıyla güncellendi. Artık yeni şifrenizle giriş yapabilirsiniz.',
     'reset_password.login_button' => 'Giriş Yap',
@@ -1661,8 +1592,6 @@ return [
     'reset_password.field_new_password' => 'Yeni Şifre',
     'reset_password.field_confirm_password' => 'Yeni Şifre (Tekrar)',
     'reset_password.update_button' => 'Şifreyi Güncelle',
-
-    // Sidebar (kalıcı navigasyon kabuğu)
     'sidebar.toggle_tooltip' => 'Menüyü Daralt / Genişlet',
     'sidebar.group_dashboard' => 'Panel',
     'sidebar.item_dashboard_overview' => 'Özet',
@@ -1726,8 +1655,6 @@ return [
     'sidebar.pending_sync_label' => 'Uygula',
     'sidebar.pending_sync_tooltip' => 'Bekleyen PBX değişiklikleri var — Asterisk\'e yansıtmak için tıklayın',
     'sidebar.other_admin_active' => 'Şu an sistemde başka bir admin de var',
-
-    // Topbar (üst bar hızlı kontroller)
     'topbar.mobile_menu_tooltip' => 'Ana Menü',
     'topbar.phone_status_tooltip' => 'Telefon Anlık Durumu / Ayarlar',
     'topbar.phone_mode_selector_tooltip' => 'Telefon Modu Seçimi',
@@ -1759,15 +1686,11 @@ return [
     'topbar.review_apply_desc' => 'Değişiklik listesini ayrıntılı görerek onayla',
     'topbar.applying' => 'Uygulanıyor...',
     'topbar.pending_changes_title' => 'Bekleyen Değişiklikler',
-
-    // Footer status bar
     'footer.fax_server' => 'Faks Sunucusu:',
     'footer.status_active' => 'Aktif',
     'footer.call_center' => 'Çağrı Merkezi:',
     'footer.status_online' => 'Çevrimiçi',
     'footer.loading' => 'Yükleniyor...',
-
-    // Phone settings modal
     'phone_settings.title' => 'Telefon Ayarları',
     'phone_settings.field_mic' => 'Mikrofon',
     'phone_settings.loading' => 'Yükleniyor...',
@@ -1776,14 +1699,10 @@ return [
     'phone_settings.test_sound_tooltip' => 'Test Sesi Çal',
     'phone_settings.speaker_unsupported' => 'Bu tarayıcı hoparlör seçimini desteklemiyor (Chrome/Edge kullanın). Sistem varsayılan hoparlörü kullanılacak.',
     'phone_settings.field_ring_volume' => 'Zil Sesi Düzeyi',
-
-    // Softphone keypad drawer
     'softphone_drawer.title' => 'Tuş Takımı',
     'softphone_drawer.close_tooltip' => 'Kapat',
     'softphone_drawer.clear_tooltip' => 'Temizle',
     'softphone_drawer.clear_label' => 'Temizle',
-
-    // Uygula (ertelenmiş Asterisk reload) sayfası
     'pending_sync.title' => 'Bekleyen Değişiklikler',
     'pending_sync.header_title' => 'Bekleyen Değişiklikler',
     'pending_sync.help_title' => 'Bu sayfa ne işe yarar?',
@@ -1818,8 +1737,6 @@ return [
     'pending_sync.domain_udptl' => 'UDPTL (Faks) Ayarları',
     'pending_sync.domain_internal_numbers' => 'Dahili Hedef Numaraları',
     'pending_sync.domain_custom_dialplan' => 'Özel Arama Planı',
-
-    // Denetim Kayıtları (Audit Log) sayfası
     'audit_log.title' => 'Denetim Kayıtları',
     'audit_log.header_title_pbx' => 'PBX Ayar Değişiklikleri',
     'audit_log.header_title_logins' => 'Giriş Denemeleri',
@@ -1876,8 +1793,6 @@ return [
     'audit_log.action_two_factor_regen_codes' => 'Yeni kurtarma kodları',
     'audit_log.action_unban' => 'Engel kaldırıldı',
     'audit_log.action_voicemail_email_notify' => 'Sesli mesaj e-posta ayarı',
-
-    // Firewall (Güvenlik)
     'firewall.title' => 'Firewall',
     'firewall.header_title' => 'Firewall Yönetimi',
     'firewall.service_active' => 'Servis Aktif',
@@ -1900,8 +1815,6 @@ return [
     'firewall.field_source' => 'Kaynak IP/Subnet (opsiyonel)',
     'firewall.source_help' => 'Boş bırakırsanız port herkese açık olur; bir subnet girerseniz (ör. 192.0.2.0/24) sadece o kaynaktan gelen trafik açılır.',
     'firewall.add_rule_submit' => 'Kuralı Ekle',
-
-    // Fail2ban (Güvenlik)
     'fail2ban.title' => 'Fail2ban',
     'fail2ban.header_title' => 'Fail2ban Yönetimi',
     'fail2ban.help_title' => 'Fail2ban Yönetimi Rehberi',
@@ -1922,8 +1835,6 @@ return [
     'fail2ban.remove_ignoreip_confirm' => 'Bu IP/subnet\'i beyaz listeden kaldırmak istediğinize emin misiniz?',
     'fail2ban.remove_ignoreip_tooltip' => 'Beyaz Listeden Kaldır',
     'fail2ban.field_add_ignoreip' => 'Beyaz Listeye IP/Subnet Ekle',
-
-    // RTP (medya) ayarlari — 2026-09-01
     'asterisk_settings.rtp_section_title' => 'RTP (Medya) Ayarları',
     'asterisk_settings.rtp_help_body' => 'Ses paketlerinin (RTP) hangi port aralığından akacağını ve Asterisk\'in beklenmedik kaynaktan gelen ses paketlerini reddedip reddetmeyeceğini belirler. Bu dosya (<code>/etc/asterisk/rtp.conf</code>) artık panelden üretilir; sunucuda elle yapılan değişiklikler bir sonraki "Uygula" işleminde kaybolur.',
     'asterisk_settings.field_rtp_start' => 'RTP Başlangıç Portu',
@@ -1935,8 +1846,6 @@ return [
     'asterisk_settings.rtp_strict_yes' => 'Açık (önerilen)',
     'asterisk_settings.rtp_strict_no' => 'Kapalı (teşhis amaçlı)',
     'asterisk_settings.rtp_restart_warning' => 'Katı RTP ayarı "Uygula" ile devreye girer. Ancak PORT ARALIĞI değişikliği için Asterisk\'in tam yeniden başlatılması gerekir — port havuzu modül yüklenirken bir kez ayrılır.',
-
-    // T.38 UDPTL (faks medya) ayarlari
     'asterisk_settings.udptl_section_title' => 'T.38 UDPTL Ayarları',
     'asterisk_settings.udptl_help_body' => 'T.38 faks paketlerinin (UDPTL) hangi port aralığından akacağını ve hata düzeltme (FEC / Checksum) parametrelerini belirler. Bu dosya (<code>/etc/asterisk/udptl.conf</code>) panelden dinamik üretilir.',
     'asterisk_settings.field_udptl_start' => 'UDPTL Başlangıç Portu',
@@ -1946,20 +1855,14 @@ return [
     'asterisk_settings.field_udptl_checksums' => 'UDPTL Checksum Kontrolü',
     'asterisk_settings.field_udptl_fec_entries' => 'FEC Yedek Paket Sayısı (Entries)',
     'asterisk_settings.field_udptl_fec_span' => 'FEC Paket Aralığı (Span)',
-
-    // Trunk baglanti modu — 2026-09-01
     'trunks.field_connection_mode' => 'Bağlantı Modu',
     'trunks.connection_mode_ip' => 'IP tabanlı (karşı taraf sabit IP\'de)',
     'trunks.connection_mode_register' => 'Gelen kayıt (karşı santral bize kaydolur)',
     'trunks.connection_mode_help' => 'IP tabanlı: karşı santralin kimliği IP adresinden doğrulanır ve adresi sabit tutulur — sabit IP\'li, aynı ağdaki santraller için önerilen mod. Gelen kayıt: karşı santral bize SIP REGISTER gönderir, adresi kayıttan öğrenilir. Bu mod kullanıcı adı ve parola zorunlu kılar; karşı taraf hem kaydını hem aramalarını bu bilgiyle doğrular.',
     'trunks.connection_mode_warning' => 'Kayıt moduna geçtiğinizde sabit adres kaydı kaldırılır: karşı santral BİZE KAYDOLANA KADAR o hattı arayamayız. Bu değişikliği karşı taraftaki kayıt ayarıyla eşzamanlı yapın.',
-
-    // IVR tuslama listesi/silme — 2026-09-01
     'ivr.entry_delete_confirm' => '%s tuşunun yönlendirmesi silinsin mi?',
     'ivr.entry_delete_tooltip' => 'Bu tuşlama seçeneğini sil',
     'ivr.entry_overwrite_warning' => 'Bu tuş zaten tanımlı — kaydederseniz mevcut yönlendirmenin üzerine yazılır.',
-
-    // MOH muzik yukleme modali — 2026-09-01
     'sounds.moh_upload_title' => 'Bekletme Müziği Yükle',
     'sounds.moh_upload_class' => 'Müzik Sınıfı',
     'sounds.moh_upload_file' => 'Ses Dosyası',
@@ -1995,8 +1898,6 @@ return [
     'sound_packs.invalid' => 'Geçersiz paket seçimi.',
     'sound_packs.already_running' => 'Başka bir ses paketi işlemi sürüyor.',
     'sound_packs.start_failed' => 'İşlem başlatılamadı.',
-
-    // Kişisel Telefonum & Çağrı Yönetimi (my_phone)
     'my_phone.title' => 'Telefonum',
     'my_phone.extension_info' => 'Dahili Bilgilerim',
     'my_phone.no_extension' => 'Hesabınıza henüz bir dahili numara atanmamış.',
@@ -2076,8 +1977,6 @@ return [
     'my_phone.sip_status_offline' => 'Çevrim Dışı',
     'my_phone.mobile_status_online' => 'Çevrim İçi',
     'my_phone.mobile_status_offline' => 'Çevrim Dışı',
-
-    // Microsoft Teams Integration
     'ms_teams.title' => 'Microsoft Teams Entegrasyonu',
     'ms_teams.badge_dr_active' => 'Direct Routing Aktif',
     'ms_teams.badge_dr_inactive' => 'Direct Routing Pasif',
@@ -2217,8 +2116,6 @@ return [
     'ms_teams.msg_err_ext_exists' => 'Bu dahili numara için zaten bir eşleştirme mevcut.',
     'ms_teams.msg_err_upn_exists' => 'Bu Teams kullanıcısı (UPN) zaten başka bir dahiliye eşleştirilmiş.',
     'ms_teams.msg_mapping_saved' => 'Kullanıcı eşleştirmesi başarıyla kaydedildi.',
-
-    // İki Faktörlü Doğrulama (2FA) & Passkey & Güvenlik
     'sidebar.security_settings' => 'Güvenlik (2FA)',
     'login.or_divider' => 'VEYA',
     'login.btn_passkey' => 'Passkey ile Giriş Yap',
@@ -2254,7 +2151,6 @@ return [
     'security.enable_google_login' => 'Google ile Girişi Etkinleştir',
     'security.google_redirect_uri_info' => 'Google Cloud Console Yetkili Yönlendirme URI (Redirect URI):',
     'security.btn_save_google' => 'Google Ayarlarını Kaydet',
-
     'login_2fa.page_title' => 'İki Faktörlü Doğrulama',
     'login_2fa.title' => 'İki Faktörlü Doğrulama (2FA)',
     'login_2fa.account_label' => 'Hesap:',
@@ -2269,7 +2165,6 @@ return [
     'login_2fa.invalid_recovery_code' => 'Geçersiz veya daha önce kullanılmış kurtarma kodu!',
     'login_2fa.enter_valid_totp' => 'Lütfen 6 haneli doğrulama kodunu eksiksiz girin.',
     'login_2fa.invalid_totp_code' => 'Hatalı veya süresi dolmuş doğrulama kodu! Lütfen telefonunuzdaki güncel kodu girin.',
-
     'security.page_title' => 'Hesap Güvenliği',
     'security.page_subtitle' => 'İki faktörlü kimlik doğrulama (2FA), biyometrik Passkey anahtarları ve şifre yönetimi.',
     'security.status_enabled' => 'Aktif',
@@ -2325,7 +2220,6 @@ return [
     'security.password_min_length' => 'Yeni şifre en az 8 karakter olmalıdır.',
     'security.password_mismatch' => 'Yeni şifreler birbiriyle uyuşmuyor.',
     'security.password_changed_success' => 'Şifreniz başarıyla güncellendi.',
-
     'system_users.2fa_reset_success' => 'Kullanıcının iki faktörlü doğrulaması (2FA) başarıyla sıfırlandı.',
     'system_users.2fa_active_tooltip' => '2FA Aktif',
     'system_users.2fa_inactive_tooltip' => '2FA Kapalı',
@@ -2337,8 +2231,6 @@ return [
     'system_users.bulk_mail_confirm' => 'Seçilen %d kullanıcıya aktivasyon ve şifre belirleme maili gönderilecek. Emin misiniz?',
     'system_users.no_email_tooltip' => 'E-posta adresi tanımlı değil',
     'system_users.select_users_warning' => 'Lütfen işlem yapmak için en az bir kullanıcı seçin!',
-
-    // E-Posta & Mail Relay Ayarları
     'mail_settings.title' => 'E-Posta & Mail Relay Ayarları',
     'mail_settings.tab_smtp' => 'SMTP & Relay',
     'mail_settings.tab_sender' => 'Gönderici',
@@ -2373,24 +2265,16 @@ return [
     'mail_settings.test_title' => 'Test E-Postası Gönder',
     'mail_settings.test_desc' => 'Mevcut ayarlar üzerinden test mesajı göndererek relay bağlantısını test edin.',
     'mail_settings.btn_send_test' => 'Test Gönder',
-
-    // Push Settings (Mobil Bildirim)
     'push_settings.title' => 'Mobil Bildirim',
     'push_settings.tab_config' => 'Yapılandırma',
     'push_settings.tab_test' => 'Test & Gönderim',
-
-    // Sidebar items
     'sidebar.item_dial_permissions' => 'Arama Yetkileri',
     'sidebar.item_ring_groups' => 'Çalma Grupları',
     'sidebar.item_boss_secretary' => 'Şef - Sekreter',
     'sidebar.item_conferences' => 'Konferans Odaları',
-
-    // Extensions
     'extensions.col_perm_role' => 'Yetki / Grup',
     'extensions.field_permission_group' => 'Arama Yetki Grubu',
     'extensions.field_boss_secretary_group' => 'Şef - Sekreter Grubu',
-
-    // Dial Permissions
     'dial_permissions.title' => 'Arama Yetki Grupları',
     'dial_permissions.subtitle' => 'Abonelerin arayabileceği ve arayamayacağı yönleri, prefix ve özel numaraları grup bazında tanımlayın.',
     'dial_permissions.new_group_btn' => 'Yeni Yetki Grubu',
@@ -2420,8 +2304,6 @@ return [
     'dial_permissions.type_exact' => 'Tam Eşleşme',
     'dial_permissions.action_allow' => 'İZİN VER',
     'dial_permissions.action_deny' => 'ENGELLE',
-
-    // Boss - Secretary
     'boss_secretary.title' => 'Şef - Sekreter Grupları',
     'boss_secretary.subtitle' => 'Müdür/Yönetici aramalarını sekreterlere yönlendirir, yalnızca yetkili kişilerin doğrudan ulaşmasını sağlar.',
     'boss_secretary.new_group_btn' => 'Yeni Şef Grubu',
@@ -2435,8 +2317,6 @@ return [
     'boss_secretary.help_strategy_desc' => 'Hepsi Birlikte (Aynı anda çalar, ilk açan bağlanır) veya Sırayla (Belirlenen sırayla teker teker çalar).',
     'boss_secretary.list_title' => 'Tanımlı Şef - Sekreter Grupları',
     'boss_secretary.empty' => 'Henüz tanımlanmış bir şef-sekreter grubu bulunmuyor.',
-
-    // Ring Groups
     'ring_groups.title' => 'Çalma Grupları (Ring Groups)',
     'ring_groups.subtitle' => 'Dahili ve harici telefon numaralarını aynı anda veya sırayla çaldırarak ilk açana bağlar.',
     'ring_groups.new_group_btn' => 'Yeni Çalma Grubu',
@@ -2450,8 +2330,6 @@ return [
     'ring_groups.help_internal_ext_desc' => 'Her çalma grubunun kendi dahili erişim numarası olabilir (ör: 7000). IVR, zaman koşulu ve dahililerden doğrudan bu numara aranabilir.',
     'ring_groups.list_title' => 'Tanımlı Çalma Grupları',
     'ring_groups.empty' => 'Henüz tanımlanmış bir çalma grubu bulunmuyor.',
-
-    // Conferences
     'conferences.title' => 'Konferans Odaları (ConfBridge)',
     'conferences.subtitle' => 'Çok katılımcılı sesli konferans odaları oluşturun, PIN kodları ve moderatör kuralları tanımlayın.',
     'conferences.new_conf_btn' => 'Yeni Konferans Odası',
@@ -2465,12 +2343,8 @@ return [
     'conferences.help_live_ctrl_desc' => 'Aktif katılımcıları canlı izleyebilir, istediklerinizi sessize alabilir (Mute) veya odadan atabilirsiniz (Kick).',
     'conferences.list_title' => 'Tanımlı Konferans Odaları',
     'conferences.empty' => 'Henüz tanımlanmış bir konferans odası bulunmuyor.',
-
-    // My Phone
     'my_phone.tab_voicemail' => 'Sesli Posta',
     'my_phone.voicemail_inbox' => 'Sesli Posta Kutum',
-
-    // Sistem Güncelleme
     'sidebar.item_system_update' => 'Sistem Güncelleme',
     'system_update.page_title' => 'Sistem Güncelleme',
     'system_update.help_title' => 'Güncelleme nasıl çalışır?',
@@ -2496,8 +2370,6 @@ return [
     'system_update.unreachable' => 'Sürüm bilgisi alınamadı (GitHub\'a ulaşılamıyor olabilir).',
     'system_update.already_running' => 'Bir güncelleme zaten sürüyor.',
     'system_update.start_failed' => 'Güncelleme başlatılamadı.',
-
-    // Zamanlanmış Görevler (Roadmap 2.1)
     'sidebar.item_scheduled_tasks' => 'Zamanlanmış Görevler',
     'scheduled_tasks.page_title' => 'Zamanlanmış Görevler',
     'scheduled_tasks.btn_new' => 'Yeni Görev',
@@ -2527,8 +2399,6 @@ return [
     'scheduled_tasks.version_history' => 'Betik Sürümleri',
     'scheduled_tasks.saved_successfully' => 'Zamanlanmış görev başarıyla kaydedildi.',
     'scheduled_tasks.deleted_successfully' => 'Zamanlanmış görev silindi.',
-
-    // Harici Veritabanları (Roadmap 2.2)
     'sidebar.item_external_dbs' => 'Veritabanı Bağlantıları',
     'external_dbs.page_title' => 'Harici Veritabanları',
     'external_dbs.btn_new' => 'Yeni Bağlantı',
@@ -2550,8 +2420,6 @@ return [
     'external_dbs.confirm_delete' => 'Bu veritabanı bağlantısını silmek istediğinizden emin misiniz?',
     'external_dbs.saved_successfully' => 'Veritabanı bağlantısı başarıyla kaydedildi.',
     'external_dbs.deleted_successfully' => 'Veritabanı bağlantısı silindi.',
-
-    // IVR Veri Adımları (Roadmap 2.3)
     'ivr_data.page_title' => 'IVR Veri Adımları',
     'ivr_data.btn_new' => 'Yeni Veri Adımı',
     'ivr_data.dest_name' => 'IVR Veri Adımı',
@@ -2576,8 +2444,6 @@ return [
     'ivr_data.saved_successfully' => 'IVR veri adımı başarıyla kaydedildi.',
     'ivr_data.deleted_successfully' => 'IVR veri adımı silindi.',
     'ivr_data.nav_button' => 'Veri Adımları',
-
-    // Asterisk Settings Fine Tuning & Maintenance (Roadmap 2.5 & 2.6)
     'asterisk_settings.tab_tuning' => 'İnce Ayar ve İşlemler',
     'asterisk_settings.tuning_title' => 'Santral İnce Ayarı ve Bakımı',
     'asterisk_settings.tuning_help_title' => 'Santral İnce Ayar Kılavuzu',
@@ -2618,14 +2484,10 @@ return [
     'asterisk_settings.sip_debug_enabled' => 'SIP hata ayıklama günlüğü 10 dakika süreyle etkinleştirildi.',
     'asterisk_settings.sip_debug_disabled' => 'SIP hata ayıklama günlüğü devre dışı bırakıldı.',
     'asterisk_settings.logs_rotated' => 'Asterisk günlükleri başarıyla döndürüldü.',
-
-    // Sağlık Kontrolleri (Roadmap 2.6)
     'health.check_failed_registrations' => 'Başarısız Kayıtlar',
     'health.desc_failed_registrations' => 'Yapılandırılan güvenlik eşiğine göre başarısız SIP kayıt ve kimlik doğrulama denemelerini izler.',
     'health.msg_failed_reg_ok' => 'Normal: Son 15 dakikada %d başarısız kayıt',
     'health.msg_failed_reg_warn' => 'Yüksek oran: Son 15 dakikada %d başarısız kayıt (eşik: %d)',
-
-    // Sertifikalar (Güvenlik → Sertifikalar)
     'sidebar.item_certificates' => 'Sertifikalar',
     'certificates.title' => 'Sertifikalar',
     'certificates.header_title' => 'TLS Sertifikası',
@@ -2709,8 +2571,6 @@ return [
     'certificates.msg_renew_ok' => 'Sertifika yenilendi ve uygulandı.',
     'certificates.msg_selfsigned_ok' => 'Kendinden imzalı sertifika etkin.',
     'certificates.msg_upload_ok' => 'Sertifika doğrulandı ve uygulandı.',
-
-    // Çağrı raporları: yön, hatlar ve çağrı yolu
     'cdr_reports.dir_inbound' => 'Gelen',
     'cdr_reports.dir_outbound' => 'Giden',
     'cdr_reports.dir_internal' => 'Dahili',
@@ -2747,8 +2607,6 @@ return [
     'cdr_reports.leg_app' => 'İşlem: %s (%s)',
     'cdr_reports.leg_app_detail' => 'Süre: %d sn • Konuşma: %d sn',
     'cdr_reports.leg_transferred_by' => 'Aktaran: %s',
-
-    // Kuyruk Rapor Merkezi
     'sidebar.item_queue_reports' => 'Kuyruk Rapor Merkezi',
     'queue_reports.title' => 'Kuyruk Rapor Merkezi',
     'queue_reports.help_title' => 'Kuyruk raporları rehberi',
@@ -2843,8 +2701,6 @@ return [
     'roles.module_certificates' => 'Sertifikalar',
     'roles.module_google_integration' => 'Google ile Giriş',
     'roles.module_queue_reports' => 'Kuyruk Rapor Merkezi',
-
-    // Rapor dışa aktarma (PDF / Excel)
     'export.generated_by' => 'Oluşturulma: %s · %s',
     'export.filters' => 'Filtreler',
     'export.summary' => 'Özet',
@@ -2880,8 +2736,6 @@ return [
     'export.f_trunk' => 'Hat',
     'export.col_in_trunk' => 'Gelen hat',
     'export.col_out_trunk' => 'Giden hat',
-
-    // AI → Cloud TTS
     'sidebar.group_ai' => 'Yapay Zekâ (AI)',
     'sidebar.item_ai_tts' => 'Cloud TTS',
     'ai_models.title' => 'Yerel AI modelleri',
@@ -4559,7 +4413,6 @@ Telefonunuz çaldırılacak.',
     'js.phones.key_park' => 'Çağrı park',
     'js.phones.key_dnd' => 'Rahatsız etme',
     'js.phones.key_line' => 'Hat',
-    // System → File storage (chat files on local disk or S3)
     'storage.title' => 'Dosya Depolama',
     'storage.header_title' => 'Sohbet dosyalarının depolanması',
     'storage.chat_unreachable' => 'Sohbet servisine ulaşılamıyor',
@@ -4610,8 +4463,6 @@ Telefonunuz çaldırılacak.',
     'storage.saved_s3' => 'Bağlantı çalışıyor, ayarlar kaydedildi. Yeni sohbet dosyaları bucket\'a gider.',
     'storage.test_ok' => 'Bağlantı çalışıyor: bir deneme dosyası yazıldı, okundu ve silindi.',
     'storage.migrate_started' => 'Dosyaların taşınması başladı. İlerlemeyi görmek için sayfayı yenileyin.',
-
-    // Network & devices → Network services (roadmap 10)
     'sidebar.item_network_services' => 'Ağ Servisleri',
     'netsvc.title' => 'Ağ Servisleri',
     'netsvc.header_title' => 'Masaüstü telefonlar için DHCP ve TFTP',
@@ -5243,7 +5094,6 @@ Telefonunuz çaldırılacak.',
     'dest.ivr' => 'IVR menüsü',
     'dest.ring_group' => 'Çalma grubu',
     'dest.time_condition' => 'Zaman koşulu',
-    // Network settings (roadmap 12-14)
     'netset.phones_title' => 'Masa telefonlarına verilen adresler',
     'roles.group_network' => 'Ağ ve cihazlar',
     'sidebar.group_network' => 'Ağ ve cihazlar',
@@ -5409,8 +5259,6 @@ Telefonunuz çaldırılacak.',
     'webhooks.col_attempts' => 'Deneme',
     'webhooks.col_created' => 'Oluşturulma',
     'webhooks.queue_empty' => 'İletim kuyruğu boş.',
-
-    // Open Source License & Telecom Disclaimer
     'license.modal_title' => 'Açık Kaynak Lisansı ve Telekom Sorumluluk Beyanı',
     'license.intro' => 'AiPBX, MIT Lisansı altında yayımlanan ücretsiz ve açık kaynaklı bir yazılımdır; hiçbir garanti olmaksızın "OLDUĞU GİBİ" (AS IS) sunulur. Bu santral sistemini kullanarak aşağıdaki şartları kabul etmiş sayılırsınız:',
     'license.item_oss' => 'Garanti Reddi (MIT Lisansı): Yazılım geliştiricileri ve katkıda bulunanlar, yazılımın kullanımından doğabilecek doğrudan veya dolaylı hiçbir zarardan sorumlu tutulamaz.',
@@ -5421,10 +5269,6 @@ Telefonunuz çaldırılacak.',
     'license.accept_btn' => 'Kabul Et ve Devam Et',
     'license.close_btn' => 'Kapat',
     'license.accepted_info' => 'Onay tarihi',
-
-    // AI → Asistan (src/services/ai/AssistantPlanner.php). İşlem adları
-    // yöneticinin diliyle söyler; hatalar ne yapılacağını anlatır. Hiçbiri
-    // yapılandırma dosyası ya da dialplan adı geçmez.
     'ai_assistant.act_extension_forward' => 'Dahiliyi yönlendir',
     'ai_assistant.act_extension_voicemail' => 'Dahilide telesekreter',
     'ai_assistant.act_extension_rename' => 'Dahili adını değiştir',
@@ -5440,11 +5284,6 @@ Telefonunuz çaldırılacak.',
     'ai_assistant.err_missing' => 'Bir değer eksik (%s).',
     'ai_assistant.err_unknown_field' => 'Bu değişiklik %s almıyor.',
     'ai_assistant.err_bad_value' => '%s için bu değeri kullanamam.',
-
-// Keys in sync with en.php (web/bin/lint_lang.php): English fallback
-// where this language has no translation yet.
-
-    // Guvenlik -> KVKK ve Veri Gizliligi (TR) / GDPR & Data Privacy (EN)
     'sidebar.item_privacy' => 'KVKK ve Veri Gizliliği',
     'roles.module_privacy' => 'KVKK ve Veri Gizliliği',
     'privacy.title' => 'KVKK ve Veri Gizliliği',
@@ -5647,8 +5486,6 @@ Telefonunuz çaldırılacak.',
     'phones.firmware_armed' => 'SIP yazılımı hazırlandı (yeniden başlatma bekleniyor):',
     'phones.firmware_fetched' => 'SIP yazılımı telefon tarafından alındı:',
     'phones.firmware_incomplete' => 'SIP yazılım dosyaları sunucuda eksik:',
-
-    // Ağda bulunan telefonlar (engine/aipbx_engine)
     'phonedisc.title' => 'Ağda bulunan telefonlar',
     'phonedisc.desc' => 'Motorun ağda, kimse MAC adresi yazmadan bulduğu masa telefonları. Zaten tanımlanmış bir telefon burada listelenir ve bir daha tanımlanmaz.',
     'phonedisc.badge_new' => '%d yeni',
@@ -5745,4 +5582,60 @@ Telefonunuz çaldırılacak.',
     'saml.err_empty_metadata' => 'Lütfen kimlik sağlayıcınızdan alınan XML metadatasını yapıştırın.',
     'saml.err_metadata_parse_failed' => 'IdP XML metadatası çözümlenemedi: %s',
     'saml.msg_metadata_imported' => '✓ IdP metadatası başarıyla çözümlendi ve uygulandı! EntityID: %s | SSO URL: %s | Sertifika: çıkarıldı (%d bayt)',
+    'sidebar.item_reverse_proxy' => 'Reverse Proxy',
+    'reverse_proxy.title' => 'Reverse Proxy ve Ağ Portları',
+    'reverse_proxy.header_title' => 'Reverse Proxy Yapılandırması',
+    'reverse_proxy.help_title' => 'Reverse Proxy ve Ağ Kurulum Kılavuzu',
+    'reverse_proxy.help_body' => 'AiPBX\'i mevcut bir HTTP/HTTPS ters proxy (Nginx, Caddy, Traefik, HAProxy veya Apache) arkasında güvenle çalıştırmak için yapılandırın. Gerçek istemci IP adreslerini almak için güvenilen proxy IP\'lerini yönetin, hazır yapılandırmaları kopyalayın ve gerekli ağ portları ile güvenlik duvarı kurallarını inceleyin.',
+    'reverse_proxy.voip_boundary_title' => 'VoIP ve Medya Sınırı Bildirimi (SIP / RTP)',
+    'reverse_proxy.voip_boundary_desc' => 'Standart HTTP/HTTPS ters proxy\'leri web yönetim trafiğini ve WebRTC WebSocket sinyalleşmesini (8089 portundaki /ws) sonlandırabilir. Ancak SIP sinyalleşmesi (5060/5061 UDP/TCP) ve ses/video RTP medya akışları (10000-20000 UDP) bir HTTP ters proxy\'si üzerinden GEÇEMEZ. Bu portlar doğrudan port yönlendirme, birebir NAT veya 4. katman yönlendirme ile AiPBX sunucusuna ulaşmalıdır.',
+    'reverse_proxy.diag_title' => 'Gerçek Zamanlı İstek Teşhisi',
+    'reverse_proxy.diag_remote_addr' => 'Doğrudan Bağlantı IP (REMOTE_ADDR)',
+    'reverse_proxy.diag_trusted' => 'Güvenilen Proxy',
+    'reverse_proxy.diag_untrusted' => 'Doğrudan / Güvenilmeyen',
+    'reverse_proxy.diag_forwarded_for' => 'İletilen IP (X-Forwarded-For)',
+    'reverse_proxy.diag_forwarded_proto' => 'Protokol (X-Forwarded-Proto)',
+    'reverse_proxy.diag_resolved_ip' => 'Çözümlenen İstemci IP (Etkin)',
+    'reverse_proxy.enable_label' => 'Reverse Proxy Modunu Etkinleştir',
+    'reverse_proxy.enable_hint' => 'Etkinleştirildiğinde, AiPBX yalnızca güvenilen ters proxy\'lerden gelen X-Forwarded-For ve X-Forwarded-Proto başlıklarını dikkate alır.',
+    'reverse_proxy.field_external_fqdn' => 'Harici FQDN / Alan Adı',
+    'reverse_proxy.fqdn_hint' => 'Kullanıcıların bu santrale erişmek için kullandığı genel alan adı (örn. pbx.example.com).',
+    'reverse_proxy.field_external_port' => 'Harici HTTPS Portu',
+    'reverse_proxy.port_hint' => 'Ters proxy üzerindeki genel port (varsayılan 443).',
+    'reverse_proxy.field_tls_mode' => 'TLS Sonlandırma Modu',
+    'reverse_proxy.tls_mode_hint' => 'Proxy ile AiPBX arasındaki SSL/TLS şifreleme biçimini seçin.',
+    'reverse_proxy.tls_edge' => 'Kenarda Sonlandırma (Proxy SSL çözer, AiPBX\'e HTTP ile bağlanır)',
+    'reverse_proxy.tls_re_encrypt' => 'Yeniden Şifreleme / Uçtan Uca (Proxy AiPBX\'e HTTPS ile bağlanır)',
+    'reverse_proxy.tls_none' => 'Yok / Düz HTTP (Dahili / Test ortamı)',
+    'reverse_proxy.field_proxy_type' => 'Tercih Edilen Ters Proxy',
+    'reverse_proxy.field_trusted_proxies' => 'Güvenilen Ters Proxy IP / CIDR Listesi',
+    'reverse_proxy.trusted_proxies_hint' => 'Virgülle ayrılmış proxy IP\'leri veya CIDR ağları (örn. 127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16). Bu listede olmayan IP\'lerden gelen başlıklar yoksayılır.',
+    'reverse_proxy.msg_saved_ok' => 'Reverse proxy ayarları başarıyla kaydedildi.',
+    'reverse_proxy.err_save_failed' => 'Reverse proxy ayarları kaydedilemedi.',
+    'reverse_proxy.err_invalid_fqdn' => 'Geçersiz alan adı veya FQDN biçimi.',
+    'reverse_proxy.gen_title' => 'Canlı Yapılandırma Oluşturucu',
+    'reverse_proxy.gen_desc' => 'WebRTC WebSocket (/ws) yükseltme başlıklarını ve istemci IP iletimini içeren üretime hazır yapılandırma örnekleri.',
+    'reverse_proxy.sample_config_for' => '%s İçin Örnek Yapılandırma',
+    'reverse_proxy.ports_title' => 'Ağ Portları ve Güvenlik Duvarı Matrisi',
+    'reverse_proxy.ports_desc' => 'AiPBX tarafından kullanılan tüm portların, protokollerin, erişim kapsamlarının ve proxy baypas durumunun kapsamlı tablosu.',
+    'reverse_proxy.th_port' => 'Port Aralığı',
+    'reverse_proxy.th_proto' => 'Protokol',
+    'reverse_proxy.th_service' => 'Servis / Amaç',
+    'reverse_proxy.th_scope' => 'Erişim Kapsamı',
+    'reverse_proxy.th_bypass' => 'Proxy Baypas',
+    'reverse_proxy.th_desc' => 'Açıklama ve Notlar',
+    'reverse_proxy.bypass_yes' => 'Doğrudan (Baypas)',
+    'reverse_proxy.bypass_no' => 'Proxy Üzerinden (HTTP/WS)',
+    'reverse_proxy.bypass_badge_hint' => 'Bu trafik doğrudan santral sunucusuna ulaşmalıdır ve HTTP proxy üzerinden geçirilemez.',
+    'reverse_proxy.fw_scripts_title' => 'Kullanıma Hazır Güvenlik Duvarı Kuralları',
+    'reverse_proxy.fw_rules_for' => '%s İçin Güvenlik Duvarı Komutları',
+    'certificates.field_validation_method' => 'Doğrulama Yöntemi',
+    'certificates.val_http01_desc' => 'Standart Let\'s Encrypt doğrulaması (80 portunun internete açık olmasını gerektirir)',
+    'certificates.val_dns_cloudflare_desc' => 'Cloudflare API ile DNS-01 doğrulaması (80 portu gerekmez, wildcard destekler)',
+    'certificates.field_cf_token' => 'Cloudflare API Belirteci (Token)',
+    'certificates.cf_token_hint' => 'Cloudflare Paneli üzerinden Zone:DNS:Edit yetkisine sahip bir API belirteci oluşturun.',
+    'certificates.cf_wildcard_label' => 'Sertifikaya joker (*.%s) alan adını dahil et',
+    'certificates.err_invalid_cf_token' => 'Geçersiz Cloudflare API belirteci biçimi.',
+    'certificates.err_stage_failed' => 'Sertifika talebi için kimlik bilgileri hazırlanamadı.',
+    'common.copied_to_clipboard' => 'Panoya kopyalandı!',
 ];

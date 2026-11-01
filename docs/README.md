@@ -31,6 +31,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | ☎️ [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, phones found on the network, key layouts (BLF, speed dial, park), re-provision |
 | 🔵 [Cisco 7900 / 8800 series](cisco-callmanager.md) | Cisco's enterprise phones (CallManager firmware): the `SEP<MAC>.cnf.xml` AiPBX writes, the firmware, the usecallmanager.nz Asterisk patch and the shared files you provide |
 | 🖧 [Network settings](network-settings.md) | The server's addresses, the addresses desk phones get, and moving everything after an IP change in one step |
+| 🛡️ [Reverse proxy setup](reverse-proxy.md) | Deploying behind Nginx, Caddy, Traefik, HAProxy, Apache; WebRTC WebSocket proxying, trusted proxies, and SIP/RTP bypass |
 | 📡 [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server, an NTP server and phone logs (syslog) by IP or MAC |
 | 🩺 [Health checks](health.md) | The server watches itself (services, trunks, disk, certificate, backup …), alarm e-mails, the daily summary with yesterday's calls, `aipbx-selftest` |
 | 🎙️ [Call recordings](recordings.md) | Where recordings live, automatic MP3 conversion, playback |
@@ -49,6 +50,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 |------|----------------|
 | 👥 [Users & roles](users-and-roles.md) | Built-in roles, landing pages, permissions, *My Phone* |
 | 🛡️ [Security](security.md) | Firewall, fail2ban, the `aipbx-priv` root helper, Apache sandbox |
+| 🖧 [Network ports & firewall](network-ports.md) | Complete matrix of all TCP/UDP ports, public vs LAN scopes, NAT guidelines, UFW/firewalld/iptables recipes |
 | 🛡️ [Threat model & attack surface](threat-model.md) | Security architecture, SIP exposure boundaries, WebRTC/TURNS credentials, recording retention, mobile push tokens, and AI least privilege guardrails |
 | ⚖️ [GDPR, KVKK & data privacy](privacy.md) | Optional regulatory presets (KVKK, GDPR, CCPA/FCC, HIPAA, PCI-DSS, LGPD), pre-call opt-in/opt-out, periodic beep, retention purge, SAR export, Right to Erasure, and Cloud AI lock |
 | 📜 [Certificates](certificates.md) | One certificate for portal, TURNS and SIP-TLS; Let's Encrypt, upload, renewals |

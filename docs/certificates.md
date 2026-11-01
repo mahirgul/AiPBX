@@ -28,11 +28,10 @@ same one. It flags the problems that break calls without an obvious error:
 
 From the page an admin can:
 
-1. **Get a Let's Encrypt certificate.** Requirements: the DNS record of the portal's domain points to the
-   server's public address and port 80 is reachable from the internet. *Test* runs against Let's
-   Encrypt's staging server first, so a misconfiguration does not use up the production rate limit.
-   Renewal is automatic (checked twice a day, renewed when less than 30 days are left); *Test renewal*
-   and *Renew now* are on the page.
+1. **Get a Let's Encrypt certificate.** Supports two validation challenge methods:
+   - **HTTP-01 (Standard)**: Requires port 80 to be open and reachable from the public internet to validate domain ownership.
+   - **DNS-01 (Cloudflare API)**: Validates domain ownership via Cloudflare DNS TXT records. **Port 80 does NOT need to be exposed to the internet**, and **Wildcard certificates** (`*.domain.com`) are supported. Requires a Cloudflare API Token with `Zone:DNS:Edit` permission.
+   *Test* runs against Let's Encrypt's staging server first, so a misconfiguration does not use up the production rate limit. Renewal is automatic (checked twice a day, renewed when less than 30 days are left); *Test renewal* and *Renew now* are on the page.
 2. **Upload a certificate** — PEM files (certificate, optional intermediate chain, private key) or a
    single PFX/P12 file with its password. The key, validity, domain and chain are checked before
    anything changes; a certificate that does not cover the portal's domain is only accepted when you
@@ -47,8 +46,9 @@ and reloads Asterisk's PJSIP module.
 The page runs `aipbx-cert` through the root helper; you can run it directly:
 
 ```bash
-sudo aipbx-cert letsencrypt --dry-run --email you@example.com   # test against staging
-sudo aipbx-cert letsencrypt --email you@example.com             # issue and apply
+sudo aipbx-cert letsencrypt --dry-run --email you@example.com                   # HTTP-01 test against staging
+sudo aipbx-cert letsencrypt --email you@example.com                             # HTTP-01 issue and apply
+sudo aipbx-cert letsencrypt --dns-cloudflare --wildcard --email you@example.com  # DNS-01 Cloudflare wildcard issue
 sudo aipbx-cert renew --dry-run
 sudo aipbx-cert selfsigned
 ```

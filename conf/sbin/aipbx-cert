@@ -123,14 +123,24 @@ do_deploy() {
 
 le_live() { echo "/etc/letsencrypt/live/$1"; }
 
+# Reads a staged file without following symlinks (the stage is web-writable).
+read_staged() {
+    local src="$1" dst="$2" max="$3"
+    dd if="$src" of="$dst" iflag=nofollow bs="$max" count=1 status=none 2>/dev/null \
+        || die "staged file missing: $(basename "$src")"
+    [ "$(stat -c %s "$dst")" -lt "$max" ] || die "staged file too large: $(basename "$src")"
+}
+
 # certbot prints the useful part of a failure on these lines.
 certbot_errors() { grep -E 'Detail:|Type:|Domain:|Hint:|Error|error:|Challenge failed|unauthorized|Timeout|too many' | head -12; }
 
 do_letsencrypt() {
-    local dry=0 email=""
+    local dry=0 email="" dns_cf=0 wildcard=0
     while [ $# -gt 0 ]; do
         case "$1" in
             --dry-run) dry=1 ;;
+            --dns-cloudflare) dns_cf=1 ;;
+            --wildcard) wildcard=1 ;;
             --email) shift; email="${1:-}"
                 [[ "$email" =~ ^[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}$ ]] || die "invalid email" ;;
             *) die "unexpected argument: $1" ;;
@@ -142,7 +152,36 @@ do_letsencrypt() {
     [[ "$d" =~ ^[0-9.]+$ ]] && die "Let's Encrypt needs a domain name, not an IP address ($d)"
     command -v certbot >/dev/null || die "certbot is not installed"
 
-    local args=(certonly --apache -d "$d" --cert-name "$d" --non-interactive --agree-tos)
+    local args=(certonly --non-interactive --agree-tos)
+    if [ "$dns_cf" = 1 ]; then
+        if ! certbot plugins 2>/dev/null | grep -q 'dns-cloudflare'; then
+            die "certbot-dns-cloudflare plugin is required for Cloudflare DNS-01 validation (install python3-certbot-dns-cloudflare)"
+        fi
+        local cf_cred="/etc/letsencrypt/cloudflare.ini"
+        mkdir -p /etc/letsencrypt || die "cannot create /etc/letsencrypt"
+        if [ -f "$STAGE_DIR/cloudflare.ini" ]; then
+            read_staged "$STAGE_DIR/cloudflare.ini" "$cf_cred.tmp" 1024
+            rm -f "$STAGE_DIR/cloudflare.ini"
+            if ! grep -qE '^[[:space:]]*dns_cloudflare_api_token[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{20,100}[[:space:]]*$' "$cf_cred.tmp"; then
+                rm -f "$cf_cred.tmp"
+                die "invalid Cloudflare API token format in staged credentials"
+            fi
+            install -o root -g root -m 0600 "$cf_cred.tmp" "$cf_cred"
+            rm -f "$cf_cred.tmp"
+        elif [ ! -r "$cf_cred" ]; then
+            die "Cloudflare credentials not found (expected staged credentials or $cf_cred)"
+        fi
+        args+=(--dns-cloudflare --dns-cloudflare-credentials "$cf_cred" --dns-cloudflare-propagation-seconds 10)
+    else
+        args+=(--apache)
+    fi
+
+    if [ "$wildcard" = 1 ]; then
+        args+=(-d "$d" -d "*.$d" --cert-name "$d")
+    else
+        args+=(-d "$d" --cert-name "$d")
+    fi
+
     if [ -n "$email" ]; then args+=(--email "$email"); else args+=(--register-unsafely-without-email); fi
 
     # Always validate against the staging server first: a failure there costs
@@ -191,14 +230,6 @@ do_renew() {
     # The deploy hook does this too; repeat it in case the hook is missing.
     do_deploy letsencrypt "$(le_live "$d")/fullchain.pem" "$(le_live "$d")/privkey.pem" || exit 1
     record true "certificate renewed"
-}
-
-# Reads a staged file without following symlinks (the stage is web-writable).
-read_staged() {
-    local src="$1" dst="$2" max="$3"
-    dd if="$src" of="$dst" iflag=nofollow bs="$max" count=1 status=none 2>/dev/null \
-        || die "staged file missing: $(basename "$src")"
-    [ "$(stat -c %s "$dst")" -lt "$max" ] || die "staged file too large: $(basename "$src")"
 }
 
 do_custom() {

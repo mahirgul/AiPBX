@@ -382,7 +382,7 @@ class CertificateService
     // ------------------------------------------------------------------
 
     /** Let's Encrypt: test (staging) or get a certificate for the portal domain. */
-    public static function letsEncrypt(bool $dryRun, string $email): array
+    public static function letsEncrypt(bool $dryRun, string $email, string $method = 'http01', string $cfApiToken = '', bool $wildcard = false): array
     {
         $domain = self::domain();
         if (!self::letsEncryptPossible($domain)) {
@@ -399,6 +399,27 @@ class CertificateService
             }
             array_push($args, '--email', $email);
         }
+
+        if ($method === 'dns_cloudflare') {
+            $token = trim($cfApiToken);
+            if ($token === '' || !preg_match('/^[A-Za-z0-9_-]{20,100}$/', $token)) {
+                return ['success' => false, 'error' => t('certificates.err_invalid_cf_token')];
+            }
+            if (!is_dir(self::STAGE_DIR)) {
+                @mkdir(self::STAGE_DIR, 0750, true);
+            }
+            $stageFile = self::STAGE_DIR . '/cloudflare.ini';
+            $content = "dns_cloudflare_api_token = " . $token . "\n";
+            if (@file_put_contents($stageFile, $content) === false) {
+                return ['success' => false, 'error' => t('certificates.err_stage_failed')];
+            }
+            @chmod($stageFile, 0600);
+            $args[] = '--dns-cloudflare';
+            if ($wildcard) {
+                $args[] = '--wildcard';
+            }
+        }
+
         return self::runPriv($args, $dryRun ? null : 'Let\'s Encrypt certificate requested');
     }
 

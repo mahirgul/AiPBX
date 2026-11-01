@@ -233,12 +233,14 @@ case "$cmd" in
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             letsencrypt)
-                # cert letsencrypt [--dry-run] [--email ADDR]
+                # cert letsencrypt [--dry-run] [--email ADDR] [--dns-cloudflare] [--wildcard]
                 args=()
                 while [ $# -gt 0 ]; do
                     case "$1" in
                         --dry-run) args+=(--dry-run) ;;
-                        --email) [ $# -ge 2 ] || die "usage: cert letsencrypt [--dry-run] [--email ADDR]"
+                        --dns-cloudflare) args+=(--dns-cloudflare) ;;
+                        --wildcard) args+=(--wildcard) ;;
+                        --email) [ $# -ge 2 ] || die "usage: cert letsencrypt [--dry-run] [--email ADDR] [--dns-cloudflare] [--wildcard]"
                             match "$2" "$RE_EMAIL"; args+=(--email "$2"); shift ;;
                         *) die "unexpected argument: $1" ;;
                     esac
