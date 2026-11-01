@@ -6,7 +6,7 @@
 #
 # A PR is flagged (label `needs-split` + one comment, updated in place) when it
 # touches too many components or is too large. It is a warning, not a failing
-# check: a single feature can legitimately span e.g. web + asterisk-config.
+# check: a single feature can legitimately span e.g. web + conf.
 name: PR scope
 
 on:
@@ -48,7 +48,7 @@ jobs:
               if (/^(install\.sh|conf\/|scripts\/)/.test(p)) return 'installer/system';
               if (/^\.github\//.test(p)) return 'ci';
               const top = p.split('/')[0];
-              return ['web', 'android', 'ios', 'chat', 'ai', 'signaling', 'asterisk-config', 'sounds', 'db'].includes(top) ? top : 'other';
+              return ['web', 'chat', 'ai', 'signaling', 'conf', 'sounds', 'db'].includes(top) ? top : 'other';
             }
             const generated = p => /(^|\/)(vendor\/|composer\.lock$|package-lock\.json$|go\.sum$)/.test(p) || /^web\/lang\//.test(p);
 

@@ -59,7 +59,10 @@ final class DialplanIntegrityTest extends TestCase
 
         $files = glob(ASTERISK_PBX_DIR . '/*.conf');
         // Seed files shipped by the installer but not regenerated here.
-        foreach (glob(dirname(__DIR__, 3) . '/asterisk-config/pbx/*.conf') as $seed) {
+        $seedDir = is_dir(dirname(__DIR__, 3) . '/conf/asterisk/pbx')
+            ? dirname(__DIR__, 3) . '/conf/asterisk/pbx'
+            : dirname(__DIR__, 3) . '/asterisk-config/pbx';
+        foreach (glob($seedDir . '/*.conf') as $seed) {
             if (!is_file(ASTERISK_PBX_DIR . '/' . basename($seed))) $files[] = $seed;
         }
 

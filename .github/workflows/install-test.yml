@@ -17,7 +17,6 @@ on:
     paths:
       - 'install.sh'
       - 'conf/**'
-      - 'asterisk-config/**'
       - 'web/bin/**'
       - 'web/db/**'
       - 'web/src/sync/**'

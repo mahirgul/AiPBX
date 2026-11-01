@@ -97,7 +97,7 @@ fi
 # Raise this number in a change that needs Asterisk RESTARTED on update (a new
 # Asterisk package or module, the service unit, anything read only at start).
 # aipbx-update compares it between releases (scripts/asterisk-restart-needed.sh):
-# when it and asterisk-config/ are unchanged, Asterisk is only reloaded and
+# when it and conf/asterisk/ are unchanged, Asterisk is only reloaded and
 # calls in progress stay up.
 # shellcheck disable=SC2034 # Read externally by scripts/asterisk-restart-needed.sh from git tree
 ASTERISK_RESTART_EPOCH=2
@@ -1446,7 +1446,7 @@ if [ -d "$INSTALL_DIR/engine" ]; then
     done
 fi
 
-# --- signaling capture (opt-in: asterisk-config/hep.conf decides whether
+# --- signaling capture (opt-in: conf/asterisk/hep.conf decides whether
 # Asterisk sends HEP; the local daemon stores events for the portal's
 # Signaling page). Installed here on fresh installs AND by --upgrade, so
 # aipbx-update upgrades land the same components.
@@ -1624,12 +1624,14 @@ mkdir -p /etc/asterisk/pbx
 # Asterisk restart with no extensions, hints or queue members: phones dropped
 # their registration and static queue members stayed "Invalid" (never rung)
 # because their hints did not exist yet when the queues were loaded.
-for f in "$INSTALL_DIR/asterisk-config/pbx/"*.conf; do
+for f in "$INSTALL_DIR/conf/asterisk/pbx/"*.conf; do
     [[ -e "/etc/asterisk/pbx/$(basename "$f")" ]] || cp "$f" /etc/asterisk/pbx/
 done
 
 for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf hep.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf stasis.conf dnsmgr.conf; do
-    if [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
+    if [[ -f "$INSTALL_DIR/conf/asterisk/$f" ]]; then
+        cp "$INSTALL_DIR/conf/asterisk/$f" /etc/asterisk/"$f"
+    elif [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
         cp "$INSTALL_DIR/asterisk-config/$f" /etc/asterisk/"$f"
     fi
 done

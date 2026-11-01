@@ -41,7 +41,7 @@ describe --tags`). Updates replace it; do not edit files there by hand.
 | `chat/` | Chat service (Go), built to `chat/aipbx-chat` |
 | `ai/aipbx_ai/` | Local AI service (Python): models, voice requests, AudioSocket calls |
 | `conf/sbin/` | Root tools installed to `/usr/local/sbin` (section 8) |
-| `asterisk-config/` | Static Asterisk files installed once (the generated ones are in `/etc/asterisk/pbx/`) |
+| `conf/asterisk/` | Static Asterisk files installed once (the generated ones are in `/etc/asterisk/pbx/`) |
 | `sounds/` | Sound lists and helpers |
 | `android/`, `ios/` | Mobile apps (not used on the server) |
 | `docs/` | These documents (also shown in the portal: *System → Help*) |
