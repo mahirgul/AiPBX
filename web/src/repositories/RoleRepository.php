@@ -52,6 +52,7 @@ class RoleRepository extends BaseRepository
             'ring_groups'        => ['title' => 'Ring Groups', 'group' => 'PBX Management', 'actions' => $all],
             'queues'             => ['title' => 'Queues', 'group' => 'PBX Management', 'actions' => $all],
             'conferences'        => ['title' => 'Conference Rooms', 'group' => 'PBX Management', 'actions' => $all],
+            'meetings'           => ['title' => 'Video Meetings', 'group' => 'PBX Management', 'actions' => $all],
             'boss_secretary'     => ['title' => 'Boss - Secretary', 'group' => 'PBX Management', 'actions' => $all],
             'end_call'           => ['title' => 'Hangup Actions', 'group' => 'PBX Management', 'actions' => $all],
             'sounds'             => ['title' => 'Sounds & Music', 'group' => 'PBX Management', 'actions' => $all],

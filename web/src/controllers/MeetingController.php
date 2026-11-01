@@ -12,6 +12,10 @@ class MeetingController extends BaseController
     public static function index(): void
     {
         static::requireLogin();
+        static::requireModule('meetings', 'access');
+
+        $canEdit = hasModulePermission('meetings', 'edit');
+        $canDelete = hasModulePermission('meetings', 'delete');
 
         if (isset($_GET['ics'])) {
             $meetingId = (int)$_GET['ics'];
@@ -57,6 +61,8 @@ class MeetingController extends BaseController
 
         static::renderPage('meetings/index', [
             'meetings' => $meetings,
+            'can_edit' => $canEdit,
+            'can_delete' => $canDelete,
             'csrf_token' => getCSRFToken(),
         ], ['title' => $pageTitle] + $notices);
     }

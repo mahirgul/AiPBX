@@ -142,7 +142,7 @@ final class RbacTest extends TestCase
     public function testReadOnlyAdminCannotEditOrDeleteAnywhere(): void
     {
         $_SESSION['user_role'] = 'read_only_admin';
-        $modules = ['trunks', 'extensions', 'queues', 'asterisk_settings', 'brand_settings', 'pending_sync', 'push_settings', 'fax_send', 'fax_sent', 'my_phone', 'chat'];
+        $modules = ['trunks', 'extensions', 'queues', 'conferences', 'meetings', 'asterisk_settings', 'brand_settings', 'pending_sync', 'push_settings', 'fax_send', 'fax_sent', 'my_phone', 'chat'];
 
         foreach ($modules as $m) {
             $this->assertFalse(
@@ -169,6 +169,9 @@ final class RbacTest extends TestCase
         $this->assertTrue(isPostDeleteRequest());
 
         $_POST = ['remove_extension' => '1'];
+        $this->assertTrue(isPostDeleteRequest());
+
+        $_POST = ['cancel_meeting' => '1'];
         $this->assertTrue(isPostDeleteRequest());
 
         $_POST = [];

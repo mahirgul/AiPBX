@@ -134,7 +134,7 @@ function getModuleKeyForPage($page = null) {
         'phone_logs.php'        => 'phones',
         'ring_groups.php'       => 'ring_groups',
         'conferences.php'       => 'conferences',
-        'meetings.php'          => 'conferences',
+        'meetings.php'          => 'meetings',
         'boss_secretary.php'    => 'boss_secretary',
         'users.php'             => 'system_users',
         'queues.php'            => 'queues',
@@ -320,13 +320,13 @@ function hasModulePermission($module_key, $action = 'access') {
  */
 function isPostDeleteRequest(): bool {
     foreach ($_POST as $k => $v) {
-        if (str_starts_with($k, 'delete_') || str_starts_with($k, 'remove_') || $k === 'delete') {
+        if (str_starts_with($k, 'delete_') || str_starts_with($k, 'remove_') || str_starts_with($k, 'cancel_') || $k === 'delete') {
             return true;
         }
     }
     $req_action = $_POST['action'] ?? $_GET['action'] ?? '';
     if ($req_action !== '') {
-        if (str_starts_with($req_action, 'delete_') || str_starts_with($req_action, 'remove_') || $req_action === 'delete') {
+        if (str_starts_with($req_action, 'delete_') || str_starts_with($req_action, 'remove_') || str_starts_with($req_action, 'cancel_') || $req_action === 'delete') {
             return true;
         }
     }
