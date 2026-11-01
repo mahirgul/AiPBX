@@ -276,4 +276,46 @@ XML;
         $this->assertSame(77777, $_SESSION['pending_reset_user_id']);
         $this->assertArrayNotHasKey('user_id', $_SESSION);
     }
+
+    public function testXmlSignatureWrappingProtection(): void
+    {
+        $res = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $this->assertNotFalse($res);
+        $csr = openssl_csr_new(['commonName' => 'idp.xsw-test.local'], $res);
+        $x509 = openssl_csr_sign($csr, null, $res, 365);
+        openssl_x509_export($x509, $certPem);
+
+        // 1. Multiple assertions in one Response must be rejected
+        $multiAssXml = '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_resp_xsw" Version="2.0">'
+            . '<samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>'
+            . '<saml:Assertion ID="_evil" Version="2.0"><saml:Subject><saml:NameID>admin@company.com</saml:NameID></saml:Subject></saml:Assertion>'
+            . '<saml:Assertion ID="_legit" Version="2.0"><saml:Subject><saml:NameID>user@company.com</saml:NameID></saml:Subject></saml:Assertion>'
+            . '</samlp:Response>';
+        $domMulti = new DOMDocument();
+        $domMulti->loadXML($multiAssXml);
+        $vMulti = SamlAuthService::verifyXmlSignature($domMulti, $certPem);
+        $this->assertFalse($vMulti['valid']);
+        $this->assertStringContainsString('XSW', (string)($vMulti['error'] ?? ''));
+
+        // 2. Reference URI mismatch against target element ID must be rejected
+        $assXml = '<saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_real_id" IssueInstant="2026-10-31T12:00:00Z" Version="2.0"><saml:Issuer>https://idp.local</saml:Issuer></saml:Assertion>';
+        $assDom = new DOMDocument();
+        $assDom->loadXML($assXml);
+        $digest = base64_encode(hash('sha256', (string)$assDom->documentElement->C14N(true, false), true));
+        $signedInfoXml = '<ds:SignedInfo xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/><ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/><ds:Reference URI="#_different_id"><ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>' . $digest . '</ds:DigestValue></ds:Reference></ds:SignedInfo>';
+        $siDom = new DOMDocument();
+        $siDom->loadXML($signedInfoXml);
+        openssl_sign((string)$siDom->documentElement->C14N(true, false), $signature, $res, OPENSSL_ALGO_SHA256);
+        $sigElementXml = '<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#">' . $signedInfoXml . '<ds:SignatureValue>' . base64_encode($signature) . '</ds:SignatureValue></ds:Signature>';
+        $frag = $assDom->createDocumentFragment();
+        $frag->appendXML($sigElementXml);
+        $assDom->documentElement->appendChild($frag);
+
+        $respXml = '<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_resp_2" Version="2.0"><samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>' . $assDom->saveXML($assDom->documentElement) . '</samlp:Response>';
+        $domMismatch = new DOMDocument();
+        $domMismatch->loadXML($respXml);
+        $vMismatch = SamlAuthService::verifyXmlSignature($domMismatch, $certPem);
+        $this->assertFalse($vMismatch['valid']);
+        $this->assertStringContainsString('XSW', (string)($vMismatch['error'] ?? ''));
+    }
 }

@@ -310,16 +310,19 @@ XML;
         $xpath->registerNamespace('saml', self::SAML_NS_ASSERTION);
         $xpath->registerNamespace('ds', self::XMLDSIG_NS);
 
-        // Check for signature in Assertion or Response
-        $sigNodes = $xpath->query('//saml:Assertion/ds:Signature');
-        if ($sigNodes->length === 0) {
-            $sigNodes = $xpath->query('/samlp:Response/ds:Signature');
-        }
-        if ($sigNodes->length === 0) {
-            $sigNodes = $xpath->query('//ds:Signature');
+        // XSW protection: reject documents containing multiple Assertion elements
+        $allAssertions = $xpath->query('//saml:Assertion');
+        if ($allAssertions && $allAssertions->length > 1) {
+            return ['valid' => false, 'error' => 'Multiple SAML Assertions are not allowed (XSW protection)'];
         }
 
-        if ($sigNodes->length === 0) {
+        // Check for signature only as a direct child of the Response or its direct Assertion
+        $sigNodes = $xpath->query('/samlp:Response/saml:Assertion/ds:Signature');
+        if (!$sigNodes || $sigNodes->length === 0) {
+            $sigNodes = $xpath->query('/samlp:Response/ds:Signature');
+        }
+
+        if (!$sigNodes || $sigNodes->length === 0) {
             return ['valid' => false, 'error' => 'No digital signature found in SAML response'];
         }
 
@@ -346,6 +349,30 @@ XML;
         $targetNode = $sigNode->parentNode;
         if (!($targetNode instanceof DOMElement)) {
             return ['valid' => false, 'error' => 'Target signed element not found'];
+        }
+
+        // XSW protection: verify <ds:Reference URI="#..."> matches target element ID and is unique
+        $refNodes = $xpath->query('.//ds:Reference/@URI', $signedInfoNode);
+        if ($refNodes && $refNodes->length > 0) {
+            $refUri = trim((string)$refNodes->item(0)->nodeValue);
+            if ($refUri !== '') {
+                $targetId = $targetNode->getAttribute('ID');
+                if (!str_starts_with($refUri, '#') || $targetId === '' || substr($refUri, 1) !== $targetId) {
+                    return ['valid' => false, 'error' => 'Signature Reference URI does not match signed element ID (XSW protection)'];
+                }
+                $idMatches = 0;
+                $allWithId = $xpath->query('//*[@ID]');
+                if ($allWithId) {
+                    foreach ($allWithId as $el) {
+                        if ($el instanceof DOMElement && $el->getAttribute('ID') === $targetId) {
+                            $idMatches++;
+                        }
+                    }
+                }
+                if ($idMatches !== 1) {
+                    return ['valid' => false, 'error' => 'Duplicate ID attribute detected in SAML document (XSW protection)'];
+                }
+            }
         }
 
         // Clone node in dedicated document to canonicalize with enveloped signature stripped
@@ -665,10 +692,13 @@ XML;
             return ['success' => false, 'error' => 'IdP returned unsuccessful authentication status: ' . $statusCode];
         }
 
-        // 2. Locate Assertion
-        $assertions = $xpath->query('//saml:Assertion');
-        if ($assertions->length === 0) {
+        // 2. Locate Assertion (must be a single direct child of Response)
+        $assertions = $xpath->query('/samlp:Response/saml:Assertion');
+        if (!$assertions || $assertions->length === 0) {
             return ['success' => false, 'error' => 'No Assertion element found in SAML response'];
+        }
+        if ($assertions->length > 1) {
+            return ['success' => false, 'error' => 'Multiple SAML Assertions are not allowed (XSW protection)'];
         }
         /** @var DOMElement $assertion */
         $assertion = $assertions->item(0);
@@ -681,6 +711,19 @@ XML;
         $sigResult = self::verifyXmlSignature($dom, $idpCert);
         if (!$sigResult['valid']) {
             return ['success' => false, 'error' => $sigResult['error'] ?? 'Invalid XML signature'];
+        }
+
+        // 3b. Validate InResponseTo against session AuthnRequest ID if SP-initiated
+        if (!empty($_SESSION['saml_auth_request_id'])) {
+            $expectedReqId = (string)$_SESSION['saml_auth_request_id'];
+            unset($_SESSION['saml_auth_request_id']);
+            $inRespNodes = $xpath->query('/samlp:Response/@InResponseTo');
+            if ($inRespNodes && $inRespNodes->length > 0) {
+                $inRespTo = trim((string)$inRespNodes->item(0)->nodeValue);
+                if ($inRespTo !== '' && !hash_equals($expectedReqId, $inRespTo)) {
+                    return ['success' => false, 'error' => 'SAML InResponseTo does not match initiated AuthnRequest ID'];
+                }
+            }
         }
 
         // 4. Validate Destination (if specified in response)

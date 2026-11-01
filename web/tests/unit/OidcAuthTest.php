@@ -251,4 +251,41 @@ final class OidcAuthTest extends TestCase
         $this->cleanUserIds[] = (int)$user['id'];
         $this->assertSame('user', $user['role']);
     }
+
+    public function testIdTokenNonceAndExpirationValidation(): void
+    {
+        $header = base64_encode((string)json_encode(['alg' => 'none']));
+        $makeToken = static function (array $claims) use ($header): string {
+            $payload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode((string)json_encode($claims)));
+            return "{$header}.{$payload}.sig";
+        };
+
+        // 1. Valid nonce & future exp succeeds
+        $validJwt = $makeToken([
+            'sub'   => 'u-1',
+            'email' => 'valid@company.com',
+            'name'  => 'Valid User',
+            'nonce' => 'nonce-abc-123',
+            'exp'   => time() + 600,
+        ]);
+        $info = OidcAuthService::getUserInfo('dummy-access', $validJwt, 'nonce-abc-123');
+        $this->assertNotNull($info);
+        $this->assertSame('valid@company.com', $info['email']);
+
+        // 2. Mismatched nonce fails
+        $badNonceInfo = OidcAuthService::getUserInfo('dummy-access', $validJwt, 'wrong-nonce');
+        $this->assertNull($badNonceInfo);
+        $this->assertStringContainsString('nonce', (string)OidcAuthService::getLastError());
+
+        // 3. Expired token fails
+        $expiredJwt = $makeToken([
+            'sub'   => 'u-1',
+            'email' => 'expired@company.com',
+            'nonce' => 'nonce-abc-123',
+            'exp'   => time() - 600,
+        ]);
+        $expiredInfo = OidcAuthService::getUserInfo('dummy-access', $expiredJwt, 'nonce-abc-123');
+        $this->assertNull($expiredInfo);
+        $this->assertStringContainsString('expired', (string)OidcAuthService::getLastError());
+    }
 }

@@ -48,9 +48,11 @@ final class InboundBlacklistAndEmergencyGeolocationTest extends TestCase
         $this->assertSame('busy', $entry['block_action']);
         $this->assertSame(1, (int)$entry['is_active']);
 
-        // Duplicate rejection
+        // Duplicate rejection (exact and E.164 '+' variant)
         $dupRes = InboundBlacklistService::add('9991234567', 'Duplicate', 'congestion', true);
         $this->assertFalse($dupRes['success']);
+        $dupPlusRes = InboundBlacklistService::add('+9991234567', 'Duplicate Plus Variant', 'congestion', true);
+        $this->assertFalse($dupPlusRes['success']);
 
         // Update action and title
         $updRes = InboundBlacklistService::update($id, '9991234567', 'Updated spam title', 'announcement', true);
