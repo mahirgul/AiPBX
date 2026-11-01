@@ -326,14 +326,14 @@ AiPBX/
 ├── plugins/                # 🔌 Bundled plugins: official (auto-dialer, ms-teams, web-widgets, ai-*, …) and community
 ├── ai/                     # 🤖 Local & cloud AI service (aipbx-ai, Python)
 ├── chat/                   # 💬 Go WebSocket chat service (aipbx-chat)
-├── android/                # 📱 Pointer to [AiPBX-Android](https://github.com/mahirgul/AiPBX-Android)
-├── ios/                    # 🍎 Pointer to [AiPBX-ios](https://github.com/mahirgul/AiPBX-ios)
+├── conf/                   # ⚙️ Configuration & services
+│   ├── asterisk/           # ☎️ Asterisk base configuration
+│   ├── sbin/               # 🔐 aipbx-priv (root helper), aipbx-update (updater)
+│   └── systemd/            # 🔄 systemd unit templates
 ├── integrations/wordpress/ # 🧩 WordPress click-to-call & callback plugin
-├── asterisk-config/        # ☎️ Asterisk base configuration
 ├── sounds/                 # 🔊 bundled custom sounds + Turkish prompt texts (core-sounds-tr.txt)
 ├── asterisk-core-sounds-tr-*.tar.xz  # 🇹🇷 Turkish prompts, one package per format (+ SHA256SUMS)
 ├── docs/                   # 📚 administrator & developer documentation
-├── conf/sbin/              # 🔐 aipbx-priv (root helper), aipbx-update (updater)
 ├── db/seed.sql             # 🗄️ initial roles, permissions, settings
 ├── scripts/release.sh      # 🚀 publishes a release
 ├── install.sh              # 🛠️ installer (--upgrade mode used by aipbx-update)

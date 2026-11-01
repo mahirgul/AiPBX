@@ -9,7 +9,7 @@
 #
 # A restart is needed when
 #   - an Asterisk configuration file the installer copies changed
-#     (asterisk-config/, except pbx/: those are generated from the database and
+#     (conf/asterisk/ or legacy asterisk-config/, except pbx/: those are generated from the database and
 #     loaded with a reload),
 #   - ASTERISK_RESTART_EPOCH in install.sh changed: raise it whenever an
 #     installer change needs Asterisk restarted (a new Asterisk package or
@@ -33,7 +33,7 @@ fi
 if [[ "$e_from" != "$e_to" ]]; then
     echo "yes: the installer asks for it (ASTERISK_RESTART_EPOCH $e_from -> $e_to)"; exit 0
 fi
-conf="$(grep -E '^asterisk-config/' <<<"$files" | grep -v '^asterisk-config/pbx/' | head -3 | tr '\n' ' ')"
+conf="$(grep -E '^(conf/asterisk/|asterisk-config/)' <<<"$files" | grep -v -E '^(conf/asterisk/|asterisk-config/)pbx/' | head -3 | tr '\n' ' ')"
 if [[ -n "$conf" ]]; then
     echo "yes: Asterisk configuration changed (${conf% })"; exit 0
 fi

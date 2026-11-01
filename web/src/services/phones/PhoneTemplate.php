@@ -16,7 +16,7 @@ require_once __DIR__ . '/PhoneModels.php';
  *         speeddial, park, dnd or line).
  *
  * To add a vendor: a subclass here, its models in
- * PhoneModels::MODELS, its notify events in asterisk-config/pjsip_notify.conf
+ * PhoneModels::MODELS, its notify events in conf/asterisk/pjsip_notify.conf
  * and a case in PhoneTemplates::forVendor().
  */
 abstract class PhoneTemplate

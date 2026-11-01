@@ -658,7 +658,10 @@ final class PhoneProvisionTest extends TestCase
         $this->assertFalse(PhoneProvisionService::resync((int) $po['id'], true, 'phones-test-csrf')['success']);
 
         // Every notify section the templates use exists in pjsip_notify.conf.
-        $conf = (string) file_get_contents(dirname(__DIR__, 3) . '/asterisk-config/pjsip_notify.conf');
+        $confPath = is_file(dirname(__DIR__, 3) . '/conf/asterisk/pjsip_notify.conf')
+            ? dirname(__DIR__, 3) . '/conf/asterisk/pjsip_notify.conf'
+            : dirname(__DIR__, 3) . '/asterisk-config/pjsip_notify.conf';
+        $conf = (string) file_get_contents($confPath);
         foreach (PhoneTemplates::all() as $tpl) {
             foreach (array_filter([$tpl->notifyResync(), $tpl->notifyReboot()]) as $section) {
                 $this->assertStringContainsString("[{$section}]", $conf);

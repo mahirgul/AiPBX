@@ -70,6 +70,12 @@ final class AsteriskRestartNeededTest extends TestCase
         $base = trim($this->git('rev-parse HEAD'));
         $head = $this->change('asterisk-config/pjsip.conf', "; new\n");
         $this->assertStringStartsWith('yes: Asterisk configuration changed', $this->decide($base, $head));
+
+        mkdir($this->repo . '/conf/asterisk', 0700, true);
+        file_put_contents($this->repo . '/conf/asterisk/pjsip.conf', "[global]\n");
+        $base2 = $this->commit('add conf/asterisk');
+        $head2 = $this->change('conf/asterisk/pjsip.conf', "; new conf\n");
+        $this->assertStringStartsWith('yes: Asterisk configuration changed', $this->decide($base2, $head2));
     }
 
     public function testRaisedEpochNeedsARestart(): void

@@ -241,5 +241,5 @@ Limits in this first version:
 
 The templates live in `web/src/services/phones/`: a `PhoneTemplate` subclass per vendor (file
 names, rendering, NOTIFY events), the models with their key counts in `PhoneModels`, and the
-NOTIFY sections in `asterisk-config/pjsip_notify.conf`. Values go through `PhoneTemplate::clean()`
+NOTIFY sections in `conf/asterisk/pjsip_notify.conf`. Values go through `PhoneTemplate::clean()`
 (line-based files) or `PhoneTemplate::xml()` (XML), so a name or label cannot add settings.

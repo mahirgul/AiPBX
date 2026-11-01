@@ -102,7 +102,7 @@ final class CiscoCallManagerTemplate extends PhoneTemplate
         return 'application/xml; charset=utf-8';
     }
 
-    /** Cisco's own NOTIFY event (see asterisk-config/pjsip_notify.conf). */
+    /** Cisco's own NOTIFY event (see conf/asterisk/pjsip_notify.conf). */
     public function notifyResync(): string
     {
         return 'cisco-check-cfg';
