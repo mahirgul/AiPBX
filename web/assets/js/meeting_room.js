@@ -242,6 +242,7 @@
                 const target = 'sip:' + config.room_number + '@' + window.location.hostname;
                 const callOptions = {
                     mediaStream: localStream,
+                    extraHeaders: ['X-Meeting-Token: ' + (config.join_token || '')],
                     pcConfig: { iceServers: config.ice_servers || [] },
                     eventHandlers: {
                         peerconnection: (e) => {
@@ -263,7 +264,10 @@
                             }
                         },
                         ended: () => leaveMeeting(),
-                        failed: (e) => console.warn('Conference Call failed:', e)
+                        failed: (e) => {
+                            console.warn('Conference Call failed:', e);
+                            leaveMeeting();
+                        }
                     }
                 };
                 jsSipSession = jsSipUA.call(target, callOptions);

@@ -250,7 +250,7 @@ final class MeetingServiceTest extends TestCase
 
         $res = MeetingService::saveMeeting([
             'title'        => 'Lobby Render Test',
-            'starts_at'    => date('Y-m-d H:i:s', time() + 3600),
+            'starts_at'    => date('Y-m-d H:i:s', time() + 600),
             'room_number'  => '8994',
             'allow_guests' => 1,
         ], 1);
@@ -271,5 +271,92 @@ final class MeetingServiceTest extends TestCase
         $this->assertStringContainsString('Lobby Render Test', $html);
         $this->assertStringContainsString('/assets/css/fontawesome.min.css', $html);
         $this->assertStringNotContainsString('Fatal error', $html);
+    }
+
+    private function meeting(array $over = []): array
+    {
+        $res = MeetingService::saveMeeting($over + [
+            'title' => 'Join check',
+            'scheduled_start' => date('Y-m-d H:i:s', time() - 60),
+            'scheduled_end' => date('Y-m-d H:i:s', time() + 3600),
+            'room_number' => '8991',
+        ]);
+        $this->assertTrue($res['success'], (string)($res['error'] ?? ''));
+        $this->createdMeetingIds[] = (int)$res['meeting_id'];
+        return MeetingService::getMeeting((int)$res['meeting_id']);
+    }
+
+    public function testMeetingDoesNotTakeOverAnExistingConferenceRoom(): void
+    {
+        $this->db->exec("INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, is_active) VALUES ('8992', '8992', 'Board room', '1234', '9999', 1)");
+        $res = MeetingService::saveMeeting(['title' => 'Other', 'scheduled_start' => '2030-01-01 10:00:00', 'room_number' => '8992']);
+        $this->assertFalse($res['success']);
+
+        $row = $this->db->query("SELECT title, user_pin, admin_pin, is_active FROM pbx_conferences WHERE room_number = '8992'")->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame('Board room', $row['title']);
+        $this->assertSame('1234', $row['user_pin']);
+        $this->assertSame('9999', $row['admin_pin']);
+        $this->assertSame(1, (int)$row['is_active']);
+    }
+
+    public function testRoomOfALiveMeetingIsNotSharedButACancelledOneIsReused(): void
+    {
+        $first = $this->meeting(['room_number' => '8993']);
+        $again = MeetingService::saveMeeting(['title' => 'Second', 'scheduled_start' => '2030-01-01 10:00:00', 'room_number' => '8993']);
+        $this->assertFalse($again['success']);
+
+        MeetingService::cancelMeeting((int)$first['id']);
+        $this->meeting(['room_number' => '8993', 'title' => 'Third']);
+    }
+
+    public function testJoinCheckTiesATokenToItsOwnRoom(): void
+    {
+        $m = $this->meeting(['max_participants' => 7]);
+        $this->assertSame(7, MeetingService::joinCheck($m['meeting_token'], '8991'));
+        $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8994'), 'another room');
+        $this->assertSame(0, MeetingService::joinCheck('m_wrong', '8991'));
+        $this->assertSame(0, MeetingService::joinCheck('', '8991'));
+    }
+
+    public function testJoinCheckRefusesCancelledAndClosedMeetings(): void
+    {
+        $m = $this->meeting();
+        $this->db->exec('UPDATE pbx_meetings SET scheduled_start = NOW() + INTERVAL 1 DAY, scheduled_end = NOW() + INTERVAL 2 DAY WHERE id = ' . (int)$m['id']);
+        $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'), 'not started');
+
+        $this->db->exec('UPDATE pbx_meetings SET scheduled_start = NOW() - INTERVAL 3 DAY, scheduled_end = NOW() - INTERVAL 2 DAY WHERE id = ' . (int)$m['id']);
+        $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'), 'ended');
+
+        $this->db->exec('UPDATE pbx_meetings SET scheduled_start = NOW(), scheduled_end = NOW() + INTERVAL 1 HOUR WHERE id = ' . (int)$m['id']);
+        $this->assertGreaterThan(0, MeetingService::joinCheck($m['meeting_token'], '8991'));
+        MeetingService::cancelMeeting((int)$m['id']);
+        $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'), 'cancelled');
+    }
+
+    public function testNoGuestMeetingTakesInvitesAndStaffButNotTheLink(): void
+    {
+        $m = $this->meeting(['allow_guests' => 0]);
+        $this->assertSame(0, MeetingService::joinCheck($m['meeting_token'], '8991'));
+        $this->assertGreaterThan(0, MeetingService::joinCheck(MeetingService::staffJoinKey($m), '8991'));
+
+        $this->db->prepare('INSERT INTO pbx_meeting_invites (meeting_id, email, guest_token, status) VALUES (?, ?, ?, "invited")')
+            ->execute([(int)$m['id'], 'guest@example.com', 'g_test']);
+        $this->assertGreaterThan(0, MeetingService::joinCheck('g_test', '8991'));
+
+        $this->assertSame(MeetingService::staffJoinKey($m), MeetingService::sipJoinToken($m, $m['meeting_token'], 'member', true));
+        $this->assertSame($m['meeting_token'], MeetingService::sipJoinToken($m, $m['meeting_token'], 'member', false));
+        $this->assertSame('g_test', MeetingService::sipJoinToken($m, 'g_test', 'guest', true));
+    }
+
+    public function testJoinWindow(): void
+    {
+        $m = ['status' => 'scheduled', 'scheduled_start' => '2030-01-01 10:00:00', 'scheduled_end' => '2030-01-01 11:00:00'];
+        $start = (int)strtotime($m['scheduled_start']);
+        $end = (int)strtotime($m['scheduled_end']);
+        $this->assertSame('not_started', MeetingService::joinState($m, $start - MeetingService::JOIN_EARLY_SECONDS - 1));
+        $this->assertSame('open', MeetingService::joinState($m, $start - MeetingService::JOIN_EARLY_SECONDS));
+        $this->assertSame('open', MeetingService::joinState($m, $end + MeetingService::JOIN_LATE_SECONDS));
+        $this->assertSame('ended', MeetingService::joinState($m, $end + MeetingService::JOIN_LATE_SECONDS + 1));
+        $this->assertSame('cancelled', MeetingService::joinState(['status' => 'cancelled'] + $m, $start));
     }
 }

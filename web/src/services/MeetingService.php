@@ -14,6 +14,11 @@ require_once __DIR__ . '/ForgotPasswordService.php';
  */
 class MeetingService
 {
+    /** A meeting can be joined this long before its scheduled start. */
+    public const JOIN_EARLY_SECONDS = 1800;
+    /** A meeting can be joined this long after its scheduled end, for meetings that run over. */
+    public const JOIN_LATE_SECONDS = 3600;
+
     /**
      * Get list of meetings with optional status filter.
      *
@@ -131,6 +136,81 @@ class MeetingService
     }
 
     /**
+     * Whether a meeting can be joined now: open, not_started, ended or cancelled.
+     *
+     * @param array<string, mixed> $meeting
+     */
+    public static function joinState(array $meeting, ?int $now = null): string
+    {
+        if (($meeting['status'] ?? '') === 'cancelled') {
+            return 'cancelled';
+        }
+        $now ??= time();
+        $start = strtotime((string)($meeting['scheduled_start'] ?? ''));
+        $end = strtotime((string)($meeting['scheduled_end'] ?? ''));
+        if ($start !== false && $now < $start - self::JOIN_EARLY_SECONDS) {
+            return 'not_started';
+        }
+        if ($end !== false && $now > $end + self::JOIN_LATE_SECONDS) {
+            return 'ended';
+        }
+        return 'open';
+    }
+
+    /**
+     * Join key of a signed-in portal user: lets staff into a meeting that takes no guests,
+     * where the meeting link alone is not enough.
+     *
+     * @param array<string, mixed> $meeting
+     */
+    public static function staffJoinKey(array $meeting): string
+    {
+        return 's_' . substr(hash_hmac('sha256', 'staff|' . (string)($meeting['meeting_token'] ?? ''), getMeetingGuestSipSecret()), 0, 32);
+    }
+
+    /**
+     * The token the browser sends with its INVITE, checked again by joinCheck() for that call.
+     *
+     * @param array<string, mixed> $meeting
+     */
+    public static function sipJoinToken(array $meeting, string $pageToken, string $role, bool $signedIn): string
+    {
+        return ($role === 'member' && $signedIn) ? self::staffJoinKey($meeting) : $pageToken;
+    }
+
+    /**
+     * Asterisk's check for a browser participant: may this token enter this room now?
+     * Every /meet page shares one SIP password, so this is what ties a caller to one meeting.
+     *
+     * @return int Participant limit of the meeting, 0 when the call must be refused.
+     */
+    public static function joinCheck(string $token, string $room): int
+    {
+        if ($token === '' || $room === '') {
+            return 0;
+        }
+        $db = getDB();
+        $stmt = $db->prepare('SELECT * FROM pbx_meetings WHERE room_number = ? AND status <> "cancelled"');
+        $stmt->execute([$room]);
+        $invite = $db->prepare('SELECT COUNT(*) FROM pbx_meeting_invites WHERE meeting_id = ? AND guest_token = ?');
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $meeting) {
+            if (self::joinState($meeting) !== 'open') {
+                continue;
+            }
+            $allowed = hash_equals(self::staffJoinKey($meeting), $token)
+                || (!empty($meeting['allow_guests']) && hash_equals((string)$meeting['meeting_token'], $token));
+            if (!$allowed) {
+                $invite->execute([(int)$meeting['id'], $token]);
+                $allowed = (int)$invite->fetchColumn() > 0;
+            }
+            if ($allowed) {
+                return max(1, (int)$meeting['max_participants']);
+            }
+        }
+        return 0;
+    }
+
+    /**
      * Schedule or update a meeting.
      *
      * @param array<string, mixed> $input
@@ -192,21 +272,27 @@ class MeetingService
             $token = 'm_' . bin2hex(random_bytes(16));
             $customRoom = preg_replace('/[^0-9]/', '', (string)($input['room_number'] ?? '')) ?? '';
             if ($customRoom !== '') {
-                $existingConfStmt = $db->prepare('SELECT id FROM pbx_conferences WHERE room_number = ? LIMIT 1');
-                $existingConfStmt->execute([$customRoom]);
-                $existingConfId = (int)$existingConfStmt->fetchColumn();
-                $owner = internalNumberOwner($customRoom, 'conference', $existingConfId);
+                // A meeting writes its title and PINs into the room, so it never takes over a
+                // conference room or another meeting's room.
+                if (!self::roomIsFree($customRoom)) {
+                    return ['success' => false, 'error' => sprintf(t('meetings.err_room_in_use'), $customRoom)];
+                }
+                $owner = internalNumberOwner($customRoom, 'conference', self::conferenceIdForRoom($customRoom));
                 if ($owner !== null) {
                     return ['success' => false, 'error' => sprintf(t('internal_number.err_used'), $customRoom, $owner)];
                 }
                 $roomNumber = $customRoom;
             } else {
-                $roomNumber = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
+                $roomNumber = '';
                 for ($attempt = 0; $attempt < 30; $attempt++) {
-                    if (internalNumberOwner($roomNumber) === null) {
+                    $candidate = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
+                    if (self::roomIsFree($candidate) && internalNumberOwner($candidate, 'conference', self::conferenceIdForRoom($candidate)) === null) {
+                        $roomNumber = $candidate;
                         break;
                     }
-                    $roomNumber = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
+                }
+                if ($roomNumber === '') {
+                    return ['success' => false, 'error' => t('meetings.err_no_free_room')];
                 }
             }
             $stmt = $db->prepare('INSERT INTO pbx_meetings (
@@ -251,6 +337,35 @@ class MeetingService
         }
 
         return ['success' => true, 'meeting_id' => $meetingId, 'message' => t('meetings.msg_saved')];
+    }
+
+    /**
+     * Free for a new meeting: no conference room with this number, or only the deactivated room
+     * of cancelled meetings.
+     */
+    private static function roomIsFree(string $room): bool
+    {
+        $db = getDB();
+        $stmt = $db->prepare('SELECT is_active FROM pbx_conferences WHERE room_number = ? LIMIT 1');
+        $stmt->execute([$room]);
+        $isActive = $stmt->fetchColumn();
+        $stmt = $db->prepare('SELECT COUNT(*) AS total, COALESCE(SUM(status <> "cancelled"), 0) AS live FROM pbx_meetings WHERE room_number = ?');
+        $stmt->execute([$room]);
+        $meetings = $stmt->fetch(PDO::FETCH_ASSOC) ?: ['total' => 0, 'live' => 0];
+        if ((int)$meetings['live'] > 0) {
+            return false;
+        }
+        if ($isActive === false) {
+            return true;
+        }
+        return (int)$isActive === 0 && (int)$meetings['total'] > 0;
+    }
+
+    private static function conferenceIdForRoom(string $room): int
+    {
+        $stmt = getDB()->prepare('SELECT id FROM pbx_conferences WHERE room_number = ? LIMIT 1');
+        $stmt->execute([$room]);
+        return (int)$stmt->fetchColumn();
     }
 
     /**

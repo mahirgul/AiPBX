@@ -33,6 +33,10 @@ final class SamlAuthTest extends TestCase
             $this->db->exec("DELETE FROM sys_users WHERE id IN ({$in})");
         }
         $this->db->exec("DELETE FROM sys_users WHERE username LIKE 'saml_test_%'");
+        $this->db->exec('DELETE FROM sys_saml_used_assertions');
+        $this->db->exec("DELETE FROM sys_plugin_settings WHERE plugin_slug = 'saml-auth'");
+        PluginManager::resetCache();
+        unset($_COOKIE['aipbx_saml_request']);
         parent::tearDown();
     }
 
@@ -83,30 +87,6 @@ final class SamlAuthTest extends TestCase
         $acs = $xpath->query('//md:AssertionConsumerService');
         $this->assertSame(1, $acs->length);
         $this->assertSame('urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST', $acs->item(0)->getAttribute('Binding'));
-    }
-
-    public function testRelayStateGenerationAndVerification(): void
-    {
-        if (session_status() === PHP_SESSION_NONE) {
-            @session_start();
-        }
-
-        $relayState = SamlAuthService::generateRelayState(false);
-        $this->assertNotEmpty($relayState);
-        $this->assertSame($relayState, $_SESSION['saml_relay_state'] ?? null);
-
-        // Verification with matching state succeeds
-        $res = SamlAuthService::verifyRelayState($relayState);
-        $this->assertTrue($res['valid']);
-        $this->assertFalse($res['mobile']);
-
-        // Replay attack: second verification fails
-        $replay = SamlAuthService::verifyRelayState($relayState);
-        $this->assertFalse($replay['valid']);
-
-        // Empty state fails
-        $empty = SamlAuthService::verifyRelayState('');
-        $this->assertFalse($empty['valid']);
     }
 
     public function testDomainFiltering(): void
@@ -317,5 +297,149 @@ XML;
         $vMismatch = SamlAuthService::verifyXmlSignature($domMismatch, $certPem);
         $this->assertFalse($vMismatch['valid']);
         $this->assertStringContainsString('XSW', (string)($vMismatch['error'] ?? ''));
+    }
+
+    /** Signs an assertion the way an IdP does and wraps it in a Response. */
+    private function signedResponse(array $o = []): array
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $x509 = openssl_csr_sign(openssl_csr_new(['commonName' => 'idp.test'], $key), null, $key, 1);
+        openssl_x509_export($x509, $pem);
+
+        $nsA = 'urn:oasis:names:tc:SAML:2.0:assertion';
+        $nsP = 'urn:oasis:names:tc:SAML:2.0:protocol';
+        $ds = 'http://www.w3.org/2000/09/xmldsig#';
+        $id = '_a' . bin2hex(random_bytes(8));
+        $until = gmdate('Y-m-d\TH:i:s\Z', time() + ($o['ttl'] ?? 300));
+        $email = $o['email'] ?? 'saml_test_low@example.com';
+        $req = $o['in_response_to'] ?? '_' . str_repeat('a', 32);
+        $aud = $o['audience'] ?? SamlAuthService::getSpEntityId();
+        $nsDecl = ($o['ns_on_response'] ?? false) ? '' : ' xmlns:saml="' . $nsA . '"';
+        $assertion = '<saml:Assertion' . $nsDecl . ' ID="' . $id . '" Version="2.0" IssueInstant="' . gmdate('Y-m-d\TH:i:s\Z') . '">'
+            . '<saml:Issuer>idp</saml:Issuer>'
+            . '<saml:Subject><saml:NameID>' . $email . '</saml:NameID>'
+            . '<saml:SubjectConfirmation Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"><saml:SubjectConfirmationData NotOnOrAfter="' . $until . '" InResponseTo="' . $req . '"/></saml:SubjectConfirmation></saml:Subject>'
+            . '<saml:Conditions NotOnOrAfter="' . $until . '"><saml:AudienceRestriction><saml:Audience>' . $aud . '</saml:Audience></saml:AudienceRestriction></saml:Conditions>'
+            . '</saml:Assertion>';
+        $wrapOpen = '<samlp:Response xmlns:samlp="' . $nsP . '"' . (($o['ns_on_response'] ?? false) ? ' xmlns:saml="' . $nsA . '"' : '') . ' ID="_r' . bin2hex(random_bytes(6)) . '">'
+            . '<samlp:Status><samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/></samlp:Status>';
+
+        $d = new DOMDocument();
+        $d->loadXML($wrapOpen . $assertion . '</samlp:Response>');
+        $node = $d->getElementsByTagNameNS($nsA, 'Assertion')->item(0);
+        $digest = base64_encode(hash('sha256', (string)$node->C14N(true, false), true));
+        $si = '<ds:SignedInfo xmlns:ds="' . $ds . '"><ds:CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/>'
+            . '<ds:SignatureMethod Algorithm="http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"/>'
+            . '<ds:Reference URI="#' . $id . '"><ds:Transforms><ds:Transform Algorithm="' . $ds . 'enveloped-signature"/><ds:Transform Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#"/></ds:Transforms>'
+            . '<ds:DigestMethod Algorithm="http://www.w3.org/2001/04/xmlenc#sha256"/><ds:DigestValue>' . $digest . '</ds:DigestValue></ds:Reference></ds:SignedInfo>';
+        $sd = new DOMDocument();
+        $sd->loadXML($si);
+        openssl_sign((string)$sd->documentElement->C14N(true, false), $sig, $key, OPENSSL_ALGO_SHA256);
+        $signature = '<ds:Signature xmlns:ds="' . $ds . '">' . $si . '<ds:SignatureValue>' . base64_encode($sig) . '</ds:SignatureValue></ds:Signature>';
+
+        $xml = $wrapOpen . str_replace('</saml:Issuer>', '</saml:Issuer>' . $signature, $assertion) . '</samlp:Response>';
+        return ['xml' => $xml, 'cert' => $pem, 'signature' => $signature, 'request' => $req];
+    }
+
+    private function dom(string $xml): DOMDocument
+    {
+        $d = new DOMDocument();
+        $d->loadXML($xml);
+        return $d;
+    }
+
+    public function testSignedNameIdHiddenInsideASecondSignatureIsRefused(): void
+    {
+        $r = $this->signedResponse();
+        $this->assertTrue(SamlAuthService::verifyXmlSignature($this->dom($r['xml']), $r['cert'])['valid']);
+
+        // The attack: a Signature element is stripped before the digest, so what it holds is unsigned.
+        $inject = '<ds:Signature xmlns:ds="http://www.w3.org/2000/09/xmldsig#"><saml:Subject><saml:NameID>admin@example.com</saml:NameID></saml:Subject></ds:Signature>';
+        $forged = str_replace('</ds:Signature><saml:Subject>', '</ds:Signature>' . $inject . '<saml:Subject>', $r['xml']);
+        $this->assertNotSame($r['xml'], $forged);
+        $res = SamlAuthService::verifyXmlSignature($this->dom($forged), $r['cert']);
+        $this->assertFalse($res['valid']);
+        $this->assertStringContainsString('XSW', (string)$res['error']);
+
+        // The same content in another unsigned wrapper breaks the digest.
+        $inject2 = '<saml:Advice><saml:Subject><saml:NameID>admin@example.com</saml:NameID></saml:Subject></saml:Advice>';
+        $forged2 = str_replace('</ds:Signature><saml:Subject>', '</ds:Signature>' . $inject2 . '<saml:Subject>', $r['xml']);
+        $this->assertFalse(SamlAuthService::verifyXmlSignature($this->dom($forged2), $r['cert'])['valid']);
+
+        // And a changed value too.
+        $tampered = str_replace('saml_test_low@', 'admin@', $r['xml']);
+        $this->assertFalse(SamlAuthService::verifyXmlSignature($this->dom($tampered), $r['cert'])['valid']);
+    }
+
+    public function testNamespacesDeclaredOnTheResponseVerify(): void
+    {
+        $r = $this->signedResponse(['ns_on_response' => true]);
+        $res = SamlAuthService::verifyXmlSignature($this->dom($r['xml']), $r['cert']);
+        $this->assertTrue($res['valid'], (string)($res['error'] ?? ''));
+    }
+
+    public function testDoctypeAndForeignTransformAreRefused(): void
+    {
+        $r = $this->signedResponse();
+        $withDoctype = '<!DOCTYPE x [<!ENTITY a "b">]>' . $r['xml'];
+        $this->assertFalse(SamlAuthService::verifyXmlSignature($this->dom($withDoctype), $r['cert'])['valid']);
+        $xslt = str_replace('enveloped-signature', 'xslt-transform', $r['xml']);
+        $this->assertFalse(SamlAuthService::verifyXmlSignature($this->dom($xslt), $r['cert'])['valid']);
+    }
+
+    private function process(array $r, ?string $cookieRequest = null, bool $mobile = false): array
+    {
+        PluginManager::setSetting('saml-auth', 'idp_x509_cert', $r['cert']);
+        $_COOKIE['aipbx_saml_request'] = ($cookieRequest ?? $r['request']) . '.' . ($mobile ? '1' : '0');
+        return SamlAuthService::processResponse(base64_encode($r['xml']));
+    }
+
+    public function testFullResponseSignsInOnceAndKeepsTheMobileFlag(): void
+    {
+        $this->db->exec("INSERT INTO sys_users (username, full_name, email, password_hash, role, is_active) VALUES ('saml_test_low', 'Low', 'saml_test_low@example.com', 'x', 'user', 1)");
+        $r = $this->signedResponse();
+
+        $ok = $this->process($r, null, true);
+        $this->assertTrue($ok['success'], (string)($ok['error'] ?? ''));
+        $this->assertSame('saml_test_low@example.com', $ok['user']['email']);
+        $this->assertTrue($ok['is_mobile']);
+
+        $replay = $this->process($r);
+        $this->assertFalse($replay['success']);
+        $this->assertStringContainsString('already been used', (string)$replay['error']);
+    }
+
+    public function testResponsesThisBrowserDidNotAskForAreRefused(): void
+    {
+        $r = $this->signedResponse();
+        $other = $this->process($r, '_' . str_repeat('b', 32));
+        $this->assertFalse($other['success']);
+        $this->assertStringContainsString('started in this browser', (string)$other['error']);
+
+        PluginManager::setSetting('saml-auth', 'idp_x509_cert', $r['cert']);
+        unset($_COOKIE['aipbx_saml_request']);
+        $none = SamlAuthService::processResponse(base64_encode($r['xml']));
+        $this->assertFalse($none['success']);
+    }
+
+    public function testExpiredAndForeignAudienceResponsesAreRefused(): void
+    {
+        $expired = $this->process($this->signedResponse(['ttl' => -600]));
+        $this->assertFalse($expired['success']);
+        $this->assertStringContainsString('expired', (string)$expired['error']);
+
+        $foreign = $this->process($this->signedResponse(['audience' => 'https://other.example.com/sp']));
+        $this->assertFalse($foreign['success']);
+        $this->assertStringContainsString('Audience', (string)$foreign['error']);
+    }
+
+    public function testAuthnRequestRemembersTheRequestInTheBrowser(): void
+    {
+        PluginManager::setSetting('saml-auth', 'idp_sso_url', 'https://idp.example.com/sso');
+        $req = SamlAuthService::buildAuthnRequest(true);
+        $this->assertNotNull($req);
+        $pending = SamlAuthService::pendingRequest();
+        $this->assertSame($req['id'], $pending['id']);
+        $this->assertTrue($pending['mobile']);
     }
 }

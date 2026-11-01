@@ -37,6 +37,26 @@ class SamlAuthService
     private const SAML_NS_ASSERTION = 'urn:oasis:names:tc:SAML:2.0:assertion';
     private const SAML_NS_METADATA = 'urn:oasis:names:tc:SAML:2.0:metadata';
     private const XMLDSIG_NS = 'http://www.w3.org/2000/09/xmldsig#';
+    private const EXC_C14N = 'http://www.w3.org/2001/10/xml-exc-c14n#';
+    private const STATE_COOKIE = 'aipbx_saml_request';
+    private const STATE_TTL = 600;
+
+    private const DIGEST_ALGORITHMS = [
+        'http://www.w3.org/2000/09/xmldsig#sha1'        => 'sha1',
+        'http://www.w3.org/2001/04/xmlenc#sha256'       => 'sha256',
+        'http://www.w3.org/2001/04/xmldsig-more#sha384' => 'sha384',
+        'http://www.w3.org/2001/04/xmlenc#sha512'       => 'sha512',
+    ];
+
+    private const SIGNATURE_ALGORITHMS = [
+        'http://www.w3.org/2000/09/xmldsig#rsa-sha1'          => OPENSSL_ALGO_SHA1,
+        'http://www.w3.org/2001/04/xmldsig-more#rsa-sha256'   => OPENSSL_ALGO_SHA256,
+        'http://www.w3.org/2001/04/xmldsig-more#rsa-sha384'   => OPENSSL_ALGO_SHA384,
+        'http://www.w3.org/2001/04/xmldsig-more#rsa-sha512'   => OPENSSL_ALGO_SHA512,
+        'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha256' => OPENSSL_ALGO_SHA256,
+        'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha384' => OPENSSL_ALGO_SHA384,
+        'http://www.w3.org/2001/04/xmldsig-more#ecdsa-sha512' => OPENSSL_ALGO_SHA512,
+    ];
 
     private static ?string $lastError = null;
 
@@ -183,61 +203,83 @@ XML;
     }
 
     /**
-     * Generates cryptographically secure relay state for CSRF mitigation and session continuity.
+     * Remembers in this browser which AuthnRequest it started.
+     *
+     * A cookie of its own: the IdP posts the response cross-site, and the Lax session cookie is
+     * not sent with that POST, so nothing in the session can be read at the ACS.
      */
-    public static function generateRelayState(bool $isMobile = false): string
+    private static function rememberRequest(string $requestId, bool $isMobile): void
     {
-        $token = bin2hex(random_bytes(16));
-        $data = [
-            'token'  => $token,
-            'mobile' => $isMobile ? 1 : 0,
-            'time'   => time(),
-        ];
-
-        $encoded = base64_encode(json_encode($data, JSON_THROW_ON_ERROR));
-
-        if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
-            @session_start();
+        $value = $requestId . '.' . ($isMobile ? '1' : '0');
+        $_COOKIE[self::STATE_COOKIE] = $value;
+        if (!headers_sent()) {
+            setcookie(self::STATE_COOKIE, $value, [
+                'expires'  => time() + self::STATE_TTL,
+                'path'     => '/auth/saml/',
+                'secure'   => true,
+                'httponly' => true,
+                'samesite' => 'None',
+            ]);
         }
-
-        $_SESSION['saml_relay_token'] = $token;
-        $_SESSION['saml_relay_state'] = $encoded;
-
-        return $encoded;
     }
 
     /**
-     * Verifies incoming RelayState parameter.
+     * The AuthnRequest this browser started, read from its cookie.
      *
-     * @return array{valid: bool, mobile: bool}
+     * @return array{id: string, mobile: bool}
      */
-    public static function verifyRelayState(?string $relayState): array
+    public static function pendingRequest(): array
     {
-        if (empty($relayState) || empty($_SESSION['saml_relay_state'])) {
-            return ['valid' => false, 'mobile' => false];
+        $value = (string)($_COOKIE[self::STATE_COOKIE] ?? '');
+        if (!preg_match('/^(_[0-9a-f]{32})\\.([01])$/', $value, $m)) {
+            return ['id' => '', 'mobile' => false];
         }
+        return ['id' => $m[1], 'mobile' => $m[2] === '1'];
+    }
 
-        if (!hash_equals((string)$_SESSION['saml_relay_state'], $relayState)) {
-            return ['valid' => false, 'mobile' => false];
+    private static function clearPendingRequest(): void
+    {
+        unset($_COOKIE[self::STATE_COOKIE]);
+        if (!headers_sent()) {
+            setcookie(self::STATE_COOKIE, '', [
+                'expires'  => time() - 3600,
+                'path'     => '/auth/saml/',
+                'secure'   => true,
+                'httponly' => true,
+                'samesite' => 'None',
+            ]);
         }
+    }
 
-        unset($_SESSION['saml_relay_token'], $_SESSION['saml_relay_state']);
-
-        $decoded = json_decode(base64_decode($relayState), true);
-        if (!is_array($decoded) || empty($decoded['time']) || (time() - (int)$decoded['time']) > 600) {
-            return ['valid' => false, 'mobile' => false];
+    /**
+     * Records an assertion ID; false when it was already used (replay).
+     */
+    private static function consumeAssertion(string $assertionId, int $validUntil): bool
+    {
+        if ($assertionId === '') {
+            return false;
         }
+        $db = getDB();
+        $db->exec('DELETE FROM sys_saml_used_assertions WHERE expires_at < NOW()');
+        $stmt = $db->prepare('INSERT IGNORE INTO sys_saml_used_assertions (assertion_hash, expires_at) VALUES (?, ?)');
+        // Kept beyond the assertion's own lifetime, by more than the allowed clock skew.
+        $stmt->execute([hash('sha256', $assertionId), date('Y-m-d H:i:s', $validUntil + 600)]);
+        return $stmt->rowCount() === 1;
+    }
 
-        return [
-            'valid'  => true,
-            'mobile' => !empty($decoded['mobile']),
-        ];
+    /**
+     * Same ACS endpoint? Compares the path only: behind a proxy the host the IdP was given can
+     * differ from the configured portal URL; the Audience check binds the response to this PBX.
+     */
+    private static function sameAcsPath(string $url, string $expectedAcs): bool
+    {
+        return rtrim((string)parse_url($url, PHP_URL_PATH), '/') === rtrim((string)parse_url($expectedAcs, PHP_URL_PATH), '/');
     }
 
     /**
      * Builds AuthnRequest XML and the complete HTTP-Redirect URL for the IdP.
      *
-     * @return array{id: string, url: string, relay_state: string}|null
+     * @return array{id: string, url: string}|null
      */
     public static function buildAuthnRequest(bool $isMobile = false): ?array
     {
@@ -260,11 +302,7 @@ XML;
 </samlp:AuthnRequest>
 XML;
 
-        $relayState = self::generateRelayState($isMobile);
-        if (session_status() !== PHP_SESSION_ACTIVE && !headers_sent()) {
-            @session_start();
-        }
-        $_SESSION['saml_auth_request_id'] = $reqId;
+        self::rememberRequest($reqId, $isMobile);
 
         // HTTP-Redirect binding: Deflate + Base64 + urlencode
         $deflated = gzdeflate($xml);
@@ -277,13 +315,11 @@ XML;
         $separator = str_contains($idpSsoUrl, '?') ? '&' : '?';
         $redirectUrl = $idpSsoUrl . $separator . http_build_query([
             'SAMLRequest' => $samlRequestB64,
-            'RelayState'  => $relayState,
         ]);
 
         return [
             'id'          => $reqId,
             'url'         => $redirectUrl,
-            'relay_state' => $relayState,
         ];
     }
 
@@ -304,7 +340,7 @@ XML;
     /**
      * Verifies XML-DSig signature on a SAML Response or Assertion.
      *
-     * @return array{valid: bool, error?: string}
+     * @return array{valid: bool, error?: string, signed?: string}
      */
     public static function verifyXmlSignature(DOMDocument $dom, string $certPem): array
     {
@@ -312,6 +348,11 @@ XML;
         $xpath->registerNamespace('samlp', self::SAML_NS_PROTOCOL);
         $xpath->registerNamespace('saml', self::SAML_NS_ASSERTION);
         $xpath->registerNamespace('ds', self::XMLDSIG_NS);
+        $xpath->registerNamespace('ec', self::EXC_C14N);
+
+        if ($dom->doctype !== null) {
+            return ['valid' => false, 'error' => 'DOCTYPE is not allowed in a SAML response'];
+        }
 
         // XSW protection: reject documents containing multiple Assertion elements
         $allAssertions = $xpath->query('//saml:Assertion');
@@ -319,124 +360,137 @@ XML;
             return ['valid' => false, 'error' => 'Multiple SAML Assertions are not allowed (XSW protection)'];
         }
 
-        // Check for signature only as a direct child of the Response or its direct Assertion
-        $sigNodes = $xpath->query('/samlp:Response/saml:Assertion/ds:Signature');
+        // The signed element is the Assertion if it carries a signature, otherwise the Response.
+        $targetQuery = '/samlp:Response/saml:Assertion';
+        $signedKind = 'assertion';
+        $sigNodes = $xpath->query($targetQuery . '/ds:Signature');
         if (!$sigNodes || $sigNodes->length === 0) {
-            $sigNodes = $xpath->query('/samlp:Response/ds:Signature');
+            $targetQuery = '/samlp:Response';
+            $signedKind = 'response';
+            $sigNodes = $xpath->query($targetQuery . '/ds:Signature');
         }
-
         if (!$sigNodes || $sigNodes->length === 0) {
             return ['valid' => false, 'error' => 'No digital signature found in SAML response'];
+        }
+        if ($sigNodes->length > 1) {
+            return ['valid' => false, 'error' => 'More than one signature on the signed element (XSW protection)'];
         }
 
         /** @var DOMElement $sigNode */
         $sigNode = $sigNodes->item(0);
-        $signedInfoNodes = $xpath->query('.//ds:SignedInfo', $sigNode);
-        if ($signedInfoNodes->length === 0) {
-            return ['valid' => false, 'error' => 'Missing SignedInfo element in signature'];
-        }
-        /** @var DOMElement $signedInfoNode */
-        $signedInfoNode = $signedInfoNodes->item(0);
-
-        $sigValNodes = $xpath->query('.//ds:SignatureValue', $sigNode);
-        $digestValNodes = $xpath->query('.//ds:DigestValue', $signedInfoNode);
-
-        if ($sigValNodes->length === 0 || $digestValNodes->length === 0) {
-            return ['valid' => false, 'error' => 'Missing SignatureValue or DigestValue in signature'];
-        }
-
-        $sigVal = trim($sigValNodes->item(0)->textContent);
-        $digestVal = trim($digestValNodes->item(0)->textContent);
-
-        // 1. Verify Digest of the target signed node
         $targetNode = $sigNode->parentNode;
         if (!($targetNode instanceof DOMElement)) {
             return ['valid' => false, 'error' => 'Target signed element not found'];
         }
 
-        // XSW protection: verify <ds:Reference URI="#..."> matches target element ID and is unique
-        $refNodes = $xpath->query('.//ds:Reference/@URI', $signedInfoNode);
-        if ($refNodes && $refNodes->length > 0) {
-            $refUri = trim((string)$refNodes->item(0)->nodeValue);
-            if ($refUri !== '') {
-                $targetId = $targetNode->getAttribute('ID');
-                if (!str_starts_with($refUri, '#') || $targetId === '' || substr($refUri, 1) !== $targetId) {
-                    return ['valid' => false, 'error' => 'Signature Reference URI does not match signed element ID (XSW protection)'];
-                }
-                $idMatches = 0;
-                $allWithId = $xpath->query('//*[@ID]');
-                if ($allWithId) {
-                    foreach ($allWithId as $el) {
-                        if ($el instanceof DOMElement && $el->getAttribute('ID') === $targetId) {
-                            $idMatches++;
-                        }
-                    }
-                }
-                if ($idMatches !== 1) {
-                    return ['valid' => false, 'error' => 'Duplicate ID attribute detected in SAML document (XSW protection)'];
-                }
+        // The enveloped transform removes exactly one signature. A second one inside the signed
+        // element would be content the digest does not cover (XSW protection).
+        $inner = $xpath->query('.//ds:Signature', $targetNode);
+        if (!$inner || $inner->length !== 1) {
+            return ['valid' => false, 'error' => 'Unexpected nested signature in the signed element (XSW protection)'];
+        }
+
+        $signedInfoNodes = $xpath->query('ds:SignedInfo', $sigNode);
+        if (!$signedInfoNodes || $signedInfoNodes->length !== 1) {
+            return ['valid' => false, 'error' => 'Missing SignedInfo element in signature'];
+        }
+        /** @var DOMElement $signedInfoNode */
+        $signedInfoNode = $signedInfoNodes->item(0);
+
+        $sigValNodes = $xpath->query('ds:SignatureValue', $sigNode);
+        $refElements = $xpath->query('ds:Reference', $signedInfoNode);
+        if (!$refElements || $refElements->length !== 1) {
+            return ['valid' => false, 'error' => 'The signature must have exactly one Reference (XSW protection)'];
+        }
+        /** @var DOMElement $refNode */
+        $refNode = $refElements->item(0);
+        $digestValNodes = $xpath->query('ds:DigestValue', $refNode);
+        if (!$sigValNodes || !$digestValNodes || $sigValNodes->length !== 1 || $digestValNodes->length !== 1) {
+            return ['valid' => false, 'error' => 'Missing SignatureValue or DigestValue in signature'];
+        }
+
+        // XSW protection: the Reference must name the signed element, and its ID must be unique
+        $targetId = $targetNode->getAttribute('ID');
+        if ($targetId === '' || $refNode->getAttribute('URI') !== '#' . $targetId) {
+            return ['valid' => false, 'error' => 'Signature Reference URI does not match signed element ID (XSW protection)'];
+        }
+        $idMatches = 0;
+        foreach ($xpath->query('//*[@ID]') ?: [] as $el) {
+            if ($el instanceof DOMElement && $el->getAttribute('ID') === $targetId) {
+                $idMatches++;
+            }
+        }
+        if ($idMatches !== 1) {
+            return ['valid' => false, 'error' => 'Duplicate ID attribute detected in SAML document (XSW protection)'];
+        }
+
+        // Only the transforms of the Web SSO profile; XPath or XSLT transforms could hide content.
+        foreach ($xpath->query('ds:Transforms/ds:Transform/@Algorithm', $refNode) ?: [] as $t) {
+            if (!in_array((string)$t->nodeValue, [self::XMLDSIG_NS . 'enveloped-signature', self::EXC_C14N], true)) {
+                return ['valid' => false, 'error' => 'Unsupported signature transform: ' . (string)$t->nodeValue];
             }
         }
 
-        // Clone node in dedicated document to canonicalize with enveloped signature stripped
-        $tempDoc = new DOMDocument();
-        $targetXml = $dom->saveXML($targetNode);
-        if ($targetXml === false) {
-            return ['valid' => false, 'error' => 'Failed to serialize target element'];
+        // 1. Digest of the signed element, without its own signature. Done on a copy of the whole
+        // document, so that namespaces declared on the Response stay in scope.
+        $copy = $dom->cloneNode(true);
+        if (!($copy instanceof DOMDocument)) {
+            return ['valid' => false, 'error' => 'Failed to copy the SAML document'];
         }
-        $tempDoc->loadXML($targetXml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR);
-
-        $sigsInTemp = $tempDoc->getElementsByTagNameNS(self::XMLDSIG_NS, 'Signature');
-        while ($sigsInTemp->length > 0) {
-            $s = $sigsInTemp->item(0);
-            $s->parentNode?->removeChild($s);
+        $copyXpath = new DOMXPath($copy);
+        $copyXpath->registerNamespace('samlp', self::SAML_NS_PROTOCOL);
+        $copyXpath->registerNamespace('saml', self::SAML_NS_ASSERTION);
+        $copyXpath->registerNamespace('ds', self::XMLDSIG_NS);
+        $copyTarget = $copyXpath->query($targetQuery)->item(0);
+        $copySig = $copyXpath->query('ds:Signature', $copyTarget)->item(0);
+        if (!($copyTarget instanceof DOMElement) || !($copySig instanceof DOMElement)) {
+            return ['valid' => false, 'error' => 'Target signed element not found'];
         }
+        $copyTarget->removeChild($copySig);
 
-        $targetCanonical = $tempDoc->documentElement->C14N(true, false);
+        $digestPrefixes = self::inclusivePrefixes($xpath, 'ds:Transforms/ds:Transform/ec:InclusiveNamespaces/@PrefixList', $refNode);
+        $targetCanonical = $copyTarget->C14N(true, false, null, $digestPrefixes);
         if ($targetCanonical === false) {
             return ['valid' => false, 'error' => 'Failed to canonicalize target element'];
         }
 
-        // Determine Digest Algorithm
-        $digestMethodNodes = $xpath->query('.//ds:DigestMethod/@Algorithm', $signedInfoNode);
-        $digestAlgoUri = $digestMethodNodes->length > 0 ? (string)$digestMethodNodes->item(0)->nodeValue : '';
-        $hashAlgo = str_contains($digestAlgoUri, 'sha1') ? 'sha1' : (str_contains($digestAlgoUri, 'sha512') ? 'sha512' : 'sha256');
-
-        $computedDigest = base64_encode(hash($hashAlgo, $targetCanonical, true));
-        if ($digestVal !== $computedDigest) {
-            // Also test sha1 fallback if sha256 failed
-            if ($hashAlgo !== 'sha1' && $digestVal === base64_encode(hash('sha1', $targetCanonical, true))) {
-                $hashAlgo = 'sha1';
-            } else {
-                return ['valid' => false, 'error' => 'XML-DSig digest verification mismatch'];
-            }
+        $digestMethodNodes = $xpath->query('ds:DigestMethod/@Algorithm', $refNode);
+        $digestAlgoUri = ($digestMethodNodes && $digestMethodNodes->length > 0) ? (string)$digestMethodNodes->item(0)->nodeValue : '';
+        $hashAlgo = self::DIGEST_ALGORITHMS[$digestAlgoUri] ?? null;
+        if ($hashAlgo === null) {
+            return ['valid' => false, 'error' => 'Unsupported digest algorithm: ' . $digestAlgoUri];
         }
 
-        // 2. Canonicalize SignedInfo
-        $siCanonical = $signedInfoNode->C14N(true, false);
+        $digestVal = (string)preg_replace('/\s+/', '', $digestValNodes->item(0)->textContent);
+        if (!hash_equals(base64_encode(hash($hashAlgo, $targetCanonical, true)), $digestVal)) {
+            return ['valid' => false, 'error' => 'XML-DSig digest verification mismatch'];
+        }
+
+        // 2. Signature over the canonical SignedInfo
+        $c14nMethodNodes = $xpath->query('ds:CanonicalizationMethod/@Algorithm', $signedInfoNode);
+        $c14nMethod = ($c14nMethodNodes && $c14nMethodNodes->length > 0) ? (string)$c14nMethodNodes->item(0)->nodeValue : '';
+        if ($c14nMethod !== self::EXC_C14N) {
+            return ['valid' => false, 'error' => 'Unsupported canonicalization method: ' . $c14nMethod];
+        }
+        $siPrefixes = self::inclusivePrefixes($xpath, 'ds:CanonicalizationMethod/ec:InclusiveNamespaces/@PrefixList', $signedInfoNode);
+        $siCanonical = $signedInfoNode->C14N(true, false, null, $siPrefixes);
         if ($siCanonical === false) {
             return ['valid' => false, 'error' => 'Failed to canonicalize SignedInfo'];
         }
 
-        // Determine Signature Algorithm
-        $sigMethodNodes = $xpath->query('.//ds:SignatureMethod/@Algorithm', $signedInfoNode);
-        $sigMethodUri = $sigMethodNodes->length > 0 ? (string)$sigMethodNodes->item(0)->nodeValue : '';
-        $opensslAlgo = OPENSSL_ALGO_SHA256;
-        if (str_contains($sigMethodUri, 'rsa-sha1')) {
-            $opensslAlgo = OPENSSL_ALGO_SHA1;
-        } elseif (str_contains($sigMethodUri, 'rsa-sha384')) {
-            $opensslAlgo = OPENSSL_ALGO_SHA384;
-        } elseif (str_contains($sigMethodUri, 'rsa-sha512')) {
-            $opensslAlgo = OPENSSL_ALGO_SHA512;
+        $sigMethodNodes = $xpath->query('ds:SignatureMethod/@Algorithm', $signedInfoNode);
+        $sigMethodUri = ($sigMethodNodes && $sigMethodNodes->length > 0) ? (string)$sigMethodNodes->item(0)->nodeValue : '';
+        $opensslAlgo = self::SIGNATURE_ALGORITHMS[$sigMethodUri] ?? null;
+        if ($opensslAlgo === null) {
+            return ['valid' => false, 'error' => 'Unsupported signature algorithm: ' . $sigMethodUri];
         }
 
-        $pem = self::formatCertPem($certPem);
-        $decodedSig = base64_decode($sigVal, true);
+        $decodedSig = base64_decode((string)preg_replace('/\s+/', '', $sigValNodes->item(0)->textContent), true);
         if ($decodedSig === false) {
             return ['valid' => false, 'error' => 'Malformed base64 SignatureValue'];
         }
 
-        $res = openssl_verify($siCanonical, $decodedSig, $pem, $opensslAlgo);
+        $res = openssl_verify($siCanonical, $decodedSig, self::formatCertPem($certPem), $opensslAlgo);
         if ($res !== 1) {
             return [
                 'valid' => false,
@@ -444,7 +498,23 @@ XML;
             ];
         }
 
-        return ['valid' => true];
+        return ['valid' => true, 'signed' => $signedKind];
+    }
+
+    /**
+     * The PrefixList of an exclusive canonicalization, or null when it has none.
+     *
+     * @return list<string>|null
+     */
+    private static function inclusivePrefixes(DOMXPath $xpath, string $query, DOMNode $context): ?array
+    {
+        $nodes = $xpath->query($query, $context);
+        if (!$nodes || $nodes->length === 0) {
+            return null;
+        }
+        $list = preg_split('/\s+/', trim((string)$nodes->item(0)->nodeValue)) ?: [];
+        $list = array_values(array_filter($list, static fn(string $p): bool => $p !== ''));
+        return $list === [] ? null : $list;
     }
 
     /**
@@ -455,7 +525,7 @@ XML;
     public static function extractSamlAttributes(DOMXPath $xpath, DOMNode $assertion): array
     {
         $attributes = [];
-        $attrNodes = $xpath->query('.//saml:AttributeStatement/saml:Attribute', $assertion);
+        $attrNodes = $xpath->query('saml:AttributeStatement/saml:Attribute', $assertion);
         if (!$attrNodes) {
             return $attributes;
         }
@@ -466,7 +536,7 @@ XML;
             }
             $attrName = $attr->getAttribute('Name');
             $values = [];
-            $valNodes = $xpath->query('.//saml:AttributeValue', $attr);
+            $valNodes = $xpath->query('saml:AttributeValue', $attr);
             if ($valNodes) {
                 foreach ($valNodes as $val) {
                     $values[] = trim($val->textContent);
@@ -661,23 +731,27 @@ XML;
      *
      * @return array{success: bool, user?: array<string, mixed>, error?: string, is_mobile?: bool}
      */
-    public static function processResponse(string $samlResponseB64, ?string $relayState = null): array
+    public static function processResponse(string $samlResponseB64): array
     {
+        $pending = self::pendingRequest();
+        $isMobile = $pending['mobile'];
+        $fail = static fn(string $error): array => ['success' => false, 'error' => $error, 'is_mobile' => $isMobile];
+
         if (empty($samlResponseB64)) {
-            return ['success' => false, 'error' => 'Empty SAMLResponse received'];
+            return $fail('Empty SAMLResponse received');
         }
 
         $xml = base64_decode($samlResponseB64, true);
         if ($xml === false || empty($xml)) {
-            return ['success' => false, 'error' => 'Malformed base64 SAMLResponse'];
+            return $fail('Malformed base64 SAMLResponse');
         }
 
         $dom = new DOMDocument();
         $dom->preserveWhiteSpace = true;
         $dom->formatOutput = false;
-        // Secure XML loading: prevent XXE attacks
+        // Secure XML loading: no network, no entity substitution; a DOCTYPE is refused below.
         if (!$dom->loadXML($xml, LIBXML_NONET | LIBXML_NOWARNING | LIBXML_NOERROR)) {
-            return ['success' => false, 'error' => 'Failed to parse SAML XML response'];
+            return $fail('Failed to parse SAML XML response');
         }
 
         $xpath = new DOMXPath($dom);
@@ -686,22 +760,22 @@ XML;
         $xpath->registerNamespace('ds', self::XMLDSIG_NS);
 
         // 1. Verify StatusCode
-        $statusNodes = $xpath->query('//samlp:StatusCode/@Value');
+        $statusNodes = $xpath->query('/samlp:Response/samlp:Status/samlp:StatusCode/@Value');
         if ($statusNodes->length === 0) {
-            return ['success' => false, 'error' => 'Missing StatusCode in SAML response'];
+            return $fail('Missing StatusCode in SAML response');
         }
         $statusCode = (string)$statusNodes->item(0)->nodeValue;
         if ($statusCode !== 'urn:oasis:names:tc:SAML:2.0:status:Success') {
-            return ['success' => false, 'error' => 'IdP returned unsuccessful authentication status: ' . $statusCode];
+            return $fail('IdP returned unsuccessful authentication status: ' . $statusCode);
         }
 
         // 2. Locate Assertion (must be a single direct child of Response)
         $assertions = $xpath->query('/samlp:Response/saml:Assertion');
         if (!$assertions || $assertions->length === 0) {
-            return ['success' => false, 'error' => 'No Assertion element found in SAML response'];
+            return $fail('No Assertion element found in SAML response');
         }
         if ($assertions->length > 1) {
-            return ['success' => false, 'error' => 'Multiple SAML Assertions are not allowed (XSW protection)'];
+            return $fail('Multiple SAML Assertions are not allowed (XSW protection)');
         }
         /** @var DOMElement $assertion */
         $assertion = $assertions->item(0);
@@ -709,82 +783,89 @@ XML;
         // 3. Verify XML-DSig signature using IdP X.509 Certificate
         $idpCert = self::getSetting('idp_x509_cert', '');
         if (empty($idpCert)) {
-            return ['success' => false, 'error' => 'IdP X.509 certificate is not configured in settings'];
+            return $fail('IdP X.509 certificate is not configured in settings');
         }
         $sigResult = self::verifyXmlSignature($dom, $idpCert);
         if (!$sigResult['valid']) {
-            return ['success' => false, 'error' => $sigResult['error'] ?? 'Invalid XML signature'];
+            return $fail($sigResult['error'] ?? 'Invalid XML signature');
         }
 
-        // 3b. Validate InResponseTo against session AuthnRequest ID if SP-initiated
-        if (!empty($_SESSION['saml_auth_request_id'])) {
-            $expectedReqId = (string)$_SESSION['saml_auth_request_id'];
-            unset($_SESSION['saml_auth_request_id']);
-            $inRespNodes = $xpath->query('/samlp:Response/@InResponseTo');
-            if ($inRespNodes && $inRespNodes->length > 0) {
-                $inRespTo = trim((string)$inRespNodes->item(0)->nodeValue);
-                if ($inRespTo !== '' && !hash_equals($expectedReqId, $inRespTo)) {
-                    return ['success' => false, 'error' => 'SAML InResponseTo does not match initiated AuthnRequest ID'];
-                }
-            }
+        $now = time();
+        $clockSkew = 120; // 2 minutes tolerance
+        $expectedAcs = self::getAcsUrl();
+
+        // From here on only direct children are read: this is the content the signature covers.
+
+        // 4. Bearer subject confirmation (required by the Web Browser SSO profile)
+        $confirmations = $xpath->query('saml:Subject/saml:SubjectConfirmation[@Method="urn:oasis:names:tc:SAML:2.0:cm:bearer"]/saml:SubjectConfirmationData', $assertion);
+        if (!$confirmations || $confirmations->length === 0) {
+            return $fail('SAML assertion has no bearer subject confirmation');
+        }
+        /** @var DOMElement $confirmation */
+        $confirmation = $confirmations->item(0);
+        $confirmUntil = strtotime($confirmation->getAttribute('NotOnOrAfter'));
+        if ($confirmUntil === false || ($now - $clockSkew) >= $confirmUntil) {
+            return $fail('SAML subject confirmation has expired (NotOnOrAfter)');
+        }
+        $recipient = $confirmation->getAttribute('Recipient');
+        if ($recipient !== '' && !self::sameAcsPath($recipient, $expectedAcs)) {
+            return $fail("SAML Recipient mismatch: expected {$expectedAcs}, received {$recipient}");
         }
 
-        // 4. Validate Destination (if specified in response)
+        // 5. The response must answer the request this browser started. The value is taken from
+        // the signed part of the document, and refuses unsolicited responses and login CSRF.
+        $inResponseTo = $confirmation->getAttribute('InResponseTo');
+        if ($inResponseTo === '' && ($sigResult['signed'] ?? '') === 'response') {
+            $inResponseTo = (string)$dom->documentElement->getAttribute('InResponseTo');
+        }
+        if ($pending['id'] === '' || $inResponseTo === '' || !hash_equals($pending['id'], $inResponseTo)) {
+            return $fail('SAML response does not match a sign-in started in this browser. Start the sign-in from the AiPBX login page.');
+        }
+
+        // 6. Validate Destination (if specified in response)
         $destNodes = $xpath->query('/samlp:Response/@Destination');
         if ($destNodes->length > 0) {
             $dest = (string)$destNodes->item(0)->nodeValue;
-            $expectedAcs = self::getAcsUrl();
-            if (!empty($dest) && strcasecmp(rtrim($dest, '/'), rtrim($expectedAcs, '/')) !== 0) {
-                // If not matching exact ACS, check if path matches
-                $destPath = parse_url($dest, PHP_URL_PATH);
-                $expectedPath = parse_url($expectedAcs, PHP_URL_PATH);
-                if ($destPath !== $expectedPath) {
-                    return ['success' => false, 'error' => "SAML Destination mismatch: expected {$expectedAcs}, received {$dest}"];
-                }
+            if (!empty($dest) && !self::sameAcsPath($dest, $expectedAcs)) {
+                return $fail("SAML Destination mismatch: expected {$expectedAcs}, received {$dest}");
             }
         }
 
-        // 5. Validate Audience Restriction
+        // 7. Validate Audience Restriction (required by the Web Browser SSO profile)
         $spEntityId = self::getSpEntityId();
-        $audienceNodes = $xpath->query('.//saml:Conditions/saml:AudienceRestriction/saml:Audience', $assertion);
-        if ($audienceNodes->length > 0) {
-            $audMatched = false;
-            foreach ($audienceNodes as $aud) {
-                if (strcasecmp(trim((string)$aud->textContent), $spEntityId) === 0) {
-                    $audMatched = true;
-                    break;
-                }
-            }
-            if (!$audMatched) {
-                return ['success' => false, 'error' => "SAML Audience mismatch: expected {$spEntityId}"];
+        $audienceNodes = $xpath->query('saml:Conditions/saml:AudienceRestriction/saml:Audience', $assertion);
+        $audMatched = false;
+        foreach ($audienceNodes as $aud) {
+            if (strcasecmp(trim((string)$aud->textContent), $spEntityId) === 0) {
+                $audMatched = true;
+                break;
             }
         }
-
-        // 6. Validate Conditions Timestamps (NotBefore, NotOnOrAfter)
-        $conditionsNodes = $xpath->query('.//saml:Conditions', $assertion);
-        if ($conditionsNodes->length > 0) {
-            /** @var DOMElement $cond */
-            $cond = $conditionsNodes->item(0);
-            $now = time();
-            $clockSkew = 120; // 2 minutes tolerance
-
-            if ($cond->hasAttribute('NotBefore')) {
-                $nb = strtotime($cond->getAttribute('NotBefore'));
-                if ($nb !== false && ($now + $clockSkew) < $nb) {
-                    return ['success' => false, 'error' => 'SAML assertion is not yet valid (NotBefore)'];
-                }
-            }
-
-            if ($cond->hasAttribute('NotOnOrAfter')) {
-                $noa = strtotime($cond->getAttribute('NotOnOrAfter'));
-                if ($noa !== false && ($now - $clockSkew) >= $noa) {
-                    return ['success' => false, 'error' => 'SAML assertion has expired (NotOnOrAfter)'];
-                }
-            }
+        if (!$audMatched) {
+            return $fail("SAML Audience mismatch: expected {$spEntityId}");
         }
 
-        // 7. Extract NameID & Attributes
-        $nameIdNodes = $xpath->query('.//saml:Subject/saml:NameID', $assertion);
+        // 8. Validate Conditions Timestamps (NotBefore, NotOnOrAfter)
+        $conditionsNodes = $xpath->query('saml:Conditions', $assertion);
+        /** @var DOMElement $cond */
+        $cond = $conditionsNodes->item(0);
+        if ($cond->hasAttribute('NotBefore')) {
+            $nb = strtotime($cond->getAttribute('NotBefore'));
+            if ($nb === false || ($now + $clockSkew) < $nb) {
+                return $fail('SAML assertion is not yet valid (NotBefore)');
+            }
+        }
+        $validUntil = $confirmUntil;
+        if ($cond->hasAttribute('NotOnOrAfter')) {
+            $noa = strtotime($cond->getAttribute('NotOnOrAfter'));
+            if ($noa === false || ($now - $clockSkew) >= $noa) {
+                return $fail('SAML assertion has expired (NotOnOrAfter)');
+            }
+            $validUntil = max($validUntil, $noa);
+        }
+
+        // 9. Extract NameID & Attributes
+        $nameIdNodes = $xpath->query('saml:Subject/saml:NameID', $assertion);
         $nameId = $nameIdNodes->length > 0 ? trim((string)$nameIdNodes->item(0)->textContent) : '';
 
         $attributes = self::extractSamlAttributes($xpath, $assertion);
@@ -806,17 +887,17 @@ XML;
         }
 
         if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return ['success' => false, 'error' => 'No valid email address found in SAML assertion NameID or attributes'];
+            return $fail('No valid email address found in SAML assertion NameID or attributes');
         }
 
         $email = mb_strtolower(trim($email));
 
         // 8. Domain Allowlist Check
         if (!self::isDomainAllowed($email)) {
-            return ['success' => false, 'error' => sprintf(
+            return $fail(sprintf(
                 function_exists('t') ? t('saml.err_domain_denied', 'Email domain (%s) is not authorized') : 'Email domain (%s) is not authorized',
                 explode('@', $email)[1] ?? ''
-            )];
+            ));
         }
 
         // Resolve Full Name
@@ -855,26 +936,28 @@ XML;
             $prefUsername = explode('@', $email)[0];
         }
 
-        // 9. Resolve Role
+        // 10. An assertion signs in once. Last check, so that a refused response is not used up.
+        if (!self::consumeAssertion($assertion->getAttribute('ID'), $validUntil)) {
+            return $fail('This SAML assertion has already been used');
+        }
+        self::clearPendingRequest();
+
+        // 11. Resolve Role
         $role = self::resolveRoleFromAttributes($attributes);
 
-        // 10. Find or auto-provision user
+        // 12. Find or auto-provision user
         $user = self::findUserByEmail($email);
         if (!$user) {
             $user = self::autoProvisionUser($email, $fullName, $prefUsername, $role);
             if (!$user) {
-                return ['success' => false, 'error' => self::getLastError() ?: 'Failed to provision user'];
+                return $fail(self::getLastError() ?: 'Failed to provision user');
             }
         }
 
         // Check active status
         if (empty($user['is_active'])) {
-            return ['success' => false, 'error' => function_exists('t') ? t('saml.err_account_disabled', 'Account is deactivated') : 'Account is deactivated'];
+            return $fail(function_exists('t') ? t('saml.err_account_disabled', 'Account is deactivated') : 'Account is deactivated');
         }
-
-        // Verify RelayState
-        $relayCheck = self::verifyRelayState($relayState);
-        $isMobile = $relayCheck['mobile'];
 
         return [
             'success'   => true,

@@ -123,7 +123,7 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
 
             <div class="form-group" style="margin-bottom: 20px;">
                 <label class="form-label"><?php echo t('reverse_proxy.field_trusted_proxies'); ?></label>
-                <textarea name="proxy_trusted_proxies" class="form-control" rows="3" style="font-family: monospace; font-size: 13px;" placeholder="127.0.0.1, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16"><?php echo $h($settings['trusted_proxies']); ?></textarea>
+                <textarea name="proxy_trusted_proxies" class="form-control" rows="3" style="font-family: monospace; font-size: 13px;" placeholder="127.0.0.1, ::1"><?php echo $h($settings['trusted_proxies']); ?></textarea>
                 <div class="u-hint"><?php echo t('reverse_proxy.trusted_proxies_hint'); ?></div>
             </div>
 

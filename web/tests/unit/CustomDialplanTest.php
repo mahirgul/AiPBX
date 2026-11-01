@@ -310,4 +310,23 @@ final class CustomDialplanTest extends TestCase
         $this->assertArrayHasKey('crm_webhook', $templates);
         $this->assertStringContainsString('FILTER(0123456789+', $templates['crm_webhook']['content']);
     }
+
+    public function testValidatorRefusesFileDirectivesAndExtendingReservedContexts(): void
+    {
+        foreach (['#include /etc/passwd', '#exec /bin/id', '#tryinclude x.conf', ' # tryexec /bin/id'] as $line) {
+            $this->assertFalse(CustomDialplanService::validateSyntax($line)['valid'], $line);
+        }
+        foreach (['[from-internal-pbx-ortak](+)', '[from-internal-pbx-ortak](!)', '[from-internal-pbx-ortak] ; comment'] as $line) {
+            $this->assertFalse(CustomDialplanService::validateSyntax($line)['valid'], $line);
+        }
+        $this->assertTrue(CustomDialplanService::validateSyntax("[my-own](+)\nexten => 1,1,NoOp()")['valid']);
+    }
+
+    public function testRiskyTemplatesCarryARandomPin(): void
+    {
+        $t = CustomDialplanService::getTemplates();
+        $this->assertStringNotContainsString('Authenticate(1234)', $t['disa_secure']['content']);
+        $this->assertMatchesRegularExpression('/Authenticate\(\d{8}\)/', $t['disa_secure']['content']);
+        $this->assertSame(2, preg_match_all('/Authenticate\(\d{6}\)/', $t['spy_directed']['content']));
+    }
 }

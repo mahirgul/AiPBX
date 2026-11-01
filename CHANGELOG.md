@@ -5,6 +5,23 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.4
+
+- **SAML 2.0 sign-in bypass fixed (security, update if the SAML plugin is on):**
+  - Anyone with an account at the Identity Provider could sign in as any other user, administrators included, by adding an unsigned NameID inside an extra `ds:Signature` element. The signature check now accepts one signature only and reads only the signed content.
+  - A response must answer a sign-in started in the same browser and is accepted once. **Sign-ins started from the Identity Provider's own portal (IdP-initiated) are no longer accepted:** start from the AiPBX login page.
+  - The bearer subject confirmation, its expiry and the audience are now required; only the transforms and algorithms of the SSO profile are accepted; a DOCTYPE is refused.
+  - A disabled SAML plugin no longer accepts responses through its stored certificate.
+  - Fixed: mobile SAML sign-in fell back to a web session, because the Lax session cookie is not sent with the Identity Provider's POST (the request now has its own short-lived cookie). Fixed: valid responses were refused when namespaces were declared on the Response element.
+- **Video meetings: guests reach only their own meeting (security):**
+  - Every `/meet` page shares one SIP password, with which anyone holding a meeting link could enter every active conference room without a PIN. Each call now carries the page's token and Asterisk checks it (`[app-meeting-guest]`): it must belong to this room and the meeting must be open.
+  - Fails closed: a failed check refuses the call. A meeting without guests no longer accepts its link at SIP level either; signed-in users and invited guests still join.
+- **Video meetings: join window and limit are enforced:** from 30 minutes before the start until one hour after the end, with clear pages outside of it; existing links of past meetings stop working. `max_participants` is enforced for browser participants. A browser that disappears without hanging up frees its seat after 30 seconds without media.
+- **Video meetings no longer take over conference rooms:** scheduling a meeting on an existing room number replaced that room's title and PINs, and cancelling the meeting deactivated the room. Such a number is now refused.
+- **Custom dialplan:** `#include`/`#exec` directives and extending reserved contexts (`[from-internal-pbx-ortak](+)`) are refused. The supervisor listen/whisper and DISA templates now carry a random PIN; the DISA template had `1234`. **Review recipes you already inserted from these templates:** existing entries are not changed.
+- **Reverse proxy:** the default list of trusted proxies is now this host only. With private networks in it, any device on the LAN could spoof `X-Forwarded-For` and avoid sign-in lockouts. A saved list is not changed: **if yours holds whole private networks, reduce it to your proxy's address.**
+- **Docs:** turning MPTCP off reduces exposure to CVE-2026-98432; the fix is the distribution's kernel update.
+
 ## 1.60.3
 
 - **Security & RBAC Authorization Enforcement:**

@@ -97,8 +97,15 @@ class CustomDialplanService
                 $errors[] = sprintf(t('custom_dialplan.err_unbalanced_var'), $lineNum);
             }
 
-            // Prevent reserved system [context] redefinition inside dialplan body
-            if (preg_match('/^\[([a-zA-Z0-9_\-]+)\]$/', $line, $m)) {
+            // A file directive would pull outside content, or a command's output, into the dialplan.
+            if (preg_match('/^#\s*(include|tryinclude|exec|tryexec)\b/i', $line)) {
+                $errors[] = sprintf(t('custom_dialplan.err_directive_forbidden'), $lineNum);
+                continue;
+            }
+
+            // Prevent reserved system [context] redefinition inside dialplan body,
+            // also in the extending forms [ctx](+), [ctx](!) and [ctx](template).
+            if (preg_match('/^\[([a-zA-Z0-9_\-]+)\]\s*(\([^)]*\))?\s*(;.*)?$/', $line, $m)) {
                 $inlineCtx = $m[1];
                 if (in_array(strtolower($inlineCtx), self::RESERVED_CONTEXTS, true)) {
                     $errors[] = sprintf(t('custom_dialplan.err_context_reserved'), $inlineCtx);
@@ -242,6 +249,11 @@ class CustomDialplanService
      */
     public static function getTemplates(): array
     {
+        // Who can dial these reaches other people's calls or paid trunks: each template that
+        // gets inserted carries its own random PIN instead of a well-known default.
+        $spyPin = (string)random_int(100000, 999999);
+        $disaPin = (string)random_int(10000000, 99999999);
+
         return [
             'intercom' => [
                 'title' => t('custom_dialplan.tpl_intercom_title'),
@@ -267,10 +279,12 @@ class CustomDialplanService
                 'content' => "; " . t('custom_dialplan.tpl_spy_title') . "\n"
                     . "exten => _*55.,1,NoOp(Supervisor Direct Listen on Extension \${EXTEN:3})\n"
                     . " same => n,Answer()\n"
+                    . " same => n,Authenticate({$spyPin})\n"
                     . " same => n,ChanSpy(PJSIP/\${FILTER(0123456789,\${EXTEN:3})}-,b)\n"
                     . " same => n,Hangup()\n\n"
                     . "exten => _*56.,1,NoOp(Supervisor Direct Whisper on Extension \${EXTEN:3})\n"
                     . " same => n,Answer()\n"
+                    . " same => n,Authenticate({$spyPin})\n"
                     . " same => n,ChanSpy(PJSIP/\${FILTER(0123456789,\${EXTEN:3})}-,qwb)\n"
                     . " same => n,Hangup()\n",
             ],
@@ -319,7 +333,7 @@ class CustomDialplanService
                 'content' => "; " . t('custom_dialplan.tpl_disa_title') . "\n"
                     . "exten => 7777,1,NoOp(Incoming DISA access request)\n"
                     . " same => n,Answer()\n"
-                    . " same => n,Authenticate(1234)\n"
+                    . " same => n,Authenticate({$disaPin})\n"
                     . " same => n,DISA(no-password,from-internal-pbx)\n"
                     . " same => n,Hangup()\n",
             ],

@@ -34,13 +34,31 @@ class MeetingLobbyController
             http_response_code(403);
             require_once __DIR__ . '/../../config.php';
             renderFatalErrorPage(
-                t('meetings.err_not_found_title', 'Access Denied'),
-                t('meetings.err_not_found_desc', 'External guest access is disabled for this video meeting.'),
+                t('meetings.err_guests_disabled_title'),
+                t('meetings.err_guests_disabled_desc'),
                 "Guest access disabled for meeting token: {$token}",
                 403
             );
             return;
         }
+
+        $joinState = MeetingService::joinState($meeting);
+        if ($joinState !== 'open') {
+            http_response_code(403);
+            require_once __DIR__ . '/../../config.php';
+            $notStarted = $joinState === 'not_started';
+            renderFatalErrorPage(
+                $notStarted ? t('meetings.err_not_started_title') : t('meetings.err_ended_title'),
+                $notStarted
+                    ? sprintf(t('meetings.err_not_started_desc'), date('d.m.Y H:i', (int)strtotime((string)$meeting['scheduled_start'])))
+                    : t('meetings.err_ended_desc'),
+                "Meeting not open for joining ({$joinState}): {$token}",
+                403
+            );
+            return;
+        }
+
+        $joinToken = MeetingService::sipJoinToken($meeting, $token, $role, !empty($_SESSION['user_id']));
 
         $defaultName = $invite['name'] ?? ($_SESSION['full_name'] ?? '');
 

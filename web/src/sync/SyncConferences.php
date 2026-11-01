@@ -38,6 +38,24 @@ function __syncConferencesBody() {
     $conf .= " same => n,ConfBridge(\${EXTEN})\n";
     $conf .= " same => n(hangup_guest),Hangup()\n\n";
 
+    // Browser participants of /meet/{token}. They all share one SIP password, so each call is
+    // checked here: the token from the page must belong to a meeting in this room that is open
+    // for joining right now. Anything else, or a failed check, is refused.
+    $conf .= "[app-meeting-guest]\n";
+    $conf .= "exten => _X.,1,NoOp(Meeting guest joining room \${EXTEN})\n";
+    $conf .= " same => n,Set(MEET_TOKEN=\${FILTER(a-zA-Z0-9_,\${PJSIP_HEADER(read,X-Meeting-Token)})})\n";
+    $conf .= " same => n,GotoIf(\$[\"\${MEET_TOKEN}\" = \"\"]?deny)\n";
+    // The prefix is required: digits in an HTTP error page must never pass for a limit.
+    $conf .= " same => n,Set(MEET_CHECK=\${CURL(http://127.0.0.1/api/meeting_join_check.php?room=\${EXTEN}&token=\${MEET_TOKEN})})\n";
+    $conf .= " same => n,GotoIf(\$[\"\${MEET_CHECK:0:5}\" != \"JOIN:\"]?deny)\n";
+    $conf .= " same => n,Set(MEET_MAX=\${FILTER(0-9,\${MEET_CHECK:5})})\n";
+    $conf .= " same => n,GotoIf(\$[\"\${MEET_MAX}\" = \"\"]?deny)\n";
+    $conf .= " same => n,Set(MEET_PARTIES=\${CONFBRIDGE_INFO(parties,\${EXTEN})})\n";
+    $conf .= " same => n,GotoIf(\$[0\${MEET_PARTIES} >= \${MEET_MAX}]?full)\n";
+    $conf .= " same => n,Goto(app-confbridge-dispatch,\${EXTEN},1)\n";
+    $conf .= " same => n(deny),Hangup(21)\n";
+    $conf .= " same => n(full),Hangup(34)\n\n";
+
     // 2. Individual conference room contexts
     foreach ($conferences as $cf) {
         $id = intval($cf['id']);
