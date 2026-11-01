@@ -5,6 +5,37 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.50.38
+
+- **Web Video Meetings & Guest Conference Scheduling System (`/meetings`) (Spec 004):**
+  - **Calendar & Meeting Scheduler (`/meetings`):**
+    - Schedule ad-hoc or planned video conferences with date/time pickers, topic, agenda, participant limits, and PIN protection.
+    - Video architecture mode selection: **SFU (Selective Forwarding Unit)** multi-stream WebRTC gallery grid vs **Follow-Talker** active-speaker switching for SIP video phones.
+    - Automatic ConfBridge room creation and dialplan synchronization via `SyncConferences.php` and `internal_numbers`.
+    - Real-time meeting status badges (Scheduled, Live Now, Ended, Cancelled).
+    - One-click .ics calendar file download and invite link copying.
+  - **Public Guest Magic Link Gateway (`/meet/{token}`):**
+    - Anonymous, zero-install, zero-registration browser portal for clients, partners, and external guests.
+    - Interactive Pre-Join Lobby: camera preview check, microphone level inspection, device mute/camera toggles, display name input, and room PIN verification.
+    - Live WebRTC Conference Room (`assets/js/meeting_room.js`):
+      - Responsive CSS gallery video grid with dynamic layout resizing (`tiles-1` to `tiles-9`).
+      - Local self-view with camera toggle and mute controls.
+      - Screen sharing via `navigator.mediaDevices.getDisplayMedia`.
+      - JsSIP WebSocket integration to Asterisk ConfBridge WSS endpoints.
+      - Elapsed meeting timer and leave meeting dialog.
+  - **ConfBridge SFU & Follow-Talker Dynamic Bridge Profiles (`SyncConferences.php`):**
+    - Asterisk `app_confbridge` bridge profiles with `CONFBRIDGE(bridge,video_mode)=sfu|follow_talker`.
+    - Keyframe and bandwidth optimization flags: `video_update_discard=0`, `remb_send_interval=1000`, `remb_behavior=average`.
+    - Expanded WebRTC PJSIP endpoint streams (`max_audio_streams=10`, `max_video_streams=10` in `SyncExtensions.php`).
+    - Standard Conference management (`/conferences`) now supports configuring Video Mode (`sfu`, `follow_talker`, `none`) and Max Video Streams directly from the admin panel.
+  - **Email Invitations & ICS Calendar Attachments (`MailTemplateService.php`):**
+    - Dedicated `meeting_invite` branded email template with host name, schedule, topic, PIN, and one-click magic join button.
+    - RFC 5545 `.ics` iCalendar MIME attachment with VCALENDAR, VEVENT, UID, and join URL.
+  - **Quality Gates, Tests & i18n:**
+    - Comprehensive unit tests in `MeetingServiceTest.php` and `SyncConferencesCoverageTest.php`.
+    - 100% translation key parity across all 22 languages (5,703 / 5,703 strings, 0 problems).
+    - Full PHPStan analysis clean (0 errors across 381 files), and clean smoke test verification (`php bin/smoke.php`).
+
 ## 1.50.37
 
 - **Configuration Directory Structure Consolidation (`conf/asterisk/`):**
