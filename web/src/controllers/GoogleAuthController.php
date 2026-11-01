@@ -38,7 +38,7 @@ class GoogleAuthController extends BaseController
      */
     public static function callback(): void
     {
-        $clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+        $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
         // 1. Did the user cancel or did an error occur?
         if (isset($_GET['error'])) {

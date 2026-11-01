@@ -153,6 +153,7 @@ do_letsencrypt() {
     command -v certbot >/dev/null || die "certbot is not installed"
 
     local args=(certonly --non-interactive --agree-tos)
+    [ "$wildcard" = 1 ] && [ "$dns_cf" != 1 ] && die "--wildcard requires --dns-cloudflare"
     if [ "$dns_cf" = 1 ]; then
         if ! certbot plugins 2>/dev/null | grep -q 'dns-cloudflare'; then
             die "certbot-dns-cloudflare plugin is required for Cloudflare DNS-01 validation (install python3-certbot-dns-cloudflare)"
@@ -160,14 +161,16 @@ do_letsencrypt() {
         local cf_cred="/etc/letsencrypt/cloudflare.ini"
         mkdir -p /etc/letsencrypt || die "cannot create /etc/letsencrypt"
         if [ -f "$STAGE_DIR/cloudflare.ini" ]; then
-            read_staged "$STAGE_DIR/cloudflare.ini" "$cf_cred.tmp" 1024
+            local tmp; tmp="$(mktemp -d)" || exit 1
+            trap 'rm -rf "$tmp"' EXIT
+            read_staged "$STAGE_DIR/cloudflare.ini" "$tmp/cloudflare.ini" 1024
             rm -f "$STAGE_DIR/cloudflare.ini"
-            if ! grep -qE '^[[:space:]]*dns_cloudflare_api_token[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{20,100}[[:space:]]*$' "$cf_cred.tmp"; then
-                rm -f "$cf_cred.tmp"
+            if ! grep -qE '^[[:space:]]*dns_cloudflare_api_token[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{20,100}[[:space:]]*$' "$tmp/cloudflare.ini"; then
+                rm -rf "$tmp"
                 die "invalid Cloudflare API token format in staged credentials"
             fi
-            install -o root -g root -m 0600 "$cf_cred.tmp" "$cf_cred"
-            rm -f "$cf_cred.tmp"
+            install -o root -g root -m 0600 "$tmp/cloudflare.ini" "$cf_cred"
+            rm -rf "$tmp"
         elif [ ! -r "$cf_cred" ]; then
             die "Cloudflare credentials not found (expected staged credentials or $cf_cred)"
         fi

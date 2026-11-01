@@ -10,7 +10,7 @@ require_once __DIR__ . '/../auth.php';
 require_once __DIR__ . '/../src/services/PasskeyService.php';
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
-$clientIp = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+$clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
 // Read the JSON body (if any)
 $rawInput = file_get_contents('php://input');

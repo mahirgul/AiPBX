@@ -114,7 +114,10 @@ class OidcAuthService
         }
 
         $domain = function_exists('getSystemSetting') ? getSystemSetting('portal_domain', '127.0.0.1') : '127.0.0.1';
-        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $isHttps = function_exists('isHttpsRequest')
+            ? isHttpsRequest()
+            : (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
+        $scheme = $isHttps ? 'https' : 'http';
         return "{$scheme}://{$domain}/auth/oidc/callback";
     }
 

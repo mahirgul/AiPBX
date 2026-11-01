@@ -37,20 +37,26 @@ final class ReverseProxyService
      */
     public static function getSettings(): array
     {
-        $db = getDB();
-        $keys = [
-            self::SETTING_ENABLED,
-            self::SETTING_TRUSTED_PROXIES,
-            self::SETTING_TLS_TERMINATION,
-            self::SETTING_EXTERNAL_FQDN,
-            self::SETTING_EXTERNAL_PORT,
-            self::SETTING_PROXY_TYPE,
-        ];
-        $placeholders = implode(',', array_fill(0, count($keys), '?'));
-        $stmt = $db->prepare("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key IN ($placeholders)");
-        $stmt->execute($keys);
-        /** @var array<string, string> $pairs */
-        $pairs = $stmt->fetchAll(PDO::FETCH_KEY_PAIR) ?: [];
+        $pairs = [];
+        try {
+            $db = getDB();
+            $keys = [
+                self::SETTING_ENABLED,
+                self::SETTING_TRUSTED_PROXIES,
+                self::SETTING_TLS_TERMINATION,
+                self::SETTING_EXTERNAL_FQDN,
+                self::SETTING_EXTERNAL_PORT,
+                self::SETTING_PROXY_TYPE,
+            ];
+            $placeholders = implode(',', array_fill(0, count($keys), '?'));
+            $stmt = $db->prepare("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key IN ($placeholders)");
+            $stmt->execute($keys);
+            /** @var array<string, string> $fetched */
+            $fetched = $stmt->fetchAll(PDO::FETCH_KEY_PAIR) ?: [];
+            $pairs = $fetched;
+        } catch (\Throwable $e) {
+            $pairs = [];
+        }
 
         $defaultFqdn = strtolower(trim((string) portalEnv('PORTAL_DOMAIN', '')));
 
@@ -180,6 +186,47 @@ final class ReverseProxyService
         }
 
         return $remote;
+    }
+
+    /**
+     * Determines whether the current request is over HTTPS, either directly
+     * or via a trusted reverse proxy sending X-Forwarded-Proto: https.
+     *
+     * @param array<string, mixed> $server
+     */
+    public static function isHttps(array $server = []): bool
+    {
+        if ($server === []) {
+            $server = $_SERVER;
+        }
+
+        if ((!empty($server['HTTPS']) && strtolower((string) $server['HTTPS']) !== 'off')
+            || (isset($server['SERVER_PORT']) && (int) $server['SERVER_PORT'] === 443)
+        ) {
+            return true;
+        }
+
+        $remote = trim((string) ($server['REMOTE_ADDR'] ?? ''));
+        if ($remote === '') {
+            return false;
+        }
+
+        $settings = self::getSettings();
+        if (!$settings['enabled'] || !self::isIpTrusted($remote, $settings['trusted_proxies'])) {
+            return false;
+        }
+
+        $proto = strtolower(trim((string) ($server['HTTP_X_FORWARDED_PROTO'] ?? '')));
+        if ($proto !== '') {
+            // If multiple proxies appended protocols (e.g. "https, http"), check the client-facing first hop
+            $firstProto = trim(explode(',', $proto)[0]);
+            if ($firstProto === 'https') {
+                return true;
+            }
+        }
+
+        $ssl = strtolower(trim((string) ($server['HTTP_X_FORWARDED_SSL'] ?? '')));
+        return $ssl === 'on';
     }
 
     /**
@@ -668,10 +715,12 @@ server {
         proxy_send_timeout 3600s;
     }
 
-    # 2. Main Portal & Desk Phone Provisioning
+    # 2. Main Portal, Chat WebSocket & Desk Phone Provisioning
     location / {
         proxy_pass {$proto}://aipbx_web_backend;
         proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -680,8 +729,8 @@ server {
         proxy_set_header X-Forwarded-Port \$server_port;
 
         proxy_connect_timeout 60s;
-        proxy_send_timeout 300s;
-        proxy_read_timeout 300s;
+        proxy_send_timeout 3600s;
+        proxy_read_timeout 3600s;
         proxy_buffering off;
     }
 }
@@ -857,6 +906,8 @@ HAPROXY;
     # WebRTC WebSocket Signaling
     ProxyPass /ws ws://{$backendIp}:8089/ws
     ProxyPassReverse /ws ws://{$backendIp}:8089/ws
+    ProxyPass /chat/ws ws://{$backendIp}:{$backendPort}/chat/ws
+    ProxyPassReverse /chat/ws ws://{$backendIp}:{$backendPort}/chat/ws
 
     # Main Web Portal
     ProxyPass / {$proto}://{$backendIp}:{$backendPort}/

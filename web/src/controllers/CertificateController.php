@@ -14,18 +14,22 @@ class CertificateController extends BaseController
         $error = '';
         $warning = '';
         $output = '';
+        $valMethod = 'http01';
+        $wildcard = false;
+        $email = '';
 
         if (static::isPost()) {
+            $valMethod = (string) ($_POST['validation_method'] ?? 'http01');
+            $cfToken = (string) ($_POST['cf_api_token'] ?? '');
+            $wildcard = !empty($_POST['cf_wildcard']);
+            $email = trim((string) ($_POST['email'] ?? ''));
+
             if (!static::verifyCsrf()) {
                 $res = ['success' => false, 'error' => t('common.invalid_csrf')];
             } else {
-                $valMethod = (string) ($_POST['validation_method'] ?? 'http01');
-                $cfToken = (string) ($_POST['cf_api_token'] ?? '');
-                $wildcard = !empty($_POST['cf_wildcard']);
-
                 $res = match ($_POST['action'] ?? '') {
-                    'le_test' => CertificateService::letsEncrypt(true, (string) ($_POST['email'] ?? ''), $valMethod, $cfToken, $wildcard),
-                    'le_issue' => CertificateService::letsEncrypt(false, (string) ($_POST['email'] ?? ''), $valMethod, $cfToken, $wildcard),
+                    'le_test' => CertificateService::letsEncrypt(true, $email, $valMethod, $cfToken, $wildcard),
+                    'le_issue' => CertificateService::letsEncrypt(false, $email, $valMethod, $cfToken, $wildcard),
                     'renew_test' => CertificateService::renew(true),
                     'renew' => CertificateService::renew(false),
                     'selfsigned' => CertificateService::selfSigned(),
@@ -56,6 +60,9 @@ class CertificateController extends BaseController
         static::renderPage('certificates/index', [
             'st' => CertificateService::status(),
             'output' => $output,
+            'val_method' => $valMethod,
+            'cf_wildcard' => $wildcard,
+            'email' => $email,
             'csrf_token' => getCSRFToken(),
         ], ['title' => t('certificates.title'), 'message' => $message, 'error' => $error, 'warning' => $warning]);
     }

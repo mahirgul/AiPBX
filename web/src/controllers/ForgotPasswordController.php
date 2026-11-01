@@ -22,7 +22,8 @@ class ForgotPasswordController extends BaseController
             } elseif ((int) ($_POST['captcha_answer'] ?? -1) !== $a + $b) {
                 $error = t('srv_login.err_captcha');
             } else {
-                $res = ForgotPasswordService::request((string) ($_POST['identifier'] ?? ''), $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+                $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
+                $res = ForgotPasswordService::request((string) ($_POST['identifier'] ?? ''), $clientIp);
                 $sent = $res['success'];
                 $error = $res['error'] ?? '';
             }

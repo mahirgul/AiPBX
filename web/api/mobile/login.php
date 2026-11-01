@@ -2,7 +2,7 @@
 require_once __DIR__ . '/auth_helper.php';
 mobileApiStart('GET, POST, OPTIONS');
 
-$client_ip = $_SERVER['REMOTE_ADDR'] ?? '127.0.0.1';
+$client_ip = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
 $json = mobileInput();
 
