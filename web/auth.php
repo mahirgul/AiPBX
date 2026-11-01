@@ -134,6 +134,7 @@ function getModuleKeyForPage($page = null) {
         'phone_logs.php'        => 'phones',
         'ring_groups.php'       => 'ring_groups',
         'conferences.php'       => 'conferences',
+        'meetings.php'          => 'conferences',
         'boss_secretary.php'    => 'boss_secretary',
         'users.php'             => 'system_users',
         'queues.php'            => 'queues',

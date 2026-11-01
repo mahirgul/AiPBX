@@ -105,12 +105,22 @@
     }
 
     // 2. Screen Sharing
+    function replacePeerVideoTrack(newTrack) {
+        if (!jsSipSession || !jsSipSession.connection) return;
+        const senders = jsSipSession.connection.getSenders ? jsSipSession.connection.getSenders() : [];
+        const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+        if (videoSender && typeof videoSender.replaceTrack === 'function') {
+            videoSender.replaceTrack(newTrack).catch(err => console.warn('replaceTrack failed:', err));
+        }
+    }
+
     async function toggleScreenShare() {
         if (!isScreenSharing) {
             try {
                 screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 const screenTrack = screenStream.getVideoTracks()[0];
                 localVideo.srcObject = screenStream;
+                replacePeerVideoTrack(screenTrack);
                 isScreenSharing = true;
                 roomShareBtn.classList.add('btn-off');
 
@@ -132,6 +142,10 @@
         }
         if (localStream) {
             localVideo.srcObject = localStream;
+            const camTrack = localStream.getVideoTracks()[0] || null;
+            if (camTrack) {
+                replacePeerVideoTrack(camTrack);
+            }
         }
         isScreenSharing = false;
         roomShareBtn.classList.remove('btn-off');
@@ -174,7 +188,8 @@
             return;
         }
 
-        localNameTag.textContent = name + ' (You)';
+        const i18n = config.i18n || {};
+        localNameTag.textContent = name + ' (' + (i18n.you || 'You') + ')';
 
         // Switch Screen
         lobbyScreen.classList.add('hidden');
@@ -204,8 +219,8 @@
         const wsUrl = wsProto + window.location.host + (config.ws_path || '/ws');
         const socket = new JsSIP.WebSocketInterface(wsUrl);
 
-        const guestUser = 'guest_' + (config.token || Math.random().toString(36).substr(2, 9));
-        const sipUri = 'sip:' + guestUser + '@' + window.location.hostname;
+        const sipUser = config.sip_user || ('guest_' + (config.token || Math.random().toString(36).substr(2, 9)));
+        const sipUri = 'sip:' + sipUser + '@' + window.location.hostname;
 
         const uaConfig = {
             sockets: [socket],
@@ -214,6 +229,10 @@
             register: false,
             session_timers: false
         };
+        if (config.sip_password) {
+            uaConfig.authorization_user = sipUser;
+            uaConfig.password = config.sip_password;
+        }
 
         try {
             jsSipUA = new JsSIP.UA(uaConfig);
@@ -231,6 +250,18 @@
                                 handleRemoteTrack(ev);
                             });
                         },
+                        confirmed: () => {
+                            const enteredPin = pinInput ? (pinInput.value || '').replace(/[^0-9]/g, '') : '';
+                            if (enteredPin !== '' && jsSipSession) {
+                                setTimeout(() => {
+                                    try {
+                                        jsSipSession.sendDTMF(enteredPin + '#');
+                                    } catch (dtmfErr) {
+                                        console.warn('DTMF PIN send warning:', dtmfErr);
+                                    }
+                                }, 800);
+                            }
+                        },
                         ended: () => leaveMeeting(),
                         failed: (e) => console.warn('Conference Call failed:', e)
                     }
@@ -245,7 +276,7 @@
     function handleRemoteTrack(ev) {
         if (ev.track.kind === 'audio') {
             const remoteAudio = document.getElementById('remoteAudio');
-            if (remoteAudio) {
+            if (remoteAudio && ev.streams && ev.streams[0]) {
                 remoteAudio.srcObject = ev.streams[0];
                 remoteAudio.play().catch(() => {});
             }
@@ -253,8 +284,9 @@
         }
 
         // SFU Remote Video Track
-        const stream = ev.streams[0];
-        const streamId = stream.id;
+        const stream = (ev.streams && ev.streams[0]) ? ev.streams[0] : new MediaStream([ev.track]);
+        const streamId = stream.id || ev.track.id;
+        const i18n = config.i18n || {};
         let tile = document.getElementById('remote_' + streamId);
         if (!tile) {
             tile = document.createElement('div');
@@ -264,11 +296,22 @@
                 <video autoplay playsinline></video>
                 <div class="tile-name">
                     <i class="fas fa-satellite-dish"></i>
-                    <span>Participant</span>
+                    <span></span>
                 </div>
             `;
+            const nameSpan = tile.querySelector('.tile-name span');
+            if (nameSpan) {
+                nameSpan.textContent = i18n.participant || 'Participant';
+            }
             videoGrid.appendChild(tile);
             updateGridLayout();
+
+            ev.track.addEventListener('ended', () => {
+                if (tile && tile.parentNode) {
+                    tile.parentNode.removeChild(tile);
+                    updateGridLayout();
+                }
+            });
         }
 
         const vid = tile.querySelector('video');
@@ -300,11 +343,16 @@
 
     function copyLink() {
         const url = window.location.href;
-        navigator.clipboard.writeText(url).then(() => {
-            alert('Meeting link copied to clipboard!');
-        }).catch(() => {
-            prompt('Copy link:', url);
-        });
+        const i18n = config.i18n || {};
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(() => {
+                alert(i18n.link_copied || 'Meeting link copied to clipboard!');
+            }).catch(() => {
+                prompt(i18n.copy_prompt || 'Copy link:', url);
+            });
+        } else {
+            prompt(i18n.copy_prompt || 'Copy link:', url);
+        }
     }
 
     // Event Listeners

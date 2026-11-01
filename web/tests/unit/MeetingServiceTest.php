@@ -50,10 +50,12 @@ final class MeetingServiceTest extends TestCase
             'title' => 'Unit Test SFU Conference',
             'description' => 'Testing SFU video conference creation',
             'starts_at' => date('Y-m-d H:i:s', time() + 3600),
-            'ends_at' => date('Y-m-d H:i:s', time() + 7200),
+            'ends_at' => '', // Optional ends_at -> defaults to starts_at + 1h
             'video_mode' => 'sfu',
             'room_number' => '8991',
             'user_pin' => '1234',
+            'host_pin' => '9999',
+            'allow_guests' => 0,
             'invite_emails' => 'guest1@example.com, guest2@example.com',
         ];
 
@@ -70,6 +72,8 @@ final class MeetingServiceTest extends TestCase
         $this->assertSame('sfu', $meeting['video_mode']);
         $this->assertSame('8991', $meeting['room_number']);
         $this->assertSame('1234', $meeting['pin']);
+        $this->assertSame('9999', $meeting['host_pin']);
+        $this->assertSame(0, (int)$meeting['allow_guests']);
 
         // Verify synced conference in pbx_conferences
         $confStmt = $this->db->prepare('SELECT * FROM pbx_conferences WHERE room_number = ?');
@@ -77,6 +81,8 @@ final class MeetingServiceTest extends TestCase
         $conf = $confStmt->fetch(PDO::FETCH_ASSOC);
         $this->assertNotEmpty($conf);
         $this->assertSame('sfu', $conf['video_mode']);
+        $this->assertSame('1234', $conf['user_pin']);
+        $this->assertSame('9999', $conf['admin_pin']);
 
         // Verify invites were created
         $invites = MeetingService::getInvites($meetingId);
@@ -172,5 +178,23 @@ final class MeetingServiceTest extends TestCase
 
         // Token resolution should return null for cancelled meetings
         $this->assertNull(MeetingService::resolveToken($guestToken));
+
+        // Corresponding pbx_conferences row should be deactivated
+        $confStmt = $this->db->prepare('SELECT is_active FROM pbx_conferences WHERE room_number = ?');
+        $confStmt->execute(['8994']);
+        $this->assertSame(0, (int)$confStmt->fetchColumn());
+    }
+
+    public function testMeetingInviteEmailTemplateAndGuestSipSecret(): void
+    {
+        $secret = getMeetingGuestSipSecret();
+        $this->assertSame(32, strlen($secret));
+        $this->assertMatchesRegularExpression('/^[0-9a-f]{32}$/', $secret);
+
+        $sample = MailTemplateService::sampleData('meeting_invite', 'en');
+        $rendered = MailTemplateService::render('meeting_invite', 'en', $sample['vars'], $sample['blocks']);
+        $this->assertStringContainsString('Weekly Team Sync', $rendered['subject']);
+        $this->assertStringContainsString('Weekly Team Sync', $rendered['html']);
+        $this->assertStringContainsString('/meet/g_sample_token', $rendered['html']);
     }
 }

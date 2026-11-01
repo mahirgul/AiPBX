@@ -24,15 +24,17 @@ function __syncConferencesBody() {
             $conf .= "exten => {$num},1,Goto(app-confbridge-{$id},s,1)\n";
         }
     }
-    // Dynamic / Ad-hoc room fallback (e.g. mobile chat group rooms)
+    // Dynamic / Ad-hoc room fallback (e.g. mobile chat group rooms; blocked for external web-guest)
     $conf .= "exten => _.,1,NoOp(Dynamic/Ad-hoc Conference Room \${EXTEN} by \${CALLERID(num)})\n";
+    $conf .= " same => n,GotoIf(\$[\"\${AIPBX_CLIENT_TYPE}\" = \"web-guest\"]?hangup_guest)\n";
     $conf .= " same => n,Set(CDR(direction)=internal)\n";
     $conf .= " same => n,Answer()\n";
+    $conf .= " same => n,Set(CONFBRIDGE(bridge,video_mode)=sfu)\n";
     $conf .= " same => n,Set(CONFBRIDGE(user,announce_join_leave)=yes)\n";
     $conf .= " same => n,Set(CONFBRIDGE(user,announce_user_count)=yes)\n";
     $conf .= " same => n,Set(CONFBRIDGE(user,music_on_hold_class)=default)\n";
     $conf .= " same => n,ConfBridge(\${EXTEN})\n";
-    $conf .= " same => n,Hangup()\n\n";
+    $conf .= " same => n(hangup_guest),Hangup()\n\n";
 
     // 2. Individual conference room contexts
     foreach ($conferences as $cf) {

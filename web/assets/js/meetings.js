@@ -20,6 +20,39 @@ function openCreateMeetingModal() {
     document.getElementById('modal_meeting_user_pin').value = '';
     document.getElementById('modal_meeting_host_pin').value = '';
     document.getElementById('modal_meeting_invites').value = '';
+    const allowGuestsEl = document.getElementById('modal_meeting_allow_guests');
+    if (allowGuestsEl) allowGuestsEl.checked = true;
+    const roomEl = document.getElementById('modal_meeting_room');
+    if (roomEl) roomEl.readOnly = false;
+
+    UIHelper.openOverlayModal('meetingModal');
+}
+
+function openEditMeetingModal(m) {
+    document.getElementById('modal_meeting_id').value = m.id || '0';
+    document.getElementById('modal_meeting_title').value = m.title || '';
+    document.getElementById('modal_meeting_desc').value = m.description || '';
+
+    const toLocalInput = (sqlDate) => {
+        if (!sqlDate) return '';
+        return String(sqlDate).replace(' ', 'T').slice(0, 16);
+    };
+
+    document.getElementById('modal_meeting_starts_at').value = toLocalInput(m.scheduled_start || m.starts_at);
+    document.getElementById('modal_meeting_ends_at').value = toLocalInput(m.scheduled_end || m.ends_at);
+    document.getElementById('modal_meeting_video_mode').value = m.video_mode || 'sfu';
+    const roomEl = document.getElementById('modal_meeting_room');
+    if (roomEl) {
+        roomEl.value = m.room_number || '';
+        roomEl.readOnly = true;
+    }
+    document.getElementById('modal_meeting_user_pin').value = m.pin || m.user_pin || '';
+    document.getElementById('modal_meeting_host_pin').value = m.host_pin || '';
+    document.getElementById('modal_meeting_invites').value = '';
+    const allowGuestsEl = document.getElementById('modal_meeting_allow_guests');
+    if (allowGuestsEl) {
+        allowGuestsEl.checked = m.allow_guests === undefined || Number(m.allow_guests) === 1;
+    }
 
     UIHelper.openOverlayModal('meetingModal');
 }

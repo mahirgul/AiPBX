@@ -529,12 +529,23 @@ class MailTemplateService
             if (in_array($key, ['fax_received', 'fax_sent', 'fax_failed'], true)) {
                 $vars['portal_link'] = $link . ($key === 'fax_received' ? '/fax-inbox' : '/fax-sent');
             }
+            if ($key === 'meeting_invite') {
+                $vars['title'] = 'Weekly Team Sync';
+                $vars['start_time'] = date('Y-m-d H:i', strtotime('+1 day 10:00'));
+                $vars['end_time'] = date('Y-m-d H:i', strtotime('+1 day 11:00'));
+                $vars['host_name'] = 'Alex Morgan';
+                $vars['join_link'] = $link . '/meet/g_sample_token';
+                $vars['pin'] = '1234';
+            }
             return ['vars' => $vars, 'blocks' => self::sampleBlocks($key, $vars)];
         });
     }
 
     private static function sampleBlocks(string $key, array $vars): array
     {
+        if ($key === 'meeting_invite') {
+            return ['join_button' => self::buttonBlock($vars['join_link'] ?? 'https://pbx.example.com/meet/…', t('meetings.btn_join_meeting'))];
+        }
         if (str_starts_with($key, 'health_')) {
             return [
                 'problems' => self::detailsBlock('', [

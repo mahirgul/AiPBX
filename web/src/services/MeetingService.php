@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../audit_log.php';
 require_once __DIR__ . '/MailTemplateService.php';
+require_once __DIR__ . '/ForgotPasswordService.php';
 
 /**
  * Service for Video Meetings & Conference Scheduling.
@@ -21,7 +22,8 @@ class MeetingService
         $db = getDB();
         if ($status !== null) {
             $stmt = $db->prepare('SELECT m.*, u.full_name AS host_name,
-                    (SELECT COUNT(*) FROM pbx_meeting_invites WHERE meeting_id = m.id) AS invite_count
+                    (SELECT COUNT(*) FROM pbx_meeting_invites WHERE meeting_id = m.id) AS invite_count,
+                    (SELECT c.admin_pin FROM pbx_conferences c WHERE BINARY c.room_number = BINARY m.room_number LIMIT 1) AS host_pin
                 FROM pbx_meetings m
                 LEFT JOIN sys_users u ON m.host_user_id = u.id
                 WHERE m.status = ?
@@ -29,7 +31,8 @@ class MeetingService
             $stmt->execute([$status]);
         } else {
             $stmt = $db->query('SELECT m.*, u.full_name AS host_name,
-                    (SELECT COUNT(*) FROM pbx_meeting_invites WHERE meeting_id = m.id) AS invite_count
+                    (SELECT COUNT(*) FROM pbx_meeting_invites WHERE meeting_id = m.id) AS invite_count,
+                    (SELECT c.admin_pin FROM pbx_conferences c WHERE BINARY c.room_number = BINARY m.room_number LIMIT 1) AS host_pin
                 FROM pbx_meetings m
                 LEFT JOIN sys_users u ON m.host_user_id = u.id
                 ORDER BY m.scheduled_start DESC');
@@ -44,13 +47,15 @@ class MeetingService
     {
         $db = getDB();
         if (is_numeric($identifier)) {
-            $stmt = $db->prepare('SELECT m.*, u.full_name AS host_name, u.email AS host_email
+            $stmt = $db->prepare('SELECT m.*, u.full_name AS host_name, u.email AS host_email,
+                    (SELECT c.admin_pin FROM pbx_conferences c WHERE BINARY c.room_number = BINARY m.room_number LIMIT 1) AS host_pin
                 FROM pbx_meetings m
                 LEFT JOIN sys_users u ON m.host_user_id = u.id
                 WHERE m.id = ?');
             $stmt->execute([(int)$identifier]);
         } else {
-            $stmt = $db->prepare('SELECT m.*, u.full_name AS host_name, u.email AS host_email
+            $stmt = $db->prepare('SELECT m.*, u.full_name AS host_name, u.email AS host_email,
+                    (SELECT c.admin_pin FROM pbx_conferences c WHERE BINARY c.room_number = BINARY m.room_number LIMIT 1) AS host_pin
                 FROM pbx_meetings m
                 LEFT JOIN sys_users u ON m.host_user_id = u.id
                 WHERE m.meeting_token = ?');
@@ -143,7 +148,7 @@ class MeetingService
         $endStr = trim((string)($input['scheduled_end'] ?? $input['ends_at'] ?? ''));
 
         $startTs = strtotime($startStr);
-        $endTs = strtotime($endStr);
+        $endTs = $endStr !== '' ? strtotime($endStr) : ($startTs ? $startTs + 3600 : false);
 
         if (!$startTs || !$endTs || $endTs <= $startTs) {
             return ['success' => false, 'error' => t('meetings.err_invalid_dates')];
@@ -157,8 +162,10 @@ class MeetingService
             $videoMode = 'sfu';
         }
 
-        $pin = trim((string)($input['pin'] ?? $input['user_pin'] ?? ''));
-        $allowGuests = !empty($input['allow_guests']) ? 1 : 1;
+        $pin = preg_replace('/[^0-9]/', '', trim((string)($input['pin'] ?? $input['user_pin'] ?? ''))) ?? '';
+        $hasHostPinInput = array_key_exists('host_pin', $input) || array_key_exists('admin_pin', $input);
+        $hostPin = preg_replace('/[^0-9]/', '', trim((string)($input['host_pin'] ?? $input['admin_pin'] ?? ''))) ?? '';
+        $allowGuests = array_key_exists('allow_guests', $input) ? (empty($input['allow_guests']) ? 0 : 1) : 1;
         $maxParticipants = max(2, min(100, (int)($input['max_participants'] ?? 25)));
 
         $db = getDB();
@@ -169,6 +176,9 @@ class MeetingService
                 return ['success' => false, 'error' => t('meetings.err_not_found')];
             }
             $roomNumber = (string)($existing['room_number'] ?? '');
+            if (!$hasHostPinInput) {
+                $hostPin = (string)($existing['host_pin'] ?? '');
+            }
             $stmt = $db->prepare('UPDATE pbx_meetings SET
                 title = ?, description = ?, pin = ?, scheduled_start = ?, scheduled_end = ?,
                 video_mode = ?, max_participants = ?, allow_guests = ?
@@ -178,8 +188,20 @@ class MeetingService
             writeAuditLog('pbx', 'meeting', 'update', "Updated video meeting {$title} (ID: {$meetingId})", 'update', $hostUserId);
         } else {
             $token = 'm_' . bin2hex(random_bytes(16));
-            $customRoom = preg_replace('/[^0-9]/', '', (string)($input['room_number'] ?? ''));
-            $roomNumber = $customRoom !== '' ? $customRoom : ('8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT));
+            $customRoom = preg_replace('/[^0-9]/', '', (string)($input['room_number'] ?? '')) ?? '';
+            if ($customRoom !== '') {
+                $roomNumber = $customRoom;
+            } else {
+                $roomNumber = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
+                $checkStmt = $db->prepare('SELECT COUNT(*) FROM pbx_conferences WHERE room_number = ?');
+                for ($attempt = 0; $attempt < 20; $attempt++) {
+                    $checkStmt->execute([$roomNumber]);
+                    if ((int)$checkStmt->fetchColumn() === 0) {
+                        break;
+                    }
+                    $roomNumber = '8' . str_pad((string)random_int(100, 999), 3, '0', STR_PAD_LEFT);
+                }
+            }
             $stmt = $db->prepare('INSERT INTO pbx_meetings (
                 meeting_token, title, description, host_user_id, room_number, pin,
                 scheduled_start, scheduled_end, video_mode, max_participants, allow_guests, status
@@ -198,11 +220,11 @@ class MeetingService
             $confStmt->execute([$roomNumber]);
             $confId = $confStmt->fetchColumn();
             if ($confId) {
-                $db->prepare('UPDATE pbx_conferences SET title = ?, user_pin = ?, video_mode = ?, max_video_streams = 10, is_active = 1 WHERE id = ?')
-                   ->execute([$title, $pin, $videoMode, $confId]);
+                $db->prepare('UPDATE pbx_conferences SET title = ?, user_pin = ?, admin_pin = ?, video_mode = ?, max_video_streams = 10, is_active = 1 WHERE id = ?')
+                   ->execute([$title, $pin, $hostPin, $videoMode, $confId]);
             } else {
-                $db->prepare('INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, video_mode, max_video_streams, is_active) VALUES (?, ?, ?, ?, ?, 10, 1)')
-                   ->execute([$roomNumber, $roomNumber, $title, $pin, $videoMode]);
+                $db->prepare('INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, video_mode, max_video_streams, is_active) VALUES (?, ?, ?, ?, ?, ?, 10, 1)')
+                   ->execute([$roomNumber, $roomNumber, $title, $pin, $hostPin, $videoMode]);
                 $confId = (int)$db->lastInsertId();
             }
             markPendingSync('conferences', 'conference', (int)$confId, "{$title} ({$roomNumber})", 'update', $hostUserId);
@@ -264,9 +286,25 @@ class MeetingService
     public static function cancelMeeting(int $meetingId, ?int $userId = null): bool
     {
         $db = getDB();
+        $meeting = self::getMeeting($meetingId);
         $stmt = $db->prepare('UPDATE pbx_meetings SET status = "cancelled" WHERE id = ?');
         $ok = $stmt->execute([$meetingId]);
         if ($ok) {
+            if ($meeting && !empty($meeting['room_number'])) {
+                $roomNumber = (string)$meeting['room_number'];
+                $activeStmt = $db->prepare('SELECT COUNT(*) FROM pbx_meetings WHERE room_number = ? AND status != "cancelled" AND id != ?');
+                $activeStmt->execute([$roomNumber, $meetingId]);
+                if ((int)$activeStmt->fetchColumn() === 0) {
+                    $confStmt = $db->prepare('SELECT id, title FROM pbx_conferences WHERE room_number = ? LIMIT 1');
+                    $confStmt->execute([$roomNumber]);
+                    $confRow = $confStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($confRow) {
+                        $db->prepare('UPDATE pbx_conferences SET is_active = 0 WHERE id = ?')->execute([(int)$confRow['id']]);
+                        markPendingSync('conferences', 'conference', (int)$confRow['id'], "{$confRow['title']} ({$roomNumber})", 'delete', $userId);
+                        markPendingSync('internal_numbers', 'conference', (int)$confRow['id'], "{$confRow['title']} ({$roomNumber})", 'delete', $userId);
+                    }
+                }
+            }
             writeAuditLog('pbx', 'meeting', 'delete', "Cancelled video meeting ID {$meetingId}", 'delete', $userId);
         }
         return $ok;
@@ -322,58 +360,44 @@ class MeetingService
             return false;
         }
 
-        require_once __DIR__ . '/ForgotPasswordService.php';
-        $baseUrl = rtrim(ForgotPasswordService::portalUrl(), '/');
-        $joinUrl = "{$baseUrl}/meet/{$token}";
-
+        $joinUrl = self::getMeetingUrl($token);
         $brand = (string)getSystemSetting('brand_title', 'AiPBX');
-        $btn = '<table role="presentation" border="0" cellpadding="0" cellspacing="0" style="margin: 20px 0;">' .
-            '<tr><td align="center" bgcolor="#2563eb" style="border-radius: 6px;">' .
-            '<a href="' . htmlspecialchars($joinUrl, ENT_QUOTES) . '" target="_blank" style="font-size: 15px; font-weight: bold; color: #ffffff; text-decoration: none; padding: 12px 24px; display: inline-block;">' .
-            t('meetings.btn_join_meeting') .
-            '</a></td></tr></table>';
+        $lang = MailTemplateService::languageFor($toEmail);
 
         $vars = [
-            'name' => $name ?: $toEmail,
+            'name' => $name !== '' ? $name : $toEmail,
             'title' => (string)$meeting['title'],
             'start_time' => (string)$meeting['scheduled_start'],
             'end_time' => (string)$meeting['scheduled_end'],
             'host_name' => (string)($meeting['host_name'] ?? $brand),
             'join_link' => $joinUrl,
-            '*join_button' => $btn,
-            'pin' => (string)($meeting['pin'] ?? '-'),
+            'pin' => ($meeting['pin'] ?? '') !== '' ? (string)$meeting['pin'] : '-',
             'brand' => $brand,
         ];
 
-        $lang = 'en';
-        $mail = MailTemplateService::render('meeting_invite', $lang, $vars);
+        $blocks = MailTemplateService::inLanguage($lang, fn() => [
+            'join_button' => MailTemplateService::buttonBlock($joinUrl, t('meetings.btn_join_meeting')),
+        ]);
 
         $ics = self::generateIcs($meeting, $joinUrl);
+        $tmpIcs = tempnam(sys_get_temp_dir(), 'aipbx_ics_');
+        $attachments = [];
+        if ($tmpIcs !== false) {
+            file_put_contents($tmpIcs, $ics);
+            $attachments[] = [
+                'path' => $tmpIcs,
+                'name' => 'meeting.ics',
+                'type' => 'text/calendar',
+            ];
+        }
 
-        $fromAddress = (string)portalEnv('MAIL_FROM_ADDRESS', 'noreply@' . (portalEnv('PORTAL_DOMAIN') ?: 'aipbx.local'));
-        $fromName = (string)portalEnv('MAIL_FROM_NAME', $brand);
-
-        // MIME multipart email with .ics attachment
-        $boundary = '=_b_' . md5((string)microtime(true));
-        $headers = [
-            'From: ' . sprintf('=?UTF-8?B?%s?= <%s>', base64_encode($fromName), $fromAddress),
-            'Reply-To: ' . $fromAddress,
-            'MIME-Version: 1.0',
-            'Content-Type: multipart/mixed; boundary="' . $boundary . '"',
-        ];
-
-        $body = "--{$boundary}\r\n" .
-            "Content-Type: text/html; charset=UTF-8\r\n" .
-            "Content-Transfer-Encoding: base64\r\n\r\n" .
-            chunk_split(base64_encode($mail['html'])) . "\r\n" .
-            "--{$boundary}\r\n" .
-            "Content-Type: text/calendar; charset=UTF-8; method=REQUEST; name=\"meeting.ics\"\r\n" .
-            "Content-Disposition: attachment; filename=\"meeting.ics\"\r\n" .
-            "Content-Transfer-Encoding: base64\r\n\r\n" .
-            chunk_split(base64_encode($ics)) . "\r\n" .
-            "--{$boundary}--\r\n";
-
-        $subject = '=?UTF-8?B?' . base64_encode($mail['subject']) . '?=';
-        return @mail($toEmail, $subject, $body, implode("\r\n", $headers), '-f ' . $fromAddress);
+        try {
+            $res = MailTemplateService::send('meeting_invite', $toEmail, $lang, $vars, $blocks, $attachments);
+            return !empty($res['success']);
+        } finally {
+            if ($tmpIcs !== false && is_file($tmpIcs)) {
+                @unlink($tmpIcs);
+            }
+        }
     }
 }

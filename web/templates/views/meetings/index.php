@@ -61,6 +61,7 @@
                             $guestToken = (string)($m['meeting_token'] ?? $m['guest_token'] ?? '');
                             $guestUrl = MeetingService::getMeetingUrl($guestToken);
                             $roomPin = (string)($m['pin'] ?? $m['user_pin'] ?? '');
+                            $hostPin = (string)($m['host_pin'] ?? '');
                         ?>
                         <tr class="<?php echo $isCancelled ? 'u-opacity-60' : ''; ?>">
                             <td>
@@ -99,7 +100,11 @@
                                 <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px;">
                                     <?php if ($roomPin !== ''): ?>
                                         <span class="badge badge-secondary" title="<?php echo t('conferences.user_pin'); ?>"><i class="fas fa-key"></i> <?php echo htmlspecialchars($roomPin); ?></span>
-                                    <?php else: ?>
+                                    <?php endif; ?>
+                                    <?php if ($hostPin !== ''): ?>
+                                        <span class="badge badge-warning" title="<?php echo t('conferences.admin_pin'); ?>"><i class="fas fa-crown"></i> <?php echo htmlspecialchars($hostPin); ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($roomPin === '' && $hostPin === ''): ?>
                                         <span class="badge badge-secondary" style="opacity: 0.7;"><?php echo t('conferences.no_pin'); ?></span>
                                     <?php endif; ?>
                                 </div>
@@ -131,6 +136,9 @@
                                         </button>
                                         <button type="button" class="btn btn-info btn-sm" onclick="openInviteModal(<?php echo jsArg($m); ?>)" title="<?php echo t('meetings.btn_invite_guest', 'Invite Guest'); ?>">
                                             <i class="fas fa-envelope"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="openEditMeetingModal(<?php echo jsArg($m); ?>)" title="<?php echo t('common.edit'); ?>">
+                                            <i class="fas fa-edit"></i>
                                         </button>
                                         <a href="/meetings?ics=<?php echo (int)$m['id']; ?>" class="btn btn-secondary btn-sm" title="<?php echo t('meetings.btn_download_ics', 'Download .ics'); ?>">
                                             <i class="fas fa-calendar-alt"></i>
@@ -219,6 +227,14 @@
                 <div class="form-group">
                     <label class="form-label"><i class="fas fa-envelope-open-text text-muted"></i> <?php echo t('meetings.lbl_invites', 'Invite Guests via Email'); ?> <span class="text-muted u-fs-11">(<?php echo t('meetings.invites_hint', 'Comma or newline separated'); ?>)</span></label>
                     <textarea name="invites_emails" id="modal_meeting_invites" class="form-control" rows="2" placeholder="guest1@example.com, client@partner.com"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <input type="hidden" name="allow_guests" value="0">
+                    <label class="u-flex-center u-pointer" style="gap: 8px; font-weight: 500;">
+                        <input type="checkbox" name="allow_guests" id="modal_meeting_allow_guests" value="1" checked>
+                        <span><?php echo t('meetings.allow_guests_lbl', 'Allow External Guests (Can join via link)'); ?></span>
+                    </label>
                 </div>
 
                 <?php echo uiModalFooter("UIHelper.closeOverlayModal('meetingModal')", t('common.save'), '', 'fa-calendar-check'); ?>
