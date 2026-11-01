@@ -1,8 +1,8 @@
 # Spec 004: Web Video Meetings & Guest Conference Scheduling System
 
-- **Status:** In Progress
+- **Status:** Implemented
 - **Author:** Mahir Gül
-- **Target Release:** v1.50.38
+- **Target Release:** v1.60.0
 - **Date:** 2026-11-01
 
 ---
@@ -39,14 +39,14 @@
 - As a **Meeting Participant**, I want to see all participants in a gallery grid (SFU mode), toggle my camera and microphone, and share my screen.
 
 ### Acceptance Criteria (Definition of Done)
-- [ ] **AC-1:** Database migration creates `pbx_meetings` and `pbx_meeting_invites` tables.
-- [ ] **AC-2:** ConfBridge generator (`SyncConferences.php`) writes `CONFBRIDGE(bridge,video_mode)=sfu` (or `follow_talker`), `video_update_discard=0`, and `remb_send_interval=1000`.
-- [ ] **AC-3:** PJSIP WebRTC endpoint generator (`SyncExtensions.php`) defines `max_audio_streams=10` and `max_video_streams=10`.
-- [ ] **AC-4:** Meeting management view (`/meetings`) allows scheduling, editing, cancelling, and viewing upcoming/past meetings with CSRF and RBAC protection.
-- [ ] **AC-5:** Public meeting gateway (`/meet/{token}`) provides pre-join camera/mic checks, lobby screen, and WebRTC room connection with clean fallback.
-- [ ] **AC-6:** E-mail invitation service dispatches branded HTML email with `.ics` calendar attachment via `MailTemplateService`.
-- [ ] **AC-7:** 100% translation key parity across all 22 supported languages (`web/lang/*.php`).
-- [ ] **AC-8:** Automated unit tests pass with 100% green coverage, 0 PHPStan errors, and clean smoke test.
+- [x] **AC-1:** Database migration creates `pbx_meetings` and `pbx_meeting_invites` tables.
+- [x] **AC-2:** ConfBridge generator (`SyncConferences.php`) writes `CONFBRIDGE(bridge,video_mode)=sfu` (or `follow_talker`), `video_update_discard=0`, and `remb_send_interval=1000`.
+- [x] **AC-3:** PJSIP WebRTC endpoint generator (`SyncExtensions.php`) defines `max_audio_streams=10` and `max_video_streams=10`.
+- [x] **AC-4:** Meeting management view (`/meetings`) allows scheduling, editing, cancelling, and viewing upcoming/past meetings with CSRF and RBAC protection.
+- [x] **AC-5:** Public meeting gateway (`/meet/{token}`) provides pre-join camera/mic checks, lobby screen, and WebRTC room connection with clean fallback.
+- [x] **AC-6:** E-mail invitation service dispatches branded HTML email with `.ics` calendar attachment via `MailTemplateService`.
+- [x] **AC-7:** 100% translation key parity across all 22 supported languages (`web/lang/*.php`).
+- [x] **AC-8:** Automated unit tests pass with 100% green coverage, 0 PHPStan errors, and clean smoke test.
 
 ---
 

@@ -180,7 +180,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 | `sys_audit_log`, `sys_login_logs` | Audit log, logins |
 | `sys_mobile_devices` | Signed-in mobile apps and their push tokens |
 | `pbx_trunks`, `pbx_dids`, `pbx_outbound_routes`, `pbx_permission_*` | Trunks and routing |
-| `pbx_ivrs`, `pbx_ivr_entries`, `pbx_time_*`, `pbx_ring_groups`, `pbx_queues`, `pbx_conferences` | Call flow |
+| `pbx_ivrs`, `pbx_ivr_entries`, `pbx_time_*`, `pbx_ring_groups`, `pbx_queues`, `pbx_conferences`, `pbx_meetings`, `pbx_meeting_invites` | Call flow & Video meetings |
 | `pbx_phones`, `pbx_phones_waiting`, `pbx_phone_keys`, `pbx_phone_fetch_log` | Desk phone provisioning |
 | `pbx_ai_apps`, `ai_requests`, `ai_cloud_usage`, `ai_tts_history`, `voicemail_ai` | AI |
 | `asteriskcdr`, `asteriskcel`, `cdrs` | Call records (Asterisk CDR/CEL, portal call list) |

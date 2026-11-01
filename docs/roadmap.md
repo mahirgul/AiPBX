@@ -278,11 +278,9 @@ MinIO, Wasabi, Backblaze B2 …) would keep large files off the PBX: bucket, key
 admin page, a connection test, and a one-time move of existing files. Downloads keep going through
 the chat service, so access rules stay the same.
 
-## 4. Video calls
+## 4. Video calls *(done in 1.60.0: Asterisk ConfBridge SFU multi-screen WebRTC gallery, Follow-Talker for SIP video phones, /meetings scheduler, /meet/{token} zero-install public guest lobby, .ics calendar invitations)*
 
-The server already allows the VP8 and H.264 codecs for WebRTC, but the web phone and the apps send
-audio only. Needed: camera handling and a video view in the web phone and the apps, switching
-between audio and video during a call, and sensible bandwidth limits for mobile networks.
+The server allows VP8, VP9, and H.264 codecs for WebRTC. Asterisk ConfBridge SFU forwards RTP video streams directly without server-side transcoding, enabling responsive multi-party gallery grid video conferences in browsers, while Follow-Talker mode supports hardware SIP video phones. Includes pre-join device check lobby, screen sharing, email invitations, and Outlook/Google Calendar `.ics` attachments.
 
 ## 5. Local AI models (EmbeddingGemma 2, EMA Lightning)
 

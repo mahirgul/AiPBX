@@ -211,6 +211,14 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   see [WebRTC, NAT and TURN](docs/webrtc-nat.md)
 - **Opus + DTLS-SRTP** encrypted audio
 
+### 🎥 Web Video Meetings & Guest Conferences (v1.60+)
+- **Selective Forwarding Unit (SFU) Architecture** — Built directly on Asterisk 22 `app_confbridge` (`video_mode=sfu`). RTP video streams are forwarded without CPU-intensive server-side transcoding, enabling modern browsers to render high-definition responsive gallery grids with multiple simultaneous participants.
+- **Hardware SIP Video Phone Compatibility (Follow-Talker)** — `video_mode=follow_talker` automatically switches the dominant active speaker's video stream to standard hardware SIP video phones (Yealink, Grandstream, Snom) that support only single video streams.
+- **Meeting Scheduler (`/meetings`)** — Schedule planned or recurring conferences with start/end times, topics, participant limits, and PIN protection.
+- **Public Guest Magic Links (`/meet/{token}`)** — Allows external clients, vendors, and non-subscribers to join video conferences directly from any modern browser with zero registration and zero app installation.
+- **Pre-Join Lobby & WebRTC In-Browser Room** — Pre-flight camera/mic hardware checks, responsive auto-resizing video tiles (1 to 9+ participants), in-call screen sharing (`getDisplayMedia`), and audio/video toggles.
+- **Calendar & Invitations** — Branded email invitations with one-click join links and downloadable RFC 5545 `.ics` calendar files.
+
 ### 💬 Messaging & Group Chat
 - **1-to-1 and group chat** (Go WebSocket service `aipbx-chat`), group admins, member management
 - **Photos and files** with thumbnails; access limited to the conversation's participants
