@@ -5,6 +5,29 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.1
+
+- **Conference Voice Quick Dial & Interactive Join (`#9` / `*9`):**
+  - Added configurable conference feature code (`#9` default, customizable to `*9` or custom code) for dialing conference rooms directly from mobile apps and desk phones (`#9<room_number>`).
+  - Added interactive prompt extension (`#9` without room number) prompting callers to enter their target room.
+  - Implemented dynamic ConfBridge routing context (`[app-confbridge-dispatch]`) with security guards preventing unauthorized guest creation.
+- **REST API v1 Video Meetings & Conference Telemetry:**
+  - Added `/api/v1/meetings` endpoints (`GET`, `POST`, `GET /id`, `PATCH /id`, `DELETE /id`, and `POST /id/invites`) to manage video meetings and dispatch invitations programmatically.
+  - Added `/api/v1/conferences/{id}/members` endpoint for live participant telemetry.
+  - Updated OpenAPI 3.1 schema specification (`/api/v1/openapi.json`).
+- **Mobile API Conference Room Directory:**
+  - Enhanced `GET / POST /api/mobile/features.php` to return active conference rooms and dial numbers alongside `conference_prefix`.
+- **Internal Number Conflict & Room Protection:**
+  - Enforced `internalNumberOwner()` conflict checks when scheduling video meetings to prevent collisions with existing extensions, queues, IVRs, or ring groups.
+  - Added protection preventing deletion of conference rooms actively in use by scheduled meetings or PBX routing.
+- **RBAC Matrix & Permission Enforcement:**
+  - Registered `meetings` module in `RoleRepository` with dedicated Phinx migration and localized role matrix labels across all 22 languages.
+  - Enforced fine-grained permissions (`can_access`, `can_edit`, `can_delete`) across `MeetingController`, `ConferenceController`, and views.
+  - Extended `bin/smoke.php` RBAC audit coverage to newly added administrator-only routes.
+- **Asterisk Sync & PHP 8.5 Compatibility Hardening:**
+  - Included `helpers.php` dependency in CLI `asterisk_sync.php` ensuring seamless unattended updates.
+  - Resolved PHP 8.5 deprecation and notice warnings in CSV processing and conference service.
+
 ## 1.60.0
 
 - **Web Video Meetings & Guest Conference Scheduling System (`/meetings`) (Spec 004):**
