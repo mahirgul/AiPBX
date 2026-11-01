@@ -62,3 +62,4 @@ For any new feature or substantial enhancement:
 |---|---|---|---|
 | [`001`](001-custom-dialplan.md) | Custom Asterisk Dialplan & Context Injection | Implemented | v1.50.35 |
 | [`002`](002-ios-app-parity.md) | iOS Mobile App Feature Parity & In-App Media Viewer | Implemented | v1.50.35 |
+| [`003`](003-reverse-proxy.md) | Reverse Proxy Architecture, Network Firewall Matrix & Cloudflare DNS-01 Validation | Implemented | v1.50.36 |

@@ -91,7 +91,7 @@ link in their invitation e-mail.
 
 | Page | What it covers |
 |------|----------------|
-| 📜 [SDD Guide & Constitution](specs/README.md) | Specification-Driven Development (SDD) guide, core architectural rules (zero regressions, circuit breakers, pure generators), and living specifications index |
+| 📜 [SDD Guide & Constitution](specs/README.md) | Specification-Driven Development (SDD) guide, core architectural rules (zero regressions, circuit breakers, pure generators), and living specifications index (Specs 001, 002, 003) |
 | 🗺️ [Roadmap](roadmap.md) | Planned work across future waves with detailed requirements and milestone criteria |
 
 Planned work (website call widget, chat message deletion, S3 storage, video calls, local AI models,
