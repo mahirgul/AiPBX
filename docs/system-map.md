@@ -42,8 +42,8 @@ describe --tags`). Updates replace it; do not edit files there by hand.
 | `ai/aipbx_ai/` | Local AI service (Python): models, voice requests, AudioSocket calls |
 | `conf/sbin/` | Root tools installed to `/usr/local/sbin` (section 8) |
 | `conf/asterisk/` | Static Asterisk files installed once (the generated ones are in `/etc/asterisk/pbx/`) |
+| `conf/systemd/` | systemd service unit files installed by `install.sh` / `aipbx-update` |
 | `sounds/` | Sound lists and helpers |
-| `android/`, `ios/` | Mobile apps (not used on the server) |
 | `docs/` | These documents (also shown in the portal: *System → Help*) |
 
 ### From a page to its code

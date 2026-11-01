@@ -37,29 +37,12 @@ chat/aipbx-chat
 web/vendor/
 web/.phpunit.cache/
 
-# === Android ===
-android/app/build/
-android/build/
-android/.gradle/
-android/local.properties
-android/*.jks
-android/keystore.properties
-android/hosting-*.json
-android/__pycache__/
+# === Python ===
 ai/**/__pycache__/
 signaling/**/__pycache__/
 engine/**/__pycache__/
 scripts/__pycache__/
 **/__pycache__/
-android/app.aab
-android/app.apk
-
-# === iOS ===
-ios/build/
-ios/DerivedData/
-*.xcuserstate
-project.xcworkspace
-xcuserdata/
 
 # === Web build/temp ===
 web/app.aab

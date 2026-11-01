@@ -42,7 +42,7 @@ jobs:
             // it does not count as a separate topic.
             function area(p) {
               if (/^(docs\/|[^/]+\.md$)/.test(p)) return null;
-              if (/^web\/lang\//.test(p) || /\/values-[a-z]{2}(-r[A-Z]{2})?\//.test(p) || /\.lproj\//.test(p)) return 'translations';
+              if (/^web\/lang\//.test(p)) return 'translations';
               const m = p.match(/^plugins\/([^/]+)\//);
               if (m) return `plugin:${m[1]}`;
               if (/^(install\.sh|conf\/|scripts\/)/.test(p)) return 'installer/system';
