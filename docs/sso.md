@@ -111,7 +111,12 @@ provider.
 - **API keys, SIP phones and softphones are not affected:** they do not sign in with a portal password.
 - **The mobile apps' user name and password sign-in stops working.** Users can still add the app with the QR code on **My Phone** after signing in on the web.
 
-Signing out of AiPBX ends the AiPBX session only. It does not sign you out of the identity provider.
+### Single Logout
+
+By default, signing out of AiPBX ends the AiPBX session only. To end the session at the identity provider too:
+
+- **SAML:** enter the provider's **Single Logout URL** in the plugin. The SP metadata then lists `/auth/saml/sls`. The request is not signed, as AiPBX has no signing key, so a provider that requires signed logout requests refuses it. Tested against SimpleSAMLphp.
+- **OpenID Connect:** turn on **Single Logout** in the plugin. It uses the `end_session_endpoint` of the provider's discovery document, and you register `/login` there as a post-logout address. Not tested against a real provider.
 
 ### If the identity provider is down
 

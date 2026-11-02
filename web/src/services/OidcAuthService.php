@@ -357,6 +357,25 @@ class OidcAuthService
     }
 
     /**
+     * The provider's end-session address with this session's id_token, or null when Single Logout
+     * is off or the provider has none.
+     */
+    public static function buildLogoutUrl(string $idToken, string $returnUrl): ?string
+    {
+        if (self::getSetting('single_logout', '0') !== '1' || $idToken === '') {
+            return null;
+        }
+        $endpoint = (string) (self::getEndpoints()['end_session_endpoint'] ?? '');
+        if (!preg_match('#^https?://#i', $endpoint)) {
+            return null;
+        }
+        return $endpoint . (str_contains($endpoint, '?') ? '&' : '?') . http_build_query([
+            'id_token_hint' => $idToken,
+            'post_logout_redirect_uri' => $returnUrl,
+        ]);
+    }
+
+    /**
      * Parses payload claims from an unencrypted JWT (id_token).
      *
      * @return array<string, mixed>|null

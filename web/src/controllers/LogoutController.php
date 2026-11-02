@@ -30,12 +30,26 @@ class LogoutController extends BaseController
             }
         }
 
+        // Read before the session goes. Only when this session signed in that way.
+        $providerLogout = null;
+        try {
+            if (($_SESSION['auth_method'] ?? '') === 'saml') {
+                require_once __DIR__ . '/../services/SamlAuthService.php';
+                $providerLogout = SamlAuthService::buildLogoutUrl((string) ($_SESSION['saml_name_id'] ?? ''), (string) ($_SESSION['saml_session_index'] ?? ''));
+            } elseif (($_SESSION['auth_method'] ?? '') === 'oidc') {
+                require_once __DIR__ . '/../services/OidcAuthService.php';
+                $providerLogout = OidcAuthService::buildLogoutUrl((string) ($_SESSION['oidc_id_token'] ?? ''), (string) preg_replace('#/auth/oidc/callback$#', '', OidcAuthService::getRedirectUri()) . '/login?signed_out=1');
+            }
+        } catch (\Throwable $e) {
+            error_log('Single Logout: ' . $e->getMessage()); // Signing out of AiPBX still works.
+        }
+
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();
             setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
         }
         session_destroy();
-        static::redirect('/login?signed_out=1');
+        static::redirect($providerLogout ?? '/login?signed_out=1');
     }
 }

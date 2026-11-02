@@ -107,6 +107,7 @@ function check_routes(?string $onlyRoute = null): void
         '/auth/saml',
         '/auth/saml/acs',
         '/auth/saml/metadata',
+        '/auth/saml/sls',
     ];
 
     // Lower bound for a full page. /reset-password without a token prints a
