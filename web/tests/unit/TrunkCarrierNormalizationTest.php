@@ -58,6 +58,12 @@ final class TrunkCarrierNormalizationTest extends TestCase
         ];
     }
 
+    public function testARouteCallerIdOverrideKeepsItsPlus(): void
+    {
+        $line = buildTrunkCallerIdLine(['trunk_name' => '', 'callerid_override' => '+43123456'], false);
+        $this->assertStringContainsString('+43123456', $line);
+    }
+
     public function testATrunkWithACountrySendsTheNumberThroughTheSubroutine(): void
     {
         $line = buildTrunkCarrierDialLine(['strip' => '', 'add' => '', 'e164' => ['cc' => '1', 'trunk' => '1', 'intl' => '011']]);

@@ -169,7 +169,8 @@ function buildTrunkCidNormalizeLine($norm) {
  */
 function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
     $lines = '';
-    $override = preg_replace('/[^0-9]/', '', trim($trunk_entry['callerid_override'] ?? ''));
+    // A carrier may want the leading + (A1, Twilio).
+    $override = cleanRoutePrefix((string) ($trunk_entry['callerid_override'] ?? ''));
     $trunk_name = trim($trunk_entry['trunk_name'] ?? '');
 
     $trunk_cid = '';
@@ -179,9 +180,9 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
         $t_stmt->execute([$trunk_name]);
         $t_row = $t_stmt->fetch(PDO::FETCH_ASSOC);
         if ($t_row) {
-            $trunk_cid = preg_replace('/[^0-9]/', '', trim($t_row['outbound_caller_id'] ?? ''));
+            $trunk_cid = cleanRoutePrefix((string) ($t_row['outbound_caller_id'] ?? ''));
             if ($trunk_cid === '' && !empty($t_row['from_user'])) {
-                $trunk_cid = preg_replace('/[^0-9]/', '', trim($t_row['from_user'] ?? ''));
+                $trunk_cid = cleanRoutePrefix((string) ($t_row['from_user'] ?? ''));
             }
             $send_name = intval($t_row['send_caller_name'] ?? 1);
         }
