@@ -85,6 +85,16 @@ final class InboundNormService
         });
     }
 
+    public static function toggle(array $data): array
+    {
+        return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
+            $id = (int) ($data['rule_id'] ?? 0);
+            getDB()->prepare('UPDATE pbx_inbound_norm_rules SET is_active = 1 - is_active WHERE id = ?')->execute([$id]);
+            self::markChanged("#{$id}", 'update');
+            return t('inbound_norm.saved');
+        });
+    }
+
     /**
      * What a number becomes on a trunk. As in the dialplan, the most specific pattern wins, and a
      * rule of this trunk comes before a rule for all trunks.
