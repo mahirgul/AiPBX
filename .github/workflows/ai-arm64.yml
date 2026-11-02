@@ -1,0 +1,42 @@
+name: Local AI runtime on arm64
+
+# Installs the real packages on an arm64 machine, the same way aipbx-ai-setup
+# does. A separate workflow on purpose: a package that drops its arm64 build must
+# be reported, not hold up a release of everything else.
+on:
+  push:
+    branches: [main]
+    paths:
+      - ai/requirements.txt
+      - conf/sbin/aipbx-ai-setup
+      - .github/workflows/ai-arm64.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  install:
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install the runtime packages
+        run: python -m pip install -r ai/requirements.txt
+      - name: The packages import
+        run: python -c 'import onnxruntime, numpy, num2words, ctranslate2, vosk'
+      - name: EMA Lightning refuses clearly
+        working-directory: ai
+        run: |
+          python - <<'PY'
+          try:
+              import aipbx_ai.ema_engine
+          except ImportError as e:
+              assert "Piper" in str(e), e
+          else:
+              raise SystemExit("EMA Lightning loaded without its normalizer")
+          PY
+      - name: Service tests
+        run: python -m unittest discover -v ai/tests

@@ -109,7 +109,8 @@ point five zero". Before phonemising, the service now writes them out for **Germ
 [num2words](https://github.com/savoirfairelinux/num2words), LGPL-2.1, installed as a separate
 package). The language is the Piper voice's `language.code` (or its espeak-ng voice), and for
 Kokoro the voice prefix (`a` en-US, `b` en-GB); other languages are left as they are. EMA
-Lightning does the same for Turkish with normalizer-tr.
+Lightning does the same for Turkish with normalizer-tr, which has no package for Linux arm64: on
+that processor EMA Lightning does not load, and the other models are not affected.
 
 | Written | German voice | English voice |
 |---------|--------------|---------------|

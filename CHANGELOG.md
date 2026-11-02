@@ -27,6 +27,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Reverse proxy:** the default list of trusted proxies is now this host only. With private networks in it, any device on the LAN could spoof `X-Forwarded-For` and avoid sign-in lockouts. A saved list is not changed: **if yours holds whole private networks, reduce it to your proxy's address.**
 - **SAML default role:** the roles the plugin offers (Call Center Manager, Call Center Agent, Read-Only Admin) were silently replaced by `user`.
 - **Let's Encrypt with Cloudflare DNS:** the certbot plugin is now installed, without which the feature could not work; a successful run with a new token no longer ended in an error.
+- **Local AI on arm64 (Raspberry Pi, Graviton):** the runtime could not be installed at all, because one package needed only by EMA Lightning has no arm64 build. That package is now left out on arm64, and EMA Lightning says it is not available on this processor instead of reading numbers wrong.
+- **Phone discovery:** 25 phones of a vendor with no model configured could keep every other vendor's phones from being provisioned, one row that could not become a phone stopped each run at the same place, and one over-long DHCP hostname lost everything a run had seen.
 - **Docs:** turning MPTCP off reduces exposure to CVE-2026-98432; the fix is the distribution's kernel update.
 
 ## 1.60.3

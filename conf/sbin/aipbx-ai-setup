@@ -146,7 +146,10 @@ step models
     || fail "the model packages could not be installed — see $LOG_FILE"
 
 step check
-"$VENV/bin/python" -c 'import onnxruntime, numpy, normalizer_tr, num2words, ctranslate2' >>"$LOG_FILE" 2>&1 \
+IMPORTS='onnxruntime, numpy, num2words, ctranslate2'
+# requirements.txt leaves normalizer-tr out on arm64 (only EMA Lightning needs it).
+[[ "$(uname -m)" == aarch64 ]] || IMPORTS+=', normalizer_tr'
+"$VENV/bin/python" -c "import $IMPORTS" >>"$LOG_FILE" 2>&1 \
     || fail "the installed packages do not import — see $LOG_FILE"
 sha256sum "$APP_DIR/requirements.txt" | cut -d' ' -f1 > "$READY_MARK"
 chmod -R go-w "$VENV"
