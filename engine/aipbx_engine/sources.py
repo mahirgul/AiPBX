@@ -63,7 +63,9 @@ def _device(mac: str, ip: str = "", hostname: str = "", source: str = "") -> dic
     mac = oui.normalize_mac(mac)
     if mac == "":
         return None
-    return {"mac": mac, "ip": (ip or "").strip(), "hostname": (hostname or "").strip(),
+    # Cut to the columns of pbx_phone_discoveries: a client chooses its own DHCP
+    # hostname, and one value too long makes the database refuse the whole batch.
+    return {"mac": mac, "ip": (ip or "").strip()[:45], "hostname": (hostname or "").strip()[:120],
             "source": source}
 
 

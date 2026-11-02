@@ -44,6 +44,15 @@ def fixture(text):
     return handle.name
 
 
+class FieldLimitTests(unittest.TestCase):
+    def test_values_fit_their_columns(self):
+        # A client picks its own DHCP hostname. One that is too long made MariaDB
+        # refuse the whole batch, so nothing that run saw was recorded.
+        dev = sources._device("00:15:65:aa:bb:cc", "1" * 60, "h" * 300, "lease")
+        self.assertEqual(len(dev["hostname"]), 120)
+        self.assertEqual(len(dev["ip"]), 45)
+
+
 class ReadsLeases(unittest.TestCase):
     def test_reads_mac_ip_and_hostname(self):
         rows = {r["mac"]: r for r in sources.read_leases(fixture(LEASE_FILE))}

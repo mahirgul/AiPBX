@@ -5,7 +5,9 @@
 onnxruntime>=1.20,<2
 numpy>=2,<3
 # Turkish text normaliser of EMA Lightning: numbers, dates, money read aloud.
-normalizer-tr>=0.5,<1
+# No wheel for Linux arm64, and its source needs Rust: requiring it there stopped
+# the whole runtime from installing. Only EMA Lightning needs it (see ema_engine.py).
+normalizer-tr>=0.5,<1; platform_machine != "aarch64"
 # Number words for the German and English text rules of the Piper and Kokoro
 # voices (aipbx_ai/textnorm.py). LGPL-2.1, installed as a separate package.
 num2words>=0.5.14,<0.6

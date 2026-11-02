@@ -371,7 +371,7 @@ class PhoneDiscoveryService
         }
 
         $limit = max(1, min(self::AUTO_MAX_PER_RUN, $limit));
-        $rows = self::candidates($limit);
+        $rows = self::candidates($limit, array_keys($models));
 
         foreach ($rows as $row) {
             $mac = (string) $row['mac'];
@@ -393,7 +393,17 @@ class PhoneDiscoveryService
                 $out['skipped'][] = sprintf(t('phonedisc.pool_exhausted'), count($out['created']));
                 break;
             }
-            $phoneId = PhoneProvisionService::upsertPhone(0, $mac, $models[$vendor], (int) $user['id']);
+            // One row that cannot become a phone is reported and passed over: it
+            // is the oldest, so stopping here would stop every later run at it
+            // too. A database error still ends the run (the wrapper reports it).
+            try {
+                $phoneId = PhoneProvisionService::upsertPhone(0, $mac, $models[$vendor], (int) $user['id']);
+            } catch (\PDOException $e) {
+                throw $e;
+            } catch (\Exception $e) {
+                $out['skipped'][] = PhoneModels::formatMac($mac) . ': ' . $e->getMessage();
+                continue;
+            }
             self::markProvisioned((int) $row['id'], $phoneId);
             $out['created'][] = PhoneModels::formatMac($mac) . ' → ' . $user['extension']
                 . ' (' . (PhoneModels::get($models[$vendor])['label'] ?? $models[$vendor]) . ')';
@@ -405,24 +415,32 @@ class PhoneDiscoveryService
     }
 
     /**
-     * Phones worth provisioning automatically: new, seen recently, not a phone,
-     * oldest first so the queue does not starve.
+     * Phones worth provisioning automatically: new, seen recently, not a phone.
+     * Vendors with a model come first, then oldest first: a row of a vendor with
+     * no model stays "new" for good, and enough of them would otherwise fill the
+     * window on every run and keep the phones that can be provisioned out of it.
+     * What is left of the window still lists those rows, so the run can say why
+     * they were passed over.
      *
+     * @param string[] $vendors the vendors that have a model
      * @return list<array<string, mixed>>
      */
-    private static function candidates(int $limit): array
+    private static function candidates(int $limit, array $vendors): array
     {
         // $limit is an int this class clamped itself, so it is safe to inline
         // (a placeholder in LIMIT is not portable across the two PDO modes).
-        return getDB()->query(
+        $placeholders = implode(',', array_fill(0, count($vendors), '?'));
+        $stmt = getDB()->prepare(
             "SELECT d.id, d.mac, d.vendor, d.ip
              FROM pbx_phone_discoveries d
              WHERE d.status = 'new'
                AND d.last_seen_at >= (NOW() - INTERVAL " . self::SEEN_WINDOW_HOURS . " HOUR)
                AND NOT EXISTS (SELECT 1 FROM pbx_phones p WHERE p.mac = d.mac)
-             ORDER BY d.first_seen_at, d.id
+             ORDER BY (d.vendor IN ({$placeholders})) DESC, d.first_seen_at, d.id
              LIMIT " . $limit
-        )->fetchAll(PDO::FETCH_ASSOC);
+        );
+        $stmt->execute(array_values($vendors));
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**

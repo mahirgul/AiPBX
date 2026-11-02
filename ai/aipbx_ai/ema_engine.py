@@ -20,7 +20,15 @@ from itertools import pairwise
 
 import numpy as np
 import onnxruntime as ort
-from normalizer_tr import Normalizer
+
+try:
+    from normalizer_tr import Normalizer
+except ImportError as e:
+    # Not installed on Linux arm64 (requirements.txt: no wheel, and the source
+    # needs Rust). Running without it is worse than not running: digits are not
+    # in the vocabulary, so "250 lira" would be read to the caller as "lira".
+    raise ImportError("EMA Lightning needs normalizer-tr, which has no package for this "
+                      "processor; use a Piper voice instead") from e
 
 RATE = 48000
 MAX_WORD_FRAMES = 250

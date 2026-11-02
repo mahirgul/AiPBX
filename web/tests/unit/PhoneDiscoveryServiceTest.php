@@ -307,6 +307,44 @@ final class PhoneDiscoveryServiceTest extends TestCase
         $this->assertNotSame($first, $second);
     }
 
+    /**
+     * Rows of a vendor nobody configured stay "new" for good. They must not fill
+     * the run's window and keep a configured vendor's phones out of it forever.
+     */
+    public function testUnconfiguredVendorsDoNotStarveAConfiguredOne(): void
+    {
+        for ($i = 0; $i < PhoneDiscoveryService::AUTO_MAX_PER_RUN; $i++) {
+            $this->discovery(sprintf('000b82%06x', $i), 'grandstream');
+        }
+        getDB()->exec("UPDATE pbx_phone_discoveries SET first_seen_at = NOW() - INTERVAL 1 HOUR");
+        $this->discovery(self::MAC);
+        $this->user('5000');
+        $this->setting('provision_discovery_pool', '5000');
+        $this->setting('provision_discovery_models', 'yealink=yealink-t46u');
+
+        $out = PhoneDiscoveryService::provisionFromPool();
+
+        $this->assertCount(1, $out['created']);
+        $this->assertSame('provisioned', $this->discoverState(self::MAC));
+    }
+
+    /** One row that cannot be provisioned is reported; the phones after it still are. */
+    public function testOneFailingRowDoesNotStopTheRun(): void
+    {
+        $bad = $this->discovery(self::MAC);
+        getDB()->prepare("UPDATE pbx_phone_discoveries SET mac = 'not-a-mac', first_seen_at = NOW() - INTERVAL 1 HOUR WHERE id = ?")->execute([$bad]);
+        $this->discovery('001565aabbcd');
+        $this->user('5000');
+        $this->setting('provision_discovery_pool', '5000');
+        $this->setting('provision_discovery_models', 'yealink=yealink-t46u');
+
+        $out = PhoneDiscoveryService::provisionFromPool();
+
+        $this->assertCount(1, $out['created']);
+        $this->assertCount(1, $out['skipped']);
+        $this->assertSame('provisioned', $this->discoverState('001565aabbcd'));
+    }
+
     public function testAPhoneAddedByHandIsReconciledIntoTheRecord(): void
     {
         // The engine saw the MAC first, then somebody used the + form: the row
