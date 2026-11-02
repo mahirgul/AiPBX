@@ -14,6 +14,11 @@ if (empty($username) || empty($password)) {
     mobileError(t('mobile_api.credentials_required'), 400);
 }
 
+require_once dirname(__DIR__, 2) . '/src/services/SsoOnlyService.php';
+if (SsoOnlyService::isActive()) {
+    mobileError(t('sso_only.err_local_off'), 403);
+}
+
 // 1. Brute-force lockout check (5 failed attempts -> 15 minute lock)
 if (checkBruteForceLockout($client_ip, $username)) {
     mobileError(t('mobile_api.too_many_attempts'), 429);

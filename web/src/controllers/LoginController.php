@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/LoginService.php';
+require_once __DIR__ . '/../services/SsoOnlyService.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
 require_once __DIR__ . '/../services/OidcAuthService.php';
 require_once __DIR__ . '/../services/SamlAuthService.php';
@@ -15,6 +16,26 @@ class LoginController extends BaseController
     public static function index(): void
     {
         $error = '';
+        if (isset($_GET['recovery'])) {
+            if (SsoOnlyService::useRecoveryToken((string) $_GET['recovery'])) {
+                static::redirect('/login');
+            }
+            $error = t('sso_only.err_recovery');
+        }
+        if (SsoOnlyService::localSignInBlocked()) {
+            // Not straight back to the provider after signing out or after it failed: that would never end.
+            $recent = time() - (int) ($_SESSION['sso_auto_at'] ?? 0) < 60;
+            if ($error === '' && !static::isPost() && !isset($_GET['signed_out']) && !$recent) {
+                $_SESSION['sso_auto_at'] = time();
+                static::redirect(SsoOnlyService::loginUrl());
+            }
+            static::renderAuthPage('login/sso_only', [
+                'error' => $error,
+                'sso_url' => SsoOnlyService::loginUrl(),
+                'brand_title' => getSystemSetting('brand_title', 'AiPBX'),
+            ]);
+            return;
+        }
         $client_ip = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
 
         // Generate Math Captcha if not present

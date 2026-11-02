@@ -269,6 +269,24 @@
     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('brand_settings.captcha_save'); ?></button>
 </form>
 
+<form method="POST" autocomplete="off" class="card" style="margin-top: 20px; padding: 20px;">
+    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+    <input type="hidden" name="save_sso_only" value="1">
+    <h3 style="font-size: 16px; font-weight: 800; margin: 0 0 12px 0;"><i class="fas fa-id-badge"></i> <?php echo t('sso_only.title'); ?></h3>
+    <p class="u-muted u-fs-12"><?php echo t('sso_only.help'); ?></p>
+    <div class="form-group">
+        <label class="form-label"><?php echo t('sso_only.field_provider'); ?></label>
+        <select name="auth_sso_provider" class="form-control">
+            <option value="saml" <?php echo $sso_only_provider === 'saml' ? 'selected' : ''; ?> <?php echo $sso_saml_enabled ? '' : 'disabled'; ?>>SAML</option>
+            <option value="oidc" <?php echo $sso_only_provider === 'oidc' ? 'selected' : ''; ?> <?php echo $sso_oidc_enabled ? '' : 'disabled'; ?>>OpenID Connect</option>
+        </select>
+    </div>
+    <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 13px;">
+        <input type="checkbox" name="auth_sso_only" value="1" <?php echo $sso_only_on ? 'checked' : ''; ?>> <?php echo t('sso_only.field_on'); ?>
+    </label>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+</form>
+
 <form method="POST" id="brandResetForm" data-no-spa="true" style="display: none;">
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="reset_brand_settings" value="1">

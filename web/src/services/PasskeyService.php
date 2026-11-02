@@ -206,6 +206,11 @@ class PasskeyService
         string $credentialIdBase64,
         string $clientIp
     ): array {
+        require_once __DIR__ . '/SsoOnlyService.php';
+        if (SsoOnlyService::localSignInBlocked()) {
+            throw new \RuntimeException(t('sso_only.err_local_off'));
+        }
+
         if (empty($_SESSION['webauthn_auth_challenge'])) {
             return ['success' => false, 'error' => t('srv_passkey.err_timeout')];
         }

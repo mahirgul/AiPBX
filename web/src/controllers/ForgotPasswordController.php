@@ -10,6 +10,10 @@ class ForgotPasswordController extends BaseController
         if (!empty($_SESSION['user_id'])) {
             static::redirect('/');
         }
+        require_once __DIR__ . '/../services/SsoOnlyService.php';
+        if (SsoOnlyService::isActive()) {
+            static::redirect('/login');
+        }
         $error = '';
         $sent = false;
 
