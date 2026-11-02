@@ -7,6 +7,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.13
 
+- **New guides:** [how numbers change on a call](docs/number-normalization.md), with the order of every setting and a diagram, and [running AiPBX in an Incus or LXD container](docs/incus-lxd.md).
 - **New installations start in English:** the default calling permission group, some feature code titles and the User role were created in Turkish. Existing installations keep the names they have.
 
 ## 1.60.12
