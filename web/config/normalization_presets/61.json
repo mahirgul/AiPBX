@@ -1,0 +1,104 @@
+{
+    "country": "61",
+    "name": "Australia",
+    "outbound": [
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 Australia (+61 -> 0)",
+            "match_pattern": "_+61.",
+            "strip_front": 3,
+            "prepend": "0",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+61 numbers become national numbers with the prefix 0."
+        },
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 international (+ -> 0011)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "0011",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 0011."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 Australia (+61 -> 0)",
+            "match_pattern": "_+61.",
+            "strip_front": 3,
+            "prepend": "0",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+61 numbers become national numbers with the prefix 0."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 international (+ -> 0011)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "0011",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 0011."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 Australia (+61 -> 0)",
+            "match_pattern": "_+61.",
+            "strip_front": 3,
+            "prepend": "0",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+61 numbers become national numbers with the prefix 0."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 international (+ -> 0011)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "0011",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 0011."
+        }
+    ],
+    "inbound": [
+        {
+            "target": "caller",
+            "rule_name": "Caller +61 to national",
+            "match_pattern": "_+61.",
+            "strip_front": 3,
+            "prepend": "0",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller + international",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "0011",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller 61 without + to national",
+            "match_pattern": "_61XXXXXXX.",
+            "strip_front": 2,
+            "prepend": "0",
+            "is_active": 0
+        }
+    ]
+}

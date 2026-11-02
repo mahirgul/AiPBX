@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
 require_once dirname(__DIR__) . '/repositories/DialplanRuleRepository.php';
+require_once __DIR__ . '/DialplanRuleService.php';
 
 /**
  * Inbound Call Normalization (/inbound-normalization): rewrites the caller's number or the dialled
@@ -82,6 +83,49 @@ final class InboundNormService
             getDB()->prepare('DELETE FROM pbx_inbound_norm_rules WHERE id = ?')->execute([$id]);
             self::markChanged("#{$id}", 'delete');
             return t('inbound_norm.deleted');
+        });
+    }
+
+    /**
+     * Ready-made rules of a country from its preset file. Only added when asked for: a new
+     * installation has none.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public static function presets(string $cc): array
+    {
+        $rules = [];
+        foreach (DialplanRuleService::presetFile($cc)['inbound'] ?? [] as $r) {
+            if (is_array($r) && in_array($r['target'] ?? '', self::TARGETS, true) && DialplanRuleService::presetRuleIsValid($r)) {
+                $rules[] = $r;
+            }
+        }
+        return $rules;
+    }
+
+    public static function loadPresets(array $data): array
+    {
+        return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
+            $cc = (string) preg_replace('/[^0-9]/', '', (string) ($data['country_code'] ?? ''));
+            $trunk = trim((string) ($data['trunk_name'] ?? ''));
+            $presets = self::presets($cc);
+            if ($presets === [] || ($trunk !== '' && !in_array($trunk, self::trunkNames(), true))) {
+                throw new \Exception(t('inbound_norm.err_country'));
+            }
+            $db = getDB();
+            $exists = $db->prepare('SELECT id FROM pbx_inbound_norm_rules WHERE trunk_name <=> ? AND target = ? AND match_pattern = ?');
+            $insert = $db->prepare('INSERT INTO pbx_inbound_norm_rules (trunk_name, target, rule_name, match_pattern, strip_front, prepend, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
+            $added = 0;
+            foreach ($presets as $r) {
+                $scope = $trunk !== '' ? $trunk : null;
+                $exists->execute([$scope, $r['target'], $r['match_pattern']]);
+                if ($exists->fetchColumn() === false) {
+                    $insert->execute([$scope, $r['target'], $r['rule_name'], $r['match_pattern'], (int) ($r['strip_front'] ?? 0), (string) ($r['prepend'] ?? ''), (int) ($r['is_active'] ?? 1)]);
+                    $added++;
+                }
+            }
+            self::markChanged("+{$cc}", 'create');
+            return sprintf(t('inbound_norm.presets_loaded'), $added);
         });
     }
 

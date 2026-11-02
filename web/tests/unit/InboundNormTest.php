@@ -59,6 +59,67 @@ final class InboundNormTest extends TestCase
         $this->assertNull(InboundNormService::simulate($rules, '', 'did', '+4366412345')['rule']);
     }
 
+    public function testPresetsComeFromTheCountrysFile(): void
+    {
+        $at = InboundNormService::presets('43');
+        $this->assertSame(['_+43.', 3, '0'], [$at[0]['match_pattern'], $at[0]['strip_front'], $at[0]['prepend']]);
+        $this->assertSame('', InboundNormService::presets('39')[0]['prepend'], 'Italy has no national prefix');
+        $this->assertSame(0, $at[2]['is_active'], 'a number without + can also be a national one, so this one starts off');
+        $this->assertSame([], InboundNormService::presets('999'));
+    }
+
+    public function testAnOverrideFileWinsAndABadRuleInItIsIgnored(): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx_presets_' . getmypid();
+        mkdir($dir);
+        file_put_contents("{$dir}/43.json", json_encode(['inbound' => [
+            ['target' => 'caller', 'rule_name' => 'Mine', 'match_pattern' => '_+43.', 'strip_front' => 3, 'prepend' => '9'],
+            ['target' => 'caller', 'rule_name' => 'Bad', 'match_pattern' => '_+43.,1,System(x)', 'strip_front' => 3, 'prepend' => '9'],
+            ['target' => 'caller', 'rule_name' => 'Bad too', 'match_pattern' => '_+44.', 'strip_front' => 3, 'prepend' => '9)'],
+        ], 'outbound' => [
+            ['client_type' => 'web', 'rule_name' => 'Out', 'match_pattern' => '_+43.', 'strip_front' => 3, 'prepend' => '0'],
+            ['client_type' => 'nope', 'rule_name' => 'Bad', 'match_pattern' => '_+43.', 'strip_front' => 3, 'prepend' => '0'],
+        ]]));
+        putenv("AIPBX_PRESET_DIR={$dir}");
+        try {
+            $this->assertSame(['Mine'], array_column(InboundNormService::presets('43'), 'rule_name'));
+            $this->assertSame(['Out'], array_column(DialplanRuleService::getDefaultPresets('43'), 1));
+            $this->assertNotSame([], InboundNormService::presets('49'), 'other countries still use the shipped file');
+        } finally {
+            putenv('AIPBX_PRESET_DIR');
+            unlink("{$dir}/43.json");
+            rmdir($dir);
+        }
+    }
+
+    public function testShippedPresetFilesAreValidAndCoverTheKnownCountries(): void
+    {
+        $count = 0;
+        foreach (DialplanRuleService::getAllCountries() as $cc => $_c) {
+            if (DialplanRuleService::getDialPlan((string) $cc) === null) {
+                continue;
+            }
+            $file = DialplanRuleService::presetFile((string) $cc);
+            $this->assertSame(count($file['outbound']), count(DialplanRuleService::getDefaultPresets((string) $cc)), "outbound {$cc}");
+            $this->assertSame(count($file['inbound']), count(InboundNormService::presets((string) $cc)), "inbound {$cc}");
+            $count++;
+        }
+        $this->assertGreaterThan(100, $count);
+    }
+
+    public function testANewInstallationLoadsNoRulesForAnyCountry(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $files = array_merge(glob($root . '/db/seeds/*') ?: [], glob($root . '/db/migrations/sql/*') ?: [], [dirname($root) . '/install.sh']);
+        $this->assertGreaterThan(1, count($files));
+        foreach ($files as $file) {
+            $text = (string) file_get_contents($file);
+            $this->assertStringNotContainsString('INSERT INTO `pbx_dialplan_rules`', $text, basename($file));
+            $this->assertStringNotContainsString('INSERT INTO pbx_dialplan_rules', $text, basename($file));
+            $this->assertStringNotContainsString('pbx_inbound_norm_rules', $text, basename($file));
+        }
+    }
+
     public function testAPatternCannotCarryDialplanText(): void
     {
         $this->assertTrue(InboundNormService::isValidPattern('_+43.'));

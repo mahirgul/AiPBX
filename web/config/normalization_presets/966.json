@@ -1,0 +1,128 @@
+{
+    "country": "966",
+    "name": "Saudi Arabia",
+    "outbound": [
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: strip outside-line 0",
+            "match_pattern": "_00[1-9].",
+            "strip_front": 1,
+            "prepend": "",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 1,
+            "is_active": 0,
+            "description": "For desk phones that dial 0 for an outside line: 0 + 0xxx (national) becomes 0xxx. Off by default."
+        },
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: outside line international (000 -> 00)",
+            "match_pattern": "_000.",
+            "strip_front": 1,
+            "prepend": "",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 2,
+            "is_active": 1,
+            "description": "Outside-line 0 dialled before an international number: 000... becomes 00..."
+        },
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 Saudi Arabia (+966 -> 0)",
+            "match_pattern": "_+966.",
+            "strip_front": 4,
+            "prepend": "0",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+966 numbers become national numbers with the prefix 0."
+        },
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 international (+ -> 00)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 00."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 Saudi Arabia (+966 -> 0)",
+            "match_pattern": "_+966.",
+            "strip_front": 4,
+            "prepend": "0",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+966 numbers become national numbers with the prefix 0."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 international (+ -> 00)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 00."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 Saudi Arabia (+966 -> 0)",
+            "match_pattern": "_+966.",
+            "strip_front": 4,
+            "prepend": "0",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+966 numbers become national numbers with the prefix 0."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 international (+ -> 00)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 00."
+        }
+    ],
+    "inbound": [
+        {
+            "target": "caller",
+            "rule_name": "Caller +966 to national",
+            "match_pattern": "_+966.",
+            "strip_front": 4,
+            "prepend": "0",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller + international",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller 966 without + to national",
+            "match_pattern": "_966XXXXXXX.",
+            "strip_front": 3,
+            "prepend": "0",
+            "is_active": 0
+        }
+    ]
+}

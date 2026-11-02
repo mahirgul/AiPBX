@@ -73,8 +73,14 @@ An outbound route's **Prepend** field also accepts a leading `+`, for example `+
 - **Caller's number:** so a caller appears the same way whichever carrier delivered the call. `+4366412345678` can become `066412345678`, which can be called back and matches the blacklist and call history.
 - **Dialled number:** runs after the trunk's "keep the last digits" setting, before the inbound route is matched.
 
-For example, to show `+43...` callers as `0...`: pattern `_+43.`, remove 3 digits, prepend `0`. **Test a number** shows the result before you press Apply. As on the outbound page, Asterisk picks the most specific pattern, not the first row, and a trunk's own rule comes before a rule for all trunks. Without rules, numbers stay as the carrier sends them.
+**Ready-made rules for a country** adds the usual rules for the caller's number when you press its button. Or write your own: to show `+43...` callers as `0...`, use pattern `_+43.`, remove 3 digits, prepend `0`. **Test a number** shows the result before you press Apply. As on the outbound page, Asterisk picks the most specific pattern, not the first row, and a trunk's own rule comes before a rule for all trunks. Without rules, numbers stay as the carrier sends them.
 
 ## Extra SIP Headers
 
 A trunk's **Advanced** tab can add SIP headers to its outgoing calls on outbound routes, one `Name: value` per line, for carriers that ask for one. Standard headers such as `From` and `Contact` cannot be set this way.
+
+## Ready-Made Rules
+
+A new installation has no rules for any country, on either page. Ready-made rules are only loaded when an administrator chooses a country and presses the button.
+
+They come from one JSON file per country calling code, in `web/config/normalization_presets/`, such as `43.json`, with an `outbound` and an `inbound` list. To change a country's rules, or add a country, copy its file to `/var/lib/aipbx/normalization_presets/` and edit the copy. That copy is used instead, and updates leave it alone. Do not edit the shipped files: `aipbx-update` would refuse to run. A rule with a value that is not allowed is skipped.
