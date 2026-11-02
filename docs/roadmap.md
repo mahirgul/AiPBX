@@ -117,38 +117,9 @@ checks.
 
 ### Wave 3: large projects
 
-#### 3.1 Modular Containerization (Decoupled Docker Compose)
+#### 3.1 Docker: decided against
 
-**Goal.** Provide a turnkey, zero-downtime container deployment for AiPBX without sacrificing telecommunications-grade performance or reliability.
-
-**Architecture: Decoupled Services vs. Monolithic "Fat Container".**
-An all-in-one container running `systemd`, Asterisk, MariaDB, Web, Cron, and AI in a single image is deliberately rejected because:
-1. **Zero-Call-Downtime Web Updates:** Rebuilding or restarting an all-in-one container drops all active phone calls. In decoupled services, `aipbx-web` restarts in seconds while `aipbx-asterisk` keeps running with zero interruption to ongoing calls.
-2. **RTP Performance:** Bridging 10,000 UDP RTP ports (`10000-20000/udp`) through Docker proxy creates high jitter and latency. Decoupled Asterisk runs with `network_mode: host` for wire-speed media forwarding.
-3. **Hardware & Resource Segregation:** Neural AI models (Whisper STT, Kokoro/Piper TTS) can be isolated to GPU-enabled nodes or scaled independently from the realtime PBX core.
-
-```
-                      ┌────────────────────────────────────────────────────────┐
-                      │                       HOST                             │
-                      │                                                        │
-                      │   ┌──────────────┐   ┌──────────────┐   ┌──────────┐   │
-                      │   │  aipbx-web   │   │   aipbx-db   │   │ aipbx-ai │   │
- HTTP / HTTPS / API ──┼──>│  (PHP/Nginx) │──>│  (MariaDB)   │   │ (Python) │   │
-                      │   └──────┬───────┘   └──────────────┘   └────┬─────┘   │
-                      │          │ Shared Volume / Unix Socket       │ Audio   │
-                      │          ▼                                   ▼ Socket  │
-                      │   ┌────────────────────────────────────────────────┐   │
- SIP / RTP (UDP) ─────┼──>│ aipbx-asterisk (Host Network: 5060 + 10k-20k)  │   │
-                      │   └────────────────────────────────────────────────┘   │
-                      └────────────────────────────────────────────────────────┘
-```
-
-**Services in the stack:**
-- **`aipbx-asterisk`**: Realtime Asterisk engine with host networking (`network_mode: host`), zero-NAT overhead, and independent lifecycle.
-- **`aipbx-web`**: PHP 8.2+ with Nginx, handling HTTP, WebSocket, and REST API calls. Can be updated and deployed independently.
-- **`aipbx-db`**: Official MariaDB container with dedicated persistent named volumes (`aipbx_db_data`).
-- **`aipbx-ai`**: Python FastAPI container housing Whisper STT, Kokoro/Piper TTS, and audio socket integrations.
-- **`aipbx-signaling`**: Lightweight daemon capturing Homer/HEPv3 signaling packets.
+Docker is not an official way to run AiPBX (decided 2026-11-02). AiPBX manages the whole machine, so a split stack has to leave out the 443 edge, coturn and DHCP/TFTP, and a complete container needs `privileged`. A second installation path would also double what has to be tested. Containers go the way described in 3.2. The work on this in #127, #143 and #144 by @shido6 found real installer faults, fixed in #141 and #142.
 
 ---
 
