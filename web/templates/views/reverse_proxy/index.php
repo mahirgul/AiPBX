@@ -31,6 +31,7 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
     <div class="module-help-box" id="proxyHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('reverse_proxy.help_title'); ?></h4>
         <p><?php echo t('reverse_proxy.help_body'); ?></p>
+        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('reverse_proxy.limit_reencrypt'); ?></li></ul></div>
     </div>
 
     <div style="padding: 16px 20px;">

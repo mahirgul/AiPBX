@@ -117,6 +117,11 @@
 <div class="card" id="fax-cover">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-file-alt u-primary"></i> <?php echo t('fax_cover.title'); ?></div>
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxCoverHelpBox')"><i class="fas fa-question-circle"></i></button>
+    </div>
+    <div class="module-help-box" id="faxCoverHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_cover.title'); ?></h4>
+        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('fax_cover.limit_colour'); ?></li></ul></div>
     </div>
     <form method="POST" autocomplete="off" style="padding: 0 20px 20px;">
         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">

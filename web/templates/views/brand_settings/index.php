@@ -30,6 +30,7 @@
         <div class="module-help-box" id="brandHelpBox">
             <h4><i class="fas fa-info-circle"></i> <?php echo t('brand_settings.help_title'); ?></h4>
             <?php echo t('brand_settings.help_body'); ?>
+            <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('brand_settings.limit_turnstile'); ?></li></ul></div>
         </div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">

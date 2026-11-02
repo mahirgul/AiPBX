@@ -33,6 +33,7 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
             <li><strong><?php echo t('meetings.help_talker_title', 'Follow-Talker Mode:'); ?></strong> <?php echo t('meetings.help_talker_desc', 'For SIP hardware video phones. Actively switches the dominant speaker to all endpoints.'); ?></li>
             <li><strong><?php echo t('meetings.help_guests_title', 'Guest Magic Links:'); ?></strong> <?php echo t('meetings.help_guests_desc', 'Invite external clients or non-subscribers via email with a one-click magic link (/meet/{token}) and downloadable .ics calendar invite.'); ?></li>
         </ul>
+        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('meetings.limit_gone'); ?></li></ul></div>
     </div>
 
     <div class="table-responsive">
