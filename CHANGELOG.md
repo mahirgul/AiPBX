@@ -7,6 +7,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.11
 
+- **Outbound Call Normalization: Add, Edit and Copy did nothing:** the rule window never opened, because the page called a function that does not exist. Fixed.
+- **Inbound Call Normalization** now looks and works like the outbound page.
 - **Inbound Call Normalization:** the ready-made rules for a country are removed. Write the rules that fit your carrier.
 
 ## 1.60.10

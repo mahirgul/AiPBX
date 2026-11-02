@@ -34,7 +34,7 @@ function openCreateRuleModal(clientType) {
         document.getElementById('modal_client_type').value = clientType;
     }
     updateModalPreview();
-    UIHelper.openModal('ruleModal');
+    UIHelper.openOverlayModal('ruleModal');
 }
 
 function openEditRuleModal(rule) {
@@ -50,7 +50,7 @@ function openEditRuleModal(rule) {
     document.getElementById('modal_description').value = rule.description || '';
     document.getElementById('modal_is_active').checked = (parseInt(rule.is_active, 10) === 1);
     updateModalPreview();
-    UIHelper.openModal('ruleModal');
+    UIHelper.openOverlayModal('ruleModal');
 }
 
 function openCopyRuleModal(rule) {

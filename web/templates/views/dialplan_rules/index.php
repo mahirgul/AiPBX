@@ -226,7 +226,7 @@ $deviceBadge = static function (string $type): string {
     <div class="modal-card" style="max-width: 580px;">
         <div class="modal-header">
             <h3 class="modal-title" id="ruleModalTitle"><?php echo t('dialplan_rules.modal_title_new'); ?></h3>
-            <button type="button" class="modal-close" onclick="UIHelper.closeModal('ruleModal')">&times;</button>
+            <button type="button" class="modal-close" onclick="UIHelper.closeOverlayModal('ruleModal')">&times;</button>
         </div>
         <form method="POST" id="ruleForm">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
@@ -304,7 +304,7 @@ $deviceBadge = static function (string $type): string {
             </div>
 
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="UIHelper.closeModal('ruleModal')"><?php echo t('common.cancel'); ?></button>
+                <button type="button" class="btn btn-secondary" onclick="UIHelper.closeOverlayModal('ruleModal')"><?php echo t('common.cancel'); ?></button>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
             </div>
         </form>
