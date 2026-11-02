@@ -127,7 +127,7 @@ Docker is not an official way to run AiPBX (decided 2026-11-02). AiPBX manages t
 
 **Goal.** One server hosts separate PBXs for separate customers, managed from one super-admin page.
 
-**Status.** Planned, not started. Installing one AiPBX in a container needs no code and comes first, as a guide.
+**Status.** Planned, not started. Installing one AiPBX in a container needs no code and already works.
 
 **Why system containers.** AiPBX manages the whole machine: systemd, firewall, fail2ban, coturn, the 443 edge, DHCP/TFTP and `aipbx-update`. An Incus/LXD container is a complete Ubuntu, so the unchanged `install.sh` runs inside it, each customer has its own Asterisk, database and files, and there is no second installation path to test. A problem in one customer's Asterisk does not reach the others.
 
@@ -147,7 +147,7 @@ Docker is not an official way to run AiPBX (decided 2026-11-02). AiPBX manages t
 **To change in AiPBX first.** Places that assume port 5060: `QrLoginService`, the protected ports in `FirewallService`, the firewall, fail2ban and coturn ports in `install.sh`, the My Phone page text and the local port in the NEC template.
 
 **Order.**
-1. A guide for installing one AiPBX in Incus/LXD, tried from start to finish with real calls and a video meeting.
+1. Done: [a guide for installing one AiPBX in Incus/LXD](incus-lxd.md), tried with the end-to-end checks and a video meeting.
 2. The port assumptions above.
 3. A script that creates a customer with its port block, tested with two customers calling at once.
 4. The super-admin page.

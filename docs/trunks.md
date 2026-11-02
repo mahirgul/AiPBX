@@ -108,3 +108,11 @@ according to the secondary trunk's own format rules.
   that use the trunk are updated, and the dialplan is marked for *Apply*. Old CDRs keep the old name.
 - **Copy** creates a new trunk with the same settings (see [Portal basics](portal.md#copying-records)).
 - **Order** the list by dragging; the first active trunk is the primary trunk.
+
+## Numbers and SIP headers
+
+A trunk can change the numbers of its calls: **Strip and Prepend Prefix** and **Send as E.164** for the dialled number, **Keep only the last N digits** and **Prepend** for the caller ID, and **Inbound DID Trim** for incoming calls. These run together with the settings on routes and on the normalization pages: see [How numbers change on a call](number-normalization.md) for the order.
+
+**Extra SIP headers**, on the Advanced tab, are added to outgoing calls on outbound routes, one `Name: value` per line.
+
+Settings for some carriers are available as templates in the community [provider-templates](https://github.com/mahirgul/AiPBX-plugins/tree/main/plugins/community/provider-templates) plugin.

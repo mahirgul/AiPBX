@@ -2,6 +2,8 @@
 
 An outbound route matches a dialled number with a pattern and sends it to one or more trunks. Before reaching outbound routes, numbers originating from subscriber devices can be pre-filtered and standardized per client type (Mobile, Desk, Web) via [Call Normalization Rules](call-normalization.md).
 
+A number can also change before and after this page: see [How numbers change on a call](number-normalization.md).
+
 ## Patterns
 
 Asterisk pattern syntax (a leading `_` marks a pattern):

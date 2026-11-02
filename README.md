@@ -152,9 +152,9 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   **limits** for concurrent channels (inbound + outbound) and calls per minute stop loops and toll fraud
 - **Outbound routes** — Asterisk patterns, strip/prepend, trunk failover chain, route groups for PBXes
   with different number formats, copy and ordering, duplicate patterns rejected
-- **Call normalization** — per-device rules (desk phone, mobile app, browser) turn what users dial
-  (`+90…`, `000…`) into one format before the outbound routes; recommended rules per country,
-  a simulator, and one switch to turn them all off
+- **Inbound and outbound call normalization** — per-device rules (desk phone, mobile app, browser) turn what users dial
+  (`+90…`, `000…`) into one format before the outbound routes, per-trunk rules do the same for incoming numbers;
+  ready-made rules per country loaded on request, simulators, and a [guide to the order of all number settings](docs/number-normalization.md)
 - **DID routing, time conditions, multi-level IVR** — optional menu repeat when no key is pressed, and
   **IVR data steps**: look up the entered digits or the caller's number in an external database or over
   HTTP and route on *found* / *not found* / *timeout* ([docs](docs/external-databases.md))
@@ -383,8 +383,7 @@ AiPBX follows a transparent, phased engineering roadmap. For the complete specif
 - **✅ Wave 1 (Delivered in v1.50.10):** Trunk rate limits, early media announcements, night dialing protection, voicemail PIN policies.
 - **✅ Wave 2 (Delivered in v1.50.11):** Sandboxed scheduled background tasks (`systemd-run`), encrypted external database integrations, IVR caller lookup steps, PBX fine-tuning & Asterisk night restarts.
 - **🚀 Wave 3 (In Active Development & Planning):**
-  - **Modular Containerization (Decoupled Docker Compose):** High-performance decoupled service stack (`aipbx-asterisk` on host network for zero-jitter media, `aipbx-web` for zero-call-downtime hot updates, `aipbx-db`, `aipbx-ai`, `aipbx-signaling`).
-  - **True Multi-Tenant Cloud PBX:** Scalable SaaS carrier architecture with Edge SIP Session Border Controllers (SBC / Kamailio) and isolated per-tenant Asterisk nodes.
+  - **Several customers on one server:** one Incus/LXD container per customer running the normal install, managed from a super-admin page. One AiPBX in a container [works today](docs/incus-lxd.md).
   - **Group Voice Conferences from Instant Chat:** WebRTC conference rooms dynamically bridged from mobile and web chat groups.
   - **Remote GPU Speech Engines:** Offloaded high-fidelity neural TTS engines on dedicated GPU compute instances.
 

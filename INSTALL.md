@@ -51,6 +51,8 @@ sudo bash install.sh
 Useful variables: `AIPBX_FQDN=pbx.example.com` (skip the domain prompt), `AIPBX_REF=main` (install the
 development branch instead of the latest release), `AIPBX_INSTALL_DIR` (default `/opt/aipbx`).
 
+To run it in a container instead of on the server itself, see [Incus or LXD](docs/incus-lxd.md). Docker is not supported.
+
 ### What the installer automates:
 1. **Interactive FQDN & TLS Provisioning**: Prompts for your domain. If your DNS is pointed to the server, it obtains a free **Let's Encrypt TLS** certificate via Certbot. If you do not have an active domain yet, it automatically provisions a secure **self-signed TLS certificate** with SAN support.
 2. **Dynamic Cryptographic Credentials**: Automatically generates unique, random secrets for:
