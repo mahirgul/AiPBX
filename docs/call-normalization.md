@@ -73,7 +73,7 @@ An outbound route's **Prepend** field also accepts a leading `+`, for example `+
 - **Caller's number:** so a caller appears the same way whichever carrier delivered the call. `+4366412345678` can become `066412345678`, which can be called back and matches the blacklist and call history.
 - **Dialled number:** runs after the trunk's "keep the last digits" setting, before the inbound route is matched.
 
-**Rules for a country** adds the usual rules for the caller's number, using that country's dialling plan. **Test a number** shows the result before you press Apply. As on the outbound page, Asterisk picks the most specific pattern, not the first row, and a trunk's own rule comes before a rule for all trunks. Without rules, numbers stay as the carrier sends them.
+For example, to show `+43...` callers as `0...`: pattern `_+43.`, remove 3 digits, prepend `0`. **Test a number** shows the result before you press Apply. As on the outbound page, Asterisk picks the most specific pattern, not the first row, and a trunk's own rule comes before a rule for all trunks. Without rules, numbers stay as the carrier sends them.
 
 ## Extra SIP Headers
 

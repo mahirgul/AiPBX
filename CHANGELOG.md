@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.11
+
+- **Inbound Call Normalization:** the ready-made rules for a country are removed. Write the rules that fit your carrier.
+
 ## 1.60.10
 
 - **Single Logout:** signing out of AiPBX can also end the session at the SAML or OpenID Connect provider. Off until you set it up in the plugin.

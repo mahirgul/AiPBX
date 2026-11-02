@@ -85,18 +85,4 @@ $trunkOptions = static function (?string $selected) use ($trunks, $h): string {
         <span class="u-muted u-fs-12"> · <?php echo t('netset.apply_note'); ?></span>
     </form>
 </div>
-
-<div class="card">
-    <div class="card-header"><div class="card-title"><i class="fas fa-magic u-primary"></i> <?php echo t('inbound_norm.presets_title'); ?></div></div>
-    <form method="POST" style="padding: 0 20px 20px;">
-        <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
-        <input type="hidden" name="load_presets" value="1">
-        <p class="u-muted u-fs-12"><?php echo t('inbound_norm.presets_help'); ?></p>
-        <div class="u-grid-2">
-            <div class="form-group"><label class="form-label"><?php echo t('inbound_norm.field_trunk'); ?></label><select name="trunk_name" class="form-control"><?php echo $trunkOptions(''); ?></select></div>
-            <div class="form-group"><label class="form-label"><?php echo t('inbound_norm.field_country'); ?></label><select name="country_code" class="form-control" required><option value=""></option><?php foreach ($countries as $cc => $name): ?><option value="<?php echo $h($cc); ?>"><?php echo $h($name); ?> (+<?php echo $h($cc); ?>)</option><?php endforeach; ?></select></div>
-        </div>
-        <button type="submit" class="btn btn-secondary"><i class="fas fa-download"></i> <?php echo t('inbound_norm.presets_load'); ?></button>
-    </form>
-</div>
 <?php endif; ?>

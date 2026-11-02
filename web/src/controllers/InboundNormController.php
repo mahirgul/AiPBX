@@ -25,7 +25,6 @@ class InboundNormController extends BaseController
         $notices = static::handlePost([
             'save_rule' => fn() => InboundNormService::save($_POST),
             'delete_rule' => fn() => InboundNormService::delete($_POST),
-            'load_presets' => fn() => InboundNormService::loadPresets($_POST),
         ]);
 
         $rules = InboundNormService::all();
@@ -35,20 +34,11 @@ class InboundNormController extends BaseController
                 $edit = $r;
             }
         }
-        $countries = [];
-        foreach (DialplanRuleService::getAllCountries() as $cc => $_c) {
-            if (DialplanRuleService::getDialPlan((string) $cc) !== null) {
-                $countries[$cc] = DialplanRuleService::getCountryName((string) $cc);
-            }
-        }
-        asort($countries);
-
         static::renderPage('inbound_norm/index', [
             'csrf' => getCSRFToken(),
             'rules' => $rules,
             'edit' => $edit,
             'trunks' => InboundNormService::trunkNames(),
-            'countries' => $countries,
             'simulation' => $simulation,
             'canEdit' => hasModulePermission('did_routes', 'edit'),
         ] + $notices, ['title' => t('inbound_norm.title')]);
