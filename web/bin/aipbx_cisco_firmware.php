@@ -28,6 +28,7 @@ if (PHP_SAPI !== 'cli') {
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/helpers.php';
 require_once dirname(__DIR__) . '/src/services/PhoneFirmwareService.php';
+require_once dirname(__DIR__) . '/src/services/PhoneProvisionService.php';
 
 $dir = null;
 foreach (array_slice($argv ?? [], 1) as $arg) {
@@ -55,6 +56,8 @@ foreach ($loads as $model => $load) {
 }
 
 $rows = PhoneFirmwareService::armAll($dir);
+// A phone on TFTP reads a stored file: it has to name the load now that it may.
+PhoneProvisionService::exportTftpQuietly();
 printf("%d Cisco 7900 phone(s)\n", count($rows));
 foreach ($rows as $r) {
     printf("  %-17s %-12s %s%s\n", $r['mac'], $r['state'] === '' ? '-' : $r['state'], $r['load'],

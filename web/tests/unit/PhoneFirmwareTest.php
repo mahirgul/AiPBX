@@ -215,7 +215,7 @@ final class PhoneFirmwareTest extends TestCase
         $state = PhoneFirmwareService::state($id);
         $this->assertSame(PhoneFirmwareService::INCOMPLETE, $state['state']);
         $this->assertSame('apps42.9-4-2ES26.sbn', $state['note'], 'the missing file is named on the phone row');
-        $this->assertSame(self::LOAD, $state['load'], 'the load itself is still written: a phone on SCCP is dead either way');
+        $this->assertSame(self::LOAD, $state['load'], 'the row keeps the load it is waiting for, so it can say which files are missing');
 
         // The gap is closed by copying the file in, and re-arming says so.
         file_put_contents($this->dir . '/apps42.9-4-2ES26.sbn', 'firmware');
@@ -275,6 +275,7 @@ final class PhoneFirmwareTest extends TestCase
     {
         $this->release();
         $this->setting('provision_cisco_loads', 'cisco-cm-7962g=' . self::LOAD);
+        putenv('AIPBX_TFTP_DIR=' . $this->dir);
         $userId = $this->user();
         $id = PhoneProvisionService::upsertPhone(0, '00:15:65:aa:bb:cc', 'cisco-cm-7962g', $userId);
 
@@ -285,6 +286,45 @@ final class PhoneFirmwareTest extends TestCase
         $this->assertStringContainsString('<deviceProtocol>SIP</deviceProtocol>', $xml);
         $this->assertStringContainsString('<loadInformation>' . self::LOAD . '</loadInformation>', $xml,
             'the switch is the load name in the file the phone already fetches');
+    }
+
+    /** A working phone that restarts must not stall at "Upgrading" on a half-copied package. */
+    public function testAPhoneFileDoesNotNameALoadWhoseFilesAreMissing(): void
+    {
+        $this->release(self::LOAD, self::COMPONENTS, ['apps42.9-4-2ES26.sbn']);
+        $this->setting('provision_cisco_loads', 'cisco-cm-7962g=' . self::LOAD);
+        putenv('AIPBX_TFTP_DIR=' . $this->dir);
+        $userId = $this->user();
+        $id = PhoneProvisionService::upsertPhone(0, '00:15:65:aa:bb:cc', 'cisco-cm-7962g', $userId);
+        $file = fn() => PhoneTemplates::forModel('cisco-cm-7962g')
+            ->render(PhoneProvisionService::buildContext(PhoneProvisionService::getPhone($id), PhoneProvisionService::userRow($userId)));
+
+        $this->assertSame(PhoneFirmwareService::INCOMPLETE, PhoneFirmwareService::state($id)['state']);
+        $this->assertStringNotContainsString('<loadInformation>', $file());
+
+        file_put_contents($this->dir . '/apps42.9-4-2ES26.sbn', 'firmware');
+        $this->assertStringContainsString('<loadInformation>' . self::LOAD . '</loadInformation>', $file());
+    }
+
+    /** `--dir` checked the server the firmware comes from; this folder may hold none of it. */
+    public function testAPhoneArmedAgainstAnotherFolderKeepsItsLoad(): void
+    {
+        $this->release();
+        $this->setting('provision_cisco_loads', 'cisco-cm-7962g=' . self::LOAD);
+        $id = $this->phone();
+        PhoneFirmwareService::arm($id, $this->dir);
+        putenv('AIPBX_TFTP_DIR=' . $this->dir . '/empty');
+
+        $this->assertSame(self::LOAD, PhoneFirmwareService::loadForPhoneFile(PhoneProvisionService::getPhone($id)));
+    }
+
+    /** The single field is what an administrator typed; it is not second-guessed. */
+    public function testTheSingleFieldIsWrittenWithoutACheck(): void
+    {
+        $this->setting('provision_cisco_load', 'SIP41.9-4-1');
+        putenv('AIPBX_TFTP_DIR=' . $this->dir);
+
+        $this->assertSame('SIP41.9-4-1', PhoneFirmwareService::loadForPhoneFile(['model' => 'cisco-cm-7962g']));
     }
 
     public function testTheSettingsFormStoresTheModelListAndRefusesATypo(): void

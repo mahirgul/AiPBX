@@ -786,7 +786,7 @@ class PhoneProvisionService
             'pickup_prefix' => self::PICKUP_PREFIX,
             // Cisco CallManager-series phones only (CiscoCallManagerTemplate):
             // the model's own load first, else the single fallback field.
-            'cisco_load' => PhoneFirmwareService::loadForModel((string) $phone['model']),
+            'cisco_load' => PhoneFirmwareService::loadForPhoneFile($phone),
             'admin_password' => SecretBox::decrypt((string) $phone['admin_password']),
             'keys' => self::getKeys((int) $user['id']),
         ];
