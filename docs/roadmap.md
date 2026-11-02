@@ -152,16 +152,34 @@ An all-in-one container running `systemd`, Asterisk, MariaDB, Web, Cron, and AI 
 
 ---
 
-#### 3.2 True Multi-Tenant Cloud PBX (SaaS Architecture)
+#### 3.2 Several customers on one server, in Incus/LXD containers
 
-**Goal.** Enable cloud telecom providers to offer isolated, branded PBX instances to multiple business customers (tenants) from a centralized control plane.
+**Goal.** One server hosts separate PBXs for separate customers, managed from one super-admin page.
 
-**Design Principles:**
-Asterisk is a single-process engine; logical context partitioning alone is not safe against tenant-level crashes or transcoding CPU spikes. The enterprise cloud solution consists of:
-- **Central Control Plane:** Unified billing, tenant lifecycle management (create, suspend, quota, backup), audit logging, and domain routing.
-- **Edge SIP Proxy / Session Border Controller (SBC):** An edge proxy (Kamailio / OpenSIPS) routing incoming SIP INVITEs based on domain/tenant tags (`tenant1.aipbx.bid`, `tenant2.aipbx.bid`).
-- **Isolated Per-Tenant Asterisk Pods:** Each tenant runs an independent, lightweight Asterisk node with dedicated memory and RTP slices. A failure or misconfiguration in Tenant A never impacts Tenant B.
-- **Zero-Trust Multi-Tenancy:** Each tenant's call recordings, voicemail, CDR, and credentials live in isolated storage buckets and database schemas.
+**Status.** Planned, not started. Installing one AiPBX in a container needs no code and comes first, as a guide.
+
+**Why system containers.** AiPBX manages the whole machine: systemd, firewall, fail2ban, coturn, the 443 edge, DHCP/TFTP and `aipbx-update`. An Incus/LXD container is a complete Ubuntu, so the unchanged `install.sh` runs inside it, each customer has its own Asterisk, database and files, and there is no second installation path to test. A problem in one customer's Asterisk does not reach the others.
+
+**Network.**
+- Customers share the server's IP, each with its own port block: SIP `5060 + 10 x N`, its own RTP range and its own coturn ports. A port is the same outside and inside the container, so SDP needs no rewriting. Extra IP addresses are used when the server has them.
+- No SIP proxy such as Kamailio: this was decided on 2026-10-22.
+- nginx on the host sends web and WSS traffic to the right container by host name.
+
+**Super-admin page.** A separate application on the host, outside the customers' containers, with its own administrators. A customer's administrator never sees it.
+- **Customers:** create, suspend, resume, delete, with one view of status, version, calls in progress and disk use.
+- **Resources:** CPU, memory and disk limits per customer, and the port block each one gets. A warning above about 20 customers on a server, which can be overridden.
+- **Updates:** update one customer or all of them, at 0 calls, with the result of each.
+- **Backups:** per customer, with restore.
+- **Health:** the checks and alerts of every customer in one place.
+- **Sign in as a customer's administrator:** every use recorded in an audit log.
+
+**To change in AiPBX first.** Places that assume port 5060: `QrLoginService`, the protected ports in `FirewallService`, the firewall, fail2ban and coturn ports in `install.sh`, the My Phone page text and the local port in the NEC template.
+
+**Order.**
+1. A guide for installing one AiPBX in Incus/LXD, tried from start to finish with real calls and a video meeting.
+2. The port assumptions above.
+3. A script that creates a customer with its port block, tested with two customers calling at once.
+4. The super-admin page.
 
 ---
 
