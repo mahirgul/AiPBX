@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/DialplanRuleService.php';
 /**
  * SIP Trunk Service
  */
@@ -130,6 +131,10 @@ class TrunkService {
             $carrier_strip_prefix = substr($carrier_strip_prefix, 0, 30);
             $carrier_add_prefix = preg_replace('/[^0-9+*#]/', '', trim($data['carrier_add_prefix'] ?? ''));
             $carrier_add_prefix = substr($carrier_add_prefix, 0, 30);
+            $carrier_e164_country = (string)preg_replace('/[^0-9]/', '', (string)($data['carrier_e164_country'] ?? ''));
+            if ($carrier_e164_country !== '' && DialplanRuleService::getDialPlan($carrier_e164_country) === null) {
+                $carrier_e164_country = '';
+            }
 
             $prack_100rel = in_array(strtolower(trim($data['prack_100rel'] ?? '')), ['yes', 'no', 'required'], true)
                 ? strtolower(trim($data['prack_100rel']))
@@ -184,6 +189,7 @@ class TrunkService {
                 'cid_prepend' => $cid_prepend !== '' ? $cid_prepend : null,
                 'carrier_strip_prefix' => $carrier_strip_prefix !== '' ? $carrier_strip_prefix : null,
                 'carrier_add_prefix' => $carrier_add_prefix !== '' ? $carrier_add_prefix : null,
+                'carrier_e164_country' => $carrier_e164_country !== '' ? $carrier_e164_country : null,
                 'prack_100rel' => $prack_100rel,
                 'direct_media' => $direct_media,
                 'timers' => $timers,

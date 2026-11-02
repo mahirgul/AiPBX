@@ -116,10 +116,12 @@ if ($is_spa_request) {
                 <div class="user-profile-dropdown" id="userProfileDropdown">
                     <!-- Icon-based quick settings: theme, font size, language, logout — one row -->
                     <div style="display: flex; align-items: center; gap: 4px; padding: 6px 8px;">
+                        <?php if (!portalThemeLocked()): ?>
                         <button type="button" class="btn btn-xs" id="theme-toggle-btn" style="flex: 1; border-radius: 6px; padding: 6px; border: none; cursor: pointer; background: transparent;" title="<?php echo t('sidebar.theme_toggle_tooltip'); ?>">
                             <i class="fas fa-moon" id="theme-icon"></i>
                         </button>
                         <div style="width: 1px; height: 18px; background: var(--border-color);"></div>
+                        <?php endif; ?>
                         <button type="button" onclick="setFontSizePref('small')" id="btn-font-small" class="btn btn-xs" style="flex: 1; border-radius: 6px; padding: 6px; font-size: 10px; font-weight: 700; border: none; cursor: pointer;" title="<?php echo t('sidebar.font_small_tooltip'); ?>">
                             A
                         </button>

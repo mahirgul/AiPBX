@@ -40,3 +40,26 @@ To guarantee that call centers, queues, faxes and IVRs are never disrupted:
 ## Live Normalization Simulator
 
 On the **Trunks → Call Normalization (`/dialplan-rules`)** page, the interactive simulator lets administrators input any test number (e.g. `+905379902352` or `005379902352`), select the target device type, and inspect the real-time pattern match and resulting number.
+
+---
+
+## Carriers That Want E.164 (Twilio and Others)
+
+Open the trunk and choose a country under **Send as E.164**. Every number sent to that trunk is converted with
+that country's dialling plan, and **Try a number** shows the result before you save. With the United States
+selected:
+
+| Dialled | Sent |
+| --- | --- |
+| `4155550100` | `+14155550100` |
+| `14155550100` | `+14155550100` |
+| `011905321234567` | `+905321234567` |
+| `+14155550100` | `+14155550100` |
+| `911` | `911` |
+
+- Numbers shorter than 7 digits, such as emergency and service numbers, and anything that is not plain digits are not changed.
+- A number that starts with the country code counts as complete. A national number that happens to start with those digits and is dialled without its national prefix would be read the same way, so try your numbering in **Try a number**.
+- It runs after the trunk's **Strip Prefix** and **Prepend Prefix**.
+- The caller ID is separate: keep the last digits and prepend the code in the same trunk's settings, for example keep 10 and prepend `+1`.
+
+An outbound route's **Prepend** field also accepts a leading `+`, for example `+1`.

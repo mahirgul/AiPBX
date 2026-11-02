@@ -115,6 +115,18 @@
                 </div>
 
                 <div class="form-group" style="margin-top: 20px;">
+                    <label class="form-label"><i class="fas fa-moon"></i> <?php echo t('brand_settings.theme_default'); ?></label>
+                    <select name="theme_default" class="form-control">
+                        <option value="light" <?php echo ($s['theme_default'] ?? 'light') !== 'dark' ? 'selected' : ''; ?>><?php echo t('brand_settings.theme_light'); ?></option>
+                        <option value="dark" <?php echo ($s['theme_default'] ?? '') === 'dark' ? 'selected' : ''; ?>><?php echo t('brand_settings.theme_dark'); ?></option>
+                    </select>
+                    <small class="u-muted u-fs-11"><?php echo t('brand_settings.theme_default_help'); ?></small>
+                    <label style="display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 13px; cursor: pointer;">
+                        <input type="checkbox" name="theme_locked" value="1" <?php echo ($s['theme_locked'] ?? '0') === '1' ? 'checked' : ''; ?>> <?php echo t('brand_settings.theme_locked'); ?>
+                    </label>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
                     <label class="form-label"><i class="fas fa-envelope"></i> <?php echo t('brand_settings.mail_logo_title'); ?></label>
                     <select name="mail_logo_variant" class="form-control">
                         <option value="light" <?php echo ($s['mail_logo_variant'] ?? 'light') !== 'dark' ? 'selected' : ''; ?>><?php echo t('brand_settings.mail_logo_light'); ?></option>
@@ -232,6 +244,29 @@
             <i class="fas fa-save"></i> <?php echo t('brand_settings.save'); ?>
         </button>
     <?php endif; ?>
+</form>
+
+<form method="POST" autocomplete="off" class="card" style="margin-top: 20px; padding: 20px;">
+    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+    <input type="hidden" name="save_login_captcha" value="1">
+    <h3 style="font-size: 16px; font-weight: 800; margin: 0 0 12px 0;"><i class="fas fa-shield-alt"></i> <?php echo t('brand_settings.captcha_title'); ?></h3>
+    <div class="form-group">
+        <label class="form-label"><?php echo t('brand_settings.captcha_provider'); ?></label>
+        <select name="login_captcha_provider" class="form-control">
+            <option value="math" <?php echo $captcha_provider !== 'turnstile' ? 'selected' : ''; ?>><?php echo t('brand_settings.captcha_math'); ?></option>
+            <option value="turnstile" <?php echo $captcha_provider === 'turnstile' ? 'selected' : ''; ?>>Cloudflare Turnstile</option>
+        </select>
+        <small class="u-muted u-fs-11"><?php echo t('brand_settings.captcha_help'); ?></small>
+    </div>
+    <div class="form-group">
+        <label class="form-label"><?php echo t('brand_settings.turnstile_site_key'); ?></label>
+        <input type="text" name="login_turnstile_site_key" class="form-control" maxlength="100" value="<?php echo htmlspecialchars($captcha_site_key, ENT_QUOTES); ?>">
+    </div>
+    <div class="form-group">
+        <label class="form-label"><?php echo t('brand_settings.turnstile_secret'); ?></label>
+        <input type="password" name="login_turnstile_secret" class="form-control" maxlength="200" autocomplete="new-password" placeholder="<?php echo $captcha_secret_set ? t('brand_settings.turnstile_secret_keep') : ''; ?>">
+    </div>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('brand_settings.captcha_save'); ?></button>
 </form>
 
 <form method="POST" id="brandResetForm" data-no-spa="true" style="display: none;">

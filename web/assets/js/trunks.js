@@ -99,6 +99,8 @@ function openCreateTrunkModal() {
     document.getElementById('modal_cid_prepend').value = '';
     document.getElementById('modal_carrier_strip_prefix').value = '';
     document.getElementById('modal_carrier_add_prefix').value = '';
+    document.getElementById('modal_carrier_e164_country').value = '';
+    document.getElementById('carrier_test_number').value = '';
     updateCidNormPreview();
     updateCarrierNormPreview();
 
@@ -182,6 +184,8 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_cid_prepend').value = item.cid_prepend || '';
     document.getElementById('modal_carrier_strip_prefix').value = item.carrier_strip_prefix || '';
     document.getElementById('modal_carrier_add_prefix').value = item.carrier_add_prefix || '';
+    document.getElementById('modal_carrier_e164_country').value = item.carrier_e164_country || '';
+    document.getElementById('carrier_test_number').value = '';
     updateCidNormPreview();
     updateCarrierNormPreview();
 
@@ -210,22 +214,36 @@ function updateCidNormPreview() {
     box.textContent = (box.dataset.label || '') + ' ' + sample + ' → ' + out;
 }
 
-// Mirrors buildTrunkCarrierDialLine(): strip prefix from dialled number, then prepend.
+// Mirrors e164DialNumber() in DialplanBuilders.php.
+function carrierE164Number(number, cc, trunk, intl) {
+    if (number.length < 7 || !/^[0-9]+$/.test(number)) return number;
+    if (intl !== '' && number.startsWith(intl)) return '+' + number.slice(intl.length);
+    if (trunk !== '' && number.startsWith(trunk)) return '+' + cc + number.slice(trunk.length);
+    return number.startsWith(cc) ? '+' + number : '+' + cc + number;
+}
+
+// Mirrors buildTrunkCarrierDialLine(): strip prefix from dialled number, prepend, then E.164.
 function updateCarrierNormPreview() {
     const box = document.getElementById('carrier_norm_preview');
     if (!box) return;
     const strip = document.getElementById('modal_carrier_strip_prefix').value.trim();
     const add = document.getElementById('modal_carrier_add_prefix').value.trim();
-    if (strip === '' && add === '') {
+    const country = document.getElementById('modal_carrier_e164_country');
+    const typed = document.getElementById('carrier_test_number').value.trim();
+    if (strip === '' && add === '' && country.value === '') {
         box.textContent = '';
         return;
     }
-    const sample = '+905321234567';
+    const sample = typed !== '' ? typed : (country.value !== '' ? '05321234567' : '+905321234567');
     let out = sample;
     if (strip !== '' && out.startsWith(strip)) {
         out = add + out.slice(strip.length);
     } else if (strip === '' && add !== '') {
         out = add + out;
+    }
+    if (country.value !== '') {
+        const plan = country.options[country.selectedIndex].dataset;
+        out = carrierE164Number(out, country.value, plan.trunk || '', plan.intl || '');
     }
     box.textContent = (box.dataset.label || '') + ' ' + sample + ' → ' + out;
 }

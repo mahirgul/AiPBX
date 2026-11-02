@@ -20,6 +20,59 @@ final class TrunkCarrierNormalizationTest extends TestCase
         $this->assertStringContainsString('Set(AIPBX_TRUNK_DIAL=${AIPBX_DIAL_TARGET})', $lineEmpty);
     }
 
+    public function testARoutePrefixKeepsALeadingPlusOnly(): void
+    {
+        $this->assertSame('+1', cleanRoutePrefix(' +1 '));
+        $this->assertSame('+12', cleanRoutePrefix('+1+2'));
+        $this->assertSame('12', cleanRoutePrefix('1+2'));
+        $this->assertSame('0', cleanRoutePrefix('0'));
+        $this->assertSame('', cleanRoutePrefix('x;Hangup()'));
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('e164Numbers')]
+    public function testE164Number(string $cc, string $number, string $expected): void
+    {
+        $plan = DialplanRuleService::getDialPlan($cc);
+        $this->assertNotNull($plan);
+        $this->assertSame($expected, e164DialNumber($number, $cc, $plan['trunk'], $plan['intl']));
+    }
+
+    /** @return array<string, array{string, string, string}> */
+    public static function e164Numbers(): array
+    {
+        return [
+            'tr national' => ['90', '05321234567', '+905321234567'],
+            'tr without the zero' => ['90', '5321234567', '+905321234567'],
+            'tr already with the code' => ['90', '905321234567', '+905321234567'],
+            'tr international' => ['90', '00493012345678', '+493012345678'],
+            'already e164' => ['90', '+905321234567', '+905321234567'],
+            'tr emergency' => ['90', '112', '112'],
+            'us ten digits' => ['1', '4155550100', '+14155550100'],
+            'us with the one' => ['1', '14155550100', '+14155550100'],
+            'us international' => ['1', '011905321234567', '+905321234567'],
+            'us emergency' => ['1', '911', '911'],
+            'italy keeps its zero' => ['39', '0612345678', '+390612345678'],
+            'russia national' => ['7', '84951234567', '+74951234567'],
+            'russia international' => ['7', '81049301234567', '+49301234567'],
+            'service code' => ['90', '*21*1000', '*21*1000'],
+        ];
+    }
+
+    public function testATrunkWithACountrySendsTheNumberThroughTheSubroutine(): void
+    {
+        $line = buildTrunkCarrierDialLine(['strip' => '', 'add' => '', 'e164' => ['cc' => '1', 'trunk' => '1', 'intl' => '011']]);
+        $this->assertStringContainsString('Gosub(sub-e164,s,1(${AIPBX_TRUNK_DIAL},1,1,011))', $line);
+        $this->assertStringContainsString('Set(AIPBX_TRUNK_DIAL=${GOSUB_RETVAL})', $line);
+        $this->assertStringContainsString('[sub-e164]', buildE164Subroutine());
+    }
+
+    public function testAnUnknownCountryIsNoPlan(): void
+    {
+        $this->assertNull(trunkE164Plan(''));
+        $this->assertNull(trunkE164Plan('999'));
+        $this->assertSame(['cc' => '90', 'trunk' => '0', 'intl' => '00'], trunkE164Plan('90'));
+    }
+
     public function testBuildTrunkCarrierDialLineWithStripAndAdd(): void
     {
         // Strip '+90' (length 3) and prepend '0'

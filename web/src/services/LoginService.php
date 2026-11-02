@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/LoginCaptchaService.php';
+
 /**
  * Login service
  */
@@ -10,7 +12,6 @@ class LoginService {
     {
         $username = trim($post['username'] ?? '');
         $password = (string) ($post['password'] ?? '');
-        $user_captcha = intval($post['captcha_answer'] ?? 0);
         $csrf_token = $post['csrf_token'] ?? '';
 
         $correct_captcha = ($_SESSION['captcha_num1'] ?? 0) + ($_SESSION['captcha_num2'] ?? 0);
@@ -24,9 +25,9 @@ class LoginService {
             return ['error' => t('mobile_api.too_many_attempts')];
         }
         // Check 3: Math Captcha
-        if ($user_captcha !== $correct_captcha) {
+        if (!LoginCaptchaService::passes($post, $clientIp, (int) $correct_captcha)) {
             logLoginAttempt($clientIp, $username, 'FAILED');
-            return ['error' => t('srv_login.err_captcha')];
+            return ['error' => LoginCaptchaService::errorMessage()];
         }
         // Check 4: User authentication
         if (empty($username) || empty($password)) {
@@ -69,7 +70,7 @@ class LoginService {
             $_SESSION['full_name'] = $user['full_name'];
             $_SESSION['user_role'] = $user['role'];
             $_SESSION['extension'] = $user['extension'];
-            $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
+            $_SESSION['theme'] = $user['theme_preference'] ?? null;
             $_SESSION['ui_language'] = isset(UI_LANGUAGES[$user['language_preference'] ?? '']) ? $user['language_preference'] : DEFAULT_UI_LANGUAGE;
 
             // Log Successful Login

@@ -287,7 +287,7 @@ class FaxSendService {
             if ($strip_front > 0) $core = substr($core, $strip_front);
             if ($strip_back > 0) $core = substr($core, 0, max(0, strlen($core) - $strip_back));
 
-            $prepend = preg_replace('/[^0-9]/', '', trim($r['prepend'] ?? ''));
+            $prepend = cleanRoutePrefix((string)($r['prepend'] ?? ''));
             $append = preg_replace('/[^0-9]/', '', trim($r['append'] ?? ''));
             return $prepend . $core . $append;
         }

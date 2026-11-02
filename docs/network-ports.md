@@ -13,8 +13,8 @@ This document details all network ports, protocols, and access scopes required b
 | **10000–20000** | UDP | RTP / SRTP Media Streams | Public / LAN | **YES** | 2-way audio & video RTP packets. Must route directly. |
 | **80** | TCP | HTTP Web & Provisioning | Public / LAN | NO | Web portal, phone auto-provisioning, ACME HTTP-01. |
 | **443** | TCP | HTTPS Web Portal & API | Public / LAN | NO | Secure web interface, REST API, WebRTC WSS upgrade. |
-| **8089** | TCP | Asterisk WebRTC WSS | Public / LAN | NO | WebRTC WebSocket signaling for browser calling. |
-| **8088** | TCP | Asterisk HTTP / WS | Internal / Proxy | NO | Plain HTTP Asterisk endpoint for reverse proxying. |
+| **8089** | TCP | Asterisk WSS | Localhost (127.0.0.1) | NO | Not used by clients and never opened: browsers and the mobile apps use 443 `/ws`. |
+| **8088** | TCP | Asterisk HTTP / WS | Localhost (127.0.0.1) | NO | Behind `/ws` of the portal. A reverse proxy connects to the portal, not to this port. |
 | **3478** | UDP / TCP | STUN / TURN (coturn) | Public | **YES** | NAT traversal candidate discovery & media relay. |
 | **5349** | TCP | TURNS TLS (coturn) | Public | **YES** | Encrypted TLS TURN relay for strict networks. |
 | **69** | UDP | TFTP Phone Provisioning | LAN only | **YES** | Legacy desk phone configuration and firmware. |
@@ -28,7 +28,7 @@ This document details all network ports, protocols, and access scopes required b
 
 ### A. Public WAN (Internet-Facing)
 If you provide remote softphone access, remote mobile app calling, or SIP trunks over the public internet:
-- **Allow Inbound**: `80/tcp`, `443/tcp`, `5060/udp,tcp`, `5061/tcp`, `10000:20000/udp`, `3478/udp,tcp`, `5349/tcp`, `8089/tcp`.
+- **Allow Inbound**: `80/tcp`, `443/tcp`, `5060/udp,tcp`, `5061/tcp`, `10000:20000/udp`, `3478/udp,tcp`, `5349/tcp`.
 - **Behind Reverse Proxy**: Only `80/tcp` and `443/tcp` go through the reverse proxy. All SIP and RTP ports (`5060`, `5061`, `10000-20000/udp`) **MUST route directly** to the server host.
 - **Fail2ban Protection**: AiPBX automatically monitors authentication attempts on SIP and Web with built-in jails.
 
@@ -83,7 +83,6 @@ sudo ufw allow 10000:20000/udp comment 'RTP Audio Media'
 sudo ufw allow 3478/udp comment 'STUN / TURN UDP'
 sudo ufw allow 3478/tcp comment 'STUN / TURN TCP'
 sudo ufw allow 5349/tcp comment 'TURNS TLS'
-sudo ufw allow 8089/tcp comment 'Asterisk WebRTC WSS'
 
 # Enable firewall
 sudo ufw enable
@@ -102,7 +101,6 @@ sudo firewall-cmd --permanent --add-port=10000-20000/udp
 sudo firewall-cmd --permanent --add-port=3478/udp
 sudo firewall-cmd --permanent --add-port=3478/tcp
 sudo firewall-cmd --permanent --add-port=5349/tcp
-sudo firewall-cmd --permanent --add-port=8089/tcp
 
 sudo firewall-cmd --reload
 ```
@@ -118,4 +116,3 @@ sudo firewall-cmd --reload
 | Custom UDP | UDP | 10000–20000 | 0.0.0.0/0 | RTP Two-Way Voice Streams |
 | Custom UDP/TCP | UDP/TCP | 3478 | 0.0.0.0/0 | STUN / TURN NAT Relay |
 | Custom TCP | TCP | 5349 | 0.0.0.0/0 | TURNS TLS Relay |
-| Custom TCP | TCP | 8089 | 0.0.0.0/0 | WebRTC WebSocket Signaling |

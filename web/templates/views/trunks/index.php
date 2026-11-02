@@ -515,6 +515,22 @@
                             </div>
                         </div>
                         <small class="u-hint u-fs-11"><?php echo t('trunks.carrier_norm_help'); ?></small>
+                        <div class="u-grid-2 u-mt-12">
+                            <div class="form-group u-mb-0">
+                                <label class="form-label"><?php echo t('trunks.field_carrier_e164'); ?></label>
+                                <select name="carrier_e164_country" id="modal_carrier_e164_country" class="form-control" onchange="updateCarrierNormPreview()">
+                                    <option value=""><?php echo t('trunks.carrier_e164_off'); ?></option>
+                                    <?php foreach ($e164Countries as $cc => $country): ?>
+                                    <option value="<?php echo htmlspecialchars((string)$cc, ENT_QUOTES); ?>" data-trunk="<?php echo htmlspecialchars($country['trunk'], ENT_QUOTES); ?>" data-intl="<?php echo htmlspecialchars($country['intl'], ENT_QUOTES); ?>"><?php echo htmlspecialchars($country['name'], ENT_QUOTES); ?> (+<?php echo htmlspecialchars((string)$cc, ENT_QUOTES); ?>)</option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="form-group u-mb-0">
+                                <label class="form-label"><?php echo t('trunks.field_carrier_test_number'); ?></label>
+                                <input type="text" id="carrier_test_number" class="form-control" maxlength="30" placeholder="05321234567" oninput="updateCarrierNormPreview()">
+                            </div>
+                        </div>
+                        <small class="u-hint u-fs-11"><?php echo t('trunks.carrier_e164_help'); ?></small>
                         <div class="u-fs-11 u-mt-12" id="carrier_norm_preview" data-label="<?php echo htmlspecialchars(t('trunks.carrier_norm_preview'), ENT_QUOTES); ?>"></div>
                     </div>
 

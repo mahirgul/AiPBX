@@ -379,17 +379,17 @@ final class ReverseProxyService
                 'port' => '8089',
                 'proto' => 'TCP',
                 'service' => 'Asterisk WSS (WebRTC)',
-                'scope' => 'Public / LAN',
+                'scope' => 'Localhost (127.0.0.1)',
                 'bypass' => false,
-                'description' => 'Secure WebSocket signaling for in-browser WebRTC softphone calling.',
+                'description' => 'Not used by clients and never opened: browsers and the mobile apps reach WebRTC signaling over 443 at /ws.',
             ],
             [
                 'port' => '8088',
                 'proto' => 'TCP',
                 'service' => 'Asterisk HTTP / WS',
-                'scope' => 'Internal / Proxy',
+                'scope' => 'Localhost (127.0.0.1)',
                 'bypass' => false,
-                'description' => 'Asterisk built-in HTTP server for local WebSocket reverse proxying.',
+                'description' => 'Behind /ws of the portal. A reverse proxy connects to the portal, not to this port.',
             ],
             [
                 'port' => '3478 / 5349',
@@ -517,10 +517,7 @@ ufw allow 3478/udp comment 'STUN / TURN UDP'
 ufw allow 3478/tcp comment 'STUN / TURN TCP'
 ufw allow 5349/tcp comment 'TURNS TLS'
 
-# 6. WebRTC WebSocket Signaling
-ufw allow 8089/tcp comment 'Asterisk WebRTC WSS'
-
-# 7. Internal Desk Phone Provisioning (Restrict to local subnet if desired)
+# 6. Internal Desk Phone Provisioning (Restrict to local subnet if desired)
 # ufw allow from 192.168.1.0/24 to any port 69 proto udp comment 'TFTP Phone Provisioning'
 
 # Enable firewall
@@ -553,9 +550,6 @@ firewall-cmd --permanent --add-port=10000-20000/udp
 firewall-cmd --permanent --add-port=3478/udp
 firewall-cmd --permanent --add-port=3478/tcp
 firewall-cmd --permanent --add-port=5349/tcp
-
-# Asterisk WebRTC WSS
-firewall-cmd --permanent --add-port=8089/tcp
 
 # Reload rules
 firewall-cmd --reload
@@ -606,7 +600,6 @@ iptables -A INPUT -p udp --dport 10000:20000 -j ACCEPT
 iptables -A INPUT -p udp --dport 3478 -j ACCEPT
 iptables -A INPUT -p tcp --dport 3478 -j ACCEPT
 iptables -A INPUT -p tcp --dport 5349 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8089 -j ACCEPT
 
 # ICMP ping
 iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
@@ -627,6 +620,11 @@ BASH;
         $backendIp = trim($backendIp) ?: '127.0.0.1';
         $backendPort = ($backendPort > 0 && $backendPort <= 65535) ? $backendPort : 80;
 
+        $names = ['nginx' => 'Nginx', 'caddy' => 'Caddy', 'traefik' => 'Traefik', 'apache' => 'Apache'];
+        if ($tlsMode === 're_encrypt' && isset($names[$type])) {
+            return self::reEncryptionNotPossible($names[$type]);
+        }
+
         return match ($type) {
             'caddy' => self::generateCaddyConfig($fqdn, $backendIp, $backendPort, $tlsMode),
             'traefik' => self::generateTraefikConfig($fqdn, $backendIp, $backendPort, $tlsMode),
@@ -636,17 +634,31 @@ BASH;
         };
     }
 
+    /**
+     * Port 443 of the portal tells TURNS from HTTPS by ALPN: a connection without it goes to coturn
+     * and closes (/etc/nginx/aipbx-stream.conf). Tried with all five: Nginx and Apache send no ALPN
+     * to a backend, Caddy and Traefik send none for a WebSocket. HAProxy can be told to.
+     */
+    private static function reEncryptionNotPossible(string $proxy): string
+    {
+        return <<<TEXT
+# {$proxy} cannot connect to AiPBX with re-encryption.
+#
+# Port 443 of AiPBX tells HTTPS from TURNS by the ALPN of the connection, and
+# {$proxy} does not send it on the connections softphones need, so they would
+# fail with 502. Use Edge Termination over a private network, or use HAProxy,
+# which can send ALPN.
+TEXT;
+    }
+
     private static function generateNginxConfig(string $fqdn, string $backendIp, int $backendPort, string $tlsMode): string
     {
-        $proto = ($tlsMode === 're_encrypt') ? 'https' : 'http';
-        $wsProto = ($tlsMode === 're_encrypt') ? 'https' : 'http';
-
         return <<<NGINX
 # ==============================================================================
 # /etc/nginx/sites-available/aipbx.conf
 # AiPBX Reverse Proxy Configuration (Nginx)
 # External FQDN: {$fqdn}
-# Backend Target: {$proto}://{$backendIp}:{$backendPort}
+# Backend Target: http://{$backendIp}:{$backendPort}
 #
 # IMPORTANT: VoIP protocols (SIP 5060/5061 and RTP 10000-20000 UDP) MUST bypass
 # this HTTP proxy and connect directly to the server host.
@@ -660,11 +672,6 @@ map \$http_upgrade \$connection_upgrade {
 upstream aipbx_web_backend {
     server {$backendIp}:{$backendPort};
     keepalive 32;
-}
-
-upstream aipbx_webrtc_backend {
-    server {$backendIp}:8089;
-    keepalive 16;
 }
 
 # Redirect HTTP to HTTPS
@@ -701,7 +708,7 @@ server {
 
     # 1. WebRTC WebSocket Signaling (Softphones)
     location /ws {
-        proxy_pass {$wsProto}://aipbx_webrtc_backend/ws;
+        proxy_pass http://aipbx_web_backend/ws;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection \$connection_upgrade;
@@ -717,7 +724,7 @@ server {
 
     # 2. Main Portal, Chat WebSocket & Desk Phone Provisioning
     location / {
-        proxy_pass {$proto}://aipbx_web_backend;
+        proxy_pass http://aipbx_web_backend;
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection \$connection_upgrade;
@@ -739,8 +746,6 @@ NGINX;
 
     private static function generateCaddyConfig(string $fqdn, string $backendIp, int $backendPort, string $tlsMode): string
     {
-        $proto = ($tlsMode === 're_encrypt') ? 'https' : 'http';
-
         return <<<CADDY
 # ==============================================================================
 # /etc/caddy/Caddyfile
@@ -753,21 +758,8 @@ NGINX;
 {$fqdn} {
     encode zstd gzip
 
-    # WebRTC WebSocket Signaling (Asterisk WSS)
-    @websocket {
-        path /ws*
-        header Connection *Upgrade*
-        header Upgrade websocket
-    }
-    reverse_proxy @websocket {$backendIp}:8089 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-    }
-
-    # Web Portal & Phone Provisioning
-    reverse_proxy {$backendIp}:{$backendPort} {
+    # Web Portal, Phone Provisioning and the WebSockets (/ws, /chat/ws)
+    reverse_proxy http://{$backendIp}:{$backendPort} {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
         header_up X-Forwarded-For {remote_host}
@@ -780,8 +772,6 @@ CADDY;
 
     private static function generateTraefikConfig(string $fqdn, string $backendIp, int $backendPort, string $tlsMode): string
     {
-        $scheme = ($tlsMode === 're_encrypt') ? 'https' : 'http';
-
         return <<<YAML
 # ==============================================================================
 # traefik-dynamic.yaml
@@ -797,19 +787,13 @@ http:
       rule: "Host(`{$fqdn}`)"
       entryPoints: ["web"]
       middlewares: ["redirect-to-https"]
-      service: "noop"
-
-    aipbx-ws:
-      rule: "Host(`{$fqdn}`) && PathPrefix(`/ws`)"
-      entryPoints: ["websecure"]
-      service: "aipbx-ws-svc"
-      tls:
-        certResolver: "letsencrypt"
+      service: "noop@internal"
 
     aipbx-web:
       rule: "Host(`{$fqdn}`)"
       entryPoints: ["websecure"]
       service: "aipbx-web-svc"
+      middlewares: ["forwarded-https"]
       tls:
         certResolver: "letsencrypt"
 
@@ -818,24 +802,26 @@ http:
       redirectScheme:
         scheme: "https"
         permanent: true
+    # Traefik says "wss" for a WebSocket, and the portal redirects anything but "https".
+    forwarded-https:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
 
   services:
     aipbx-web-svc:
       loadBalancer:
         passHostHeader: true
         servers:
-          - url: "{$scheme}://{$backendIp}:{$backendPort}"
-
-    aipbx-ws-svc:
-      loadBalancer:
-        passHostHeader: true
-        servers:
-          - url: "http://{$backendIp}:8089"
+          - url: "http://{$backendIp}:{$backendPort}"
 YAML;
     }
 
     private static function generateHAProxyConfig(string $fqdn, string $backendIp, int $backendPort, string $tlsMode): string
     {
+        // The portal's certificate is often its own self-signed one.
+        $backendTls = ($tlsMode === 're_encrypt') ? ' ssl verify none alpn http/1.1' : '';
+
         return <<<HAPROXY
 # ==============================================================================
 # /etc/haproxy/haproxy.cfg (Snippet for AiPBX)
@@ -861,21 +847,19 @@ backend aipbx_web_backend
     option forwardfor
     http-request set-header X-Forwarded-Proto https if { ssl_fc }
     http-request set-header X-Forwarded-Host %[req.hdr(host)]
-    server aipbx1 {$backendIp}:{$backendPort} check
+    server aipbx1 {$backendIp}:{$backendPort} check{$backendTls}
 
 backend aipbx_ws_backend
     mode http
     option forwardfor
     timeout tunnel 3600s
     http-request set-header X-Forwarded-Proto https if { ssl_fc }
-    server aipbx_ws1 {$backendIp}:8089 check
+    server aipbx_ws1 {$backendIp}:{$backendPort} check{$backendTls}
 HAPROXY;
     }
 
     private static function generateApacheConfig(string $fqdn, string $backendIp, int $backendPort, string $tlsMode): string
     {
-        $proto = ($tlsMode === 're_encrypt') ? 'https' : 'http';
-
         return <<<APACHE
 # ==============================================================================
 # /etc/apache2/sites-available/aipbx-reverse-proxy.conf
@@ -904,14 +888,14 @@ HAPROXY;
     RequestHeader set X-Forwarded-Port "443"
 
     # WebRTC WebSocket Signaling
-    ProxyPass /ws ws://{$backendIp}:8089/ws
-    ProxyPassReverse /ws ws://{$backendIp}:8089/ws
+    ProxyPass /ws ws://{$backendIp}:{$backendPort}/ws
+    ProxyPassReverse /ws ws://{$backendIp}:{$backendPort}/ws
     ProxyPass /chat/ws ws://{$backendIp}:{$backendPort}/chat/ws
     ProxyPassReverse /chat/ws ws://{$backendIp}:{$backendPort}/chat/ws
 
     # Main Web Portal
-    ProxyPass / {$proto}://{$backendIp}:{$backendPort}/
-    ProxyPassReverse / {$proto}://{$backendIp}:{$backendPort}/
+    ProxyPass / http://{$backendIp}:{$backendPort}/
+    ProxyPassReverse / http://{$backendIp}:{$backendPort}/
 </VirtualHost>
 APACHE;
     }
