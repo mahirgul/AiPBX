@@ -61,7 +61,7 @@ $form = $edit ?? ['id' => 0, 'object_type' => 'endpoint', 'object_name' => '', '
     <?php if (!$entries): ?>
         <p class="u-muted" style="padding: 0 20px 16px;"><?php echo t('advanced_config.empty'); ?></p>
     <?php else: ?>
-    <div class="table-responsive"><table class="table">
+    <div class="table-responsive"><table class="data-table">
         <thead><tr><th><?php echo t('advanced_config.field_type'); ?></th><th><?php echo t('advanced_config.field_name'); ?></th><th><?php echo t('advanced_config.field_options'); ?></th><th><?php echo t('advanced_config.status'); ?></th><th></th></tr></thead>
         <tbody>
         <?php foreach ($entries as $e):
@@ -98,7 +98,7 @@ $form = $edit ?? ['id' => 0, 'object_type' => 'endpoint', 'object_name' => '', '
     <div class="card-header"><div class="card-title"><i class="fas fa-history u-primary"></i> <?php echo t('advanced_config.versions_title'); ?></div></div>
     <p class="u-muted u-fs-12" style="margin: 0 20px 12px;"><?php echo t('advanced_config.versions_help'); ?></p>
     <?php if ($versions): ?>
-    <div class="table-responsive"><table class="table">
+    <div class="table-responsive"><table class="data-table">
         <tbody>
         <?php foreach ($versions as $v): ?>
             <tr>
