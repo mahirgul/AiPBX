@@ -99,9 +99,10 @@ What AiPBX checks, and what it will not do:
 - **The file set is checked before the load is written** (`CiscoFirmware`): AiPBX reads the load's `.loads`
   manifest and verifies that every file it names is in the TFTP folder. A phone pointed at a load it cannot
   download does not fail politely — it sits at *Upgrading* — so a missing file is reported instead.
-- **A missing file is not a reason to skip the load.** The phone's row reads *SIP firmware not on this
-  server* with the missing names in the tooltip. Copy the rest of the package in; the file the phone gets is
-  already right.
+- **A load with a missing file is not written to the phone's file.** The phone's row reads *SIP firmware not
+  on this server* with the missing names in the tooltip, and the phone keeps the firmware it has when it
+  restarts. Copy the rest of the package in and run the command below, which rewrites the phone's file. This
+  applies to the per-model list; the single load field is written as you typed it.
 - **Only the 7900 series is switched.** The 8800 series (8841/8851/8861/8865) has no SCCP enterprise
   firmware to leave: its enterprise firmware is SIP already.
 - **Enterprise ↔ Multiplatform (MPP) is not automated.** Converting an 8800 to MPP firmware is a licensed
@@ -164,7 +165,7 @@ untested here: UDP is the path that works out of the box.
 | Symptom | Check |
 |---------|-------|
 | The phone reboots and never registers | Is it running a **SIP** load and not SCCP? Its own status screen says which. A 7900 still on SCCP needs the switch in section 3 (and the restart that comes with it); AiPBX does not run chan-sccp, so a phone left on SCCP never registers. |
-| A 7900 sits at *Upgrading* | It is asking for a firmware file the server does not have: the row on **Phones** names what is missing, and `aipbx_cisco_firmware.php` lists the whole set. Copy the rest of that release's package into the TFTP folder — do not rename the files, and do not use another model's package (the loads are signed per model). |
+| A 7900 sits at *Upgrading* | It is asking for a firmware file the server does not have (a load from the single field is not checked): `aipbx_cisco_firmware.php` lists what the per-model list needs. Copy the rest of that release's package into the TFTP folder — do not rename the files, and do not use another model's package (the loads are signed per model). |
 | It has a name but no extension | The file was not fetched: DHCP option 150, or the TFTP folder's owner and the allowed networks. `PBX → Phone logs → TFTP/FTP` shows every fetch the PBX answered. |
 | It fetched the file and stayed on the old settings | The `loadInformation` you set may be a load you do not have. Clear it and re-provision (↻). |
 | The lamp of a BLF key never changes | A hint in the dialplan and the usecallmanager Asterisk patch — both are outside AiPBX's file. |

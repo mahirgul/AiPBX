@@ -29,6 +29,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Let's Encrypt with Cloudflare DNS:** the certbot plugin is now installed, without which the feature could not work; a successful run with a new token no longer ended in an error.
 - **Local AI on arm64 (Raspberry Pi, Graviton):** the runtime could not be installed at all, because one package needed only by EMA Lightning has no arm64 build. That package is now left out on arm64, and EMA Lightning says it is not available on this processor instead of reading numbers wrong.
 - **Phone discovery:** 25 phones of a vendor with no model configured could keep every other vendor's phones from being provisioned, one row that could not become a phone stopped each run at the same place, and one over-long DHCP hostname lost everything a run had seen.
+- **Cisco 7900 firmware:** a phone's file no longer names a load from the per-model list while that load's files are missing on the server, so a working phone that restarts does not stall at *Upgrading* on a half-copied package. After copying the files, `aipbx_cisco_firmware.php` rewrites the phone's file.
 - **Docs:** turning MPTCP off reduces exposure to CVE-2026-98432; the fix is the distribution's kernel update.
 
 ## 1.60.3

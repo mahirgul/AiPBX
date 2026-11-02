@@ -31,7 +31,9 @@ require_once __DIR__ . '/phones/CiscoFirmware.php';
  *    and an automatic run must not point a 7941 at a 7962's load.
  *  - The load's file set is checked first (CiscoFirmware), and a missing file
  *    is recorded rather than repaired: the phone would stall at "Upgrading",
- *    and the fix is copying the rest of the package, not another config.
+ *    and the fix is copying the rest of the package, not another config. Until
+ *    then the phone's file does not name the load (loadForPhoneFile()), so a
+ *    phone that works keeps working when it restarts.
  *  - Nothing is sent to the phone. Arming is a file change plus a row; the
  *    phone acts on it at its next boot, and the row says whether it has.
  */
@@ -104,6 +106,30 @@ final class PhoneFirmwareService
             return $loads[$model];
         }
         return trim((string) getSystemSetting('provision_cisco_load', ''));
+    }
+
+    /**
+     * The load written into a phone's file. As loadForModel(), except that a load
+     * from the model list whose files are known to be missing here is left out.
+     * A phone armed earlier stays armed: `aipbx_cisco_firmware.php --dir` may have
+     * checked the server its firmware really comes from. A manifest that cannot
+     * be read proves nothing is missing, and the single field is an administrator's
+     * own statement, so both are written as they are.
+     *
+     * @param array<string, mixed> $phone a pbx_phones row
+     */
+    public static function loadForPhoneFile(array $phone): string
+    {
+        $model = (string) ($phone['model'] ?? '');
+        $load = self::loads()[$model] ?? '';
+        if ($load === '') {
+            return self::loadForModel($model);
+        }
+        if ((string) ($phone['firmware_load'] ?? '') === $load
+            && in_array((string) ($phone['firmware_state'] ?? ''), [self::ARMED, self::FETCHED], true)) {
+            return $load;
+        }
+        return CiscoFirmware::check($load)['state'] === 'missing' ? '' : $load;
     }
 
     /** The load the automatic switch may use for a model ('' = this model is not switched automatically). */
