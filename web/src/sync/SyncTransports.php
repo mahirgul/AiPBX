@@ -58,6 +58,14 @@ function __syncTransportsBody() {
     $ws_port = $cleanPort($settings['ws_bindport'] ?? '');
 
     $extern_ip = preg_replace('/[^a-zA-Z0-9.:_-]/', '', (string)($settings['externip_val'] ?? ''));
+    // Media can leave from a different address than signaling. A name works too: Asterisk's DNS
+    // manager looks it up again (dnsmgr.conf).
+    $extern_media = preg_replace('/[^a-zA-Z0-9.:_-]/', '', (string)($settings['externmedia_val'] ?? ''));
+    $external_lines = '';
+    if (!empty($extern_ip)) {
+        $external_lines = 'external_media_address=' . ($extern_media !== '' ? $extern_media : $extern_ip) . "\n"
+            . "external_signaling_address={$extern_ip}\n";
+    }
 
     // Local networks: read from the dynamic localnet_* / netmask_* records in the DB
     $local_nets = [];
@@ -106,10 +114,7 @@ function __syncTransportsBody() {
         $conf .= "protocol=udp\n";
         $conf .= "bind={$bind_udp}:{$bind_udp_port}\n";
         $conf .= $local_net_lines;
-        if (!empty($extern_ip)) {
-            $conf .= "external_media_address={$extern_ip}\n";
-            $conf .= "external_signaling_address={$extern_ip}\n";
-        }
+        $conf .= $external_lines;
         $conf .= "\n";
     }
 
@@ -120,10 +125,7 @@ function __syncTransportsBody() {
         $conf .= "protocol=tcp\n";
         $conf .= "bind={$bind_tcp}:{$bind_tcp_port}\n";
         $conf .= $local_net_lines;
-        if (!empty($extern_ip)) {
-            $conf .= "external_media_address={$extern_ip}\n";
-            $conf .= "external_signaling_address={$extern_ip}\n";
-        }
+        $conf .= $external_lines;
         $conf .= "\n";
     }
 
@@ -144,10 +146,7 @@ function __syncTransportsBody() {
         }
         $conf .= "method={$tls_method}\n";
         $conf .= $local_net_lines;
-        if (!empty($extern_ip)) {
-            $conf .= "external_media_address={$extern_ip}\n";
-            $conf .= "external_signaling_address={$extern_ip}\n";
-        }
+        $conf .= $external_lines;
         $conf .= "\n";
     }
 
@@ -164,10 +163,7 @@ function __syncTransportsBody() {
             $conf .= "priv_key_file={$tls_priv_key}\n";
         }
         $conf .= $local_net_lines;
-        if (!empty($extern_ip)) {
-            $conf .= "external_media_address={$extern_ip}\n";
-            $conf .= "external_signaling_address={$extern_ip}\n";
-        }
+        $conf .= $external_lines;
         $conf .= "\n";
     }
 
@@ -178,10 +174,7 @@ function __syncTransportsBody() {
         $conf .= "protocol=ws\n";
         $conf .= "bind={$ws_bind}:{$ws_port}\n";
         $conf .= $local_net_lines;
-        if (!empty($extern_ip)) {
-            $conf .= "external_media_address={$extern_ip}\n";
-            $conf .= "external_signaling_address={$extern_ip}\n";
-        }
+        $conf .= $external_lines;
         $conf .= "\n";
     }
 

@@ -53,6 +53,15 @@ function buildRtpConf(): string
     if ($extern_ip === '') {
         $extern_ip = portalEnv('EXTERNAL_IP', '');
     }
+    // Audio and video leave from the media address when there is a separate one.
+    $extern_media = trim(getSystemSetting('pjsip_external_media_ip', ''));
+    if ($extern_media !== '') {
+        $extern_ip = $extern_media;
+    }
+    // rtp.conf takes only an address here, so a dynamic DNS name is looked up now (and on each Apply).
+    if ($extern_ip !== '' && !filter_var($extern_ip, FILTER_VALIDATE_IP)) {
+        $extern_ip = (string) gethostbyname($extern_ip);
+    }
     // The address Asterisk's ICE host candidate carries. Not SERVER_ADDR: behind
     // the 443 nginx multiplexer that is 127.0.0.1 and the mapping never matched.
     $local_ip = trim(getSystemSetting('server_ip', ''));

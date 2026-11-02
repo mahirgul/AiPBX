@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/NetworkSettingsService.php';
+require_once __DIR__ . '/../services/NatDiagnosticsService.php';
 
 /**
  * Network → Network settings (roadmap 12, 13): the server's addresses, the
@@ -31,6 +32,10 @@ class NetworkSettingsController extends BaseController
                 }
             }
         }
+        $natResults = null;
+        if (static::isPost() && ($_POST['action'] ?? '') === 'nat_check' && verifyCSRFToken($_POST['csrf_token'] ?? '')) {
+            $natResults = NatDiagnosticsService::evaluate(NatDiagnosticsService::gather());
+        }
         $notices = static::handlePost([
             'save_server' => fn() => NetworkSettingsService::saveServer($_POST),
             'save_phones' => fn() => NetworkSettingsService::savePhones($_POST),
@@ -47,6 +52,7 @@ class NetworkSettingsController extends BaseController
             'files' => $files,
             'preview' => $preview,
             'previewError' => $previewError,
+            'natResults' => $natResults,
         ] + $notices, ['title' => t('sidebar.item_network_settings')]);
     }
 }

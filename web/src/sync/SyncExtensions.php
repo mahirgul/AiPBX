@@ -43,6 +43,8 @@ function pjsipIdentifyHosts(): array
 
     $external = trim((string) getSystemSetting('pjsip_external_ip', ''));
     if ($external !== '') { $hosts[] = $external; }
+    $externalMedia = trim((string) getSystemSetting('pjsip_external_media_ip', ''));
+    if ($externalMedia !== '') { $hosts[] = $externalMedia; }
 
     if (function_exists('net_get_interfaces')) {
         foreach ((array) net_get_interfaces() as $iface) {

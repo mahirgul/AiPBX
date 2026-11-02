@@ -15,13 +15,47 @@ require_once __DIR__ . '/priv_helper.php';
  */
 function writePBXConf($filename, $content) {
     $file_path = ASTERISK_PBX_DIR . '/' . $filename;
+    keepHandEditedConf($filename, $file_path);
     // A failed write used to pass silently: the reload then succeeded with the
     // old file and the pending change was marked as applied.
     if (FileHelper::writeFile($file_path, $content, 'asterisk', 'asterisk', 0644) === false) {
         $err = error_get_last()['message'] ?? 'unknown error';
         throw new \Exception(sprintf(t('sync.err_write'), $file_path, $err));
     }
+    @FileHelper::writeFile($file_path . '.written', hash('sha256', (string) $content), 'asterisk', 'asterisk', 0664);
     return $file_path;
+}
+
+/**
+ * A generated file that differs from what the portal last wrote was changed by hand. Regenerating
+ * would lose that silently, so a copy is kept and the change goes in the audit log. The copy's name
+ * ends in the date, so Asterisk's `pbx/*.conf` includes do not read it.
+ */
+function keepHandEditedConf(string $filename, string $file_path): void
+{
+    $written = @file_get_contents($file_path . '.written');
+    $current = is_file($file_path) ? @file_get_contents($file_path) : false;
+    if (!is_string($written) || !is_string($current) || hash('sha256', $current) === trim($written)) {
+        return;
+    }
+    $copy = $file_path . '.edited-' . date('Ymd-His');
+    if (@copy($file_path, $copy)) {
+        @chmod($copy, 0640);
+        $old = glob($file_path . '.edited-*') ?: [];
+        sort($old);
+        foreach (array_slice($old, 0, max(0, count($old) - 5)) as $stale) {
+            @unlink($stale);
+        }
+    }
+    writeAuditLog('system', 'config_file', 0, $filename, 'hand_edit', $_SESSION['user_id'] ?? null);
+}
+
+/** @return list<string> kept copies of generated files that were changed by hand, newest first */
+function handEditedConfCopies(): array
+{
+    $copies = glob(ASTERISK_PBX_DIR . '/*.edited-*') ?: [];
+    rsort($copies);
+    return $copies;
 }
 
 /**
@@ -152,6 +186,7 @@ const PENDING_SYNC_DOMAIN_MAP = [
     'widgets'           => 'syncWidgets',
     'ai_apps'           => 'syncAiApps',
     'custom_dialplan'   => 'syncCustomDialplan',
+    'advanced_pjsip'    => 'syncAdvancedPjsip',
 ];
 
 /**
@@ -315,6 +350,7 @@ require_once __DIR__ . '/sync/SyncPermissions.php';
 require_once __DIR__ . '/sync/SyncWidgets.php';
 require_once __DIR__ . '/sync/SyncAiApps.php';
 require_once __DIR__ . '/sync/SyncCustomDialplan.php';
+require_once __DIR__ . '/sync/SyncAdvancedPjsip.php';
 
 /**
  * Updates the system default language (/etc/asterisk/asterisk.conf [options]

@@ -58,6 +58,7 @@ class RoleRepository extends BaseRepository
             'sounds'             => ['title' => 'Sounds & Music', 'group' => 'PBX Management', 'actions' => $all],
             'feature_codes'      => ['title' => 'Feature Codes (*)', 'group' => 'PBX Management', 'actions' => self::VAE],
             'custom_dialplan'    => ['title' => 'Custom Dialplan', 'group' => 'PBX Management', 'actions' => $all, 'admin_only' => true],
+            'advanced_config'    => ['title' => 'Advanced Configuration', 'group' => 'PBX Management', 'actions' => $all, 'admin_only' => true],
             'phones'             => ['title' => 'Phones', 'group' => 'Network & Devices', 'actions' => $all, 'admin_only' => true],
             'cc_board'           => ['title' => 'Wallboard', 'group' => 'Call Center', 'actions' => self::VA],
             'queue_monitor'      => ['title' => 'Queue Monitor', 'group' => 'Call Center', 'actions' => self::VA],

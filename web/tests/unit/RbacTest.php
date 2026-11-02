@@ -48,6 +48,7 @@ final class RbacTest extends TestCase
         'health',
         'call_quality',
         'custom_dialplan',
+        'advanced_config',
     ];
 
     protected function setUp(): void

@@ -112,6 +112,9 @@ class AsteriskHelper {
      * Reload PJSIP module
      */
     public static function reloadPJSIP() {
+        if (function_exists('refreshAdvancedPjsipOverlay')) {
+            refreshAdvancedPjsipOverlay();
+        }
         return self::execCLI('pjsip reload');
     }
 

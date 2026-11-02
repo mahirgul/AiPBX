@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/DialplanRuleService.php';
+require_once __DIR__ . '/AdvancedPjsipService.php';
 /**
  * SIP Trunk Service
  */
@@ -149,6 +150,11 @@ class TrunkService {
             $send_pai = isset($data['send_pai']) ? intval($data['send_pai']) : 0;
             $send_rpid = isset($data['send_rpid']) ? intval($data['send_rpid']) : 0;
             $custom_pjsip_params = trim($data['custom_pjsip_params'] ?? '');
+            // An unknown option here makes the trunk's endpoint disappear at the next Asterisk restart.
+            $custom_check = AdvancedPjsipService::checkOptions($custom_pjsip_params, AdvancedPjsipService::optionNames('endpoint'));
+            if ($custom_check['errors'] !== []) {
+                throw new \Exception(implode(' ', $custom_check['errors']));
+            }
 
             $trunk_data = [
                 'id' => $trunk_id,
