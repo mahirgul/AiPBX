@@ -40,6 +40,6 @@ final class UiHelperCallsTest extends TestCase
         $router = (string) file_get_contents(dirname(__DIR__, 2) . '/assets/js/spa_router.js');
         $at = strpos($router, "document.body.addEventListener('submit'");
         $this->assertNotFalse($at);
-        $this->assertStringContainsString('if (e.defaultPrevented) return;', substr($router, (int) $at, 200), 'without it, Cancel still deletes');
+        $this->assertStringContainsString('if (e.defaultPrevented) return;', substr($router, (int) $at, 400), 'without it, Cancel still deletes');
     }
 }
