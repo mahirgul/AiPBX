@@ -9,6 +9,8 @@ require_once dirname(__DIR__) . '/helpers.php';
  */
 class DialplanRuleService
 {
+    public const PRESET_OVERRIDE_DIR = '/var/lib/aipbx/normalization_presets';
+
     public const VALID_CLIENT_TYPES = ['all', 'desktop', 'mobile', 'web'];
 
     /**
@@ -340,38 +342,64 @@ class DialplanRuleService
      */
     public static function getDefaultPresets(string $countryCode): array
     {
-        $cc = preg_replace('/[^0-9]/', '', $countryCode);
-        $plan = ($cc !== '' && strlen($cc) <= 4) ? self::getDialPlan($cc) : null;
-        if ($plan === null) {
+        $rows = [];
+        foreach (self::presetFile($countryCode)['outbound'] ?? [] as $r) {
+            if (!is_array($r) || !in_array($r['client_type'] ?? '', ['desktop', 'mobile', 'web', 'all'], true) || !self::presetRuleIsValid($r)) {
+                continue;
+            }
+            $rows[] = [
+                $r['client_type'],
+                $r['rule_name'],
+                $r['match_pattern'],
+                (int) ($r['strip_front'] ?? 0),
+                (string) ($r['prepend'] ?? ''),
+                (int) ($r['strip_back'] ?? 0),
+                (string) ($r['append'] ?? ''),
+                (int) ($r['sort_order'] ?? 1),
+                (int) ($r['is_active'] ?? 1),
+                (string) ($r['description'] ?? ''),
+            ];
+        }
+        return $rows;
+    }
+
+    /**
+     * Ready-made rules of a country. A copy in PRESET_OVERRIDE_DIR wins over the one that ships with
+     * AiPBX: updates do not touch it, and editing a shipped file would make aipbx-update refuse.
+     *
+     * @return array<string, mixed>
+     */
+    public static function presetFile(string $countryCode): array
+    {
+        $cc = (string) preg_replace('/[^0-9]/', '', $countryCode);
+        if ($cc === '' || strlen($cc) > 4) {
             return [];
         }
-        $trunk = $plan['trunk'];
-        $intl = $plan['intl'];
-        $stripLen = 1 + strlen($cc); // "+" and the country code
-        $country = self::getCountryName($cc, 'en');
-        $national = $trunk === '' ? "+{$cc}" : "+{$cc} -> {$trunk}";
-        $nationalDesc = $trunk === ''
-            ? "+{$cc} numbers are dialled as national numbers (without +{$cc})."
-            : "+{$cc} numbers become national numbers with the prefix {$trunk}.";
-        $intlDesc = "International numbers with + are dialled with {$intl}.";
-
-        $presets = [];
-        if ($trunk === '0' && $intl === '00') {
-            $presets[] = ['desktop', 'Desk phones: strip outside-line 0', '_00[1-9].', 1, '', 0, '', 1, 0, 'For desk phones that dial 0 for an outside line: 0 + 0xxx (national) becomes 0xxx. Off by default.'];
-            $presets[] = ['desktop', 'Desk phones: outside line international (000 -> 00)', '_000.', 1, '', 0, '', 2, 1, 'Outside-line 0 dialled before an international number: 000... becomes 00...'];
+        $override = getenv('AIPBX_PRESET_DIR') ?: self::PRESET_OVERRIDE_DIR;
+        foreach ([$override, dirname(__DIR__, 2) . '/config/normalization_presets'] as $dir) {
+            $path = "{$dir}/{$cc}.json";
+            if (is_readable($path)) {
+                $data = json_decode((string) file_get_contents($path), true);
+                return is_array($data) ? $data : [];
+            }
         }
-        foreach (['desktop' => 'Desk phones', 'mobile' => 'Mobile app', 'web' => 'Web phone'] as $type => $label) {
-            $presets[] = [$type, "{$label}: E.164 {$country} ({$national})", "_+{$cc}.", $stripLen, $trunk, 0, '', 3, 1, $nationalDesc];
-            $presets[] = [$type, "{$label}: E.164 international (+ -> {$intl})", '_+X.', 1, $intl, 0, '', 4, 1, $intlDesc];
-        }
+        return [];
+    }
 
-        // Country-specific national formats (Turkey: 10-digit mobile 5xx -> 05xx)
-        if ($cc === '90') {
-            $presets[] = ['mobile', 'Mobile app: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 5, 1, 'Mobile numbers stored as 5xx xxx xx xx get the leading 0.'];
-            $presets[] = ['web', 'Web phone: 10-digit mobile number, add 0', '_5XXXXXXXXX', 0, '0', 0, '', 5, 1, 'Mobile numbers typed as 5xx xxx xx xx get the leading 0.'];
-        }
-
-        return $presets;
+    /**
+     * A preset file can be edited by hand, and its values end up in the dialplan.
+     *
+     * @param array<string, mixed> $r
+     */
+    public static function presetRuleIsValid(array $r): bool
+    {
+        return is_string($r['rule_name'] ?? null) && $r['rule_name'] !== '' && mb_strlen($r['rule_name']) <= 120
+            && is_string($r['match_pattern'] ?? null) && preg_match('/^(_[0-9NXZnxz.!*#+\[\]-]{1,39}|\+?[0-9*#]{1,39})$/D', $r['match_pattern']) === 1
+            && substr_count($r['match_pattern'], '[') === substr_count($r['match_pattern'], ']')
+            && preg_match('/^[0-9+*#]{0,30}$/D', (string) ($r['prepend'] ?? '')) === 1
+            && preg_match('/^[0-9+*#]{0,30}$/D', (string) ($r['append'] ?? '')) === 1
+            && (int) ($r['strip_front'] ?? 0) >= 0 && (int) ($r['strip_front'] ?? 0) <= 32
+            && (int) ($r['strip_back'] ?? 0) >= 0 && (int) ($r['strip_back'] ?? 0) <= 32;
     }
 
     public static function loadDefaults(string $csrfToken, string $countryCode = '90'): array
@@ -381,7 +409,7 @@ class DialplanRuleService
             if ($cleanCc === '' || strlen($cleanCc) > 4) {
                 throw new \Exception(t('dialplan_rules.err_country_required'));
             }
-            if (self::getDialPlan($cleanCc) === null) {
+            if (self::getDefaultPresets($cleanCc) === []) {
                 throw new \Exception(t('dialplan_rules.err_no_presets'));
             }
 

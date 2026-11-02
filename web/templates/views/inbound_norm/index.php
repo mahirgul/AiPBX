@@ -35,6 +35,29 @@ foreach ($trunks as $trunk) {
     </div>
 </div>
 
+<?php if ($canEdit): ?>
+<div class="card mb-3">
+    <div class="dpr-settings">
+        <div class="dpr-setting">
+            <div>
+                <div class="dpr-setting-title"><?php echo t('inbound_norm.presets_title'); ?></div>
+                <div class="dpr-setting-desc"><?php echo t('inbound_norm.presets_help'); ?></div>
+            </div>
+            <form method="POST" class="dpr-country-form">
+                <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+                <input type="hidden" name="load_presets" value="1">
+                <select name="trunk_name" class="form-control form-control-sm"><?php echo $trunkOptions; ?></select>
+                <select name="country_code" class="form-control form-control-sm" required>
+                    <option value=""><?php echo t('dialplan_rules.country_none'); ?></option>
+                    <?php foreach ($countries as $cc => $name): ?><option value="<?php echo $h($cc); ?>"><?php echo $h($name); ?> (+<?php echo $h($cc); ?>)</option><?php endforeach; ?>
+                </select>
+                <button type="submit" class="btn btn-secondary btn-sm"><i class="fas fa-magic"></i> <?php echo t('inbound_norm.presets_load'); ?></button>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="settings-tabs u-mb-12">
     <?php foreach ($tabs as $key => [$icon, $label]): ?>
         <?php $count = $key === 'all' ? count($rules) : count(array_filter($rules, static fn(array $r): bool => $r['target'] === $key)); ?>

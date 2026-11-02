@@ -34,9 +34,19 @@ class InboundNormController extends BaseController
             'save_rule' => fn() => InboundNormService::save($_POST),
             'delete_rule' => fn() => InboundNormService::delete($_POST),
             'toggle_status' => fn() => InboundNormService::toggle($_POST),
+            'load_presets' => fn() => InboundNormService::loadPresets($_POST),
         ]);
 
+        $countries = [];
+        foreach (DialplanRuleService::getAllCountries() as $cc => $_country) {
+            if (InboundNormService::presets((string) $cc) !== []) {
+                $countries[$cc] = DialplanRuleService::getCountryName((string) $cc);
+            }
+        }
+        asort($countries);
+
         static::renderPage('inbound_norm/index', [
+            'countries' => $countries,
             'csrf' => getCSRFToken(),
             'rules' => InboundNormService::all(),
             'trunks' => InboundNormService::trunkNames(),

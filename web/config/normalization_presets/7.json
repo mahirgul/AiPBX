@@ -1,0 +1,104 @@
+{
+    "country": "7",
+    "name": "Russia / Kazakhstan",
+    "outbound": [
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 Russia / Kazakhstan (+7 -> 8)",
+            "match_pattern": "_+7.",
+            "strip_front": 2,
+            "prepend": "8",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+7 numbers become national numbers with the prefix 8."
+        },
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 international (+ -> 810)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "810",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 810."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 Russia / Kazakhstan (+7 -> 8)",
+            "match_pattern": "_+7.",
+            "strip_front": 2,
+            "prepend": "8",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+7 numbers become national numbers with the prefix 8."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 international (+ -> 810)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "810",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 810."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 Russia / Kazakhstan (+7 -> 8)",
+            "match_pattern": "_+7.",
+            "strip_front": 2,
+            "prepend": "8",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+7 numbers become national numbers with the prefix 8."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 international (+ -> 810)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "810",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 810."
+        }
+    ],
+    "inbound": [
+        {
+            "target": "caller",
+            "rule_name": "Caller +7 to national",
+            "match_pattern": "_+7.",
+            "strip_front": 2,
+            "prepend": "8",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller + international",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "810",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller 7 without + to national",
+            "match_pattern": "_7XXXXXXX.",
+            "strip_front": 1,
+            "prepend": "8",
+            "is_active": 0
+        }
+    ]
+}

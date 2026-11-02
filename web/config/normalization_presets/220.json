@@ -1,0 +1,104 @@
+{
+    "country": "220",
+    "name": "Gambia",
+    "outbound": [
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 Gambia (+220)",
+            "match_pattern": "_+220.",
+            "strip_front": 4,
+            "prepend": "",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+220 numbers are dialled as national numbers (without +220)."
+        },
+        {
+            "client_type": "desktop",
+            "rule_name": "Desk phones: E.164 international (+ -> 00)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 00."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 Gambia (+220)",
+            "match_pattern": "_+220.",
+            "strip_front": 4,
+            "prepend": "",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+220 numbers are dialled as national numbers (without +220)."
+        },
+        {
+            "client_type": "mobile",
+            "rule_name": "Mobile app: E.164 international (+ -> 00)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 00."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 Gambia (+220)",
+            "match_pattern": "_+220.",
+            "strip_front": 4,
+            "prepend": "",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 3,
+            "is_active": 1,
+            "description": "+220 numbers are dialled as national numbers (without +220)."
+        },
+        {
+            "client_type": "web",
+            "rule_name": "Web phone: E.164 international (+ -> 00)",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "strip_back": 0,
+            "append": "",
+            "sort_order": 4,
+            "is_active": 1,
+            "description": "International numbers with + are dialled with 00."
+        }
+    ],
+    "inbound": [
+        {
+            "target": "caller",
+            "rule_name": "Caller +220 to national",
+            "match_pattern": "_+220.",
+            "strip_front": 4,
+            "prepend": "",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller + international",
+            "match_pattern": "_+X.",
+            "strip_front": 1,
+            "prepend": "00",
+            "is_active": 1
+        },
+        {
+            "target": "caller",
+            "rule_name": "Caller 220 without + to national",
+            "match_pattern": "_220XXXXXXX.",
+            "strip_front": 3,
+            "prepend": "",
+            "is_active": 0
+        }
+    ]
+}
