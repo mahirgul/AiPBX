@@ -282,6 +282,7 @@ function __syncGeneralDialplanBody() {
     $conf .= "exten => s,1,NoOp(Applying Adaptive Jitter Buffer & Outbound Headers to Channel \${CHANNEL})\n";
     $conf .= " same => n,ExecIf(\$[\"\${AIPBX_GEOLOCATION_URI}\" != \"\"]?Set(PJSIP_HEADER(add,Geolocation)=\${AIPBX_GEOLOCATION_URI}))\n";
     $conf .= " same => n,ExecIf(\$[\"\${AIPBX_GEOLOCATION_ROUTING}\" != \"\"]?Set(PJSIP_HEADER(add,Geolocation-Routing)=\${AIPBX_GEOLOCATION_ROUTING}))\n";
+    $conf .= " same => n,GosubIf(\$[\"\${AIPBX_TRUNK_HEADERS}\" != \"\"]?\${AIPBX_TRUNK_HEADERS},s,1)\n";
     // Not for a fax sent from the portal (AIPBX_FAX, inherited): a jitter buffer
     // reshapes the modem's timing.
     $conf .= jitterBufferLine();

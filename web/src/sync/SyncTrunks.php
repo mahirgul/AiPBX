@@ -198,7 +198,7 @@ function __syncAllTrunksBody() {
             'registration_enabled', 'registration_expiration', 'registration_retry_interval',
             'outbound_auth', 'outbound_proxy', 'match_hosts',
             'outbound_caller_id', 'callerid', 'did_trim_digits', 'allow_outbound_routing', 'outbound_route_group',
-            'connection_mode', 'is_active', 'created_at', 'custom_pjsip_params'
+            'connection_mode', 'is_active', 'created_at', 'custom_pjsip_params', 'custom_sip_headers'
         ];
         foreach ($sip_map as $k => $v) {
             if (in_array($k, $ignore_keys) || $v === '') continue;

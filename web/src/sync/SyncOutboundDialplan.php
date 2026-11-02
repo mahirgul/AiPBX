@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__DIR__) . '/services/TrunkService.php';
 /**
  * Sync Outbound Routes Dialplan (/etc/asterisk/pbx/extensions_outbound.conf)
  */
@@ -22,7 +23,8 @@ function __syncOutboundDialplanBody() {
     $trunk_rates = [];
     $trunk_cid_norm = [];
     $trunk_carrier_norm = [];
-    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend, carrier_strip_prefix, carrier_add_prefix, carrier_e164_country FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
+    $trunk_headers = [];
+    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend, carrier_strip_prefix, carrier_add_prefix, carrier_e164_country, custom_sip_headers FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
         $trunk_limits[$tl['trunk_name']] = intval($tl['max_channels']);
         $trunk_rates[$tl['trunk_name']] = intval($tl['max_calls_per_minute'] ?? 0);
         $trunk_cid_norm[$tl['trunk_name']] = [
@@ -34,6 +36,7 @@ function __syncOutboundDialplanBody() {
             'add' => preg_replace('/[^0-9+*#]/', '', (string)($tl['carrier_add_prefix'] ?? '')),
             'e164' => trunkE164Plan((string)($tl['carrier_e164_country'] ?? '')),
         ];
+        $trunk_headers[$tl['trunk_name']] = TrunkService::parseSipHeaders((string)($tl['custom_sip_headers'] ?? ''))['lines'];
     }
 
     $db = getDB();
@@ -217,6 +220,12 @@ function __syncOutboundDialplanBody() {
                 // thus reaches the caller directly instead of being masked by a fake local ring.
                 // No jitter buffer for a fax: it reshapes the modem's timing.
                 $conf .= jitterBufferLine();
+                // Inherited by the callee channel, where sub-callee-jb adds them. Set on every
+                // attempt, so a fallback trunk does not send the previous trunk's headers.
+                if (array_filter($trunk_headers)) {
+                    $header_sub = !empty($trunk_headers[$t['trunk_name']]) ? 'sub-trunk-headers-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $t['trunk_name']) : '';
+                    $conf .= " same => n,Set(__AIPBX_TRUNK_HEADERS={$header_sub})\n";
+                }
                 $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
                 if ($limited) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";
@@ -301,6 +310,16 @@ function __syncOutboundDialplanBody() {
     $conf .= "[from-internal-web]\ninclude => from-internal-web-1\n\n";
 
     $conf .= buildE164Subroutine();
+    foreach ($trunk_headers as $header_trunk => $header_lines) {
+        if ($header_lines !== []) {
+            $conf .= '[sub-trunk-headers-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$header_trunk) . "]\n";
+            $conf .= "exten => s,1,NoOp(Trunk headers)\n";
+            foreach ($header_lines as [$header_name, $header_value]) {
+                $conf .= " same => n,Set(PJSIP_HEADER(add,{$header_name})={$header_value})\n";
+            }
+            $conf .= " same => n,Return()\n\n";
+        }
+    }
 
     // Outbound call termination and status handling (D-1 / D-2)
     // BUSY -> 486 Busy Here, CONGESTION -> 503, NOANSWER -> 480, CHANUNAVAIL -> HANGUPCAUSE (e.g. 404/603)

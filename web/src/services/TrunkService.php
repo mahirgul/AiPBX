@@ -19,6 +19,34 @@ class TrunkService {
         return in_array($v, ['yes', 'no', 'required', 'always'], true) ? $v : 'yes';
     }
 
+    /** Headers carriers rely on for routing: a trunk's own SIP stack writes these. */
+    private const RESERVED_HEADERS = ['via', 'from', 'to', 'call-id', 'cseq', 'contact', 'max-forwards', 'route', 'record-route', 'content-length', 'content-type', 'authorization', 'proxy-authorization'];
+
+    /**
+     * Header lines for outgoing calls of a trunk. The values end up in the dialplan, so only plain
+     * characters are allowed: nothing that Asterisk would expand or read as a separator.
+     *
+     * @return array{lines: list<array{0: string, 1: string}>, errors: list<string>}
+     */
+    public static function parseSipHeaders(string $text): array
+    {
+        $lines = [];
+        $errors = [];
+        foreach (explode("\n", str_replace("\r", '', $text)) as $i => $raw) {
+            $line = trim($raw);
+            if ($line === '') {
+                continue;
+            }
+            if (!preg_match('/^([A-Za-z][A-Za-z0-9-]{0,60}):\s*([A-Za-z0-9 ._:;=+@\/<>"-]{1,200})$/D', $line, $m)
+                || in_array(strtolower($m[1]), self::RESERVED_HEADERS, true)) {
+                $errors[] = sprintf(t('trunks.err_sip_header'), $i + 1);
+                continue;
+            }
+            $lines[] = [$m[1], trim($m[2])];
+        }
+        return ['lines' => $lines, 'errors' => $errors];
+    }
+
     public static function saveTrunk($data) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data) {
             $trunk_id = intval($data['trunk_id'] ?? 0);
@@ -156,6 +184,12 @@ class TrunkService {
                 throw new \Exception(implode(' ', $custom_check['errors']));
             }
 
+            $custom_sip_headers = trim((string) ($data['custom_sip_headers'] ?? ''));
+            $header_check = self::parseSipHeaders($custom_sip_headers);
+            if ($header_check['errors'] !== []) {
+                throw new \Exception(implode(' ', $header_check['errors']));
+            }
+
             $trunk_data = [
                 'id' => $trunk_id,
                 'trunk_name' => $trunk_name,
@@ -205,6 +239,7 @@ class TrunkService {
                 'send_pai' => $send_pai,
                 'send_rpid' => $send_rpid,
                 'custom_pjsip_params' => $custom_pjsip_params !== '' ? $custom_pjsip_params : null,
+                'custom_sip_headers' => $custom_sip_headers !== '' ? $custom_sip_headers : null,
                 'is_active' => $is_active
             ];
 
