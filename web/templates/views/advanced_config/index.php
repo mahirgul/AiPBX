@@ -13,6 +13,12 @@ $form = $edit ?? ['id' => 0, 'object_type' => 'endpoint', 'object_name' => '', '
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-sliders-h u-primary"></i> <?php echo t('advanced_config.title'); ?></div>
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('advancedConfigHelpBox')"><i class="fas fa-question-circle"></i></button>
+    </div>
+    <div class="module-help-box" id="advancedConfigHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('advanced_config.title'); ?></h4>
+        <p><?php echo t('advanced_config.intro'); ?></p>
+        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('advanced_config.limit_values'); ?></li><li><?php echo t('advanced_config.limit_generated'); ?></li></ul></div>
     </div>
     <p class="u-muted u-fs-12" style="margin: 0 20px 12px;"><?php echo t('advanced_config.intro'); ?></p>
     <form method="POST" autocomplete="off" style="padding: 0 20px 20px;">

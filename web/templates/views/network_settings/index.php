@@ -144,6 +144,12 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
 <div class="card" id="natcheck">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-stethoscope u-primary"></i> <?php echo t('nat_check.title'); ?></div>
+        <button type="button" class="btn-help" onclick="toggleModuleHelp('natCheckHelpBox')"><i class="fas fa-question-circle"></i></button>
+    </div>
+    <div class="module-help-box" id="natCheckHelpBox">
+        <h4><i class="fas fa-info-circle"></i> <?php echo t('nat_check.title'); ?></h4>
+        <p><?php echo t('nat_check.help'); ?></p>
+        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('nat_check.limit_router'); ?></li></ul></div>
     </div>
     <div style="padding: 0 20px 20px;">
         <p class="u-muted u-fs-12"><?php echo t('nat_check.help'); ?></p>

@@ -23,6 +23,7 @@
         - <strong><?php echo t('trunks.help_transport'); ?></strong><br>
         - <strong><?php echo t('trunks.help_t38'); ?></strong><br>
         - <strong><?php echo t('trunks.help_qualify'); ?></strong>
+        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('trunks.limit_e164'); ?></li><li><?php echo t('trunks.limit_custom'); ?></li></ul></div>
     </div>
 
     <div class="table-responsive">
