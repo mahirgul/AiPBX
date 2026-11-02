@@ -63,6 +63,24 @@ jobs:
       - name: aipbx-selftest
         run: sudo /usr/local/sbin/aipbx-selftest
 
+      # The only test that makes a WebRTC call. Everything else passed while v1.60.4 dropped every
+      # meeting guest after 30 seconds. Needs a browser and Node 22, which the runner may not have.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: A real video meeting between two browsers
+        timeout-minutes: 6
+        run: |
+          CHROME="$(command -v google-chrome || command -v chromium || true)"
+          if [ -z "$CHROME" ]; then
+            npx --yes @puppeteer/browsers install chrome-headless-shell@stable --path /tmp/chrome > /tmp/chrome.txt
+            CHROME="$(awk '{print $2}' /tmp/chrome.txt | tail -1)"
+          fi
+          TOKEN="$(sudo php scripts/e2e/meeting_setup.php create | tail -1)"
+          CHROME_BIN="$CHROME" node scripts/e2e/meeting_call.mjs https://127.0.0.1 "$TOKEN"
+          sudo php scripts/e2e/meeting_setup.php clean
+
       - name: Logs on failure or cancellation
         # `cancelled()` as well as `failure()`: the job timeout cancels rather
         # than fails, which is exactly the case that used to end with no log at
