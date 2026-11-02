@@ -1,5 +1,7 @@
 # Outbound Call Normalization
 
+> Routes and trunks can change numbers too. See [How numbers change on a call](number-normalization.md) for the order and which setting to use.
+
 Outbound Call Normalization rules act as an intelligent **pre-filter** between subscriber endpoints and the PBX Outbound Routes.
 
 ![Where normalization rules sit between the device and the trunk](img/call-normalization.svg)

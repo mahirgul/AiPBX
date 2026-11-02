@@ -43,6 +43,7 @@ $deviceBadge = static function (string $type): string {
     <div class="module-help-box" id="dialplanRulesHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('dialplan_rules.help_title'); ?></h4>
         <p><?php echo t('dialplan_rules.help_body'); ?></p>
+        <p style="margin-top: 8px;"><?php echo t('common.help_number_order'); ?></p>
         <ul>
             <li><strong><?php echo t('dialplan_rules.help_mobile_title'); ?>:</strong> <?php echo t('dialplan_rules.help_mobile_desc'); ?></li>
             <li><strong><?php echo t('dialplan_rules.help_desktop_title'); ?>:</strong> <?php echo t('dialplan_rules.help_desktop_desc'); ?></li>

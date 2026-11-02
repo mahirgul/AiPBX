@@ -20,6 +20,7 @@
     <div class="module-help-box" id="trunkHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('trunks.help_title'); ?></h4>
         <?php echo t('trunks.help_body'); ?><br>
+        <p style="margin-top: 8px;"><?php echo t('common.help_number_order'); ?></p>
         - <strong><?php echo t('trunks.help_transport'); ?></strong><br>
         - <strong><?php echo t('trunks.help_t38'); ?></strong><br>
         - <strong><?php echo t('trunks.help_qualify'); ?></strong>

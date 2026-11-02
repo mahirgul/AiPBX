@@ -20,6 +20,7 @@
     <div class="module-help-box" id="outboundHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('outbound.help_title'); ?></h4>
         <?php echo t('outbound.help_body'); ?><br>
+        <p style="margin-top: 8px;"><?php echo t('common.help_number_order'); ?></p>
         - <strong><?php echo t('outbound.help_pattern'); ?></strong><br>
         - <strong><?php echo t('outbound.help_transform'); ?></strong><br>
         - <strong><?php echo t('outbound.help_trunks'); ?></strong>
