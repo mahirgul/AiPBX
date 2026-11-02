@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
-require_once __DIR__ . '/DialplanRuleService.php';
 require_once dirname(__DIR__) . '/repositories/DialplanRuleRepository.php';
 
 /**
@@ -83,50 +82,6 @@ final class InboundNormService
             getDB()->prepare('DELETE FROM pbx_inbound_norm_rules WHERE id = ?')->execute([$id]);
             self::markChanged("#{$id}", 'delete');
             return t('inbound_norm.deleted');
-        });
-    }
-
-    /**
-     * Rules that turn a caller's number into the form people dial in this country.
-     *
-     * @return list<array{0: string, 1: string, 2: int, 3: string}> name, pattern, strip, prepend
-     */
-    public static function presets(string $cc): array
-    {
-        $plan = DialplanRuleService::getDialPlan($cc);
-        if ($plan === null) {
-            return [];
-        }
-        $strip = strlen($cc);
-        return [
-            ["Caller +{$cc} to national", "_+{$cc}.", $strip + 1, $plan['trunk']],
-            ["Caller {$cc} without + to national", "_{$cc}XXXXXXX.", $strip, $plan['trunk']],
-            ['Caller + international', '_+X.', 1, $plan['intl']],
-        ];
-    }
-
-    public static function loadPresets(array $data): array
-    {
-        return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
-            $cc = (string) preg_replace('/[^0-9]/', '', (string) ($data['country_code'] ?? ''));
-            $trunk = trim((string) ($data['trunk_name'] ?? ''));
-            $presets = self::presets($cc);
-            if ($presets === [] || ($trunk !== '' && !in_array($trunk, self::trunkNames(), true))) {
-                throw new \Exception(t('inbound_norm.err_country'));
-            }
-            $db = getDB();
-            $exists = $db->prepare('SELECT id FROM pbx_inbound_norm_rules WHERE trunk_name <=> ? AND target = ? AND match_pattern = ?');
-            $insert = $db->prepare('INSERT INTO pbx_inbound_norm_rules (trunk_name, target, rule_name, match_pattern, strip_front, prepend, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, NOW())');
-            $added = 0;
-            foreach ($presets as [$name, $pattern, $strip, $prepend]) {
-                $exists->execute([$trunk !== '' ? $trunk : null, 'caller', $pattern]);
-                if ($exists->fetchColumn() === false) {
-                    $insert->execute([$trunk !== '' ? $trunk : null, 'caller', $name, $pattern, $strip, $prepend]);
-                    $added++;
-                }
-            }
-            self::markChanged("+{$cc}", 'create');
-            return sprintf(t('inbound_norm.presets_loaded'), $added);
         });
     }
 

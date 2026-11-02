@@ -59,15 +59,6 @@ final class InboundNormTest extends TestCase
         $this->assertNull(InboundNormService::simulate($rules, '', 'did', '+4366412345')['rule']);
     }
 
-    public function testPresetsFollowTheCountrysPlan(): void
-    {
-        $at = InboundNormService::presets('43');
-        $this->assertSame(['_+43.', 3, '0'], [$at[0][1], $at[0][2], $at[0][3]]);
-        $this->assertSame('00', InboundNormService::presets('43')[2][3]);
-        $this->assertSame('', InboundNormService::presets('39')[0][3], 'Italy has no national prefix');
-        $this->assertSame([], InboundNormService::presets('999'));
-    }
-
     public function testAPatternCannotCarryDialplanText(): void
     {
         $this->assertTrue(InboundNormService::isValidPattern('_+43.'));
