@@ -97,3 +97,39 @@ The mobile application exchanges the code for a local session token, enabling co
 * **Keep Certificates Current:** IdP signing certificates typically expire every 1–3 years. When updating certificates in Microsoft Entra ID or Okta, update the certificate in AiPBX before the old certificate expires to prevent sign-in interruptions.
 * **Restricting Access by Group:** For strict access control, assign the AiPBX enterprise application only to designated groups within your corporate IdP directory.
 * **Audit Logging:** Every successful and failed SSO attempt is recorded in the security audit log (`sys_audit_log`) with client IP address, User-Agent, and detailed diagnostic error messages.
+
+---
+
+## Sign In Only Through the Identity Provider
+
+Under **Appearance → Sign in only through the identity provider**, choose SAML or OpenID Connect. Then local passwords,
+passkeys, Google sign-in and the password reset stop working for signing in, and the sign-in page goes straight to the
+provider.
+
+- **You cannot turn it on by mistake.** It can only be turned on from a session that really signed in through that provider.
+- **If the provider is switched off or its plugin disabled,** local sign-in comes back by itself.
+- **API keys, SIP phones and softphones are not affected:** they do not sign in with a portal password.
+- **The mobile apps' user name and password sign-in stops working.** Users can still add the app with the QR code on **My Phone** after signing in on the web.
+
+Signing out of AiPBX ends the AiPBX session only. It does not sign you out of the identity provider.
+
+### If the identity provider is down
+
+On the server, as root:
+
+```bash
+sudo php /opt/aipbx/web/bin/aipbx_sso_recovery.php
+```
+
+It prints a link that works once, within 15 minutes. It allows an administrator's password, and only that, for ten minutes
+in that browser. Two-factor authentication still applies, and the link's creation and use go in the audit log.
+
+To allow local sign-in again for everyone:
+
+```bash
+sudo php /opt/aipbx/web/bin/aipbx_sso_recovery.php --off
+```
+
+### Which providers have been tried
+
+SAML was tested against SimpleSAMLphp. Microsoft Entra, Okta and others have not been tried yet, so reports are welcome.

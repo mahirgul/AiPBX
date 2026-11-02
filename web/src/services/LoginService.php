@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/LoginCaptchaService.php';
+require_once __DIR__ . '/SsoOnlyService.php';
 
 /**
  * Login service
@@ -20,6 +21,9 @@ class LoginService {
         if (!verifyCSRFToken($csrf_token)) {
             return ['error' => t('common.invalid_csrf')];
         }
+        if (SsoOnlyService::localSignInBlocked()) {
+            return ['error' => t('sso_only.err_local_off')];
+        }
         // Check 2: Brute force lockout check (5 failures in 15 mins)
         if (checkBruteForceLockout($clientIp, $username)) {
             return ['error' => t('mobile_api.too_many_attempts')];
@@ -39,6 +43,11 @@ class LoginService {
         $is_authenticated = false;
         if ($user && $user['is_active'] == 1 && verifyLoginPassword($password, (string) $user['password_hash'])) {
             $is_authenticated = true;
+        }
+
+        if ($is_authenticated && !SsoOnlyService::roleMayUsePassword((string) $user['role'])) {
+            logLoginAttempt($clientIp, $username, 'FAILED');
+            return ['error' => t('sso_only.err_local_off')];
         }
 
         if ($is_authenticated && !empty($user['must_reset_password'])) {

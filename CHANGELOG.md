@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.9
+
+- **Sign in only through the identity provider:** passwords, passkeys, Google and the password reset can be turned off for signing in, so everyone goes through SAML or OpenID Connect (Appearance). It can only be turned on from a session that signed in through that provider, and a one-time link from the server's command line gets an administrator in if the provider is down. Thanks to @quietvw for the request (#149).
+
 ## 1.60.8
 
 - **A trunk's caller ID kept losing its leading `+`:** the outbound caller ID of a trunk and a route's caller ID override dropped the `+`, so carriers that require `+E.164` in the caller ID could refuse the call. It is now kept.
