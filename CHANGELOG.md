@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.13
+
+- **New installations start in English:** the default calling permission group, some feature code titles and the User role were created in Turkish. Existing installations keep the names they have.
+
 ## 1.60.12
 
 - **Cancel in a confirmation did nothing (update soon):** on most portal forms, pressing Cancel in "Are you sure?" still carried out the action, including deleting. Cancel now stops it.

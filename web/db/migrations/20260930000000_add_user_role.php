@@ -16,7 +16,7 @@ final class AddUserRole extends AbstractMigration
     {
         $this->execute(
             "INSERT INTO sys_roles (role_key, role_name, description, is_system)
-             SELECT 'user', 'Kullanıcı', 'Telefonum, rehber, sohbet ve kendi arama geçmişi (faks ve çağrı merkezi yetkisi yok)', 1
+             SELECT 'user', 'User', 'My Phone, directory, chat and own call history (no fax or call centre access)', 1
              FROM DUAL WHERE NOT EXISTS (SELECT 1 FROM sys_roles WHERE role_key = 'user')
                AND EXISTS (SELECT 1 FROM sys_roles WHERE role_key = 'admin')"
         );
