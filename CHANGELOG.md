@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.7
+
+- **Fax cover page:** faxes sent from the portal can start with a cover page: organisation name, logo, confidentiality notice, recipient, subject, message and page count. It can be off, up to the sender, or on every fax (Fax Units), and it can be previewed in black and white as the far end receives it. Thanks to @quietvw for the request (#149).
+
 ## 1.60.6
 
 - **Outbound routes kept losing a leading `+`:** a route's Prepend field dropped the `+` of `+1`, so carriers that require it refused the call. It is now kept.

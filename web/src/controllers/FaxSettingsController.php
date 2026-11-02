@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/FaxSettingsService.php';
+require_once __DIR__ . '/../services/FaxCoverService.php';
 
 /**
  * Fax Units page (/fax-settings).
@@ -18,6 +19,7 @@ class FaxSettingsController extends BaseController
         $notices = static::handlePost([
             'save_did' => fn() => FaxSettingsService::saveDidMapping($_POST),
             'toggle_status' => fn() => PBXHelper::toggleStatus('sys_did_mappings', $_POST['did_id'] ?? 0, static::csrfToken()),
+            'save_fax_cover' => fn() => FaxCoverService::saveSettings($_POST),
             'delete_did' => fn() => FaxSettingsService::deleteDidMapping($_POST['did_id'] ?? 0, static::csrfToken()),
         ]);
 
@@ -28,6 +30,8 @@ class FaxSettingsController extends BaseController
         static::renderPage('fax_settings/index', [
             'mappings' => $mappings,
             'fax_users' => $fax_users,
+            'cover' => FaxCoverService::settings(),
+            'coverLogoFound' => FaxCoverService::logoPath() !== null,
         ], ['title' => $page_title] + $notices);
     }
 }

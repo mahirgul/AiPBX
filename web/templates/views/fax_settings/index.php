@@ -113,3 +113,35 @@
 </div>
 
 <script src="<?php echo asset('/assets/js/fax_settings.js'); ?>"></script>
+
+<div class="card" id="fax-cover">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-file-alt u-primary"></i> <?php echo t('fax_cover.title'); ?></div>
+    </div>
+    <form method="POST" autocomplete="off" style="padding: 0 20px 20px;">
+        <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+        <input type="hidden" name="save_fax_cover" value="1">
+        <div class="form-group">
+            <label class="form-label"><?php echo t('fax_cover.field_mode'); ?></label>
+            <select name="fax_cover_mode" class="form-control">
+                <?php foreach (['off', 'optional', 'required'] as $mode): ?>
+                    <option value="<?php echo $mode; ?>" <?php echo $cover['mode'] === $mode ? 'selected' : ''; ?>><?php echo t('fax_cover.mode_' . $mode); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('fax_cover.field_company'); ?></label>
+            <input type="text" name="fax_cover_company" class="form-control" maxlength="120" value="<?php echo htmlspecialchars($cover['company'], ENT_QUOTES); ?>">
+        </div>
+        <div class="form-group">
+            <label class="form-label"><?php echo t('fax_cover.field_notice'); ?></label>
+            <textarea name="fax_cover_notice" class="form-control" rows="3" maxlength="1000"><?php echo htmlspecialchars($cover['notice'], ENT_QUOTES); ?></textarea>
+        </div>
+        <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13px;">
+            <input type="checkbox" name="fax_cover_logo" value="1" <?php echo $cover['logo'] ? 'checked' : ''; ?>> <?php echo t('fax_cover.field_logo'); ?>
+        </label>
+        <small class="u-hint u-fs-11" style="display: block; margin-bottom: 12px;"><?php echo t($coverLogoFound ? 'fax_cover.logo_help' : 'fax_cover.logo_missing'); ?></small>
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+        <button type="submit" class="btn btn-secondary" name="cover_preview" value="1" formaction="/fax-send" formtarget="_blank" data-no-spa="true"><i class="fas fa-eye"></i> <?php echo t('fax_cover.preview'); ?></button>
+    </form>
+</div>

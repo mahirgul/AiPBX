@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../asterisk_helper.php';
 require_once __DIR__ . '/../text_fax_helper.php';
 require_once __DIR__ . '/../db_helper.php';
+require_once __DIR__ . '/FaxCoverService.php';
 
 /**
  * Fax send service
@@ -122,6 +123,14 @@ class FaxSendService {
                 TextFaxHelper::htmlToPdf($safe_text_html, $archived_pdf);
             } catch (\Throwable $e) {
                 return ['success' => false, 'error' => sprintf(t('srv_fax.err_text_pdf'), $e->getMessage())];
+            }
+        }
+        if (FaxCoverService::wanted($post)) {
+            try {
+                FaxCoverService::prepend($archived_pdf, FaxCoverService::fieldsFromPost($post), (string) $sender_did, (string) $dest_number);
+            } catch (\Throwable $e) {
+                @unlink($archived_pdf);
+                return ['success' => false, 'error' => sprintf(t('fax_cover.err_make'), $e->getMessage())];
             }
         }
         @chown($archived_pdf, 'asterisk');
