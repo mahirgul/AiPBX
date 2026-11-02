@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.5
+
+- **Video meetings: guests were dropped after 30 seconds (fixed, update if you run 1.60.4):** 1.60.4 added an RTP timeout to meeting guests, and Asterisk does not see bundled WebRTC video as active, so every participant was disconnected. A browser that vanishes without saying goodbye is now found by SIP session timers within about two minutes.
+- **Video meetings: video starts right away:** rooms of meetings no longer record each person's name or play join announcements, which held video back for over 30 seconds. Existing meeting rooms are updated.
+- **Video meetings: a new meeting works at once:** its room used to wait for an administrator's *Apply*, and until then guests were refused. The room now goes live when the meeting is saved.
+- **Video meetings:** the empty *Participants* tile is gone.
+
 ## 1.60.4
 
 - **Command execution through the emergency Geolocation URI fixed (security, update now):** the URI of an outbound route went into the dialplan unchecked, so anyone allowed to edit outbound routes, or an API key with `pbx:write`, could run commands as the `asterisk` user. The URI is now validated on save and when the dialplan is generated.

@@ -153,7 +153,7 @@
 
     // 3. Grid Layout Auto-Resize
     function updateGridLayout() {
-        const tiles = videoGrid.querySelectorAll('.video-tile');
+        const tiles = videoGrid.querySelectorAll('.video-tile:not(.hidden)');
         const count = tiles.length;
         videoGrid.className = 'video-grid';
         if (count <= 1) videoGrid.classList.add('tiles-1');
@@ -226,8 +226,7 @@
             sockets: [socket],
             uri: sipUri,
             display_name: displayName,
-            register: false,
-            session_timers: false
+            register: false
         };
         if (config.sip_password) {
             uaConfig.authorization_user = sipUser;
@@ -306,6 +305,15 @@
             const nameSpan = tile.querySelector('.tile-name span');
             if (nameSpan) {
                 nameSpan.textContent = i18n.participant || 'Participant';
+            }
+            // Asterisk answers every call with a video stream of its own that may never
+            // carry a frame: the tile appears when media arrives, not before.
+            if (ev.track.muted) {
+                tile.classList.add('hidden');
+                ev.track.addEventListener('unmute', () => {
+                    tile.classList.remove('hidden');
+                    updateGridLayout();
+                }, { once: true });
             }
             videoGrid.appendChild(tile);
             updateGridLayout();
