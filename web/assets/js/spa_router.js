@@ -104,6 +104,9 @@
 
         // Intercept form submissions inside content area
         document.body.addEventListener('submit', function(e) {
+            // A page's own handler said no: Cancel in onsubmit="return confirm(...)", or failed checks.
+            if (e.defaultPrevented) return;
+
             const form = e.target;
             if (!form || form.getAttribute('data-no-spa') === 'true' || form.target === '_blank') {
                 return;
