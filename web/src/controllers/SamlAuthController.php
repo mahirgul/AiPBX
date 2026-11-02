@@ -111,6 +111,8 @@ class SamlAuthController extends BaseController
 
         // Web login session
         $redirectUrl = SamlAuthService::loginUserSession($user);
+        $_SESSION['saml_name_id'] = (string) ($result['name_id'] ?? '');
+        $_SESSION['saml_session_index'] = (string) ($result['session_index'] ?? '');
         if ($redirectUrl === '/force-reset') {
             static::redirect('/force-reset');
             return;
@@ -132,6 +134,12 @@ class SamlAuthController extends BaseController
     /**
      * Outputs SP EntityDescriptor Metadata XML for IdP configuration.
      */
+    /** Where the identity provider returns after Single Logout. The AiPBX session already ended. */
+    public static function sls(): void
+    {
+        static::redirect('/login?signed_out=1');
+    }
+
     public static function metadata(): void
     {
         $xml = SamlAuthService::getSpMetadataXml();

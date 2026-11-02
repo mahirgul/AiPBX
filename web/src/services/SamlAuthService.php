@@ -188,6 +188,11 @@ class SamlAuthService
     {
         $entityId = htmlspecialchars(self::getSpEntityId(), ENT_XML1, 'UTF-8');
         $acsUrl = htmlspecialchars(self::getAcsUrl(), ENT_XML1, 'UTF-8');
+        $sloXml = '';
+        if (trim(self::getSetting('idp_slo_url', '')) !== '') {
+            $slsUrl = htmlspecialchars(self::getBasePortalUrl() . '/auth/saml/sls', ENT_XML1, 'UTF-8');
+            $sloXml = '    <md:SingleLogoutService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="' . $slsUrl . "\"/>\n";
+        }
 
         return <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
@@ -196,7 +201,7 @@ class SamlAuthService
     <md:NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</md:NameIDFormat>
     <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</md:NameIDFormat>
     <md:NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</md:NameIDFormat>
-    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="{$acsUrl}" index="1" isDefault="true"/>
+{$sloXml}    <md:AssertionConsumerService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST" Location="{$acsUrl}" index="1" isDefault="true"/>
   </md:SPSSODescriptor>
 </md:EntityDescriptor>
 XML;
@@ -729,7 +734,7 @@ XML;
     /**
      * Processes incoming SAMLResponse from IdP (Assertion Consumer Service).
      *
-     * @return array{success: bool, user?: array<string, mixed>, error?: string, is_mobile?: bool}
+     * @return array{success: bool, user?: array<string, mixed>, error?: string, is_mobile?: bool, name_id?: string, session_index?: string}
      */
     public static function processResponse(string $samlResponseB64): array
     {
@@ -959,11 +964,44 @@ XML;
             return $fail(function_exists('t') ? t('saml.err_account_disabled', 'Account is deactivated') : 'Account is deactivated');
         }
 
+        $sessionIndex = '';
+        $authnStatements = $xpath->query('saml:AuthnStatement', $assertion);
+        if ($authnStatements->length > 0 && $authnStatements->item(0) instanceof DOMElement) {
+            $sessionIndex = $authnStatements->item(0)->getAttribute('SessionIndex');
+        }
+
         return [
             'success'   => true,
             'user'      => $user,
             'is_mobile' => $isMobile,
+            'name_id'   => $nameId,
+            'session_index' => $sessionIndex,
         ];
+    }
+
+    /**
+     * The address that ends the session at the identity provider, or null when Single Logout is not
+     * set up. HTTP-Redirect, and not signed: AiPBX has no signing key of its own, so a provider that
+     * insists on a signed LogoutRequest refuses it.
+     */
+    public static function buildLogoutUrl(string $nameId, string $sessionIndex): ?string
+    {
+        $sloUrl = trim(self::getSetting('idp_slo_url', ''));
+        if ($sloUrl === '' || $nameId === '' || !preg_match('#^https?://#i', $sloUrl)) {
+            return null;
+        }
+        $e = static fn(string $s): string => htmlspecialchars($s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        $sessionXml = $sessionIndex !== '' ? '<samlp:SessionIndex>' . $e($sessionIndex) . '</samlp:SessionIndex>' : '';
+        $xml = '<samlp:LogoutRequest xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion"'
+            . ' ID="_' . bin2hex(random_bytes(16)) . '" Version="2.0" IssueInstant="' . gmdate('Y-m-d\TH:i:s\Z') . '" Destination="' . $e($sloUrl) . '">'
+            . '<saml:Issuer>' . $e(self::getSpEntityId()) . '</saml:Issuer>'
+            . '<saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">' . $e($nameId) . '</saml:NameID>'
+            . $sessionXml . '</samlp:LogoutRequest>';
+        $deflated = gzdeflate($xml);
+        if ($deflated === false) {
+            return null;
+        }
+        return $sloUrl . (str_contains($sloUrl, '?') ? '&' : '?') . http_build_query(['SAMLRequest' => base64_encode($deflated)]);
     }
 
     /**

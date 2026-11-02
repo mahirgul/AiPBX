@@ -167,6 +167,7 @@ class OidcAuthController extends BaseController
 
         // 11. Web login session
         $redirectUrl = OidcAuthService::loginUser($user, $clientIp);
+        $_SESSION['oidc_id_token'] = (string) ($tokenData['id_token'] ?? '');
         notify(sprintf(t('oidc.welcome', 'Welcome, %s! Signed in via Corporate SSO.'), htmlspecialchars((string)$user['full_name'])), 'success');
         static::redirect($redirectUrl);
     }

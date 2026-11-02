@@ -92,6 +92,20 @@
             }
         },
         {
+            "key": "idp_slo_url",
+            "type": "text",
+            "default": "",
+            "label": "IdP Single Logout (SLO) URL (optional)",
+            "label_i18n": {
+                "en": "IdP Single Logout (SLO) URL (optional)"
+            },
+            "placeholder": "https://idp.example.com/saml2/logout",
+            "help": "Signing out of AiPBX also ends the session at the identity provider. The request is not signed, so a provider that requires signed logout requests refuses it. Empty ends only the AiPBX session.",
+            "help_i18n": {
+                "en": "Signing out of AiPBX also ends the session at the identity provider. The request is not signed, so a provider that requires signed logout requests refuses it. Empty ends only the AiPBX session."
+            }
+        },
+        {
             "key": "idp_x509_cert",
             "type": "textarea",
             "default": "",
