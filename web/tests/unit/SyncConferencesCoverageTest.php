@@ -296,4 +296,17 @@ final class SyncConferencesCoverageTest extends TestCase
         $this->assertStringContainsString('context=app-meeting-guest', $ext);
         $this->assertStringNotContainsString('context=app-confbridge-dispatch', $ext);
     }
+
+    /** v1.60.4: with an RTP timeout Asterisk hung up every participant after 30 s ("lack of video RTP activity"). */
+    public function testMeetingGuestsHaveNoRtpTimeoutAndSessionTimersFindDeadBrowsers(): void
+    {
+        $ext = (string)file_get_contents(dirname(__DIR__, 2) . '/src/sync/SyncExtensions.php');
+        $guest = substr($ext, (int)strpos($ext, '[meeting-guest](endpoint-wss)'), 900);
+        $this->assertStringContainsString('rtp_timeout=0', $guest);
+        $this->assertStringContainsString('rtp_timeout_hold=0', $guest);
+        $this->assertStringContainsString('timers_sess_expires=120', $guest);
+
+        $page = (string)file_get_contents(dirname(__DIR__, 2) . '/assets/js/meeting_room.js');
+        $this->assertStringNotContainsString('session_timers: false', $page, 'the page must refresh the session timer');
+    }
 }

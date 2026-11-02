@@ -96,6 +96,19 @@ final class MeetingServiceTest extends TestCase
         $this->assertNotEmpty($invites[0]['guest_token']);
     }
 
+    public function testAMeetingRoomHasNoJoinAnnouncementsAndGoesLiveWhenSaved(): void
+    {
+        $res = MeetingService::saveMeeting([
+            'title' => 'Live room', 'starts_at' => date('Y-m-d H:i:s', time() + 600),
+            'ends_at' => date('Y-m-d H:i:s', time() + 4200), 'room_number' => '8877', 'allow_guests' => 1,
+        ]);
+        $this->assertTrue($res['success'] ?? false, json_encode($res));
+
+        $row = getDB()->query("SELECT announce_join_leave, announce_user_count FROM pbx_conferences WHERE room_number = '8877'")->fetch(PDO::FETCH_ASSOC);
+        $this->assertSame([0, 0], [(int)$row['announce_join_leave'], (int)$row['announce_user_count']]);
+        $this->assertStringContainsString('exten => 8877,1,Goto(', (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_conferences.conf'));
+    }
+
     public function testResolveGuestTokenAndMeetingToken(): void
     {
         $input = [

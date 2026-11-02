@@ -307,21 +307,30 @@ class MeetingService
             writeAuditLog('pbx', 'meeting', (string)$meetingId, "Created video meeting {$title} (Token: {$token})", 'create', $hostUserId);
         }
 
-        // Keep pbx_conferences in sync so ConfBridge dialplan and bridge profile exist
+        // Keep pbx_conferences in sync so ConfBridge dialplan and bridge profile exist.
+        // No join announcements: ConfBridge records each person's name and plays the prompts
+        // before they enter the bridge, which kept video away for over 30 seconds.
         if ($roomNumber !== '') {
             $confStmt = $db->prepare('SELECT id FROM pbx_conferences WHERE room_number = ? LIMIT 1');
             $confStmt->execute([$roomNumber]);
             $confId = $confStmt->fetchColumn();
             if ($confId) {
-                $db->prepare('UPDATE pbx_conferences SET title = ?, user_pin = ?, admin_pin = ?, video_mode = ?, max_video_streams = 10, is_active = 1 WHERE id = ?')
+                $db->prepare('UPDATE pbx_conferences SET title = ?, user_pin = ?, admin_pin = ?, video_mode = ?, max_video_streams = 10, is_active = 1, announce_join_leave = 0, announce_user_count = 0 WHERE id = ?')
                    ->execute([$title, $pin, $hostPin, $videoMode, $confId]);
             } else {
-                $db->prepare('INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, video_mode, max_video_streams, is_active) VALUES (?, ?, ?, ?, ?, ?, 10, 1)')
+                $db->prepare('INSERT INTO pbx_conferences (room_number, internal_number, title, user_pin, admin_pin, video_mode, max_video_streams, is_active, announce_join_leave, announce_user_count) VALUES (?, ?, ?, ?, ?, ?, 10, 1, 0, 0)')
                    ->execute([$roomNumber, $roomNumber, $title, $pin, $hostPin, $videoMode]);
                 $confId = (int)$db->lastInsertId();
             }
             markPendingSync('conferences', 'conference', (int)$confId, "{$title} ({$roomNumber})", 'update', $hostUserId);
             markPendingSync('internal_numbers', 'conference', (int)$confId, "{$title} ({$roomNumber})", 'update', $hostUserId);
+            // The link goes out right after saving, and a room missing from the dialplan refuses
+            // its guests: the room goes live now, without waiting for an administrator's Apply.
+            try {
+                syncConferences();
+            } catch (\Throwable $e) {
+                error_log('meetings: room ' . $roomNumber . ' is waiting for Apply: ' . $e->getMessage());
+            }
         }
 
         // Process invites if emails provided

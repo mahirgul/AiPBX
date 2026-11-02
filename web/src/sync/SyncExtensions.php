@@ -426,9 +426,14 @@ function __syncAllExtensionsBody() {
     $conf .= "context=app-meeting-guest\n";
     $conf .= "disallow=all\n";
     $conf .= "allow={$guest_codecs}\n";
-    // A browser that vanishes sends no BYE; without a timeout its seat stays taken for good.
-    $conf .= "rtp_timeout=30\n";
-    $conf .= "rtp_timeout_hold=60\n";
+    // No RTP timeout: bundled WebRTC video looks inactive to Asterisk, which would hang up every
+    // participant after it ("lack of video RTP activity"). A browser that vanishes sends no BYE
+    // and would keep its seat for good, so it is found by session timers (the page refreshes them).
+    $conf .= "rtp_timeout=0\n";
+    $conf .= "rtp_timeout_hold=0\n";
+    $conf .= "timers=yes\n";
+    $conf .= "timers_min_se=90\n";
+    $conf .= "timers_sess_expires=120\n";
     $conf .= "set_var=AIPBX_CLIENT_TYPE=web-guest\n\n";
 
     $conf .= "[auth-meeting-guest](auth-userpass)\n";
