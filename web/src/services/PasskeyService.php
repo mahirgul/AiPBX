@@ -207,7 +207,7 @@ class PasskeyService
         string $clientIp
     ): array {
         require_once __DIR__ . '/SsoOnlyService.php';
-        if (SsoOnlyService::localSignInBlocked()) {
+        if (SsoOnlyService::isActive()) {
             throw new \RuntimeException(t('sso_only.err_local_off'));
         }
 
