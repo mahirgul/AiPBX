@@ -266,7 +266,7 @@ class GoogleAuthService
     public static function findUserByEmail(string $email): ?array
     {
         require_once __DIR__ . '/SsoOnlyService.php';
-        if (SsoOnlyService::localSignInBlocked()) {
+        if (SsoOnlyService::isActive()) {
             return null;
         }
 

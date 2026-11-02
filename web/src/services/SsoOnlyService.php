@@ -47,7 +47,7 @@ final class SsoOnlyService
         return (int) ($_SESSION['sso_recovery_until'] ?? 0) >= time();
     }
 
-    /** Password, passkey and Google sign-in go through this. */
+    /** The password form goes through this. Passkeys and Google are off the whole time, recovery included. */
     public static function localSignInBlocked(): bool
     {
         return self::isActive() && !self::inRecovery();
