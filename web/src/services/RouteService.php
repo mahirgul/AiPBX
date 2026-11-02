@@ -56,7 +56,7 @@ class RouteService {
             $route_id = intval($data['route_id'] ?? 0);
             $route_name = trim($data['route_name'] ?? '');
             $match_pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim($data['match_pattern'] ?? ''));
-            $prepend = preg_replace('/[^0-9]/', '', trim($data['prepend'] ?? ''));
+            $prepend = cleanRoutePrefix((string)($data['prepend'] ?? ''));
             $append = preg_replace('/[^0-9]/', '', trim($data['append'] ?? ''));
             $strip_front = intval($data['strip_front'] ?? 0);
             $strip_back = intval($data['strip_back'] ?? 0);

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/ForgotPasswordService.php';
+require_once __DIR__ . '/../services/LoginCaptchaService.php';
 
 /** "Forgot your password?" (#13): asks for the password reset e-mail. */
 class ForgotPasswordController extends BaseController
@@ -19,8 +20,8 @@ class ForgotPasswordController extends BaseController
             [$a, $b] = $_SESSION['forgot_captcha'];
             if (!static::verifyCsrf()) {
                 $error = t('common.invalid_csrf');
-            } elseif ((int) ($_POST['captcha_answer'] ?? -1) !== $a + $b) {
-                $error = t('srv_login.err_captcha');
+            } elseif (!LoginCaptchaService::passes($_POST, function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1'), $a + $b)) {
+                $error = LoginCaptchaService::errorMessage();
             } else {
                 $clientIp = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
                 $res = ForgotPasswordService::request((string) ($_POST['identifier'] ?? ''), $clientIp);

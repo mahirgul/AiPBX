@@ -45,6 +45,7 @@ function buildCatchAllExtensions(string $first, string $sameLines = ''): string 
  * Transforms the destination number to the carrier's required format.
  * E.g., strip '+90' and add '0': +905321234567 -> 05321234567.
  * Or prepend carrier prefix: 532... -> 0532...
+ * With a country ('e164' => ['cc', 'trunk', 'intl']) the result then goes through [sub-e164].
  */
 function buildTrunkCarrierDialLine(?array $carrierNorm): string {
     if (!$carrierNorm) {
@@ -52,9 +53,14 @@ function buildTrunkCarrierDialLine(?array $carrierNorm): string {
     }
     $strip = preg_replace('/[^0-9+*#]/', '', (string)($carrierNorm['strip'] ?? ''));
     $add = preg_replace('/[^0-9+*#]/', '', (string)($carrierNorm['add'] ?? ''));
+    $e164 = $carrierNorm['e164'] ?? null;
+    $e164Lines = is_array($e164)
+        ? " same => n,Gosub(sub-e164,s,1(\${AIPBX_TRUNK_DIAL},{$e164['cc']},{$e164['trunk']},{$e164['intl']}))\n"
+          . " same => n,Set(AIPBX_TRUNK_DIAL=\${GOSUB_RETVAL})\n"
+        : '';
 
     if ($strip === '' && $add === '') {
-        return " same => n,Set(AIPBX_TRUNK_DIAL=\${AIPBX_DIAL_TARGET})\n";
+        return " same => n,Set(AIPBX_TRUNK_DIAL=\${AIPBX_DIAL_TARGET})\n" . $e164Lines;
     }
 
     $lines = " same => n,Set(AIPBX_TRUNK_DIAL=\${AIPBX_DIAL_TARGET})\n";
@@ -64,7 +70,71 @@ function buildTrunkCarrierDialLine(?array $carrierNorm): string {
     } elseif ($add !== '') {
         $lines .= " same => n,Set(AIPBX_TRUNK_DIAL={$add}\${AIPBX_TRUNK_DIAL})\n";
     }
-    return $lines;
+    return $lines . $e164Lines;
+}
+
+/**
+ * What buildTrunkCarrierDialLine() needs for a trunk's E.164 country; null for none or an unknown
+ * code. The digit filter keeps a value edited in the database out of the dialplan.
+ *
+ * @return array{cc: string, trunk: string, intl: string}|null
+ */
+function trunkE164Plan(string $country): ?array {
+    $cc = (string)preg_replace('/[^0-9]/', '', $country);
+    if ($cc === '') {
+        return null;
+    }
+    require_once dirname(__DIR__) . '/services/DialplanRuleService.php';
+    $plan = DialplanRuleService::getDialPlan($cc);
+    if ($plan === null) {
+        return null;
+    }
+    return [
+        'cc' => $cc,
+        'trunk' => (string)preg_replace('/[^0-9]/', '', $plan['trunk']),
+        'intl' => (string)preg_replace('/[^0-9]/', '', $plan['intl']),
+    ];
+}
+
+/**
+ * The number as [sub-e164] sends it. Kept beside the dialplan that does the same, and
+ * assets/js/trunks.js previews it with the same steps.
+ *
+ * Short numbers (emergency, services) and anything that is not plain digits stay as they are. A
+ * number starting with the country code counts as complete, which is a guess for a national number
+ * that happens to start with those digits and is dialled without its national prefix.
+ */
+function e164DialNumber(string $number, string $cc, string $trunk, string $intl): string {
+    if (strlen($number) < 7 || !ctype_digit($number)) {
+        return $number;
+    }
+    if ($intl !== '' && str_starts_with($number, $intl)) {
+        return '+' . substr($number, strlen($intl));
+    }
+    if ($trunk !== '' && str_starts_with($number, $trunk)) {
+        return "+{$cc}" . substr($number, strlen($trunk));
+    }
+    return str_starts_with($number, $cc) ? "+{$number}" : "+{$cc}{$number}";
+}
+
+/** The subroutine behind e164DialNumber(): ARG1 number, ARG2 country code, ARG3 national prefix, ARG4 international prefix. */
+function buildE164Subroutine(): string {
+    return "; ---- E.164 for trunks that want it ----\n"
+        . "[sub-e164]\n"
+        . "exten => s,1,Set(LOCAL(n)=\${ARG1})\n"
+        . " same => n,GotoIf(\$[\${LEN(\${n})} < 7]?done)\n"
+        . " same => n,GotoIf(\${REGEX(\"^[0-9]+\$\" \${n})}?:done)\n"
+        . " same => n,GotoIf(\$[\"\${ARG4}\" != \"\" & \"\${n:0:\${LEN(\${ARG4})}}\" = \"\${ARG4}\"]?intl)\n"
+        . " same => n,GotoIf(\$[\"\${ARG3}\" != \"\" & \"\${n:0:\${LEN(\${ARG3})}}\" = \"\${ARG3}\"]?national)\n"
+        . " same => n,GotoIf(\$[\"\${n:0:\${LEN(\${ARG2})}}\" = \"\${ARG2}\"]?complete)\n"
+        . " same => n,Set(LOCAL(n)=+\${ARG2}\${n})\n"
+        . " same => n,Goto(done)\n"
+        . " same => n(intl),Set(LOCAL(n)=+\${n:\${LEN(\${ARG4})}})\n"
+        . " same => n,Goto(done)\n"
+        . " same => n(national),Set(LOCAL(n)=+\${ARG2}\${n:\${LEN(\${ARG3})}})\n"
+        . " same => n,Goto(done)\n"
+        . " same => n(complete),Set(LOCAL(n)=+\${n})\n"
+        . " same => n(done),Return(\${n})\n\n";
 }
 
 /**

@@ -244,6 +244,19 @@ define('AIPBX_VERSION', (function (): string {
     return preg_match('/^\d+\.\d+\.\d+/', $v) ? $v : 'dev';
 })());
 
+/** Administrators can make dark the default, and make everyone use the default (Appearance page). */
+function portalThemeLocked(): bool {
+    return getSystemSetting('theme_locked', '0') === '1';
+}
+
+/** The theme to show: a user's own choice unless the theme is locked, otherwise the default. */
+function portalTheme(?string $userTheme = null): string {
+    if (!portalThemeLocked() && ($userTheme === 'dark' || $userTheme === 'light')) {
+        return $userTheme;
+    }
+    return getSystemSetting('theme_default', 'light') === 'dark' ? 'dark' : 'light';
+}
+
 function getSystemSetting($key, $default = '') {
     try {
         $db = getDB();

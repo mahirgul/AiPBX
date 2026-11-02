@@ -38,6 +38,8 @@ class BrandSettingsService {
             // brand name is printed under it (off when the logo already contains it).
             'mail_logo_variant' => 'light',
             'mail_show_brand_title' => '1',
+            'theme_default' => 'light',
+            'theme_locked' => '0',
         ];
     }
 
@@ -167,6 +169,8 @@ class BrandSettingsService {
                 'support_phone' => mb_substr(preg_replace('/[^0-9+()\/ .-]/', '', (string) ($post['support_phone'] ?? '')), 0, 40),
                 'mail_logo_variant' => (($post['mail_logo_variant'] ?? '') === 'dark') ? 'dark' : 'light',
                 'mail_show_brand_title' => empty($post['mail_show_brand_title']) ? '0' : '1',
+                'theme_default' => (($post['theme_default'] ?? '') === 'dark') ? 'dark' : 'light',
+                'theme_locked' => empty($post['theme_locked']) ? '0' : '1',
             ];
 
             if (!empty($post['remove_logo_image'])) {

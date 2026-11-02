@@ -9,6 +9,11 @@ if (!verifyCSRFToken($csrf)) {
     exit;
 }
 
+if (portalThemeLocked()) {
+    echo json_encode(['success' => false, 'theme' => portalTheme()]);
+    exit;
+}
+
 $theme = $input['theme'] ?? 'light';
 
 if (!in_array($theme, ['dark', 'light'])) {
@@ -18,5 +23,6 @@ if (!in_array($theme, ['dark', 'light'])) {
 $db = getDB();
 $stmt = $db->prepare('UPDATE sys_users SET theme_preference = ? WHERE id = ?');
 $stmt->execute([$theme, $_SESSION['user_id']]);
+$_SESSION['theme'] = $theme;
 
 echo json_encode(['success' => true, 'theme' => $theme]);

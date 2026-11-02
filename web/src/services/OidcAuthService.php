@@ -691,7 +691,7 @@ class OidcAuthService
         $_SESSION['extension_type'] = $user['extension_type'] ?? '';
         $_SESSION['allowed_phone_mode'] = $user['allowed_phone_mode'] ?? 'both';
         $_SESSION['last_activity'] = time();
-        $_SESSION['theme'] = $user['theme_preference'] ?? 'light';
+        $_SESSION['theme'] = $user['theme_preference'] ?? null;
         $_SESSION['language'] = $user['language_preference'] ?? 'tr';
         $_SESSION['auth_method'] = 'oidc';
         $_SESSION['auth_provider'] = 'oidc';

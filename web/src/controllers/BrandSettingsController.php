@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/BrandSettingsService.php';
+require_once __DIR__ . '/../services/LoginCaptchaService.php';
 
 /**
  * Appearance page (/brand-settings).
@@ -17,6 +18,7 @@ class BrandSettingsController extends BaseController
         $notices = static::handlePost([
             'save_brand_settings' => fn() => BrandSettingsService::saveSettings($_POST),
             'reset_brand_settings' => fn() => BrandSettingsService::resetToDefaults($_POST),
+            'save_login_captcha' => fn() => LoginCaptchaService::saveSettings($_POST),
         ]);
 
         $defaults = BrandSettingsService::defaults();
@@ -34,6 +36,9 @@ class BrandSettingsController extends BaseController
             'logo_preview_url' => $logo_preview_url,
             'logo_dark_preview_url' => $logo_dark_preview_url,
             'favicon_preview_url' => $favicon_preview_url,
+            'captcha_provider' => (string) getSystemSetting('login_captcha_provider', 'math'),
+            'captcha_site_key' => LoginCaptchaService::siteKey(),
+            'captcha_secret_set' => (string) getSystemSetting('login_turnstile_secret', '') !== '',
         ], ['title' => $page_title] + $notices);
     }
 }

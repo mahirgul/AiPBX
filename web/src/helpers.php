@@ -167,6 +167,15 @@ function getConferencePrefix(): string {
 }
 
 /**
+ * The prefix of an outbound route: digits, and a + only at the very start (+1 for a carrier that
+ * wants E.164).
+ */
+function cleanRoutePrefix(string $prefix): string {
+    $digits = (string)preg_replace('/[^0-9]/', '', $prefix);
+    return str_starts_with(trim($prefix), '+') ? '+' . $digits : $digits;
+}
+
+/**
  * A Geolocation URI that is safe in generated dialplan, without its angle brackets; null if invalid.
  * Letters a URI needs, and none that mean something to Asterisk: no line breaks, ( ) $ { } [ ]. geo: URIs need the comma and the semicolon;
  * the writer of the dialplan has to escape the semicolon, which starts a comment there.

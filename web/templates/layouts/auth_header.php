@@ -9,7 +9,7 @@ $auth_site_title = getSystemSetting('site_title', 'AI PBX Portal');
 $auth_favicon = getSystemSetting('site_favicon_url', '');
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="light">
+<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="<?php echo portalTheme(); ?>" data-theme-locked="<?php echo portalThemeLocked() ? '1' : '0'; ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

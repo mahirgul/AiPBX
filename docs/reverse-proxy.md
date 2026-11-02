@@ -21,7 +21,7 @@ AiPBX delivers two distinct categories of network traffic:
    | (Nginx/Caddy/etc.) |                         | (1:1 NAT / Router)|
    +---------+----------+                         +---------+---------+
              |                                              |
-             | HTTP (80/8080) & WS (8089)                   | SIP (5060/5061 UDP/TCP)
+             | HTTP and WebSockets (80)                     | SIP (5060/5061 UDP/TCP)
              v                                              | RTP (10000-20000 UDP)
    +--------------------------------------------------------+---------+
    |                            AiPBX Server                          |
@@ -46,7 +46,7 @@ Log in to the AiPBX portal as an administrator and navigate to **Network → Rev
 3. **External Port**: Enter `443` (or your public HTTPS port).
 4. **TLS Termination Mode**:
    - `Edge Termination` (recommended): The reverse proxy handles SSL certificates and connects to AiPBX via HTTP.
-   - `Re-encryption`: The reverse proxy terminates external SSL and connects to AiPBX via internal HTTPS.
+   - `Re-encryption`: The reverse proxy terminates external SSL and connects to AiPBX via internal HTTPS. HAProxy only, and the page generates no configuration for the others: port 443 of AiPBX tells HTTPS from TURNS by ALPN, which they do not send on the connections softphones need, so softphones would get 502. Use Edge Termination over a private network with them.
 5. **Trusted Reverse Proxies**: The IP addresses of your reverse proxies; the default is this host only (`127.0.0.1, ::1`). Add the exact address of a proxy on another machine, and avoid whole private networks: every device in a trusted range can claim any client IP in `X-Forwarded-For`, which avoids sign-in lockouts and passes the allowed networks of phone provisioning.
 
 ### Security: Spoofing Prevention
@@ -57,8 +57,8 @@ AiPBX enforces strict header validation. It will **ONLY** honor `X-Forwarded-For
 ## 3. WebRTC WebSocket (`/ws`) Requirements
 
 In-browser calling via WebRTC relies on persistent WebSocket connections for SIP signaling:
-- **Path**: `/ws`
-- **Backend Port**: `8089` (Asterisk WSS)
+- **Path**: `/ws`, on the same port as the portal. Asterisk's own ports (8088, 8089) listen on loopback only, on purpose, so that signaling cannot bypass the portal's edge and its fail2ban protection. This is also what lets a proxy run on a different server: it connects to the portal's port 80 or 443 and nothing else needs opening.
+- **Headers**: `Upgrade` and `Connection` must be passed, and `X-Forwarded-Proto: https` must be set, or the portal answers with a redirect.
 - **Timeouts**: Reverse proxies typically terminate idle connections after 60 seconds. Set `proxy_read_timeout` to at least `3600s` (1 hour) so softphones do not disconnect while idle.
 
 ---
@@ -98,7 +98,7 @@ server {
 
     # 1. WebRTC WebSocket Signaling
     location /ws {
-        proxy_pass http://127.0.0.1:8089/ws;
+        proxy_pass http://127.0.0.1:80/ws;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
@@ -138,20 +138,7 @@ server {
 pbx.example.com {
     encode zstd gzip
 
-    # WebRTC WebSocket Signaling
-    @websocket {
-        path /ws*
-        header Connection *Upgrade*
-        header Upgrade websocket
-    }
-    reverse_proxy @websocket 127.0.0.1:8089 {
-        header_up Host {host}
-        header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
-    }
-
-    # Web Portal & Phone Provisioning
+    # Web Portal, Phone Provisioning and the WebSockets (/ws, /chat/ws)
     reverse_proxy 127.0.0.1:80 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
@@ -168,19 +155,20 @@ pbx.example.com {
 
 http:
   routers:
-    aipbx-ws:
-      rule: "Host(`pbx.example.com`) && PathPrefix(`/ws`)"
-      entryPoints: ["websecure"]
-      service: "aipbx-ws-svc"
-      tls:
-        certResolver: "letsencrypt"
-
     aipbx-web:
       rule: "Host(`pbx.example.com`)"
       entryPoints: ["websecure"]
       service: "aipbx-web-svc"
+      middlewares: ["forwarded-https"]
       tls:
         certResolver: "letsencrypt"
+
+  middlewares:
+    # Traefik says "wss" for a WebSocket, and the portal redirects anything but "https".
+    forwarded-https:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
 
   services:
     aipbx-web-svc:
@@ -188,12 +176,6 @@ http:
         passHostHeader: true
         servers:
           - url: "http://127.0.0.1:80"
-
-    aipbx-ws-svc:
-      loadBalancer:
-        passHostHeader: true
-        servers:
-          - url: "http://127.0.0.1:8089"
 ```
 
 ### D. HAProxy
@@ -224,7 +206,7 @@ backend aipbx_ws
     option forwardfor
     timeout tunnel 3600s
     http-request set-header X-Forwarded-Proto https if { ssl_fc }
-    server aipbx_ws1 127.0.0.1:8089 check
+    server aipbx_ws1 127.0.0.1:80 check
 ```
 
 ---

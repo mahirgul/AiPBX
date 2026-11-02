@@ -308,7 +308,7 @@ class PasskeyService
             $_SESSION['user_role'] = $passkey['role'];
             $_SESSION['extension'] = $passkey['extension'];
             $_SESSION['last_activity'] = time();
-            $_SESSION['theme'] = $passkey['theme_preference'] ?? 'light';
+            $_SESSION['theme'] = $passkey['theme_preference'] ?? null;
             $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$passkey['language_preference'] ?? '']))
                 ? $passkey['language_preference']
                 : DEFAULT_UI_LANGUAGE;

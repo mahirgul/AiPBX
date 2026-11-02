@@ -21,6 +21,16 @@ firewall-cmd --reload
 The web softphone and the mobile apps connect over 443 and are not affected. RTP (10000–20000/udp) must
 stay open for carrier audio, and UDPTL (4100–4999/udp) for T.38 fax. The **Firewall** page shows and removes these rules.
 
+**Sign-in check.** The sign-in and forgotten password pages ask a simple sum. Under **Appearance** you can
+use Cloudflare Turnstile instead (site key and secret key from your Cloudflare account). The keys are checked
+when you save. Turnstile loads a script from Cloudflare and sends the visitor's IP address to it, so the
+browser needs internet access. If the server cannot reach Cloudflare, the sum comes back for ten minutes. If
+browsers cannot load Turnstile, for example on a closed network, turn it off from the server:
+
+```bash
+sudo mysql asterisk -e "UPDATE sys_settings SET setting_value='math' WHERE setting_key='login_captcha_provider'"
+```
+
 Asterisk's own TLS WebSocket (8089) listens on loopback only: browsers and the mobile apps use 443
 `/ws`, which goes through the nginx/Apache edge. Earlier versions opened 8089 publicly; installing or
 updating closes it.

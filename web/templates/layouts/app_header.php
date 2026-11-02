@@ -10,7 +10,7 @@ $db = getDB();
 
 $user = getCurrentUser();
 $role = $_SESSION['user_role'] ?? 'user';
-$theme = $_SESSION['theme'] ?? 'light';
+$theme = portalTheme($_SESSION['theme'] ?? null);
 $active_page = basename($_SERVER['PHP_SELF']);
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
 
@@ -63,7 +63,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="<?php echo htmlspecialchars($theme); ?>">
+<html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>" data-theme="<?php echo htmlspecialchars($theme); ?>" data-theme-source="user" data-theme-locked="<?php echo portalThemeLocked() ? '1' : '0'; ?>">
 <head>
 <?php echo jsI18nScript(); ?>
     <meta charset="UTF-8">

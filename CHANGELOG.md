@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.6
+
+- **Outbound routes kept losing a leading `+`:** a route's Prepend field dropped the `+` of `+1`, so carriers that require it refused the call. It is now kept.
+- **Trunks can send E.164:** choose a country on the trunk and numbers go out as `+<country code>...` with that country's dialling plan, without doubling a code that is already there. Short numbers such as emergency numbers are left alone. Try a number on the same page. Thanks to @quietvw for the request (#149).
+- **Reverse proxy settings did not work:** the configurations generated on the Reverse Proxy page and the guide sent WebSockets to Asterisk's port 8089, which only listens on loopback, so softphones behind them could not connect. They now go through the portal's own port, which also works for a proxy on another server. The firewall commands no longer open 8089.
+- **Default theme:** administrators can set dark as the default for the sign-in page and for users who have not chosen a theme, or use one theme for everyone (Appearance).
+- **Cloudflare Turnstile:** can replace the sum on the sign-in and forgotten password pages (Appearance). Off by default.
+
 ## 1.60.5
 
 - **Video meetings: guests were dropped after 30 seconds (fixed, update if you run 1.60.4):** 1.60.4 added an RTP timeout to meeting guests, and Asterisk does not see bundled WebRTC video as active, so every participant was disconnected. A browser that vanishes without saying goodbye is now found by SIP session timers within about two minutes.

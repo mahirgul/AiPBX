@@ -24,6 +24,12 @@
                     <input type="text" id="identifier" name="identifier" class="form-control" required maxlength="120" autofocus autocomplete="username"
                            value="<?php echo htmlspecialchars((string) ($_POST['identifier'] ?? '')); ?>">
                 </div>
+                <?php if (LoginCaptchaService::usesTurnstile()): ?>
+                <div class="form-group">
+                    <div class="cf-turnstile" data-sitekey="<?php echo htmlspecialchars(LoginCaptchaService::siteKey(), ENT_QUOTES); ?>" data-theme="auto"></div>
+                    <script src="<?php echo LoginCaptchaService::SCRIPT_URL; ?>" async defer></script>
+                </div>
+                <?php else: ?>
                 <div class="form-group">
                     <label class="form-label" for="captcha_answer"><?php echo t('login.security_check'); ?></label>
                     <div class="captcha-row">
@@ -31,6 +37,7 @@
                         <input type="number" inputmode="numeric" id="captcha_answer" name="captcha_answer" class="form-control" placeholder="<?php echo t('login.captcha_placeholder'); ?>" required autocomplete="off">
                     </div>
                 </div>
+                <?php endif; ?>
                 <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 6px; font-size: 15px;">
                     <i class="fas fa-paper-plane"></i> <?php echo t('forgot.submit'); ?>
                 </button>

@@ -42,9 +42,9 @@ final class ReverseProxyTest extends TestCase
         $this->assertArrayHasKey('443', $byPort);
         $this->assertFalse($byPort['443']['bypass'], 'HTTPS 443 can be proxied');
 
-        // WebRTC WSS signaling
-        $this->assertArrayHasKey('8089', $byPort);
-        $this->assertFalse($byPort['8089']['bypass'], 'WSS 8089 can be proxied');
+        // Asterisk listens on loopback only (conf/asterisk/http.conf)
+        $this->assertStringContainsString('127.0.0.1', $byPort['8089']['scope']);
+        $this->assertStringContainsString('127.0.0.1', $byPort['8088']['scope']);
     }
 
     public function testIpInCidrIpv4(): void
@@ -202,14 +202,12 @@ final class ReverseProxyTest extends TestCase
         // Caddy
         $caddy = ReverseProxyService::generateProxyConfig('caddy', $fqdn, $backendIp, $backendPort, 'edge');
         $this->assertStringContainsString('pbx.example.com {', $caddy);
-        $this->assertStringContainsString('reverse_proxy @websocket 192.168.1.150:8089', $caddy);
-        $this->assertStringContainsString('reverse_proxy 192.168.1.150:80', $caddy);
+        $this->assertStringContainsString('reverse_proxy http://192.168.1.150:80', $caddy);
 
         // Traefik
         $traefik = ReverseProxyService::generateProxyConfig('traefik', $fqdn, $backendIp, $backendPort, 'edge');
         $this->assertStringContainsString('Host(`pbx.example.com`)', $traefik);
         $this->assertStringContainsString('url: "http://192.168.1.150:80"', $traefik);
-        $this->assertStringContainsString('url: "http://192.168.1.150:8089"', $traefik);
 
         // HAProxy
         $haproxy = ReverseProxyService::generateProxyConfig('haproxy', $fqdn, $backendIp, $backendPort, 'edge');
@@ -220,8 +218,36 @@ final class ReverseProxyTest extends TestCase
         // Apache
         $apache = ReverseProxyService::generateProxyConfig('apache', $fqdn, $backendIp, $backendPort, 'edge');
         $this->assertStringContainsString('ServerName pbx.example.com', $apache);
-        $this->assertStringContainsString('ProxyPass /ws ws://192.168.1.150:8089/ws', $apache);
+        $this->assertStringContainsString('ProxyPass /ws ws://192.168.1.150:80/ws', $apache);
         $this->assertStringContainsString('ProxyPass / http://192.168.1.150:80/', $apache);
+    }
+
+    public function testNoGeneratedProxyPointsAtAsteriskWhichOnlyListensOnLoopback(): void
+    {
+        foreach (['nginx', 'caddy', 'traefik', 'haproxy', 'apache'] as $type) {
+            foreach (['edge', 're_encrypt'] as $mode) {
+                $config = ReverseProxyService::generateProxyConfig($type, 'pbx.example.com', '192.168.1.150', 443, $mode);
+                $this->assertStringNotContainsString(':8089', $config, "$type $mode");
+                $this->assertStringNotContainsString(':8088', $config, "$type $mode");
+            }
+        }
+    }
+
+    public function testOnlyHaproxyOffersReEncryptionBecauseThePortalNeedsAlpn(): void
+    {
+        $config = fn(string $type): string => ReverseProxyService::generateProxyConfig($type, 'pbx.example.com', '192.168.1.150', 443, 're_encrypt');
+        $this->assertStringContainsString('server aipbx_ws1 192.168.1.150:443 check ssl verify none alpn http/1.1', $config('haproxy'));
+        foreach (['nginx', 'caddy', 'traefik', 'apache'] as $type) {
+            $this->assertStringContainsString('cannot connect to AiPBX with re-encryption', $config($type), $type);
+            $this->assertStringNotContainsString('192.168.1.150', $config($type), $type);
+        }
+    }
+
+    public function testFirewallCommandsDoNotOpenAsterisksLoopbackPort(): void
+    {
+        foreach (['ufw', 'firewalld', 'iptables'] as $tool) {
+            $this->assertStringNotContainsString('8089', ReverseProxyService::generateFirewallCommands($tool), $tool);
+        }
     }
 
     public function testFirewallGenerators(): void

@@ -1058,7 +1058,7 @@ XML;
         $_SESSION['extension'] = $user['extension'] ?? '';
         $_SESSION['extension_type'] = $user['extension_type'] ?? '';
         $_SESSION['allowed_phone_mode'] = $user['allowed_phone_mode'] ?? 'both';
-        $_SESSION['theme'] = $user['theme_preference'] ?? 'dark';
+        $_SESSION['theme'] = $user['theme_preference'] ?? null;
         $_SESSION['language'] = $user['language_preference'] ?? 'tr';
         $_SESSION['ui_language'] = (defined('UI_LANGUAGES') && isset(UI_LANGUAGES[$user['language_preference'] ?? '']))
             ? $user['language_preference']

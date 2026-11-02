@@ -1,7 +1,12 @@
 // Theme & Typography Preference Switcher Logic (Dark / Light Mode & Font Size Scale)
 document.addEventListener('DOMContentLoaded', () => {
     const themeBtn = document.getElementById('theme-toggle-btn');
-    const savedTheme = localStorage.getItem('aipbx_theme') || localStorage.getItem('kb_theme') || 'light';
+    // A signed-in page already has the user's theme from the server. A sign-in page has the default,
+    // unless this browser's user chose otherwise and the theme is not locked.
+    const root = document.documentElement;
+    const served = root.getAttribute('data-theme') || 'light';
+    const useServed = root.dataset.themeLocked === '1' || root.dataset.themeSource === 'user';
+    const savedTheme = useServed ? served : (localStorage.getItem('aipbx_theme_choice') || served);
     const savedFont = localStorage.getItem('font_size_pref') || 'normal';
     
     setTheme(savedTheme);
@@ -12,7 +17,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
             const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
             setTheme(newTheme);
-            
+            localStorage.setItem('aipbx_theme_choice', newTheme);
+
             // Persist theme to database via AJAX
             fetch('/api/theme.php', {
                 method: 'POST',

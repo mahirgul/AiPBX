@@ -22,7 +22,7 @@ function __syncOutboundDialplanBody() {
     $trunk_rates = [];
     $trunk_cid_norm = [];
     $trunk_carrier_norm = [];
-    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend, carrier_strip_prefix, carrier_add_prefix FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
+    foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend, carrier_strip_prefix, carrier_add_prefix, carrier_e164_country FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
         $trunk_limits[$tl['trunk_name']] = intval($tl['max_channels']);
         $trunk_rates[$tl['trunk_name']] = intval($tl['max_calls_per_minute'] ?? 0);
         $trunk_cid_norm[$tl['trunk_name']] = [
@@ -32,6 +32,7 @@ function __syncOutboundDialplanBody() {
         $trunk_carrier_norm[$tl['trunk_name']] = [
             'strip' => preg_replace('/[^0-9+*#]/', '', (string)($tl['carrier_strip_prefix'] ?? '')),
             'add' => preg_replace('/[^0-9+*#]/', '', (string)($tl['carrier_add_prefix'] ?? '')),
+            'e164' => trunkE164Plan((string)($tl['carrier_e164_country'] ?? '')),
         ];
     }
 
@@ -90,7 +91,7 @@ function __syncOutboundDialplanBody() {
         foreach ($routes as $r) {
             $name = toCleanAscii($r['route_name']);
             $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim($r['match_pattern']));
-            $prepend = preg_replace('/[^0-9]/', '', trim($r['prepend'] ?? ''));
+            $prepend = cleanRoutePrefix((string)($r['prepend'] ?? ''));
             $append = preg_replace('/[^0-9]/', '', trim($r['append'] ?? ''));
             $strip_front = intval($r['strip_front'] ?? 0);
             $strip_back = intval($r['strip_back'] ?? 0);
@@ -298,6 +299,8 @@ function __syncOutboundDialplanBody() {
     $conf .= "[from-internal-desktop]\ninclude => from-internal-desktop-1\n\n";
     $conf .= "[from-internal-mobile]\ninclude => from-internal-mobile-1\n\n";
     $conf .= "[from-internal-web]\ninclude => from-internal-web-1\n\n";
+
+    $conf .= buildE164Subroutine();
 
     // Outbound call termination and status handling (D-1 / D-2)
     // BUSY -> 486 Busy Here, CONGESTION -> 503, NOANSWER -> 480, CHANUNAVAIL -> HANGUPCAUSE (e.g. 404/603)

@@ -68,6 +68,12 @@ ob_start(); ?>
             </div>
 
             <!-- Dynamic Math Security Challenge -->
+            <?php if (LoginCaptchaService::usesTurnstile()): ?>
+            <div class="form-group">
+                <div class="cf-turnstile" data-sitekey="<?php echo htmlspecialchars(LoginCaptchaService::siteKey(), ENT_QUOTES); ?>" data-theme="auto"></div>
+                <script src="<?php echo LoginCaptchaService::SCRIPT_URL; ?>" async defer></script>
+            </div>
+            <?php else: ?>
             <div class="form-group">
                 <label class="form-label" for="captcha_answer"><?php echo t('login.security_check'); ?></label>
                 <div class="captcha-row">
@@ -75,6 +81,7 @@ ob_start(); ?>
                     <input type="number" inputmode="numeric" id="captcha_answer" name="captcha_answer" class="form-control" placeholder="<?php echo t('login.captcha_placeholder'); ?>" required autocomplete="off">
                 </div>
             </div>
+            <?php endif; ?>
 
             <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;" title="<?php echo t('login.submit_tooltip'); ?>">
                 <i class="fas fa-sign-in-alt"></i> <?php echo t('login.submit_tooltip'); ?>
