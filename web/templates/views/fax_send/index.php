@@ -93,6 +93,30 @@
             </div>
         </div>
 
+        <?php if ($cover['mode'] !== 'off'): ?>
+        <div class="form-group" style="border: 1px solid var(--border-color); border-radius: 8px; padding: 14px;">
+            <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13px;">
+                <input type="checkbox" name="cover_enabled" value="1" checked <?php echo $cover['mode'] === 'required' ? 'disabled' : ''; ?>>
+                <?php echo t($cover['mode'] === 'required' ? 'fax_cover.field_required' : 'fax_cover.field_enabled'); ?>
+            </label>
+            <div class="u-grid-2 u-mt-12">
+                <div class="form-group u-mb-0">
+                    <label class="form-label"><?php echo t('fax_cover.label_to'); ?></label>
+                    <input type="text" name="cover_to" class="form-control" maxlength="120">
+                </div>
+                <div class="form-group u-mb-0">
+                    <label class="form-label"><?php echo t('fax_cover.label_subject'); ?></label>
+                    <input type="text" name="cover_subject" class="form-control" maxlength="200">
+                </div>
+            </div>
+            <div class="form-group u-mt-12">
+                <label class="form-label"><?php echo t('fax_cover.field_message'); ?></label>
+                <textarea name="cover_message" class="form-control" rows="3" maxlength="2000"></textarea>
+            </div>
+            <button type="submit" class="btn btn-secondary btn-sm" name="cover_preview" value="1" formaction="/fax-send" formtarget="_blank" formnovalidate data-no-spa="true"><i class="fas fa-eye"></i> <?php echo t('fax_cover.preview'); ?></button>
+        </div>
+        <?php endif; ?>
+
         <?php if (hasModulePermission('fax_send', 'edit')): ?>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;" title="<?php echo t('fax_send.send_tooltip'); ?>">
             <i class="fas fa-paper-plane"></i>
