@@ -90,7 +90,7 @@ class RouteService {
             foreach ($trunk_names as $i => $tn) {
                 $tn = trim($tn);
                 if ($tn === '' || !in_array($tn, $valid_trunk_names, true)) continue;
-                $trunks[] = ['trunk_name' => $tn, 'callerid_override' => preg_replace('/[^0-9]/', '', trim($trunk_cids[$i] ?? ''))];
+                $trunks[] = ['trunk_name' => $tn, 'callerid_override' => cleanRoutePrefix((string) ($trunk_cids[$i] ?? ''))];
             }
 
             if (empty($route_name) || empty($match_pattern)) {

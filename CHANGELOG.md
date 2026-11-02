@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.8
+
+- **A trunk's caller ID kept losing its leading `+`:** the outbound caller ID of a trunk and a route's caller ID override dropped the `+`, so carriers that require `+E.164` in the caller ID could refuse the call. It is now kept.
+
 ## 1.60.7
 
 - **Fax cover page:** faxes sent from the portal can start with a cover page: organisation name, logo, confidentiality notice, recipient, subject, message and page count. It can be off, up to the sender, or on every fax (Fax Units), and it can be previewed in black and white as the far end receives it. Thanks to @quietvw for the request (#149).
