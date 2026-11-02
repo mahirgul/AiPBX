@@ -43,11 +43,10 @@ foreach ($trunks as $trunk) {
                 <div class="dpr-setting-title"><?php echo t('inbound_norm.presets_title'); ?></div>
                 <div class="dpr-setting-desc"><?php echo t('inbound_norm.presets_help'); ?></div>
             </div>
-            <form method="POST" class="dpr-country-form">
+            <form method="POST" class="dpr-country-form" onsubmit="return confirmLoadDefaults(this);" data-confirm-tmpl="<?php echo $h(t('inbound_norm.confirm_presets')); ?>" data-msg-required="<?php echo $h(t('dialplan_rules.err_country_required')); ?>">
                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                 <input type="hidden" name="load_presets" value="1">
-                <select name="trunk_name" class="form-control form-control-sm"><?php echo $trunkOptions; ?></select>
-                <select name="country_code" class="form-control form-control-sm" required>
+                <select name="country_code" class="form-control form-control-sm">
                     <option value=""><?php echo t('dialplan_rules.country_none'); ?></option>
                     <?php foreach ($countries as $cc => $name): ?><option value="<?php echo $h($cc); ?>"><?php echo $h($name); ?> (+<?php echo $h($cc); ?>)</option><?php endforeach; ?>
                 </select>

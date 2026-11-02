@@ -46,6 +46,15 @@ function updateInboundPreview() {
         raw ? document.getElementById('inbound_prepend').value + raw.substring(strip) : '—';
 }
 
+function confirmLoadDefaults(form) {
+    const cc = form.querySelector('[name=country_code]').value;
+    if (!cc) {
+        alert(form.dataset.msgRequired);
+        return false;
+    }
+    return confirm((form.dataset.confirmTmpl || '').replace('%s', cc));
+}
+
 var inboundSimTimer = null; // var: the portal can load this script more than once
 function debounceInboundSim() {
     clearTimeout(inboundSimTimer);

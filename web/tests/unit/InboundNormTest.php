@@ -120,6 +120,24 @@ final class InboundNormTest extends TestCase
         }
     }
 
+    public function testLoadingACountryReplacesEveryRule(): void
+    {
+        $db = getDB();
+        $db->exec('DELETE FROM pbx_inbound_norm_rules');
+        $db->exec("INSERT INTO pbx_inbound_norm_rules (trunk_name, target, rule_name, match_pattern, strip_front, prepend, is_active, created_at) VALUES ('t9', 'did', 'old', '_+1.', 1, '', 1, NOW())");
+        $_SESSION['csrf_token'] = 'x';
+
+        $this->assertFalse(InboundNormService::loadPresets(['csrf_token' => 'x', 'country_code' => '999'])['success']);
+        $this->assertSame(1, (int) $db->query('SELECT COUNT(*) FROM pbx_inbound_norm_rules')->fetchColumn(), 'nothing is lost when a country has no rules');
+
+        $this->assertTrue(InboundNormService::loadPresets(['csrf_token' => 'x', 'country_code' => '43'])['success']);
+        $rows = $db->query('SELECT rule_name, trunk_name FROM pbx_inbound_norm_rules')->fetchAll(PDO::FETCH_ASSOC);
+        $this->assertCount(3, $rows);
+        $this->assertNotContains('old', array_column($rows, 'rule_name'));
+        $this->assertSame([null, null, null], array_column($rows, 'trunk_name'));
+        $db->exec('DELETE FROM pbx_inbound_norm_rules');
+    }
+
     public function testAPatternCannotCarryDialplanText(): void
     {
         $this->assertTrue(InboundNormService::isValidPattern('_+43.'));
