@@ -315,7 +315,8 @@ function __syncOutboundDialplanBody() {
             $conf .= '[sub-trunk-headers-' . preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$header_trunk) . "]\n";
             $conf .= "exten => s,1,NoOp(Trunk headers)\n";
             foreach ($header_lines as [$header_name, $header_value]) {
-                $conf .= " same => n,Set(PJSIP_HEADER(add,{$header_name})={$header_value})\n";
+                // A semicolon starts a comment in the dialplan unless escaped.
+                $conf .= " same => n,Set(PJSIP_HEADER(add,{$header_name})=" . str_replace(';', '\\;', $header_value) . ")\n";
             }
             $conf .= " same => n,Return()\n\n";
         }

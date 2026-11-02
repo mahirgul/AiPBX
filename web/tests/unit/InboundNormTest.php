@@ -91,4 +91,10 @@ final class InboundNormTest extends TestCase
             $this->assertNotSame([], TrunkService::parseSipHeaders($bad)['errors'], $bad);
         }
     }
+
+    public function testASemicolonInAHeaderIsEscapedInTheDialplan(): void
+    {
+        $source = (string) file_get_contents(dirname(__DIR__, 2) . '/src/sync/SyncOutboundDialplan.php');
+        $this->assertStringContainsString("str_replace(';', '\\\\;', \$header_value)", $source);
+    }
 }
