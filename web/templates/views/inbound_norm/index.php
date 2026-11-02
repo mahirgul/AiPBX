@@ -31,6 +31,7 @@ foreach ($trunks as $trunk) {
     <div class="module-help-box" id="inboundNormHelpBox">
         <h4><i class="fas fa-info-circle"></i> <?php echo t('inbound_norm.title'); ?></h4>
         <p><?php echo t('inbound_norm.help'); ?></p>
+        <p style="margin-top: 8px;"><?php echo t('common.help_number_order'); ?></p>
         <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('inbound_norm.limit_order'); ?></li></ul></div>
     </div>
 </div>

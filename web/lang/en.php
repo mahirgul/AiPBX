@@ -85,6 +85,7 @@ return [
     'trunks.sip_headers_help' => 'One "Name: value" per line, added to outgoing calls through this trunk on outbound routes. Standard headers such as From and Contact cannot be set here.',
     'trunks.err_sip_header' => 'Line %d is not a valid SIP header, or it is a header that cannot be set here.',
     'common.help_limits' => 'Limits to know',
+    'common.help_number_order' => 'Routes, trunks and the normalization pages can all change a number, and they run one after the other. <a href="https://github.com/mahirgul/AiPBX/blob/main/docs/number-normalization.md" target="_blank" rel="noopener noreferrer">See the order and which setting to use.</a>',
     'reverse_proxy.limit_reencrypt' => 'HTTPS between the proxy and AiPBX only works with HAProxy. Port 443 tells HTTPS from TURNS by ALPN, and Nginx, Apache, Caddy and Traefik do not send it on the connections softphones need. With those, end TLS at the proxy and use a private network to reach AiPBX.',
     'trunks.limit_e164' => 'Send as E.164 treats a number that starts with the country code as complete. A national number dialled without its national prefix that happens to start with those digits would be sent wrongly, so try your numbering in Try a number.',
     'trunks.limit_custom' => 'Custom parameters: only option names are checked. Asterisk accepts a wrong value without an error, so test what you changed.',
