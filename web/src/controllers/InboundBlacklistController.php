@@ -136,7 +136,7 @@ class InboundBlacklistController extends BaseController
             if (strcasecmp($num, 'number') === 0 || strcasecmp($num, 'numara') === 0) {
                 continue;
             }
-            $title = isset($row[1]) ? trim((string)$row[1]) : 'CSV İçe Aktarma';
+            $title = isset($row[1]) ? trim((string)$row[1]) : 'CSV import';
             $act = isset($row[2]) && in_array(trim($row[2]), InboundBlacklistService::VALID_ACTIONS, true)
                 ? trim($row[2])
                 : $defaultAction;

@@ -9,7 +9,7 @@ final class AddConferenceJoinFeatureCode extends AbstractMigration
         if ($this->hasTable('pbx_feature_codes')) {
             $ex = $this->query("SELECT id FROM `pbx_feature_codes` WHERE `feature_key` = 'conference_join'")->fetchAll();
             if (empty($ex)) {
-                $this->execute("INSERT INTO `pbx_feature_codes` (`feature_key`, `title`, `code`, `allowed_roles`, `is_active`) VALUES ('conference_join', 'Konferans Odası Girişi (*9 / #9)', '_#9.', NULL, 1)");
+                $this->execute("INSERT INTO `pbx_feature_codes` (`feature_key`, `title`, `code`, `allowed_roles`, `is_active`) VALUES ('conference_join', 'Conference room login (*9 / #9)', '_#9.', NULL, 1)");
             }
         }
     }

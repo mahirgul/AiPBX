@@ -30,7 +30,7 @@ final class CreateAdvancedPbxModules extends AbstractMigration
 
             // Seed default group (open in every direction)
             $this->execute("INSERT INTO `pbx_permission_groups` (`id`, `group_name`, `description`, `default_action`, `is_active`) 
-                VALUES (1, 'Her Yöne Açık (Varsayılan)', 'Tüm iç ve dış aramalara kısıtlama olmadan izin verir.', 'allow', 1)");
+                VALUES (1, 'Open to all destinations (default)', 'Allows all internal and external calls without restriction.', 'allow', 1)");
         }
 
         // 2. Calling Permission Rules
@@ -139,10 +139,10 @@ final class CreateAdvancedPbxModules extends AbstractMigration
 
         // 7. Add Whisper, Barge, and Voicemail feature codes to pbx_feature_codes if not present
         $fCodes = [
-            ['feature_key' => 'spy_whisper', 'title' => 'Çağrı Fısıldama (Whisper)', 'code' => '*91', 'allowed_roles' => 'admin,cc_manager'],
-            ['feature_key' => 'spy_barge', 'title' => 'Çağrıya Dahil Olma (Barge)', 'code' => '*92', 'allowed_roles' => 'admin,cc_manager'],
-            ['feature_key' => 'voicemail_my', 'title' => 'Kendi Sesli Postam', 'code' => '*97', 'allowed_roles' => 'admin,cc_manager,cc_agent,user'],
-            ['feature_key' => 'voicemail_general', 'title' => 'Sesli Posta Girişi', 'code' => '*98', 'allowed_roles' => 'admin,cc_manager,cc_agent,user'],
+            ['feature_key' => 'spy_whisper', 'title' => 'Call whisper', 'code' => '*91', 'allowed_roles' => 'admin,cc_manager'],
+            ['feature_key' => 'spy_barge', 'title' => 'Call barge', 'code' => '*92', 'allowed_roles' => 'admin,cc_manager'],
+            ['feature_key' => 'voicemail_my', 'title' => 'My voicemail', 'code' => '*97', 'allowed_roles' => 'admin,cc_manager,cc_agent,user'],
+            ['feature_key' => 'voicemail_general', 'title' => 'Voicemail login', 'code' => '*98', 'allowed_roles' => 'admin,cc_manager,cc_agent,user'],
         ];
 
         foreach ($fCodes as $fc) {
