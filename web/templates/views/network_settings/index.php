@@ -80,8 +80,13 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
             </div>
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_external_ip'); ?></label>
-                <input type="text" name="pjsip_external_ip" class="form-control" maxlength="15" value="<?php echo $h($settings['pjsip_external_ip']); ?>" placeholder="203.0.113.10">
-                <small class="u-hint"><?php echo t('asterisk_settings.external_ip_help'); ?></small>
+                <input type="text" name="pjsip_external_ip" class="form-control" maxlength="253" value="<?php echo $h($settings['pjsip_external_ip']); ?>" placeholder="203.0.113.10">
+                <small class="u-hint"><?php echo t('netset.public_help'); ?></small>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('netset.field_media_ip'); ?></label>
+                <input type="text" name="pjsip_external_media_ip" class="form-control" maxlength="253" value="<?php echo $h($settings['pjsip_external_media_ip']); ?>">
+                <small class="u-hint"><?php echo t('netset.media_ip_help'); ?></small>
             </div>
         </div>
         <div class="form-group">
@@ -134,6 +139,29 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
         </div>
         <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
     </form>
+</div>
+
+<div class="card" id="natcheck">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-stethoscope u-primary"></i> <?php echo t('nat_check.title'); ?></div>
+    </div>
+    <div style="padding: 0 20px 20px;">
+        <p class="u-muted u-fs-12"><?php echo t('nat_check.help'); ?></p>
+        <?php if ($natResults !== null): ?>
+            <ul style="list-style: none; margin: 0 0 14px; padding: 0;">
+                <?php foreach ($natResults as $r):
+                    [$icon, $color] = ['ok' => ['fa-check-circle', 'var(--success)'], 'warn' => ['fa-exclamation-triangle', 'var(--warning)'], 'fail' => ['fa-times-circle', 'var(--danger)']][$r['status']] ?? ['fa-info-circle', 'var(--text-muted)'];
+                ?>
+                    <li style="display: flex; gap: 8px; padding: 5px 0; font-size: 13px;"><i class="fas <?php echo $icon; ?>" style="color: <?php echo $color; ?>; margin-top: 3px;"></i><span><?php echo $h($r['text']); ?></span></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
+        <form method="POST" action="/network-settings#natcheck">
+            <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+            <input type="hidden" name="action" value="nat_check">
+            <button type="submit" class="btn btn-secondary"><i class="fas fa-play"></i> <?php echo t('nat_check.run'); ?></button>
+        </form>
+    </div>
 </div>
 
 <div class="card" id="readdress">

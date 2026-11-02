@@ -51,6 +51,7 @@ return [
     '/end-call'        => ['controller' => HangupActionController::class, 'action' => 'index', 'module' => 'end_call.php'],
     '/feature-codes'        => ['controller' => FeatureCodeController::class, 'action' => 'index', 'module' => 'feature_codes.php'],
     '/feature-codes-status' => ['controller' => FeatureCodeStatusController::class, 'action' => 'index', 'module' => 'feature_codes_status.php'],
+    '/advanced-config'      => ['controller' => AdvancedConfigController::class, 'action' => 'index', 'module' => 'advanced_config.php'],
     '/custom-dialplan'      => ['controller' => CustomDialplanController::class, 'action' => 'index', 'module' => 'custom_dialplan.php'],
     '/system-users'    => ['controller' => SystemUserController::class, 'action' => 'index', 'module' => 'system_users.php'],
     '/roles'           => ['controller' => RoleController::class, 'action' => 'index', 'module' => 'roles.php'],

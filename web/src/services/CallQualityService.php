@@ -409,7 +409,7 @@ final class CallQualityService
     public static function ownHosts(): array
     {
         $own = ['127.0.0.1', '::1'];
-        foreach (['server_ip', 'pjsip_external_ip'] as $k) {
+        foreach (['server_ip', 'pjsip_external_ip', 'pjsip_external_media_ip'] as $k) {
             $v = trim((string) getSystemSetting($k, ''));
             if ($v !== '') {
                 $own[] = $v;

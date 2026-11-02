@@ -223,6 +223,7 @@ function check_rbac(): void
         '/ivr-data-steps',
         '/reverse-proxy',
         '/network-settings',
+        '/advanced-config',
         '/network-services',
         '/phone-logs',
         '/custom-dialplan',

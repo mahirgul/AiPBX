@@ -26,7 +26,7 @@ final class NetworkSettingsTest extends TestCase
     public function testServerFormValidation(): void
     {
         $v = NetworkSettingsService::validateServer(['server_ip' => ' 10.0.0.5 ', 'pjsip_external_ip' => '', 'pjsip_local_net' => "10.0.0.0/8\n192.168.1.0/24, 10.0.0.0/8"]);
-        $this->assertSame(['server_ip' => '10.0.0.5', 'pjsip_external_ip' => '', 'pjsip_local_net' => '10.0.0.0/8,192.168.1.0/24'], $v);
+        $this->assertSame(['server_ip' => '10.0.0.5', 'pjsip_external_ip' => '', 'pjsip_external_media_ip' => '', 'pjsip_local_net' => '10.0.0.0/8,192.168.1.0/24'], $v);
         foreach ([
             ['server_ip' => '10.0.0.256'],
             ['pjsip_external_ip' => 'pbx.example.com'],

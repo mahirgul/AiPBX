@@ -29,7 +29,10 @@ require_once __DIR__ . '/PhoneProvisionService.php';
 final class NetworkSettingsService
 {
     /** Settings of the "server addresses" form. */
-    public const SERVER_KEYS = ['server_ip', 'pjsip_external_ip', 'pjsip_local_net'];
+    public const SERVER_KEYS = ['server_ip', 'pjsip_external_ip', 'pjsip_external_media_ip', 'pjsip_local_net'];
+
+    /** A name is allowed for the public addresses: dynamic DNS. Asterisk looks it up again by itself. */
+    private const HOSTNAME = '/^(?=.{1,253}$)([A-Za-z0-9]([A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,63}$/D';
 
     private const IPV4 = '/^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/';
 
@@ -207,7 +210,7 @@ final class NetworkSettingsService
     }
 
     /**
-     * @return array{server_ip: string, pjsip_external_ip: string, pjsip_local_net: string}
+     * @return array{server_ip: string, pjsip_external_ip: string, pjsip_external_media_ip: string, pjsip_local_net: string}
      */
     public static function validateServer(array $data): array
     {
@@ -216,8 +219,15 @@ final class NetworkSettingsService
             throw new \Exception(t('netset.err_server_ip'));
         }
         $public = trim((string) ($data['pjsip_external_ip'] ?? ''));
-        if ($public !== '' && !preg_match(self::IPV4, $public)) {
+        if ($public !== '' && !preg_match(self::IPV4, $public) && !preg_match(self::HOSTNAME, $public)) {
             throw new \Exception(t('netset.err_public_ip'));
+        }
+        $media = trim((string) ($data['pjsip_external_media_ip'] ?? ''));
+        if ($media !== '' && !preg_match(self::IPV4, $media) && !preg_match(self::HOSTNAME, $media)) {
+            throw new \Exception(t('netset.err_public_ip'));
+        }
+        if ($media !== '' && $public === '') {
+            throw new \Exception(t('netset.err_media_without_public'));
         }
         $nets = [];
         foreach (preg_split('/[\s,]+/', trim((string) ($data['pjsip_local_net'] ?? ''))) ?: [] as $n) {
@@ -232,7 +242,7 @@ final class NetworkSettingsService
         if (count($nets) > 32) {
             throw new \Exception(sprintf(t('netset.err_local_net'), '…'));
         }
-        return ['server_ip' => $server, 'pjsip_external_ip' => $public, 'pjsip_local_net' => implode(',', array_values(array_unique($nets)))];
+        return ['server_ip' => $server, 'pjsip_external_ip' => $public, 'pjsip_external_media_ip' => $media, 'pjsip_local_net' => implode(',', array_values(array_unique($nets)))];
     }
 
     /** Stores the server addresses and marks transports and RTP for Apply. */
@@ -246,6 +256,7 @@ final class NetworkSettingsService
         // The transports read these rows (SyncTransports).
         $pj = $db->prepare('INSERT INTO pjsipsettings (keyword, data, seq, type) VALUES (?, ?, 1, 0) ON DUPLICATE KEY UPDATE data = VALUES(data)');
         $pj->execute(['externip_val', $v['pjsip_external_ip']]);
+        $pj->execute(['externmedia_val', $v['pjsip_external_media_ip']]);
         $i = 0;
         foreach (array_filter(explode(',', $v['pjsip_local_net'])) as $net) {
             [$ip, $cidr] = explode('/', $net, 2);
@@ -277,7 +288,7 @@ final class NetworkSettingsService
         $settings = $settings ?? self::settings();
         $files = $files ?? self::fileStatus();
         $changes = [];
-        foreach (['server_ip', 'pjsip_external_ip', 'provision_sip_server', 'provision_sip_proxy', 'provision_base_url', 'provision_syslog', 'provision_ntp'] as $k) {
+        foreach (['server_ip', 'pjsip_external_ip', 'pjsip_external_media_ip', 'provision_sip_server', 'provision_sip_proxy', 'provision_base_url', 'provision_syslog', 'provision_ntp'] as $k) {
             $val = (string) ($settings[$k] ?? '');
             $to = self::replaceHost($val, $old, $new);
             if ($to !== $val) {
