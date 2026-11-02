@@ -103,29 +103,32 @@ final class InboundNormService
         return $rules;
     }
 
+    /** Replaces every rule with a country's, as Load Defaults does on the outbound page. The page asks first. */
     public static function loadPresets(array $data): array
     {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $cc = (string) preg_replace('/[^0-9]/', '', (string) ($data['country_code'] ?? ''));
-            $trunk = trim((string) ($data['trunk_name'] ?? ''));
             $presets = self::presets($cc);
-            if ($presets === [] || ($trunk !== '' && !in_array($trunk, self::trunkNames(), true))) {
+            if ($presets === []) {
                 throw new \Exception(t('inbound_norm.err_country'));
             }
             $db = getDB();
-            $exists = $db->prepare('SELECT id FROM pbx_inbound_norm_rules WHERE trunk_name <=> ? AND target = ? AND match_pattern = ?');
-            $insert = $db->prepare('INSERT INTO pbx_inbound_norm_rules (trunk_name, target, rule_name, match_pattern, strip_front, prepend, is_active, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())');
-            $added = 0;
-            foreach ($presets as $r) {
-                $scope = $trunk !== '' ? $trunk : null;
-                $exists->execute([$scope, $r['target'], $r['match_pattern']]);
-                if ($exists->fetchColumn() === false) {
-                    $insert->execute([$scope, $r['target'], $r['rule_name'], $r['match_pattern'], (int) ($r['strip_front'] ?? 0), (string) ($r['prepend'] ?? ''), (int) ($r['is_active'] ?? 1)]);
-                    $added++;
+            $db->beginTransaction();
+            try {
+                $db->exec('DELETE FROM pbx_inbound_norm_rules');
+                $insert = $db->prepare('INSERT INTO pbx_inbound_norm_rules (trunk_name, target, rule_name, match_pattern, strip_front, prepend, is_active, created_at) VALUES (NULL, ?, ?, ?, ?, ?, ?, NOW())');
+                foreach ($presets as $r) {
+                    $insert->execute([$r['target'], $r['rule_name'], $r['match_pattern'], (int) ($r['strip_front'] ?? 0), (string) ($r['prepend'] ?? ''), (int) ($r['is_active'] ?? 1)]);
                 }
+                $db->commit();
+            } catch (\Throwable $e) {
+                if ($db->inTransaction()) {
+                    $db->rollBack();
+                }
+                throw $e;
             }
-            self::markChanged("+{$cc}", 'create');
-            return sprintf(t('inbound_norm.presets_loaded'), $added);
+            self::markChanged("+{$cc}", 'update');
+            return sprintf(t('inbound_norm.presets_loaded'), count($presets));
         });
     }
 
