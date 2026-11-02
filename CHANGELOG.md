@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.12
+
+- **Cancel in a confirmation did nothing (update soon):** on most portal forms, pressing Cancel in "Are you sure?" still carried out the action, including deleting. Cancel now stops it.
+- **Inbound Call Normalization:** loading a country's ready-made rules now asks first and replaces the existing rules, as on the outbound page.
+
 ## 1.60.11
 
 - **Outbound Call Normalization: Add, Edit and Copy did nothing:** the rule window never opened, because the page called a function that does not exist. Fixed.
