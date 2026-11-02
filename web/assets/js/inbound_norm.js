@@ -46,7 +46,7 @@ function updateInboundPreview() {
         raw ? document.getElementById('inbound_prepend').value + raw.substring(strip) : '—';
 }
 
-let inboundSimTimer = null;
+var inboundSimTimer = null; // var: the portal can load this script more than once
 function debounceInboundSim() {
     clearTimeout(inboundSimTimer);
     inboundSimTimer = setTimeout(runInboundSim, 200);
