@@ -117,6 +117,7 @@ function getModuleKeyForPage($page = null) {
         'trunks.php'            => 'trunks',
         'did_routes.php'        => 'did_routes',
         'blacklist.php'         => 'did_routes',
+        'inbound_normalization.php' => 'did_routes',
         'outbound_routes.php'   => 'outbound_routes',
         'dialplan_rules.php'    => 'outbound_routes',
         'dial_permissions.php' => 'dial_permissions',

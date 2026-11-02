@@ -1,6 +1,6 @@
-# Call Normalization & Ingress Dialplan Rules
+# Outbound Call Normalization
 
-Call Normalization rules act as an intelligent **pre-filter** between subscriber endpoints and the PBX Outbound Routes.
+Outbound Call Normalization rules act as an intelligent **pre-filter** between subscriber endpoints and the PBX Outbound Routes.
 
 ![Where normalization rules sit between the device and the trunk](img/call-normalization.svg)
 
@@ -39,7 +39,7 @@ To guarantee that call centers, queues, faxes and IVRs are never disrupted:
 
 ## Live Normalization Simulator
 
-On the **Trunks → Call Normalization (`/dialplan-rules`)** page, the interactive simulator lets administrators input any test number (e.g. `+905379902352` or `005379902352`), select the target device type, and inspect the real-time pattern match and resulting number.
+On the **Trunks → Outbound Call Normalization (`/dialplan-rules`)** page, the interactive simulator lets administrators input any test number (e.g. `+905379902352` or `005379902352`), select the target device type, and inspect the real-time pattern match and resulting number.
 
 ---
 
@@ -63,3 +63,18 @@ selected:
 - The caller ID is separate: keep the last digits and prepend the code in the same trunk's settings, for example keep 10 and prepend `+1`.
 
 An outbound route's **Prepend** field also accepts a leading `+`, for example `+1`.
+
+---
+
+## Inbound Call Normalization
+
+**Trunks → Inbound Call Normalization** rewrites the numbers of incoming calls, for one trunk or for all of them:
+
+- **Caller's number:** so a caller appears the same way whichever carrier delivered the call. `+4366412345678` can become `066412345678`, which can be called back and matches the blacklist and call history.
+- **Dialled number:** runs after the trunk's "keep the last digits" setting, before the inbound route is matched.
+
+**Rules for a country** adds the usual rules for the caller's number, using that country's dialling plan. **Test a number** shows the result before you press Apply. As on the outbound page, Asterisk picks the most specific pattern, not the first row, and a trunk's own rule comes before a rule for all trunks. Without rules, numbers stay as the carrier sends them.
+
+## Extra SIP Headers
+
+A trunk's **Advanced** tab can add SIP headers to its outgoing calls on outbound routes, one `Name: value` per line, for carriers that ask for one. Standard headers such as `From` and `Contact` cannot be set this way.

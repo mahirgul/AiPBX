@@ -63,6 +63,7 @@ return [
             ['href' => '/trunks', 'icon' => 'fas fa-server', 'label' => 'sidebar.item_trunks', 'show' => $can('trunks'), 'pages' => ['trunks.php']],
             ['href' => '/did-routes', 'icon' => 'fas fa-route', 'label' => 'sidebar.item_did_routes', 'show' => $can('did_routes'), 'pages' => ['did_routes.php']],
             ['href' => '/blacklist', 'icon' => 'fas fa-ban', 'label' => 'sidebar.item_blacklist', 'show' => $can('did_routes'), 'pages' => ['blacklist.php']],
+            ['href' => '/inbound-normalization', 'icon' => 'fas fa-sliders-h', 'label' => 'sidebar.item_inbound_norm', 'show' => $can('did_routes'), 'pages' => ['inbound_normalization.php']],
             ['href' => '/outbound-routes', 'icon' => 'fas fa-sign-out-alt', 'label' => 'sidebar.item_outbound_routes', 'show' => $can('outbound_routes'), 'pages' => ['outbound_routes.php']],
             ['href' => '/dialplan-rules', 'icon' => 'fas fa-sliders-h', 'label' => 'sidebar.item_dialplan_rules', 'show' => $can('outbound_routes'), 'pages' => ['dialplan_rules.php']],
             ['href' => '/dial-permissions', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_dial_permissions', 'title' => 'sidebar.item_dial_permissions', 'show' => $can('dial_permissions'), 'pages' => ['dial_permissions.php'], 'uri' => '/dial-permissions'],

@@ -543,6 +543,11 @@
                         <textarea name="custom_pjsip_params" id="modal_custom_pjsip_params" class="form-control" rows="3" placeholder="trust_id_inbound=yes&#10;inband_progress=yes" style="font-family: monospace; font-size: 12px;"></textarea>
                         <small class="u-hint u-fs-11"><?php echo t('trunks.custom_params_help'); ?></small>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('trunks.field_sip_headers'); ?></label>
+                        <textarea name="custom_sip_headers" id="modal_custom_sip_headers" class="form-control" rows="3" spellcheck="false" placeholder="X-Account: 1234"></textarea>
+                        <small class="u-hint u-fs-11"><?php echo t('trunks.sip_headers_help'); ?></small>
+                    </div>
                 </div>
 
                 <?php echo uiModalFooter('closeTrunkModal()'); ?>

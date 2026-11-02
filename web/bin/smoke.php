@@ -224,6 +224,7 @@ function check_rbac(): void
         '/reverse-proxy',
         '/network-settings',
         '/advanced-config',
+        '/inbound-normalization',
         '/network-services',
         '/phone-logs',
         '/custom-dialplan',

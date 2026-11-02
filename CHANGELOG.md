@@ -7,6 +7,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.10
 
+- **Inbound Call Normalization:** a new page rewrites the caller's number or the dialled number of incoming calls, for one trunk or all of them, with rules for a country and a test field. The earlier page is now called Outbound Call Normalization. Thanks to @quietvw for the request (#149).
+- **SIP headers per trunk:** a trunk can add its own SIP headers to outgoing calls.
 - **Limits in the help:** the help boxes of Reverse Proxy, Trunks, Advanced Configuration, Network settings, Video Meetings, Appearance and Fax Units now say what cannot work, and why.
 
 ## 1.60.9

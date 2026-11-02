@@ -34,6 +34,7 @@ return [
     '/did-routes'      => ['controller' => DidRouteController::class, 'action' => 'index', 'module' => 'did_routes.php'],
     '/blacklist'       => ['controller' => InboundBlacklistController::class, 'action' => 'index', 'module' => 'blacklist.php'],
     '/outbound-routes' => ['controller' => OutboundRouteController::class, 'action' => 'index', 'module' => 'outbound_routes.php'],
+    '/inbound-normalization' => ['controller' => InboundNormController::class, 'action' => 'index', 'module' => 'inbound_normalization.php'],
     '/dialplan-rules'  => ['controller' => DialplanRuleController::class, 'action' => 'index', 'module' => 'dialplan_rules.php'],
     '/dial-permissions' => ['controller' => DialPermissionController::class, 'action' => 'index', 'module' => 'dial_permissions.php'],
     '/time-conditions' => ['controller' => TimeConditionController::class, 'action' => 'index', 'module' => 'time_conditions.php'],
