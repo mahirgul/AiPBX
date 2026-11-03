@@ -131,10 +131,10 @@ TFTP and FTP; read it on **Network & devices → Phone logs**. Set this server's
 own menu or web page).
 
 The page shows the newest 500 lines and, with *Live* on, follows new ones every 3 seconds. Type an
-**IP** or **MAC address** for one phone (part of an address works too, e.g. `10.12.3.`) and text to
+**IP** or **MAC address** for one phone (part of an address works too, e.g. `192.168.1.`) and text to
 narrow the lines; the level list keeps warnings and errors only. A MAC address stands for every
 address the phone was seen at: its last configuration download, the waiting phones, the download
-log, and the log itself — NEC phones name their MAC (`[MAC:0060B9EF8B1F]`) in every line, so their
+log, and the log itself — NEC phones name their MAC (`[MAC:0060B9000002]`) in every line, so their
 other lines from the same address are found too.
 
 Lines are kept in `/var/log/aipbx-phones/phones.log`, rotated at 20 MB with 4 older files (about

@@ -367,23 +367,23 @@ final class PhoneProvisionTest extends TestCase
 
     public function testNecServesItsFile(): void
     {
-        $phone = $this->addPhone('0060b9ef609f', 'nec-dt830');
+        $phone = $this->addPhone('0060b9000003', 'nec-dt830');
         $this->setSetting('provision_allowed_networks', '192.0.2.0/24');
         // dt-<mac>.cfg is the master file naming the data file.
-        $master = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f.cfg', '192.0.2.10', '');
+        $master = PhoneProvisionService::handleRequest(null, 'dt-0060b9000003.cfg', '192.0.2.10', '');
         $this->assertSame(200, $master['status']);
-        $this->assertStringContainsString('<DT_APPLICATION DATA_FILES="dt-0060b9ef609f-phone.cfg" />', $master['body']);
+        $this->assertStringContainsString('<DT_APPLICATION DATA_FILES="dt-0060b9000003-phone.cfg" />', $master['body']);
         $this->assertStringNotContainsString(self::$sipPassword, $master['body']);
-        $res = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f-phone.cfg', '192.0.2.10', '');
+        $res = PhoneProvisionService::handleRequest(null, 'dt-0060b9000003-phone.cfg', '192.0.2.10', '');
         $this->assertSame(200, $res['status']);
         $this->assertStringContainsString('line.1.authentication.password="' . self::$sipPassword . '"', $res['body']);
-        $this->assertSame(200, PhoneProvisionService::handleRequest($phone['token'], 'dt-0060b9ef609f.cfg', '192.0.2.10', '')['status']);
+        $this->assertSame(200, PhoneProvisionService::handleRequest($phone['token'], 'dt-0060b9000003.cfg', '192.0.2.10', '')['status']);
         $this->assertSame(404, PhoneProvisionService::handleRequest(null, 'dt-000000000000.cfg', '192.0.2.10', '')['status']);
 
         // Unix line ends (the phones read them); the local override file next to it.
         $this->assertStringNotContainsString("\r", $res['body']);
         $this->assertStringNotContainsString("\r", $master['body']);
-        $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef609f-local.cfg', '192.0.2.10', '');
+        $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9000003-local.cfg', '192.0.2.10', '');
         $this->assertSame(200, $local['status']);
         $xml = simplexml_load_string($local['body']);
         $this->assertNotFalse($xml);
@@ -392,23 +392,23 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(self::EXT, (string) $data['line.1.extension']);
         $this->assertSame(self::$sipPassword, (string) $data['line.1.authentication.password']);
         $this->assertSame('+3', trim((string) $data['network.gmt.offset']));
-        $this->assertSame(['dt-0060b9ef609f.cfg', 'dt-0060b9ef609f-phone.cfg', 'dt-0060b9ef609f-local.cfg'], (new NecTemplate())->exportFiles('0060b9ef609f'));
+        $this->assertSame(['dt-0060b9000003.cfg', 'dt-0060b9000003-phone.cfg', 'dt-0060b9000003-local.cfg'], (new NecTemplate())->exportFiles('0060b9000003'));
     }
 
     /** The local file's <VERSION> rises with each change of the files, and only then. */
     public function testNecLocalVersionRisesOnlyWhenTheFilesChange(): void
     {
-        $phone = $this->addPhone('0060b9ef6100', 'nec-dt830');
+        $phone = $this->addPhone('0060b9000004', 'nec-dt830');
         $this->setSetting('provision_allowed_networks', '192.0.2.0/24');
         $version = function (): string {
-            $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9ef6100-local.cfg', '192.0.2.10', '');
+            $local = PhoneProvisionService::handleRequest(null, 'dt-0060b9000004-local.cfg', '192.0.2.10', '');
             $this->assertSame(200, $local['status']);
             return (string) simplexml_load_string($local['body'])->VERSION['Version'];
         };
         // Starts above 2, the version the phones in use were set up with.
         $this->assertSame('3', $version());
         // Fetching again, or the other files, changes nothing.
-        PhoneProvisionService::handleRequest(null, 'dt-0060b9ef6100-phone.cfg', '192.0.2.10', '');
+        PhoneProvisionService::handleRequest(null, 'dt-0060b9000004-phone.cfg', '192.0.2.10', '');
         $this->assertSame('3', $version());
 
         // The preview shows the next number without taking it.
@@ -440,11 +440,11 @@ final class PhoneProvisionTest extends TestCase
             ['poly', 'phone0004f2aabbcc.cfg', '0004f2aabbcc'],
             ['poly', '000000000000.cfg', ''],
             ['poly', '0004f2aabbcc-phone.cfg', ''],
-            ['nec', 'dt-0060b9ef609f.cfg', '0060b9ef609f'],
-            ['nec', 'dt-0060B9EF609F.cfg', '0060b9ef609f'],
+            ['nec', 'dt-0060b9000003.cfg', '0060b9000003'],
+            ['nec', 'dt-0060B9000003.cfg', '0060b9000003'],
             ['nec', 'dt-000000000000.cfg', ''],
-            ['nec', 'dt-0060b9ef609f-local.cfg', '0060b9ef609f'],
-            ['nec', 'dt-0060B9EF609F-phone.cfg', '0060b9ef609f'],
+            ['nec', 'dt-0060b9000003-local.cfg', '0060b9000003'],
+            ['nec', 'dt-0060B9000003-phone.cfg', '0060b9000003'],
             ['nec', 'dt-sip.cfg', ''],
             ['cisco-cm', 'SEP001565AABBCC.cnf.xml', '001565aabbcc'],
             ['cisco-cm', 'SEP001565aabbcc.cnf.xml', '001565aabbcc'],

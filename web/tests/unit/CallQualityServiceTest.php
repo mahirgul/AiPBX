@@ -48,11 +48,11 @@ final class CallQualityServiceTest extends TestCase
 
     public function testALegIsNamedFromItsInvite(): void
     {
-        $trunks = ['VOIP' => ['203.0.113.10'], 'NEC' => ['10.12.0.0/16']];
+        $trunks = ['VOIP' => ['203.0.113.10'], 'NEC' => ['10.55.0.0/16']];
         $exts = ['3001' => 0];
         $c = fn($src, $dst, $from, $to) => CallQualityService::classify(['src' => $src, 'dst' => $dst, 'from_uri' => $from, 'to_uri' => $to], self::OWN, $trunks, $exts);
         $this->assertSame(['trunk', 'VOIP'], $c('203.0.113.10:5060', '10.0.0.5:5060', '<sip:0532@x>', '<sip:3000@y>'));
-        $this->assertSame(['trunk', 'NEC'], $c('10.0.0.5:5060', '10.12.3.4:5060', '<sip:3001@a>', '<sip:5123@b>'), 'CIDR of the match list');
+        $this->assertSame(['trunk', 'NEC'], $c('10.0.0.5:5060', '10.55.3.4:5060', '<sip:3001@a>', '<sip:5123@b>'), 'CIDR of the match list');
         $this->assertSame(['extension', '3001'], $c('10.0.0.9:5060', '10.0.0.5:5060', '"Ali" <sip:3001@pbx>', '<sip:9000@pbx>'));
         $this->assertSame(['other', '2001:db8::1'], $c('[2001:db8::1]:5060', '10.0.0.5:5060', '<sip:777@a>', '<sip:888@b>'));
     }
@@ -101,8 +101,8 @@ final class CallQualityServiceTest extends TestCase
 
     public function testCidr(): void
     {
-        $this->assertTrue(CallQualityService::inCidr('10.12.3.4', '10.12.0.0/16'));
-        $this->assertFalse(CallQualityService::inCidr('10.13.0.1', '10.12.0.0/16'));
-        $this->assertFalse(CallQualityService::inCidr('10.12.0.1', '10.12.0.1'), 'not a CIDR');
+        $this->assertTrue(CallQualityService::inCidr('10.55.3.4', '10.55.0.0/16'));
+        $this->assertFalse(CallQualityService::inCidr('10.13.0.1', '10.55.0.0/16'));
+        $this->assertFalse(CallQualityService::inCidr('10.55.0.1', '10.55.0.1'), 'not a CIDR');
     }
 }

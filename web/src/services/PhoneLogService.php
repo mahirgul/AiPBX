@@ -3,7 +3,7 @@
  * PBX → Phone logs: what desk phones send as syslog, received by
  * aipbx-syslogd (Network services → Syslog) into FILE, one line per message:
  *
- *     2026-10-15T11:10:01+03:00 10.12.3.90 err <message>
+ *     2026-10-15T11:10:01+03:00 192.168.1.90 err <message>
  *
  * The page shows the newest lines and follows the file (the browser asks for
  * what came after its cursor every few seconds). Lines can be narrowed to one
@@ -11,7 +11,7 @@
  *
  * A MAC address stands for the IP addresses that phone used: its row on the
  * Phones page (last configuration download), waiting phones, the download log
- * and the log itself (NEC phones write "[MAC:0060B9EF8B1F]" in every line),
+ * and the log itself (NEC phones write "[MAC:0060B9000002]" in every line),
  * and for lines that name the MAC.
  *
  * Next to the syslog the page has a tab for every other way a phone talks to
@@ -133,7 +133,7 @@ class PhoneLogService
                 return false;
             }
             if ($who !== '' && $ip === '' && $mac === '' && stripos($l['ip'], $who) === false) {
-                return false;                       // part of an address, e.g. "10.12.3."
+                return false;                       // part of an address, e.g. "192.168.1."
             }
             return $text === '' || stripos($l['message'], $text) !== false;
         }));
@@ -182,8 +182,8 @@ class PhoneLogService
 
     /**
      * vsftpd transfer log (times in the server's local time zone):
-     *   Thu Oct 15 11:31:12 2026 [pid 824877] [NECSDT700] OK DOWNLOAD: Client "192.168.1.70", "/dt-0060b98cb528.cfg", 1265 bytes, 3676.64Kbyte/sec
-     *   Thu Oct 15 11:31:12 2026 [pid 824875] [NECSDT700] FAIL LOGIN: Client "10.12.3.90"
+     *   Thu Oct 15 11:31:12 2026 [pid 824877] [NECSDT700] OK DOWNLOAD: Client "192.168.1.70", "/dt-0060b9000001.cfg", 1265 bytes, 3676.64Kbyte/sec
+     *   Thu Oct 15 11:31:12 2026 [pid 824875] [NECSDT700] FAIL LOGIN: Client "192.168.1.90"
      * CONNECT lines are left out (one per session, no information).
      */
     public static function parseFtp(string $line, ?\DateTimeZone $tz = null): ?array
@@ -226,8 +226,8 @@ class PhoneLogService
 
     /**
      * dnsmasq DHCP (journalctl -o short-iso):
-     *   ... dnsmasq-dhcp[1]: DHCPDISCOVER(eth1) 00:60:b9:ef:8b:1f
-     *   ... dnsmasq-dhcp[1]: DHCPACK(eth1) 192.168.10.50 00:60:b9:ef:8b:1f DT710
+     *   ... dnsmasq-dhcp[1]: DHCPDISCOVER(eth1) 00:60:b9:00:00:02
+     *   ... dnsmasq-dhcp[1]: DHCPACK(eth1) 192.168.10.50 00:60:b9:00:00:02 DT710
      */
     public static function parseDhcp(string $line): ?array
     {
@@ -266,7 +266,7 @@ class PhoneLogService
         }
     }
 
-    /** The MAC in a phone's file name (dt-0060b9ef609f-phone.cfg, 001565aabbcc.cfg), or ''. */
+    /** The MAC in a phone's file name (dt-0060b9000003-phone.cfg, 001565aabbcc.cfg), or ''. */
     public static function macInFile(string $file): string
     {
         return preg_match('/(?<![0-9a-f])([0-9a-f]{12})(?![0-9a-f])/i', $file, $m) && $m[1] !== '000000000000'
@@ -298,7 +298,7 @@ class PhoneLogService
         }));
     }
 
-    /** The MAC a message names ("MAC:0060B9EF8B1F", "MAC: 00:60:B9:EF:8B:1F"), lowercase 12 hex, or ''. */
+    /** The MAC a message names ("MAC:0060B9000002", "MAC: 00:60:B9:00:00:02"), lowercase 12 hex, or ''. */
     public static function macInText(string $message): string
     {
         return preg_match(self::MAC_IN_TEXT, $message, $m) ? PhoneModels::normalizeMac($m[1]) : '';

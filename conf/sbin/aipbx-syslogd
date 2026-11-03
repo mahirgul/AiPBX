@@ -4,7 +4,7 @@
 Desk phones send their log as syslog over UDP 514. This writes one line per
 message to /var/log/aipbx-phones/phones.log:
 
-    2026-10-15T11:10:01+03:00 10.12.3.90 err <message as sent, without <PRI>>
+    2026-10-15T11:10:01+03:00 192.168.1.90 err <message as sent, without <PRI>>
 
 - Only senders in the allowed networks (net= lines of the configuration that
   `aipbx-priv netsvc syslog-on` writes) are accepted: the firewall opens the
