@@ -30,11 +30,14 @@ class FaxSettingsService {
                 $stmt = $db->prepare('UPDATE sys_did_mappings SET department_name = ?, notification_email = ?, did_extension = ?, assigned_user_id = ?, is_active = ? WHERE id = ?');
                 $stmt->execute([$dept, $email, $did_extension ?: null, $assigned_user_id, $is_active, $did_id]);
                 writeAuditLog(null, 'did_mapping', $did_id, "Fax unit: {$dept}", 'update', $uid);
+                markPendingSync('general_dialplan', 'did_mapping', $did_id, "Fax unit: {$dept}", 'update', $uid);
                 return ['success' => true, 'message' => sprintf(t('srv_fax.dept_updated'), $dept)];
             }
             $stmt = $db->prepare('INSERT INTO sys_did_mappings (department_name, notification_email, did_extension, assigned_user_id, is_active) VALUES (?, ?, ?, ?, ?)');
             $stmt->execute([$dept, $email, $did_extension ?: null, $assigned_user_id, $is_active]);
-            writeAuditLog(null, 'did_mapping', $db->lastInsertId(), "Fax unit: {$dept}", 'create', $uid);
+            $new_id = $db->lastInsertId();
+            writeAuditLog(null, 'did_mapping', $new_id, "Fax unit: {$dept}", 'create', $uid);
+            markPendingSync('general_dialplan', 'did_mapping', $new_id, "Fax unit: {$dept}", 'create', $uid);
             return ['success' => true, 'message' => sprintf(t('srv_fax.dept_added'), $dept)];
         } catch (\PDOException $e) {
             return ['success' => false, 'error' => sprintf(t('common.error_colon'), $e->getMessage())];
@@ -52,6 +55,7 @@ class FaxSettingsService {
             $dept = DBHelper::fetchColumn("SELECT department_name FROM sys_did_mappings WHERE id = ?", [$did_id]);
             DBHelper::delete('sys_did_mappings', 'id', $did_id);
             writeAuditLog(null, 'did_mapping', $did_id, "Fax unit: " . ($dept ?: $did_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'did_mapping', $did_id, "Fax unit: " . ($dept ?: $did_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             return ['success' => true, 'message' => t('srv_fax.dept_deleted')];
         }
         return ['success' => true, 'message' => ''];

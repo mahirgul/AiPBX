@@ -63,7 +63,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
         <?php
             $other_names = array_map(fn($a) => $a['full_name'], $other_active_admins);
         ?>
-        <div class="nav-link" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 12px 12px; padding: 10px 12px; border-radius: 8px; background: var(--info); color: #fff; font-weight: 700; font-size: 12px; text-align: center;" title="<?php echo htmlspecialchars(implode(', ', $other_names)); ?>">
+        <div class="nav-link" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0 12px 12px; padding: 10px 12px; border-radius: 8px; background: var(--nav-active-bg); color: var(--primary); font-weight: 700; font-size: 12px; text-align: center;" title="<?php echo htmlspecialchars(implode(', ', $other_names)); ?>">
             <i class="fas fa-user-clock"></i>
             <span class="nav-text"><?php echo t('sidebar.other_admin_active'); ?></span>
         </div>

@@ -47,6 +47,9 @@ if [ "$STATUS" != "SUCCESS" ]; then
 fi
 
 # Backslashes are dropped too: MariaDB treats \' as an escape, which would break the '' doubling.
+# A delivered fax has no error: when the far end hangs up first, Asterisk still
+# reports HANGUP here, and the Sent Faxes page would show it as the detail.
+if [ "$STATUS" = "SUCCESS" ]; then ERROR_MSG=""; fi
 ESCAPED_ERR=$(printf '%s' "$ERROR_MSG" | tr -d '\r\n\\' | sed "s/'/''/g")
 
 # The password goes in the environment, not on the command line: -p<password> was visible to everyone in `ps`.

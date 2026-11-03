@@ -565,6 +565,16 @@ case "$cmd" in
                 [ -d /var/lib/aipbx/tftp ] || install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
                 chown root:root "$NETSVC_DIR"; chmod 0755 "$NETSVC_DIR"
                 chown "$user:" "$NETSVC_DIR/leases"; chmod 0755 "$NETSVC_DIR/leases"
+                # Another program on the port makes dnsmasq fail and restart for ever, while
+                # phones fetch that program's files. Say so instead of switching on.
+                own_pid="$(systemctl show -p MainPID --value aipbx-dnsmasq.service 2>/dev/null)"
+                for port_check in "$( [ "$tftp" = 1 ] && echo 69 )" "$( [ "$mode" = dhcp ] && echo 67 )"; do
+                    [ -n "$port_check" ] || continue
+                    holder="$(ss -Hlunp "sport = :$port_check" 2>/dev/null | grep -v "pid=${own_pid:-0}," | head -1)"
+                    [ -z "$holder" ] && continue
+                    holder_name="$(printf '%s' "$holder" | sed -n 's/.*users:(("\([^"]*\)".*/\1/p')"
+                    die "UDP port $port_check is in use by ${holder_name:-another program}. Stop that program first: phones get its files, not the ones on this page."
+                done
                 tmp="$(mktemp "$NETSVC_DIR/.dnsmasq.XXXXXX")" || exit 1
                 trap 'rm -f "$tmp"' EXIT
                 {

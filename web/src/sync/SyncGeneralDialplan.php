@@ -9,6 +9,36 @@ function syncGeneralDialplan() {
     return withSyncLock('general_dialplan', '__syncGeneralDialplanBody');
 }
 
+/**
+ * Fax users have no SIP device, so they are left out of the direct-dial list and
+ * their number used to fall through to an outbound route. An outbound route such
+ * as _9[0-5]XX then sent a fax for our own 9276 to the other exchange. A number
+ * that lives here stays here: the numbers of active fax users and fax units go
+ * to the fax receiver. A SIP extension with the same number keeps it.
+ *
+ * @param list<string> $sipExtensions
+ */
+function buildInternalFaxLines(PDO $db, array $sipExtensions): string {
+    $numbers = array_merge(
+        $db->query("SELECT extension FROM sys_users WHERE extension_type = 'fax' AND is_active = 1 AND extension IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN),
+        $db->query("SELECT did_extension FROM sys_did_mappings WHERE is_active = 1 AND did_extension IS NOT NULL")->fetchAll(PDO::FETCH_COLUMN)
+    );
+    $taken = array_flip(array_map(static fn($e): string => trim((string) $e), $sipExtensions));
+
+    $conf = '';
+    $seen = [];
+    foreach ($numbers as $raw) {
+        $number = trim((string) $raw);
+        if (preg_match('/^[0-9]+$/D', $number) !== 1 || isset($taken[$number]) || isset($seen[$number])) {
+            continue;
+        }
+        $seen[$number] = true;
+        $conf .= "exten => {$number},1,NoOp(Internal call to fax number {$number})\n";
+        $conf .= " same => n,Goto(from-trunk-fax,{$number},1)\n";
+    }
+    return $conf === '' ? '' : "; Fax users and fax units: a number of ours is never sent to a trunk\n{$conf}";
+}
+
 function __syncGeneralDialplanBody() {
     $db = getDB();
     // Fax users (extension_type='fax') have no PJSIP registration at all —
@@ -136,6 +166,8 @@ function __syncGeneralDialplanBody() {
         $conf .= " same => n(unavail),NoOp(No registered contacts for \${EXTEN})\n";
         $conf .= " same => n,Hangup()\n";
     }
+
+    $conf .= buildInternalFaxLines($db, array_column($active_exts ?: [], 'extension'));
 
     // Default context: shared internal plan + group 1 outbound routes.
     // All existing endpoints and the Local/...@from-internal-pbx calls in the

@@ -150,10 +150,12 @@ function __syncInboundDialplanBody() {
             $conf .= "include => from-trunk-inbound\n";
 
             if ($allow_outbound) {
-                $conf .= "; 2. Trunk-to-trunk / transit: outbound routes (group {$route_group})\n";
-                $conf .= "include => from-internal-outbound-{$route_group}\n";
-                $conf .= "; 3. Extensions & internal numbers\n";
+                // Extensions first: a number of ours must not go back out through
+                // an outbound route that happens to match it.
+                $conf .= "; 2. Extensions & internal numbers\n";
                 $conf .= "include => from-internal-pbx-ortak\n";
+                $conf .= "; 3. Trunk-to-trunk / transit: outbound routes (group {$route_group})\n";
+                $conf .= "include => from-internal-outbound-{$route_group}\n";
             }
 
             $conf .= "; 4. Closing for unmatched routes\n";

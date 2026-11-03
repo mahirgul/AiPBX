@@ -371,6 +371,9 @@ final class HealthChecks
         }
         $down = [];
         if ($mode !== 'off' && trim(self::sh('systemctl is-active aipbx-dnsmasq')) !== 'active') {
+            if (getSystemSetting('netsvc_tftp', '1') === '1' && trim(self::sh("ss -Hlun 'sport = :69'")) !== '') {
+                return ['fail', t('health.msg_netsvc_port_busy')];
+            }
             $down[] = $mode === 'dhcp' ? 'DHCP/TFTP' : 'TFTP';
         }
         if ($ftp && trim(self::sh('systemctl is-active aipbx-vsftpd')) !== 'active') {
