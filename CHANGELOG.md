@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.19
+
+- **Mail on a sign-in from a new network.** When an account signs in from an internet network it has not used in the last 90 days, its owner gets a mail with the address, time and browser. It covers every way in: password, two-factor, single sign-on, passkey, QR and the mobile app. A stolen password that works looks like a normal sign-in to the lockouts and Fail2ban, so this is what tells the owner. On by default; Appearance → Sign-in alerts turns it off, and the text is on the Mail templates page.
+
 ## 1.60.18
 
 - **VPN Server and VPN Client pages (Network & devices).** Choose WireGuard or OpenVPN. The server gives each phone, softphone or laptop its own keys and a profile to download (a QR code for WireGuard); deleting a device shuts it out at once and leaves the others connected. The client connects the PBX to another network by uploading a `.conf` or `.ovpn` profile, or pasting it. VPN networks become local networks for Asterisk, so a phone on the VPN gets the right address in its calls. See `docs/vpn.md`.

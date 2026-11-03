@@ -272,6 +272,17 @@
 
 <form method="POST" autocomplete="off" class="card" style="margin-top: 20px; padding: 20px;">
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+    <input type="hidden" name="save_login_alert" value="1">
+    <h3 style="font-size: 16px; font-weight: 800; margin: 0 0 12px 0;"><i class="fas fa-bell"></i> <?php echo t('login_alert.title'); ?></h3>
+    <p class="u-muted u-fs-12"><?php echo t('login_alert.help'); ?></p>
+    <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 12px; font-size: 13px;">
+        <input type="checkbox" name="login_new_ip_alert" value="1" <?php echo $login_alert_on ? 'checked' : ''; ?>> <?php echo t('login_alert.enable'); ?>
+    </label>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+</form>
+
+<form method="POST" autocomplete="off" class="card" style="margin-top: 20px; padding: 20px;">
+    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_sso_only" value="1">
     <h3 style="font-size: 16px; font-weight: 800; margin: 0 0 12px 0;"><i class="fas fa-id-badge"></i> <?php echo t('sso_only.title'); ?></h3>
     <p class="u-muted u-fs-12"><?php echo t('sso_only.help'); ?></p>
