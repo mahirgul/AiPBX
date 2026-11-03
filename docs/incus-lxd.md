@@ -10,6 +10,8 @@ Docker is not supported, because it runs one program per container. See the [roa
 Incus is the community continuation of LXD, and the two use almost the same commands. The commands below are for Incus.
 With LXD, type `lxc` instead of `incus`.
 
+> The VPN pages need the WireGuard kernel module on the host and `/dev/net/tun` in the container for OpenVPN (see [VPN](vpn.md)).
+
 ## What was tested
 
 Tested on LXD 6.10 with an Ubuntu 26.04 image and 4 GB of memory, on its default bridge network. The install took about

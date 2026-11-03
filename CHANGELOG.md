@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.18
+
+- **VPN Server and VPN Client pages (Network & devices).** Choose WireGuard or OpenVPN. The server gives each phone, softphone or laptop its own keys and a profile to download (a QR code for WireGuard); deleting a device shuts it out at once and leaves the others connected. The client connects the PBX to another network by uploading a `.conf` or `.ovpn` profile, or pasting it. VPN networks become local networks for Asterisk, so a phone on the VPN gets the right address in its calls. See `docs/vpn.md`.
+- **A VPN profile cannot run commands on the server.** Profiles are read against a list of allowed settings and written out again, so `PostUp`, `up`, `plugin`, `script-security` and files named by path are refused. Keys are kept in a folder only root can read and are part of the daily backup; restoring an uploaded backup leaves them out.
+- **A VPN cannot take over the PBX's traffic.** The default route, name servers and routes sent by the far side are never taken. VPN devices reach this server only, not other devices or the networks behind it. An OpenVPN or WireGuard the server already runs by itself is left alone.
+
 ## 1.60.17
 
 - **Updates work again on systems with TFTP switched on.** 1.60.16 stopped during the update on such a system and went back to the previous release, with nothing lost. Skip 1.60.16 and take this one. Other systems are not affected.

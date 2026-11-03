@@ -59,6 +59,7 @@ class AuditLogController extends BaseController
             'file_storage'       => 'file_storage',
             'network_services'   => 'network_services',
             'network_settings'   => 'network_settings',
+            'vpn'                => 'vpn',
             'ms_teams'           => 'ms_teams',
             'google_integration' => 'google_integration',
         ]);

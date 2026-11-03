@@ -82,6 +82,10 @@ jobs:
 
       # 1.60.16 stopped every update here: a check in install.sh found nothing to
       # report when our own dnsmasq held the port, and pipefail ended the script.
+      - name: VPN helper answers through the portal's root helper
+        run: |
+          sudo /usr/local/sbin/aipbx-priv vpn status | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["caps"]["wg"] and d["caps"]["ovpn"] and d["server"]["type"] == "off"'
+          systemctl cat aipbx-vpn@.service >/dev/null
       - name: An update with the portal's TFTP switched on
         run: |
           sudo /usr/local/sbin/aipbx-priv netsvc apply mode=tftp tftp=1 net=10.0.0.0/8

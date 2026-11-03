@@ -250,7 +250,7 @@ LOG;
     {
         $this->assertSame(['ok', 'warn', 'fail', 'info', 'off', 'unknown'], HealthChecks::STATUSES);
         $this->assertSame([0, 5, 15, 60, 360, 1440], HealthChecks::INTERVALS);
-        $this->assertCount(22, HealthChecks::DEFAULTS);
+        $this->assertCount(23, HealthChecks::DEFAULTS);
 
         foreach (HealthChecks::DEFAULTS as $k => $interval) {
             $this->assertContains($interval, HealthChecks::INTERVALS);

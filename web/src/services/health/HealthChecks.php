@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../VpnService.php';
 /**
  * The checks of Admin → Health checks (docs/health.md). Each one returns
  * [status, message]:
@@ -33,6 +34,7 @@ final class HealthChecks
         'alerts' => 5,
         'failed_registrations' => 15,
         'network_services' => 15,
+        'vpn' => 15,
         'server_address' => 60,
         'local_ai' => 15,
         'certificate' => 1440,
@@ -65,6 +67,7 @@ final class HealthChecks
                 'alerts' => self::alerts(),
                 'failed_registrations' => self::failedRegistrations(),
                 'network_services' => self::networkServices(),
+                'vpn' => self::vpn(),
                 'server_address' => self::serverAddress(),
                 'local_ai' => self::localAi(),
                 'certificate' => self::certificate(),
@@ -358,6 +361,23 @@ final class HealthChecks
         }
         $failed = (int) $db->query("SELECT COUNT(*) FROM fax_sent WHERE status = 'FAILED' AND created_at > NOW() - INTERVAL 1 DAY")->fetchColumn();
         return ['ok', sprintf(t('health.msg_fax_ok'), $failed)];
+    }
+
+    private static function vpn(): array
+    {
+        $status = VpnService::status();
+        $wanted = ($status['server']['type'] ?? 'off') !== 'off';
+        $down = $wanted && empty($status['server']['active']) ? ['VPN server'] : [];
+        foreach ($status['tunnels'] as $tunnel) {
+            $wanted = $wanted || !empty($tunnel['enabled']);
+            if (!empty($tunnel['enabled']) && empty($tunnel['online'])) {
+                $down[] = (string) $tunnel['name'];
+            }
+        }
+        if (!$wanted) {
+            return ['off', t('health.msg_netsvc_off')];
+        }
+        return $down ? ['fail', sprintf(t('health.msg_netsvc_down'), implode(', ', $down))] : ['ok', t('health.msg_netsvc_ok')];
     }
 
     private static function networkServices(): array
