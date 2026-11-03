@@ -127,13 +127,10 @@ ATTACH_PDF_ENABLED=$($MYSQL_QUERY -e \
   "SELECT setting_value FROM sys_settings WHERE setting_key = 'fax_email_rx_attach_pdf' LIMIT 1;" 2>/dev/null)
 if [ -z "$ATTACH_PDF_ENABLED" ]; then ATTACH_PDF_ENABLED="yes"; fi
 
-# The notification email and unit name follow a three-level priority (the
-# 2026-08-19 "1 prefix" revision: the DID (e.g. 19276) and the fax user's
-# extension (e.g. 9276) no longer match textually — the "1" stays only on the
-# DID side):
+# The notification email and unit name follow a three-level priority:
 # 1) sys_did_mappings.notification_email/department_name (exact DID match, entered explicitly by the admin)
 # 2) sys_did_mappings.assigned_user_id -> sys_users (the fax user linked on the Fax Units page)
-# 3) drop the leading "1" of EXTEN and match sys_users.extension (a safety net for new DIDs never saved in sys_did_mappings)
+# 3) sys_users.extension equal to EXTEN (a fax user dialled by their own number)
 NOTIFY_EMAIL=$($MYSQL_QUERY -e \
   "SELECT notification_email FROM sys_did_mappings WHERE did_extension = '$EXTEN' AND is_active = 1 AND notification_email != '' LIMIT 1;" 2>/dev/null)
 
@@ -151,12 +148,8 @@ if [ -z "$NOTIFY_EMAIL" ] || [ -z "$DEPT_NAME" ]; then
 fi
 
 if [ -z "$NOTIFY_EMAIL" ] || [ -z "$DEPT_NAME" ]; then
-    STRIPPED_EXTEN="$EXTEN"
-    if [[ "$EXTEN" =~ ^1[0-9]{4}$ ]]; then
-        STRIPPED_EXTEN="${EXTEN:1}"
-    fi
     FALLBACK_ROW=$($MYSQL_QUERY -e \
-      "SELECT email, full_name FROM sys_users WHERE extension = '$STRIPPED_EXTEN' AND extension_type = 'fax' LIMIT 1;" 2>/dev/null)
+      "SELECT email, full_name FROM sys_users WHERE extension = '$EXTEN' AND extension_type = 'fax' LIMIT 1;" 2>/dev/null)
     FALLBACK_EMAIL=$(echo "$FALLBACK_ROW" | cut -f1)
     FALLBACK_NAME=$(echo "$FALLBACK_ROW" | cut -f2)
 

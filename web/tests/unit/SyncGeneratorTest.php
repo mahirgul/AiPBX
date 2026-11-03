@@ -171,6 +171,9 @@ final class SyncGeneratorTest extends TestCase
             $conf = $this->endpointsConf();
 
             $this->assertStringContainsString('[7001-sip](endpoint-sip)', $conf);
+            $template = (string) strstr((string) strstr($conf, '[endpoint-sip](!)'), '[endpoint-wss](!)', true);
+            $this->assertStringContainsString('send_pai=yes', $template, 'desk phones show "asterisk" as the caller without it');
+            $this->assertStringNotContainsString('trust_id_outbound', $template, 'a hidden number must stay hidden');
             $this->assertStringContainsString('auth=auth7001-sip', $conf);
             $this->assertStringContainsString('[auth7001-sip](auth-userpass)', $conf);
             $this->assertStringContainsString('[7001-sip-identify]', $conf);

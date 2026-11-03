@@ -5,6 +5,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.16
+
+- **Desk phones show who is calling:** NEC DT700/DT800 phones showed "asterisk" instead of the caller's number. Extensions now send the caller in a header these phones read. A caller who hides their number stays hidden.
+- **"Another admin is currently active" can be read in the light theme.** The text was white on no background.
+- **Network services: another TFTP server on the same port is now reported.** If a separate program such as tftpd-hpa held UDP port 69, TFTP restarted for ever without a word, and phones got that program's files. The page now refuses with the program's name, the health check says why, and an update warns.
+- **A number of ours is never sent to a trunk:** a fax user's or Fax Unit's number that also matched an outbound route used to leave through that trunk, so a fax for a local number went to the other exchange. It now reaches the fax receiver here. A call arriving from a trunk with transit allowed also looks at extensions first. Numbers that are not on this system still follow the routes.
+- **Fax numbers are matched exactly:** the old rule that treated 19350 and 9350 as the same number is gone. A fax user gets the faxes of their own number and of the Fax Units linked to them. If you relied on that rule, add a Fax Unit for each such number before you update, or its faxes send no mail and stay visible only to administrators.
+
 ## 1.60.15
 
 - **Sign-in only through the identity provider: updates work again (update soon if you use this).** Every update rolled back, the health check reported a failure, and the page tests failed, because `/login` redirected and `/forgot-password` showed nothing. Now only a browser is sent on to the provider. The sign-in page of this mode also has its logo and layout now.

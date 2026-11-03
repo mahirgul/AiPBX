@@ -129,6 +129,9 @@ class PBXHelper {
                 if ($table === 'pbx_outbound_routes') {
                     markPendingSync('ivrs', $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
                 }
+                if ($table === 'sys_did_mappings') {
+                    markPendingSync('general_dialplan', $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
+                }
                 if ($table === 'sys_users' && !empty($row['extension'])) {
                     $uid = $_SESSION['user_id'] ?? null;
                     $lbl = ($row['label'] ?: $id) . " ({$status_text}, ext {$row['extension']})";

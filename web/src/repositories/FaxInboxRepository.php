@@ -15,11 +15,6 @@ class FaxInboxRepository extends BaseRepository
         $ext = trim($userExt);
         if ($ext !== '') {
             $dids[] = $ext;
-            if (strlen($ext) === 4) {
-                $dids[] = '1' . $ext;
-            } elseif (strlen($ext) === 5 && $ext[0] === '1') {
-                $dids[] = substr($ext, 1);
-            }
         }
         if ($userId > 0) {
             $stmt = static::db()->prepare("SELECT did_extension FROM sys_did_mappings WHERE assigned_user_id = ? AND is_active = 1");

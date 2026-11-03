@@ -165,6 +165,10 @@ function __syncAllExtensionsBody() {
     $conf .= "direct_media=no\n";
     $conf .= "dtmf_mode=rfc4733\n";
     $conf .= "rtp_timeout=60\n";
+    // Some desk phones (NEC DT700/DT800) show the Contact user, "asterisk", as the caller
+    // unless this header names the caller. Measured on a DT710. Without trust_id_outbound
+    // a caller who hides their number stays hidden.
+    $conf .= "send_pai=yes\n";
     $conf .= "rtp_timeout_hold=300\n\n";
 
     // WebRTC (browser/WSS) clients: DTLS-SRTP, ICE, AVPF
