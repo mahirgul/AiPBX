@@ -828,7 +828,7 @@ final class ApiV1PbxHandlers
         }
 
         if ($method === 'DELETE' && $idStr !== null && $subAction === null) {
-            ApiRequestContext::requireScope('pbx:write');
+            ApiRequestContext::requireScope('queues:write');
             $res = QueueService::deleteQueue((int)$idStr, ApiRequestContext::csrfToken());
             ApiResponse::fromServiceResult($res);
         }

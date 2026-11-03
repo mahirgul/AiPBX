@@ -1093,6 +1093,17 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 	}
 	defer tx.Rollback()
 
+	// Two admins leaving at once would each still see the other as an admin (a
+	// plain read in a transaction sees its snapshot), nobody would be promoted and
+	// the group would stay without an admin for good. The lock on the group's rows
+	// comes first, so the second leaver waits and then counts what is left. It has
+	// to come before the UPDATE: locked after it, the two would deadlock.
+	lockRows, err := tx.Query("SELECT id FROM chat_participants WHERE conversation_id = ? FOR UPDATE", convID)
+	if err != nil {
+		return nil, err
+	}
+	lockRows.Close()
+
 	res, err := tx.Exec(`
 		UPDATE chat_participants
 		SET left_at = NOW()
@@ -1106,7 +1117,7 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 	}
 
 	var remainingCount int
-	if err := tx.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND left_at IS NULL", convID).Scan(&remainingCount); err != nil {
+	if err := tx.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND left_at IS NULL FOR UPDATE", convID).Scan(&remainingCount); err != nil {
 		return nil, err
 	}
 
@@ -1122,7 +1133,7 @@ func LeaveGroup(convID int, ext string) (*Message, error) {
 
 	// If the last admin leaves, make the oldest member admin
 	var adminCount int
-	if err := tx.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL", convID).Scan(&adminCount); err != nil {
+	if err := tx.QueryRow("SELECT COUNT(*) FROM chat_participants WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL FOR UPDATE", convID).Scan(&adminCount); err != nil {
 		return nil, err
 	}
 	if adminCount == 0 {

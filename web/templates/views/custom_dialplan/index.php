@@ -116,7 +116,7 @@ $can_delete = $canDelete ?? false;
                                     </button>
                                 <?php endif; ?>
                                 <?php if ($can_delete): ?>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('custom_dialplan.confirm_delete', 'Bu özel arama planı context\'ini silmek istediğinize emin misiniz?')); ?>');">
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo jsArg(t('custom_dialplan.confirm_delete')); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="action" value="delete_entry">
                                         <input type="hidden" name="entry_id" value="<?php echo (int)$e['id']; ?>">

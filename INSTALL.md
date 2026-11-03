@@ -48,6 +48,10 @@ git checkout "$(git tag -l 'v*' --sort=-v:refname | head -1)"   # latest release
 sudo bash install.sh
 ```
 
+On a server where AiPBX is already installed, `install.sh` stops: a new install would reset the admin password
+and the secrets. Update with `sudo aipbx-update`. If an install stopped half way and you want to run it again,
+use `sudo bash install.sh --reinstall`.
+
 Useful variables: `AIPBX_FQDN=pbx.example.com` (skip the domain prompt), `AIPBX_REF=main` (install the
 development branch instead of the latest release), `AIPBX_INSTALL_DIR` (default `/opt/aipbx`).
 

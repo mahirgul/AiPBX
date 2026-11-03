@@ -3,6 +3,7 @@
  * Fax mail settings service
  */
 require_once __DIR__ . '/../asterisk_sync.php';
+require_once __DIR__ . '/FaxSendService.php';
 
 class FaxMailSettingsService {
     public static function saveSettings(array $data): array
@@ -23,6 +24,7 @@ class FaxMailSettingsService {
             'fax_max_retries'        => trim($data['fax_max_retries'] ?? '3'),
             'fax_retry_time'         => trim($data['fax_retry_time'] ?? '60'),
             'fax_wait_time'          => trim($data['fax_wait_time'] ?? '30'),
+            'fax_send_limit_per_hour' => (string) max(0, (int) ($data['fax_send_limit_per_hour'] ?? FaxSendService::DEFAULT_LIMIT_PER_HOUR)),
         ];
 
         $db = getDB();

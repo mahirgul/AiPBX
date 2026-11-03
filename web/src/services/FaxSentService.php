@@ -106,6 +106,10 @@ class FaxSentService {
         if (AsteriskHelper::getPrimaryTrunkName() === null) {
             return ['success' => false, 'error' => t('srv_fax.err_no_trunk')];
         }
+        $refused = FaxSendService::refusalFor((string) $fax['destination_number'], (string) $fax['sender_extension'], $userId, $userRole);
+        if ($refused !== null) {
+            return ['success' => false, 'error' => $refused];
+        }
         // Moved to the bucket (#69)? The TIFF is needed on the disk to send it;
         // the new record then uses the local copies (moved again an hour after it finished).
         require_once __DIR__ . '/FaxStorage.php';

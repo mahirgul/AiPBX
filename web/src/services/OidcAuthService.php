@@ -125,7 +125,7 @@ class OidcAuthService
      * Resolves OIDC provider endpoints via .well-known/openid-configuration.
      * Uses sys_plugin_kv for caching.
      *
-     * @return array{authorization_endpoint: string, token_endpoint: string, userinfo_endpoint: string, jwks_uri: string, end_session_endpoint?: string}|null
+     * @return array{authorization_endpoint: string, token_endpoint: string, userinfo_endpoint: string, jwks_uri: string, end_session_endpoint?: string, issuer?: string}|null
      */
     public static function getEndpoints(): ?array
     {
@@ -157,7 +157,7 @@ class OidcAuthService
     /**
      * Performs an HTTP GET request to fetch and parse the OIDC discovery document.
      *
-     * @return array{authorization_endpoint: string, token_endpoint: string, userinfo_endpoint: string, jwks_uri: string, end_session_endpoint?: string}|null
+     * @return array{authorization_endpoint: string, token_endpoint: string, userinfo_endpoint: string, jwks_uri: string, end_session_endpoint?: string, issuer?: string}|null
      */
     public static function discover(string $discoveryUrl): ?array
     {
@@ -202,6 +202,7 @@ class OidcAuthService
             'token_endpoint'         => (string)($data['token_endpoint'] ?? ''),
             'userinfo_endpoint'      => (string)($data['userinfo_endpoint'] ?? ''),
             'jwks_uri'               => (string)($data['jwks_uri'] ?? ''),
+            'issuer'                 => (string)($data['issuer'] ?? ''),
             'end_session_endpoint'   => isset($data['end_session_endpoint']) ? (string)$data['end_session_endpoint'] : '',
         ];
     }
@@ -375,6 +376,19 @@ class OidcAuthService
         ]);
     }
 
+    public static function issuerMatches(string $expected, string $actual): bool
+    {
+        // A discovery document without an issuer: nothing to compare with.
+        if ($expected === '') {
+            return true;
+        }
+        if (!str_contains($expected, '{')) {
+            return hash_equals(rtrim($expected, '/'), rtrim($actual, '/'));
+        }
+        $regex = '#^' . str_replace('\\{tenantid\\}', '[^/]+', preg_quote(rtrim($expected, '/'), '#')) . '$#';
+        return preg_match($regex, rtrim($actual, '/')) === 1;
+    }
+
     /**
      * Parses payload claims from an unencrypted JWT (id_token).
      *
@@ -416,17 +430,24 @@ class OidcAuthService
             $idClaims = self::parseJwtClaims($idToken);
             if (is_array($idClaims)) {
                 // Validate expiration (exp) with 120s clock skew tolerance
-                if (isset($idClaims['exp']) && is_numeric($idClaims['exp'])) {
-                    if ((time() - 120) >= (int)$idClaims['exp']) {
-                        self::setLastError('OIDC ID Token has expired');
-                        return null;
-                    }
+                if (!isset($idClaims['exp']) || !is_numeric($idClaims['exp']) || (time() - 120) >= (int)$idClaims['exp']) {
+                    self::setLastError('OIDC ID Token has expired');
+                    return null;
+                }
+
+                // The issuer must be the provider that was configured. Microsoft's
+                // multi-tenant document says https://login.microsoftonline.com/{tenantid}/v2.0:
+                // its tenant part is checked by the provider, the rest here.
+                $issuer = (string) ((self::getEndpoints() ?: [])['issuer'] ?? '');
+                if (!self::issuerMatches($issuer, (string) ($idClaims['iss'] ?? ''))) {
+                    self::setLastError('OIDC ID Token issuer mismatch');
+                    return null;
                 }
 
                 // Validate audience (aud) if client_id is configured
                 $clientId = self::getSetting('client_id', '');
-                if ($clientId !== '' && isset($idClaims['aud'])) {
-                    $audList = is_array($idClaims['aud']) ? $idClaims['aud'] : [(string)$idClaims['aud']];
+                if ($clientId !== '') {
+                    $audList = is_array($idClaims['aud'] ?? null) ? $idClaims['aud'] : [(string)($idClaims['aud'] ?? '')];
                     if (!in_array($clientId, $audList, true)) {
                         self::setLastError('OIDC ID Token audience mismatch');
                         return null;

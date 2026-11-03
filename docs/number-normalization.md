@@ -35,11 +35,11 @@ Steps 3 and 4 start again from the result of step 2 for every trunk tried, so on
 ## Outgoing call: the caller ID
 
 1. **One number is chosen**, the first that is set:
-   1. the user's External Call CID,
-   2. the trunk's Default Outbound Caller ID, or its From User if that is empty,
-   3. the route's Caller ID override for that trunk.
+   1. the route's Caller ID override for that trunk,
+   2. the user's External Call CID,
+   3. the trunk's Default Outbound Caller ID, or its From User if that is empty.
 
-   A call that came in from another trunk keeps its caller. This order is for calls on normal outside routes. On a route marked internal, the route's override comes first.
+   A call that came in from another trunk keeps its caller. This order is for calls on normal outside routes. On a route marked internal, the override comes first too, then the user's Internal Call CID.
 2. **Trunk format.** Keep only the last N digits, then Prepend. It runs on whichever number was chosen, and again from the original number for each trunk tried.
 
 From User on a trunk also replaces the user part of the From header when it differs from the chosen number, so the carrier can see it instead of the user's number. Leave it empty unless the carrier asks for it.

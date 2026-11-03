@@ -10,6 +10,27 @@ use PHPUnit\Framework\TestCase;
  */
 final class UiHelperCallsTest extends TestCase
 {
+    /**
+     * A translation with an apostrophe inside confirm('...') is a syntax error: the
+     * handler never runs and the form submits with no question (Custom Dialplan,
+     * Turkish, deleted without asking). Translated text in a handler goes through jsArg().
+     */
+    public function testNoInlineHandlerPutsATranslationInsideSingleQuotes(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $files = array_merge(glob($root . '/templates/*.php') ?: [], glob($root . '/templates/*/*.php') ?: [], glob($root . '/templates/*/*/*.php') ?: []);
+        $this->assertGreaterThan(50, count($files));
+        foreach ($files as $file) {
+            foreach ((array) file($file) as $i => $line) {
+                $this->assertDoesNotMatchRegularExpression(
+                    '/\\bconfirm\\(\'<\\?(?:php echo|=)\\s*(?:htmlspecialchars\\(|sprintf\\()*t\\(/',
+                    (string) $line,
+                    basename($file) . ':' . ($i + 1)
+                );
+            }
+        }
+    }
+
     public function testEveryUiHelperMethodThatIsCalledExists(): void
     {
         $root = dirname(__DIR__, 2);

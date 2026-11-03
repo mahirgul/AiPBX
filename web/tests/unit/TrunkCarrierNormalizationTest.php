@@ -64,6 +64,25 @@ final class TrunkCarrierNormalizationTest extends TestCase
         $this->assertStringContainsString('+43123456', $line);
     }
 
+    /** An override that lost to the trunk's number and the user's was no override. */
+    public function testARouteOverrideBeatsTheUserAndTheTrunk(): void
+    {
+        getDB()->prepare("INSERT INTO pbx_trunks (trunk_name, title, ip_address, outbound_caller_id) VALUES ('zz_ov_trunk', 'zz', '127.0.0.1', '905550000001')")->execute();
+        try {
+            $line = buildTrunkCallerIdLine(['trunk_name' => 'zz_ov_trunk', 'callerid_override' => '905550000002'], false);
+            $this->assertStringContainsString('Set(CALLERID(num)=905550000002)', $line);
+            $this->assertStringNotContainsString('905550000001', $line, 'the trunk number must not be used');
+            $this->assertStringNotContainsString('CID_EXTERNAL', $line, 'the user number must not be used');
+            $this->assertStringContainsString('CDR(inbound_trunk)', $line, 'a transit call keeps its caller');
+
+            $without = buildTrunkCallerIdLine(['trunk_name' => 'zz_ov_trunk', 'callerid_override' => ''], false);
+            $this->assertStringContainsString('CID_EXTERNAL', $without);
+            $this->assertStringContainsString('905550000001', $without);
+        } finally {
+            getDB()->exec("DELETE FROM pbx_trunks WHERE trunk_name = 'zz_ov_trunk'");
+        }
+    }
+
     public function testATrunkWithACountrySendsTheNumberThroughTheSubroutine(): void
     {
         $line = buildTrunkCarrierDialLine(['strip' => '', 'add' => '', 'e164' => ['cc' => '1', 'trunk' => '1', 'intl' => '011']]);

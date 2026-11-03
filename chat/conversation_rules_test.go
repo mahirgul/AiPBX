@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -162,5 +163,52 @@ func TestDeletedGroupIsClosed(t *testing.T) {
 	}
 	if ok, _ := IsGroupAdmin(conv.ID, a); ok {
 		t.Fatal("a deleted group has no admins")
+	}
+}
+
+// Two admins leaving at the same moment each saw the other as an admin, nobody
+// was promoted, and the group stayed without an admin for good.
+func TestLeavingAdminsAtOnceLeaveAnAdmin(t *testing.T) {
+	testExtensions(t)
+	for i := 0; i < 25; i++ {
+		res, err := db.Exec(`INSERT INTO chat_conversations (type, created_by, created_at, updated_at, is_deleted)
+			VALUES ('group', '91001', NOW(), NOW(), 0)`)
+		if err != nil {
+			t.Fatalf("create group: %v", err)
+		}
+		id64, _ := res.LastInsertId()
+		convID := int(id64)
+		defer removeTestConversation(convID)
+		if _, err := db.Exec(`INSERT INTO chat_participants (conversation_id, extension, role, joined_at)
+			VALUES (?, '91001', 'admin', NOW()), (?, '91002', 'admin', NOW()), (?, '91003', 'member', NOW())`,
+			convID, convID, convID); err != nil {
+			t.Fatalf("add participants: %v", err)
+		}
+
+		var wg sync.WaitGroup
+		errs := make(chan error, 2)
+		for _, ext := range []string{"91001", "91002"} {
+			wg.Add(1)
+			go func(ext string) {
+				defer wg.Done()
+				if _, err := LeaveGroup(convID, ext); err != nil {
+					errs <- err
+				}
+			}(ext)
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			t.Fatalf("round %d: leave failed: %v", i, err)
+		}
+
+		var admins int
+		if err := db.QueryRow(`SELECT COUNT(*) FROM chat_participants
+			WHERE conversation_id = ? AND role = 'admin' AND left_at IS NULL`, convID).Scan(&admins); err != nil {
+			t.Fatal(err)
+		}
+		if admins != 1 {
+			t.Fatalf("round %d: %d admins left in the group, want the remaining member promoted", i, admins)
+		}
 	}
 }

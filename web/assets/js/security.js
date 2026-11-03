@@ -1,7 +1,7 @@
 /* Page script of templates/views/security/index.php */
 
-const CSRF_TOKEN = window.SECURITY_PAGE.csrf;
-const RECOVERY_CODES = window.SECURITY_PAGE.recoveryCodes;
+var CSRF_TOKEN = window.SECURITY_PAGE.csrf;
+var RECOVERY_CODES = window.SECURITY_PAGE.recoveryCodes;
 
 function copySecretKey() {
     const text = document.getElementById('manual_secret_key').innerText.trim();
