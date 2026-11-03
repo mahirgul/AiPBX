@@ -65,7 +65,7 @@ class BackupService
         if (!$res['success']) {
             return ['success' => false, 'error' => $res['output']];
         }
-        writeAuditLog('backup', 'backup', '', 'Backup started by hand', 'create');
+        writeAuditLog('backup', 'backup', '', 'Backup started by hand', 'create', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => t('backup.created')];
     }
 
@@ -79,7 +79,7 @@ class BackupService
         if (!$res['success']) {
             return ['success' => false, 'error' => $res['output']];
         }
-        writeAuditLog('backup', 'backup', $name, "Backup deleted: {$name}", 'delete');
+        writeAuditLog('backup', 'backup', $name, "Backup deleted: {$name}", 'delete', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => t('backup.deleted')];
     }
 
@@ -99,7 +99,7 @@ class BackupService
         if (!$res['success']) {
             return ['success' => false, 'error' => $res['output']];
         }
-        writeAuditLog('backup', 'backup', '', "Backups are kept for {$days} days", 'update');
+        writeAuditLog('backup', 'backup', '', "Backups are kept for {$days} days", 'update', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => t('backup.keep_saved')];
     }
 
@@ -110,7 +110,7 @@ class BackupService
             http_response_code(400);
             return;
         }
-        writeAuditLog('backup', 'backup', $name, "Backup downloaded: {$name}", 'download');
+        writeAuditLog('backup', 'backup', $name, "Backup downloaded: {$name}", 'download', $_SESSION['user_id'] ?? null);
         session_write_close();
         while (ob_get_level() > 0) {
             ob_end_clean();
@@ -177,12 +177,12 @@ class BackupService
         if (!$res['success']) {
             $lines = preg_split('/\r?\n/', trim($res['output'])) ?: [];
             $why = (string) end($lines);
-            writeAuditLog('backup', 'backup', '', 'Uploaded backup refused: ' . $why, 'security');
+            writeAuditLog('backup', 'backup', '', 'Uploaded backup refused: ' . $why, 'security', $_SESSION['user_id'] ?? null);
             return ['success' => false, 'error' => sprintf(t('backup.err_refused'), $why)];
         }
         $lines = preg_split('/\r?\n/', trim($res['output'])) ?: [];
         $name = (string) end($lines);
-        writeAuditLog('backup', 'backup', $name, "Backup uploaded: {$name}", 'upload');
+        writeAuditLog('backup', 'backup', $name, "Backup uploaded: {$name}", 'upload', $_SESSION['user_id'] ?? null);
         return ['success' => true, 'message' => sprintf(t('backup.upload_done'), $name), 'name' => $name];
     }
 
@@ -214,7 +214,7 @@ class BackupService
             $hash = (string) DBHelper::fetchColumn('SELECT password_hash FROM sys_users WHERE id = ?', [$userId]);
             if ($hash === '' || !password_verify((string) ($post['password'] ?? ''), $hash)) {
                 $_SESSION['backup_password_failures'] = (int) ($_SESSION['backup_password_failures'] ?? 0) + 1;
-                writeAuditLog('backup', 'backup', $name, "Restore of {$name} refused: wrong password", 'security');
+                writeAuditLog('backup', 'backup', $name, "Restore of {$name} refused: wrong password", 'security', $_SESSION['user_id'] ?? null);
                 if ($_SESSION['backup_password_failures'] >= 5) {
                     $_SESSION = [];
                     session_destroy();
@@ -237,7 +237,7 @@ class BackupService
             $args[] = '--allow-calls';
         }
         // Written first: once the restore runs, the audit table itself is being replaced.
-        writeAuditLog('backup', 'backup', $name, "Restore of {$name} started", 'restore');
+        writeAuditLog('backup', 'backup', $name, "Restore of {$name} started", 'restore', $userId);
         $res = PrivHelper::run($args);
         if (!$res['success']) {
             return ['success' => false, 'error' => sprintf(t('backup.err_start'), $res['output'])];

@@ -366,6 +366,9 @@ final class HealthChecks
     private static function vpn(): array
     {
         $status = VpnService::status();
+        if (!empty($status['unavailable'])) {
+            return ['fail', t('health.msg_vpn_unavailable')];
+        }
         $wanted = ($status['server']['type'] ?? 'off') !== 'off';
         $down = $wanted && empty($status['server']['active']) ? ['VPN server'] : [];
         foreach ($status['tunnels'] as $tunnel) {

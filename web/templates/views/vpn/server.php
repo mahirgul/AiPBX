@@ -8,6 +8,9 @@ $size = function (int $bytes): string {
     return $bytes >= 1048576 ? round($bytes / 1048576, 1) . ' MB' : round($bytes / 1024) . ' KB';
 };
 ?>
+<?php if (!empty($status['unavailable'])): ?>
+<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?php echo t('vpn.err_unavailable'); ?></div>
+<?php endif; ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title">
@@ -109,7 +112,7 @@ $size = function (int $bytes): string {
                                 <?php if ($type === 'wg'): ?>
                                     <button type="submit" name="peer_qr" value="1" class="btn btn-xs btn-secondary" title="<?php echo t('vpn.qr'); ?>"><i class="fas fa-qrcode"></i> <?php echo t('vpn.qr'); ?></button>
                                 <?php endif; ?>
-                                <button type="submit" name="peer_delete" value="1" class="btn btn-xs btn-danger" title="<?php echo t('common.delete'); ?>" onclick="return confirm('<?php echo $h(t('vpn.confirm_delete_device')); ?>');"><i class="fas fa-trash"></i></button>
+                                <button type="submit" name="peer_delete" value="1" class="btn btn-xs btn-danger" title="<?php echo t('common.delete'); ?>" onclick="return confirm(<?php echo jsArg(t('vpn.confirm_delete_device')); ?>);"><i class="fas fa-trash"></i></button>
                             </form>
                         </td>
                     </tr>

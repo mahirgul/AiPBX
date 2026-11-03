@@ -24,7 +24,7 @@ class VpnService
     /** Which of the local networks this page added, so it can take back only those. */
     public const LOCAL_NETS_KEY = 'vpn_local_nets';
 
-    /** @return array{caps: array, server: array, tunnels: array} */
+    /** @return array{caps: array, server: array, tunnels: array, unavailable?: bool} */
     public static function status(): array
     {
         $res = PrivHelper::run(['vpn', 'status']);
@@ -35,6 +35,8 @@ class VpnService
                 'server' => ['type' => 'off', 'port' => self::DEFAULT_PORT['wg'], 'proto' => 'udp', 'net' => self::DEFAULT_NET,
                     'endpoint' => '', 'active' => false, 'address' => '10.99.0.1', 'peers' => [], 'counts' => [], 'public_key' => ''],
                 'tunnels' => [],
+                // The helper did not answer: this says nothing about what is really set up.
+                'unavailable' => true,
             ];
         }
         return $data;
@@ -302,10 +304,19 @@ class VpnService
     /** Puts the VPN networks into Asterisk's local networks (applied with the page's Apply). */
     public static function syncLocalNets(): void
     {
+        self::syncLocalNetsFrom(self::status());
+    }
+
+    /** A status the helper did not give changes nothing: the VPN may well be up. */
+    public static function syncLocalNetsFrom(array $status): void
+    {
+        if (!empty($status['unavailable'])) {
+            return;
+        }
         $settings = NetworkSettingsService::settings();
         $current = array_values(array_filter(explode(',', (string) $settings['pjsip_local_net'])));
         $before = json_decode((string) getSystemSetting(self::LOCAL_NETS_KEY, '[]'), true);
-        $merged = self::mergeLocalNets($current, is_array($before) ? $before : [], self::wantedLocalNets(self::status()));
+        $merged = self::mergeLocalNets($current, is_array($before) ? $before : [], self::wantedLocalNets($status));
         $db = getDB();
         $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
             ->execute([self::LOCAL_NETS_KEY, json_encode($merged['ours'])]);

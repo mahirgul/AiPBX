@@ -15,6 +15,9 @@
 #   - only the files aipbx-backup itself writes are taken, nothing outside those folders,
 #     no device files or hard links, no link leading out of its folder;
 #   - mysql runs with --binary-mode, which turns off client commands such as "\!";
+#   - an uploaded dump runs as the migration user, not as root. That user holds all rights
+#     on this one database and none outside it, so GRANT, CREATE USER, INSTALL PLUGIN and
+#     INTO OUTFILE fail and stop the import. --one-database does not stop those;
 #   - from an uploaded backup, values in the environment file that could break into a
 #     generated configuration are refused, and so is #exec in /etc/asterisk;
 #     asterisk.conf, which says which user Asterisk runs as, is not taken.
@@ -299,9 +302,30 @@ SAFETY="$(ls -1dt "$DEST"/aipbx-*-before-restore 2>/dev/null | head -n 1)"
 [[ -n "$SAFETY" && -f "$SAFETY/db.sql.gz" ]] || fail "The safety backup was not found"
 log "Safety backup: $SAFETY"
 
-import_db() {  # folder
+import_uploaded_dump() {  # dump
+    local user pass cnf status
+    user="$(env_get MIGRATOR_DB_USER)"; pass="$(env_get MIGRATOR_DB_PASS)"
+    if [[ -z "$user" || -z "$pass" ]]; then
+        log "No migration user in the environment file: an uploaded dump is not run as root"
+        return 1
+    fi
+    cnf="$(mktemp)"  # mode 600
+    printf '[client]\nuser="%s"\npassword="%s"\n' "$user" "$pass" > "$cnf"
+    # A view's DEFINER line goes: the view then belongs to this user. A dump cannot name root.
+    zcat "$1" | sed -E '/^\/\*!50013 DEFINER=.* SQL SECURITY (DEFINER|INVOKER) \*\/$/d' \
+        | mysql --defaults-extra-file="$cnf" --binary-mode --one-database "$DB_NAME" 2>>"$LOG_FILE"
+    status=$?
+    rm -f "$cnf"
+    return "$status"
+}
+
+import_db() {  # folder [uploaded]
     mysql -e "DROP DATABASE IF EXISTS \`$DB_NAME\`; CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" 2>>"$LOG_FILE" || return 1
-    zcat "$1/db.sql.gz" | mysql --binary-mode --one-database "$DB_NAME" 2>>"$LOG_FILE" || return 1
+    if [[ "${2:-}" == uploaded ]]; then
+        import_uploaded_dump "$1/db.sql.gz" || return 1
+    else
+        zcat "$1/db.sql.gz" | mysql --binary-mode --one-database "$DB_NAME" 2>>"$LOG_FILE" || return 1
+    fi
     [[ "$(mysql -N "$DB_NAME" -e 'SELECT COUNT(*) FROM sys_users' 2>>"$LOG_FILE")" =~ ^[1-9] ]]
 }
 
@@ -346,7 +370,11 @@ go_back() {  # reason
 for svc in aipbx-webhook-worker aipbx-chat; do systemctl stop "$svc" 2>/dev/null; done
 
 status running "Restoring the database"
-import_db "$DIR" || go_back "The database could not be restored"
+if [[ "$UNTRUSTED" == 1 ]]; then
+    import_db "$DIR" uploaded || go_back "The database could not be restored"
+else
+    import_db "$DIR" || go_back "The database could not be restored"
+fi
 log "Database restored"
 
 if [[ "$DB_ONLY" != true ]]; then

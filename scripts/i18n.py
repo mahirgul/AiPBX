@@ -7,7 +7,7 @@ See docs/translating.md.
     scripts/i18n.py import CODE FILE            # translated chunk (same format) -> <dir>/<code>.json, validated
     scripts/i18n.py status CODE                 # how many strings are done, which chunks are missing
     scripts/i18n.py build CODE "Language name"  # <dir>/<code>.json -> web/lang/<code>.php (English key order)
-    scripts/i18n.py check [CODE ...]            # web/lang/<code>.php against English (CI; no code = every language)
+    scripts/i18n.py check [--strict] [CODE ...] # web/lang/<code>.php against English (CI; no code = every language; --strict: missing texts count too)
 
 Validation on import: the index must exist, the placeholders (%s, %1$s, %d)
 and the HTML tags must be the same as in English. "check" applies the same rules
@@ -53,8 +53,12 @@ def php_str(v):
     return "'" + v.replace('\\', '\\\\').replace("'", "\\'") + "'"
 
 
-def check(en, codes):
-    """Problems of web/lang/<code>.php against English; exit code 1 when any."""
+def check(en, codes, strict=False):
+    """Problems of web/lang/<code>.php against English; exit code 1 when any.
+
+    A missing text shows the English one, so it is no problem for CI or a contribution in
+    progress. strict counts it as one: that is the check before a release.
+    """
     en_map = dict(en)
     if not codes:
         codes = sorted(f[:-4] for f in os.listdir(f'{WEB}/lang') if f.endswith('.php') and f != 'en.php')
@@ -80,6 +84,9 @@ def check(en, codes):
                 errors.append(f'{key}: placeholders {placeholders(val)} != {placeholders(en_map[key])}')
             elif tags(val) != tags(en_map[key]):
                 errors.append(f'{key}: HTML tags {tags(val)} != {tags(en_map[key])}')
+        if strict:
+            missing = [key for key in en_map if key not in db]
+            errors += [f'{key}: missing' for key in missing]
         print(f'{code}: {len(db)}/{len(en)} strings, {len(errors)} problem(s)')
         for e in errors:
             print('  ' + e)
@@ -91,7 +98,8 @@ def main():
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     en = load_en()
     if cmd == 'check':
-        check(en, sys.argv[2:])
+        args = sys.argv[2:]
+        check(en, [a for a in args if a != '--strict'], '--strict' in args)
     os.makedirs(DIR, exist_ok=True)
     if cmd == 'export':
         size = int(sys.argv[2])

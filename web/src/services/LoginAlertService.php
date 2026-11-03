@@ -68,23 +68,27 @@ class LoginAlertService
         return true;
     }
 
+    /** @return list<string> addresses of the account's sign-ins, under either name it can use */
+    public static function earlierAddresses(string $username, string $extension): array
+    {
+        $st = getDB()->prepare("SELECT DISTINCT ip_address FROM sys_login_logs
+            WHERE username IN (?, ?) AND status = 'SUCCESS' AND created_at > DATE_SUB(NOW(), INTERVAL " . self::LOOKBACK_DAYS . ' DAY)');
+        $st->execute([$username, $extension !== '' ? $extension : $username]);
+        return array_map('strval', $st->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     public static function beforeSuccessfulLogin(string $ip, string $username): void
     {
         try {
             if (!self::enabled() || !self::isPublic($ip)) {
                 return;
             }
-            $db = getDB();
-            $st = $db->prepare("SELECT DISTINCT ip_address FROM sys_login_logs
-                WHERE username = ? AND status = 'SUCCESS' AND created_at > DATE_SUB(NOW(), INTERVAL " . self::LOOKBACK_DAYS . ' DAY)');
-            $st->execute([$username]);
-            if (!self::isNewNetwork($ip, array_map('strval', $st->fetchAll(PDO::FETCH_COLUMN)))) {
+            // People sign in with their user name or their extension, and the log holds what they typed.
+            $user = findLoginUser($username, 'id, username, extension, full_name, email');
+            if (!$user || !filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL)) {
                 return;
             }
-            $st = $db->prepare('SELECT id, username, full_name, email FROM sys_users WHERE username = ? LIMIT 1');
-            $st->execute([$username]);
-            $user = $st->fetch(PDO::FETCH_ASSOC);
-            if (!$user || !filter_var((string) $user['email'], FILTER_VALIDATE_EMAIL)) {
+            if (!self::isNewNetwork($ip, self::earlierAddresses((string) $user['username'], (string) $user['extension']))) {
                 return;
             }
             $res = MailTemplateService::send('login_new_ip', (string) $user['email'], MailTemplateService::languageFor(null, (int) $user['id']), [
