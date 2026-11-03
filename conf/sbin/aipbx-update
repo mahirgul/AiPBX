@@ -264,7 +264,7 @@ fi
 
 log "===== Update started: $CURRENT → $TARGET ====="
 if [[ "$AIPBX_ASTERISK_RESTART" == no ]]; then
-    log "Asterisk: reload only, calls in progress stay up"
+    log "Asterisk needs no restart this time, only a reload"
 else
     log "Asterisk: restart (${RESTART_REASON#yes: })"
 fi
@@ -407,6 +407,8 @@ code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "${domai
 # The services and the portal are up, so a page test that fails is reported, not a reason
 # to take a working system back.
 SMOKE_NOTE=""
+status running "Testing every page, this can take a few minutes"
+log "Testing every page. This can take a few minutes on a small server and needs nothing from you."
 if ! (cd "$INSTALL_DIR/web" && timeout 900 sudo -n -u www-data php bin/smoke.php >>"$LOG_FILE" 2>&1); then
     log "WARNING: the page tests (smoke) found problems; see above. The update stays."
     SMOKE_NOTE=", page tests found problems (see the log)"
