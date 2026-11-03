@@ -84,6 +84,14 @@ scripts/e2e/run.sh           # both
 The container is reset to a snapshot on every run. Run it before a release and
 after changes to `install.sh`, migrations, seed data or system integration.
 
+`scripts/e2e/rollback.sh` checks that `aipbx-update` comes back from a bad release: the
+code, the database and the services. Run it inside an installed test container after
+changes to `conf/sbin/aipbx-update`, and before a release with migrations:
+
+```bash
+lxc exec aipbx-test -- bash -s < scripts/e2e/rollback.sh
+```
+
 ### 4. Android App Development
 - Open the `android/` directory in **Android Studio**.
 - Build the release or debug APK:

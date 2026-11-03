@@ -294,6 +294,8 @@ if [[ "$AIPBX_MODE" == "install" && -f /etc/ai-pbx.env && "${AIPBX_REINSTALL:-0}
     error "AiPBX is already installed here (/etc/ai-pbx.env). To update it: bash install.sh --upgrade. To install over it, which resets the admin password and the secrets: bash install.sh --reinstall"
 fi
 is_upgrade() { [[ "$AIPBX_MODE" == "upgrade" ]]; }
+# A value for inside '...' in SQL: a password an admin set may hold a quote or a backslash.
+sql_q() { local v="${1//\\/\\\\}"; printf '%s' "${v//\'/\'\'}"; }
 
 # Reads KEY=value from the existing environment file (upgrade mode).
 env_get() {
@@ -985,11 +987,11 @@ mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE u
 
 # App users: created when missing, password (re)applied — safe to re-run
 mysql <<EOF
-CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
-ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '${DB_PASS}';
+CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '$(sql_q "${DB_PASS}")';
+ALTER USER '${DB_USER}'@'localhost' IDENTIFIED BY '$(sql_q "${DB_PASS}")';
 GRANT SELECT, INSERT, UPDATE, DELETE ON asterisk.* TO '${DB_USER}'@'localhost';
-CREATE USER IF NOT EXISTS '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
-ALTER USER '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '${MIGRATOR_PASS}';
+CREATE USER IF NOT EXISTS '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '$(sql_q "${MIGRATOR_PASS}")';
+ALTER USER '${MIGRATOR_USER}'@'localhost' IDENTIFIED BY '$(sql_q "${MIGRATOR_PASS}")';
 GRANT ALL PRIVILEGES ON asterisk.* TO '${MIGRATOR_USER}'@'localhost';
 FLUSH PRIVILEGES;
 EOF
@@ -1064,6 +1066,13 @@ else
         || error "Could not install the TLS certificate ($CERT_FILE)"
 fi
 
+# An install before 1.60.15 wrote this unit running as root.
+if is_upgrade && [[ -f /etc/systemd/system/aipbx-mdns.service ]] && ! grep -q '^User=nobody' /etc/systemd/system/aipbx-mdns.service; then
+    sed -i 's/^\[Service\]$/[Service]\nUser=nobody\nNoNewPrivileges=yes\nProtectSystem=full\nProtectHome=yes\nPrivateTmp=yes/' /etc/systemd/system/aipbx-mdns.service
+    systemctl daemon-reload
+    systemctl try-restart aipbx-mdns 2>/dev/null || true
+fi
+
 # Announce the local .local name on the LAN via mDNS (as an alias, hostname unchanged).
 if [[ "${USE_MDNS:-false}" == "true" ]]; then
     grep -qE "[[:space:]]${PORTAL_DOMAIN}([[:space:]]|$)" /etc/hosts || echo "127.0.0.1 ${PORTAL_DOMAIN}" >> /etc/hosts
@@ -1074,6 +1083,12 @@ After=avahi-daemon.service network-online.target
 Requires=avahi-daemon.service
 
 [Service]
+# Only asks avahi-daemon over D-Bus: no reason to be root.
+User=nobody
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
 ExecStart=/usr/bin/avahi-publish -a -R ${PORTAL_DOMAIN} ${SERVER_IP}
 Restart=always
 RestartSec=5
@@ -1344,8 +1359,8 @@ fi   # install mode — the admin password is never touched on upgrade
 # call-center reports read those tables. This user did not exist before, so
 # nothing was ever recorded.
 mysql <<EOF
-CREATE USER IF NOT EXISTS 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
-ALTER USER 'asterisk_odbc'@'localhost' IDENTIFIED BY '${ODBC_PASS}';
+CREATE USER IF NOT EXISTS 'asterisk_odbc'@'localhost' IDENTIFIED BY '$(sql_q "${ODBC_PASS}")';
+ALTER USER 'asterisk_odbc'@'localhost' IDENTIFIED BY '$(sql_q "${ODBC_PASS}")';
 GRANT SELECT, INSERT ON asterisk.asteriskcdr TO 'asterisk_odbc'@'localhost';
 GRANT SELECT, INSERT ON asterisk.asteriskqueue TO 'asterisk_odbc'@'localhost';
 FLUSH PRIVILEGES;
@@ -1517,6 +1532,11 @@ Wants=network-online.target
 ConditionPathExists=/var/lib/aipbx-netsvc/dnsmasq.conf
 
 [Service]
+# Binds its ports as root and then drops to its own user by itself.
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
 ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/var/lib/aipbx-netsvc/dnsmasq.conf
 Restart=on-failure
 RestartSec=5
@@ -1549,6 +1569,11 @@ Wants=network-online.target
 ConditionPathExists=/var/lib/aipbx-netsvc/vsftpd.conf
 
 [Service]
+# vsftpd has to start as root (port 21, chroot of each login).
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
 ExecStart=/usr/sbin/vsftpd /var/lib/aipbx-netsvc/vsftpd.conf
 Restart=on-failure
 RestartSec=5
@@ -1928,6 +1953,10 @@ User=www-data
 WorkingDirectory=${INSTALL_DIR}/chat
 EnvironmentFile=/etc/ai-pbx.env
 Environment="GODEBUG=multipathtcp=0"
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
 ExecStart=${INSTALL_DIR}/chat/aipbx-chat
 Restart=always
 RestartSec=3

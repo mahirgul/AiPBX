@@ -307,7 +307,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   Apache kept in Ubuntu's systemd sandbox with only the paths the portal needs opened
 
 ### 🌍 Multi-language & Mobile-Ready Portal
-- **23 interface languages** including Turkish 🇹🇷 and English 🇬🇧 (5,000+ keys per language, 100% parity checked in CI)
+- **23 interface languages** including Turkish 🇹🇷 and English 🇬🇧 (5,000+ keys per language; a text not yet translated shows in English)
 - **Universal Live Filtering & Pagination** across all multi-record tables (extensions, trunks, routes, system users, audit log, call reports) and responsive mobile drawer/table layout
 
 ---
@@ -327,8 +327,7 @@ AiPBX/
 │   │   └── sync/           # Asterisk configuration generators
 │   ├── templates/          # Layouts + views (including /privacy, /api-keys, /webhooks, /plugins)
 │   ├── api/                # Portal JSON endpoints + /api/v1/* rewrite
-│   ├── openapi.json        # OpenAPI 3.1 specification
-│   ├── lang/               # 23 interface languages (100% key parity)
+│   ├── lang/               # 23 interface languages
 │   ├── db/migrations/      # Phinx migrations (the database schema)
 │   └── tests/              # PHPUnit
 ├── plugins/                # 🔌 Bundled plugins: official (auto-dialer, ms-teams, web-widgets, ai-*, …) and community

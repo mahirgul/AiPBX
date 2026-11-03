@@ -165,18 +165,18 @@ function generateNewQrCode() {
             _qrToken = data.qr_token;
             if (spinner) spinner.style.display = "none";
             if (svgWrapper) {
-                svgWrapper.innerHTML = '<img src="' + data.qr_data_uri + '" alt="' + __('js.my_phone.qr_alt') + '" style="width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; user-select: none;">';
+                svgWrapper.innerHTML = '<img src="' + escapeHtml(data.qr_data_uri) + '" alt="' + __('js.my_phone.qr_alt') + '" style="width: 100%; max-width: 220px; height: auto; display: block; margin: 0 auto; user-select: none;">';
                 svgWrapper.style.display = "block";
             }
             _qrSecondsLeft = data.expires_in || 600;
             startQrCountdown();
             startQrPolling();
         } else {
-            if (spinner) spinner.innerHTML = '<span class="u-danger">' + (data.error || __('js.my_phone.qr_failed')) + '</span>';
+            if (spinner) spinner.innerHTML = '<span class="u-danger">' + escapeHtml(data.error || __('js.my_phone.qr_failed')) + '</span>';
         }
     })
     .catch(err => {
-        if (spinner) spinner.innerHTML = '<span class="u-danger">' + __('js.common.connection_error_colon') + '' + err.message + '</span>';
+        if (spinner) spinner.innerHTML = '<span class="u-danger">' + __('js.common.connection_error_colon') + '' + escapeHtml(err.message) + '</span>';
     });
 }
 

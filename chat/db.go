@@ -354,6 +354,12 @@ func GetOrCreateDirectConversation(ext1, ext2, creatorExt string) (*Conversation
 		VALUES ('direct', ?, ?, NOW(), NOW(), 0)
 	`, directKey, creatorExt)
 	if err != nil {
+		// Both sides opened the chat at the same moment: the other request made it.
+		tx.Rollback()
+		var exists int
+		if db.QueryRow("SELECT 1 FROM chat_conversations WHERE direct_key = ? AND is_deleted = 0 LIMIT 1", directKey).Scan(&exists) == nil {
+			return GetOrCreateDirectConversation(ext1, ext2, creatorExt)
+		}
 		return nil, err
 	}
 

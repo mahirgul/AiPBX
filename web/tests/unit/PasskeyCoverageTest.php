@@ -123,6 +123,20 @@ final class PasskeyCoverageTest extends TestCase
         $this->assertNotEmpty($argsUser->allowCredentials);
     }
 
+    /** The answer must not show which user names have passkeys. */
+    public function testAUserNameWithoutPasskeysLooksLikeOneWithThem(): void
+    {
+        $_SERVER['HTTP_HOST'] = 'localhost';
+        $first = PasskeyService::getLoginArgs('zz_nobody_here');
+        $again = PasskeyService::getLoginArgs('zz_nobody_here');
+        $other = PasskeyService::getLoginArgs('zz_nobody_else');
+        $this->assertTrue(isset($first->allowCredentials));
+        $this->assertNotEmpty($first->allowCredentials);
+        $id = static fn($args) => json_encode($args->allowCredentials);
+        $this->assertSame($id($first), $id($again), 'a made-up id that changes would give it away');
+        $this->assertNotSame($id($first), $id($other));
+    }
+
     public function testProcessLoginExpiredOrMissingChallengeRefused(): void
     {
         $_SESSION = [];

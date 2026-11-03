@@ -5,6 +5,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.15
+
+- **A plugin zip may unpack to at most 200 MB.** The upload limit counted only the compressed size.
+- **`aipbx-update`:** if restoring the database fails during a rollback, it tries again and then stops with the command to run by hand, instead of starting the services on half a database. Services are now checked twice after an update, so one that keeps crashing is caught.
+- **Chat:** a slow line can now finish a 25 MB upload or download (it was cut off after 30 seconds). A replaced group picture is deleted. Two people opening the same new chat at once no longer get an error for one of them. Chat, DHCP/TFTP, FTP and the mDNS alias run with tighter system limits.
+- **Audit log:** when a record cannot be written, it now goes to the error log instead of disappearing. API changes to plugin data made with an administrator token are recorded.
+- **Custom Dialplan:** a row with a file directive or a reserved context name, which the portal refuses, is now also skipped when it arrives through a restored backup or SQL.
+- **Passkey sign-in** no longer shows whether a user name has passkeys.
+- **A double quote in an extension's display name** no longer breaks its caller ID.
+- **Upgrades** work when a database password holds a quote or a backslash.
+- **Translations:** all 23 languages are complete again.
+
 ## 1.60.14
 
 Found on a live system whose fax account was taken over, and in a code review.

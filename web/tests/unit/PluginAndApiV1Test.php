@@ -345,6 +345,37 @@ final class PluginAndApiV1Test extends TestCase
         }
     }
 
+    /** 25 MB is the compressed size: a small upload must not be able to fill the disk. */
+    public function testAZipThatUnpacksTooLargeIsRefused(): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx_custom_plugins_' . bin2hex(random_bytes(4));
+        mkdir($dir, 0700, true);
+        $zipFile = $dir . '.zip';
+        $zip = new ZipArchive();
+        $zip->open($zipFile, ZipArchive::CREATE);
+        $zip->addFromString('plugin.json', json_encode(['slug' => 'zip-bomb-test', 'name' => 'Bomb', 'version' => '1.0.0', 'type' => 'community']));
+        $zip->addFromString('data.bin', str_repeat("\0", 210 * 1024 * 1024));
+        $zip->close();
+        $this->assertLessThan(25 * 1024 * 1024, (int) filesize($zipFile));
+
+        $prev = getenv('AIPBX_CUSTOM_PLUGINS_DIR');
+        putenv('AIPBX_CUSTOM_PLUGINS_DIR=' . $dir);
+        PluginManager::resetCache();
+        try {
+            $res = PluginManager::installFromZip(
+                ['error' => UPLOAD_ERR_OK, 'tmp_name' => $zipFile, 'size' => filesize($zipFile)],
+                'test-csrf-token'
+            );
+            $this->assertFalse($res['success']);
+            $this->assertStringContainsString('200 MB', (string) ($res['error'] ?? ''));
+            $this->assertDirectoryDoesNotExist($dir . '/zip-bomb-test');
+        } finally {
+            putenv($prev === false ? 'AIPBX_CUSTOM_PLUGINS_DIR' : 'AIPBX_CUSTOM_PLUGINS_DIR=' . $prev);
+            PluginManager::resetCache();
+            @unlink($zipFile);
+        }
+    }
+
     public function testZipUploadIsStagedInsideThePluginsDirectory(): void
     {
         $dir = sys_get_temp_dir() . '/aipbx_custom_plugins_' . bin2hex(random_bytes(4));

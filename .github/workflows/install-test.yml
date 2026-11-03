@@ -24,7 +24,18 @@ on:
       - 'web/src/services/HealthService.php'
       - '.github/workflows/install-test.yml'
   push:
+    # The paths apply to the branch only: a tag always runs.
+    branches: [ main ]
     tags: [ 'v*' ]
+    paths:
+      - 'install.sh'
+      - 'conf/**'
+      - 'web/bin/**'
+      - 'web/db/**'
+      - 'web/src/sync/**'
+      - 'web/src/services/health/**'
+      - 'web/src/services/HealthService.php'
+      - '.github/workflows/install-test.yml'
   workflow_dispatch:
 
 concurrency:

@@ -7,6 +7,7 @@
  */
 
 require_once __DIR__ . '/DialplanBuilders.php';
+require_once dirname(__DIR__) . '/services/CustomDialplanService.php';
 
 function syncCustomDialplan()
 {
@@ -50,6 +51,14 @@ function buildCustomDialplanConf(array $entries): string
         $title = toCleanAscii((string)($e['title'] ?? ''));
         $cName = preg_replace('/[^a-zA-Z0-9_-]/', '', trim((string)($e['context_name'] ?? '')));
         if ($cName === '') {
+            continue;
+        }
+        // The portal refuses these when saving; a row from a restored backup or from
+        // SQL never went through it, and a file directive runs as Asterisk.
+        if (preg_match('/^\s*#\s*(include|tryinclude|exec|tryexec)\b/im', (string) ($e['dialplan_content'] ?? ''))
+            || in_array(strtolower($cName), CustomDialplanService::RESERVED_CONTEXTS, true)) {
+            error_log("Custom dialplan [{$cName}] skipped: file directive or reserved context name");
+            $conf .= "; Custom Context [{$cName}] skipped: file directive or reserved context name\n\n";
             continue;
         }
 

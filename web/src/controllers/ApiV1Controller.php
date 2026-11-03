@@ -454,6 +454,10 @@ final class ApiV1Controller
                 unset($body['csrf_token']);
                 $value = $body['value'] ?? $body;
                 PluginManager::kvSet($slug, $collection, $itemKey, $value);
+                // A plugin's own token writes its data all the time; an admin token changing it is worth a line.
+                if (!$hasPluginScope) {
+                    writeAuditLog('plugins', 'plugin_kv', "{$slug}/{$collection}/{$itemKey}", "Plugin data changed through the API: {$slug}/{$collection}/{$itemKey}", 'update');
+                }
                 ApiResponse::success(PluginManager::kvGet($slug, $collection, $itemKey));
             }
             if ($method === 'DELETE' && $itemKey !== null) {
@@ -461,6 +465,9 @@ final class ApiV1Controller
                     ApiRequestContext::requireScope('system:write');
                 }
                 PluginManager::kvDelete($slug, $collection, $itemKey);
+                if (!$hasPluginScope) {
+                    writeAuditLog('plugins', 'plugin_kv', "{$slug}/{$collection}/{$itemKey}", "Plugin data deleted through the API: {$slug}/{$collection}/{$itemKey}", 'delete');
+                }
                 ApiResponse::success(['deleted' => true, 'key' => $itemKey]);
             }
         }

@@ -21,6 +21,21 @@ final class CustomDialplanTest extends TestCase
         }
     }
 
+    /** A row from a restored backup or SQL never went through the portal's check. */
+    public function testAFileDirectiveOrReservedNameIsSkippedWhenWriting(): void
+    {
+        $conf = buildCustomDialplanConf([
+            ['title' => 'a', 'context_name' => 'zz-good', 'dialplan_content' => 'exten => s,1,NoOp(good)'],
+            ['title' => 'b', 'context_name' => 'zz-exec', 'dialplan_content' => "exten => s,1,NoOp()\n#exec /bin/evil"],
+            ['title' => 'c', 'context_name' => 'zz-inc', 'dialplan_content' => '  # include /etc/passwd'],
+            ['title' => 'd', 'context_name' => 'general', 'dialplan_content' => 'exten => s,1,NoOp(res)'],
+        ]);
+        $this->assertStringContainsString('NoOp(good)', $conf);
+        $this->assertStringNotContainsString('/bin/evil', $conf);
+        $this->assertStringNotContainsString('/etc/passwd', $conf);
+        $this->assertStringNotContainsString('NoOp(res)', $conf);
+    }
+
     protected function tearDown(): void
     {
         foreach ($this->createdIds as $id) {

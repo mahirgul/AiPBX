@@ -156,7 +156,7 @@ final class ApiV1PbxHandlers
         if ($method === 'GET' && $idStr === null && $subAction === null) {
             ApiRequestContext::requireScope('pbx:read');
             $rows = DBHelper::fetchAll('SELECT * FROM pbx_dids ORDER BY sort_order ASC, id ASC');
-            ApiResponse::success($rows);
+            ApiResponse::success(ResourceNormalizer::sanitizeList($rows));
         }
 
         if ($method === 'GET' && $idStr !== null && $subAction === null) {
@@ -165,7 +165,7 @@ final class ApiV1PbxHandlers
             if (!$row) {
                 ApiResponse::error('NOT_FOUND', 'Inbound route not found.', 404);
             }
-            ApiResponse::success($row);
+            ApiResponse::success(ResourceNormalizer::sanitizeRow($row));
         }
 
         if ($method === 'POST' && $idStr === null) {
@@ -288,7 +288,8 @@ final class ApiV1PbxHandlers
             foreach ($ivrs as &$ivr) {
                 $ivr['entries'] = $byIvr[(int)$ivr['id']] ?? [];
             }
-            ApiResponse::success($ivrs);
+            unset($ivr);
+            ApiResponse::success(ResourceNormalizer::sanitizeList($ivrs));
         }
 
         if ($method === 'GET' && $idStr !== null && $subAction === null) {
@@ -298,7 +299,7 @@ final class ApiV1PbxHandlers
                 ApiResponse::error('NOT_FOUND', 'IVR menu not found.', 404);
             }
             $ivr['entries'] = DBHelper::fetchAll('SELECT * FROM pbx_ivr_entries WHERE ivr_id = ? ORDER BY digit ASC', [(int)$idStr]);
-            ApiResponse::success($ivr);
+            ApiResponse::success(ResourceNormalizer::sanitizeRow($ivr));
         }
 
         if ($method === 'POST' && $idStr === null) {

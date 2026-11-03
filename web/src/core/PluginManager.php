@@ -18,6 +18,10 @@ require_once dirname(__DIR__) . '/services/ApiTokenService.php';
  */
 final class PluginManager
 {
+    /** A plugin zip may unpack to this much. */
+    private const MAX_UNPACKED_BYTES = 209715200;
+    private const MAX_ZIP_ENTRIES = 20000;
+
     /** @var array<string, array<string, mixed>>|null */
     private static ?array $dbCache = null;
 
@@ -431,6 +435,16 @@ final class PluginManager
                 throw new \Exception(sprintf(t('plugins.err_reserved_slug', 'Slug "%s" is reserved by an official catalog plugin.'), $slug));
             }
 
+            // The upload limit counts the compressed size: a small zip can unpack to fill the disk.
+            $unpacked = 0;
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $unpacked += (int) ($zip->statIndex($i)['size'] ?? 0);
+            }
+            if ($zip->numFiles > self::MAX_ZIP_ENTRIES || $unpacked > self::MAX_UNPACKED_BYTES) {
+                $zip->close();
+                throw new \Exception(t('plugins.err_zip_unpacked'));
+            }
+
             // Extract to a staging directory and syntax-check all PHP files before moving into place.
             // The staging directory sits inside the plugins directory: Apache runs with
             // PrivateTmp, and rename() cannot move a directory from that /tmp to another
@@ -444,6 +458,7 @@ final class PluginManager
             @mkdir($stageDir, 0700, true);
 
             try {
+                $written = 0;
                 for ($i = 0; $i < $zip->numFiles; $i++) {
                     $entryName = (string)$zip->getNameIndex($i);
                     if ($prefixDir !== '' && str_starts_with($entryName, $prefixDir)) {
@@ -463,8 +478,15 @@ final class PluginManager
                     if ($stream === false) {
                         continue;
                     }
-                    file_put_contents($destFile, stream_get_contents($stream));
+                    // The sizes in a zip are only what the zip says they are.
+                    $left = self::MAX_UNPACKED_BYTES - $written;
+                    $data = stream_get_contents($stream, $left + 1);
                     fclose($stream);
+                    $written += strlen((string) $data);
+                    if ($written > self::MAX_UNPACKED_BYTES) {
+                        throw new \Exception(t('plugins.err_zip_unpacked'));
+                    }
+                    file_put_contents($destFile, $data);
 
                     if (str_ends_with(strtolower($destFile), '.php')) {
                         $lintOut = [];
