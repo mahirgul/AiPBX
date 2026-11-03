@@ -74,4 +74,19 @@ class ReviewFixesTest extends TestCase
             $db->prepare('DELETE FROM sys_users WHERE username = ?')->execute([$name]);
         }
     }
+
+    public function testAnAbandonedUpdateDoesNotBlockTheNextOne(): void
+    {
+        require_once __DIR__ . '/../../src/services/SystemUpdateService.php';
+        $now = 1800000000;
+        $at = fn(int $ago) => date('c', $now - $ago);
+        $f = fn(array $s, bool $unit = false) => SystemUpdateService::isAbandoned($s, $now, $unit);
+
+        $this->assertFalse($f(['state' => 'done', 'updated_at' => $at(99999)]));
+        $this->assertFalse($f(['state' => 'running', 'updated_at' => $at(99999)], true), 'its unit is alive');
+        $this->assertFalse($f(['state' => 'running', 'updated_at' => $at(1800)]), 'a quiet step');
+        $this->assertTrue($f(['state' => 'running', 'updated_at' => $at(3700)]));
+        $this->assertFalse($f(['state' => 'running', 'waiting_calls' => 2, 'updated_at' => $at(30)]), 'still waiting');
+        $this->assertTrue($f(['state' => 'running', 'waiting_calls' => 2, 'updated_at' => $at(300)]), 'wait stopped writing');
+    }
 }

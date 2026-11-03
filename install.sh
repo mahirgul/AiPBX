@@ -1946,9 +1946,9 @@ fi
 # the whole install — a failed upgrade rolls back.
 if is_upgrade && [[ "${AIPBX_ASTERISK_RESTART:-yes}" == no ]] && systemctl is-active --quiet asterisk; then
     # aipbx-update found nothing that needs a restart: reload instead, calls stay up.
-    asterisk -rx "core reload" >/dev/null 2>&1 || true
+    timeout 30 asterisk -rx "core reload" >/dev/null 2>&1 || warn "Asterisk did not answer the reload in time"
     ok "Asterisk reloaded (no restart needed, calls kept)"
-elif ! systemctl restart asterisk; then
+elif ! timeout 150 systemctl restart asterisk; then
     warn "Asterisk did not start on the first try — waiting for the automatic restart"
     for _ in $(seq 1 20); do
         systemctl is-active --quiet asterisk && break
@@ -2206,7 +2206,7 @@ if cmp -s /etc/turnserver.conf.new /etc/turnserver.conf && systemctl is-active -
     rm -f /etc/turnserver.conf.new
 else
     mv -f /etc/turnserver.conf.new /etc/turnserver.conf
-    systemctl restart coturn 2>/dev/null || true
+    timeout 150 systemctl restart coturn 2>/dev/null || warn "coturn did not restart in time: systemctl status coturn"
 fi
 systemctl enable coturn 2>/dev/null || true
 

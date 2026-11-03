@@ -29,7 +29,36 @@ class SystemUpdateService
     /** State of the last / running update. */
     public static function status(): ?array
     {
-        return self::readJson(self::STATUS_FILE);
+        $status = self::readJson(self::STATUS_FILE);
+        if ($status !== null && self::isAbandoned($status, time(), self::unitActive())) {
+            $status['state'] = 'failed';
+            $status['step'] = t('system_update.interrupted');
+            $status['waiting_calls'] = 0;
+        }
+        return $status;
+    }
+
+    /**
+     * "running" left behind by an update that died, for instance in a reboot, would refuse
+     * every later one. A wait writes its status every few seconds; other steps can be quiet
+     * for a long time, so those get an hour, and never while the update's unit is alive.
+     */
+    public static function isAbandoned(array $status, int $now, bool $unitActive): bool
+    {
+        if (($status['state'] ?? '') !== 'running' || $unitActive) {
+            return false;
+        }
+        $at = strtotime((string) ($status['updated_at'] ?? ''));
+        if ($at === false) {
+            return true;
+        }
+        return $now - $at > ((int) ($status['waiting_calls'] ?? 0) > 0 ? 120 : 3600);
+    }
+
+    private static function unitActive(): bool
+    {
+        exec('systemctl is-active --quiet aipbx-update.service 2>/dev/null', $out, $rc);
+        return $rc === 0;
     }
 
     public static function isRunning(): bool
@@ -70,20 +99,32 @@ class SystemUpdateService
     }
 
     /** Starts the update in the background. */
-    public static function start(bool $allowCalls): array
+    public static function start(string $calls = 'wait'): array
     {
         if (self::isRunning()) {
             return ['success' => false, 'error' => t('system_update.already_running')];
         }
         $args = ['update', 'start'];
-        if ($allowCalls) {
-            $args[] = '--allow-calls';
-        }
+        $args[] = $calls === 'end' ? '--allow-calls' : '--wait-calls';
         $res = PrivHelper::run($args);
         if (!$res['success']) {
             return ['success' => false, 'error' => $res['output'] ?: t('system_update.start_failed')];
         }
         writeAuditLog(null, 'system', 'update', 'System update started (from ' . AIPBX_VERSION . ')', 'update', $_SESSION['user_id'] ?? null);
+        return ['success' => true];
+    }
+
+    /** While the update waits for calls: stop waiting and end them, or give the update up. */
+    public static function whileWaiting(string $what): array
+    {
+        if ((int) (self::status()['waiting_calls'] ?? 0) < 1) {
+            return ['success' => false, 'error' => t('system_update.not_waiting')];
+        }
+        $res = PrivHelper::run(['update', $what === 'end' ? 'end-calls' : 'cancel']);
+        if (!$res['success']) {
+            return ['success' => false, 'error' => $res['output'] ?: t('system_update.not_waiting')];
+        }
+        writeAuditLog(null, 'system', 'update', $what === 'end' ? 'Update: calls ended instead of waiting' : 'Update cancelled while waiting for calls', 'update', $_SESSION['user_id'] ?? null);
         return ['success' => true];
     }
 

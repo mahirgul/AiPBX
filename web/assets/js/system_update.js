@@ -33,8 +33,10 @@ function suRender(d) {
         rEl.style.color = restart ? 'var(--warning)' : 'var(--success)';
         rEl.textContent = restart ? SU_TEXT.restart_yes.replace('%s', ck.restart_reason || '') : SU_TEXT.restart_no;
     }
-    const allowLabel = document.getElementById('su-allow-calls-label');
-    if (allowLabel) allowLabel.style.display = restart ? '' : 'none';
+    const choice = document.getElementById('su-calls-choice');
+    if (choice) choice.style.display = restart && !running ? '' : 'none';
+    const waiting = document.getElementById('su-waiting');
+    if (waiting) waiting.style.display = running && st.waiting_calls > 0 ? '' : 'none';
     window.SYSTEM_UPDATE_PAGE.restart = restart;
     if (ck.notes) {
         document.getElementById('su-notes').textContent = ck.notes;
@@ -71,10 +73,18 @@ function suStart() {
     const target = document.getElementById('su-latest').textContent;
     const restart = window.SYSTEM_UPDATE_PAGE.restart !== false;
     if (!confirm((restart ? SU_TEXT.confirm : SU_TEXT.confirm_no_restart).replace('%s', target))) return;
-    const allow = document.getElementById('su-allow-calls').checked ? '1' : '';
-    suPost('start', allow ? { allow_calls: '1' } : {}).then(res => {
+    const picked = document.querySelector('input[name="su-calls"]:checked');
+    suPost('start', { calls: picked ? picked.value : 'wait' }).then(res => {
         if (!res.success) { suToast(res.error, 'error'); return; }
         suPoll();
+        setTimeout(suRefresh, 1500);
+    });
+}
+
+function suWhileWaiting(action) {
+    if (action === 'end_calls' && !confirm(SU_TEXT.confirm_end_calls)) return;
+    suPost(action).then(res => {
+        if (!res.success) { suToast(res.error, 'error'); return; }
         setTimeout(suRefresh, 1500);
     });
 }
