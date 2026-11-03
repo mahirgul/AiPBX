@@ -960,6 +960,17 @@ FTPCONF
         esac
         ;;
 
+    vpn)
+        # vpn SUBCOMMAND ... — Network -> VPN Server and VPN Client. aipbx-vpn checks every
+        # value (profiles arrive on stdin) and is what holds the keys; "run" is for its
+        # own systemd unit and is not offered here.
+        case "${1:-}" in
+            status|server-set|peer-add|peer-del|peer-profile|tunnel-add|tunnel-set|tunnel-del|log) ;;
+            *) die "unknown vpn command: ${1:-<empty>}" ;;
+        esac
+        exec /usr/local/sbin/aipbx-vpn "$@"
+        ;;
+
     *)
         die "unknown command: ${cmd:-<empty>}"
         ;;

@@ -187,5 +187,7 @@ jobs:
           python-version: '3.12'
       - name: Plugin checker unit tests
         run: python3 scripts/test_check_plugins.py
+      - name: VPN helper tests
+        run: python3 scripts/test_aipbx_vpn.py
       - name: Validate catalog plugins
         run: python3 scripts/check_plugins.py --no-php-lint

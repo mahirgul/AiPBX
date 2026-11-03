@@ -64,6 +64,8 @@ return [
     '/phone-logs'      => ['controller' => PhoneLogController::class, 'action' => 'index', 'module' => 'phone_logs.php'],
     '/network-services' => ['controller' => NetworkServicesController::class, 'action' => 'index', 'module' => 'network_services.php'],
     '/network-settings' => ['controller' => NetworkSettingsController::class, 'action' => 'index', 'module' => 'network_settings.php'],
+    '/vpn-server'      => ['controller' => VpnServerController::class, 'action' => 'index', 'module' => 'vpn_server.php'],
+    '/vpn-client'      => ['controller' => VpnClientController::class, 'action' => 'index', 'module' => 'vpn_client.php'],
     '/reverse-proxy'    => ['controller' => ReverseProxyController::class, 'action' => 'index', 'module' => 'reverse_proxy.php'],
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
     '/certificates'    => ['controller' => CertificateController::class, 'action' => 'index', 'module' => 'certificates.php'],

@@ -233,6 +233,8 @@ function check_rbac(): void
         '/advanced-config',
         '/inbound-normalization',
         '/network-services',
+        '/vpn-server',
+        '/vpn-client',
         '/phone-logs',
         '/custom-dialplan',
         '/privacy',

@@ -246,6 +246,18 @@ final class NetworkSettingsService
     }
 
     /** Stores the server addresses and marks transports and RTP for Apply. */
+    /**
+     * Asterisk's local networks, keeping the other server addresses as they are
+     * (the VPN pages add and take back their own networks).
+     *
+     * @param string[] $nets
+     */
+    public static function storeLocalNets(array $nets, array $settings): void
+    {
+        self::storeServer(['server_ip' => $settings['server_ip'], 'pjsip_external_ip' => $settings['pjsip_external_ip'],
+            'pjsip_external_media_ip' => $settings['pjsip_external_media_ip'], 'pjsip_local_net' => implode(',', $nets)]);
+    }
+
     private static function storeServer(array $v): void
     {
         $db = getDB();

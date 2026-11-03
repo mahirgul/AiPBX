@@ -597,6 +597,10 @@ PACKAGES=(
   dnsmasq-base
   vsftpd
   libpam-pwdfile
+  # Network -> VPN Server and VPN Client. Both stay unused until those pages start
+  # them, in units of their own (aipbx-vpn@*).
+  wireguard-tools
+  openvpn
 )
 
 # An upgrade only installs packages a newer release added: system package
@@ -1451,6 +1455,8 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 
 # DHCP check for PBX → Network services; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
+# VPN server and client connections; the portal calls it through aipbx-priv.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-vpn" /usr/local/sbin/aipbx-vpn
 # --- phone discovery engine (PBX -> Phones -> Discovered on the network):
 # looks at the DHCP lease file, the ARP table and dnsmasq's log (opt-in sweep)
 # and records what it found; the portal decides what happens to it. Installed on
@@ -1527,6 +1533,33 @@ WEBHOOKUNIT
 systemctl daemon-reload
 systemctl enable aipbx-webhook-worker.service >/dev/null 2>&1 || true
 systemctl restart aipbx-webhook-worker.service 2>/dev/null || true
+# Network -> VPN Server and VPN Client: one unit per server or connection. All of it is
+# under /var/lib/aipbx-vpn, root only. An OpenVPN or WireGuard of the server's own
+# (openvpn-client@..., wg-quick@...) is a different unit and is not touched.
+cat > /etc/systemd/system/aipbx-vpn@.service << 'VPNUNIT'
+[Unit]
+Description=AiPBX VPN %i (Network -> VPN)
+After=network-online.target firewalld.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+ExecStart=/usr/local/sbin/aipbx-vpn run %i
+Restart=always
+RestartSec=15
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
+VPNUNIT
+systemctl daemon-reload
+# What the state says should run, runs; nothing restarts unless its configuration
+# changed, so an update does not drop a call on the VPN.
+/usr/local/sbin/aipbx-vpn reapply >/dev/null 2>&1 || warn "VPN: could not apply the saved configuration (Network -> VPN Server)"
+
 cat > /etc/systemd/system/aipbx-dnsmasq.service << 'NETSVC'
 [Unit]
 Description=AiPBX DHCP/TFTP for desk phones (PBX -> Network services)

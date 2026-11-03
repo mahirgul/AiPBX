@@ -6,7 +6,8 @@
 #   <dir>/aipbx-YYYYmmdd-HHMM/config.tgz    /etc/ai-pbx.env, /etc/asterisk, uploaded
 #                                            sounds and music on hold, certificates
 #                                            (Let's Encrypt and /etc/ssl/aipbx), the
-#                                            settings key and the AI service token
+#                                            settings key, the AI service token and the
+#                                            VPN keys
 # and removes backups older than the retention period.
 #
 #   aipbx-backup [--label WORD]   a labelled backup is named aipbx-YYYYmmdd-HHMM-WORD
@@ -71,10 +72,11 @@ paths=()
 # etc/ssl/aipbx holds uploaded or self-signed certificates, etc/aipbx the AI
 # service token. The archive is root-only (umask 077 above).
 for p in etc/ai-pbx.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt \
-         var/lib/aipbx/settings.key var/lib/aipbx/plugins etc/ssl/aipbx etc/aipbx; do
+         var/lib/aipbx/settings.key var/lib/aipbx/plugins etc/ssl/aipbx etc/aipbx var/lib/aipbx-vpn; do
     [[ -e "/$p" ]] && paths+=("$p")
 done
-if ! tar czf "$WORK/config.tgz" -C / "${paths[@]}" 2>>"$LOG_FILE"; then
+# run/ is generated from the state on every start, and holds sockets.
+if ! tar czf "$WORK/config.tgz" --exclude=var/lib/aipbx-vpn/run -C / "${paths[@]}" 2>>"$LOG_FILE"; then
     log "FAILED: configuration archive"
     rm -rf "$WORK"
     exit 1

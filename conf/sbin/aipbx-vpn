@@ -1,0 +1,1275 @@
+#!/usr/bin/python3 -I
+"""aipbx-vpn: the VPN server and VPN client connections of AiPBX.
+
+The portal reaches this only through `aipbx-priv vpn ...`. It runs as root, so:
+
+ - The portal never writes a configuration file. A WireGuard or OpenVPN file can
+   run commands as root (PostUp, up, plugin, ...), so an uploaded profile is read
+   against a list of allowed settings and written out again from the parsed values.
+ - All state and every private key live in STATE_DIR (root only). Files under
+   run/ are generated from the state on every start, never trusted as they are.
+ - Nothing here turns on IP forwarding or NAT: a VPN device reaches this server,
+   not the networks behind it.
+ - A client connection never takes the default route: the PBX's calls, trunks and
+   management stay where they are, and only the listed networks use the tunnel.
+ - Interfaces are named aipbx*, units aipbx-vpn@*: an OpenVPN or WireGuard the
+   server already runs on its own is left alone.
+"""
+
+import fcntl
+import ipaddress
+import json
+import os
+import re
+import secrets
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import tempfile
+import time
+
+STATE_DIR = '/var/lib/aipbx-vpn'
+SERVER_IF = 'aipbxs0'
+ZONE_SERVER = 'aipbx-vpn'
+ZONE_CLIENT = 'aipbx-vpnc'
+ZONE_MANAGED = 'aipbx-vpnm'
+MAX_PEERS = 250
+MAX_TUNNELS = 16
+MAX_PROFILE = 256 * 1024
+MAX_ROUTES = 32
+DEFAULT_NET = '10.99.0.0/24'
+# Reached by VPN devices on this server: portal, SIP, media, T.38, TURN. Not SSH or
+# the phone file services: those stay under the admin's own firewall rules.
+SERVER_ZONE_PORTS = ('80/tcp', '443/tcp', '5060/udp', '5060/tcp', '5061/tcp', '10000-20000/udp',
+                     '4100-4999/udp', '3478/udp', '3478/tcp', '5349/tcp', '5349/udp', '49152-65535/udp')
+# Reached through a client connection: signalling and media of a trunk over the tunnel.
+CLIENT_ZONE_PORTS = ('5060/udp', '5060/tcp', '5061/tcp', '10000-20000/udp', '4100-4999/udp')
+# A connection the admin also manages this server through: SSH and the portal on top.
+MANAGED_ZONE_PORTS = CLIENT_ZONE_PORTS + ('22/tcp', '80/tcp', '443/tcp')
+# Ports a VPN server must not take: they belong to the PBX or to the phone services.
+RESERVED_PORTS = {21, 22, 25, 53, 67, 69, 80, 123, 443, 514, 3306, 3478, 5038, 5060, 5061, 5349, 8088, 8089}
+
+RE_NAME = re.compile(r'^[A-Za-z0-9][A-Za-z0-9 ._-]{0,39}$')
+RE_ID = re.compile(r'^[1-9][0-9]{0,4}$')
+RE_HOST = re.compile(r'^(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,62}[A-Za-z0-9])?)*$')
+RE_WG_KEY = re.compile(r'^[A-Za-z0-9+/]{42}[AEIMQUYcgkosw048]=$')
+RE_INT = re.compile(r'^[0-9]{1,7}$')
+RE_CIPHERS = re.compile(r'^[A-Za-z0-9_.:+-]{1,512}$')
+RE_X509 = re.compile(r'^[A-Za-z0-9._@=,:*-]{1,128}$')
+RE_PEM_BLOCK = re.compile(r'-----BEGIN ([A-Za-z0-9 -]{1,40})-----\n[A-Za-z0-9+/=\n]{16,65536}-----END \1-----')
+RE_CREDENTIAL = re.compile(r'^[^\x00-\x1f\x7f]{1,256}$')
+
+
+class Refused(Exception):
+    """A value or a request this helper will not act on; the text reaches the admin."""
+
+
+def run(args, input_text=None, check=True):
+    done = subprocess.run(args, input=input_text, capture_output=True, text=True, timeout=60)
+    if check and done.returncode != 0:
+        raise Refused(f'{args[0]}: {(done.stderr or done.stdout).strip()[:300]}')
+    return done.stdout.strip()
+
+
+def write_private(path, text):
+    """Replaces a file in one step, readable by root only."""
+    os.makedirs(os.path.dirname(path), mode=0o700, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path))
+    try:
+        with os.fdopen(fd, 'w') as f:
+            f.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
+def read_file(path, default=''):
+    try:
+        with open(path) as f:
+            return f.read()
+    except OSError:
+        return default
+
+
+# ----------------------------------------------------------------- validation
+
+def valid_name(v):
+    v = v.strip()
+    if not RE_NAME.match(v):
+        raise Refused('The name may hold letters, digits, spaces, dots, dashes and underscores (40 at most).')
+    return v
+
+
+def valid_host(v):
+    v = v.strip()
+    try:
+        return str(ipaddress.ip_address(v))
+    except ValueError:
+        pass
+    if not RE_HOST.match(v):
+        raise Refused(f'Not an address or host name: {v[:60]}')
+    return v
+
+
+def valid_port(v):
+    if not RE_INT.match(str(v)) or not 1 <= int(v) <= 65535:
+        raise Refused(f'Not a port: {str(v)[:20]}')
+    return int(v)
+
+
+def valid_v4_net(v):
+    try:
+        net = ipaddress.IPv4Network(str(v).strip(), strict=False)
+    except ValueError as e:
+        raise Refused(f'Not an IPv4 network: {str(v)[:60]}') from e
+    return net
+
+
+def parse_args(items, allowed):
+    out = {}
+    for item in items:
+        k, sep, v = item.partition('=')
+        if not sep or k not in allowed:
+            raise Refused(f'unknown argument: {item[:40]}')
+        out[k] = v
+    return out
+
+
+def connected_networks(skip_prefix='aipbx'):
+    """Networks this server has a route to, without its own VPN interfaces."""
+    nets = []
+    data = run(['ip', '-j', '-4', 'route', 'show'], check=False)
+    for r in json.loads(data or '[]'):
+        dst, dev = r.get('dst', ''), r.get('dev', '')
+        if dst == 'default' or dev.startswith(skip_prefix):
+            continue
+        try:
+            nets.append((ipaddress.IPv4Network(dst, strict=False), dev))
+        except ValueError:
+            continue
+    return nets
+
+
+def check_no_clash(net, what, own_state=None):
+    """A VPN network on top of a network the server already uses would cut that one off."""
+    for other, dev in connected_networks():
+        if net.overlaps(other):
+            raise Refused(f'{what} {net} overlaps {other} on {dev}, which this server already uses.')
+    for label, other in own_networks(own_state):
+        if net.overlaps(other):
+            raise Refused(f'{what} {net} overlaps {other} of {label}.')
+
+
+def own_networks(state):
+    out = []
+    if not state:
+        return out
+    server = state.get('server') or {}
+    if server.get('type', 'off') != 'off':
+        out.append(('the VPN server', ipaddress.IPv4Network(server['net'])))
+    for t in state.get('tunnels', []):
+        for r in t.get('routes', []):
+            out.append((f'connection {t["name"]}', ipaddress.IPv4Network(r)))
+    return out
+
+
+def valid_routes(text, state, skip_tunnel=None):
+    """The networks a client connection carries. Never the default route."""
+    routes = []
+    for part in re.split(r'[\s,]+', text.strip()):
+        if part == '':
+            continue
+        net = valid_v4_net(part)
+        if net.prefixlen < 8:
+            raise Refused(f'{net} would send most of this server\'s traffic into the tunnel, its calls and trunks too. '
+                          'List the networks behind the tunnel instead.')
+        routes.append(str(net))
+    routes = list(dict.fromkeys(routes))
+    if len(routes) > MAX_ROUTES:
+        raise Refused(f'At most {MAX_ROUTES} networks.')
+    others = dict(state)
+    others['tunnels'] = [t for t in state.get('tunnels', []) if t['id'] != skip_tunnel]
+    for r in routes:
+        check_no_clash(ipaddress.IPv4Network(r), 'Network', others)
+    return routes
+
+
+def check_endpoint_outside(host, routes):
+    """A tunnel whose own server is routed into the tunnel never comes up."""
+    try:
+        addrs = {ai[4][0] for ai in socket.getaddrinfo(host, None, socket.AF_INET)}
+    except OSError:
+        return
+    for a in addrs:
+        for r in routes:
+            if ipaddress.IPv4Address(a) in ipaddress.IPv4Network(r):
+                raise Refused(f'{r} holds the VPN server itself ({a}), so the tunnel could not stay up.')
+
+
+# ------------------------------------------------------------ WireGuard profile
+
+WG_DROPPED = {'dns'}
+WG_INTERFACE = {'privatekey', 'address', 'listenport', 'mtu'}
+WG_PEER = {'publickey', 'presharedkey', 'endpoint', 'allowedips', 'persistentkeepalive'}
+
+
+def parse_wg_profile(text):
+    """Returns the values of a wg-quick file. Anything not listed above is refused, so
+    PostUp, PreDown, SaveConfig and the like never get anywhere."""
+    iface, peers, ignored, section = {}, [], [], None
+    for raw in text.splitlines():
+        line = raw.split('#', 1)[0].strip()
+        if line == '':
+            continue
+        low = line.lower()
+        if low == '[interface]':
+            section = iface
+            continue
+        if low == '[peer]':
+            section = {}
+            peers.append(section)
+            continue
+        key, sep, value = line.partition('=')
+        key, value = key.strip().lower(), value.strip()
+        if not sep or section is None:
+            raise Refused('This is not a WireGuard file.')
+        if key in WG_DROPPED:
+            ignored.append(key)
+            continue
+        if key not in (WG_INTERFACE if section is iface else WG_PEER):
+            raise Refused(f'This profile holds the setting "{key[:30]}", which is not accepted here: '
+                          'some settings of these files can run commands on the server.')
+        section[key] = value
+    if not RE_WG_KEY.match(iface.get('privatekey', '')):
+        raise Refused('The profile has no valid PrivateKey.')
+    addresses = []
+    for part in re.split(r'[\s,]+', iface.get('address', '')):
+        if part == '' or ':' in part:
+            continue
+        try:
+            addresses.append(ipaddress.IPv4Interface(part).with_prefixlen)
+        except ValueError as e:
+            raise Refused(f'Not an address: {part[:50]}') from e
+    if not addresses:
+        raise Refused('The profile has no IPv4 Address.')
+    if not peers:
+        raise Refused('The profile has no [Peer].')
+    out_peers = []
+    for p in peers[:16]:
+        if not RE_WG_KEY.match(p.get('publickey', '')):
+            raise Refused('A [Peer] has no valid PublicKey.')
+        peer = {'public': p['publickey'], 'allowed': []}
+        if p.get('presharedkey'):
+            if not RE_WG_KEY.match(p['presharedkey']):
+                raise Refused('The PresharedKey is not valid.')
+            peer['psk'] = p['presharedkey']
+        if p.get('endpoint'):
+            m = re.match(r'^\[?([^\]]+?)\]?:([0-9]{1,5})$', p['endpoint'])
+            if not m:
+                raise Refused('The Endpoint is not host:port.')
+            peer['host'], peer['port'] = valid_host(m.group(1)), valid_port(m.group(2))
+        if p.get('persistentkeepalive') and p['persistentkeepalive'] != 'off':
+            if not RE_INT.match(p['persistentkeepalive']) or int(p['persistentkeepalive']) > 65535:
+                raise Refused('PersistentKeepalive is not a number.')
+            peer['keepalive'] = int(p['persistentkeepalive'])
+        for part in re.split(r'[\s,]+', p.get('allowedips', '')):
+            if part == '' or ':' in part:
+                continue
+            peer['allowed'].append(str(valid_v4_net(part)))
+        out_peers.append(peer)
+    out = {'private': iface['privatekey'], 'addresses': addresses, 'peers': out_peers}
+    if iface.get('listenport'):
+        out['listen'] = valid_port(iface['listenport'])
+    if iface.get('mtu'):
+        if not RE_INT.match(iface['mtu']) or not 576 <= int(iface['mtu']) <= 9000:
+            raise Refused('MTU is not valid.')
+        out['mtu'] = int(iface['mtu'])
+    return out, ignored
+
+
+def wg_routes_from_profile(profile):
+    """The networks of the profile's AllowedIPs that are safe to route: without the
+    default route and the like, which the admin replaces by naming the real networks."""
+    out = []
+    for p in profile['peers']:
+        for a in p['allowed']:
+            if ipaddress.IPv4Network(a).prefixlen >= 8:
+                out.append(a)
+    return list(dict.fromkeys(out))
+
+
+def check_routes_in_profile(profile, routes):
+    allowed = [ipaddress.IPv4Network(a) for p in profile['peers'] for a in p['allowed']]
+    for r in routes:
+        net = ipaddress.IPv4Network(r)
+        if not any(net.subnet_of(a) for a in allowed):
+            raise Refused(f'{r} is outside the AllowedIPs of this profile, so WireGuard would drop its packets.')
+
+
+# -------------------------------------------------------------- OpenVPN profile
+
+OVPN_FLAGS = {'client', 'tls-client', 'pull', 'nobind', 'persist-key', 'persist-tun', 'auth-nocache', 'float',
+              'remote-random', 'mute-replay-warnings', 'ping-timer-rem', 'passtos', 'fast-io'}
+OVPN_INT = {'port', 'rport', 'reneg-sec', 'tun-mtu', 'mssfix', 'fragment', 'ping', 'ping-restart', 'ping-exit',
+            'connect-retry', 'connect-retry-max', 'connect-timeout', 'server-poll-timeout', 'hand-window',
+            'tran-window', 'sndbuf', 'rcvbuf', 'verb', 'mute', 'explicit-exit-notify', 'key-direction',
+            'reneg-bytes', 'reneg-pkts', 'tun-mtu-extra'}
+OVPN_TOKEN = {'cipher', 'data-ciphers', 'data-ciphers-fallback', 'ncp-ciphers', 'auth', 'tls-cipher', 'tls-ciphersuites',
+              'tls-groups', 'ecdh-curve', 'tls-version-min', 'tls-version-max', 'remote-cert-tls',
+              'comp-lzo', 'compress', 'allow-compression', 'tls-cert-profile', 'resolv-retry', 'auth-retry'}
+OVPN_INLINE = {'ca', 'cert', 'key', 'tls-auth', 'tls-crypt', 'tls-crypt-v2', 'extra-certs'}
+# Harmless in a client profile, and of no use on a server: left out, and the page says so.
+OVPN_DROPPED = {'route-ipv6', 'redirect-gateway', 'redirect-private', 'dhcp-option', 'block-outside-dns',
+                'register-dns', 'setenv', 'setenv-safe', 'ignore-unknown-option', 'route-method', 'route-delay',
+                'dev-node', 'user', 'group', 'tun-ipv6', 'route-metric', 'ifconfig-ipv6',
+                'push-peer-info', 'ip-win32', 'pull-filter', 'windows-driver', 'disable-dco',
+                'auth-user-pass-optional', 'static-challenge', 'machine-readable-output', 'tcp-nodelay'}
+OVPN_PROTOS = {'udp', 'udp4', 'tcp', 'tcp4', 'tcp-client', 'tcp4-client'}
+
+
+def ovpn_tokens(line):
+    """Splits the way OpenVPN does, without its escapes: a backslash is never needed in a
+    value accepted here, and quoting tricks are one more reason not to pass it along."""
+    if '\\' in line or "'" in line:
+        raise Refused('The profile holds a line with characters that are not accepted: ' + line[:60])
+    out, cur, quoted = [], '', False
+    for c in line:
+        if c == '"':
+            quoted = not quoted
+        elif c.isspace() and not quoted:
+            if cur:
+                out.append(cur)
+                cur = ''
+        else:
+            cur += c
+    if quoted:
+        raise Refused('A quote is not closed in the profile: ' + line[:60])
+    if cur:
+        out.append(cur)
+    return out
+
+
+def parse_ovpn_profile(text):
+    """Returns the values of a .ovpn file. Only what is listed above passes: up, down,
+    plugin, script-security, config, log, management, and files named by path never do."""
+    opts, inline, remotes, ignored, routes = [], {}, [], [], []
+    uses_login = False
+    credentials = None
+    block, block_lines = None, []
+    verify = None
+    seen_dev = False
+    proto = ''
+    for raw in text.splitlines():
+        line = raw.strip()
+        if block is not None:
+            if line == f'</{block}>':
+                if block == 'auth-user-pass':
+                    # The login inside the profile: two lines, never written back into a config.
+                    if len(block_lines) != 2 or not all(RE_CREDENTIAL.match(v) for v in block_lines):
+                        raise Refused('The <auth-user-pass> block must hold a username and a password.')
+                    credentials = block_lines
+                    uses_login = True
+                else:
+                    inline[block] = '\n'.join(block_lines).strip() + '\n'
+                block, block_lines = None, []
+            else:
+                block_lines.append(line)
+            continue
+        if line == '' or line[0] in '#;':
+            continue
+        m = re.match(r'^<([a-z0-9-]{1,30})>$', line)
+        if m:
+            if m.group(1) not in OVPN_INLINE and m.group(1) != 'auth-user-pass':
+                raise Refused(f'This profile holds a <{m.group(1)}> block, which is not accepted here.')
+            block = m.group(1)
+            continue
+        tok = ovpn_tokens(line)
+        name, args = tok[0], tok[1:]
+        if name in OVPN_DROPPED:
+            ignored.append(name)
+        elif name == 'route' and len(args) > 2 and args[2] != 'vpn_gateway':
+            # "route X mask net_gateway" keeps X out of the tunnel: the opposite of what the
+            # list on the page means, and of no use when nothing else goes in.
+            ignored.append(name)
+        elif name == 'route' and args:
+            # The profile's own networks: used when the page lists none. The default
+            # route stays out; valid_routes checks the rest.
+            try:
+                net = ipaddress.IPv4Network(f'{args[0]}/{args[1] if len(args) > 1 and args[1] != "default" else "255.255.255.255"}', strict=False)
+            except ValueError:
+                ignored.append(name)
+                continue
+            if net.prefixlen >= 8:
+                routes.append(str(net))
+            else:
+                ignored.append(name)
+        elif name in OVPN_FLAGS and not args:
+            opts.append([name])
+        elif name in OVPN_INT and len(args) <= 1 and all(RE_INT.match(a) for a in args):
+            opts.append([name] + args)
+        elif name in ('tls-version-min', 'tls-version-max') and args and args[1:] in ([], ['or-highest']) and RE_CIPHERS.match(args[0]):
+            opts.append([name] + args)
+        elif name == 'keepalive' and len(args) == 2 and all(RE_INT.match(a) for a in args):
+            opts.append([name] + args)
+        elif name in OVPN_TOKEN and len(args) <= 1 and all(RE_CIPHERS.match(a) for a in args):
+            opts.append([name] + args)
+        elif name == 'dev' and len(args) == 1:
+            if not args[0].startswith('tun'):
+                raise Refused('Only tun connections are accepted, not tap.')
+            seen_dev = True
+        elif name == 'dev-type' and args == ['tun']:
+            seen_dev = True
+        elif name == 'proto' and len(args) == 1 and args[0] in OVPN_PROTOS:
+            proto = args[0]
+        elif name == 'remote' and 1 <= len(args) <= 3:
+            r = {'host': valid_host(args[0])}
+            if len(args) > 1:
+                r['port'] = valid_port(args[1])
+            if len(args) > 2:
+                if args[2] not in OVPN_PROTOS:
+                    raise Refused('The protocol of a remote line is not valid.')
+                r['proto'] = args[2]
+            remotes.append(r)
+        elif name == 'verify-x509-name' and 1 <= len(args) <= 2 and RE_X509.match(args[0]) \
+                and (len(args) == 1 or args[1] in ('name', 'name-prefix', 'subject')):
+            verify = args
+        elif name == 'auth-user-pass' and len(args) <= 1:
+            # A file named here is never opened: the login comes from the page.
+            uses_login = True
+        elif name in OVPN_INLINE:
+            raise Refused(f'"{name}" names a file. Put its content into the profile (<{name}> ... </{name}>).')
+        else:
+            raise Refused(f'This profile holds the setting "{name[:30]}", which is not accepted here: '
+                          'some settings of these files can run commands on the server.')
+    if block is not None:
+        raise Refused(f'<{block}> is not closed in the profile.')
+    if not remotes:
+        raise Refused('The profile has no remote line.')
+    if not seen_dev:
+        raise Refused('This is not an OpenVPN client file (no dev line).')
+    if 'ca' not in inline:
+        raise Refused('The profile has no <ca> block.')
+    for k, v in list(inline.items()):
+        # Only the key or certificate itself is kept: such blocks often carry a text dump around it.
+        found = [m.group(0) for m in RE_PEM_BLOCK.finditer(v)]
+        if not found:
+            raise Refused(f'The <{k}> block is not a key or certificate (a key protected by a password is not accepted).')
+        if any('ENCRYPTED' in b.splitlines()[0] for b in found):
+            raise Refused(f'The key in <{k}> is protected by a password, which a service cannot type in.')
+        inline[k] = '\n'.join(found) + '\n'
+    if 'cert' in inline and 'key' not in inline:
+        raise Refused('The profile has a certificate but no <key> block.')
+    if 'cert' not in inline and not uses_login:
+        raise Refused('The profile has neither a certificate nor a login.')
+    return {'opts': opts, 'inline': inline, 'remotes': remotes, 'proto': proto, 'verify': verify,
+            'login': uses_login, 'routes': list(dict.fromkeys(routes)), 'credentials': credentials}, ignored
+
+
+# --------------------------------------------------------------------- state
+
+def load_state():
+    try:
+        with open(priv('state.json')) as f:
+            state = json.load(f)
+    except FileNotFoundError:
+        state = {}
+    state.setdefault('server', {'type': 'off', 'port': 51820, 'proto': 'udp', 'net': DEFAULT_NET, 'endpoint': ''})
+    state['server'].setdefault('peers', {'wg': [], 'ovpn': []})
+    state.setdefault('tunnels', [])
+    state.setdefault('next_id', 1)
+    return state
+
+
+def save_state(state):
+    write_private(priv('state.json'), json.dumps(state, indent=1))
+
+
+def next_id(state):
+    v = int(state['next_id'])
+    state['next_id'] = v + 1
+    return v
+
+
+def priv(*parts):
+    return os.path.join(STATE_DIR, *parts)
+
+
+def ensure_dirs():
+    os.makedirs(STATE_DIR, mode=0o700, exist_ok=True)
+    os.chmod(STATE_DIR, 0o700)
+    for d in ('wg', 'ovpn', 'ovpn/ccd', 'run'):
+        os.makedirs(priv(d), mode=0o700, exist_ok=True)
+
+
+# ------------------------------------------------------- keys and certificates
+
+def wg_keypair():
+    private = run(['wg', 'genkey'])
+    return private, run(['wg', 'pubkey'], input_text=private + '\n')
+
+
+def wg_server_keys():
+    path = priv('wg', 'server.key')
+    if not os.path.exists(path):
+        write_private(path, wg_keypair()[0] + '\n')
+    private = read_file(path).strip()
+    return private, run(['wg', 'pubkey'], input_text=private + '\n')
+
+
+def openssl(*args):
+    run(['openssl', *args])
+
+
+def ovpn_issue(name, ca=False, server=False):
+    """An EC key and a certificate. Certificates last ten years; a device is shut out by
+    removing its ccd file (ccd-exclusive), not by waiting for its certificate to end."""
+    base = priv('ovpn', name)
+    openssl('ecparam', '-name', 'prime256v1', '-genkey', '-noout', '-out', base + '.key')
+    os.chmod(base + '.key', 0o600)
+    with tempfile.NamedTemporaryFile('w', dir=priv('ovpn'), suffix='.ext', delete=False) as ext:
+        if ca:
+            ext.write('basicConstraints=critical,CA:TRUE\nkeyUsage=critical,keyCertSign,cRLSign\n')
+        elif server:
+            ext.write('basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=serverAuth\n')
+        else:
+            ext.write('basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=clientAuth\n')
+    try:
+        if ca:
+            openssl('req', '-new', '-x509', '-key', base + '.key', '-sha256', '-days', '3650', '-subj', f'/CN={name}',
+                    '-addext', 'basicConstraints=critical,CA:TRUE', '-addext', 'keyUsage=critical,keyCertSign,cRLSign',
+                    '-out', base + '.crt')
+        else:
+            openssl('req', '-new', '-key', base + '.key', '-subj', f'/CN={name}', '-out', base + '.csr')
+            openssl('x509', '-req', '-in', base + '.csr', '-CA', priv('ovpn', 'ca.crt'), '-CAkey', priv('ovpn', 'ca.key'),
+                    '-CAcreateserial', '-sha256', '-days', '3650', '-extfile', ext.name, '-out', base + '.crt')
+            os.unlink(base + '.csr')
+    finally:
+        os.unlink(ext.name)
+
+
+def ovpn_ensure_pki():
+    if not os.path.exists(priv('ovpn', 'ca.crt')):
+        ovpn_issue('aipbx-vpn-ca-' + secrets.token_hex(4), ca=True)
+        ca_name = [f for f in os.listdir(priv('ovpn')) if f.startswith('aipbx-vpn-ca-') and f.endswith('.crt')][0][:-4]
+        os.replace(priv('ovpn', ca_name + '.crt'), priv('ovpn', 'ca.crt'))
+        os.replace(priv('ovpn', ca_name + '.key'), priv('ovpn', 'ca.key'))
+    if not os.path.exists(priv('ovpn', 'server.crt')):
+        ovpn_issue('server', server=True)
+    if not os.path.exists(priv('ovpn', 'tls-crypt.key')):
+        run(['openvpn', '--genkey', 'secret', priv('ovpn', 'tls-crypt.key')])
+        os.chmod(priv('ovpn', 'tls-crypt.key'), 0o600)
+
+
+# -------------------------------------------------------- generated configuration
+
+def server_address(net):
+    return ipaddress.IPv4Network(net).network_address + 1
+
+
+def wg_conf_server(state):
+    server = state['server']
+    lines = ['[Interface]', f'PrivateKey = {wg_server_keys()[0]}', f'ListenPort = {int(server["port"])}']
+    for p in server['peers']['wg']:
+        lines += ['', '[Peer]', f'PublicKey = {p["public"]}', f'PresharedKey = {p["psk"]}', f'AllowedIPs = {p["ip"]}/32']
+    return '\n'.join(lines) + '\n'
+
+
+def ovpn_conf_server(state):
+    server = state['server']
+    net = ipaddress.IPv4Network(server['net'])
+    proto = 'tcp-server' if server['proto'] == 'tcp' else 'udp'
+    lines = [
+        '# Written by aipbx-vpn. Do not edit: the next start replaces it.',
+        f'dev {SERVER_IF}', 'dev-type tun', 'topology subnet',
+        f'server {net.network_address} {net.netmask}',
+        f'port {int(server["port"])}', f'proto {proto}',
+        f'ca {priv("ovpn", "ca.crt")}', f'cert {priv("ovpn", "server.crt")}', f'key {priv("ovpn", "server.key")}',
+        'dh none', f'tls-crypt {priv("ovpn", "tls-crypt.key")}', 'tls-version-min 1.2',
+        'data-ciphers AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305',
+        # Only a device with a ccd file gets in, so removing the file shuts it out.
+        f'client-config-dir {priv("ovpn", "ccd")}', 'ccd-exclusive', 'verify-client-cert require',
+        # Kernel offload refuses every device where its netlink calls are not allowed (containers).
+        'disable-dco',
+        'keepalive 10 60', 'persist-key', 'persist-tun', 'script-security 1',
+        f'status {priv("run", "server.status")} 15', 'status-version 2', 'verb 3', 'mute 10',
+        f'management {priv("run", "server.mgmt")} unix',
+    ]
+    if proto == 'udp':
+        lines.append('explicit-exit-notify 1')
+    return '\n'.join(lines) + '\n'
+
+
+def ovpn_profile_peer(state, peer):
+    server = state['server']
+    proto = 'tcp-client' if server['proto'] == 'tcp' else 'udp'
+    body = [
+        '# AiPBX VPN profile: ' + peer['name'],
+        'client', 'dev tun', f'proto {proto}', f'remote {server["endpoint"]} {int(server["port"])}',
+        'nobind', 'persist-key', 'persist-tun', 'remote-cert-tls server', 'verb 3',
+        'data-ciphers AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305', 'tls-version-min 1.2',
+    ]
+    for tag, path in (('ca', 'ca.crt'), ('cert', peer['cn'] + '.crt'), ('key', peer['cn'] + '.key'), ('tls-crypt', 'tls-crypt.key')):
+        body += [f'<{tag}>', read_file(priv('ovpn', path)).strip(), f'</{tag}>']
+    return '\n'.join(body) + '\n'
+
+
+def wg_profile_peer(state, peer):
+    server = state['server']
+    return '\n'.join([
+        '# AiPBX VPN profile: ' + peer['name'],
+        '[Interface]', f'PrivateKey = {read_file(priv("wg", "peer-" + str(peer["id"]) + ".key")).strip()}',
+        f'Address = {peer["ip"]}/32', '',
+        '[Peer]', f'PublicKey = {wg_server_keys()[1]}', f'PresharedKey = {peer["psk"]}',
+        f'Endpoint = {server["endpoint"]}:{int(server["port"])}',
+        f'AllowedIPs = {server_address(server["net"])}/32', 'PersistentKeepalive = 25', '',
+    ])
+
+
+def tunnel_iface(t):
+    return f'aipbxc{int(t["id"])}'
+
+
+def tunnel_of(state, ident):
+    for t in state['tunnels']:
+        if t['id'] == ident:
+            return t
+    raise Refused('No such connection.')
+
+
+def wg_conf_tunnel(t):
+    p = t['profile']
+    lines = ['[Interface]', f'PrivateKey = {p["private"]}']
+    if p.get('listen'):
+        lines.append(f'ListenPort = {int(p["listen"])}')
+    for peer in p['peers']:
+        lines += ['', '[Peer]', f'PublicKey = {peer["public"]}']
+        if peer.get('psk'):
+            lines.append(f'PresharedKey = {peer["psk"]}')
+        if peer.get('host'):
+            lines.append(f'Endpoint = {peer["host"]}:{int(peer["port"])}')
+        if peer['allowed']:
+            lines.append('AllowedIPs = ' + ','.join(peer['allowed']))
+        if peer.get('keepalive'):
+            lines.append(f'PersistentKeepalive = {int(peer["keepalive"])}')
+    return '\n'.join(lines) + '\n'
+
+
+def ovpn_conf_tunnel(t):
+    p = t['profile']
+    iface = tunnel_iface(t)
+    lines = ['# Written by aipbx-vpn. Do not edit: the next start replaces it.', 'client', f'dev {iface}', 'dev-type tun',
+             # The server's pushed routes and redirect-gateway are ignored: only the listed networks use the tunnel.
+             'route-nopull', 'script-security 1', 'verb 3', 'mute 10', 'auth-nocache', 'disable-dco']
+    if p.get('proto'):
+        lines.append(f'proto {p["proto"]}')
+    for r in p['remotes']:
+        lines.append(' '.join(['remote', r['host']] + ([str(r['port'])] if r.get('port') else []) + ([r['proto']] if r.get('proto') else [])))
+    for o in p['opts']:
+        if o[0] not in ('client', 'verb', 'mute', 'auth-nocache'):
+            lines.append(' '.join(o))
+    if p.get('verify'):
+        lines.append('verify-x509-name ' + ' '.join(p['verify']))
+    for r in t['routes']:
+        net = ipaddress.IPv4Network(r)
+        lines.append(f'route {net.network_address} {net.netmask}')
+    if p.get('login'):
+        lines.append(f'auth-user-pass {priv("run", "t" + str(int(t["id"])) + ".auth")}')
+    for tag, v in p['inline'].items():
+        lines += [f'<{tag}>', v.strip(), f'</{tag}>']
+    return '\n'.join(lines) + '\n'
+
+
+# ------------------------------------------------------------------ firewall
+
+def fw_running():
+    return subprocess.run(['firewall-cmd', '--state'], capture_output=True).returncode == 0
+
+
+def fw_ensure_zone(zone, ports):
+    """A zone of our own: open only these ports and do not forward, whatever the default
+    zone allows. Created once; the reload is what makes a new permanent zone exist."""
+    if subprocess.run(['firewall-cmd', '--permanent', f'--zone={zone}', '--get-target'], capture_output=True).returncode != 0:
+        subprocess.run(['firewall-cmd', '--permanent', f'--new-zone={zone}'], capture_output=True)
+        for p in ports:
+            subprocess.run(['firewall-cmd', '--permanent', f'--zone={zone}', f'--add-port={p}'], capture_output=True)
+        subprocess.run(['firewall-cmd', '--reload'], capture_output=True)
+
+
+def fw_bind(iface, zone, ports):
+    if not fw_running():
+        return
+    fw_ensure_zone(zone, ports)
+    for extra in ([], ['--permanent']):
+        current = subprocess.run(['firewall-cmd', *extra, f'--get-zone-of-interface={iface}'], capture_output=True, text=True).stdout.strip()
+        if current == zone:
+            continue
+        verb = '--change-interface' if current and current != 'no zone' else '--add-interface'
+        subprocess.run(['firewall-cmd', *extra, f'--zone={zone}', f'{verb}={iface}'], capture_output=True)
+
+
+def fw_unbind(iface):
+    if not fw_running():
+        return
+    for extra in ([], ['--permanent']):
+        current = subprocess.run(['firewall-cmd', *extra, f'--get-zone-of-interface={iface}'], capture_output=True, text=True).stdout.strip()
+        if current and current != 'no zone':
+            subprocess.run(['firewall-cmd', *extra, f'--zone={current}', f'--remove-interface={iface}'], capture_output=True)
+
+
+def fw_port(state, port_spec):
+    """Opens the server's port and closes the one opened before. The file records what we
+    opened, so a port the admin opened by hand is not closed on them."""
+    path = priv('run', 'firewall.port')
+    before = read_file(path).strip()
+    if before == (port_spec or ''):
+        if not port_spec or not fw_running() or subprocess.run(['firewall-cmd', f'--query-port={port_spec}'], capture_output=True).returncode == 0:
+            return
+    if fw_running():
+        if before and re.match(r'^[0-9]{1,5}/(udp|tcp)$', before):
+            for extra in ([], ['--permanent']):
+                subprocess.run(['firewall-cmd', *extra, f'--remove-port={before}'], capture_output=True)
+        if port_spec:
+            for extra in ([], ['--permanent']):
+                subprocess.run(['firewall-cmd', *extra, f'--add-port={port_spec}'], capture_output=True)
+    write_private(path, (port_spec or '') + '\n')
+
+
+# -------------------------------------------------------------------- services
+
+def unit(name):
+    return f'aipbx-vpn@{name}.service'
+
+
+def is_active(name):
+    return subprocess.run(['systemctl', 'is-active', '--quiet', unit(name)]).returncode == 0
+
+
+def stop_unit(name):
+    subprocess.run(['systemctl', 'disable', '--now', unit(name)], capture_output=True, timeout=60)
+    subprocess.run(['systemctl', 'reset-failed', unit(name)], capture_output=True, timeout=30)
+
+
+def start_unit(name, changed):
+    """Restarts only what changed: an update or a reload must not drop running calls."""
+    subprocess.run(['systemctl', 'enable', unit(name)], capture_output=True, timeout=60)
+    subprocess.run(['systemctl', 'restart' if changed or not is_active(name) else 'start', unit(name)], capture_output=True, timeout=60)
+
+
+def render_server(state):
+    """(conf text, firewall port) of the server for its type."""
+    server = state['server']
+    if server['type'] == 'wg':
+        return wg_conf_server(state), f'{int(server["port"])}/udp'
+    if server['type'] == 'ovpn':
+        return ovpn_conf_server(state), f'{int(server["port"])}/{"tcp" if server["proto"] == "tcp" else "udp"}'
+    return '', None
+
+
+def write_if_changed(path, text):
+    if read_file(path) == text:
+        return False
+    write_private(path, text)
+    return True
+
+
+def apply_server(state):
+    server = state['server']
+    if server['type'] == 'off':
+        stop_unit('server')
+        fw_unbind(SERVER_IF)
+        fw_port(state, None)
+        for f in ('server.conf', 'server.status'):
+            if os.path.exists(priv('run', f)):
+                os.unlink(priv('run', f))
+        return
+    if server['type'] == 'ovpn':
+        ovpn_ensure_pki()
+    conf, port = render_server(state)
+    changed = write_if_changed(priv('run', 'server.conf'), conf)
+    meta_changed = write_if_changed(priv('run', 'server.meta'), json.dumps([server['type'], server['net']]))
+    fw_bind(SERVER_IF, ZONE_SERVER, SERVER_ZONE_PORTS)
+    fw_port(state, port)
+    if server['type'] == 'wg' and is_active('server') and not meta_changed and changed:
+        # Adding or removing a device must not drop the others.
+        run(['wg', 'syncconf', SERVER_IF, '/dev/stdin'], input_text=conf, check=False)
+        start_unit('server', False)
+    else:
+        start_unit('server', changed or meta_changed)
+
+
+def apply_tunnel(t):
+    name = f't{int(t["id"])}'
+    iface = tunnel_iface(t)
+    if not t.get('enabled', True):
+        stop_unit(name)
+        fw_unbind(iface)
+        return
+    changed = False
+    if t['type'] == 'wg':
+        changed |= write_if_changed(priv('run', name + '.conf'), wg_conf_tunnel(t))
+        changed |= write_if_changed(priv('run', name + '.meta'), json.dumps([t['profile']['addresses'], t['routes'], t['profile'].get('mtu')]))
+    else:
+        changed |= write_if_changed(priv('run', name + '.conf'), ovpn_conf_tunnel(t))
+        if t['profile'].get('login'):
+            changed |= write_if_changed(priv('run', name + '.auth'), f'{t.get("username", "")}\n{t.get("password", "")}\n')
+    if t.get('manage'):
+        fw_bind(iface, ZONE_MANAGED, MANAGED_ZONE_PORTS)
+    else:
+        fw_bind(iface, ZONE_CLIENT, CLIENT_ZONE_PORTS)
+    start_unit(name, changed)
+
+
+def remove_tunnel_files(t):
+    name = f't{int(t["id"])}'
+    for suffix in ('.conf', '.meta', '.auth'):
+        if os.path.exists(priv('run', name + suffix)):
+            os.unlink(priv('run', name + suffix))
+
+
+# ------------------------------------------- the running side (under the unit)
+
+def wg_up(iface, conf, addresses, routes, mtu=None):
+    subprocess.run(['ip', 'link', 'del', iface], capture_output=True)
+    run(['ip', 'link', 'add', iface, 'type', 'wireguard'])
+    # Through a pipe: the wg AppArmor profile lets it open files under /etc/wireguard only,
+    # which the portal's sandbox cannot write, even as root.
+    run(['wg', 'setconf', iface, '/dev/stdin'], input_text=read_file(conf))
+    for a in addresses:
+        run(['ip', 'addr', 'add', a, 'dev', iface])
+    if mtu:
+        run(['ip', 'link', 'set', iface, 'mtu', str(int(mtu))])
+    run(['ip', 'link', 'set', iface, 'up'])
+    for r in routes:
+        run(['ip', 'route', 'replace', r, 'dev', iface])
+
+
+def wg_stay(iface, peers=()):
+    """Keeps the unit alive for the interface, removes it at the end, and looks a host-name
+    endpoint up again so a peer on a dynamic address keeps working."""
+    def finish(*_):
+        subprocess.run(['ip', 'link', 'del', iface], capture_output=True)
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, finish)
+    signal.signal(signal.SIGINT, finish)
+    while True:
+        time.sleep(120)
+        for p in peers:
+            if p.get('host') and not re.match(r'^[0-9.]+$', p['host']):
+                subprocess.run(['wg', 'set', iface, 'peer', p['public'], 'endpoint', f'{p["host"]}:{int(p["port"])}'], capture_output=True)
+
+
+def cmd_run(args):
+    state = load_state()
+    name = args[0]
+    if name == 'server':
+        server = state['server']
+        if server['type'] == 'wg':
+            address = f'{server_address(server["net"])}/{ipaddress.IPv4Network(server["net"]).prefixlen}'
+            wg_up(SERVER_IF, priv('run', 'server.conf'), [address], [])
+            wg_stay(SERVER_IF)
+        elif server['type'] == 'ovpn':
+            os.execv('/usr/sbin/openvpn', ['openvpn', '--config', priv('run', 'server.conf')])
+        raise Refused('The VPN server is off.')
+    if not re.match(r'^t[1-9][0-9]{0,4}$', name):
+        raise Refused('unknown unit')
+    t = tunnel_of(state, int(name[1:]))
+    iface = tunnel_iface(t)
+    if t['type'] == 'wg':
+        wg_up(iface, priv('run', name + '.conf'), t['profile']['addresses'], t['routes'], t['profile'].get('mtu'))
+        wg_stay(iface, t['profile']['peers'])
+    os.execv('/usr/sbin/openvpn', ['openvpn', '--config', priv('run', name + '.conf')])
+
+
+# ---------------------------------------------------------------------- status
+
+def wg_dump(iface):
+    """peer public key -> (last handshake, rx, tx)"""
+    out = {}
+    done = subprocess.run(['wg', 'show', iface, 'dump'], capture_output=True, text=True, timeout=20)
+    for i, line in enumerate(done.stdout.splitlines()):
+        f = line.split('\t')
+        if i > 0 and len(f) >= 7:
+            # WireGuard renews its handshake every two minutes while the peer is reachable.
+            out[f[0]] = {'online': int(f[4]) > time.time() - 180, 'since': int(f[4]), 'rx': int(f[5]), 'tx': int(f[6])}
+    return out
+
+
+def ovpn_status():
+    """common name -> (connected since, rx, tx), from OpenVPN's own status file."""
+    out = {}
+    for line in read_file(priv('run', 'server.status')).splitlines():
+        f = line.split(',')
+        if f[0] == 'CLIENT_LIST' and len(f) > 8:
+            try:
+                out[f[1]] = {'online': True, 'since': int(f[8]) if f[8].isdigit() else 0, 'rx': int(f[5]), 'tx': int(f[6])}
+            except ValueError:
+                continue
+    return out
+
+
+def tunnel_address(iface):
+    done = subprocess.run(['ip', '-j', '-4', 'addr', 'show', 'dev', iface], capture_output=True, text=True, timeout=10)
+    try:
+        for i in json.loads(done.stdout or '[]'):
+            for a in i.get('addr_info', []):
+                return a.get('local', '')
+    except ValueError:
+        pass
+    return ''
+
+
+def caps():
+    # /dev/net/tun cannot be checked from here: the portal's sandbox (PrivateDevices) hides it
+    # from this process, while the service sees it. Where it is really missing (a container
+    # without it), the service does not start and its log says why.
+    return {'wg': shutil.which('wg') is not None, 'ovpn': shutil.which('openvpn') is not None}
+
+
+def cmd_status(_args):
+    state = load_state()
+    server = state['server']
+    active = server['type'] != 'off' and is_active('server')
+    live = {}
+    if active:
+        live = wg_dump(SERVER_IF) if server['type'] == 'wg' else ovpn_status()
+    peers = []
+    if server['type'] != 'off':
+        for p in server['peers'][server['type']]:
+            key = p.get('public') if server['type'] == 'wg' else p.get('cn')
+            peers.append({'id': p['id'], 'name': p['name'], 'ip': p['ip'], 'live': live.get(key)})
+    tunnels = []
+    for t in state['tunnels']:
+        running = t.get('enabled', True) and is_active(f't{int(t["id"])}')
+        iface = tunnel_iface(t)
+        info = {'id': t['id'], 'name': t['name'], 'type': t['type'], 'enabled': t.get('enabled', True), 'routes': t['routes'],
+                'active': running, 'iface': iface, 'address': tunnel_address(iface) if running else '', 'ignored': t.get('ignored', []),
+                'login': bool(t['profile'].get('login')), 'manage': bool(t.get('manage'))}
+        if t['type'] == 'wg':
+            info['remote'] = next((p.get('host', '') for p in t['profile']['peers'] if p.get('host')), '')
+            if running:
+                d = wg_dump(iface)
+                info['since'] = max((v['since'] for v in d.values()), default=0)
+                info['online'] = any(v['online'] for v in d.values())
+                info['rx'] = sum(v['rx'] for v in d.values())
+                info['tx'] = sum(v['tx'] for v in d.values())
+        else:
+            info['remote'] = t['profile']['remotes'][0]['host']
+            info['online'] = running and info['address'] != ''
+        tunnels.append(info)
+    print(json.dumps({
+        'caps': caps(),
+        'server': {'type': server['type'], 'port': server['port'], 'proto': server['proto'], 'net': server['net'],
+                   'endpoint': server['endpoint'], 'active': active, 'address': str(server_address(server['net'])),
+                   'peers': peers, 'counts': {k: len(v) for k, v in server['peers'].items()},
+                   'public_key': wg_server_keys()[1] if server['type'] == 'wg' else ''},
+        'tunnels': tunnels,
+    }))
+
+
+# --------------------------------------------------------------- server commands
+
+def check_port_free(port, proto, state):
+    """Refused while another program holds the port: the service would only fail to start."""
+    server = state['server']
+    if server['type'] != 'off' and int(server['port']) == port and (server['proto'] if server['type'] == 'ovpn' else 'udp') == proto:
+        return
+    flag = '-Hlun' if proto == 'udp' else '-Hltn'
+    held = run(['ss', flag, f'sport = :{port}'], check=False)
+    if held.strip():
+        raise Refused(f'Another program already uses {proto.upper()} port {port}.')
+
+
+def cmd_server_set(args):
+    a = parse_args(args, {'type', 'port', 'proto', 'net', 'endpoint'})
+    state = load_state()
+    server = state['server']
+    kind = a.get('type', '')
+    if kind not in ('off', 'wg', 'ovpn'):
+        raise Refused('Choose WireGuard, OpenVPN or off.')
+    if kind == 'off':
+        server['type'] = 'off'
+        apply_server(state)
+        save_state(state)
+        return
+    c = caps()
+    if not c['wg' if kind == 'wg' else 'ovpn']:
+        raise Refused('WireGuard is not available on this server.' if kind == 'wg' else 'OpenVPN is not available on this server.')
+    port = valid_port(a.get('port', ''))
+    if port in RESERVED_PORTS or 10000 <= port <= 20000 or 4100 <= port <= 4999:
+        raise Refused(f'Port {port} belongs to the PBX. Choose another one.')
+    proto = a.get('proto', 'udp') if kind == 'ovpn' else 'udp'
+    if proto not in ('udp', 'tcp'):
+        raise Refused('The protocol is UDP or TCP.')
+    net = valid_v4_net(a.get('net', ''))
+    if not net.is_private or not 16 <= net.prefixlen <= 29:
+        raise Refused('The VPN network must be a private one, between /16 and /29.')
+    if str(net) != server['net'] and any(server['peers'][k] for k in server['peers']):
+        raise Refused('Devices were given addresses in the present network. Remove them before changing it.')
+    others = dict(state)
+    others['server'] = {'type': 'off', 'peers': server['peers']}
+    check_no_clash(net, 'The VPN network', others)
+    endpoint = valid_host(a.get('endpoint', ''))
+    check_port_free(port, proto, state)
+    before = dict(server)
+    server.update({'type': kind, 'port': port, 'proto': proto, 'net': str(net), 'endpoint': endpoint})
+    if before.get('type') not in ('off', kind):
+        # Switching type: the other program's interface goes first, under the same name.
+        stop_unit('server')
+    apply_server(state)
+    save_state(state)
+
+
+def free_ip(server, kind):
+    net = ipaddress.IPv4Network(server['net'])
+    taken = {p['ip'] for p in server['peers'][kind]}
+    hosts = list(net.hosts())
+    for ip in hosts[1:]:  # the first address is the server's
+        if str(ip) not in taken:
+            return str(ip)
+    raise Refused('The VPN network is full.')
+
+
+def cmd_peer_add(args):
+    a = parse_args(args, {'name'})
+    name = valid_name(a.get('name', ''))
+    state = load_state()
+    server = state['server']
+    kind = server['type']
+    if kind == 'off':
+        raise Refused('Switch the VPN server on first.')
+    peers = server['peers'][kind]
+    if len(peers) >= MAX_PEERS:
+        raise Refused('Too many devices.')
+    if any(p['name'].lower() == name.lower() for p in peers):
+        raise Refused(f'A device named {name} is already there.')
+    ident = next_id(state)
+    peer = {'id': ident, 'name': name, 'ip': free_ip(server, kind)}
+    if kind == 'wg':
+        private, public = wg_keypair()
+        write_private(priv('wg', f'peer-{ident}.key'), private + '\n')
+        peer['public'] = public
+        peer['psk'] = run(['wg', 'genpsk'])
+    else:
+        ovpn_ensure_pki()
+        # Unique for every device, so a new device under an old name never fits an old certificate.
+        peer['cn'] = f'peer-{ident}-{secrets.token_hex(6)}'
+        ovpn_issue(peer['cn'])
+        mask = ipaddress.IPv4Network(server['net']).netmask
+        write_private(priv('ovpn', 'ccd', peer['cn']), f'ifconfig-push {peer["ip"]} {mask}\n')
+    peers.append(peer)
+    apply_server(state)
+    save_state(state)
+    print(ident)
+
+
+def find_peer(state, ident, kind=None):
+    if not RE_ID.match(str(ident)):
+        raise Refused('No such device.')
+    kind = kind or state['server']['type']
+    for p in state['server']['peers'].get(kind, []):
+        if p['id'] == int(ident):
+            return p
+    raise Refused('No such device.')
+
+
+def ovpn_kick(cn):
+    """A connection already up keeps its session until told otherwise. Over the management
+    socket, so that only this device is cut off and the others stay in their calls."""
+    try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as s:
+            s.settimeout(5)
+            s.connect(priv('run', 'server.mgmt'))
+            s.sendall(f'kill {cn}\nquit\n'.encode())
+            while s.recv(4096):
+                pass
+    except OSError:
+        pass
+
+
+def cmd_peer_del(args):
+    a = parse_args(args, {'id'})
+    state = load_state()
+    kind = state['server']['type']
+    peer = find_peer(state, a.get('id', ''))
+    state['server']['peers'][kind].remove(peer)
+    if kind == 'wg':
+        if os.path.exists(priv('wg', f'peer-{peer["id"]}.key')):
+            os.unlink(priv('wg', f'peer-{peer["id"]}.key'))
+    else:
+        for f in (priv('ovpn', 'ccd', peer['cn']), priv('ovpn', peer['cn'] + '.crt'), priv('ovpn', peer['cn'] + '.key')):
+            if os.path.exists(f):
+                os.unlink(f)
+        ovpn_kick(peer['cn'])
+    apply_server(state)
+    save_state(state)
+
+
+def cmd_peer_profile(args):
+    a = parse_args(args, {'id'})
+    state = load_state()
+    peer = find_peer(state, a.get('id', ''))
+    if not state['server']['endpoint']:
+        raise Refused('The server has no public address yet.')
+    print(wg_profile_peer(state, peer) if state['server']['type'] == 'wg' else ovpn_profile_peer(state, peer), end='')
+
+
+# --------------------------------------------------------------- tunnel commands
+
+def read_stdin_json():
+    raw = sys.stdin.read(MAX_PROFILE + 1)
+    if len(raw) > MAX_PROFILE:
+        raise Refused('The profile is too large.')
+    try:
+        data = json.loads(raw)
+    except ValueError as e:
+        raise Refused('The profile could not be read.') from e
+    return data if isinstance(data, dict) else {}
+
+
+def cmd_tunnel_add(args):
+    a = parse_args(args, {'name', 'type', 'routes', 'manage'})
+    name = valid_name(a.get('name', ''))
+    kind = a.get('type', '')
+    if kind not in ('wg', 'ovpn'):
+        raise Refused('Choose WireGuard or OpenVPN.')
+    c = caps()
+    if not c[kind]:
+        raise Refused('WireGuard is not available on this server.' if kind == 'wg' else 'OpenVPN is not available on this server.')
+    data = read_stdin_json()
+    state = load_state()
+    if len(state['tunnels']) >= MAX_TUNNELS:
+        raise Refused('Too many connections.')
+    if any(t['name'].lower() == name.lower() for t in state['tunnels']):
+        raise Refused(f'A connection named {name} is already there.')
+    text = str(data.get('config', ''))
+    t = {'name': name, 'type': kind, 'enabled': True, 'manage': a.get('manage') == '1'}
+    if kind == 'wg':
+        profile, ignored = parse_wg_profile(text)
+        routes_text = a.get('routes', '').strip() or ' '.join(wg_routes_from_profile(profile))
+        routes = valid_routes(routes_text, state)
+        if not routes:
+            raise Refused('List the networks to reach through this connection.')
+        check_routes_in_profile(profile, routes)
+        for p in profile['peers']:
+            if p.get('host'):
+                check_endpoint_outside(p['host'], routes)
+    else:
+        profile, ignored = parse_ovpn_profile(text)
+        routes = valid_routes(a.get('routes', '').strip() or ' '.join(profile.pop('routes')), state)
+        profile.pop('routes', None)
+        for r in profile['remotes']:
+            check_endpoint_outside(r['host'], routes)
+        inside = profile.pop('credentials')
+        if profile['login']:
+            user, password = str(data.get('username', '')), str(data.get('password', ''))
+            if inside and not user:
+                user, password = inside
+            if not RE_CREDENTIAL.match(user) or not RE_CREDENTIAL.match(password):
+                raise Refused('This profile needs a username and a password.')
+            t['username'], t['password'] = user, password
+    t.update({'id': next_id(state), 'profile': profile, 'routes': routes, 'ignored': sorted(set(ignored))})
+    state['tunnels'].append(t)
+    apply_tunnel(t)
+    save_state(state)
+    print(t['id'])
+
+
+def valid_tunnel_id(v):
+    if not RE_ID.match(str(v)):
+        raise Refused('No such connection.')
+    return int(v)
+
+
+def cmd_tunnel_set(args):
+    a = parse_args(args, {'id', 'enabled', 'routes', 'manage'})
+    state = load_state()
+    t = tunnel_of(state, valid_tunnel_id(a.get('id', '')))
+    if 'routes' in a:
+        routes = valid_routes(a['routes'], state, skip_tunnel=t['id'])
+        if t['type'] == 'wg':
+            if not routes:
+                raise Refused('List the networks to reach through this connection.')
+            check_routes_in_profile(t['profile'], routes)
+        hosts = [p.get('host') for p in t['profile']['peers']] if t['type'] == 'wg' else [r['host'] for r in t['profile']['remotes']]
+        for h in hosts:
+            if h:
+                check_endpoint_outside(h, routes)
+        t['routes'] = routes
+    if 'enabled' in a:
+        if a['enabled'] not in ('0', '1'):
+            raise Refused('enabled is 0 or 1')
+        t['enabled'] = a['enabled'] == '1'
+    if 'manage' in a:
+        t['manage'] = a['manage'] == '1'
+    apply_tunnel(t)
+    save_state(state)
+
+
+def cmd_tunnel_del(args):
+    a = parse_args(args, {'id'})
+    state = load_state()
+    t = tunnel_of(state, valid_tunnel_id(a.get('id', '')))
+    stop_unit(f't{int(t["id"])}')
+    fw_unbind(tunnel_iface(t))
+    remove_tunnel_files(t)
+    state['tunnels'].remove(t)
+    save_state(state)
+
+
+def cmd_log(args):
+    """The newest lines of a unit's log, for the page."""
+    if len(args) != 1 or not re.match(r'^(server|t[1-9][0-9]{0,4})$', args[0]):
+        raise Refused('usage: log server|tID')
+    done = subprocess.run(['journalctl', '-u', unit(args[0]), '-n', '60', '--no-pager', '-o', 'short-iso'], capture_output=True, text=True, timeout=20)
+    print(done.stdout, end='')
+
+
+def cmd_reapply(_args):
+    """After an update or a restore: what the state says should be running, is running.
+    Nothing is restarted unless its generated configuration changed."""
+    if not os.path.exists(priv('state.json')):
+        return
+    state = load_state()
+    apply_server(state)
+    for t in state['tunnels']:
+        apply_tunnel(t)
+    # After a restore: a connection that is no longer in the state does not stay up.
+    known = {f't{int(t["id"])}.conf' for t in state['tunnels']}
+    for f in os.listdir(priv('run')):
+        if re.match(r'^t[1-9][0-9]{0,4}\.conf$', f) and f not in known:
+            stop_unit(f[:-5])
+            subprocess.run(['ip', 'link', 'del', 'aipbxc' + f[1:-5]], capture_output=True)
+            fw_unbind('aipbxc' + f[1:-5])
+            remove_tunnel_files({'id': int(f[1:-5])})
+
+
+COMMANDS = {
+    'status': cmd_status, 'server-set': cmd_server_set, 'peer-add': cmd_peer_add, 'peer-del': cmd_peer_del,
+    'peer-profile': cmd_peer_profile, 'tunnel-add': cmd_tunnel_add, 'tunnel-set': cmd_tunnel_set,
+    'tunnel-del': cmd_tunnel_del, 'log': cmd_log, 'reapply': cmd_reapply, 'run': cmd_run,
+}
+LOCKED = {'server-set', 'peer-add', 'peer-del', 'tunnel-add', 'tunnel-set', 'tunnel-del', 'reapply'}
+
+
+def main():
+    os.umask(0o077)
+    if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
+        raise Refused('unknown command')
+    cmd = sys.argv[1]
+    ensure_dirs()
+    if cmd in LOCKED:
+        lock = open(priv('run', '.lock'), 'w')
+        fcntl.flock(lock, fcntl.LOCK_EX)
+    COMMANDS[cmd](sys.argv[2:])
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Refused as e:
+        print(e, file=sys.stderr)
+        sys.exit(64)
