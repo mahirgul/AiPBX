@@ -1552,9 +1552,11 @@ systemctl enable aipbx-dnsmasq.service >/dev/null 2>&1 || true
 systemctl try-restart aipbx-dnsmasq.service 2>/dev/null || true
 # A separate TFTP server (tftpd-hpa and the like) takes the port: dnsmasq then
 # restarts for ever and phones get that server's files. Not ours to remove.
+# "|| true": grep finds nothing when our own dnsmasq holds the port, and this
+# script runs with pipefail, so without it every update stops here.
 if [ -f /var/lib/aipbx-netsvc/dnsmasq.conf ] && grep -q '^enable-tftp' /var/lib/aipbx-netsvc/dnsmasq.conf; then
     tftp_pid="$(systemctl show -p MainPID --value aipbx-dnsmasq.service 2>/dev/null)"
-    tftp_other="$(ss -Hlunp 'sport = :69' 2>/dev/null | grep -v "pid=${tftp_pid:-0}," | sed -n 's/.*users:(("\([^"]*\)".*/\1/p' | head -1)"
+    tftp_other="$(ss -Hlunp 'sport = :69' 2>/dev/null | grep -v "pid=${tftp_pid:-0}," | sed -n 's/.*users:(("\([^"]*\)".*/\1/p' | head -1 || true)"
     if [ -n "$tftp_other" ]; then
         warn "UDP port 69 is held by $tftp_other: PBX -> Network services TFTP cannot start, and phones get that program's files. Stop it to use the portal's TFTP."
     fi

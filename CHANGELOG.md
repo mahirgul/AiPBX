@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.17
+
+- **Updates work again on systems with TFTP switched on.** 1.60.16 stopped during the update on such a system and went back to the previous release, with nothing lost. Skip 1.60.16 and take this one. Other systems are not affected.
+
 ## 1.60.16
 
 - **Desk phones show who is calling:** NEC DT700/DT800 phones showed "asterisk" instead of the caller's number. Extensions now send the caller in a header these phones read. A caller who hides their number stays hidden.
