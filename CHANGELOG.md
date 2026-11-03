@@ -1242,7 +1242,7 @@ Security fixes from a code review (2026-10-16):
 ## 1.25.2
 
 - The **provisioning address** (*PBX → Phones → Provisioning settings*) no longer
-  needs `http://`: a bare IP or name (`10.23.3.70`, `10.23.3.70:8080`) is enough and
+  needs `http://`: a bare IP or name (`192.168.1.70`, `192.168.1.70:8080`) is enough and
   means HTTP; `https://…` still works.
 - **Fix:** with the DHCP server on, an `http://` provisioning address was left out
   of DHCP options 66/160 (only `https://` was sent); now both are.

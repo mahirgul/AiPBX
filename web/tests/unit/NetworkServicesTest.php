@@ -82,7 +82,7 @@ final class NetworkServicesTest extends TestCase
     public function testPlainHttpAddressGoesToOption66(): void
     {
         $v = NetworkServicesService::validate($this->dhcpForm([]), self::IFACES, []);
-        $this->assertContains('url=http://10.23.3.70/provision/', NetworkServicesService::privArgs($v, [], 'http://10.23.3.70/provision/'));
+        $this->assertContains('url=http://192.168.1.70/provision/', NetworkServicesService::privArgs($v, [], 'http://192.168.1.70/provision/'));
     }
 
     /** @return array<string, array{0: array<string, string>}> */
