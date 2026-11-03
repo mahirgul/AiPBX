@@ -68,6 +68,7 @@ return [
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
     '/certificates'    => ['controller' => CertificateController::class, 'action' => 'index', 'module' => 'certificates.php'],
     '/privacy'         => ['controller' => PrivacyController::class, 'action' => 'index', 'module' => 'privacy.php'],
+    '/backup'          => ['controller' => BackupController::class, 'action' => 'index', 'module' => 'backup.php'],
     '/system-update'   => ['controller' => SystemUpdateController::class, 'action' => 'index', 'module' => 'system_update.php'],
     '/scheduled-tasks' => ['controller' => ScheduledTasksController::class, 'action' => 'index', 'module' => 'scheduled_tasks.php'],
     '/health'          => ['controller' => HealthController::class, 'action' => 'index', 'module' => 'health.php'],

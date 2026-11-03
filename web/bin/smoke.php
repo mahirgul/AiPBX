@@ -217,6 +217,7 @@ function check_rbac(): void
         '/file-storage',
         '/mail-settings',
         '/system-update',
+        '/backup',
         '/health',
         '/call-quality',
         '/scheduled-tasks',
@@ -308,6 +309,7 @@ function check_api(): void
         ['api/assistant.php', 'action=changes'],
         ['api/sound_packs.php', 'action=status'],
         ['api/system_update.php', 'action=status'],
+        ['api/backup.php', 'action=status'],
         ['api/conferences.php', 'action=members&room=1001'],
     ];
     $n = 0;

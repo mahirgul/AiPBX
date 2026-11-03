@@ -98,9 +98,36 @@ If **any** stage fails, the script immediately logs the failure to `/var/log/aip
 
 ---
 
-## 3. Disaster Recovery: Step-by-Step Restore Procedure
+## 3. The Backup & Restore Page
 
-In the event of hardware failure, cloud instance destruction, or disaster migration to a clean server:
+**Administration → Backup & Restore** is for administrators only. It lists the backups, and from there you can:
+
+- **Back up now.** The nightly backup runs as well.
+- **Download** a backup as a `.tar.gz` file. It holds every password and secret key of the system, so keep it safe. The download is written to the audit log.
+- **Upload** a backup from this or another AiPBX server. It is checked and added to the list; nothing is restored until you choose to.
+- **Restore** everything, or the database only. You type the name of the backup and your password. On a system with SSO-only sign-in, only the name is asked.
+- **Set how many days** backups are kept.
+
+A restore:
+
+1. Refuses a backup from a newer release than this system. Update first.
+2. Stops if calls are in progress, unless you tick the box. With the box ticked, Asterisk is reloaded rather than restarted.
+3. Makes a backup of the present state (`aipbx-…-before-restore`).
+4. Replaces the database and, unless you chose database only, the configuration.
+5. Runs `install.sh --upgrade`, which applies migrations for an older backup, then regenerates the Asterisk configuration and restarts Asterisk.
+6. Checks that the services run and the portal answers. If any step fails, it puts the state from step 3 back.
+
+The portal may ask you to sign in again afterwards: the users are now those in the backup. A backup restored on another server brings the settings of the old server, including its portal address (`PORTAL_DOMAIN`), so check them afterwards.
+
+**Uploaded backups are not trusted.** Only the files `aipbx-backup` writes are accepted. Links out of their folder, device files, `#exec` in `/etc/asterisk`, and values in the environment file that could break into a generated configuration are refused. `asterisk.conf` is not taken from an uploaded backup, and the database dump cannot run client commands.
+
+The page does not cover call recordings and faxes, which are not in the backup. From the command line: `sudo aipbx-restore NAME [--db-only] [--allow-calls]`. Progress is in `/var/log/aipbx/restore.log`.
+
+---
+
+## 4. Disaster Recovery by Hand
+
+If the portal cannot be used, or you restore on a clean server without it:
 
 ### Step 1: Install a Clean Base System
 Install AiPBX on a fresh Linux server using the standard turnkey installer:

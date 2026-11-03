@@ -51,6 +51,7 @@ return [
             ['href' => '/fax-mail-settings', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_mail_settings', 'show' => $can('fax_mail_settings'), 'pages' => ['fax_mail_settings.php']],
             ['href' => '/file-storage', 'icon' => 'fas fa-hard-drive', 'label' => 'sidebar.item_file_storage', 'show' => $can('file_storage'), 'pages' => ['file_storage.php']],
             ['href' => '/pending-sync', 'icon' => 'fas fa-cloud-upload-alt', 'label' => 'sidebar.item_pending_sync', 'show' => $can('pending_sync'), 'pages' => ['pending_sync.php']],
+            ['href' => '/backup', 'icon' => 'fas fa-box-archive', 'label' => 'sidebar.item_backup', 'show' => $isAdmin, 'pages' => ['backup.php']],
             ['href' => '/system-update', 'icon' => 'fas fa-cloud-arrow-down', 'label' => 'sidebar.item_system_update', 'show' => $isAdmin, 'pages' => ['system_update.php']],
             ['href' => '/scheduled-tasks', 'icon' => 'fas fa-calendar-check', 'label' => 'sidebar.item_scheduled_tasks', 'show' => $isAdmin, 'pages' => ['scheduled_tasks.php']],
             ['href' => '/health', 'icon' => 'fas fa-heart-pulse', 'label' => 'sidebar.item_health', 'show' => $isAdmin, 'pages' => ['health.php']],

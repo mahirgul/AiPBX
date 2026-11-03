@@ -39,6 +39,7 @@ class RoleRepository extends BaseRepository
             'fax_settings'       => ['title' => 'Fax Units', 'group' => 'Administration', 'actions' => $all],
             'file_storage'       => ['title' => 'File Storage', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],
             'pending_sync'       => ['title' => 'Pending Changes', 'group' => 'Administration', 'actions' => self::VAE],
+            'backup'             => ['title' => 'Backup & Restore', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],
             'system_update'      => ['title' => 'System Update', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],
             'scheduled_tasks'    => ['title' => 'Scheduled Tasks', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],
             'health'             => ['title' => 'Health Checks', 'group' => 'Administration', 'actions' => self::VAE, 'admin_only' => true],

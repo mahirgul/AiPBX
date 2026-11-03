@@ -92,6 +92,9 @@ changes to `conf/sbin/aipbx-update`, and before a release with migrations:
 lxc exec aipbx-test -- bash -s < scripts/e2e/rollback.sh
 ```
 
+`scripts/e2e/backup_restore.sh` does the same for the Backup page: bad uploads are refused,
+and a restore brings the data back and keeps a safety backup.
+
 ### 4. Android App Development
 - Open the `android/` directory in **Android Studio**.
 - Build the release or debug APK:
