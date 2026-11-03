@@ -352,11 +352,11 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame(['DT_LINE_DATA', 'DT_SIP_DATA', 'DT_PHONE_NETWORK_DATA', 'DT_PHONE_DST_DATA', 'DT_PHONE_SECURITY_DATA',
             'DT_PHONE_DATA', 'DT_PHONE_FEATURE_DATA', 'DT_USER_DATA'], array_map(fn($e) => $e->getName(), iterator_to_array($xml->children(), false)));
 
-        $ctx['ntp'] = '10.23.3.1';
-        $ctx['syslog'] = '10.23.3.70';
+        $ctx['ntp'] = '192.168.1.1';
+        $ctx['syslog'] = '192.168.1.70';
         $ctx['utc_offset'] = 330;
         $net = simplexml_load_string((new NecTemplate())->render($ctx))->DT_PHONE_NETWORK_DATA->attributes();
-        $this->assertSame(['10.23.3.1', '10.23.3.70', '+6'], [(string) $net['network.sntp.address'], (string) $net['network.syslog.address'], (string) $net['network.gmt.offset']]);
+        $this->assertSame(['192.168.1.1', '192.168.1.70', '+6'], [(string) $net['network.sntp.address'], (string) $net['network.syslog.address'], (string) $net['network.gmt.offset']]);
 
         $ctx['transport'] = 'tls';
         $ctx['language'] = 'de';
@@ -697,16 +697,16 @@ final class PhoneProvisionTest extends TestCase
 
     public function testOutboundProxyInEveryTemplate(): void
     {
-        $ctx = ['proxy' => '10.23.3.70'] + $this->context('yealink-t46u');
+        $ctx = ['proxy' => '192.168.1.70'] + $this->context('yealink-t46u');
         $this->assertStringContainsString('account.1.outbound_proxy_enable = 1', (new YealinkTemplate())->render($ctx));
-        $this->assertStringContainsString('account.1.outbound_proxy.1.address = 10.23.3.70', (new YealinkTemplate())->render($ctx));
-        $this->assertStringContainsString('<P48>10.23.3.70:5060</P48>', (new GrandstreamTemplate())->render($ctx));
-        $this->assertStringContainsString('SIP1 Proxy Addr    :10.23.3.70', (new FanvilTemplate())->render($ctx));
-        $this->assertStringContainsString('10.23.3.70:5060;transport=udp', (new SnomTemplate())->render($ctx));
+        $this->assertStringContainsString('account.1.outbound_proxy.1.address = 192.168.1.70', (new YealinkTemplate())->render($ctx));
+        $this->assertStringContainsString('<P48>192.168.1.70:5060</P48>', (new GrandstreamTemplate())->render($ctx));
+        $this->assertStringContainsString('SIP1 Proxy Addr    :192.168.1.70', (new FanvilTemplate())->render($ctx));
+        $this->assertStringContainsString('192.168.1.70:5060;transport=udp', (new SnomTemplate())->render($ctx));
         $this->assertStringContainsString('Outbound_Proxy_1_', (new CiscoSpaTemplate())->render($ctx));
-        $this->assertStringContainsString('reg.1.outboundProxy.address="10.23.3.70"', (new PolyTemplate())->render($ctx));
-        $this->assertStringContainsString('10.23.3.70', (new NecTemplate())->render($ctx));
-        $this->assertStringContainsString('<outboundProxy>10.23.3.70</outboundProxy>', (new CiscoCallManagerTemplate())->render($ctx));
+        $this->assertStringContainsString('reg.1.outboundProxy.address="192.168.1.70"', (new PolyTemplate())->render($ctx));
+        $this->assertStringContainsString('192.168.1.70', (new NecTemplate())->render($ctx));
+        $this->assertStringContainsString('<outboundProxy>192.168.1.70</outboundProxy>', (new CiscoCallManagerTemplate())->render($ctx));
         $this->assertStringContainsString('<outboundProxyPort>5060</outboundProxyPort>', (new CiscoCallManagerTemplate())->render($ctx));
         // Without a proxy nothing is switched on.
         $this->assertStringContainsString('account.1.outbound_proxy_enable = 0', (new YealinkTemplate())->render($this->context('yealink-t46u')));
@@ -717,12 +717,12 @@ final class PhoneProvisionTest extends TestCase
         $before = [PhoneProvisionService::sipServer(), PhoneProvisionService::baseUrl()];
         $set = getDB()->prepare('REPLACE INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
         try {
-            $set->execute(['provision_sip_server', '10.23.3.70']);
-            $set->execute(['provision_base_url', 'http://10.23.3.70']);
-            $this->assertSame('10.23.3.70', PhoneProvisionService::sipServer());
-            $this->assertSame('http://10.23.3.70/provision/', NetworkServicesService::provisioningUrl());
-            $set->execute(['provision_base_url', '10.23.3.70:8080']);           // no scheme: http
-            $this->assertSame('http://10.23.3.70:8080/provision/', NetworkServicesService::provisioningUrl());
+            $set->execute(['provision_sip_server', '192.168.1.70']);
+            $set->execute(['provision_base_url', 'http://192.168.1.70']);
+            $this->assertSame('192.168.1.70', PhoneProvisionService::sipServer());
+            $this->assertSame('http://192.168.1.70/provision/', NetworkServicesService::provisioningUrl());
+            $set->execute(['provision_base_url', '192.168.1.70:8080']);           // no scheme: http
+            $this->assertSame('http://192.168.1.70:8080/provision/', NetworkServicesService::provisioningUrl());
         } finally {
             getDB()->exec("DELETE FROM sys_settings WHERE setting_key IN ('provision_sip_server', 'provision_base_url')");
         }
@@ -749,11 +749,11 @@ final class PhoneProvisionTest extends TestCase
     {
         $s = PhoneProvisionService::settings();
         $s['provision_codecs'] = explode(',', $s['provision_codecs']);
-        foreach (['10.23.3.70', '10.23.3.70:8080', 'pbx.example.com', 'HTTP://10.23.3.70', 'https://pbx.example.com:8443/'] as $ok) {
+        foreach (['192.168.1.70', '192.168.1.70:8080', 'pbx.example.com', 'HTTP://192.168.1.70', 'https://pbx.example.com:8443/'] as $ok) {
             $r = PhoneProvisionService::saveSettings(['csrf_token' => 'phones-test-csrf', 'provision_base_url' => $ok] + $s);
             $this->assertTrue($r['success'], $ok . ': ' . $r['message']);
         }
-        foreach (['10.23.3.70/provision', 'ftp://10.23.3.70', 'http://', '10.23.3.70:'] as $bad) {
+        foreach (['192.168.1.70/provision', 'ftp://192.168.1.70', 'http://', '192.168.1.70:'] as $bad) {
             $r = PhoneProvisionService::saveSettings(['csrf_token' => 'phones-test-csrf', 'provision_base_url' => $bad] + $s);
             $this->assertFalse($r['success'], $bad);
         }

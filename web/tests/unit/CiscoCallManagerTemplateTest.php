@@ -114,8 +114,8 @@ final class CiscoCallManagerTemplateTest extends TestCase
 
     public function testTheOutboundProxyIsWrittenWhenSet(): void
     {
-        $xml = $this->tpl->render(['proxy' => '10.23.3.70'] + $this->context());
-        $this->assertStringContainsString('<outboundProxy>10.23.3.70</outboundProxy>', $xml);
+        $xml = $this->tpl->render(['proxy' => '192.168.1.70'] + $this->context());
+        $this->assertStringContainsString('<outboundProxy>192.168.1.70</outboundProxy>', $xml);
         $this->assertStringContainsString('<outboundProxyPort>5060</outboundProxyPort>', $xml);
         // Without a proxy the phone registers straight at the server.
         $this->assertStringNotContainsString('<outboundProxy>', $this->tpl->render($this->context()));

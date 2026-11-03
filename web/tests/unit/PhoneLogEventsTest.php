@@ -12,10 +12,10 @@ final class PhoneLogEventsTest extends TestCase
 {
     public function testFtpLines(): void
     {
-        $ok = PhoneLogService::parseFtp('Thu Oct 15 11:31:12 2026 [pid 824877] [NECSDT700] OK DOWNLOAD: Client "10.23.3.70", "/dt-0060b98cb528.cfg", 1265 bytes, 3676.64Kbyte/sec',
+        $ok = PhoneLogService::parseFtp('Thu Oct 15 11:31:12 2026 [pid 824877] [NECSDT700] OK DOWNLOAD: Client "192.168.1.70", "/dt-0060b98cb528.cfg", 1265 bytes, 3676.64Kbyte/sec',
             new \DateTimeZone('Europe/Istanbul'));
         $this->assertNotNull($ok);
-        $this->assertSame('10.23.3.70', $ok['ip']);
+        $this->assertSame('192.168.1.70', $ok['ip']);
         $this->assertSame('0060b98cb528', $ok['mac']);
         $this->assertSame('OK DOWNLOAD', $ok['result']);
         $this->assertTrue($ok['ok']);

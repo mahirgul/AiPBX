@@ -182,7 +182,7 @@ class PhoneLogService
 
     /**
      * vsftpd transfer log (times in the server's local time zone):
-     *   Thu Oct 15 11:31:12 2026 [pid 824877] [NECSDT700] OK DOWNLOAD: Client "10.23.3.70", "/dt-0060b98cb528.cfg", 1265 bytes, 3676.64Kbyte/sec
+     *   Thu Oct 15 11:31:12 2026 [pid 824877] [NECSDT700] OK DOWNLOAD: Client "192.168.1.70", "/dt-0060b98cb528.cfg", 1265 bytes, 3676.64Kbyte/sec
      *   Thu Oct 15 11:31:12 2026 [pid 824875] [NECSDT700] FAIL LOGIN: Client "10.12.3.90"
      * CONNECT lines are left out (one per session, no information).
      */
