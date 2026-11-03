@@ -49,11 +49,17 @@ $state_colors = ['running' => 'var(--info, #0ea5e9)', 'done' => 'var(--success)'
         <button type="button" class="btn btn-primary" id="su-start-btn" onclick="suStart()" <?php echo ($available && $state !== 'running') ? '' : 'disabled'; ?>>
             <i class="fas fa-download"></i> <?php echo t('system_update.btn_update'); ?>
         </button>
-        <label class="u-check-label u-fs-12" id="su-allow-calls-label" style="<?php echo $restart ? '' : 'display: none;'; ?>">
-            <input type="checkbox" id="su-allow-calls" class="u-accent"> <?php echo t('system_update.allow_calls'); ?>
-        </label>
     </div>
 
+    <div id="su-calls-choice" class="u-fs-12" style="margin-bottom: 12px; <?php echo $restart ? '' : 'display: none;'; ?>">
+        <div class="u-fw-600" style="margin-bottom: 4px;"><?php echo t('system_update.calls_choice'); ?></div>
+        <label class="u-check-label" style="display: block; margin-bottom: 4px;"><input type="radio" name="su-calls" value="wait" class="u-accent" checked> <?php echo t('system_update.calls_wait'); ?></label>
+        <label class="u-check-label" style="display: block;"><input type="radio" name="su-calls" value="end" class="u-accent"> <?php echo t('system_update.calls_end'); ?></label>
+    </div>
+    <div id="su-waiting" class="u-fs-12" style="margin-bottom: 12px; display: none;">
+        <button type="button" class="btn btn-danger btn-sm" onclick="suWhileWaiting('end_calls')"><?php echo t('system_update.end_calls_now'); ?></button>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="suWhileWaiting('cancel')"><?php echo t('system_update.cancel_update'); ?></button>
+    </div>
     <div id="su-restart" class="u-fs-12" style="margin-bottom: 12px; <?php echo $available ? '' : 'display: none;'; ?> color: <?php echo $restart ? 'var(--warning)' : 'var(--success)'; ?>;">
         <?php if ($restart): ?>
             <i class="fas fa-triangle-exclamation"></i> <?php echo htmlspecialchars(sprintf(t('system_update.restart_yes'), (string)($check['restart_reason'] ?? ''))); ?>
@@ -90,6 +96,7 @@ window.SYSTEM_UPDATE_PAGE = {
     rolled_back: <?php echo json_encode(t('system_update.state_rolled_back')); ?>,
     confirm: <?php echo json_encode(t('system_update.confirm')); ?>,
     confirm_no_restart: <?php echo json_encode(t('system_update.confirm_no_restart')); ?>,
+    confirm_end_calls: <?php echo json_encode(t('system_update.confirm_end_calls')); ?>,
     restart_yes: <?php echo json_encode(t('system_update.restart_yes')); ?>,
     restart_no: <?php echo json_encode(t('system_update.restart_no')); ?>,
     up_to_date: <?php echo json_encode(t('system_update.up_to_date')); ?>,

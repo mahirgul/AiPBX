@@ -3,7 +3,8 @@
  * System Update API (admin only).
  *   GET  ?action=status  → state + log tail (the page polls progress)
  *   POST action=check    → is a newer release available on GitHub
- *   POST action=start    → start the update in the background (optional allow_calls=1)
+ *   POST action=start    → start the update in the background (calls=wait or calls=end)
+ *   POST action=end_calls / action=cancel → while it waits for calls
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/SystemUpdateService.php';
@@ -46,7 +47,11 @@ if ($action === 'check') {
     exit;
 }
 if ($action === 'start') {
-    echo json_encode(SystemUpdateService::start(!empty($_POST['allow_calls'])), JSON_UNESCAPED_UNICODE);
+    echo json_encode(SystemUpdateService::start((string) ($_POST['calls'] ?? 'wait')), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+if ($action === 'end_calls' || $action === 'cancel') {
+    echo json_encode(SystemUpdateService::whileWaiting($action === 'end_calls' ? 'end' : 'cancel'), JSON_UNESCAPED_UNICODE);
     exit;
 }
 

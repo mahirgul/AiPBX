@@ -5,7 +5,10 @@
 #   aipbx-update                      update to the latest release (asks for confirmation)
 #   aipbx-update --to v2.1.0          update to a specific release
 #   aipbx-update --yes                no confirmation (portal / automation)
-#   aipbx-update --allow-calls        continue even with active calls (they will drop)
+#   aipbx-update --allow-calls        when a restart is needed: end the calls in progress
+#   aipbx-update --wait-calls         when a restart is needed: wait until the calls have ended
+#
+# Without either, a person at the terminal is asked; --yes alone stops instead.
 #
 # Asterisk is restarted only when the update needs it
 # (scripts/asterisk-restart-needed.sh of the target release decides); otherwise it
@@ -39,13 +42,14 @@ LOG_FILE=/var/log/aipbx/update.log
 BACKUP_ROOT=/var/backups/aipbx
 KEEP_BACKUPS=5
 
-MODE=update; TARGET=""; ASSUME_YES=false; ALLOW_CALLS=false
+MODE=update; TARGET=""; ASSUME_YES=false; ALLOW_CALLS=false; WAIT_CALLS=false
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --check) MODE=check ;;
         --to) TARGET="${2:-}"; shift ;;
         --yes|-y) ASSUME_YES=true ;;
         --allow-calls) ALLOW_CALLS=true ;;
+        --wait-calls) WAIT_CALLS=true ;;
         -h|--help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) echo "Unknown argument: $1 (--help)" >&2; exit 64 ;;
     esac
@@ -77,9 +81,9 @@ write_check_file() {
 status() {
     local state="$1" step="$2"
     local tmpf; tmpf="$(mktemp "$STATE_DIR/.update-status.XXXXXX")"
-    printf '{"state":%s,"step":%s,"from":%s,"to":%s,"updated_at":%s}\n' \
+    printf '{"state":%s,"step":%s,"from":%s,"to":%s,"waiting_calls":%d,"updated_at":%s}\n' \
         "$(json_str "$state")" "$(json_str "$step")" "$(json_str "${FROM_VERSION:-${CURRENT:-}}")" \
-        "$(json_str "${TARGET:-}")" "$(json_str "$(date -Iseconds)")" > "$tmpf"
+        "$(json_str "${TARGET:-}")" "${WAITING_CALLS:-0}" "$(json_str "$(date -Iseconds)")" > "$tmpf"
     chmod 644 "$tmpf"
     [[ -L "$STATUS_FILE" ]] && rm -f "$STATUS_FILE"
     mv -f "$tmpf" "$STATUS_FILE"
@@ -165,14 +169,13 @@ fi
 # File mode changes do not count: an installer that chmods a script (1.34.0-1.34.2
 # did that with web/bin/aipbx_ops.php) must not block every later update; the
 # checkout below restores the modes anyway.
-dirty="$(git_in -c core.fileMode=false status --porcelain --untracked-files=no)"
-if [[ -n "$dirty" ]]; then
-    echo "Files under $INSTALL_DIR were modified; the update would discard them:" >&2
-    echo "$dirty" >&2
-    echo "Keep customisations out of the code: use the portal, /etc/ai-pbx.env and *_custom.conf files." >&2
-    status failed "Code was modified by hand"
-    exit 1
-fi
+# They do not stop the update: they go into the backup, and come back after it unless the
+# new release changes the same file (then the release's version is used).
+HAND_FILES=()
+while IFS= read -r -d '' f; do
+    HAND_FILES+=("$f")
+done < <(git_in -c core.fileMode=false diff --name-only -z --diff-filter=M HEAD 2>/dev/null)
+HAND_KEPT=0; HAND_REPLACED=0
 
 RESTART_REASON="$(restart_needed "$TARGET")"
 if [[ "$RESTART_REASON" == no ]]; then
@@ -180,12 +183,78 @@ if [[ "$RESTART_REASON" == no ]]; then
 else
     export AIPBX_ASTERISK_RESTART=yes
 fi
-calls="$(asterisk -rx 'core show channels count' 2>/dev/null | sed -n 's/^\([0-9]\+\) active call.*/\1/p')"
+# Bounded: a stuck Asterisk must not hold the update up until someone restarts it by hand.
+active_calls() {
+    timeout 15 asterisk -rx 'core show channels count' 2>/dev/null | sed -n 's/^\([0-9]\+\) active call.*/\1/p'
+}
+END_CALLS_FLAG=/run/aipbx-update-end-calls
+CANCEL_FLAG=/run/aipbx-update-cancel
+WAIT_MAX_SECONDS=$((4 * 3600))
+rm -f "$END_CALLS_FLAG" "$CANCEL_FLAG"
+
+wait_for_calls() {
+    local started seen="" n
+    started="$(date +%s)"
+    while :; do
+        n="$(active_calls)"; n="${n:-0}"
+        [[ "$n" -gt 0 ]] || { WAITING_CALLS=0; log "No calls in progress, continuing"; return 0; }
+        if [[ -e "$CANCEL_FLAG" ]]; then
+            rm -f "$CANCEL_FLAG"; WAITING_CALLS=0
+            log "Cancelled while waiting for ${n} call(s)"
+            status failed "Cancelled while waiting for calls"
+            exit 3
+        fi
+        if [[ -e "$END_CALLS_FLAG" ]]; then
+            rm -f "$END_CALLS_FLAG"; WAITING_CALLS=0; ALLOW_CALLS=true
+            log "Asked to end the ${n} call(s) in progress instead of waiting"
+            return 0
+        fi
+        if (( $(date +%s) - started > WAIT_MAX_SECONDS )); then
+            WAITING_CALLS=0
+            log "Still ${n} call(s) after $((WAIT_MAX_SECONDS / 3600)) hours, stopping"
+            status failed "Calls still in progress after $((WAIT_MAX_SECONDS / 3600)) hours"
+            exit 3
+        fi
+        if [[ "$n" != "$seen" ]]; then
+            seen="$n"
+            log "Waiting for ${n} call(s) to end"
+            [[ -t 0 ]] && echo "Press e to end the calls now, c to cancel."
+        fi
+        # Written each round: the portal tells a wait from an update that died by its age.
+        WAITING_CALLS="$n"
+        status running "Waiting for ${n} call(s) to end"
+        if [[ -t 0 ]]; then
+            key=""
+            read -r -s -n 1 -t 5 key || true
+            case "${key,,}" in
+                e) touch "$END_CALLS_FLAG" ;;
+                c) touch "$CANCEL_FLAG" ;;
+            esac
+        else
+            sleep 5
+        fi
+    done
+}
+
+calls="$(active_calls)"
 if [[ "$AIPBX_ASTERISK_RESTART" == yes && "${calls:-0}" -gt 0 && "$ALLOW_CALLS" != true ]]; then
-    echo "${calls} call(s) in progress; the update restarts Asterisk and they would drop." >&2
-    echo "Try again when the calls have ended, or force it with --allow-calls." >&2
-    status failed "Calls in progress (${calls})"
-    exit 3
+    if [[ "$WAIT_CALLS" != true && "$ASSUME_YES" != true && -t 0 ]]; then
+        echo "${calls} call(s) in progress, and this update restarts Asterisk."
+        read -r -p "[w]ait until they end, [e]nd them now, or [c]ancel? [w/e/c]: " ans
+        case "${ans,,}" in
+            w|wait) WAIT_CALLS=true ;;
+            e|end) ALLOW_CALLS=true ;;
+            *) echo "Cancelled."; exit 0 ;;
+        esac
+    fi
+    if [[ "$WAIT_CALLS" == true && "$ALLOW_CALLS" != true ]]; then
+        wait_for_calls
+    elif [[ "$ALLOW_CALLS" != true ]]; then
+        echo "${calls} call(s) in progress; the update restarts Asterisk and they would drop." >&2
+        echo "Choose: --wait-calls waits until they end, --allow-calls ends them." >&2
+        status failed "Calls in progress (${calls})"
+        exit 3
+    fi
 fi
 
 if [[ "$ASSUME_YES" != true ]]; then
@@ -219,6 +288,11 @@ if ! zcat "$BACKUP_DIR/asterisk-db.sql.gz" 2>/dev/null | tail -n 1 | grep -q 'Du
     status failed "Database backup failed"
     exit 1
 fi
+if [[ ${#HAND_FILES[@]} -gt 0 ]]; then
+    printf '%s\0' "${HAND_FILES[@]}" | tar czf "$BACKUP_DIR/hand-changed-files.tgz" -C "$INSTALL_DIR" --null -T - 2>>"$LOG_FILE" \
+        || { log "ERROR: could not save the files changed by hand, nothing was changed"; status failed "Backup of changed files failed"; exit 1; }
+    log "Files changed by hand (${#HAND_FILES[@]}) saved in $BACKUP_DIR/hand-changed-files.tgz"
+fi
 log "Backup: $BACKUP_DIR"
 # Prune old backups (the last $KEEP_BACKUPS are kept)
 ls -1dt "$BACKUP_ROOT"/*/ 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -rf
@@ -228,6 +302,7 @@ rollback() {
     log "!!! $1 — returning to the previous release ($CURRENT)"
     status running "Rolling back: $1"
     git_in checkout --quiet --force "$CURRENT_COMMIT" >>"$LOG_FILE" 2>&1
+    [[ -s "$BACKUP_DIR/hand-changed-files.tgz" ]] && tar xzf "$BACKUP_DIR/hand-changed-files.tgz" -C "$INSTALL_DIR" 2>>"$LOG_FILE"
     # Restore the database exactly as backed up: tables added by the new
     # migrations are not in the dump, so the database is dropped first — but
     # ONLY when the dump is complete.
@@ -274,6 +349,25 @@ rollback() {
 # ------------------------------------------------------------------ apply
 status running "Checking out $TARGET"
 git_in checkout --quiet --force --detach "$TARGET" >>"$LOG_FILE" 2>&1 || rollback "Checkout failed"
+if [[ ${#HAND_FILES[@]} -gt 0 ]]; then
+    for f in "${HAND_FILES[@]}"; do
+        if git_in diff --quiet "$CURRENT_COMMIT" "$TARGET" -- "$f" 2>/dev/null; then
+            tar xzf "$BACKUP_DIR/hand-changed-files.tgz" -C "$INSTALL_DIR" -- "$f" 2>>"$LOG_FILE" \
+                && HAND_KEPT=$((HAND_KEPT + 1))
+        else
+            HAND_REPLACED=$((HAND_REPLACED + 1))
+            log "NOTE: this release changes $f, so your version was not kept (it is in the backup)"
+        fi
+    done
+    log "Files changed by hand: $HAND_KEPT kept, $HAND_REPLACED replaced by the release"
+fi
+
+# Clean hang-ups before the restart: phones and trunks hear a BYE and the calls get their CDRs.
+if [[ "$AIPBX_ASTERISK_RESTART" == yes && "$ALLOW_CALLS" == true && "$(active_calls)" -gt 0 ]] 2>/dev/null; then
+    log "Ending the calls in progress"
+    timeout 15 asterisk -rx 'channel request hangup all' >>"$LOG_FILE" 2>&1 || true
+    sleep 2
+fi
 
 status running "Updating the system (packages, database, services)"
 log "Running install.sh --upgrade..."
@@ -310,13 +404,19 @@ domain="${domain#[\"\']}"; domain="${domain%[\"\']}"
 [[ -z "$domain" ]] && domain=127.0.0.1
 code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "${domain}:443:127.0.0.1" "https://${domain}/login" || echo 000)"
 [[ "$code" == 200 ]] || rollback "Portal not responding (HTTP $code)"
+# The services and the portal are up, so a page test that fails is reported, not a reason
+# to take a working system back.
+SMOKE_NOTE=""
 if ! (cd "$INSTALL_DIR/web" && timeout 900 sudo -n -u www-data php bin/smoke.php >>"$LOG_FILE" 2>&1); then
-    rollback "Page tests (smoke) failed"
+    log "WARNING: the page tests (smoke) found problems; see above. The update stays."
+    SMOKE_NOTE=", page tests found problems (see the log)"
 fi
 
 log "===== Update completed: $CURRENT → $TARGET ====="
 FROM_VERSION="$CURRENT"
-status "done" "Updated: $CURRENT → $TARGET"
+HAND_NOTE=""
+[[ ${#HAND_FILES[@]} -gt 0 ]] && HAND_NOTE=", files changed by hand: $HAND_KEPT kept, $HAND_REPLACED replaced"
+status "done" "Updated: $CURRENT → $TARGET$HAND_NOTE$SMOKE_NOTE"
 # Refresh the portal's "update available" information.
 /bin/bash "${AIPBX_UPDATE_REEXEC:-$0}" --check >/dev/null 2>&1 || true
 echo "AiPBX updated to $TARGET. Backup: $BACKUP_DIR"
@@ -327,6 +427,7 @@ if [[ -n "$FINAL_TARGET" ]]; then
     log "Bridge release $TARGET installed, continuing to $FINAL_TARGET"
     next=(--to "$FINAL_TARGET" --yes)
     [[ "$ALLOW_CALLS" == true ]] && next+=(--allow-calls)
+    [[ "$WAIT_CALLS" == true && "$ALLOW_CALLS" != true ]] && next+=(--wait-calls)
     rm -f "${AIPBX_UPDATE_REEXEC:-}"
     exec env -u AIPBX_UPDATE_REEXEC -u AIPBX_UPDATE_COPIED /usr/local/sbin/aipbx-update "${next[@]}"
 fi

@@ -112,8 +112,8 @@ sudo aipbx-update           # update to the latest release
 ```
 
 or from the portal: **System → System Update** (admin only). The update:
-1. refuses to run when files under `/opt/aipbx` were edited by hand. Asterisk is restarted only when the release needs it (an
-   Asterisk configuration file or package changed); then the update waits for an idle PBX (`--allow-calls` to force).
+1. saves files under `/opt/aipbx` that were edited by hand and keeps them, unless the release changes the same file (then the release's version is used and the log names it). Asterisk is restarted only when the release needs it (an
+   Asterisk configuration file or package changed); you choose what happens to calls in progress: `--wait-calls` waits until they end, `--allow-calls` ends them. At a terminal it asks, and keys e and c end the calls or cancel while it waits.
    Otherwise Asterisk is only reloaded and calls stay up. `--check` and the portal page say which applies;
 2. backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/` (last 5 kept);
 3. checks out the release and runs `install.sh --upgrade` — database migrations, new packages and system settings are applied, **passwords, certificate, admin password and firewall choices are kept**;

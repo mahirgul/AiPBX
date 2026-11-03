@@ -283,10 +283,10 @@ case "$cmd" in
                 exec /usr/local/sbin/aipbx-update --check
                 ;;
             start)
-                # update start [--allow-calls]
-                [ $# -le 1 ] || die "usage: update start [--allow-calls]"
+                # update start [--allow-calls|--wait-calls]
+                [ $# -le 1 ] || die "usage: update start [--allow-calls|--wait-calls]"
                 extra=""
-                case "${1:-}" in '') ;; --allow-calls) extra="--allow-calls" ;; *) die "unexpected argument: $1" ;; esac
+                case "${1:-}" in '') ;; --allow-calls) extra="--allow-calls" ;; --wait-calls) extra="--wait-calls" ;; *) die "unexpected argument: $1" ;; esac
                 if systemctl is-active --quiet aipbx-update.service; then
                     die "an update is already running"
                 fi
@@ -294,6 +294,13 @@ case "$cmd" in
                 exec systemd-run --quiet --collect --unit=aipbx-update \
                     --setenv=HOME=/root \
                     --description="AiPBX update" /usr/local/sbin/aipbx-update --yes $extra
+                ;;
+            end-calls|cancel)
+                # While an update waits for calls: end them after all, or give up.
+                [ $# -eq 0 ] || die "usage: update $sub"
+                # Also for an update started at the terminal, which is not that unit.
+                grep -q '"waiting_calls":[1-9]' /var/lib/aipbx/update-status.json 2>/dev/null || die "no update is waiting for calls"
+                if [ "$sub" = end-calls ]; then touch /run/aipbx-update-end-calls; else touch /run/aipbx-update-cancel; fi
                 ;;
             *) die "unknown update command: $sub" ;;
         esac
