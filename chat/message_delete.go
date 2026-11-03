@@ -87,6 +87,9 @@ func attachmentFilePaths(uploadDir, url string) []string {
 	return out
 }
 
+// deleteWindowOnReadError is the limit while the setting cannot be read.
+const deleteWindowOnReadError = 5
+
 // GetDeleteWindowMinutes reads the admin setting; 0 = no time limit.
 func GetDeleteWindowMinutes() int {
 	if db == nil {
@@ -94,8 +97,13 @@ func GetDeleteWindowMinutes() int {
 	}
 	var v string
 	err := db.QueryRow("SELECT setting_value FROM sys_settings WHERE setting_key = ? LIMIT 1", deleteWindowSettingKey).Scan(&v)
-	if err != nil {
+	if err == sql.ErrNoRows {
 		return 0
+	}
+	if err != nil {
+		// The setting exists but could not be read: a database hiccup must not
+		// lift a limit the administrator set.
+		return deleteWindowOnReadError
 	}
 	n, err := strconv.Atoi(strings.TrimSpace(v))
 	if err != nil || n < 0 {

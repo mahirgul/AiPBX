@@ -21,7 +21,7 @@ Content-Type: application/json
 | Scope | Description |
 |---|---|
 | `pbx:read` | Read extensions, trunks, DID/outbound routes, IVRs, queues, ring groups, conferences, time conditions, and web widgets |
-| `pbx:write` | Create, update (`PATCH`/`PUT`), or delete PBX routing and extension resources |
+| `pbx:write` | Create, update (`PATCH`/`PUT`), or delete PBX routing and extension resources (queues need `queues:write`) |
 | `calls:read` | Read active channels (`/api/v1/calls/active`) and live queue board (`/api/v1/queues/live`) |
 | `calls:write` | Originate calls (`/api/v1/calls/originate`) and hangup channels (`/api/v1/calls/hangup`) |
 | `cdr:read` | Query Call Detail Records (`/api/v1/cdr`) |

@@ -20,8 +20,51 @@ function requireLogin() {
         header('Location: /login?timeout=1');
         exit;
     }
+    if (!_isSessionEpochCurrent()) {
+        $_SESSION = [];
+        session_destroy();
+        header('Location: /login');
+        exit;
+    }
     $_SESSION['last_activity'] = time();
     _touchLastSeen($_SESSION['user_id']);
+}
+
+/**
+ * Web sessions follow sys_users.token_epoch, which goes up when a password is
+ * changed: without this, changing the password of a stolen account left the
+ * thief's browser signed in. A session is stamped on its first request, so a
+ * session from before this check is not thrown out, and the stamp names the user
+ * because signing in as someone else keeps the same session data. A disabled or
+ * removed account loses its session here too.
+ */
+function _isSessionEpochCurrent(): bool {
+    $userId = (int) ($_SESSION['user_id'] ?? 0);
+    if ($userId <= 0) {
+        return false;
+    }
+    $stmt = getDB()->prepare('SELECT token_epoch, is_active FROM sys_users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row || empty($row['is_active'])) {
+        return false;
+    }
+    $stamp = $userId . ':' . (int) $row['token_epoch'];
+    $held = $_SESSION['session_epoch'] ?? null;
+    if ($held === null || !str_starts_with((string) $held, $userId . ':')) {
+        $_SESSION['session_epoch'] = $stamp;
+        return true;
+    }
+    return hash_equals($stamp, (string) $held);
+}
+
+/** After changing their own password the user keeps this session; the others end. */
+function refreshOwnSessionEpoch(int $changedUserId): void {
+    if ((int) ($_SESSION['user_id'] ?? 0) !== $changedUserId) {
+        return;
+    }
+    unset($_SESSION['session_epoch']);
+    _isSessionEpochCurrent();
 }
 
 /**
@@ -33,7 +76,7 @@ function requireLogin() {
  * its own auth check by hand/inconsistently" risk found in the 2026-08-23 review.
  */
 function requireApiLogin() {
-    $valid = isset($_SESSION['user_id']) && _isSessionActivityFresh();
+    $valid = isset($_SESSION['user_id']) && _isSessionActivityFresh() && _isSessionEpochCurrent();
     if (!$valid) {
         if (isset($_SESSION['user_id'])) {
             $_SESSION = [];

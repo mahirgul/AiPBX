@@ -23,7 +23,7 @@ $can_delete = $canDelete ?? false;
                 <button type="button" class="btn btn-secondary btn-sm" onclick="openImportModal()" title="<?php echo t('blacklist.import_csv'); ?>">
                     <i class="fas fa-file-csv"></i> <?php echo t('blacklist.import_csv'); ?>
                 </button>
-                <form method="POST" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(t('blacklist.confirm_resync', 'Tüm kara liste kuralları AstDB ve arama planına yeniden yazılsın mı?')); ?>');">
+                <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo jsArg(t('blacklist.confirm_resync')); ?>);">
                     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                     <input type="hidden" name="action" value="resync">
                     <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('blacklist.resync_astdb'); ?>">
@@ -133,7 +133,7 @@ $can_delete = $canDelete ?? false;
                                     </button>
                                 <?php endif; ?>
                                 <?php if ($can_delete): ?>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('<?php echo htmlspecialchars(sprintf(t('blacklist.confirm_delete', '%s numarası kara listeden silinsin mi?'), $e['number'])); ?>');">
+                                    <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo jsArg(sprintf(t('blacklist.confirm_delete'), $e['number'])); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="action" value="delete_entry">
                                         <input type="hidden" name="entry_id" value="<?php echo (int)$e['id']; ?>">

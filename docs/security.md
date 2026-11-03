@@ -63,6 +63,10 @@ Three brakes, all off until switched on:
   alarm *Trunk limits* (see [Trunks](trunks.md#limits)).
 - **Dial permission groups**: which numbers a group of users may dial at all.
 
+One brake is on from the start: a user can send 30 faxes an hour (*Fax settings*; 0 turns it off,
+administrators are not limited). Deleting faxes does not free the limit, so a stolen account cannot
+hide what it sends and carry on.
+
 ## Root helper (`aipbx-priv`)
 
 The portal never runs arbitrary commands as root. `/etc/sudoers.d/aipbx` allows `www-data` to run only

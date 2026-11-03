@@ -134,6 +134,7 @@ class UserService {
                 DBHelper::save('sys_users', $save_data);
                 if (!empty($password)) {
                     getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
+                    refreshOwnSessionEpoch((int) $user_id);
                 }
                 $msg = sprintf(t('srv_user.updated'), $username);
                 writeAuditLog(null, 'user_account', $user_id, "User: {$username} ({$full_name}, role: {$role})", 'update', $_SESSION['user_id'] ?? null);
@@ -315,6 +316,10 @@ class UserService {
                 throw new \Exception(t('srv_user.err_no_password'));
             }
 
+            if (!empty($new_password) && mb_strlen($new_password) < 8) {
+                throw new \Exception(t('security.password_min_length'));
+            }
+
             // Same floor as the Extensions page: with digest auth on, a SIP
             // secret shorter than 6 characters must not be set anywhere.
             if (!empty($new_sip_password)) {
@@ -335,6 +340,7 @@ class UserService {
             if (!empty($new_password)) {
                 // When an administrator resets the password, the sessions on the phones drop too.
                 getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
+                refreshOwnSessionEpoch($user_id);
             }
 
             // The passwords THEMSELVES are never logged — only "which kind of

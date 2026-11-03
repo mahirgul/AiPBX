@@ -75,8 +75,13 @@ class WebhookService
         $scheme = strtolower((string)($parts['scheme'] ?? 'https'));
         $port = (int)($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
         $ip = self::resolveAndValidatePublicIp($host);
-        if ($ip === '' || filter_var($host, FILTER_VALIDATE_IP)) {
+        if (filter_var($host, FILTER_VALIDATE_IP)) {
             return [];
+        }
+        // Nothing resolved means nothing was checked: curl would look the name up
+        // again by itself, and that answer could be an internal address.
+        if ($ip === '') {
+            throw new \InvalidArgumentException(t('webhooks.err_unresolved'));
         }
         $fmtIp = str_contains($ip, ':') ? "[{$ip}]" : $ip;
         return ["{$host}:{$port}:{$fmtIp}"];

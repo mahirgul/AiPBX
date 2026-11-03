@@ -252,6 +252,20 @@ final class OidcAuthTest extends TestCase
         $this->assertSame('user', $user['role']);
     }
 
+    public function testTheIssuerMustBeTheConfiguredOne(): void
+    {
+        $this->assertTrue(OidcAuthService::issuerMatches('https://idp.example/realm', 'https://idp.example/realm'));
+        $this->assertTrue(OidcAuthService::issuerMatches('https://idp.example/realm/', 'https://idp.example/realm'));
+        $this->assertFalse(OidcAuthService::issuerMatches('https://idp.example/realm', 'https://evil.example/realm'));
+        $this->assertFalse(OidcAuthService::issuerMatches('https://idp.example/realm', ''));
+        $this->assertTrue(OidcAuthService::issuerMatches('', 'anything'), 'no issuer in the discovery document');
+
+        $ms = 'https://login.microsoftonline.com/{tenantid}/v2.0';
+        $this->assertTrue(OidcAuthService::issuerMatches($ms, 'https://login.microsoftonline.com/1234-abcd/v2.0'));
+        $this->assertFalse(OidcAuthService::issuerMatches($ms, 'https://evil.example/1234-abcd/v2.0'));
+        $this->assertFalse(OidcAuthService::issuerMatches($ms, 'https://login.microsoftonline.com/a/b/v2.0'));
+    }
+
     public function testIdTokenNonceAndExpirationValidation(): void
     {
         $header = base64_encode((string)json_encode(['alg' => 'none']));

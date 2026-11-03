@@ -280,11 +280,18 @@ AIPBX_MODE=install
 for arg in "$@"; do
     case "$arg" in
         --upgrade) AIPBX_MODE=upgrade ;;
-        *) error "Unknown argument: $arg (supported: --upgrade)" ;;
+        --reinstall) AIPBX_REINSTALL=1 ;;
+        *) error "Unknown argument: $arg (supported: --upgrade, --reinstall)" ;;
     esac
 done
 if [[ "$AIPBX_MODE" == "upgrade" && ! -f /etc/ai-pbx.env ]]; then
     error "--upgrade needs an existing installation (/etc/ai-pbx.env not found)"
+fi
+# A plain run on an installed system would reset the admin password and make new
+# secrets: one forgotten word on a live server. An install that stopped half way
+# can go again with --reinstall.
+if [[ "$AIPBX_MODE" == "install" && -f /etc/ai-pbx.env && "${AIPBX_REINSTALL:-0}" != "1" ]]; then
+    error "AiPBX is already installed here (/etc/ai-pbx.env). To update it: bash install.sh --upgrade. To install over it, which resets the admin password and the secrets: bash install.sh --reinstall"
 fi
 is_upgrade() { [[ "$AIPBX_MODE" == "upgrade" ]]; }
 
@@ -1465,6 +1472,8 @@ if [ -d "$INSTALL_DIR/signaling" ]; then
         install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
         systemctl daemon-reload >/dev/null 2>&1 || true
         systemctl enable --now aipbx-signaling.service >/dev/null 2>&1 || true
+        # A running daemon picks up a changed unit only here; no call depends on it.
+        systemctl try-restart aipbx-signaling.service >/dev/null 2>&1 || true
     fi
 fi
 

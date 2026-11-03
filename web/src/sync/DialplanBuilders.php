@@ -153,9 +153,8 @@ function buildTrunkCidNormalizeLine($norm) {
 
 /**
  * Generates the CALLERID(num) line for one outbound route attempt (trunk entry).
- * The trunk's own caller ID masking wins if set (e.g. a number the trunk
- * carrier requires); otherwise the calling extension's own internal/external
- * CID preference is used (PJSIP endpoint set_var: CID_INTERNAL/CID_EXTERNAL,
+ * The route's override for this trunk wins if set; otherwise the calling
+ * extension's own internal/external CID preference is used (PJSIP endpoint set_var: CID_INTERNAL/CID_EXTERNAL,
  * see SyncExtensions.php). If both are empty the current CALLERID(num) stays.
  *
  * Display name (CALLERID(name)): when pbx_trunks.send_caller_name is off
@@ -195,12 +194,15 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
             $lines .= " same => n,Set(CALLERID(num)=\${IF(\$[\"\${CID_INTERNAL}\" != \"\"]?\${CID_INTERNAL}:\${CALLERID(num)})})\n";
         }
     } else {
-        // External call: the user's sys_users.cid_external (CID_EXTERNAL) wins.
-        // If the user has no external CID, the trunk CID (outbound_caller_id) or the route override is sent.
-        $fallback_cid = !empty($trunk_cid) ? $trunk_cid : $override;
-        if (!empty($fallback_cid)) {
-            // On transit calls (a call coming in from another trunk) keep the caller's number
-            $lines .= " same => n,ExecIf(\$[\"\${CDR(inbound_trunk)}\" = \"\"]?Set(CALLERID(num)=\${IF(\$[\"\${CID_EXTERNAL}\" != \"\"]?\${CID_EXTERNAL}:{$fallback_cid})}))\n";
+        // External call. The route's override means what it says: it beats the user's
+        // number and the trunk's. Without one, the user's sys_users.cid_external
+        // (CID_EXTERNAL), then the trunk's number. On transit calls (a call coming in
+        // from another trunk) the caller's number is kept in every case.
+        $transit_check = "\$[\"\${CDR(inbound_trunk)}\" = \"\"]";
+        if (!empty($override)) {
+            $lines .= " same => n,ExecIf({$transit_check}?Set(CALLERID(num)={$override}))\n";
+        } elseif (!empty($trunk_cid)) {
+            $lines .= " same => n,ExecIf({$transit_check}?Set(CALLERID(num)=\${IF(\$[\"\${CID_EXTERNAL}\" != \"\"]?\${CID_EXTERNAL}:{$trunk_cid})}))\n";
         } else {
             $lines .= " same => n,ExecIf(\$[\"\${CID_EXTERNAL}\" != \"\"]?Set(CALLERID(num)=\${CID_EXTERNAL}))\n";
         }

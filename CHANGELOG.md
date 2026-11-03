@@ -5,6 +5,23 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.14
+
+Found on a live system whose fax account was taken over, and in a code review.
+
+- **Caller ID override on a route now overrides:** on outside routes it lost to the user's External Call CID and to the trunk's number, so it worked only when both were empty. If you filled one in and it had no effect, your calls will now go out with that number: check your routes before updating.
+- **Faxes per hour:** a user can now send 30 faxes an hour, and deleting faxes does not free the limit. Change it under Fax settings (0 turns it off). Administrators are not limited.
+- **A number that cannot be dialled is refused at once:** a fax to a number with no outbound route used to wait out every retry and then read "no answer".
+- **Changing a password now ends web sessions:** before, it ended only the sessions on phones, so a stolen browser session stayed signed in. Disabling an account ends its sessions too. Whoever changes their own password stays signed in. After five wrong current passwords on the Security page, the session ends.
+- **Custom Dialplan in Turkish deleted without asking:** an apostrophe in the translated question broke the confirmation. It now asks.
+- **`install.sh` on an installed system now stops:** a run without `--upgrade` reset the admin password and made new secrets. To do that on purpose, use `--reinstall`.
+- **Chat:** two admins leaving a group at the same moment could leave it with no admin. If the delete time limit cannot be read, 5 minutes applies instead of no limit.
+- **OpenID Connect:** the sign-in token must come from the configured issuer and must carry an expiry and an audience. Tested in code only, not against a real provider: please report if your provider's sign-in stops working.
+- **REST API:** deleting a queue now needs `queues:write`, the same as creating or changing one. A token with only `pbx:write` can no longer delete queues.
+- **Webhooks:** a host name that cannot be resolved now fails the delivery.
+- **Administrators setting a password:** at least 8 characters, the same as everyone else.
+- **Signaling capture** no longer runs as root.
+
 ## 1.60.13
 
 - **New guides:** [how numbers change on a call](docs/number-normalization.md), with the order of every setting and a diagram, and [running AiPBX in an Incus or LXD container](docs/incus-lxd.md).

@@ -8,6 +8,9 @@ require_once __DIR__ . '/FaxCoverService.php';
  * Fax send service
  */
 class FaxSendService {
+    /** Faxes one user may send in an hour, until an administrator changes it. */
+    public const DEFAULT_LIMIT_PER_HOUR = 30;
+
     /**
      * Uploads a PDF and converts it to TIFF G4, records it in fax_sent and
      * creates a .call spool file for Asterisk SendFAX(). It used to be
@@ -82,6 +85,10 @@ class FaxSendService {
         }
         if (AsteriskHelper::getPrimaryTrunkName() === null) {
             return ['success' => false, 'error' => t('srv_fax.err_no_trunk')];
+        }
+        $refused = self::refusalFor($dest_number, (string) $sender_did, $userId, (string) $current_role);
+        if ($refused !== null) {
+            return ['success' => false, 'error' => $refused];
         }
 
         $db = getDB();
@@ -167,6 +174,58 @@ class FaxSendService {
         }
 
         return ['success' => true, 'message' => sprintf(t('srv_fax.queued'), $fax_id, $page_count)];
+    }
+
+    /**
+     * Why this fax must not be sent, or null. Shared by a new send and a resend.
+     *
+     * The hourly limit stops a stolen account from sending in bulk (live system,
+     * 2026-11-01). Deleted faxes count too: deleting the history must not free the
+     * limit. Administrators are not limited.
+     */
+    public static function refusalFor(string $destNumber, string $senderExt, int $userId, string $role): ?string
+    {
+        $limit = (int) getSystemSetting('fax_send_limit_per_hour', (string) self::DEFAULT_LIMIT_PER_HOUR);
+        if ($role !== 'admin' && $limit > 0 && self::sentInLastHour($userId) >= $limit) {
+            writeAuditLog(null, 'fax_sent', $userId, "Fax refused: hourly limit of {$limit} reached (extension {$senderExt})", 'security');
+            return sprintf(t('srv_fax.err_limit'), $limit);
+        }
+        if (!self::hasDialplanMatch($destNumber, self::dialContextFor($senderExt))) {
+            return t('srv_fax.err_no_route');
+        }
+        return null;
+    }
+
+    private static function sentInLastHour(int $userId): int
+    {
+        $sent = (int) DBHelper::fetchColumn(
+            'SELECT COUNT(*) FROM fax_sent WHERE user_id = ? AND created_at > (NOW() - INTERVAL 1 HOUR)',
+            [$userId]
+        );
+        $deleted = (int) DBHelper::fetchColumn(
+            "SELECT COUNT(*) FROM sys_audit_log WHERE user_id = ? AND entity_type = 'fax_sent' AND action = 'delete'
+             AND created_at > (NOW() - INTERVAL 1 HOUR)",
+            [$userId]
+        );
+        return $sent + $deleted;
+    }
+
+    /**
+     * Asks Asterisk whether the number can be dialled from this context: a number
+     * with no route used to wait out every retry and then read "no answer". Only a
+     * clear "no" refuses the fax; if Asterisk cannot be asked, the fax goes on.
+     */
+    private static function hasDialplanMatch(string $number, string $context): bool
+    {
+        $res = AsteriskHelper::execCLI("dialplan show {$number}@{$context}");
+        return !str_contains((string) ($res['output'] ?? ''), 'There is no existence');
+    }
+
+    private static function dialContextFor(string $senderExt): string
+    {
+        $row = DBHelper::fetchOne('SELECT outbound_group FROM sys_users WHERE extension = ?', [$senderExt]);
+        $group = max(1, (int) ($row['outbound_group'] ?? 1));
+        return $group > 1 ? "from-internal-desktop-{$group}" : 'from-internal-desktop';
     }
 
     /**

@@ -94,6 +94,16 @@ class SecurityController extends BaseController
                     $curHash = $pStmt->fetchColumn();
 
                     if (!password_verify($curPass, $curHash)) {
+                        // A stolen session must not be able to try passwords here
+                        // forever: this sign-in ends after five wrong ones.
+                        $_SESSION['password_change_failures'] = (int) ($_SESSION['password_change_failures'] ?? 0) + 1;
+                        if ($_SESSION['password_change_failures'] >= 5) {
+                            writeAuditLog('security', 'sys_users', (string) $userId, "User '{$user['username']}': session ended after five wrong current passwords", 'security');
+                            $_SESSION = [];
+                            session_destroy();
+                            header('Location: /login');
+                            exit;
+                        }
                         $error = t('security.wrong_current_password');
                     } elseif (mb_strlen($newPass) < 8) {
                         $error = t('security.password_min_length');
@@ -104,6 +114,8 @@ class SecurityController extends BaseController
                         // When the password changes, the sessions on the phones drop too (token_epoch).
                         $upd = $db->prepare('UPDATE sys_users SET password_hash = ?, token_epoch = token_epoch + 1 WHERE id = ?');
                         $upd->execute([$newHash, $userId]);
+                        refreshOwnSessionEpoch((int) $userId);
+                        unset($_SESSION['password_change_failures']);
                         if (function_exists('writeAuditLog')) {
                             writeAuditLog('security', 'sys_users', (string)$userId, "User '{$user['username']}' changed their web password.", 'password_change', (int)$userId);
                         }

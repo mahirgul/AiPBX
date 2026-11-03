@@ -119,6 +119,12 @@
                     <small class="u-hint"><?php echo t('fax_mail_settings.wait_time_help'); ?></small>
                 </div>
             </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('fax_mail_settings.field_send_limit'); ?></label>
+                <input type="number" name="fax_send_limit_per_hour" class="form-control" value="<?php echo htmlspecialchars($fax_send_limit_per_hour); ?>" min="0" max="10000" required>
+                <small class="u-hint"><?php echo t('fax_mail_settings.send_limit_help'); ?></small>
+            </div>
         </div>
 
         <?php if (hasModulePermission('fax_mail_settings', 'edit')): ?>

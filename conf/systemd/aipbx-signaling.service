@@ -4,6 +4,16 @@ After=multi-user.target
 ConditionPathExists=/opt/aipbx/signaling
 
 [Service]
+# The one Python service that parses packets from the network: it needs the
+# environment file (group asterisk) and a port above 1024, nothing more.
+User=asterisk
+Group=asterisk
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+CapabilityBoundingSet=
 WorkingDirectory=/opt/aipbx/signaling
 ExecStart=/usr/bin/python3 -m aipbx_signaling
 Restart=on-failure

@@ -34,6 +34,9 @@ while True:
     if method == "INVITE":
         uri = lines[0].split(" ")[1]
         log.write(uri.split(":", 1)[1].split("@")[0] + "\n")
+        sender = next((l for l in lines if l.lower().startswith("from:")), "")
+        with open(sys.argv[1] + ".from", "a") as f:
+            f.write(sender.split("sip:", 1)[-1].split("@")[0] + "\n")
     keep = [l for l in lines[1:] if l.split(":", 1)[0].lower() in ("via", "from", "to", "call-id", "cseq")]
     keep = [l + ";tag=e2esink" if l.lower().startswith("to:") and "tag=" not in l else l for l in keep]
     status = "486 Busy Here" if method == "INVITE" else "200 OK"
@@ -173,6 +176,20 @@ if [[ -n "$ext" ]]; then
         fail "internal extension $ext stays internal" "carrier got $got"
     fi
 fi
+
+# 9. A route's Caller ID override beats the trunk's number
+db "UPDATE pbx_trunks SET outbound_caller_id = '905550000001' WHERE trunk_name = 'e2esink'"
+db "INSERT INTO pbx_outbound_routes (route_name, match_pattern, prepend, append, strip_front, strip_back, trunks_json, is_internal, route_group, is_active, sort_order)
+    VALUES ('E2E call flows cid', '_8X.', '', '', 0, 0, '[{\"trunk_name\":\"e2esink\",\"callerid_override\":\"905550000002\"}]', 0, 1, 1, 4)"
+apply
+dial mobile 8123456 >/dev/null
+got="$(tail -n 1 "$SINK_LOG.from")"
+if [[ "$got" == "905550000002" ]]; then pass "route override beats the trunk number"; else fail "route override beats the trunk number" "carrier saw $got"; fi
+db "UPDATE pbx_outbound_routes SET trunks_json = '[{\"trunk_name\":\"e2esink\",\"callerid_override\":\"\"}]' WHERE route_name = 'E2E call flows cid'"
+apply
+dial mobile 8123457 >/dev/null
+got="$(tail -n 1 "$SINK_LOG.from")"
+if [[ "$got" == "905550000001" ]]; then pass "no override: the trunk number goes out"; else fail "no override: the trunk number goes out" "carrier saw $got"; fi
 
 echo "== $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]
