@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Inkomende fax',
     'sidebar.item_fax_send' => 'Fax verzenden',
     'sidebar.item_fax_sent' => 'Uitgaande fax',
+    'sidebar.item_fax_settings' => 'Faxeenheden',
     'sidebar.group_cc' => 'Callcenter',
     'sidebar.item_cc_board_unified' => 'Wallboard',
     'sidebar.item_cc_board_unified_tooltip' => 'Live callcenter-wallboard & wachtrijmonitor',

@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Fax entrante',
     'sidebar.item_fax_send' => 'Enviar fax',
     'sidebar.item_fax_sent' => 'Fax saliente',
+    'sidebar.item_fax_settings' => 'Unidades de fax',
     'sidebar.group_cc' => 'Centro de llamadas',
     'sidebar.item_cc_board_unified' => 'Panel mural',
     'sidebar.item_cc_board_unified_tooltip' => 'Panel mural en vivo del centro de llamadas y monitor de colas',

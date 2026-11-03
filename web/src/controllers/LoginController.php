@@ -25,15 +25,15 @@ class LoginController extends BaseController
         if (SsoOnlyService::localSignInBlocked()) {
             // Not straight back to the provider after signing out or after it failed: that would never end.
             $recent = time() - (int) ($_SESSION['sso_auto_at'] ?? 0) < 60;
-            if ($error === '' && !static::isPost() && !isset($_GET['signed_out']) && !$recent) {
+            if ($error === '' && !static::isPost() && !isset($_GET['signed_out']) && !$recent
+                && SsoOnlyService::redirectsToProvider((string) ($_SERVER['HTTP_ACCEPT'] ?? ''))) {
                 $_SESSION['sso_auto_at'] = time();
                 static::redirect(SsoOnlyService::loginUrl());
             }
             static::renderAuthPage('login/sso_only', [
                 'error' => $error,
                 'sso_url' => SsoOnlyService::loginUrl(),
-                'brand_title' => getSystemSetting('brand_title', 'AiPBX'),
-            ]);
+            ] + self::brandVars(), ['title' => t('login.page_title')]);
             return;
         }
         $client_ip = function_exists('getClientIP') ? getClientIP() : ($_SERVER['REMOTE_ADDR'] ?? '127.0.0.1');
@@ -61,13 +61,6 @@ class LoginController extends BaseController
         $csrf_token = getCSRFToken();
 
         $site_title = getSystemSetting('site_title', 'AiPBX');
-        $brand_title = getSystemSetting('brand_title', 'AiPBX');
-        $brand_sub = getSystemSetting('brand_sub', 'PBX & Call Center');
-        $site_logo_type = getSystemSetting('site_logo_type', 'image');
-        $site_logo_icon = getSystemSetting('site_logo_icon', 'fa-network-wired');
-        $site_logo_image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
-        $site_logo_image_dark = getSystemSetting('site_logo_image_dark', '');
-        $site_logo_wide = $site_logo_type === 'image' && !empty($site_logo_image) && getSystemSetting('site_logo_style', 'square') === 'wide';
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
         $googleLoginEnabled = GoogleAuthService::isEnabled();
         $oidcLoginEnabled = OidcAuthService::isEnabled();
@@ -81,19 +74,28 @@ class LoginController extends BaseController
             'num2' => $num2,
             'csrf_token' => $csrf_token,
             'site_title' => $site_title,
-            'brand_title' => $brand_title,
-            'brand_sub' => $brand_sub,
-            'site_logo_type' => $site_logo_type,
-            'site_logo_icon' => $site_logo_icon,
-            'site_logo_image' => $site_logo_image,
-            'site_logo_image_dark' => $site_logo_image_dark,
-            'site_logo_wide' => $site_logo_wide,
             'site_favicon_url' => $site_favicon_url,
             'googleLoginEnabled' => $googleLoginEnabled,
             'oidcLoginEnabled' => $oidcLoginEnabled,
             'oidcPublicSettings' => $oidcPublicSettings,
             'samlLoginEnabled' => $samlLoginEnabled,
             'samlPublicSettings' => $samlPublicSettings,
-        ], ['title' => t('login.page_title'), 'inline_lang_switch' => true]);
+        ] + self::brandVars(), ['title' => t('login.page_title'), 'inline_lang_switch' => true]);
+    }
+
+    /** What templates/views/login/_brand.php shows. */
+    private static function brandVars(): array
+    {
+        $type = getSystemSetting('site_logo_type', 'image');
+        $image = getSystemSetting('site_logo_image', BRAND_DEFAULT_LOGO_URL);
+        return [
+            'brand_title' => getSystemSetting('brand_title', 'AiPBX'),
+            'brand_sub' => getSystemSetting('brand_sub', 'PBX & Call Center'),
+            'site_logo_type' => $type,
+            'site_logo_icon' => getSystemSetting('site_logo_icon', 'fa-network-wired'),
+            'site_logo_image' => $image,
+            'site_logo_image_dark' => getSystemSetting('site_logo_image_dark', ''),
+            'site_logo_wide' => $type === 'image' && !empty($image) && getSystemSetting('site_logo_style', 'square') === 'wide',
+        ];
     }
 }

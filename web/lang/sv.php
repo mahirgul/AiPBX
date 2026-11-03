@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Inkommande fax',
     'sidebar.item_fax_send' => 'Skicka fax',
     'sidebar.item_fax_sent' => 'Utgående fax',
+    'sidebar.item_fax_settings' => 'Faxenheter',
     'sidebar.group_cc' => 'Callcenter',
     'sidebar.item_cc_board_unified' => 'Väggtavla',
     'sidebar.item_cc_board_unified_tooltip' => 'Live-väggtavla för callcenter och köövervakning',

@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Εισερχόμενα φαξ',
     'sidebar.item_fax_send' => 'Αποστολή φαξ',
     'sidebar.item_fax_sent' => 'Εξερχόμενα φαξ',
+    'sidebar.item_fax_settings' => 'Μονάδες φαξ',
     'sidebar.group_cc' => 'Τηλεφωνικό κέντρο',
     'sidebar.item_cc_board_unified' => 'Wallboard',
     'sidebar.item_cc_board_unified_tooltip' => 'Ζωντανό wallboard τηλεφωνικού κέντρου & παρακολούθηση ουρών',

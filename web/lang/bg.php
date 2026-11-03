@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Входящ факс',
     'sidebar.item_fax_send' => 'Изпрати факс',
     'sidebar.item_fax_sent' => 'Изходящ факс',
+    'sidebar.item_fax_settings' => 'Факс звена',
     'sidebar.group_cc' => 'Кол център',
     'sidebar.item_cc_board_unified' => 'Табло',
     'sidebar.item_cc_board_unified_tooltip' => 'Табло на кол центъра и наблюдение на опашки в реално време',

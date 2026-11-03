@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Gelen Faks',
     'sidebar.item_fax_send' => 'Faks Gönder',
     'sidebar.item_fax_sent' => 'Giden Faks',
+    'sidebar.item_fax_settings' => 'Faks Birimleri',
     'sidebar.group_cc' => 'Çağrı Merkezi',
     'sidebar.item_cc_board_unified' => 'Pano',
     'sidebar.item_cc_board_unified_tooltip' => 'Canlı Çağrı Merkezi Panosu ve Kuyruk İzleme',

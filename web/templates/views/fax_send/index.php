@@ -1,4 +1,4 @@
-<div class="card" style="max-width: 760px; margin: 0 auto;">
+<div class="card fax-send-card">
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-paper-plane u-primary"></i> <?php echo t('fax_send.header_title'); ?>
@@ -31,6 +31,7 @@
         <input type="hidden" name="compose_mode" id="fax_compose_mode_input" value="pdf">
         <input type="hidden" name="fax_text_content" id="fax_text_content_input">
 
+        <div class="fax-send-fields">
         <div class="form-group">
             <label class="form-label"><?php echo t('fax_send.field_sender'); ?></label>
             <?php if ($user_role === 'admin' && !empty($fax_users)): ?>
@@ -53,6 +54,8 @@
                 <input type="text" name="dest_number" class="form-control" style="padding-left: 44px;" required>
             </div>
             <small class="u-hint u-fs-11"><?php echo t('fax_send.dest_help'); ?></small>
+        </div>
+
         </div>
 
         <div id="fax-compose-pdf" class="fax-compose-panel">
@@ -119,7 +122,7 @@
 
         <?php if (hasModulePermission('fax_send', 'edit')): ?>
         <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;" title="<?php echo t('fax_send.send_tooltip'); ?>">
-            <i class="fas fa-paper-plane"></i>
+            <i class="fas fa-paper-plane"></i> <span><?php echo t('fax_send.send_tooltip'); ?></span>
         </button>
         <?php else: ?>
         <div style="margin-top: 15px; padding: 12px; border-radius: 8px; background: var(--bg-card); border: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 13px;">

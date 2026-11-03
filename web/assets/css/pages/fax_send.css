@@ -32,3 +32,20 @@
     #fax-text-toolbar .ql-picker { font-size: 12px; }
     #fax-text-toolbar button { width: 22px; }
 }
+
+/* The page uses the width it has: at 760 px in the middle of a wide screen it looked lost. */
+.fax-send-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+@media (max-width: 800px) { .fax-send-fields { grid-template-columns: 1fr; } }
+#fax-text-editor { min-height: 460px; }
+#fax-text-editor .ql-editor { min-height: 460px; }
+
+/* The toolbar follows the theme. The writing area stays white on purpose: it is the page
+   that goes out, and the dark Quill icons were close to invisible on a dark toolbar. */
+#fax-text-toolbar.ql-toolbar.ql-snow { background: var(--bg-card); border-color: var(--border-color); border-radius: 8px 8px 0 0; }
+#fax-text-toolbar + #fax-text-editor.ql-container.ql-snow { border-color: var(--border-color); border-radius: 0 0 8px 8px; }
+#fax-text-toolbar .ql-stroke { stroke: var(--text-main, currentColor); }
+#fax-text-toolbar .ql-fill { fill: var(--text-main, currentColor); }
+#fax-text-toolbar .ql-picker, #fax-text-toolbar .ql-picker-label { color: var(--text-main, currentColor); }
+#fax-text-toolbar .ql-picker-options { background: var(--bg-card); border-color: var(--border-color); color: var(--text-main, currentColor); }
+#fax-text-toolbar button:hover .ql-stroke, #fax-text-toolbar button.ql-active .ql-stroke { stroke: var(--primary); }
+#fax-text-toolbar button:hover .ql-fill, #fax-text-toolbar button.ql-active .ql-fill { fill: var(--primary); }

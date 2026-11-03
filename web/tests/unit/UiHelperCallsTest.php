@@ -11,6 +11,24 @@ use PHPUnit\Framework\TestCase;
 final class UiHelperCallsTest extends TestCase
 {
     /**
+     * jsArg() and htmlspecialchars() are for HTML attributes. In a <script> block nothing
+     * decodes the entities: the code read &quot;text&quot;, and Scheduled Tasks, External
+     * Databases, IVR data steps and Custom Dialplan had no working script at all.
+     */
+    public function testNoScriptBlockHoldsHtmlEscapedValues(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $files = array_merge(glob($root . '/templates/views/*/*.php') ?: [], glob($root . '/templates/views/*.php') ?: []);
+        $this->assertGreaterThan(50, count($files));
+        foreach ($files as $file) {
+            preg_match_all('#<script(?![^>]*\\bsrc=)[^>]*>(.*?)</script>#s', (string) file_get_contents($file), $m);
+            foreach ($m[1] as $block) {
+                $this->assertDoesNotMatchRegularExpression('/jsArg\\(|htmlspecialchars\\(/', $block, str_replace($root, '', $file));
+            }
+        }
+    }
+
+    /**
      * A translation with an apostrophe inside confirm('...') is a syntax error: the
      * handler never runs and the form submits with no question (Custom Dialplan,
      * Turkish, deleted without asking). Translated text in a handler goes through jsArg().

@@ -285,7 +285,7 @@ function toggleModuleHelp(id) {
 function openCreateCustomDialplanModal() {
     document.getElementById('customDialplanForm').reset();
     document.getElementById('cdEntryId').value = '';
-    document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-code text-primary"></i> <?php echo htmlspecialchars(t('custom_dialplan.modal_new_title', 'Yeni Özel Arama Planı Context\'i')); ?>';
+    document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-code text-primary"></i> ' + <?php echo jsValue(t('custom_dialplan.modal_new_title', 'Yeni Özel Arama Planı Context\'i')); ?>;
     document.getElementById('cdIsActive').checked = true;
     document.getElementById('cdIncludeInternal').checked = true;
     document.getElementById('syntaxCheckFeedback').style.display = 'none';
@@ -310,16 +310,16 @@ function openEditCustomDialplanModal(id) {
                 document.getElementById('templateSelect').value = '';
                 document.getElementById('syntaxCheckFeedback').style.display = 'none';
 
-                document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-edit text-primary"></i> <?php echo htmlspecialchars(t('custom_dialplan.modal_edit_title', 'Özel Arama Planı Düzenle')); ?>';
+                document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-edit text-primary"></i> ' + <?php echo jsValue(t('custom_dialplan.modal_edit_title', 'Özel Arama Planı Düzenle')); ?>;
                 document.getElementById('customDialplanModal').style.display = 'block';
                 document.getElementById('customDialplanModal').classList.add('show');
             } else {
-                alert('<?php echo htmlspecialchars(t('common.action_failed')); ?>');
+                alert(<?php echo jsValue(t('common.action_failed')); ?>);
             }
         })
         .catch(err => {
             console.error(err);
-            alert('<?php echo htmlspecialchars(t('common.action_failed')); ?>');
+            alert(<?php echo jsValue(t('common.action_failed')); ?>);
         });
 }
 
@@ -330,7 +330,7 @@ function closeCustomDialplanModal() {
 
 function openPreviewModal() {
     const pre = document.getElementById('previewConfContent');
-    pre.textContent = '<?php echo htmlspecialchars(t('js.common.loading', 'Yükleniyor...')); ?>';
+    pre.textContent = <?php echo jsValue(t('js.common.loading', 'Yükleniyor...')); ?>;
     document.getElementById('previewModal').style.display = 'block';
     document.getElementById('previewModal').classList.add('show');
 
@@ -340,7 +340,7 @@ function openPreviewModal() {
             if (data && data.success) {
                 pre.textContent = data.conf;
             } else {
-                pre.textContent = '<?php echo htmlspecialchars(t('common.action_failed')); ?>';
+                pre.textContent = <?php echo jsValue(t('common.action_failed')); ?>;
             }
         })
         .catch(err => {
@@ -394,7 +394,7 @@ function checkSyntax() {
             const res = data.result;
             fb.style.display = 'block';
             if (res.valid) {
-                let html = '<div class="alert alert-success py-2 mb-0"><i class="fas fa-check-circle"></i> <?php echo htmlspecialchars(t('custom_dialplan.syntax_valid', 'Sözdizimi geçerli ve dengeli.')); ?></div>';
+                let html = '<div class="alert alert-success py-2 mb-0"><i class="fas fa-check-circle"></i> ' + <?php echo jsValue(t('custom_dialplan.syntax_valid', 'Sözdizimi geçerli ve dengeli.')); ?> + '</div>';
                 if (res.warnings && res.warnings.length > 0) {
                     html += '<div class="alert alert-warning py-2 mt-1 mb-0"><i class="fas fa-exclamation-triangle"></i> ' + res.warnings.join('<br>') + '</div>';
                 }

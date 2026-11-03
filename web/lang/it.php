@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Fax in arrivo',
     'sidebar.item_fax_send' => 'Invia fax',
     'sidebar.item_fax_sent' => 'Fax in uscita',
+    'sidebar.item_fax_settings' => 'Unità fax',
     'sidebar.group_cc' => 'Call Center',
     'sidebar.item_cc_board_unified' => 'Wallboard',
     'sidebar.item_cc_board_unified_tooltip' => 'Wallboard call center e monitoraggio code in tempo reale',

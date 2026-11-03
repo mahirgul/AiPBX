@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Inbound Fax',
     'sidebar.item_fax_send' => 'Send Fax',
     'sidebar.item_fax_sent' => 'Outbound Fax',
+    'sidebar.item_fax_settings' => 'Fax Units',
     'sidebar.group_cc' => 'Call Center',
     'sidebar.item_cc_board_unified' => 'Wallboard',
     'sidebar.item_cc_board_unified_tooltip' => 'Live Call Center Wallboard & Queue Monitor',

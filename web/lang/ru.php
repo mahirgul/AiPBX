@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Входящие факсы',
     'sidebar.item_fax_send' => 'Отправить факс',
     'sidebar.item_fax_sent' => 'Исходящие факсы',
+    'sidebar.item_fax_settings' => 'Факс-подразделения',
     'sidebar.group_cc' => 'Колл-центр',
     'sidebar.item_cc_board_unified' => 'Табло',
     'sidebar.item_cc_board_unified_tooltip' => 'Табло колл-центра и мониторинг очередей в реальном времени',

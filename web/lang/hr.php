@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Dolazni faks',
     'sidebar.item_fax_send' => 'Pošalji faks',
     'sidebar.item_fax_sent' => 'Odlazni faks',
+    'sidebar.item_fax_settings' => 'Faks jedinice',
     'sidebar.group_cc' => 'Pozivni centar',
     'sidebar.item_cc_board_unified' => 'Zidna ploča',
     'sidebar.item_cc_board_unified_tooltip' => 'Zidna ploča pozivnog centra i praćenje redova uživo',

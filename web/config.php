@@ -508,6 +508,15 @@ function jsArg($value): string {
     return htmlspecialchars($json === false ? '""' : $json, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * A PHP value as JavaScript inside a <script> block. Not jsArg(): nothing decodes HTML
+ * entities there, so the code read &quot;text&quot; and the whole block failed to run.
+ */
+function jsValue($value): string {
+    $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+    return $json === false ? '""' : $json;
+}
+
 function toCleanAscii($str) {
     if ($str === null || $str === '') return '';
 

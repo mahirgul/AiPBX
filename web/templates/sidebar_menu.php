@@ -40,7 +40,6 @@ return [
     ],
     [
         'id' => 'admin', 'icon' => 'fas fa-user-shield u-warning', 'label' => 'sidebar.group_system',
-        'open_on' => ['fax_settings.php'],
         'items' => [
             ['href' => '/system-users', 'icon' => 'fas fa-users-cog', 'label' => 'sidebar.item_system_users', 'show' => $can('system_users'), 'pages' => ['system_users.php']],
             ['href' => '/roles', 'icon' => 'fas fa-user-shield', 'label' => 'sidebar.item_roles', 'show' => $can('roles'), 'pages' => ['roles.php']],
@@ -117,6 +116,7 @@ return [
             ['href' => '/fax-inbox', 'icon' => 'fas fa-inbox', 'label' => 'sidebar.item_fax_inbox', 'show' => $can('fax_inbox'), 'pages' => ['fax_inbox.php']],
             ['href' => '/fax-send', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_send', 'show' => $can('fax_send'), 'pages' => ['fax_send.php']],
             ['href' => '/fax-sent', 'icon' => 'fas fa-history', 'label' => 'sidebar.item_fax_sent', 'show' => $can('fax_sent'), 'pages' => ['fax_sent.php']],
+            ['href' => '/fax-settings', 'icon' => 'fas fa-fax', 'label' => 'sidebar.item_fax_settings', 'show' => $can('fax_settings'), 'pages' => ['fax_settings.php']],
         ],
     ],
     [
