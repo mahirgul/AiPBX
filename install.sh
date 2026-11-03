@@ -1437,6 +1437,7 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/s
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local/sbin/aipbx-update
 # Daily database/configuration backup (cron below).
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-backup" /usr/local/sbin/aipbx-backup
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-restore" /usr/local/sbin/aipbx-restore
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-readdress" /usr/local/sbin/aipbx-readdress
 # Asterisk sound packs (Sounds page); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-sounds" /usr/local/sbin/aipbx-sounds
@@ -1501,6 +1502,8 @@ install -d -o root -g root -m 0755 /var/lib/aipbx-netsvc
 install -d -o www-data -g www-data -m 0755 /var/lib/aipbx/tftp
 install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/plugins
 install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/api-ratelimit
+# Backup page: an upload is collected here piece by piece, then aipbx-restore checks it.
+install -d -o www-data -g www-data -m 0700 /var/lib/aipbx/backup-upload
 
 cat > /etc/systemd/system/aipbx-webhook-worker.service << 'WEBHOOKUNIT'
 [Unit]

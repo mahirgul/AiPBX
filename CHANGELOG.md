@@ -7,6 +7,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.15
 
+- **New: Backup & Restore page** (Administration). List backups, make one now, download or upload one, and restore everything or only the database, also on another server. A backup of the present state is made first and put back if the restore fails. Uploaded backups are checked and cannot run anything on the server. See [Backups](docs/backup-and-rollback.md).
 - **A plugin zip may unpack to at most 200 MB.** The upload limit counted only the compressed size.
 - **`aipbx-update`:** if restoring the database fails during a rollback, it tries again and then stops with the command to run by hand, instead of starting the services on half a database. Services are now checked twice after an update, so one that keeps crashing is caught.
 - **Chat:** a slow line can now finish a 25 MB upload or download (it was cut off after 30 seconds). A replaced group picture is deleted. Two people opening the same new chat at once no longer get an error for one of them. Chat, DHCP/TFTP, FTP and the mDNS alias run with tighter system limits.

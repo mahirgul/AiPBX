@@ -208,6 +208,7 @@ function getModuleKeyForPage($page = null) {
         'fail2ban.php'              => 'fail2ban',
         'certificates.php'          => 'certificates',
         'system_update.php'         => 'system_update',
+        'backup.php'                => 'backup',
         'scheduled_tasks.php'       => 'scheduled_tasks',
         // Admin → Help (system guide): admins only (HelpController), listed with System update.
         'help.php'                  => 'system_update',
@@ -294,6 +295,7 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'firewall' and 'fail2ban' are under the same circuit breaker (2026-08-31 / 2026-09-01
     // RbacTest): these pages run real sudo, they can NEVER open for a non-admin role.
     // 'system_update' too: it updates the system and restarts services.
+    // 'backup': a backup holds every secret of the system, and a restore replaces it.
     // 'certificates': installs the TLS key and reloads Apache, coturn and Asterisk.
     // 'phones': the provisioning URLs it shows hand out SIP passwords.
     // 'web_widgets': an external destination or the call-back form can cost money.
@@ -302,7 +304,7 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'ai_cloud': holds the API keys of paid cloud AI services.
     // 'ai_apps': an application's lookup URL is requested by the server itself.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality', 'custom_dialplan'], true)) {
+    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality', 'custom_dialplan'], true)) {
         return $role === 'admin';
     }
 

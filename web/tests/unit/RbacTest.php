@@ -30,6 +30,7 @@ final class RbacTest extends TestCase
         'fail2ban',
         'mail_settings',
         'system_update',
+        'backup',
         'scheduled_tasks',
         'certificates',
         'privacy',

@@ -1,0 +1,365 @@
+#!/bin/bash
+# aipbx-restore — puts a backup of aipbx-backup back on this server.
+#
+#   aipbx-restore NAME [--db-only] [--allow-calls] [--token-hash HEX]
+#   aipbx-restore --import FILE     checks an uploaded archive and adds it to the backups
+#
+# Run as root: from the Backup page through aipbx-priv (its own systemd unit, because
+# Apache restarts during a restore), or by hand.
+#
+# A safety backup of the present state comes first. If anything fails afterwards, that
+# safety backup is put back.
+#
+# An uploaded archive comes from outside and is handled as untrusted. This script runs
+# as root, so neither the archive nor the dump may be able to run anything:
+#   - only the files aipbx-backup itself writes are taken, nothing outside those folders,
+#     no device files or hard links, no link leading out of its folder;
+#   - mysql runs with --binary-mode, which turns off client commands such as "\!";
+#   - from an uploaded backup, values in the environment file that could break into a
+#     generated configuration are refused, and so is #exec in /etc/asterisk;
+#     asterisk.conf, which says which user Asterisk runs as, is not taken.
+
+set -uo pipefail
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export LC_ALL=C
+umask 077
+
+ENV_FILE=/etc/ai-pbx.env
+STATE_DIR=/var/lib/aipbx
+STATUS_FILE="$STATE_DIR/restore-status.json"
+LOG_FILE=/var/log/aipbx/restore.log
+INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
+RE_NAME='^aipbx-[0-9]{8}-[0-9]{4}(-[a-z-]{1,20})?$'
+
+env_get() { [[ -r "$ENV_FILE" ]] && sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//"; }
+DEST="$(env_get AIPBX_BACKUP_DIR)"; DEST="${DEST:-/var/backups/aipbx-daily}"
+DB_NAME="$(env_get DB_NAME)"; [[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] || DB_NAME=asterisk
+
+mkdir -p "$(dirname "$LOG_FILE")" "$STATE_DIR"
+touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+log() { echo "$(date '+%F %T') $*" | tee -a "$LOG_FILE"; }
+
+TOKEN_HASH=""; NAME=""
+json_str() { local s="${1//\\/\\\\}"; s="${s//\"/\\\"}"; printf '%s' "$s" | tr -d '\000-\037'; }
+status() {  # state step
+    local tmp; tmp="$(mktemp "$STATUS_FILE.XXXXXX")"
+    printf '{"state":"%s","step":"%s","name":"%s","token_hash":"%s","updated_at":"%s"}\n' \
+        "$1" "$(json_str "$2")" "$NAME" "$TOKEN_HASH" "$(date -Iseconds)" > "$tmp"
+    chmod 644 "$tmp"; mv -f "$tmp" "$STATUS_FILE"
+}
+
+# ------------------------------------------------------------------ checks (Python)
+# check-archive FILE               the backup archive as uploaded: only its three files
+# check-backup DIR UNTRUSTED       the dump is complete, config.tgz holds only what it may
+# extract-config DIR UNTRUSTED     config.tgz to /
+py() { python3 -I - "$@" <<'PY'
+import gzip, os, re, shutil, sys, tarfile
+
+ROOTS = ('etc/asterisk', 'var/lib/asterisk/sounds/custom', 'var/lib/asterisk/moh/custom',
+         'etc/letsencrypt', 'var/lib/aipbx/plugins', 'etc/ssl/aipbx', 'etc/aipbx')
+FILES = ('etc/ai-pbx.env', 'var/lib/aipbx/settings.key')
+MAX_CONFIG = 20 * 1024 ** 3
+MAX_DUMP = 200 * 1024 ** 3
+# Values that cannot leave their place in a generated Apache, nginx or systemd file. A
+# generated password may hold more characters, but nothing a shell or a config file treats
+# as special; a display name may hold spaces.
+ENV_VALUE = re.compile(r'^[A-Za-z0-9._@:/+=,%~-]*$')
+ENV_SECRET_KEY = re.compile(r'(PASS|SECRET|TOKEN|KEY)')
+ENV_SECRET_VALUE = re.compile(r'^[A-Za-z0-9._@:/+=,%~!^*#?-]*$')
+ENV_NAME_KEY = re.compile(r'_NAME$')
+ENV_NAME_VALUE = re.compile(r'^[^\x00-\x1f`$"\'\\;<>|&{}()\[\]]*$')
+ENV_KEY = re.compile(r'^[A-Z][A-Z0-9_]{0,63}$')
+EXEC_DIRECTIVE = re.compile(rb'^[ \t]*#[ \t]*(?:try)?exec\b', re.M | re.I)
+
+
+def die(msg):
+    print(msg, file=sys.stderr)
+    sys.exit(1)
+
+
+def root_of(path):
+    """The allowed folder or file the path belongs to, or None."""
+    for f in FILES:
+        if path == f:
+            return f
+    for r in ROOTS:
+        if path == r or path.startswith(r + '/'):
+            return r
+    return None
+
+
+def clean(name):
+    p = name[2:] if name.startswith('./') else name
+    p = p.rstrip('/')
+    if p == '' or p.startswith('/') or '\\' in p or any(s in ('..', '.') for s in p.split('/')):
+        die(f'refused: path {name!r}')
+    return p
+
+
+def is_parent(path):
+    return any(a == path or a.startswith(path + '/') for a in ROOTS + FILES)
+
+
+def members(tar):
+    total = 0
+    for m in tar:
+        path = clean(m.name)
+        root = root_of(path)
+        if root is None:
+            if m.isdir() and is_parent(path):
+                continue
+            die(f'refused: {path} is outside what a backup holds')
+        if not (m.isfile() or m.isdir() or m.issym()):
+            die(f'refused: {path} is not a file or folder')
+        if m.issym():
+            target = os.path.normpath(os.path.join(os.path.dirname(path), m.linkname))
+            if m.linkname.startswith('/') or not (target == root or target.startswith(root + '/')):
+                die(f'refused: link {path} leads out of its folder')
+        total += m.size
+        if total > MAX_CONFIG:
+            die('refused: config.tgz unpacks to too much')
+        yield m, path
+
+
+def check_env(data):
+    for line in data.decode('utf-8', 'replace').splitlines():
+        line = line.strip()
+        if line == '' or line.startswith('#'):
+            continue
+        key, sep, value = line.partition('=')
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
+            value = value[1:-1]
+        if ENV_SECRET_KEY.search(key):
+            allowed = ENV_SECRET_VALUE
+        elif ENV_NAME_KEY.search(key):
+            allowed = ENV_NAME_VALUE
+        else:
+            allowed = ENV_VALUE
+        if not sep or not ENV_KEY.match(key) or not allowed.match(value):
+            die(f'refused: environment file, line of {key[:40]!r}')
+
+
+def check_backup(folder, untrusted):
+    dump = os.path.join(folder, 'db.sql.gz')
+    size, tail = 0, b''
+    try:
+        with gzip.open(dump, 'rb') as f:
+            while True:
+                block = f.read(1024 * 1024)
+                if not block:
+                    break
+                size += len(block)
+                if size > MAX_DUMP:
+                    die('refused: the database dump is too large')
+                tail = (tail + block)[-4096:]
+    except (OSError, EOFError) as e:
+        die(f'refused: database dump: {e}')
+    if b'Dump completed' not in tail:
+        die('refused: the database dump is not complete')
+    try:
+        with tarfile.open(os.path.join(folder, 'config.tgz'), 'r:gz') as tar:
+            for m, path in members(tar):
+                if not untrusted or not m.isfile():
+                    continue
+                if path == 'etc/ai-pbx.env':
+                    check_env(tar.extractfile(m).read())
+                elif path.startswith('etc/asterisk/'):
+                    if EXEC_DIRECTIVE.search(tar.extractfile(m).read()):
+                        die(f'refused: file directive in {path}')
+    except (OSError, EOFError, tarfile.TarError) as e:
+        die(f'refused: config.tgz: {e}')
+
+
+def extract_config(folder, untrusted):
+    with tarfile.open(os.path.join(folder, 'config.tgz'), 'r:gz') as tar:
+        for m, path in members(tar):
+            if untrusted and path == 'etc/asterisk/asterisk.conf':
+                continue
+            root = root_of(path)
+            target = '/' + path
+            parent = os.path.realpath(os.path.dirname(target))
+            allowed = os.path.realpath(os.path.dirname('/' + root) if root in FILES else '/' + root)
+            if not (parent == allowed or parent.startswith(allowed + os.sep) or allowed.startswith(parent + os.sep)):
+                die(f'refused: {path} would land outside its folder')
+            m.name = path
+            tar.extract(m, '/', filter='tar')
+
+
+def check_archive(archive, out):
+    wanted = {'db.sql.gz', 'config.tgz', 'version'}
+    seen = set()
+    try:
+        tar = tarfile.open(archive, 'r:gz')
+    except (OSError, EOFError, tarfile.TarError):
+        die('refused: this is not a .tar.gz file')
+    with tar:
+        for m in tar:
+            parts = clean(m.name).split('/')
+            if len(parts) == 1 and m.isdir():
+                continue
+            if len(parts) != 2 or parts[1] not in wanted or not m.isfile() or parts[1] in seen:
+                die(f'refused: {m.name} does not belong in a backup')
+            seen.add(parts[1])
+            src = tar.extractfile(m)
+            with open(os.path.join(out, parts[1]), 'wb') as dst:
+                shutil.copyfileobj(src, dst)
+    if not {'db.sql.gz', 'config.tgz'} <= seen:
+        die('refused: this is not an AiPBX backup (db.sql.gz and config.tgz are missing)')
+
+
+cmd = sys.argv[1]
+if cmd == 'check-archive':
+    check_archive(sys.argv[2], sys.argv[3])
+elif cmd == 'check-backup':
+    check_backup(sys.argv[2], sys.argv[3] == '1')
+elif cmd == 'extract-config':
+    extract_config(sys.argv[2], sys.argv[3] == '1')
+PY
+}
+
+# ------------------------------------------------------------------ import
+if [[ "${1:-}" == "--import" ]]; then
+    FILE="${2:-}"
+    [[ -f "$FILE" && ! -L "$FILE" ]] || { echo "no such file" >&2; exit 64; }
+    mkdir -p "$DEST"
+    STAMP="$(date +%Y%m%d-%H%M)"; OUT_NAME="aipbx-$STAMP-upload"
+    # Two uploads in one minute must not replace each other.
+    for suffix in a b c d e f g h; do
+        [[ -e "$DEST/$OUT_NAME" ]] || break
+        OUT_NAME="aipbx-$STAMP-upload-$suffix"
+    done
+    [[ ! -e "$DEST/$OUT_NAME" ]] || { echo "try again in a minute" >&2; exit 1; }
+    WORK="$DEST/.$OUT_NAME.partial"
+    rm -rf "$WORK"; mkdir -p "$WORK"
+    if ! err="$(py check-archive "$FILE" "$WORK" 2>&1 && py check-backup "$WORK" 1 2>&1)"; then
+        why="$(printf '%s\n' "$err" | tail -n 1)"
+        log "Upload refused: $why"
+        echo "$why" >&2
+        rm -rf "$WORK"; exit 1
+    fi
+    if [[ -f "$WORK/version" ]] && ! grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' "$WORK/version"; then
+        rm -f "$WORK/version"
+    fi
+    date -Iseconds > "$WORK/uploaded"
+    mv "$WORK" "$DEST/$OUT_NAME"
+    log "Upload accepted: $OUT_NAME"
+    echo "$OUT_NAME"
+    exit 0
+fi
+
+# ------------------------------------------------------------------ restore
+DB_ONLY=false; ALLOW_CALLS=false
+NAME="${1:-}"; [[ $# -gt 0 ]] && shift
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --db-only) DB_ONLY=true ;;
+        --allow-calls) ALLOW_CALLS=true ;;
+        --token-hash) TOKEN_HASH="${2:-}"; shift ;;
+        *) echo "Unknown argument: $1" >&2; exit 64 ;;
+    esac
+    shift
+done
+[[ "$NAME" =~ $RE_NAME ]] || { echo "invalid backup name" >&2; exit 64; }
+[[ "$TOKEN_HASH" =~ ^[0-9a-f]{0,64}$ ]] || { echo "invalid token" >&2; exit 64; }
+DIR="$DEST/$NAME"
+
+fail() { log "FAILED: $1"; status failed "$1"; exit 1; }
+
+exec 9>/run/aipbx-restore.lock
+flock -n 9 || { echo "a restore is already running" >&2; exit 3; }
+
+status running "Checking the backup"
+log "===== Restore of $NAME started (database only: $DB_ONLY) ====="
+[[ -d "$DIR" && -f "$DIR/db.sql.gz" && -f "$DIR/config.tgz" ]] || fail "Backup not found: $NAME"
+
+UNTRUSTED=0; [[ -f "$DIR/uploaded" ]] && UNTRUSTED=1
+if ! err="$(py check-backup "$DIR" "$UNTRUSTED" 2>&1)"; then
+    fail "${err:-The backup did not pass its check}"
+fi
+
+CURRENT="$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION" 2>/dev/null || echo 0.0.0)"
+if [[ -f "$DIR/version" ]]; then
+    BACKUP_VERSION="$(tr -d '[:space:]' < "$DIR/version")"
+    if [[ "$(printf '%s\n%s\n' "$BACKUP_VERSION" "$CURRENT" | sort -V | tail -n 1)" != "$CURRENT" ]]; then
+        fail "This backup is from v$BACKUP_VERSION, newer than this system (v$CURRENT). Update first."
+    fi
+fi
+
+calls="$(asterisk -rx 'core show channels count' 2>/dev/null | sed -n 's/^\([0-9]\+\) active call.*/\1/p')"
+if [[ "${calls:-0}" -gt 0 && "$ALLOW_CALLS" != true ]]; then
+    fail "${calls} call(s) in progress. Try again when they have ended."
+fi
+
+status running "Saving the present state first"
+SAFETY_LOG="$(/usr/local/sbin/aipbx-backup --label before-restore 2>&1)" || fail "The safety backup failed: $SAFETY_LOG"
+SAFETY="$(ls -1dt "$DEST"/aipbx-*-before-restore 2>/dev/null | head -n 1)"
+[[ -n "$SAFETY" && -f "$SAFETY/db.sql.gz" ]] || fail "The safety backup was not found"
+log "Safety backup: $SAFETY"
+
+import_db() {  # folder
+    mysql -e "DROP DATABASE IF EXISTS \`$DB_NAME\`; CREATE DATABASE \`$DB_NAME\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci" 2>>"$LOG_FILE" || return 1
+    zcat "$1/db.sql.gz" | mysql --binary-mode --one-database "$DB_NAME" 2>>"$LOG_FILE" || return 1
+    [[ "$(mysql -N "$DB_NAME" -e 'SELECT COUNT(*) FROM sys_users' 2>>"$LOG_FILE")" =~ ^[1-9] ]]
+}
+
+reapply() {  # database settings, packages, permissions, generated files, services
+    bash "$INSTALL_DIR/install.sh" --upgrade </dev/null >>"$LOG_FILE" 2>&1 || return 1
+    (cd "$INSTALL_DIR/web" && runuser -u www-data -- php src/asterisk_sync.php) >>"$LOG_FILE" 2>&1 || true
+    if [[ "$ALLOW_CALLS" == true ]]; then
+        asterisk -rx 'core reload' >>"$LOG_FILE" 2>&1 || true
+    else
+        systemctl restart asterisk >>"$LOG_FILE" 2>&1 || return 1
+    fi
+}
+
+verify() {
+    local svc code domain
+    for wait_s in 3 8; do
+        sleep "$wait_s"
+        for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
+            systemctl is-active --quiet "$svc" || { log "$svc is not running"; return 1; }
+        done
+    done
+    domain="$(env_get PORTAL_DOMAIN)"; [[ -n "$domain" ]] || domain=127.0.0.1
+    code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "${domain}:443:127.0.0.1" "https://${domain}/login")"
+    [[ "$code" == 200 ]] || { log "Portal not responding (HTTP $code)"; return 1; }
+}
+
+go_back() {  # reason
+    log "!!! $1 — putting the safety backup back"
+    status running "$1. Putting the state from before the restore back"
+    if ! import_db "$SAFETY"; then
+        log "ERROR: the safety backup could not be restored. By hand: zcat $SAFETY/db.sql.gz | mysql --binary-mode"
+        status failed "Restoring failed and so did going back. By hand: zcat $SAFETY/db.sql.gz | mysql --binary-mode, then: bash $INSTALL_DIR/install.sh --upgrade"
+        exit 4
+    fi
+    py extract-config "$SAFETY" 0 2>>"$LOG_FILE" || log "WARNING: the configuration of the safety backup could not be restored"
+    reapply || log "WARNING: could not apply the settings again after going back"
+    log "===== Back to the state before the restore ($1) ====="
+    status failed "$1. The state from before the restore was put back."
+    exit 1
+}
+
+for svc in aipbx-webhook-worker aipbx-chat; do systemctl stop "$svc" 2>/dev/null; done
+
+status running "Restoring the database"
+import_db "$DIR" || go_back "The database could not be restored"
+log "Database restored"
+
+if [[ "$DB_ONLY" != true ]]; then
+    status running "Restoring the configuration"
+    if ! err="$(py extract-config "$DIR" "$UNTRUSTED" 2>&1)"; then
+        go_back "The configuration could not be restored: $err"
+    fi
+    log "Configuration restored"
+fi
+
+status running "Applying the settings and restarting services"
+reapply || go_back "The settings could not be applied"
+systemctl start aipbx-webhook-worker aipbx-chat 2>/dev/null
+
+status running "Verifying"
+verify || go_back "The system did not come back after the restore"
+
+log "===== Restore of $NAME finished ====="
+status done "Restored from $NAME. Safety backup: $(basename "$SAFETY")"
