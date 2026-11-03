@@ -25,8 +25,12 @@ function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action
         );
         $stmt->execute([$domain, $entity_type, (string)$entity_id, $entity_label, $action, $user_id, $username, $ip]);
     } catch (\Exception $e) {
-        // Failing to write the audit record must NEVER block the actual
-        // operation (saving/applying settings) — it is silently skipped.
+        // Failing to write the audit record must NEVER block the actual operation
+        // (saving/applying settings), but a security event must leave some trace.
+        error_log('AUDIT LOG WRITE FAILED: ' . json_encode([
+            'entity_type' => $entity_type, 'entity_id' => $entity_id, 'label' => $entity_label,
+            'action' => $action, 'user_id' => $user_id, 'error' => $e->getMessage(),
+        ], JSON_UNESCAPED_UNICODE));
     }
 }
 

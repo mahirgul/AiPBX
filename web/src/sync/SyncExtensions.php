@@ -287,6 +287,10 @@ function __syncAllExtensionsBody() {
         }
 
         $callerid = !empty($sip_map['callerid']) ? $sip_map['callerid'] : "\"{$name}\" <{$ext}>";
+        // The stored value may hold the name too: a quote inside it ends the name early.
+        if (preg_match('/^"(.*)"\s*<([^<>]*)>$/s', (string) $callerid, $cidParts)) {
+            $callerid = '"' . str_replace(['"', '\\'], '', $cidParts[1]) . '" <' . $cidParts[2] . '>';
+        }
         $transport = !empty($sip_map['transport']) ? $sip_map['transport'] : 'transport-wss';
         $max_contacts = !empty($sip_map['max_contacts']) ? $sip_map['max_contacts'] : '5';
 

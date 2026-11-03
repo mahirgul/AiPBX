@@ -91,10 +91,14 @@ func main() {
 	registerRoutes("/chat")
 
 	httpServer := &http.Server{
-		Addr:         "127.0.0.1:" + cfg.Port,
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:    "127.0.0.1:" + cfg.Port,
+		Handler: mux,
+		// A 25 MB file on a slow line takes minutes: the old 30 s cut it off. The
+		// header timeout is what stops a client that sends nothing.
+		ReadHeaderTimeout: 15 * time.Second,
+		ReadTimeout:       15 * time.Minute,
+		WriteTimeout:      15 * time.Minute,
+		IdleTimeout:       2 * time.Minute,
 	}
 
 	stop := make(chan os.Signal, 1)

@@ -747,8 +747,8 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 
 	// When the group picture changes, the new file must be the sender's own upload
 	// (sending the current picture back unchanged is allowed).
+	cur, _ := GetConversationByID(body.ConversationID)
 	if body.AvatarURL != "" {
-		cur, _ := GetConversationByID(body.ConversationID)
 		if cur == nil || cur.AvatarURL != body.AvatarURL {
 			if !validMediaURL(body.AvatarURL) || !attachmentOwnedBy(s.cfg.SecretKey, body.AvatarURL, user.Extension) {
 				writeJSONError(w, http.StatusBadRequest, "Invalid group image.")
@@ -761,6 +761,10 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 	if err != nil {
 		writeActionError(w, "Could not update the group", err)
 		return
+	}
+	// The old picture stays on disk for nobody once it is replaced.
+	if cur != nil && cur.AvatarURL != body.AvatarURL {
+		s.hub.removeUnusedAttachment(cur.AvatarURL)
 	}
 
 	conv, _ := GetConversationByID(body.ConversationID)

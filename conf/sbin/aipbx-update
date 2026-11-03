@@ -236,7 +236,18 @@ rollback() {
            && zcat "$BACKUP_DIR/asterisk-db.sql.gz" | mysql 2>>"$LOG_FILE"; then
             log "Database restored from backup"
         else
-            log "WARNING: database restore failed — by hand: zcat $BACKUP_DIR/asterisk-db.sql.gz | mysql"
+            # The dropped database is gone, so one more try. Then stop: carrying on
+            # would start the services on half a database, and the admin must see it.
+            log "WARNING: database restore failed, trying once more"
+            sleep 5
+            if mysql -e "DROP DATABASE IF EXISTS \`${DB_NAME}\`" 2>>"$LOG_FILE" \
+               && zcat "$BACKUP_DIR/asterisk-db.sql.gz" | mysql 2>>"$LOG_FILE"; then
+                log "Database restored from backup on the second try"
+            else
+                log "ERROR: database restore failed. Restore it by hand: zcat $BACKUP_DIR/asterisk-db.sql.gz | mysql, then run: bash $INSTALL_DIR/install.sh --upgrade"
+                status failed "Database restore failed: zcat $BACKUP_DIR/asterisk-db.sql.gz | mysql, then run: bash $INSTALL_DIR/install.sh --upgrade"
+                exit 4
+            fi
         fi
     else
         log "WARNING: backup looks incomplete, database left untouched: $BACKUP_DIR"
@@ -287,9 +298,12 @@ fi
 
 # ------------------------------------------------------------------ verification
 status running "Verifying"
-sleep 3
-for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
-    systemctl is-active --quiet "$svc" || rollback "$svc is not running"
+# Twice: a service that crashes on start looks active between two of its restarts.
+for wait_s in 3 8; do
+    sleep "$wait_s"
+    for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
+        systemctl is-active --quiet "$svc" || rollback "$svc is not running"
+    done
 done
 domain="$(grep -m1 '^PORTAL_DOMAIN=' /etc/ai-pbx.env 2>/dev/null | cut -d= -f2- | tr -d "\"'" || true)"
 domain="${domain#[\"\']}"; domain="${domain%[\"\']}"

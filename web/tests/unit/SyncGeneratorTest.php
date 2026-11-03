@@ -148,6 +148,19 @@ final class SyncGeneratorTest extends TestCase
         return (string) file_get_contents($p);
     }
 
+    public function testADoubleQuoteInTheNameDoesNotBreakTheCallerId(): void
+    {
+        $db = getDB();
+        try {
+            $db->exec("INSERT IGNORE INTO sys_roles (role_key, role_name, is_system) VALUES ('user', 'User', 0)");
+            $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, is_active, role) VALUES ('testextq', '', ?, '7009', ?, 1, 'sip', 1, 'user')")->execute(['Ali "Bey" Veli', 'S' . bin2hex(random_bytes(8))]);
+            syncAllExtensions();
+            $this->assertStringContainsString('callerid="Ali Bey Veli" <7009>', $this->endpointsConf());
+        } finally {
+            $db->prepare("DELETE FROM sys_users WHERE extension = '7009'")->execute();
+        }
+    }
+
     public function testExtensionAuthDigestOn(): void
     {
         $db = getDB();

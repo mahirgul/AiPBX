@@ -229,6 +229,20 @@ func removeAttachmentFiles(uploadDir, url string) {
 	}
 }
 
+// removeUnusedAttachment deletes the file behind url unless a message or a group
+// picture still uses it.
+func (h *Hub) removeUnusedAttachment(url string) {
+	if url == "" || attachmentStillUsed(url) {
+		return
+	}
+	if h.storage != nil {
+		// From the bucket too when S3 is in use.
+		h.storage.Remove(context.Background(), attachmentKeys(url))
+	} else {
+		removeAttachmentFiles(h.uploadDir, url)
+	}
+}
+
 // DeleteMessage is the one delete path behind POST /api/messages/delete and
 // the "delete_message" WebSocket action.
 func (h *Hub) DeleteMessage(user *User, msgID int64) (map[string]interface{}, *sendError) {
@@ -237,14 +251,7 @@ func (h *Hub) DeleteMessage(user *User, msgID int64) (map[string]interface{}, *s
 		return nil, e
 	}
 
-	if attachmentURL != "" && !attachmentStillUsed(attachmentURL) {
-		if h.storage != nil {
-			// From the bucket too when S3 is in use.
-			h.storage.Remove(context.Background(), attachmentKeys(attachmentURL))
-		} else {
-			removeAttachmentFiles(h.uploadDir, attachmentURL)
-		}
-	}
+	h.removeUnusedAttachment(attachmentURL)
 
 	data := map[string]interface{}{
 		"conversation_id": convID,

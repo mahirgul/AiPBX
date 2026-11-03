@@ -181,6 +181,11 @@ class PasskeyService
                     $allowedCredentials[] = $raw;
                 }
             }
+            // A name without passkeys gets a made-up credential, the same every time:
+            // an empty list would tell anyone which user names have passkeys.
+            if ($allowedCredentials === []) {
+                $allowedCredentials[] = hash_hmac('sha256', 'passkey-decoy:' . strtolower($username), (string) portalEnv('DB_PASS', ''), true);
+            }
         }
 
         // With empty $allowedCredentials it works in resident-key mode (the device lists the registered accounts)
