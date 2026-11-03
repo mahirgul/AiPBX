@@ -22,6 +22,10 @@ class FaxSettingsService {
         if (empty($dept)) {
             return ['success' => false, 'error' => t('srv_fax.err_dept')];
         }
+        $error = self::didExtensionError($did_extension);
+        if ($error !== null) {
+            return ['success' => false, 'error' => $error];
+        }
 
         try {
             $db = getDB();
@@ -29,14 +33,12 @@ class FaxSettingsService {
             if ($did_id > 0) {
                 $stmt = $db->prepare('UPDATE sys_did_mappings SET department_name = ?, notification_email = ?, did_extension = ?, assigned_user_id = ?, is_active = ? WHERE id = ?');
                 $stmt->execute([$dept, $email, $did_extension ?: null, $assigned_user_id, $is_active, $did_id]);
-                writeAuditLog(null, 'did_mapping', $did_id, "Fax unit: {$dept}", 'update', $uid);
                 markPendingSync('general_dialplan', 'did_mapping', $did_id, "Fax unit: {$dept}", 'update', $uid);
                 return ['success' => true, 'message' => sprintf(t('srv_fax.dept_updated'), $dept)];
             }
             $stmt = $db->prepare('INSERT INTO sys_did_mappings (department_name, notification_email, did_extension, assigned_user_id, is_active) VALUES (?, ?, ?, ?, ?)');
             $stmt->execute([$dept, $email, $did_extension ?: null, $assigned_user_id, $is_active]);
             $new_id = $db->lastInsertId();
-            writeAuditLog(null, 'did_mapping', $new_id, "Fax unit: {$dept}", 'create', $uid);
             markPendingSync('general_dialplan', 'did_mapping', $new_id, "Fax unit: {$dept}", 'create', $uid);
             return ['success' => true, 'message' => sprintf(t('srv_fax.dept_added'), $dept)];
         } catch (\PDOException $e) {
@@ -54,10 +56,32 @@ class FaxSettingsService {
         if ($did_id > 0) {
             $dept = DBHelper::fetchColumn("SELECT department_name FROM sys_did_mappings WHERE id = ?", [$did_id]);
             DBHelper::delete('sys_did_mappings', 'id', $did_id);
-            writeAuditLog(null, 'did_mapping', $did_id, "Fax unit: " . ($dept ?: $did_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             markPendingSync('general_dialplan', 'did_mapping', $did_id, "Fax unit: " . ($dept ?: $did_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             return ['success' => true, 'message' => t('srv_fax.dept_deleted')];
         }
         return ['success' => true, 'message' => ''];
+    }
+
+    /**
+     * A fax unit's number is dialled before the numbers of queues, IVRs and the like, so it
+     * must not take one of theirs. A fax user with the same number is normal: that is the
+     * unit's own mailbox.
+     */
+    public static function didExtensionError(string $number): ?string
+    {
+        if ($number === '') {
+            return null;
+        }
+        if (preg_match('/^\+?[0-9]{1,20}$/D', $number) !== 1) {
+            return t('fax.err_did_digits');
+        }
+        $u = getDB()->prepare("SELECT extension_type FROM sys_users WHERE extension = ? LIMIT 1");
+        $u->execute([$number]);
+        $type = $u->fetchColumn();
+        if ($type === 'fax') {
+            return null;
+        }
+        $owner = internalNumberOwner($number);
+        return $owner === null ? null : sprintf(t('internal_number.err_used_choose'), $number, $owner);
     }
 }

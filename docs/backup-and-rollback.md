@@ -119,7 +119,7 @@ A restore:
 
 The portal may ask you to sign in again afterwards: the users are now those in the backup. A backup restored on another server brings the settings of the old server, including its portal address (`PORTAL_DOMAIN`), so check them afterwards.
 
-**Uploaded backups are not trusted.** Only the files `aipbx-backup` writes are accepted. Links out of their folder, device files, `#exec` in `/etc/asterisk`, and values in the environment file that could break into a generated configuration are refused. `asterisk.conf` is not taken from an uploaded backup, and the database dump cannot run client commands.
+**Uploaded backups are not trusted.** Only the files `aipbx-backup` writes are accepted. The database dump runs as the migration user, which has rights on this one database only; a dump asking for more stops the restore, and the safety backup goes back. Links out of their folder, device files, `#exec` in `/etc/asterisk`, and values in the environment file that could break into a generated configuration are refused. `asterisk.conf` is not taken from an uploaded backup, and the database dump cannot run client commands.
 
 The page does not cover call recordings and faxes, which are not in the backup. From the command line: `sudo aipbx-restore NAME [--db-only] [--allow-calls]`. Progress is in `/var/log/aipbx/restore.log`.
 

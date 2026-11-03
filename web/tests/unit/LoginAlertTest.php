@@ -63,4 +63,22 @@ class LoginAlertTest extends TestCase
             setSystemSetting(LoginAlertService::SETTING, (string) $before);
         }
     }
+
+    public function testHistoryCountsBothNamesOfTheAccount(): void
+    {
+        $db = getDB();
+        $name = 'zz_alert_' . bin2hex(random_bytes(3));
+        $ext = '98' . random_int(1000, 9999);
+        try {
+            $st = $db->prepare("INSERT INTO sys_login_logs (ip_address, username, status) VALUES (?, ?, 'SUCCESS')");
+            $st->execute(['198.51.100.1', $name]);
+            $st->execute(['203.0.113.1', $ext]);
+            $found = LoginAlertService::earlierAddresses($name, $ext);
+            sort($found);
+            $this->assertSame(['198.51.100.1', '203.0.113.1'], $found);
+            $this->assertSame(['198.51.100.1'], LoginAlertService::earlierAddresses($name, ''));
+        } finally {
+            $db->prepare('DELETE FROM sys_login_logs WHERE username IN (?, ?)')->execute([$name, $ext]);
+        }
+    }
 }

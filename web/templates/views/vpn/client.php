@@ -4,6 +4,9 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $caps = $status['caps'];
 $tunnels = $status['tunnels'];
 ?>
+<?php if (!empty($status['unavailable'])): ?>
+<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?php echo t('vpn.err_unavailable'); ?></div>
+<?php endif; ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-plug u-primary"></i> <?php echo t('vpn.client_title'); ?></div>
@@ -105,7 +108,7 @@ $tunnels = $status['tunnels'];
             </div>
             <button type="submit" name="tunnel_save" value="1" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
             <a href="/vpn-client?log=<?php echo (int) $tunnel['id']; ?>#vpnLog" class="btn btn-secondary"><i class="fas fa-scroll"></i> <?php echo t('vpn.show_log'); ?></a>
-            <button type="submit" name="tunnel_delete" value="1" class="btn btn-danger" onclick="return confirm('<?php echo $h(t('vpn.confirm_delete_connection')); ?>');"><i class="fas fa-trash"></i> <?php echo t('common.delete'); ?></button>
+            <button type="submit" name="tunnel_delete" value="1" class="btn btn-danger" onclick="return confirm(<?php echo jsArg(t('vpn.confirm_delete_connection')); ?>);"><i class="fas fa-trash"></i> <?php echo t('common.delete'); ?></button>
         </form>
     </div>
 </div>

@@ -26,6 +26,7 @@ final class OidcAuthTest extends TestCase
 
     protected function tearDown(): void
     {
+        OidcAuthService::$jwksForTests = null;
         if (!empty($this->cleanUserIds)) {
             $in = implode(',', array_map('intval', $this->cleanUserIds));
             $this->db->exec("DELETE FROM sys_users WHERE id IN ({$in})");
@@ -268,11 +269,9 @@ final class OidcAuthTest extends TestCase
 
     public function testIdTokenNonceAndExpirationValidation(): void
     {
-        $header = base64_encode((string)json_encode(['alg' => 'none']));
-        $makeToken = static function (array $claims) use ($header): string {
-            $payload = str_replace(['+', '/', '='], ['-', '_', ''], base64_encode((string)json_encode($claims)));
-            return "{$header}.{$payload}.sig";
-        };
+        [$private, $jwk] = $this->rsaKey('k1');
+        OidcAuthService::$jwksForTests = [$jwk];
+        $makeToken = fn(array $claims): string => $this->signRsa($claims, $private, 'k1');
 
         // 1. Valid nonce & future exp succeeds
         $validJwt = $makeToken([
@@ -301,5 +300,90 @@ final class OidcAuthTest extends TestCase
         $expiredInfo = OidcAuthService::getUserInfo('dummy-access', $expiredJwt, 'nonce-abc-123');
         $this->assertNull($expiredInfo);
         $this->assertStringContainsString('expired', (string)OidcAuthService::getLastError());
+    }
+
+    private static function b64(string $raw): string
+    {
+        return rtrim(strtr(base64_encode($raw), '+/', '-_'), '=');
+    }
+
+    /** @return array{0: \OpenSSLAsymmetricKey, 1: array<string, string>} */
+    private function rsaKey(string $kid): array
+    {
+        $key = openssl_pkey_new(['private_key_bits' => 2048, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+        $d = openssl_pkey_get_details($key)['rsa'];
+        return [$key, ['kty' => 'RSA', 'kid' => $kid, 'use' => 'sig', 'n' => self::b64($d['n']), 'e' => self::b64($d['e'])]];
+    }
+
+    private function signRsa(array $claims, \OpenSSLAsymmetricKey $key, string $kid): string
+    {
+        $input = self::b64((string) json_encode(['alg' => 'RS256', 'kid' => $kid])) . '.' . self::b64((string) json_encode($claims));
+        openssl_sign($input, $sig, $key, 'sha256');
+        return $input . '.' . self::b64($sig);
+    }
+
+    public function testRsaSignatureIsCheckedAgainstTheNamedKey(): void
+    {
+        [$key, $jwk] = $this->rsaKey('k1');
+        [$other, $otherJwk] = $this->rsaKey('k2');
+        $jwt = $this->signRsa(['sub' => 'a'], $key, 'k1');
+
+        $this->assertTrue(OidcAuthService::verifyIdTokenSignature($jwt, [$otherJwk, $jwk]));
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($jwt, [$otherJwk]), 'key not published');
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($this->signRsa(['sub' => 'a'], $other, 'k1'), [$jwk]), 'signed by another key');
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($jwt, []), 'no keys');
+
+        [$h, , $s] = explode('.', $jwt);
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature("{$h}." . self::b64('{"sub":"admin"}') . ".{$s}", [$jwk]), 'changed claims');
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($jwt, [['use' => 'enc'] + $jwk]), 'encryption key');
+    }
+
+    public function testEcSignatureIsChecked(): void
+    {
+        foreach (['ES256' => ['prime256v1', 'P-256', 'sha256', 32], 'ES384' => ['secp384r1', 'P-384', 'sha384', 48]] as $alg => [$curve, $crv, $digest, $size]) {
+            $key = openssl_pkey_new(['private_key_type' => OPENSSL_KEYTYPE_EC, 'curve_name' => $curve]);
+            $d = openssl_pkey_get_details($key)['ec'];
+            $jwk = ['kty' => 'EC', 'crv' => $crv, 'kid' => 'e', 'x' => self::b64(str_pad($d['x'], $size, "\0", STR_PAD_LEFT)), 'y' => self::b64(str_pad($d['y'], $size, "\0", STR_PAD_LEFT))];
+            $input = self::b64((string) json_encode(['alg' => $alg, 'kid' => 'e'])) . '.' . self::b64('{"sub":"a"}');
+            openssl_sign($input, $der, $key, $digest);
+            // DER to the JWS form: r and s side by side.
+            $offset = 2 + (ord($der[1]) > 0x80 ? 1 : 0);
+            $rLen = ord($der[$offset + 1]);
+            $r = substr($der, $offset + 2, $rLen);
+            $s = substr($der, $offset + 2 + $rLen + 2);
+            $raw = str_pad(ltrim($r, "\0"), $size, "\0", STR_PAD_LEFT) . str_pad(ltrim($s, "\0"), $size, "\0", STR_PAD_LEFT);
+
+            $this->assertTrue(OidcAuthService::verifyIdTokenSignature($input . '.' . self::b64($raw), [$jwk]), $alg);
+            $raw[5] = chr(ord($raw[5]) ^ 1);
+            $this->assertFalse(OidcAuthService::verifyIdTokenSignature($input . '.' . self::b64($raw), [$jwk]), $alg . ' changed');
+        }
+    }
+
+    public function testOtherAlgorithmsAndConfusionAreRefused(): void
+    {
+        [$key, $jwk] = $this->rsaKey('k1');
+        $payload = self::b64('{"sub":"admin"}');
+        $none = self::b64('{"alg":"none"}') . ".{$payload}.";
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($none, [$jwk]));
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($none . 'sig', [$jwk], 'secret'));
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature('two.parts', [$jwk]));
+
+        $input = self::b64('{"alg":"HS256"}') . ".{$payload}";
+        $good = $input . '.' . self::b64(hash_hmac('sha256', $input, 'client-secret', true));
+        $this->assertTrue(OidcAuthService::verifyIdTokenSignature($good, [], 'client-secret'));
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($good, [$jwk], 'other'));
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($good, [$jwk], ''), 'no secret');
+
+        // The classic trick: HMAC with the public key as the secret.
+        $public = openssl_pkey_get_details($key)['key'];
+        $forged = $input . '.' . self::b64(hash_hmac('sha256', $input, $public, true));
+        $this->assertFalse(OidcAuthService::verifyIdTokenSignature($forged, [$jwk], 'client-secret'));
+    }
+
+    public function testAnUnsignedTokenStopsTheSignIn(): void
+    {
+        OidcAuthService::$jwksForTests = [];
+        $jwt = self::b64('{"alg":"none"}') . '.' . self::b64((string) json_encode(['sub' => 'a', 'exp' => time() + 600])) . '.x';
+        $this->assertNull(OidcAuthService::getUserInfo('dummy', $jwt, null));
     }
 }

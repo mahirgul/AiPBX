@@ -389,6 +389,146 @@ class OidcAuthService
         return preg_match($regex, rtrim($actual, '/')) === 1;
     }
 
+    /** The provider's signing keys, set by tests instead of a fetch. */
+    public static ?array $jwksForTests = null;
+
+    private static function idTokenSignatureValid(string $jwt): bool
+    {
+        $header = json_decode((string) self::base64UrlDecode(explode('.', $jwt)[0]), true);
+        $alg = is_array($header) ? (string) ($header['alg'] ?? '') : '';
+        $jwks = self::$jwksForTests ?? (str_starts_with($alg, 'HS') ? [] : self::fetchJwks());
+        return self::verifyIdTokenSignature($jwt, $jwks, self::getSetting('client_secret', ''));
+    }
+
+    /** @return list<array<string, mixed>> */
+    private static function fetchJwks(): array
+    {
+        $url = (string) ((self::getEndpoints() ?: [])['jwks_uri'] ?? '');
+        if ($url === '') {
+            return [];
+        }
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 8,
+            CURLOPT_CONNECTTIMEOUT => 4,
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_HTTPHEADER     => ['Accept: application/json'],
+            CURLOPT_USERAGENT      => 'AiPBX-OIDC-Client/1.0',
+        ]);
+        $body = curl_exec($ch);
+        $data = is_string($body) ? json_decode($body, true) : null;
+        return is_array($data) && is_array($data['keys'] ?? null) ? array_values($data['keys']) : [];
+    }
+
+    /**
+     * Checks the signature with the key the token names. "none" and any other algorithm are
+     * refused, and the HMAC ones work only with the client secret, never with a public key.
+     *
+     * @param list<mixed> $jwks
+     */
+    public static function verifyIdTokenSignature(string $jwt, array $jwks, string $clientSecret = ''): bool
+    {
+        $parts = explode('.', $jwt);
+        if (count($parts) !== 3) {
+            return false;
+        }
+        $header = json_decode((string) self::base64UrlDecode($parts[0]), true);
+        $signature = self::base64UrlDecode($parts[2]);
+        if (!is_array($header) || $signature === null || $signature === '') {
+            return false;
+        }
+        $alg = (string) ($header['alg'] ?? '');
+        $input = $parts[0] . '.' . $parts[1];
+
+        $hmac = ['HS256' => 'sha256', 'HS384' => 'sha384', 'HS512' => 'sha512'];
+        if (isset($hmac[$alg])) {
+            return $clientSecret !== '' && hash_equals(hash_hmac($hmac[$alg], $input, $clientSecret, true), $signature);
+        }
+        $digest = ['RS256' => 'sha256', 'RS384' => 'sha384', 'RS512' => 'sha512', 'ES256' => 'sha256', 'ES384' => 'sha384'];
+        if (!isset($digest[$alg])) {
+            return false;
+        }
+        if (str_starts_with($alg, 'ES')) {
+            $signature = self::ecSignatureToDer($signature, $alg === 'ES256' ? 32 : 48);
+            if ($signature === null) {
+                return false;
+            }
+        }
+        $kid = isset($header['kid']) ? (string) $header['kid'] : null;
+        foreach ($jwks as $jwk) {
+            if (!is_array($jwk) || ($kid !== null && (string) ($jwk['kid'] ?? '') !== $kid)
+                || ($jwk['use'] ?? 'sig') !== 'sig' || (isset($jwk['alg']) && $jwk['alg'] !== $alg)) {
+                continue;
+            }
+            $pem = self::jwkToPem($jwk, $alg);
+            if ($pem !== null && openssl_verify($input, $signature, $pem, $digest[$alg]) === 1) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static function base64UrlDecode(string $value): ?string
+    {
+        $raw = base64_decode(strtr($value, '-_', '+/'), true);
+        return $raw === false ? null : $raw;
+    }
+
+    /** @param array<string, mixed> $jwk */
+    private static function jwkToPem(array $jwk, string $alg): ?string
+    {
+        if (str_starts_with($alg, 'RS')) {
+            $n = self::base64UrlDecode((string) ($jwk['n'] ?? ''));
+            $e = self::base64UrlDecode((string) ($jwk['e'] ?? ''));
+            if (($jwk['kty'] ?? '') !== 'RSA' || !$n || !$e) {
+                return null;
+            }
+            $key = self::der(0x30, self::derInteger($n) . self::derInteger($e));
+            $der = self::der(0x30, hex2bin('300d06092a864886f70d0101010500') . self::der(0x03, "\0" . $key));
+        } else {
+            $size = $alg === 'ES256' ? 32 : 48;
+            $curve = $alg === 'ES256' ? 'P-256' : 'P-384';
+            $x = self::base64UrlDecode((string) ($jwk['x'] ?? ''));
+            $y = self::base64UrlDecode((string) ($jwk['y'] ?? ''));
+            if (($jwk['kty'] ?? '') !== 'EC' || ($jwk['crv'] ?? '') !== $curve
+                || $x === null || $y === null || strlen($x) !== $size || strlen($y) !== $size) {
+                return null;
+            }
+            $oid = $alg === 'ES256' ? '301306072a8648ce3d020106082a8648ce3d030107' : '301006072a8648ce3d020106052b81040022';
+            $der = self::der(0x30, hex2bin($oid) . self::der(0x03, "\0\x04" . $x . $y));
+        }
+        return "-----BEGIN PUBLIC KEY-----\n" . chunk_split(base64_encode($der), 64, "\n") . "-----END PUBLIC KEY-----\n";
+    }
+
+    /** A JWS keeps r and s side by side; OpenSSL wants them as DER. */
+    private static function ecSignatureToDer(string $signature, int $size): ?string
+    {
+        if (strlen($signature) !== $size * 2) {
+            return null;
+        }
+        return self::der(0x30, self::derInteger(substr($signature, 0, $size)) . self::derInteger(substr($signature, $size)));
+    }
+
+    private static function derInteger(string $bytes): string
+    {
+        $bytes = ltrim($bytes, "\0");
+        if ($bytes === '' || ord($bytes[0]) >= 0x80) {
+            $bytes = "\0" . $bytes;
+        }
+        return self::der(0x02, $bytes);
+    }
+
+    private static function der(int $tag, string $content): string
+    {
+        $length = strlen($content);
+        if ($length < 0x80) {
+            return chr($tag) . chr($length) . $content;
+        }
+        $bytes = ltrim(pack('N', $length), "\0");
+        return chr($tag) . chr(0x80 | strlen($bytes)) . $bytes . $content;
+    }
+
     /**
      * Parses payload claims from an unencrypted JWT (id_token).
      *
@@ -427,6 +567,10 @@ class OidcAuthService
 
         // 1. Parse claims from ID Token if available
         if (!empty($idToken)) {
+            if (!self::idTokenSignatureValid($idToken)) {
+                self::setLastError('OIDC ID Token signature could not be verified');
+                return null;
+            }
             $idClaims = self::parseJwtClaims($idToken);
             if (is_array($idClaims)) {
                 // Validate expiration (exp) with 120s clock skew tolerance

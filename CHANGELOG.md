@@ -8,6 +8,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 ## 1.60.19
 
 - **Mail on a sign-in from a new network.** When an account signs in from an internet network it has not used in the last 90 days, its owner gets a mail with the address, time and browser. It covers every way in: password, two-factor, single sign-on, passkey, QR and the mobile app. A stolen password that works looks like a normal sign-in to the lockouts and Fail2ban, so this is what tells the owner. On by default; Appearance → Sign-in alerts turns it off, and the text is on the Mail templates page.
+- **VPN delete buttons always ask first.** In French and Ukrainian the question never appeared and a click on the VPN Client page deleted the connection at once.
+- **A failing VPN helper no longer changes your settings.** It could take the VPN networks out of Asterisk's local networks, which broke calls over the VPN at the next Apply. Pages and the health check now say the helper did not answer, instead of showing the VPN as off.
+- **An uploaded backup's database no longer runs as MySQL root.** It runs as the migration user, which has rights on this one database only, so a prepared dump cannot create accounts, load plugins or write files.
+- **A fax unit cannot take the number of a queue, IVR or other internal number.** Dialling that number used to reach the fax instead. Sharing a number with its fax user stays normal. Numbers can hold only digits and an optional leading +.
+- **OIDC sign-in checks the signature of the ID token** against the provider's published keys (RS256/384/512, ES256/384, or HMAC with the client secret). A provider that signs in another way, such as PS256, is refused.
+- **Audit log:** backup and restore actions now name who did them, saving a fax unit no longer writes two rows, and password reset requests are recorded (the row did not fit before and was lost).
 
 ## 1.60.18
 
