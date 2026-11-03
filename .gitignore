@@ -74,7 +74,7 @@ db/asterisk_db_dump.sql
 *.key
 *.crt
 
-# aipbx.bid website (own git repo, deployed to 10.8.0.1)
+# aipbx.bid website (own git repo, deployed separately)
 /aipbx.bid/
 
 # === Uploads (Appearance → Branding) ===

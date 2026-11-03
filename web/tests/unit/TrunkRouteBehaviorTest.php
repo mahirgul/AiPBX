@@ -93,7 +93,7 @@ final class TrunkRouteBehaviorTest extends TestCase
     {
         $save = fn(string $nets) => NetworkSettingsService::saveServer(['csrf_token' => self::CSRF, 'pjsip_local_net' => $nets]);
 
-        $this->assertTrue($save('192.168.1.0/24,10.8.0.0/24')['success'] ?? false);
+        $this->assertTrue($save('192.168.1.0/24,10.77.0.0/24')['success'] ?? false);
         $this->assertTrue($save('10.0.0.0/8')['success'] ?? false);
 
         $keys = getDB()->query("SELECT keyword, data FROM pjsipsettings WHERE keyword LIKE 'localnet\\_%' OR keyword LIKE 'netmask\\_%'")

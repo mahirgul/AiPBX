@@ -46,8 +46,8 @@ register to the old address, the self-signed certificate names the wrong IP.
 The same from the command line, for a server whose portal cannot be reached any more:
 
 ```
-sudo aipbx-readdress 10.8.0.12 10.9.0.5          # shows what would change
-sudo aipbx-readdress 10.8.0.12 10.9.0.5 --yes    # applies it
+sudo aipbx-readdress 10.77.0.12 10.9.0.5          # shows what would change
+sudo aipbx-readdress 10.77.0.12 10.9.0.5 --yes    # applies it
 ```
 
 ## Where the address lives (for troubleshooting)

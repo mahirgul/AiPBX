@@ -231,7 +231,7 @@ class Values(unittest.TestCase):
 
 class Routes(unittest.TestCase):
     """The tunnel must not take the PBX's own networks or its default route."""
-    ROUTES = [(ipaddress.IPv4Network('10.42.3.0/24'), 'ens192'), (ipaddress.IPv4Network('10.8.0.0/24'), 'tun0')]
+    ROUTES = [(ipaddress.IPv4Network('10.42.3.0/24'), 'ens192'), (ipaddress.IPv4Network('10.77.0.0/24'), 'tun0')]
 
     def setUp(self):
         p = mock.patch.object(vpn, 'connected_networks', return_value=self.ROUTES)
@@ -247,7 +247,7 @@ class Routes(unittest.TestCase):
                 vpn.valid_routes(r, self.state())
 
     def test_network_in_use_refused(self):
-        for r in ('10.0.0.0/8', '10.42.3.0/24', '10.42.3.80/32', '10.8.0.0/16'):
+        for r in ('10.0.0.0/8', '10.42.3.0/24', '10.42.3.80/32', '10.77.0.0/16'):
             with self.subTest(r=r), self.assertRaises(vpn.Refused):
                 vpn.valid_routes(r, self.state())
 

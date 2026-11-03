@@ -9,18 +9,18 @@ require_once __DIR__ . '/../../src/services/NetworkSettingsService.php';
 final class NetworkSettingsTest extends TestCase
 {
     private const SETTINGS = [
-        'server_ip' => '10.8.0.12', 'pjsip_external_ip' => '212.147.231.58', 'pjsip_local_net' => '192.168.100.0/24,10.8.0.0/24',
-        'provision_sip_server' => '10.8.0.12', 'provision_sip_proxy' => '', 'provision_base_url' => 'https://10.8.0.12:8443',
-        'provision_syslog' => '10.8.0.12', 'provision_ntp' => 'pool.ntp.org', 'provision_allowed_networks' => "10.8.0.0/24",
+        'server_ip' => '10.77.0.12', 'pjsip_external_ip' => '203.0.113.7', 'pjsip_local_net' => '192.168.50.0/24,10.77.0.0/24',
+        'provision_sip_server' => '10.77.0.12', 'provision_sip_proxy' => '', 'provision_base_url' => 'https://10.77.0.12:8443',
+        'provision_syslog' => '10.77.0.12', 'provision_ntp' => 'pool.ntp.org', 'provision_allowed_networks' => "10.77.0.0/24",
     ];
 
     public function testReplaceHostOnlyReplacesTheWholeAddress(): void
     {
-        $this->assertSame('10.9.0.5', NetworkSettingsService::replaceHost('10.8.0.1', '10.8.0.1', '10.9.0.5'));
-        // 10.8.0.1 is a prefix of 10.8.0.12 and a suffix of 110.8.0.1: neither may change.
-        $this->assertSame('10.8.0.12', NetworkSettingsService::replaceHost('10.8.0.12', '10.8.0.1', '10.9.0.5'));
-        $this->assertSame('110.8.0.1', NetworkSettingsService::replaceHost('110.8.0.1', '10.8.0.1', '10.9.0.5'));
-        $this->assertSame('https://10.9.0.5:8443', NetworkSettingsService::replaceHost('https://10.8.0.1:8443', '10.8.0.1', '10.9.0.5'));
+        $this->assertSame('10.9.0.5', NetworkSettingsService::replaceHost('10.77.0.1', '10.77.0.1', '10.9.0.5'));
+        // 10.77.0.1 is a prefix of 10.77.0.12 and a suffix of 110.77.0.1: neither may change.
+        $this->assertSame('10.77.0.12', NetworkSettingsService::replaceHost('10.77.0.12', '10.77.0.1', '10.9.0.5'));
+        $this->assertSame('110.77.0.1', NetworkSettingsService::replaceHost('110.77.0.1', '10.77.0.1', '10.9.0.5'));
+        $this->assertSame('https://10.9.0.5:8443', NetworkSettingsService::replaceHost('https://10.77.0.1:8443', '10.77.0.1', '10.9.0.5'));
     }
 
     public function testServerFormValidation(): void
@@ -46,26 +46,26 @@ final class NetworkSettingsTest extends TestCase
 
     public function testStaleAddressesAfterAnIpChange(): void
     {
-        $files = ['coturn_relay' => '10.8.0.12', 'mdns' => ''];
-        $this->assertSame([], NetworkSettingsService::staleAddresses(['10.8.0.12', '192.168.100.173'], self::SETTINGS, $files));
+        $files = ['coturn_relay' => '10.77.0.12', 'mdns' => ''];
+        $this->assertSame([], NetworkSettingsService::staleAddresses(['10.77.0.12', '192.168.50.23'], self::SETTINGS, $files));
         $stale = NetworkSettingsService::staleAddresses(['10.9.0.5'], self::SETTINGS, $files);
         $this->assertSame(['server_ip', 'provision_sip_server', 'provision_base_url', 'provision_syslog', 'coturn_relay'], array_column($stale, 'where'));
-        $this->assertSame(['10.8.0.12'], array_values(array_unique(array_column($stale, 'value'))));
+        $this->assertSame(['10.77.0.12'], array_values(array_unique(array_column($stale, 'value'))));
         // A name instead of an address is not checked.
         $this->assertSame([], NetworkSettingsService::staleAddresses(['10.9.0.5'], ['provision_sip_server' => 'pbx.example.com'], []));
     }
 
     public function testReaddressPreview(): void
     {
-        $files = ['coturn_relay' => '10.8.0.12', 'mdns' => '10.8.0.12', 'cert_ips' => '10.8.0.12'];
-        $changes = NetworkSettingsService::readdressPreview('10.8.0.12', '172.20.1.7', self::SETTINGS, $files, 16);
+        $files = ['coturn_relay' => '10.77.0.12', 'mdns' => '10.77.0.12', 'cert_ips' => '10.77.0.12'];
+        $changes = NetworkSettingsService::readdressPreview('10.77.0.12', '172.20.1.7', self::SETTINGS, $files, 16);
         $by = array_column($changes, null, 'where');
         $this->assertSame('172.20.1.7', $by['server_ip']['to']);
         $this->assertSame('172.20.1.7', $by['provision_sip_server']['to']);
         $this->assertSame('https://172.20.1.7:8443', $by['provision_base_url']['to']);
         $this->assertSame('172.20.1.7', $by['provision_syslog']['to']);
         // The new address is in no local network: its network (interface prefix) is added.
-        $this->assertSame('192.168.100.0/24,10.8.0.0/24,172.20.0.0/16', $by['pjsip_local_net']['to']);
+        $this->assertSame('192.168.50.0/24,10.77.0.0/24,172.20.0.0/16', $by['pjsip_local_net']['to']);
         $this->assertArrayHasKey('provision_allowed_networks', $by, 'the old address was allowed, the new one is not');
         $this->assertArrayHasKey('coturn_relay', $by);
         $this->assertArrayHasKey('mdns', $by);
@@ -75,6 +75,6 @@ final class NetworkSettingsTest extends TestCase
         $this->assertArrayNotHasKey('provision_ntp', $by);
 
         $this->expectException(\Exception::class);
-        NetworkSettingsService::readdressPreview('10.8.0.12', '10.8.0.12', self::SETTINGS, $files);
+        NetworkSettingsService::readdressPreview('10.77.0.12', '10.77.0.12', self::SETTINGS, $files);
     }
 }
