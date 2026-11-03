@@ -22,6 +22,7 @@ class MailTemplateService
         'invite_new' => ['name', 'username', 'extension', 'email', 'brand', '*account_details', 'reset_link', '*reset_button', '*mobile_section'],
         'invite' => ['name', 'username', 'extension', 'email', 'brand', '*account_details', 'reset_link', '*reset_button', '*mobile_section'],
         'password_reset' => ['name', 'username', 'brand', 'reset_link', '*reset_button'],
+        'login_new_ip' => ['name', 'username', 'ip', 'date', 'browser', 'brand', 'portal_link'],
         'voicemail' => ['name', 'mailbox', 'caller', 'caller_name', 'caller_number', 'date', 'duration', '*ai_text', 'brand', 'portal_link'],
         'fax_received' => ['department', 'did', 'caller', 'pages', 'date', 'brand', 'portal_link'],
         'fax_sent' => ['destination', 'fax_id', 'pages', 'date', 'brand', 'portal_link'],
@@ -515,6 +516,11 @@ class MailTemplateService
                 'host' => gethostname() ?: 'pbx',
                 'request' => 'Towels', 'transcript' => 'could I get two more towels please', 'app' => 'Hotel reception',
             ];
+            if ($key === 'login_new_ip') {
+                $vars['portal_link'] = $link;
+                $vars['ip'] = '203.0.113.25';
+                $vars['browser'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0';
+            }
             if ($key === 'ai_request') {
                 $vars['portal_link'] = $link . '/ai-apps';
             }

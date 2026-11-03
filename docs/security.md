@@ -21,6 +21,12 @@ firewall-cmd --reload
 The web softphone and the mobile apps connect over 443 and are not affected. RTP (10000–20000/udp) must
 stay open for carrier audio, and UDPTL (4100–4999/udp) for T.38 fax. The **Firewall** page shows and removes these rules.
 
+**Sign-in alerts.** The lockouts and Fail2ban react to wrong passwords, so they cannot see a stolen
+password that works. For that, a user gets a mail when their account signs in from an internet network
+(same /24 or /64) it has not used in the last 90 days. An account's first sign-in and addresses on your own
+LAN or VPN send nothing. It needs the E-mail settings and an e-mail address on the user. Turn it off under
+**Appearance → Sign-in alerts**.
+
 **Sign-in check.** The sign-in and forgotten password pages ask a simple sum. Under **Appearance** you can
 use Cloudflare Turnstile instead (site key and secret key from your Cloudflare account). The keys are checked
 when you save. Turnstile loads a script from Cloudflare and sends the visitor's IP address to it, so the

@@ -419,6 +419,9 @@ function checkBruteForceLockout($ip, $username) {
 
 function logLoginAttempt($ip, $username, $status) {
     $db = getDB();
+    if ($status === 'SUCCESS') {
+        LoginAlertService::beforeSuccessfulLogin((string) $ip, (string) $username);
+    }
     $ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
     $stmt = $db->prepare("INSERT INTO sys_login_logs (ip_address, username, status, user_agent) VALUES (?, ?, ?, ?)");
     $stmt->execute([$ip, $username, $status, $ua]);

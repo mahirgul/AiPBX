@@ -23,6 +23,7 @@ class BrandSettingsController extends BaseController
             'reset_brand_settings' => fn() => BrandSettingsService::resetToDefaults($_POST),
             'save_sso_only' => fn() => SsoOnlyService::saveSettings($_POST),
             'save_login_captcha' => fn() => LoginCaptchaService::saveSettings($_POST),
+            'save_login_alert' => fn() => LoginAlertService::saveSettings($_POST),
         ]);
 
         $defaults = BrandSettingsService::defaults();
@@ -47,6 +48,7 @@ class BrandSettingsController extends BaseController
             'captcha_provider' => (string) getSystemSetting('login_captcha_provider', 'math'),
             'captcha_site_key' => LoginCaptchaService::siteKey(),
             'captcha_secret_set' => (string) getSystemSetting('login_turnstile_secret', '') !== '',
+            'login_alert_on' => LoginAlertService::enabled(),
         ], ['title' => $page_title] + $notices);
     }
 }

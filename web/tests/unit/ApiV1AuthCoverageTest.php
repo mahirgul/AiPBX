@@ -485,6 +485,12 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
             $this->markTestSkipped('Rate limit directory (' . $dir . ') is not writable by current process.');
         }
 
+        // The counter is per clock minute: the 11 requests must not straddle two of them.
+        $second = time() % 60;
+        if ($second >= 45) {
+            sleep(61 - $second);
+        }
+
         // ApiRequestContext enforces max(10, rate_limit), so minimum limit is 10 req/min
         $token = $this->createToken('zz_cov_rate_test', ['system:read'], '*', 10);
 
