@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Вхідні факси',
     'sidebar.item_fax_send' => 'Надіслати факс',
     'sidebar.item_fax_sent' => 'Вихідні факси',
+    'sidebar.item_fax_settings' => 'Факс-пристрої',
     'sidebar.group_cc' => 'Кол-центр',
     'sidebar.item_cc_board_unified' => 'Табло',
     'sidebar.item_cc_board_unified_tooltip' => 'Табло кол-центру і монітор черг у реальному часі',

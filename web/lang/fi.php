@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Saapuvat faksit',
     'sidebar.item_fax_send' => 'Lähetä faksi',
     'sidebar.item_fax_sent' => 'Lähtevät faksit',
+    'sidebar.item_fax_settings' => 'Faksiyksiköt',
     'sidebar.group_cc' => 'Contact center',
     'sidebar.item_cc_board_unified' => 'Seinätaulu',
     'sidebar.item_cc_board_unified_tooltip' => 'Contact centerin reaaliaikainen seinätaulu ja jonojen seuranta',

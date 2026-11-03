@@ -202,7 +202,7 @@ function updateDefaultPort(driver) {
 }
 
 function showNewDbForm() {
-    document.getElementById('dbFormTitle').innerHTML = '<i class="fas fa-plus"></i> ' + <?php echo jsArg(t('external_dbs.btn_new', 'New Connection')); ?>;
+    document.getElementById('dbFormTitle').innerHTML = '<i class="fas fa-plus"></i> ' + <?php echo jsValue(t('external_dbs.btn_new', 'New Connection')); ?>;
     document.getElementById('dbForm').reset();
     document.getElementById('db_id').value = '';
     document.getElementById('db_port').value = '3306';
@@ -214,7 +214,7 @@ function showNewDbForm() {
 }
 
 function editDb(c) {
-    document.getElementById('dbFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Connection')); ?> + ': ' + escapeHtml(c.name || '');
+    document.getElementById('dbFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsValue(t('common.edit', 'Edit Connection')); ?> + ': ' + escapeHtml(c.name || '');
     document.getElementById('db_id').value = c.id;
     document.getElementById('db_name').value = c.name || '';
     document.getElementById('db_driver').value = c.driver || 'mysql';
@@ -236,7 +236,7 @@ function testFormConnection() {
     feedback.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + __('js.external_dbs.testing');
 
     var data = new URLSearchParams();
-    data.append('csrf_token', <?php echo jsArg($csrf); ?>);
+    data.append('csrf_token', <?php echo jsValue($csrf); ?>);
     data.append('action', 'test_connection');
     data.append('id', document.getElementById('db_id').value);
     data.append('driver', document.getElementById('db_driver').value);
@@ -267,7 +267,7 @@ function testFormConnection() {
 
 function testSavedConnection(id) {
     var data = new URLSearchParams();
-    data.append('csrf_token', <?php echo jsArg($csrf); ?>);
+    data.append('csrf_token', <?php echo jsValue($csrf); ?>);
     data.append('action', 'test_connection');
     data.append('id', id);
 

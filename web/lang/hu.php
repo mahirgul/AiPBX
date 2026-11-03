@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Bejövő fax',
     'sidebar.item_fax_send' => 'Fax küldése',
     'sidebar.item_fax_sent' => 'Kimenő fax',
+    'sidebar.item_fax_settings' => 'Faxegységek',
     'sidebar.group_cc' => 'Ügyfélszolgálat',
     'sidebar.item_cc_board_unified' => 'Fali kijelző',
     'sidebar.item_cc_board_unified_tooltip' => 'Élő ügyfélszolgálati fali kijelző és várólista-figyelő',

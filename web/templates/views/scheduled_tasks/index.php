@@ -311,7 +311,7 @@ $csrf = getCSRFToken();
 
 <script>
 function showNewTaskForm() {
-    document.getElementById('taskFormTitle').innerHTML = '<i class="fas fa-plus"></i> ' + <?php echo jsArg(t('scheduled_tasks.btn_new', 'New Task')); ?>;
+    document.getElementById('taskFormTitle').innerHTML = '<i class="fas fa-plus"></i> ' + <?php echo jsValue(t('scheduled_tasks.btn_new', 'New Task')); ?>;
     document.getElementById('taskForm').reset();
     document.getElementById('task_id').value = '';
     document.getElementById('task_cron').value = '0 3 * * *';
@@ -324,7 +324,7 @@ function showNewTaskForm() {
 }
 
 function editTask(t) {
-    document.getElementById('taskFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsArg(t('common.edit', 'Edit Task')); ?> + ': ' + escapeHtml(t.name || '');
+    document.getElementById('taskFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsValue(t('common.edit', 'Edit Task')); ?> + ': ' + escapeHtml(t.name || '');
     document.getElementById('task_id').value = t.id;
     document.getElementById('task_name').value = t.name || '';
     document.getElementById('task_description').value = t.description || '';
@@ -343,7 +343,7 @@ function editTask(t) {
 
 function taskPost(action, taskId) {
     var data = new URLSearchParams();
-    data.append('csrf_token', <?php echo jsArg($csrf); ?>);
+    data.append('csrf_token', <?php echo jsValue($csrf); ?>);
     data.append('action', action);
     data.append('id', taskId);
     return fetch('/scheduled-tasks', {
@@ -421,7 +421,7 @@ function showHistory(taskId) {
     modal.style.display = 'flex';
 
     var data = new URLSearchParams();
-    data.append('csrf_token', <?php echo jsArg($csrf); ?>);
+    data.append('csrf_token', <?php echo jsValue($csrf); ?>);
     data.append('action', 'get_details');
     data.append('id', taskId);
 
@@ -438,7 +438,7 @@ function showHistory(taskId) {
         }
 
         var t = res.task;
-        document.getElementById('historyModalTitle').innerHTML = '<i class="fas fa-history"></i> ' + <?php echo jsArg(t('scheduled_tasks.btn_history')); ?> + ': ' + escapeHtml(t.name || '');
+        document.getElementById('historyModalTitle').innerHTML = '<i class="fas fa-history"></i> ' + <?php echo jsValue(t('scheduled_tasks.btn_history')); ?> + ': ' + escapeHtml(t.name || '');
 
         if (!t.runs || t.runs.length === 0) {
             runsBody.innerHTML = '<tr><td colspan="5" class="text-center u-muted">' + __('js.scheduled_tasks.no_runs') + '</td></tr>';

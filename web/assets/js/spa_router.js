@@ -435,6 +435,10 @@
                     newScript.setAttribute(attr.name, val);
                 });
                 newScript.setAttribute('data-page-script', 'true');
+                // A script made by createElement runs as soon as it arrives, in any order. A page
+                // whose script needs a library before it then broke on the first visit only: the
+                // fax editor never appeared, because fax_send.js ran before quill.js.
+                newScript.async = false;
 
                 // Scripts with src load ASYNCHRONOUSLY in the browser — a
                 // promise is added to wait for the load/error result (see the

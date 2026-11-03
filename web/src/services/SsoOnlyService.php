@@ -42,6 +42,16 @@ final class SsoOnlyService
         return self::provider() === 'oidc' ? '/auth/oidc' : '/auth/saml';
     }
 
+    /**
+     * Only a browser goes on to the provider. The health check, aipbx-update and monitoring
+     * ask for /login to see that the portal is up, and a redirect there looked like a
+     * failure: every update rolled back. Those get the page with its button, and 200.
+     */
+    public static function redirectsToProvider(string $accept): bool
+    {
+        return stripos($accept, 'text/html') !== false;
+    }
+
     public static function inRecovery(): bool
     {
         return (int) ($_SESSION['sso_recovery_until'] ?? 0) >= time();

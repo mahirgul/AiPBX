@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Fax primit',
     'sidebar.item_fax_send' => 'Trimitere fax',
     'sidebar.item_fax_sent' => 'Fax trimis',
+    'sidebar.item_fax_settings' => 'Unități fax',
     'sidebar.group_cc' => 'Call center',
     'sidebar.item_cc_board_unified' => 'Panou afișare',
     'sidebar.item_cc_board_unified_tooltip' => 'Panou live call center și monitorizare cozi',

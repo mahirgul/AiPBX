@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Daxil olan faks',
     'sidebar.item_fax_send' => 'Faks göndər',
     'sidebar.item_fax_sent' => 'Çıxan faks',
+    'sidebar.item_fax_settings' => 'Faks bölmələri',
     'sidebar.group_cc' => 'Çağrı mərkəzi',
     'sidebar.item_cc_board_unified' => 'Lövhə',
     'sidebar.item_cc_board_unified_tooltip' => 'Canlı çağrı mərkəzi lövhəsi və növbə monitoru',

@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Innkommende faks',
     'sidebar.item_fax_send' => 'Send faks',
     'sidebar.item_fax_sent' => 'Utgående faks',
+    'sidebar.item_fax_settings' => 'Faksenheter',
     'sidebar.group_cc' => 'Kundesenter',
     'sidebar.item_cc_board_unified' => 'Veggtavle',
     'sidebar.item_cc_board_unified_tooltip' => 'Sanntids veggtavle og køovervåking for kundesenteret',

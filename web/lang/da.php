@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Indgående fax',
     'sidebar.item_fax_send' => 'Send fax',
     'sidebar.item_fax_sent' => 'Udgående fax',
+    'sidebar.item_fax_settings' => 'Faxenheder',
     'sidebar.group_cc' => 'Callcenter',
     'sidebar.item_cc_board_unified' => 'Wallboard',
     'sidebar.item_cc_board_unified_tooltip' => 'Live callcenter-wallboard og køovervågning',

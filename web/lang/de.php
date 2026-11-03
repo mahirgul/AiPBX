@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Fax-Eingang',
     'sidebar.item_fax_send' => 'Fax senden',
     'sidebar.item_fax_sent' => 'Fax-Ausgang',
+    'sidebar.item_fax_settings' => 'Faxgeräte',
     'sidebar.group_cc' => 'Callcenter',
     'sidebar.item_cc_board_unified' => 'Wallboard',
     'sidebar.item_cc_board_unified_tooltip' => 'Live-Callcenter-Wallboard & Warteschlangen-Monitor',

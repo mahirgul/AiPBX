@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Fax recebido',
     'sidebar.item_fax_send' => 'Enviar fax',
     'sidebar.item_fax_sent' => 'Fax enviado',
+    'sidebar.item_fax_settings' => 'Unidades de fax',
     'sidebar.group_cc' => 'Call center',
     'sidebar.item_cc_board_unified' => 'Painel mural',
     'sidebar.item_cc_board_unified_tooltip' => 'Painel mural do call center e monitor de filas em tempo real',

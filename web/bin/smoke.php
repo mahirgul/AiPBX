@@ -165,6 +165,11 @@ function check_routes(?string $onlyRoute = null): void
             if (in_array($path, $REDIRECT_OK, true)) {
                 continue; // redirect is legitimate — no size/closing-tag check
             }
+            // With sign-in only through the identity provider there is no password to reset:
+            // this page goes to /login. Every update on such a system failed here.
+            if ($path === '/forgot-password' && ($d['bytes'] ?? 0) === 0) {
+                continue;
+            }
             if (($d['bytes'] ?? 0) < $MIN_BYTES) {
                 fail('routes', "$path [$lang]", 'output is suspiciously short: ' . ($d['bytes'] ?? 0) . ' bytes');
             }

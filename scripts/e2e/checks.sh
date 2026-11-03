@@ -176,8 +176,11 @@ if [[ "$(mysql -N asterisk -e "SELECT enabled FROM sys_plugins WHERE slug='ai-tt
     tts_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/ai-tts?tab=providers")"
     check "Cloud TTS page renders" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "save_provider" <<<"$1"' _ "$tts_page"
 else
-    plugins_page="$("${CURL[@]}" -c "$JAR" -b "$JAR" -w '\n%{http_code}' "$URL/plugins")"
-    check "plugins page renders and lists ai-tts" bash -c '[[ "$(tail -n 1 <<<"$1")" == 200 ]] && grep -q "ai-tts" <<<"$1"' _ "$plugins_page"
+    # In a file: this page is over 128 KB, the limit for one command argument on Linux.
+    plugins_page="$(mktemp)"
+    "${CURL[@]}" -c "$JAR" -b "$JAR" -o "$plugins_page" -w '%{http_code}' "$URL/plugins" > "$plugins_page.code"
+    check "plugins page renders and lists ai-tts" bash -c '[[ "$(cat "$1.code")" == 200 ]] && grep -q "ai-tts" "$1"' _ "$plugins_page"
+    rm -f "$plugins_page" "$plugins_page.code"
 fi
 
 # --- Security and maintenance --------------------------------------------------

@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Faksy przychodzące',
     'sidebar.item_fax_send' => 'Wyślij faks',
     'sidebar.item_fax_sent' => 'Faksy wychodzące',
+    'sidebar.item_fax_settings' => 'Jednostki faksowe',
     'sidebar.group_cc' => 'Call center',
     'sidebar.item_cc_board_unified' => 'Tablica',
     'sidebar.item_cc_board_unified_tooltip' => 'Tablica call center na żywo i monitor kolejek',

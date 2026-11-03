@@ -1794,6 +1794,7 @@ return [
     'sidebar.item_fax_inbox' => 'Příchozí fax',
     'sidebar.item_fax_send' => 'Odeslat fax',
     'sidebar.item_fax_sent' => 'Odchozí fax',
+    'sidebar.item_fax_settings' => 'Faxové jednotky',
     'sidebar.group_cc' => 'Call centrum',
     'sidebar.item_cc_board_unified' => 'Tabule',
     'sidebar.item_cc_board_unified_tooltip' => 'Živá tabule call centra a sledování front',

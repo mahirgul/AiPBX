@@ -7,6 +7,9 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.15
 
+- **Sign-in only through the identity provider: updates work again (update soon if you use this).** Every update rolled back, the health check reported a failure, and the page tests failed, because `/login` redirected and `/forgot-password` showed nothing. Now only a browser is sent on to the provider. The sign-in page of this mode also has its logo and layout now.
+- **Fax: the Write Text editor did not appear** on the first visit through the menu, so the box stayed empty. It was a script loading order problem, which is fixed for every page. The Send Fax page uses the full width, its toolbar follows the dark theme, and the button says Send Fax. **Fax Units** is in the Fax menu.
+- **Scheduled Tasks, External Databases, IVR data steps and Custom Dialplan:** their page scripts did not run at all, so their buttons did nothing. Text inside the script was escaped for HTML.
 - **New: Backup & Restore page** (Administration). List backups, make one now, download or upload one, and restore everything or only the database, also on another server. A backup of the present state is made first and put back if the restore fails. Uploaded backups are checked and cannot run anything on the server. See [Backups](docs/backup-and-rollback.md).
 - **A plugin zip may unpack to at most 200 MB.** The upload limit counted only the compressed size.
 - **`aipbx-update`:** if restoring the database fails during a rollback, it tries again and then stops with the command to run by hand, instead of starting the services on half a database. Services are now checked twice after an update, so one that keeps crashing is caught.
