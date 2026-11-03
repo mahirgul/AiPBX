@@ -87,7 +87,8 @@ jobs:
           sudo /usr/local/sbin/aipbx-priv netsvc apply mode=tftp tftp=1 net=10.0.0.0/8
           sleep 2
           systemctl is-active aipbx-dnsmasq
-          sudo ./install.sh --upgrade > /tmp/upgrade-tftp.log 2>&1 || { tail -40 /tmp/upgrade-tftp.log; exit 1; }
+          cd /opt/aipbx
+          sudo DEBIAN_FRONTEND=noninteractive bash install.sh --upgrade </dev/null > /tmp/upgrade-tftp.log 2>&1 || { tail -40 /tmp/upgrade-tftp.log; exit 1; }
           sudo /usr/local/sbin/aipbx-priv netsvc off
 
       - name: A real video meeting between two browsers
