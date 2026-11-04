@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.21
+
+- **The caller header can be seen and changed on each desk phone extension.** The extension form now has a *Send the caller in a header* box, on by default, as it has been for every desk phone since 1.60.16. It can be turned off for a phone that has trouble with this header.
+
 ## 1.60.20
 
 - **One time zone for the whole system.** PBX Settings → Language now sets the time zone of the server, the portal, call records and time conditions together. Every installation's portal used to be fixed to Europe/Istanbul while Asterisk followed the server's clock, so the two could differ by hours; the page warns when they do. A new installation starts on the server's zone. An update changes nothing by itself: a new zone moves working hours, so an administrator chooses. Changing it restarts the database, Asterisk and the portal. Thanks to @quietvw for reporting this.

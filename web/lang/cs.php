@@ -6055,4 +6055,6 @@ Váš telefon zazvoní.',
     'region.err_timezone' => 'Vyberte časové pásmo ze seznamu.',
     'region.err_tone' => 'Vyberte zemi ze seznamu.',
     'region.err_calls' => 'Probíhá %d hovorů. Změna časového pásma by je ukončila: zkuste to znovu později, nebo zaškrtněte políčko pro jejich ukončení.',
+    'extensions.field_send_pai' => 'Odesílat volajícího v hlavičce (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Ve výchozím stavu zapnuto. Některé stolní telefony, například NEC DT700 a DT800, bez ní zobrazují "asterisk" jako volajícího. Volající, který skrývá své číslo, zůstává skrytý. Vypněte pouze tehdy, pokud má telefon s touto hlavičkou problémy.',
 ];

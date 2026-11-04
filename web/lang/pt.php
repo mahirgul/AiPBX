@@ -6055,4 +6055,6 @@ O seu telefone vai tocar.',
     'region.err_timezone' => 'Escolha um fuso horário da lista.',
     'region.err_tone' => 'Escolha um país da lista.',
     'region.err_calls' => '%d chamada(s) em curso. Alterar o fuso horário iria terminá-las: tente novamente mais tarde ou marque a caixa para as terminar.',
+    'extensions.field_send_pai' => 'Enviar o chamador num cabeçalho (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Ativado por predefinição. Alguns telefones de secretária, como os NEC DT700 e DT800, mostram "asterisk" como chamador sem ele. Um chamador que oculta o seu número permanece oculto. Desative-o apenas se um telefone tiver problemas com este cabeçalho.',
 ];

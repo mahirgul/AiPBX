@@ -6055,4 +6055,6 @@ Votre téléphone va sonner.',
     'region.err_timezone' => 'Choisissez un fuseau horaire dans la liste.',
     'region.err_tone' => 'Choisissez un pays dans la liste.',
     'region.err_calls' => '%d appel(s) en cours. Changer de fuseau horaire les terminerait : réessayez plus tard ou cochez la case pour les terminer.',
+    'extensions.field_send_pai' => 'Envoyer l\'appelant dans un en-tête (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Activé par défaut. Certains téléphones de bureau, tels que les NEC DT700 et DT800, affichent « asterisk » comme appelant sans cet en-tête. Un appelant qui masque son numéro reste masqué. Désactivez-le uniquement si un téléphone rencontre des problèmes avec cet en-tête.',
 ];

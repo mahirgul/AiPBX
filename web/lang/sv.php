@@ -6055,4 +6055,6 @@ Din telefon kommer att ringa.',
     'region.err_timezone' => 'Välj en tidszon från listan.',
     'region.err_tone' => 'Välj ett land från listan.',
     'region.err_calls' => '%d pågående samtal. Att ändra tidszonen skulle avsluta dem: försök igen senare, eller markera rutan för att avsluta dem.',
+    'extensions.field_send_pai' => 'Skicka uppringaren i ett huvud (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Aktiverad som standard. Vissa bordstelefoner, till exempel NEC DT700 och DT800, visar "asterisk" som uppringare utan det. En uppringare som döljer sitt nummer förblir dold. Inaktivera det endast om en telefon har problem med detta huvud.',
 ];

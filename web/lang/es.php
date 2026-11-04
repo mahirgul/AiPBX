@@ -6055,4 +6055,6 @@ Su teléfono sonará.',
     'region.err_timezone' => 'Elija una zona horaria de la lista.',
     'region.err_tone' => 'Elija un país de la lista.',
     'region.err_calls' => '%d llamada(s) en curso. Cambiar la zona horaria las finalizaría: inténtelo de nuevo más tarde o marque la casilla para finalizarlas.',
+    'extensions.field_send_pai' => 'Enviar el llamante en una cabecera (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Activado por defecto. Algunos teléfonos de sobremesa, como los NEC DT700 y DT800, muestran "asterisk" como llamante sin ella. Un llamante que oculta su número permanece oculto. Desactívelo solo si un teléfono tiene problemas con esta cabecera.',
 ];

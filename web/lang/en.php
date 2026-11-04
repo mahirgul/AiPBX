@@ -626,6 +626,8 @@ return [
     'extensions.field_auth_digest' => 'SIP Authentication (Auth Digest)',
     'extensions.auth_digest_enabled' => 'Enabled (Encrypted Digest Auth - Default)',
     'extensions.auth_digest_disabled' => 'Disabled (No Password / IP / Header Matching)',
+    'extensions.field_send_pai' => 'Send the caller in a header (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'On by default. Some desk phones, such as NEC DT700 and DT800, show "asterisk" as the caller without it. A caller who hides their number stays hidden. Turn it off only if a phone has trouble with this header.',
     'extensions.auth_digest_help' => 'When disabled, the PBX does not challenge SIP requests (REGISTER/INVITE) with digest authentication; the device is directly identified by its From header.',
     'extensions.auth_digest_badge_on' => 'Digest',
     'extensions.auth_digest_badge_off' => 'No-Auth',

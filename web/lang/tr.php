@@ -6055,4 +6055,6 @@ Telefonunuz çaldırılacak.',
     'region.err_timezone' => 'Listeden bir saat dilimi seçin.',
     'region.err_tone' => 'Listeden bir ülke seçin.',
     'region.err_calls' => 'Süren %d görüşme var. Saat dilimini değiştirmek bunları sonlandırır: daha sonra tekrar deneyin veya sonlandırmak için kutuyu işaretleyin.',
+    'extensions.field_send_pai' => 'Arayanı bir başlıkta gönder (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Varsayılan olarak açıktır. NEC DT700 ve DT800 gibi bazı masa telefonları, bu olmadan arayanı "asterisk" olarak gösterir. Numarasını gizleyen arayan gizli kalır. Yalnızca bir telefon bu başlıkla sorun yaşıyorsa kapatın.',
 ];

@@ -6055,4 +6055,6 @@ Il suo telefono squillerà.',
     'region.err_timezone' => 'Scegli un fuso orario dall\'elenco.',
     'region.err_tone' => 'Scegli un paese dall\'elenco.',
     'region.err_calls' => '%d chiamata/e in corso. Modificare il fuso orario le interromperebbe: riprova più tardi o seleziona la casella per terminarle.',
+    'extensions.field_send_pai' => 'Invia il chiamante in un\'intestazione (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Attivo per impostazione predefinita. Alcuni telefoni da scrivania, come i modelli NEC DT700 e DT800, mostrano "asterisk" come chiamante senza di essa. Un chiamante che nasconde il proprio numero rimane nascosto. Lo disattivi solo se un telefono ha problemi con questa intestazione.',
 ];

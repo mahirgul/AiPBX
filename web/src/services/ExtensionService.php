@@ -22,6 +22,10 @@ class ExtensionService {
             // unable to call out at all.
             $outbound_group = max(1, min(99, intval($data['outbound_group'] ?? 1)));
             $sip_auth_digest = PBXHelper::boolFlag($data, 'sip_auth_digest', 1);
+            // A caller that does not send it, such as an import or the API, keeps what is there.
+            $sip_send_pai = array_key_exists('sip_send_pai', $data) || $user_id < 1
+                ? PBXHelper::boolFlag($data, 'sip_send_pai', 1)
+                : (int) DBHelper::fetchColumn('SELECT sip_send_pai FROM sys_users WHERE id = ?', [$user_id]);
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');
             $is_active = PBXHelper::boolFlag($data, 'is_active', 0);
@@ -113,6 +117,7 @@ class ExtensionService {
                     'extension' => $extension,
                     'sip_password' => $extension_type === 'sip' ? $sip_password : '',
                     'sip_auth_digest' => $sip_auth_digest,
+                    'sip_send_pai' => $sip_send_pai,
                     'extension_type' => $extension_type,
                     'outbound_group' => $outbound_group,
                     'permission_group_id' => $permission_group_id,
@@ -172,6 +177,7 @@ class ExtensionService {
                     'extension' => $extension,
                     'sip_password' => $extension_type === 'sip' ? $sip_password : '',
                     'sip_auth_digest' => $sip_auth_digest,
+                    'sip_send_pai' => $sip_send_pai,
                     'extension_type' => $extension_type,
                     'outbound_group' => $outbound_group,
                     'permission_group_id' => $permission_group_id,

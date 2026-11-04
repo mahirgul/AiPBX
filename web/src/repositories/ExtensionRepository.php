@@ -12,7 +12,7 @@ class ExtensionRepository extends BaseRepository
     public static function allWithExtension(): array
     {
         return static::db()->query(
-            "SELECT u.id, u.username, u.full_name, u.email, u.extension, u.sip_password, u.sip_auth_digest,
+            "SELECT u.id, u.username, u.full_name, u.email, u.extension, u.sip_password, u.sip_auth_digest, u.sip_send_pai,
                     u.extension_type, u.outbound_group, u.cid_internal, u.cid_external, u.is_active, u.role,
                     u.permission_group_id, u.boss_secretary_group_id, u.boss_secretary_role,
                     u.voicemail_enabled, u.voicemail_pin, u.voicemail_email, u.voicemail_email_notify, u.voicemail_attach_audio,

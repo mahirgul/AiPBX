@@ -184,6 +184,15 @@
                         </select>
                         <small class="u-hint u-fs-11"><?php echo t('extensions.auth_digest_help'); ?></small>
                     </div>
+
+                    <div class="form-group" id="sip_send_pai_group">
+                        <input type="hidden" name="sip_send_pai" value="0">
+                        <label class="u-check-label">
+                            <input type="checkbox" name="sip_send_pai" id="modal_sip_send_pai" value="1" class="u-accent" checked>
+                            <?php echo t('extensions.field_send_pai'); ?>
+                        </label>
+                        <small class="u-hint u-fs-11" style="display: block;"><?php echo t('extensions.send_pai_help'); ?></small>
+                    </div>
                 </div>
 
                 <div class="form-group">
