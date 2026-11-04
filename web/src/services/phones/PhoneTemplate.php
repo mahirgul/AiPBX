@@ -52,6 +52,18 @@ abstract class PhoneTemplate
         return $this->render($ctx);
     }
 
+    /** Can this vendor's file take "name = value" settings from the Phones page? */
+    public function supportsExtraSettings(): bool
+    {
+        return false;
+    }
+
+    /** @return array<string, string> the model's extra settings (PhoneModelSettingsService) */
+    protected static function extras(array $ctx): array
+    {
+        return $ctx['extra_settings'] ?? [];
+    }
+
     /** pjsip_notify.conf section that makes the phone fetch its configuration again. */
     abstract public function notifyResync(): string;
 

@@ -56,6 +56,7 @@ class PhoneController extends BaseController
             'delete_waiting' => fn() => PhoneProvisionService::deleteWaiting((int) ($_POST['waiting_id'] ?? 0), $csrf),
             'import_csv' => fn() => PhoneProvisionService::importCsvAction(self::uploadedCsv(), $csrf),
             'save_settings' => fn() => PhoneProvisionService::saveSettings($_POST),
+            'save_model_settings' => fn() => PhoneModelSettingsService::save($_POST),
             // The discovery switches are their own form (their own modal): they
             // are read by a different service and a different process.
             'save_discovery_settings' => fn() => PhoneDiscoveryService::saveSettingsAction($_POST, $csrf),
@@ -87,6 +88,8 @@ class PhoneController extends BaseController
             'waiting' => PhoneProvisionService::listWaiting(),
             'users' => PhoneProvisionService::assignableUsers(),
             'settings' => PhoneProvisionService::settings(),
+            'extraModels' => PhoneModelSettingsService::supportedModels(),
+            'extraTexts' => PhoneModelSettingsService::all(),
             // Phones the discovery engine (cron, every 5 minutes) found on the
             // network, plus the switches that decide what may happen to them.
             'discovered' => PhoneDiscoveryService::listDiscovered(),

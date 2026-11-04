@@ -108,7 +108,17 @@ final class YealinkTemplate extends PhoneTemplate
             }
         }
 
+        // Later lines win in a Yealink file.
+        foreach (self::extras($ctx) as $name => $value) {
+            $lines[] = $name . ' = ' . self::clean($value, 500);
+        }
+
         return implode("\n", $lines) . "\n";
+    }
+
+    public function supportsExtraSettings(): bool
+    {
+        return true;
     }
 
     /**
