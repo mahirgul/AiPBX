@@ -600,6 +600,7 @@ PACKAGES=(
   # Network -> VPN Server and VPN Client. Both stay unused until those pages start
   # them, in units of their own (aipbx-vpn@*).
   wireguard-tools
+  python3-yaml
   openvpn
 )
 
@@ -1461,6 +1462,23 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
 # VPN server and client connections; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-vpn" /usr/local/sbin/aipbx-vpn
+# The server's own address (Network settings); a change on trial goes back at a reboot.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-netcfg" /usr/local/sbin/aipbx-netcfg
+cat > /etc/systemd/system/aipbx-netcfg-boot.service << 'NETCFGUNIT'
+[Unit]
+Description=AiPBX: an address change not confirmed before a reboot goes back
+Before=network-online.target
+After=systemd-networkd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/aipbx-netcfg boot-check
+
+[Install]
+WantedBy=multi-user.target
+NETCFGUNIT
+systemctl daemon-reload
+systemctl enable aipbx-netcfg-boot.service >/dev/null 2>&1 || true
 # --- phone discovery engine (PBX -> Phones -> Discovered on the network):
 # looks at the DHCP lease file, the ARP table and dnsmasq's log (opt-in sweep)
 # and records what it found; the portal decides what happens to it. Installed on

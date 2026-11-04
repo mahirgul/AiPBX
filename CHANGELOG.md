@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.23
+
+- **See and set the server's own address.** Network settings now shows whether each network card is on DHCP or a static address, and can change it, with the gateway and DNS servers. A wrong address cuts a server off, so the change goes back by itself after 3 minutes unless you open the portal at the new address and confirm it. Only cards managed with netplan can be changed; others are shown.
+
 ## 1.60.22
 
 - **Model settings for desk phones.** The Phones page can add settings to the files of every phone of one model, one `name = value` per line, such as a dial plan for NEC phones. They are kept in the database, so updates keep them, and they win over what AiPBX writes. Available for NEC, Yealink, Grandstream and Poly.

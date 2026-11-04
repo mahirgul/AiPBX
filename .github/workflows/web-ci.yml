@@ -188,6 +188,6 @@ jobs:
       - name: Plugin checker unit tests
         run: python3 scripts/test_check_plugins.py
       - name: VPN helper tests
-        run: python3 scripts/test_aipbx_vpn.py
+        run: python3 scripts/test_aipbx_vpn.py && python3 scripts/test_aipbx_netcfg.py
       - name: Validate catalog plugins
         run: python3 scripts/check_plugins.py --no-php-lint
