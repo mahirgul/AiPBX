@@ -48,7 +48,7 @@ class NetworkConfigService
 
     public static function confirm(array $post): array
     {
-        $change = self::status()['change'] ?? [];
+        $change = self::status()['change'];
         $res = self::finish($post, 'confirm', t('netcfg.confirmed'));
         // What still holds the old address follows: phone files, settings, certificate, local name.
         $old = (string) ($change['old_ip'] ?? '');
