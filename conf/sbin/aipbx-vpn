@@ -729,12 +729,17 @@ def fw_port(state, port_spec):
         if not port_spec or not fw_running() or subprocess.run(['firewall-cmd', f'--query-port={port_spec}'], capture_output=True).returncode == 0:
             return
     if fw_running():
-        if before and re.match(r'^[0-9]{1,5}/(udp|tcp)$', before):
-            for extra in ([], ['--permanent']):
-                subprocess.run(['firewall-cmd', *extra, f'--remove-port={before}'], capture_output=True)
-        if port_spec:
-            for extra in ([], ['--permanent']):
-                subprocess.run(['firewall-cmd', *extra, f'--add-port={port_spec}'], capture_output=True)
+        # A card with its own firewall rules (Firewall page) has its own zone: the tunnel may
+        # arrive on it too.
+        out = subprocess.run(['firewall-cmd', '--get-zones'], capture_output=True, text=True).stdout
+        zones = [[]] + [[f'--zone={z}'] for z in out.split() if re.fullmatch(r'aipbx-card[0-9]+', z)]
+        for zone in zones:
+            if before and re.match(r'^[0-9]{1,5}/(udp|tcp)$', before):
+                for extra in ([], ['--permanent']):
+                    subprocess.run(['firewall-cmd', *extra, *zone, f'--remove-port={before}'], capture_output=True)
+            if port_spec:
+                for extra in ([], ['--permanent']):
+                    subprocess.run(['firewall-cmd', *extra, *zone, f'--add-port={port_spec}'], capture_output=True)
     write_private(path, (port_spec or '') + '\n')
 
 

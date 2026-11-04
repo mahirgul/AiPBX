@@ -38,7 +38,8 @@ if [[ "$PREV" != "$VER" && "$(printf '%s\n%s\n' "$PREV" "$VER" | sort -V | tail 
 fi
 
 NOTES="$(awk -v v="## $VER" '$0 == v {f=1; next} /^## / && f {exit} f' CHANGELOG.md | sed -e :a -e '/^\n*$/{$d;N;ba' -e '}')"
-python3 scripts/i18n.py check --strict >/dev/null || { echo "Translations are missing: python3 scripts/i18n.py check --strict" >&2; exit 1; }
+# Missing translations do not stop a release (they show in English); broken ones do.
+python3 scripts/i18n.py check >/dev/null || { echo "Language files have problems: python3 scripts/i18n.py check" >&2; exit 1; }
 [[ -n "${NOTES// }" ]] || { echo "CHANGELOG.md has no (or an empty) '## $VER' section" >&2; exit 1; }
 
 # Say in the notes whether updating to this release restarts Asterisk (the

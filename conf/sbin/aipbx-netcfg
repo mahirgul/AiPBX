@@ -2,19 +2,24 @@
 """aipbx-netcfg - shows and changes this server's own address (Network settings page).
 
   status                      JSON: address method per interface, whether it can be changed
-  apply iface=X mode=dhcp
-  apply iface=X mode=static address=A/P gateway=G dns=D1,D2
+  apply iface=X mode=dhcp default=1|0
+  apply iface=X mode=static address=A/P gateway=G dns=D1,D2 default=1|0 nets=N1/P,N2/P
   confirm                     keep the change
   revert                      go back now
 
 A wrong address cuts the server off, so a change goes back by itself unless it is confirmed
-in CONFIRM_SECONDS, from the new address. Only an interface netplan and systemd-networkd
-manage can be changed; on any other the page only shows it.
+in CONFIRM_SECONDS, from the new address. An interface NetworkManager holds is changed through
+its connection, one netplan and systemd-networkd manage through its netplan file; on any other
+this live with ip commands, and what owns it may write its own back.
+
+The server has one default gateway. A card with a router of its own that is not the default
+answers through that router whatever arrived on its address (a routing table of its own), and
+the networks listed for it go through that router.
 
 The work runs in its own systemd units: the portal's Apache sandbox keeps /etc read-only,
 and the network may go away under the request that asked for this.
 """
-import ipaddress, json, os, re, shutil, subprocess, sys, time
+import ipaddress, json, os, re, shutil, subprocess, sys, time, zlib
 
 NETPLAN = '/etc/netplan'
 STATE_DIR = '/var/lib/aipbx/netcfg'
@@ -25,6 +30,8 @@ SELF = '/usr/local/sbin/aipbx-netcfg'
 APPLY_UNIT = 'aipbx-netcfg-apply'
 REVERT_UNIT = 'aipbx-netcfg-revert'
 CONFIRM_SECONDS = 180
+VIRTUAL = ('veth', 'docker', 'lxd', 'incus', 'br-', 'virbr', 'tun', 'tap', 'wg', 'aipbx', 'p2p')
+COTURN_CONF = '/etc/turnserver.conf'
 
 
 class Refused(Exception):
@@ -50,20 +57,21 @@ def check_static(address, gateway, dns):
         iface = ipaddress.IPv4Interface(address)
     except ValueError:
         raise Refused('The address must look like 192.168.1.10/24.')
-    if '/' not in address or not 8 <= iface.network.prefixlen <= 30:
-        raise Refused('The address must have a prefix from /8 to /30.')
+    if '/' not in address:
+        raise Refused('The address needs a subnet mask.')
     ip = iface.ip
-    if ip in (iface.network.network_address, iface.network.broadcast_address) or ip.is_loopback or ip.is_multicast or ip.is_unspecified:
-        raise Refused('This address cannot be given to a server.')
-    try:
-        gw = ipaddress.IPv4Address(gateway)
-    except ValueError:
-        raise Refused('The gateway must be an IPv4 address.')
-    if gw not in iface.network or gw == ip:
-        raise Refused('The gateway must be another address in the same network.')
+    # An inner card has no gateway and no DNS of its own: both may stay empty.
+    gw = ''
+    if (gateway or '').strip():
+        try:
+            gw = ipaddress.IPv4Address(gateway.strip())
+        except ValueError:
+            raise Refused('The gateway must be an IPv4 address.')
+        if gw == ip:
+            raise Refused('The gateway cannot be the address of the card itself.')
     servers = [d.strip() for d in (dns or '').split(',') if d.strip()]
-    if not 1 <= len(servers) <= 3:
-        raise Refused('Give one to three DNS servers.')
+    if len(servers) > 3:
+        raise Refused('Give at most three DNS servers.')
     for d in servers:
         try:
             ipaddress.IPv4Address(d)
@@ -72,19 +80,99 @@ def check_static(address, gateway, dns):
     return str(iface), str(gw), servers
 
 
-def edit_config(cfg, iface, mode, address='', gateway='', dns=None):
+def check_nets(nets, gateway):
+    """The networks behind this card's router, as a list of a.b.c.d/p."""
+    out = []
+    for n in (x.strip() for x in (nets or '').split(',')):
+        if not n:
+            continue
+        try:
+            net = ipaddress.IPv4Network(n, strict=False)
+        except ValueError:
+            raise Refused('A network must look like 10.12.0.0/16.')
+        if net.prefixlen == 0:
+            raise Refused('0.0.0.0/0 is the default gateway, not a network.')
+        out.append(str(net))
+    if out and not gateway:
+        raise Refused('Networks go through a router: enter the gateway too.')
+    if len(out) > 20:
+        raise Refused('Give at most 20 networks.')
+    return out
+
+
+def table_of(iface):
+    """The routing table of a card's own router. The same name gives the same table."""
+    return 100 + zlib.crc32(iface.encode()) % 900
+
+
+def edit_config(cfg, iface, mode, address='', gateway='', dns=None, is_default=True, nets=None):
     """The netplan config with this interface's addressing replaced; other keys stay."""
     eth = cfg['network']['ethernets'][iface]
-    for key in ('addresses', 'gateway4', 'routes', 'nameservers', 'dhcp4', 'dhcp4-overrides'):
+    for key in ('addresses', 'gateway4', 'routes', 'routing-policy', 'nameservers', 'dhcp4', 'dhcp4-overrides'):
         eth.pop(key, None)
     if mode == 'dhcp':
         eth['dhcp4'] = True
+        if not is_default:
+            eth['dhcp4-overrides'] = {'use-routes': False}
     else:
         eth['dhcp4'] = False
         eth['addresses'] = [address]
-        eth['routes'] = [{'to': 'default', 'via': gateway}]
-        eth['nameservers'] = {'addresses': list(dns or [])}
+        routes = []
+        # A gateway outside the card's network (point to point) has to be marked.
+        on_link = {}
+        if gateway and ipaddress.IPv4Address(gateway) not in ipaddress.IPv4Interface(address).network:
+            on_link = {'on-link': True}
+        if gateway and is_default:
+            routes.append({'to': 'default', 'via': gateway, **on_link})
+        elif gateway:
+            routes.append({'to': 'default', 'via': gateway, 'table': table_of(iface), **on_link})
+            eth['routing-policy'] = [{'from': address.split('/')[0], 'table': table_of(iface)}]
+        routes += [{'to': n, 'via': gateway, **on_link} for n in (nets or [])]
+        if routes:
+            eth['routes'] = routes
+        if dns:
+            eth['nameservers'] = {'addresses': list(dns)}
     return cfg
+
+
+def demote_default(eth, iface):
+    """This card gives up the default gateway and keeps its router for what arrives on it."""
+    if eth.get('dhcp4') is True:
+        eth['dhcp4-overrides'] = {**(eth.get('dhcp4-overrides') or {}), 'use-routes': False}
+        return True
+    gateway = eth.pop('gateway4', None)
+    routes = eth.get('routes') or []
+    for r in routes:
+        if r.get('to') in ('default', '0.0.0.0/0') and 'table' not in r:
+            gateway = gateway or r.get('via')
+            r['table'] = table_of(iface)
+    if not gateway:
+        return False
+    if not any(r.get('table') == table_of(iface) for r in routes):
+        routes.append({'to': 'default', 'via': gateway, 'table': table_of(iface)})
+    eth['routes'] = routes
+    addresses = eth.get('addresses') or []
+    if addresses:
+        eth['routing-policy'] = [{'from': str(addresses[0]).split('/')[0], 'table': table_of(iface)}]
+    return True
+
+
+def nm_settings(mode, cidr='', gateway='', dns=None, is_default=True, nets=None, table=0):
+    """The NetworkManager properties of the same addressing, as nmcli arguments."""
+    if mode == 'dhcp':
+        return ['ipv4.method', 'auto', 'ipv4.addresses', '', 'ipv4.gateway', '', 'ipv4.routes', '',
+                'ipv4.routing-rules', '', 'ipv4.dns', '', 'ipv4.never-default', 'no' if is_default else 'yes']
+    routes = [f'{n} {gateway}' for n in (nets or [])]
+    rules = ''
+    if gateway and not is_default:
+        routes.append(f'0.0.0.0/0 {gateway} table={table}')
+        rules = f"priority {table} from {cidr.split('/')[0]}/32 table {table}"
+    return ['ipv4.method', 'manual', 'ipv4.addresses', cidr, 'ipv4.gateway', gateway if is_default else '',
+            'ipv4.routes', ', '.join(routes), 'ipv4.routing-rules', rules, 'ipv4.dns', ','.join(dns or []),
+            'ipv4.never-default', 'no' if is_default or not gateway else 'yes']
+
+
+NM_FIELDS = ('ipv4.method', 'ipv4.addresses', 'ipv4.gateway', 'ipv4.routes', 'ipv4.routing-rules', 'ipv4.dns', 'ipv4.never-default')
 
 
 def files_with(iface, directory=NETPLAN):
@@ -111,24 +199,36 @@ def ip_json(*args):
         return []
 
 
-def manageable(iface):
-    """(can it be changed here, why not)."""
-    if not shutil.which('netplan'):
-        return False, 'netplan'
-    if run(['systemctl', 'is-active', '--quiet', 'NetworkManager']).returncode == 0:
-        p = run(['nmcli', '-t', '-f', 'DEVICE,STATE', 'device'])
-        if re.search(r'^' + re.escape(iface) + r':connected', p.stdout, re.M):
-            return False, 'networkmanager'
-    p = run(['networkctl', 'list', '--no-legend', '--no-pager', iface])
-    if ' configured' not in p.stdout:
-        return False, 'not_networkd'
+def nm_state(iface):
+    """The state NetworkManager gives this device, '' when it is not running."""
+    if run(['systemctl', 'is-active', '--quiet', 'NetworkManager']).returncode != 0:
+        return ''
+    m = re.search(r'^' + re.escape(iface) + r':(.*)$', run(['nmcli', '-t', '-f', 'DEVICE,STATE', 'device']).stdout, re.M)
+    return m.group(1) if m else ''
+
+
+def uses_nm(iface):
+    return backend(iface) == 'nm'
+
+
+def backend(iface):
+    """How this interface is changed: 'nm', 'netplan', or 'live' (ip commands, for an interface
+    something else owns, such as Docker, LXD or a tunnel: that owner may write its own back)."""
+    state = nm_state(iface)
+    wireless = os.path.exists(f'/sys/class/net/{iface}/wireless')
+    if state == 'connected' or (state == 'disconnected' and not wireless):
+        return 'nm'
+    if state.startswith('connected') or iface.startswith(VIRTUAL) or wireless or not shutil.which('netplan'):
+        return 'live'
     try:
-        found = files_with(iface)
+        if files_with(iface):
+            return 'netplan'
     except Exception:
-        return False, 'not_readable'
-    if len(found) != 1:
-        return False, 'no_single_file'
-    return True, ''
+        return 'live'
+    if run(['systemctl', 'is-active', '--quiet', 'systemd-networkd']).returncode != 0:
+        return 'live'
+    kinds = [(l.get('linkinfo') or {}).get('info_kind', '') for l in ip_json('-d', 'link', 'show', iface)]
+    return 'netplan' if kinds and kinds[0] in ('', 'veth') else 'live'
 
 
 def load_state():
@@ -147,23 +247,36 @@ def save_state(state):
     os.replace(tmp, STATE)
 
 
+def link_dns(name):
+    if uses_nm(name):
+        out = run(['nmcli', '-g', 'IP4.DNS', 'device', 'show', name]).stdout
+    else:
+        out = run(['resolvectl', 'dns', name]).stdout if shutil.which('resolvectl') else ''
+    return re.findall(r'\b\d+\.\d+\.\d+\.\d+\b', out)
+
+
 def cmd_status(_args):
-    routes = ip_json('-4', 'route', 'show', 'default')
-    default_dev = routes[0].get('dev', '') if routes else ''
+    main = ip_json('-4', 'route', 'show')
+    default_dev = next((r.get('dev', '') for r in main if r.get('dst') == 'default'), '')
+    tables = ip_json('-4', 'route', 'show', 'table', 'all')
+    addrs = {l.get('ifname', ''): l.get('addr_info', []) for l in ip_json('-4', 'addr', 'show')}
     out = []
-    for link in ip_json('-4', 'addr', 'show'):
+    # From the links, not the addresses: a card without an address must be editable too.
+    for link in ip_json('link', 'show'):
         name = link.get('ifname', '')
-        if name == 'lo' or name.startswith(('aipbx', 'tun', 'wg', 'docker', 'veth', 'lxd', 'br-', 'virbr')):
+        if name == 'lo':
             continue
-        infos = [a for a in link.get('addr_info', []) if a.get('family') == 'inet']
-        can, why = manageable(name)
+        infos = [a for a in addrs.get(name, []) if a.get('family') == 'inet']
         out.append({
             'name': name,
             'addresses': [f"{a['local']}/{a['prefixlen']}" for a in infos],
             'method': 'dhcp' if any(a.get('dynamic') for a in infos) else 'static',
             'default_route': name == default_dev,
-            'can_change': can,
-            'why_not': why,
+            'is_default': name == default_dev,
+            'gateway': next((r.get('gateway', '') for r in tables if r.get('dst') == 'default' and r.get('dev') == name), ''),
+            'nets': [r['dst'] for r in main if r.get('dev') == name and r.get('gateway') and r.get('dst') != 'default' and r.get('protocol') == 'static'],
+            'dns': link_dns(name),
+            'backend': backend(name),
         })
     state = load_state()
     if state.get('state') == 'pending':
@@ -197,15 +310,132 @@ def cmd_apply(args):
         raise Refused('Choose an interface and dhcp or static.')
     if load_state().get('state') == 'pending':
         raise Refused('An address change is waiting to be confirmed.')
-    can, why = manageable(iface)
-    if not can:
-        raise Refused(f'This interface cannot be changed here ({why}).')
-    extra = []
+    is_default = a.get('default', '1') == '1'
+    extra = [f"default={'1' if is_default else '0'}"]
     if mode == 'static':
         cidr, gw, dns = check_static(a.get('address', ''), a.get('gateway', ''), a.get('dns', ''))
-        extra = [f'address={cidr}', f'gateway={gw}', 'dns=' + ','.join(dns)]
+        nets = check_nets(a.get('nets', ''), gw)
+        extra += [f'address={cidr}', f'gateway={gw}', 'dns=' + ','.join(dns), 'nets=' + ','.join(nets)]
     run(['systemctl', 'reset-failed', APPLY_UNIT, REVERT_UNIT])
     unit(APPLY_UNIT, 'do-apply', f'iface={iface}', f'mode={mode}', *extra)
+
+
+def nm_uuid(iface):
+    return run(['nmcli', '-g', 'GENERAL.CON-UUID', 'device', 'show', iface]).stdout.strip()
+
+
+def nm_read(uuid):
+    return {f: run(['nmcli', '--escape', 'no', '-g', f, 'connection', 'show', uuid]).stdout.strip() for f in NM_FIELDS}
+
+
+def nm_restore(backup):
+    for b in backup:
+        if b.get('created'):
+            run(['nmcli', 'connection', 'delete', b['uuid']])
+            continue
+        args = [x for kv in b['values'].items() for x in kv]
+        run(['nmcli', 'connection', 'modify', b['uuid'], *args])
+        run(['nmcli', '--wait', '20', 'connection', 'up', b['uuid']])
+
+
+def live_routes(iface):
+    return [r for r in ip_json('-4', 'route', 'show', 'dev', iface) if r.get('gateway')]
+
+
+def live_restore(b):
+    iface = b['iface']
+    run(['ip', '-4', 'addr', 'flush', 'dev', iface])
+    if b.get('rule'):
+        run(['ip', 'rule', 'del', 'from', b['rule'], 'table', str(table_of(iface))])
+    run(['ip', 'route', 'flush', 'table', str(table_of(iface))])
+    for cidr in b['addresses']:
+        run(['ip', 'addr', 'add', cidr, 'dev', iface])
+    for r in b['routes']:
+        run(['ip', 'route', 'replace', r['dst'], 'via', r['gateway'], 'dev', iface])
+
+
+def do_apply_live(a, iface, mode, is_default, old_ip):
+    before = [f"{x['local']}/{x['prefixlen']}" for link in ip_json('-4', 'addr', 'show', iface) for x in link.get('addr_info', [])]
+    cidr, gateway = a.get('address', ''), a.get('gateway', '')
+    ip = cidr.split('/')[0]
+    rule = ip if mode == 'static' and gateway and not is_default else ''
+    backup = {'iface': iface, 'addresses': before, 'routes': live_routes(iface), 'rule': rule}
+    save_state({'state': 'pending', 'iface': iface, 'mode': mode, 'address': cidr, 'live_backup': backup,
+                'old_ip': old_ip, 'new_ip': ip, 'deadline': time.time() + CONFIRM_SECONDS})
+    unit(REVERT_UNIT, 'do-revert', delay=CONFIRM_SECONDS)
+    if mode == 'dhcp':
+        if not shutil.which('dhclient'):
+            stop_timer()
+            save_state({'state': 'failed', 'error': f'{iface} is not managed by netplan or NetworkManager and this server has no DHCP client for it.'})
+            return
+        run(['ip', '-4', 'addr', 'flush', 'dev', iface])
+        run(['dhclient', '-1', iface])
+        return
+    run(['ip', '-4', 'addr', 'flush', 'dev', iface])
+    p = run(['ip', 'addr', 'add', cidr, 'dev', iface])
+    if p.returncode != 0:
+        stop_timer()
+        live_restore(backup)
+        save_state({'state': 'failed', 'error': (p.stderr or 'could not set the address').strip()[:300]})
+        return
+    run(['ip', 'link', 'set', iface, 'up'])
+    if gateway and is_default:
+        run(['ip', 'route', 'replace', 'default', 'via', gateway, 'dev', iface, 'onlink'])
+    elif gateway:
+        t = str(table_of(iface))
+        run(['ip', 'route', 'replace', 'default', 'via', gateway, 'dev', iface, 'onlink', 'table', t])
+        run(['ip', 'rule', 'add', 'from', ip, 'table', t])
+    for n in (x for x in a.get('nets', '').split(',') if x):
+        run(['ip', 'route', 'replace', n, 'via', gateway, 'dev', iface, 'onlink'])
+    dns = [d for d in a.get('dns', '').split(',') if d]
+    if dns and shutil.which('resolvectl'):
+        run(['resolvectl', 'dns', iface, *dns])
+
+
+def do_apply_nm(a, iface, mode, is_default, old_ip):
+    gateway = a.get('gateway', '')
+    dns = [d for d in a.get('dns', '').split(',') if d]
+    nets = [n for n in a.get('nets', '').split(',') if n]
+    backup, changes = [], []
+    uuid = nm_uuid(iface)
+    if uuid:
+        backup.append({'uuid': uuid, 'values': nm_read(uuid)})
+    else:
+        p = run(['nmcli', '-g', 'connection.uuid', 'connection', 'add', 'type', 'ethernet', 'ifname', iface, 'con-name', f'aipbx-{iface}'])
+        uuid = next(iter(re.findall(r'[0-9a-f-]{36}', p.stdout)), '')
+        if not uuid:
+            save_state({'state': 'failed', 'error': (p.stderr or 'could not create a connection').strip()[:300]})
+            return
+        backup.append({'uuid': uuid, 'created': True})
+    changes.append((uuid, nm_settings(mode, a.get('address', ''), gateway, dns, is_default, nets, table_of(iface))))
+    if is_default and (gateway or mode == 'dhcp'):
+        for r in ip_json('-4', 'route', 'show', 'default'):
+            other = r.get('dev', '')
+            other_uuid = nm_uuid(other) if other != iface and uses_nm(other) else ''
+            if not other_uuid or any(b['uuid'] == other_uuid for b in backup):
+                continue
+            values = nm_read(other_uuid)
+            backup.append({'uuid': other_uuid, 'values': values})
+            settings = ['ipv4.never-default', 'yes']
+            if values['ipv4.method'] == 'manual' and values['ipv4.gateway']:
+                first = values['ipv4.addresses'].split(',')[0].split('/')[0].strip()
+                t = table_of(other)
+                own = f"0.0.0.0/0 {values['ipv4.gateway']} table={t}"
+                routes = ', '.join(x for x in (values['ipv4.routes'], own) if x)
+                settings += ['ipv4.gateway', '', 'ipv4.routes', routes, 'ipv4.routing-rules', f'priority {t} from {first}/32 table {t}']
+            changes.append((other_uuid, settings))
+    save_state({'state': 'pending', 'iface': iface, 'mode': mode, 'address': a.get('address', ''), 'nm_backup': backup,
+                'old_ip': old_ip, 'new_ip': a.get('address', '').split('/')[0], 'deadline': time.time() + CONFIRM_SECONDS})
+    unit(REVERT_UNIT, 'do-revert', delay=CONFIRM_SECONDS)
+    for u, settings in changes:
+        p = run(['nmcli', 'connection', 'modify', u, *settings])
+        if p.returncode != 0:
+            stop_timer()
+            nm_restore(backup)
+            save_state({'state': 'failed', 'error': (p.stderr or 'NetworkManager refused the change').strip()[:300]})
+            return
+    for u, _settings in reversed(changes):
+        run(['nmcli', '--wait', '20', 'connection', 'up', u])
 
 
 def cmd_do_apply(args):
@@ -214,20 +444,50 @@ def cmd_do_apply(args):
     iface, mode = a['iface'], a['mode']
     before = [x for link in ip_json('-4', 'addr', 'show', iface) for x in link.get('addr_info', [])]
     old_ip = before[0]['local'] if before else ''
-    name = files_with(iface)[0]
-    path = os.path.join(NETPLAN, name)
+    is_default = a.get('default', '1') == '1'
+    how = backend(iface)
+    if how == 'nm':
+        do_apply_nm(a, iface, mode, is_default, old_ip)
+        return
+    if how == 'live':
+        do_apply_live(a, iface, mode, is_default, old_ip)
+        return
+    found = files_with(iface)
+    # netplan merges its files and the last one wins.
+    path = os.path.join(NETPLAN, found[-1] if found else f'60-aipbx-{iface}.yaml')
     shutil.rmtree(BACKUP, ignore_errors=True)
     os.makedirs(BACKUP, mode=0o700)
     for n in os.listdir(NETPLAN):
         if n.endswith('.yaml'):
             shutil.copy2(os.path.join(NETPLAN, n), os.path.join(BACKUP, n))
-    with open(path, encoding='utf-8') as f:
-        cfg = yaml.safe_load(f)
+    if found:
+        with open(path, encoding='utf-8') as f:
+            cfg = yaml.safe_load(f)
+    else:
+        cfg = {'network': {'version': 2, 'ethernets': {iface: {}}}}
     dns = [d for d in a.get('dns', '').split(',') if d]
-    edit_config(cfg, iface, mode, a.get('address', ''), a.get('gateway', ''), dns)
+    nets = [n for n in a.get('nets', '').split(',') if n]
+    edit_config(cfg, iface, mode, a.get('address', ''), a.get('gateway', ''), dns, is_default, nets)
     with open(path, 'w', encoding='utf-8') as f:
         yaml.safe_dump(cfg, f, default_flow_style=False, sort_keys=False)
     os.chmod(path, 0o600)
+    if is_default and (a.get('gateway') or mode == 'dhcp'):
+        # One default gateway: the card that had it keeps its router for its own traffic.
+        holder = next((r.get('dev', '') for r in ip_json('-4', 'route', 'show', 'default')), '')
+        for n in sorted(os.listdir(NETPLAN)):
+            if not n.endswith('.yaml'):
+                continue
+            other_path = os.path.join(NETPLAN, n)
+            with open(other_path, encoding='utf-8') as f:
+                other = yaml.safe_load(f) or {}
+            changed = False
+            for name, eth in ((other.get('network') or {}).get('ethernets') or {}).items():
+                # A DHCP card that does not hold it keeps what its server gives it.
+                if name != iface and isinstance(eth, dict) and (eth.get('dhcp4') is not True or name == holder) and demote_default(eth, name):
+                    changed = True
+            if changed:
+                with open(other_path, 'w', encoding='utf-8') as f:
+                    yaml.safe_dump(other, f, default_flow_style=False, sort_keys=False)
     if run(['netplan', 'generate']).returncode != 0:
         restore_backup()
         save_state({'state': 'failed', 'error': 'netplan refused the new configuration'})
@@ -260,6 +520,51 @@ def cmd_do_confirm(_args):
             f.write('network: {config: disabled}\n')
     shutil.rmtree(BACKUP, ignore_errors=True)
     save_state({'state': 'confirmed', 'old_ip': state.get('old_ip', ''), 'new_ip': state.get('new_ip', ''), 'at': time.time()})
+    if refresh_coturn():
+        # Nothing to wait for: the address of this server has just changed anyway.
+        run(['systemctl', 'try-restart', 'coturn'])
+
+
+def coturn_conf(text, ips, route_ip):
+    """coturn only serves the addresses it saw when it started, and may relay only to this
+    server's own: both follow the cards. A relay address still on the server stays."""
+    lines = text.split('\n')
+    relay = [l for l in lines if l.startswith('relay-ip=')]
+    out, placed = [], False
+    for line in lines:
+        if line.startswith('allowed-peer-ip='):
+            if not placed:
+                out += ['allowed-peer-ip=' + ip for ip in ips]
+                placed = True
+        elif line.startswith('relay-ip=') and line.split('=', 1)[1] not in ips and route_ip:
+            out.append('relay-ip=' + route_ip)
+        else:
+            out.append(line)
+    return '\n'.join(out) if relay or placed else text
+
+
+def refresh_coturn():
+    """Returns True when the addresses in coturn's configuration changed."""
+    try:
+        with open(COTURN_CONF, encoding='utf-8') as f:
+            text = f.read()
+    except OSError:
+        return False
+    ips = run(['hostname', '-I']).stdout.split()
+    route = re.search(r'\bsrc (\S+)', run(['ip', '-4', 'route', 'get', '1.1.1.1']).stdout or '')
+    if not ips:
+        return False
+    new = coturn_conf(text, ips, route.group(1) if route else (ips[0] if ips else ''))
+    if new == text:
+        return False
+    with open(COTURN_CONF, 'w', encoding='utf-8') as f:
+        f.write(new)
+    return True
+
+
+def cmd_coturn_addresses(_args):
+    # Runs before every coturn start (drop-in written by install.sh).
+    refresh_coturn()
 
 
 def cmd_revert(_args):
@@ -273,8 +578,13 @@ def cmd_do_revert(_args):
     state = load_state()
     if state.get('state') != 'pending':
         return
-    restore_backup()
-    run(['netplan', 'apply'])
+    if state.get('nm_backup'):
+        nm_restore(state['nm_backup'])
+    elif state.get('live_backup'):
+        live_restore(state['live_backup'])
+    else:
+        restore_backup()
+        run(['netplan', 'apply'])
     shutil.rmtree(BACKUP, ignore_errors=True)
     save_state({'state': 'reverted', 'old_ip': state.get('old_ip', ''), 'at': time.time()})
 
@@ -285,7 +595,7 @@ def cmd_boot_check(_args):
         cmd_do_revert([])
 
 
-COMMANDS = {'boot-check': cmd_boot_check, 'status': cmd_status, 'apply': cmd_apply, 'confirm': cmd_confirm, 'revert': cmd_revert,
+COMMANDS = {'boot-check': cmd_boot_check, 'coturn-addresses': cmd_coturn_addresses, 'status': cmd_status, 'apply': cmd_apply, 'confirm': cmd_confirm, 'revert': cmd_revert,
             'do-apply': cmd_do_apply, 'do-confirm': cmd_do_confirm, 'do-revert': cmd_do_revert}
 
 

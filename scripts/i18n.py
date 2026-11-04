@@ -57,7 +57,7 @@ def check(en, codes, strict=False):
     """Problems of web/lang/<code>.php against English; exit code 1 when any.
 
     A missing text shows the English one, so it is no problem for CI or a contribution in
-    progress. strict counts it as one: that is the check before a release.
+    progress. strict counts it as one.
     """
     en_map = dict(en)
     if not codes:
