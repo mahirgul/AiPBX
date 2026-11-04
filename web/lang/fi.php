@@ -6055,4 +6055,6 @@ Puhelimesi soi.',
     'region.err_timezone' => 'Valitse aikavyöhyke luettelosta.',
     'region.err_tone' => 'Valitse maa luettelosta.',
     'region.err_calls' => '%d käynnissä oleva(a) puhelu(a). Aikavyöhykkeen muuttaminen lopettaisi ne: yritä myöhemmin uudelleen tai valitse ruutu lopettaaksesi ne.',
+    'extensions.field_send_pai' => 'Lähetä soittaja otsakkeessa (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Oletuksena käytössä. Jotkin pöytäpuhelimet, kuten NEC DT700 ja DT800, näyttävät ilman sitä soittajana "asterisk". Soittaja, joka piilottaa numeronsa, pysyy piilossa. Poista se käytöstä vain, jos puhelimella on ongelmia tämän otsakkeen kanssa.',
 ];

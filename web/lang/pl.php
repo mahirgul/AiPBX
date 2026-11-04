@@ -6055,4 +6055,6 @@ Telefon zadzwoni.',
     'region.err_timezone' => 'Wybierz strefę czasową z listy.',
     'region.err_tone' => 'Wybierz kraj z listy.',
     'region.err_calls' => 'Trwa %d połączenie(-a). Zmiana strefy czasowej spowodowałaby ich przerwanie: spróbuj ponownie później lub zaznacz pole, aby je zakończyć.',
+    'extensions.field_send_pai' => 'Wysyłaj dzwoniącego w nagłówku (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Domyślnie włączone. Niektóre telefony biurkowe, takie jak NEC DT700 i DT800, bez tego wyświetlają "asterisk" jako dzwoniącego. Dzwoniący, który ukrywa swój numer, pozostaje ukryty. Wyłącz to tylko wtedy, gdy telefon ma problemy z tym nagłówkiem.',
 ];

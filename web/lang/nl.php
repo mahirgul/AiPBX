@@ -6055,4 +6055,6 @@ Je telefoon gaat over.',
     'region.err_timezone' => 'Kies een tijdzone uit de lijst.',
     'region.err_tone' => 'Kies een land uit de lijst.',
     'region.err_calls' => '%d lopende gesprek(ken). Het wijzigen van de tijdzone zou deze beëindigen: probeer het later opnieuw, of vink het vakje aan om ze te beëindigen.',
+    'extensions.field_send_pai' => 'De beller in een header meesturen (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Staat standaard aan. Sommige bureautelefoons, zoals de NEC DT700 en DT800, tonen zonder dit "asterisk" als beller. Een beller die zijn nummer verbergt, blijft verborgen. Schakel dit alleen uit als een telefoon problemen heeft met deze header.',
 ];

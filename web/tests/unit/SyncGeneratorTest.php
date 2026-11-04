@@ -148,6 +148,25 @@ final class SyncGeneratorTest extends TestCase
         return (string) file_get_contents($p);
     }
 
+    public function testTheCallerHeaderFollowsTheExtension(): void
+    {
+        $db = getDB();
+        try {
+            $db->exec("INSERT IGNORE INTO sys_roles (role_key, role_name, is_system) VALUES ('user', 'User', 0)");
+            $ins = $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, sip_auth_digest, extension_type, role, is_active, sip_send_pai) VALUES (?, 'x', ?, ?, 'secret123', 1, 'sip', 'user', 1, ?)");
+            $ins->execute(['pai_on', 'Pai On', '7011', 1]);
+            $ins->execute(['pai_off', 'Pai Off', '7012', 0]);
+            syncAllExtensions();
+            $conf = $this->endpointsConf();
+            $this->assertStringContainsString('send_pai=yes', $conf, 'the template');
+            $section = fn(string $ext): string => (string) preg_replace('/\n\[.*/s', '', substr($conf, (int) strpos($conf, "[{$ext}-sip](endpoint-sip)") + 1));
+            $this->assertStringNotContainsString('send_pai', $section('7011'));
+            $this->assertStringContainsString('send_pai=no', $section('7012'));
+        } finally {
+            $db->exec("DELETE FROM sys_users WHERE extension IN ('7011', '7012')");
+        }
+    }
+
     public function testADoubleQuoteInTheNameDoesNotBreakTheCallerId(): void
     {
         $db = getDB();

@@ -6055,4 +6055,6 @@ Ihr Telefon wird klingeln.',
     'region.err_timezone' => 'Wählen Sie eine Zeitzone aus der Liste.',
     'region.err_tone' => 'Wählen Sie ein Land aus der Liste.',
     'region.err_calls' => '%d laufende(s) Gespräch(e). Das Ändern der Zeitzone würde diese beenden: Versuchen Sie es später erneut, oder aktivieren Sie das Kontrollkästchen, um sie zu beenden.',
+    'extensions.field_send_pai' => 'Anrufer in einem Header senden (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Standardmäßig aktiviert. Einige Tischtelefone wie NEC DT700 und DT800 zeigen ohne ihn "asterisk" als Anrufer an. Ein Anrufer, der seine Nummer unterdrückt, bleibt verborgen. Deaktivieren Sie dies nur, wenn ein Telefon Probleme mit diesem Header hat.',
 ];

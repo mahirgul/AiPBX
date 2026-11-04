@@ -6055,4 +6055,6 @@ Telefonul dvs. va suna.',
     'region.err_timezone' => 'Alegeți un fus orar din listă.',
     'region.err_tone' => 'Alegeți o țară din listă.',
     'region.err_calls' => '%d apel(uri) în curs. Modificarea fusului orar le-ar încheia: încercați din nou mai târziu sau bifați caseta pentru a le încheia.',
+    'extensions.field_send_pai' => 'Trimitere apelant într-un antet (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Activat implicit. Unele telefoane de birou, cum ar fi NEC DT700 și DT800, afișează „asterisk” ca apelant fără acesta. Un apelant care își ascunde numărul rămâne ascuns. Dezactivați-l doar dacă un telefon are probleme cu acest antet.',
 ];

@@ -106,7 +106,7 @@ function __syncAllExtensionsBody() {
     // Fax users (extension_type='fax') never register over SIP (an incoming
     // fax lands directly in [from-trunk-fax], an outgoing fax is sent with a
     // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
-    $users = $db->query("SELECT id, extension, full_name, sip_password, sip_auth_digest, cid_internal, cid_external, pickup_group, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $db->query("SELECT id, extension, full_name, sip_password, sip_auth_digest, sip_send_pai, cid_internal, cid_external, pickup_group, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     // Two `sys_users` rows can share one extension — an imported account plus one
     // re-created by hand, say. The loop below writes a full endpoint/auth/identify
@@ -329,6 +329,10 @@ function __syncAllExtensionsBody() {
         $conf .= "aors={$ext}-sip,{$ext}\n";
         $conf .= "context={$sip_context}\n";
         $conf .= "callerid={$callerid}\n";
+        // On in the template; the extension's own setting can turn it off.
+        if (isset($u['sip_send_pai']) && (int) $u['sip_send_pai'] === 0) {
+            $conf .= "send_pai=no\n";
+        }
         $conf .= $set_vars;
         $conf .= "set_var=AIPBX_CLIENT_TYPE=desktop\n";
         $conf .= $pickup_lines;
@@ -345,7 +349,7 @@ function __syncAllExtensionsBody() {
         // Pass-through any extra custom PJSIP parameters stored in `sip` table.
         // WebRTC-specific keys (dtls/ice/avpf/direct_media) are NEVER written to
         // the standard SIP endpoint — desk phones are incompatible with them.
-        $ignore_keys = ['type', 'account', 'secret', 'context', 'callerid', 'transport', 'max_contacts', 'remove_existing', 'auth_digest'];
+        $ignore_keys = ['send_pai', 'type', 'account', 'secret', 'context', 'callerid', 'transport', 'max_contacts', 'remove_existing', 'auth_digest'];
         $sip_blocked = [
             'disallow', 'allow', 'rtp_symmetric', 'rewrite_contact', 'force_rport',
             'direct_media', 'ice_support', 'use_avpf', 'media_encryption',

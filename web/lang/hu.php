@@ -6055,4 +6055,6 @@ A telefonja csörögni fog.',
     'region.err_timezone' => 'Válasszon ki egy időzónát a listából.',
     'region.err_tone' => 'Válasszon ki egy országot a listából.',
     'region.err_calls' => '%d folyamatban lévő hívás van. Az időzóna módosítása megszakítaná őket: próbálja újra később, vagy jelölje be a négyzetet a megszakításukhoz.',
+    'extensions.field_send_pai' => 'Hívó küldése fejlécben (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Alapértelmezés szerint bekapcsolva. Egyes asztali telefonok, például a NEC DT700 és DT800, nélküle az "asterisk" szöveget jelenítik meg hívóként. A számát elrejtő hívó rejtve marad. Csak akkor kapcsolja ki, ha egy telefonnak problémája van ezzel a fejléccel.',
 ];

@@ -6055,4 +6055,6 @@ Telefonunuz çalacaq.',
     'region.err_timezone' => 'Siyahıdan saat qurşağı seçin.',
     'region.err_tone' => 'Siyahıdan ölkə seçin.',
     'region.err_calls' => '%d davam edən zəng var. Saat qurşağının dəyişdirilməsi onları bitirəcək: daha sonra yenidən cəhd edin və ya onları bitirmək üçün qutunu işarələyin.',
+    'extensions.field_send_pai' => 'Zəng edəni başlıqda göndər (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Standart olaraq aktivdir. Bəzi masaüstü telefonlar, məsələn, NEC DT700 və DT800, bu olmadan zəng edən kimi "asterisk" göstərir. Nömrəsini gizlədən zəng edən gizli qalır. Yalnız bir telefon bu başlıqla problem yaşadıqda söndürün.',
 ];

@@ -6055,4 +6055,6 @@ Telefonen din vil ringe.',
     'region.err_timezone' => 'Velg en tidssone fra listen.',
     'region.err_tone' => 'Velg et land fra listen.',
     'region.err_calls' => '%d pågående samtale(r). Å endre tidssonen vil avslutte dem: prøv igjen senere, eller kryss av i boksen for å avslutte dem.',
+    'extensions.field_send_pai' => 'Send innringeren i en header (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Slått på som standard. Noen bordtelefoner, som NEC DT700 og DT800, viser "asterisk" som innringer uten den. En innringer som skjuler nummeret sitt, forblir skjult. Slå det bare av hvis en telefon har problemer med denne headeren.',
 ];

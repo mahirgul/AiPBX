@@ -6055,4 +6055,6 @@ Vaš telefon će zazvoniti.',
     'region.err_timezone' => 'Izaberite vremensku zonu sa liste.',
     'region.err_tone' => 'Izaberite zemlju sa liste.',
     'region.err_calls' => '%d tekući(h) poziv(a). Promena vremenske zone bi ih prekinula: pokušajte ponovo kasnije ili označite polje da biste ih prekinuli.',
+    'extensions.field_send_pai' => 'Šalji pozivaoca u zaglavlju (P-Asserted-Identity)',
+    'extensions.send_pai_help' => 'Podrazumevano uključeno. Neki stoni telefoni, kao što su NEC DT700 i DT800, bez toga prikazuju "asterisk" kao pozivaoca. Pozivalac koji sakriva svoj broj ostaje sakriven. Isključite ovo samo ako telefon ima problema sa ovim zaglavljem.',
 ];

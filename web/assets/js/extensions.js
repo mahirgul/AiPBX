@@ -24,6 +24,8 @@ function toggleExtensionTypeFields() {
 
     const isFax = typeEl.value === 'fax';
     if (authGroup) authGroup.style.display = isFax ? 'none' : '';
+    const paiGroup = document.getElementById('sip_send_pai_group');
+    if (paiGroup) paiGroup.style.display = isFax ? 'none' : '';
 
     const vmGroup = document.getElementById('voicemail_settings_group');
     if (vmGroup) vmGroup.style.display = isFax ? 'none' : '';
@@ -52,6 +54,8 @@ function openCreateExtensionModal() {
     document.getElementById('modal_extension_type').value = 'sip';
     const authEl = document.getElementById('modal_sip_auth_digest');
     if (authEl) authEl.value = '1';
+    const paiEl = document.getElementById('modal_sip_send_pai');
+    if (paiEl) paiEl.checked = true;
     const obEl = document.getElementById('modal_outbound_group');
     if (obEl) obEl.value = '1';
     document.getElementById('modal_cid_internal').value = '';
@@ -105,6 +109,8 @@ function openEditExtensionModal(item) {
     if (authEl) {
         authEl.value = (item.sip_auth_digest !== undefined && parseInt(item.sip_auth_digest, 10) === 0) ? '0' : '1';
     }
+    const paiEl = document.getElementById('modal_sip_send_pai');
+    if (paiEl) paiEl.checked = !(item.sip_send_pai !== undefined && parseInt(item.sip_send_pai, 10) === 0);
     const obEl = document.getElementById('modal_outbound_group');
     if (obEl) obEl.value = item.outbound_group || 1;
     document.getElementById('modal_cid_internal').value = item.cid_internal || '';
