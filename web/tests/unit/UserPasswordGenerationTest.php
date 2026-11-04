@@ -85,4 +85,27 @@ final class UserPasswordGenerationTest extends TestCase
         $this->assertTrue(password_verify($secret, $u['password_hash']));
         $this->assertSame(0, (int) $u['must_reset_password']);
     }
+
+    public function testOnlyTheUsernameAndOnTheUsersPageTheExtensionAreRequired(): void
+    {
+        $name = 'zz_min_' . bin2hex(random_bytes(3));
+        $ext = '97' . random_int(100, 999);
+        $base = ['csrf_token' => getCSRFToken(), 'user_id' => 0, 'role' => 'user'];
+        $db = getDB();
+        try {
+            $this->assertFalse(UserService::saveUser($base + ['username' => '', 'extension' => $ext])['success']);
+            $this->assertFalse(UserService::saveUser($base + ['username' => $name, 'require_extension' => 1])['success'], 'the page needs one');
+            $this->assertSame('0', (string) $db->query("SELECT COUNT(*) FROM sys_users WHERE username = '{$name}'")->fetchColumn());
+
+            $res = UserService::saveUser($base + ['username' => $name, 'extension' => $ext, 'require_extension' => 1]);
+            $this->assertTrue($res['success'], (string) ($res['error'] ?? ''));
+            $this->assertNotSame('', (string) ($res['generated_password'] ?? ''), 'shown once');
+            $row = $db->query("SELECT full_name, must_reset_password FROM sys_users WHERE username = '{$name}'")->fetch(PDO::FETCH_ASSOC);
+            $this->assertSame($name, $row['full_name']);
+            $this->assertSame(1, (int) $row['must_reset_password']);
+        } finally {
+            $db->prepare('DELETE FROM sys_users WHERE username = ?')->execute([$name]);
+            $db->prepare('DELETE FROM sip WHERE id = ?')->execute([$ext]);
+        }
+    }
 }

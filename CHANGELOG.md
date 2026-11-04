@@ -7,6 +7,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.23
 
+- **Adding a user takes two fields.** Only the username and extension are required, and they are now one under the other at the top of the form. An empty password is generated, as an invitation or a one-time password shown to you, and an empty full name becomes the username.
+
 - **See and set the server's own address.** Network settings now shows whether each network card is on DHCP or a static address, and can change it, with the gateway and DNS servers. A wrong address cuts a server off, so the change goes back by itself after 3 minutes unless you open the portal at the new address and confirm it. Only cards managed with netplan can be changed; others are shown.
 
 ## 1.60.22
