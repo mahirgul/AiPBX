@@ -910,6 +910,10 @@ if is_upgrade; then
     fi
     ok "Environment file kept (missing keys added)"
 else
+# The portal starts on the server's own zone, so both agree; PBX Settings changes both.
+SERVER_TIMEZONE="$(timedatectl show -p Timezone --value 2>/dev/null || true)"
+[[ "$SERVER_TIMEZONE" =~ ^[A-Za-z0-9_+/-]+$ ]] || SERVER_TIMEZONE="$(cat /etc/timezone 2>/dev/null || true)"
+[[ "$SERVER_TIMEZONE" =~ ^[A-Za-z0-9_+/-]+$ ]] || SERVER_TIMEZONE=UTC
 cat > /etc/ai-pbx.env << ENVFILE
 # AI PBX - Environment Configuration
 # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
@@ -929,7 +933,7 @@ MIGRATOR_DB_PASS=${MIGRATOR_PASS}
 # --- Site identity ---
 SITE_NAME=AI PBX Portal
 PORTAL_DOMAIN=${PORTAL_DOMAIN}
-TIMEZONE=Europe/Istanbul
+TIMEZONE=${SERVER_TIMEZONE}
 
 # --- Asterisk AMI (Manager Interface) ---
 AMI_HOST=127.0.0.1

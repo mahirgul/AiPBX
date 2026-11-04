@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.20
+
+- **One time zone for the whole system.** PBX Settings → Language now sets the time zone of the server, the portal, call records and time conditions together. Every installation's portal used to be fixed to Europe/Istanbul while Asterisk followed the server's clock, so the two could differ by hours; the page warns when they do. A new installation starts on the server's zone. An update changes nothing by itself: a new zone moves working hours, so an administrator chooses. Changing it restarts the database, Asterisk and the portal. Thanks to @quietvw for reporting this.
+- **Ring and busy tones by country.** The same page sets them, without disturbing calls. Every installation was using the United States tones. Turkey is added to Asterisk's list.
+
 ## 1.60.19
 
 - **Mail on a sign-in from a new network.** When an account signs in from an internet network it has not used in the last 90 days, its owner gets a mail with the address, time and browser. It covers every way in: password, two-factor, single sign-on, passkey, QR and the mobile app. A stolen password that works looks like a normal sign-in to the lockouts and Fail2ban, so this is what tells the owner. On by default; Appearance → Sign-in alerts turns it off, and the text is on the Mail templates page.

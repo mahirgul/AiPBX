@@ -434,6 +434,44 @@
             <small class="u-hint"><?php echo t('asterisk_settings.lang_packs_help'); ?></small>
         </div>
     </div>
+
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-globe u-primary"></i> <?php echo t('region.title'); ?></div>
+        </div>
+        <div class="module-help-box">
+            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+            <?php echo t('region.help'); ?>
+        </div>
+        <?php if ($system_timezone !== $portal_timezone): ?>
+            <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> <?php echo sprintf(t('region.mismatch'), htmlspecialchars($system_timezone), htmlspecialchars($portal_timezone)); ?></div>
+        <?php endif; ?>
+        <div class="form-group" style="max-width: 320px;">
+            <label class="form-label"><?php echo t('region.timezone'); ?></label>
+            <select name="system_timezone" form="region-form" class="form-control">
+                <?php foreach (DateTimeZone::listIdentifiers() as $zone): ?>
+                    <option value="<?php echo htmlspecialchars($zone); ?>" <?php echo $zone === $system_timezone ? 'selected' : ''; ?>><?php echo htmlspecialchars($zone); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group" style="max-width: 320px;">
+            <label class="form-label"><?php echo t('region.tones'); ?></label>
+            <select name="tone_country" form="region-form" class="form-control">
+                <?php foreach (RegionSettingsService::TONES as $code => $name): ?>
+                    <option value="<?php echo $code; ?>" <?php echo $code === $tone_country ? 'selected' : ''; ?>><?php echo htmlspecialchars($name); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <small class="u-hint"><?php echo t('region.tones_help'); ?></small>
+        </div>
+        <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>
+            <label class="u-check-label u-fs-12" style="display: block; margin-bottom: 12px;">
+                <input type="checkbox" name="end_calls" value="1" form="region-form" class="u-accent"> <?php echo t('region.end_calls'); ?>
+            </label>
+            <button type="submit" form="region-form" class="btn btn-primary" onclick="return confirm(<?php echo jsArg(t('region.confirm')); ?>);">
+                <i class="fas fa-save"></i> <?php echo t('region.save'); ?>
+            </button>
+        <?php endif; ?>
+    </div>
     </div>
 
     <!-- SECTION: AMD (Answering Machine Detection) settings -->
@@ -702,4 +740,9 @@
             <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
         </button>
     <?php endif; ?>
+</form>
+
+<form id="region-form" method="POST" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+    <input type="hidden" name="save_region" value="1">
 </form>

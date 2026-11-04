@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/../services/AsteriskSettingsService.php';
 require_once __DIR__ . '/../services/VoicemailPolicy.php';
+require_once __DIR__ . '/../services/RegionSettingsService.php';
 
 /**
  * PBX Settings page (/asterisk-settings).
@@ -18,6 +19,7 @@ class AsteriskSettingsController extends BaseController
         $csrf = static::csrfToken();
         $notices = static::handlePost([
             'save_asterisk_settings' => fn() => AsteriskSettingsService::saveSettings($_POST),
+            'save_region' => fn() => RegionSettingsService::save($_POST),
             'enable_sip_debug' => fn() => !verifyCSRFToken($csrf)
                 ? ['success' => false, 'error' => t('common.invalid_csrf')]
                 : AsteriskSettingsService::enableSipDebug(600),
@@ -47,6 +49,9 @@ class AsteriskSettingsController extends BaseController
             'signaling_status' => AsteriskSettingsService::signalingStatus(),
             'vm_settings' => VoicemailPolicy::settings(),
             'vm_weak_pins' => VoicemailPolicy::weakPinCount(),
+            'system_timezone' => RegionSettingsService::systemTimezone(),
+            'portal_timezone' => RegionSettingsService::portalTimezone(),
+            'tone_country' => RegionSettingsService::toneCountry(),
         ], ['title' => $page_title] + $notices);
     }
 }

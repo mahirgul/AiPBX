@@ -398,6 +398,45 @@ case "$cmd" in
             --description="AiPBX sound pack: $1 $2-$3-$4" /usr/local/sbin/aipbx-sounds "$1" "$2" "$3" "$4"
         ;;
 
+    timezone)
+        # timezone ZONE — one time zone for the system, the portal and Asterisk. The
+        # database and long-running services read it when they start, so they restart;
+        # in a moment, because the portal asking for this restarts too.
+        [ $# -eq 1 ] || die "usage: timezone ZONE"
+        match "$1" '^[A-Za-z_+-]+(/[A-Za-z0-9_+-]+){0,2}$'
+        [ -f "/usr/share/zoneinfo/$1" ] || die "unknown time zone: $1"
+        timedatectl set-timezone "$1" || die "could not set the time zone"
+        # In the unit, not here: Apache's sandbox keeps the environment file read-only.
+        exec systemd-run --quiet --collect --on-active=3 --setenv=ZONE="$1" --description="AiPBX: time zone changed" /bin/sh -c \
+            'if grep -q "^TIMEZONE=" /etc/ai-pbx.env; then sed -i "s|^TIMEZONE=.*|TIMEZONE=$ZONE|" /etc/ai-pbx.env; else echo "TIMEZONE=$ZONE" >> /etc/ai-pbx.env; fi
+             for s in mariadb asterisk cron aipbx-webhook-worker aipbx-chat apache2; do systemctl try-restart "$s"; done'
+        ;;
+
+    tones)
+        # tones show | tones set COUNTRY — ring and busy tones (indications.conf, asterisk:asterisk 0640).
+        conf=/etc/asterisk/indications.conf
+        [ -f "$conf" ] || die "$conf not found"
+        case "${1:-}" in
+            show)
+                sed -n 's/^country=\([a-z]*\).*/\1/p' "$conf" | head -n 1
+                ;;
+            set)
+                [ $# -eq 2 ] || die "usage: tones set COUNTRY"
+                match "$2" '^[a-z]{2}$'
+                # Asterisk's own file has no Turkey; AiPBX ships those tones.
+                if [ "$2" = tr ] && ! grep -q '^\[tr\]' "$conf"; then
+                    src="$(readlink -f /var/www/html)/../conf/asterisk/indications.conf"
+                    grep -q '^\[tr\]' "$src" 2>/dev/null || die "tones for tr not found"
+                    { echo; sed -n '/^\[tr\]/,$p' "$src"; } >> "$conf"
+                fi
+                grep -q "^\[$2\]" "$conf" || die "no tones for: $2"
+                sed -i "s/^country=[a-z]*/country=$2/" "$conf"
+                exec asterisk -rx 'module reload indications'
+                ;;
+            *) die "usage: tones show | tones set COUNTRY" ;;
+        esac
+        ;;
+
     asterisk-lang)
         # asterisk-lang LANG — [options] defaultlanguage in asterisk.conf (the
         # file is asterisk:asterisk 0640, the portal cannot write it). Takes

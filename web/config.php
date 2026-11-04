@@ -74,7 +74,7 @@ define('AMI_USER', portalEnv('AMI_USER'));
 define('AMI_PASS', portalEnv('AMI_PASS'));
 
 // Dynamic System Timezone Configuration
-date_default_timezone_set(portalEnv('TIMEZONE', 'Europe/Istanbul'));
+date_default_timezone_set(portalEnv('TIMEZONE', 'UTC'));
 
 // WebRTC TURN server (coturn) — used to issue REST-API style time-limited
 // credentials (secret: NO fallback). Only TURNS (TLS/TCP) is used — plain

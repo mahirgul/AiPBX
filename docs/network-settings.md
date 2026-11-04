@@ -63,3 +63,11 @@ sudo aipbx-readdress 10.77.0.12 10.9.0.5 --yes    # applies it
 `sudo aipbx-priv net status` prints the file side. The files are changed by
 `aipbx-priv net readdress`, which runs in its own systemd unit (`aipbx-readdress`): the portal's
 sandbox keeps `/etc` read-only.
+
+## Time zone and tones
+
+**PBX Settings → Language → Time zone and tones.** The time zone is one setting for the server, the portal, call records and time conditions. A new installation starts on the server's zone. An older one keeps what it has until you choose, and the page warns if the server and the portal differ.
+
+Changing the zone restarts the database, Asterisk and the portal within a few seconds, and calls in progress drop. If calls are in progress the page refuses, unless you tick the box to end them. Working hours in time conditions then follow the new zone.
+
+The tones are the ring and busy sounds callers hear. Changing them does not disturb calls. From the command line: `sudo aipbx-priv timezone America/Chicago` and `sudo aipbx-priv tones set us`.
