@@ -49,6 +49,7 @@ class Edit(unittest.TestCase):
         self.assertEqual(e['nameservers'], {'addresses': ['1.1.1.1']})
         self.assertEqual(e['mtu'], 1400)
 
+    @unittest.skipUnless(importlib.util.find_spec('yaml'), 'needs python3-yaml, which install.sh installs')
     def test_finds_the_file(self):
         with tempfile.TemporaryDirectory() as d:
             with open(d + '/00-a.yaml', 'w') as f:
