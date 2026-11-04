@@ -42,8 +42,15 @@ class UserService {
             $can_view_queue_monitor = PBXHelper::boolFlag($data, 'can_view_queue_monitor', 0);
             $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
 
-            if (empty($username) || empty($full_name)) {
-                throw new \Exception(t('srv_user.err_required'));
+            if ($username === '') {
+                throw new \Exception(t('srv_user.err_username_required'));
+            }
+            // The users page asks for it on a new user; an import or the API may leave it out.
+            if ($user_id === 0 && $extension === '' && !empty($data['require_extension'])) {
+                throw new \Exception(t('srv_user.err_extension_required'));
+            }
+            if ($full_name === '') {
+                $full_name = $username;
             }
             if ($extension !== '' && !preg_match('/^\d{3,6}$/', $extension)) {
                 throw new \Exception(t('srv_ext.err_number'));

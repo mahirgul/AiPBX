@@ -7,7 +7,8 @@ function openCreateUserModal() {
     document.getElementById('modal_username').value = '';
     document.getElementById('modal_username').readOnly = false;
     document.getElementById('modal_password_group').style.display = 'block';
-    document.getElementById('modal_password').required = true;
+    document.getElementById('modal_password').required = false;
+    document.getElementById('modal_extension').required = true;
     document.getElementById('modal_password').value = '';
     document.getElementById('modal_full_name').value = '';
     document.getElementById('modal_email').value = '';
@@ -44,6 +45,7 @@ function openEditUserModal(u) {
     document.getElementById('modal_username').readOnly = (u.username === 'admin');
     document.getElementById('modal_password_group').style.display = 'none';
     document.getElementById('modal_password').required = false;
+    document.getElementById('modal_extension').required = false;
     document.getElementById('modal_password').value = '';
     document.getElementById('modal_full_name').value = u.full_name || '';
     document.getElementById('modal_email').value = u.email || '';

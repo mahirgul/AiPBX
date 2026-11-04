@@ -281,27 +281,32 @@
                 <input type="hidden" name="save_system_user" value="1">
                 <input type="hidden" name="user_id" id="modal_user_id" value="0">
 
-                <div class="u-grid-2">
-                    <div class="form-group">
-                        <label class="form-label"><?php echo t('system_users.field_username'); ?></label>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('system_users.field_username'); ?></label>
                         <input type="text" name="username" id="modal_username" class="form-control" required placeholder="<?php echo t('system_users.field_username_placeholder'); ?>">
-                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('system_users.field_extension'); ?></label>
+                        <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('common.eg'); ?> 3001">
+                        <small class="u-muted u-fs-11"><?php echo t('system_users.extension_help'); ?></small>
+                </div>
+
+                <div class="u-grid-2">
                     <div class="form-group" id="modal_password_group">
                         <label class="form-label"><?php echo t('system_users.field_password'); ?></label>
                         <input type="password" name="password" id="modal_password" class="form-control" placeholder="******" autocomplete="new-password">
                         <small style="display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-muted);"><?php echo t('system_users.password_auto_hint'); ?></small>
                     </div>
-                </div>
-
-                <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_fullname'); ?></label>
-                        <input type="text" name="full_name" id="modal_full_name" class="form-control" required placeholder="<?php echo t('system_users.field_fullname_placeholder'); ?>">
+                        <input type="text" name="full_name" id="modal_full_name" class="form-control" placeholder="<?php echo t('system_users.field_fullname_placeholder'); ?>">
+                        <small class="u-muted u-fs-11"><?php echo t('system_users.fullname_auto_hint'); ?></small>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label"><?php echo t('system_users.field_email'); ?></label>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('system_users.field_email'); ?></label>
                         <input type="email" name="email" id="modal_email" class="form-control" placeholder="name@example.com">
-                    </div>
                 </div>
 
                 <div class="form-group">
@@ -313,13 +318,7 @@
                     </select>
                 </div>
 
-                <div class="u-grid-2">
-                    <div class="form-group">
-                        <label class="form-label"><?php echo t('system_users.field_extension'); ?></label>
-                        <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('common.eg'); ?> 3001">
-                        <small class="u-muted u-fs-11"><?php echo t('system_users.extension_help'); ?></small>
-                    </div>
-                    <div class="form-group">
+                <div class="form-group">
                         <label class="form-label u-flex-between">
                             <span><?php echo t('system_users.field_sip_password'); ?></span>
                             <button type="button" class="btn btn-secondary btn-sm" onclick="if(typeof generateSipPassword === 'function'){ document.getElementById('modal_sip_password').value = generateSipPassword(); }" title="<?php echo t('system_users.gen_password_tooltip'); ?>" style="padding: 2px 8px; font-size: 10px;">
@@ -328,7 +327,6 @@
                         </label>
                         <input type="text" name="sip_password" id="modal_sip_password" class="form-control" placeholder="<?php echo t('system_users.sip_password_placeholder'); ?>">
                         <small class="u-muted u-fs-11"><?php echo t('system_users.sip_password_help'); ?></small>
-                    </div>
                 </div>
 
                 <div class="u-grid-2">
