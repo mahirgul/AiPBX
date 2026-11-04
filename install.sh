@@ -2307,7 +2307,7 @@ fi   # install mode
 # like the default zone. Every port an update opens or closes goes through this list.
 FW_ZONES=""
 if command -v firewall-cmd >/dev/null 2>&1; then
-    FW_ZONES="$(firewall-cmd --get-default-zone 2>/dev/null) $(firewall-cmd --permanent --get-zones 2>/dev/null | tr ' ' '\n' | grep -E '^aipbx-card[0-9]+$' | tr '\n' ' ')"
+    FW_ZONES="$(firewall-cmd --get-default-zone 2>/dev/null) $(firewall-cmd --permanent --get-zones 2>/dev/null | tr ' ' '\n' | { grep -E '^aipbx-card[0-9]+$' || true; } | tr '\n' ' ')"
 fi
 FW_CHANGED=0
 for z in $FW_ZONES; do
