@@ -105,6 +105,98 @@ final class NetworkSettingsService
         return array_values(array_unique($out));
     }
 
+    /** Bridges, tunnels and containers' links, as opposed to network cards. */
+    public static function isVirtualInterface(string $name): bool
+    {
+        return preg_match('/^(veth|docker|lxd|incus|br-|virbr|tun|tap|wg|aipbx|p2p)/', $name) === 1;
+    }
+
+    /**
+     * Networks of the cards that the running Asterisk does not know as local yet. A transport
+     * takes a new list only at a restart.
+     *
+     * @return list<string>
+     */
+    public static function networksWaitingForRestart(): array
+    {
+        $out = (string) AsteriskHelper::execCLI('pjsip show transport transport-udp')['output'];
+        if (!preg_match_all('/^\s*local_net\s*:\s*(\S+)/m', $out, $m)) {
+            // Not running or just restarting: there is nothing to compare with.
+            return str_contains($out, 'external_signaling') ? self::connectedNetworks([], self::addressList()) : [];
+        }
+        return self::connectedNetworks($m[1], self::addressList());
+    }
+
+    /** Writes the transports now and restarts Asterisk as soon as no call is up. */
+    public static function restartForNetworks(array $post): array
+    {
+        if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
+        syncTransports();
+        getDB()->exec("DELETE FROM sys_pending_sync WHERE domain = 'transports'");
+        AsteriskHelper::execCLI('core restart when convenient');
+        writeAuditLog('network_settings', 'restart', 0, 'Asterisk restart when idle, for new card networks', 'update', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t('netset.restart_requested')];
+    }
+
+    /** @return list<array{iface: string, ip: string, prefix: int}> IPv4 addresses, 127.* left out */
+    public static function addressList(): array
+    {
+        $list = json_decode((string) @shell_exec('ip -j -4 addr show 2>/dev/null'), true);
+        $out = [];
+        foreach (is_array($list) ? $list : [] as $if) {
+            foreach ((array) ($if['addr_info'] ?? []) as $a) {
+                $ip = (string) ($a['local'] ?? '');
+                if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && !str_starts_with($ip, '127.')) {
+                    $out[] = ['iface' => (string) ($if['ifname'] ?? ''), 'ip' => $ip, 'prefix' => (int) ($a['prefixlen'] ?? 32)];
+                }
+            }
+        }
+        return $out;
+    }
+
+    /** @return array<string, list<string>> interface => its addresses */
+    public static function interfaceAddresses(): array
+    {
+        $out = [];
+        foreach (self::addressList() as $a) {
+            $out[$a['iface']][] = $a['ip'];
+        }
+        return $out;
+    }
+
+    /**
+     * Networks of the server's own cards as "net/mask", without those $configured already covers.
+     * A phone on a card's network needs the card's address, not the public one, so these count
+     * as local without being typed in. Networks behind a router cannot be seen from here: those
+     * stay in the Local networks field.
+     *
+     * @param list<string> $configured "net/mask" or "net/prefix"
+     * @param list<array{iface: string, ip: string, prefix: int}> $addresses
+     * @return list<string>
+     */
+    public static function connectedNetworks(array $configured, array $addresses): array
+    {
+        $out = [];
+        foreach ($addresses as $a) {
+            if (self::isVirtualInterface($a['iface']) || $a['prefix'] < 1 || $a['prefix'] > 30) {
+                continue;
+            }
+            $maskLong = (-1 << (32 - $a['prefix'])) & 0xFFFFFFFF;
+            $net = long2ip(ip2long($a['ip']) & $maskLong);
+            foreach ($configured as $c) {
+                [$cNet, $cMask] = array_pad(explode('/', $c, 2), 2, '32');
+                $cLong = str_contains($cMask, '.') ? (int) ip2long($cMask) : ((-1 << (32 - (int) $cMask)) & 0xFFFFFFFF);
+                if ($cLong <= $maskLong && (ip2long($net) & $cLong) === ((int) ip2long($cNet) & $cLong)) {
+                    continue 2;
+                }
+            }
+            $out[] = $net . '/' . long2ip($maskLong);
+        }
+        return array_values(array_unique($out));
+    }
+
     /** IPv4 addresses of this server (no loopback). */
     public static function localIps(): array
     {

@@ -40,6 +40,7 @@ class NetworkSettingsController extends BaseController
         $notices = static::handlePost([
             'save_server' => fn() => NetworkSettingsService::saveServer($_POST),
             'netcfg_apply' => fn() => NetworkConfigService::apply($_POST),
+            'restart_for_networks' => fn() => NetworkSettingsService::restartForNetworks($_POST),
             'netcfg_confirm' => fn() => NetworkConfigService::confirm($_POST),
             'netcfg_revert' => fn() => NetworkConfigService::revert($_POST),
             'save_phones' => fn() => NetworkSettingsService::savePhones($_POST),

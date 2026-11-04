@@ -76,6 +76,10 @@ function __syncTransportsBody() {
         $local_nets[] = $net . '/' . $mask;
     }
 
+    // The networks of the server's own cards are local whether listed or not.
+    require_once __DIR__ . '/../services/NetworkSettingsService.php';
+    $local_nets = array_merge($local_nets, NetworkSettingsService::connectedNetworks($local_nets, NetworkSettingsService::addressList()));
+
     $local_net_lines = '';
     foreach ($local_nets as $ln) {
         $local_net_lines .= "local_net={$ln}\n";

@@ -5,20 +5,32 @@ and moves all of them in one step when the server's IP address changes.
 
 ## What the page shows
 
-- **This server** (read only): host name, interfaces with their addresses, the default gateway,
-  the DNS servers and the main address (the source of the default route). The server's own
-  network is set up on the server (netplan); changing it from this page is planned
-  ([roadmap 13](roadmap.md#13-network-settings-page)).
-- **Server addresses**:
-  - *This server's address on the local network* (`server_ip`): the address calls reach the
-    server at; Asterisk advertises it as its RTP ICE candidate. Empty: the main address.
+- **Network cards**: one row per card with its IP address, subnet mask, gateway and DNS, and an
+  **Edit** button. Gateway and DNS may stay empty on an inner card. A card nothing configures yet
+  gets its own netplan file or NetworkManager connection. Every interface can be edited. One that
+  something else owns (Docker, LXD, a tunnel) changes live, and its owner may write its own settings
+  back. A wrong address cuts the server off, so a change goes back by itself unless you confirm it
+  within 3 minutes.
+  - *Default gateway*: only one card has it, and ticking it on one card takes it from the other.
+    A card that is not the default keeps its own router: what arrives on its address is answered
+    through that router.
+  - *Networks behind this router*: routes through the card's router, written as `10.12.0.0/16`.
+    If phones are on those networks, add them to Local networks too.
+- **Addresses the PBX uses**:
   - *Public address* (`pjsip_external_ip`): the address in front of NAT, for callers outside.
-  - *Local networks* (`pjsip_local_net`): the networks Asterisk treats as inside NAT, written as
-    `192.168.1.0/24`, comma separated.
+  - *Local networks* (`pjsip_local_net`): networks behind a router that Asterisk treats as inside
+    NAT, written as `192.168.1.0/24`, comma separated. The networks of the server's own cards count
+    as local without being listed. Asterisk takes a new list at its next restart: the page says so
+    when a card's network is waiting, with a button that restarts Asterisk once no call is up.
+  - *This server's address on the local network* (`server_ip`): shown only while it is set, so an
+    old value can be cleared. Every service answers on every card.
   Saving marks the transports and RTP for *Apply*. These fields were on *PBX settings* before.
 - **Addresses for desk phones**: SIP server, outbound proxy, provisioning address, syslog server,
   NTP server and the allowed networks. Saving rewrites the phone files at once. These fields were
   in *Phones → Provisioning settings* before; see [Desk phones](phones.md).
+
+An address changed with **Edit** moves everything below by itself when you confirm it. The
+*Apply the new address* section appears only when the address changed outside this page.
 
 ## When the server's IP address changed
 
@@ -79,3 +91,10 @@ Network settings shows whether each network card is on DHCP or a static address,
 Only cards managed with netplan and systemd-networkd can be changed here. A desktop system with NetworkManager is shown only. The previous files are kept in `/var/lib/aipbx/netcfg/backup` until the change is confirmed.
 
 If you are locked out in spite of this, from the server's console: `sudo aipbx-netcfg revert`.
+
+## Several network cards
+
+SIP, web and TURN answer on every card, and each card has its own rules on the
+[Firewall](network-ports.md) page. Any rule can be removed; the page says first when that can cut
+your connection, calls or phones, and a firewall change does not come back by itself. coturn serves the addresses it finds when it starts: a confirmed
+address change restarts it, and a card added another way needs `systemctl restart coturn`.

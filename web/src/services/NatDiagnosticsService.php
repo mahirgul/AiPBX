@@ -27,7 +27,10 @@ final class NatDiagnosticsService
             'local_ips' => NetworkSettingsService::localIps(),
             'public' => trim((string) getSystemSetting('pjsip_external_ip', '')),
             'media' => trim((string) getSystemSetting('pjsip_external_media_ip', '')),
-            'local_nets' => array_values(array_filter(explode(',', (string) getSystemSetting('pjsip_local_net', '')))),
+            'local_nets' => array_merge(
+                $configuredNets = array_values(array_filter(explode(',', (string) getSystemSetting('pjsip_local_net', '')))),
+                NetworkSettingsService::connectedNetworks($configuredNets, NetworkSettingsService::addressList())
+            ),
             'running_signaling' => self::transportValue($transport, 'external_signaling_address'),
             'running_media' => self::transportValue($transport, 'external_media_address'),
             'rtp_start' => (int) getSystemSetting('rtp_start', '10000'),

@@ -415,7 +415,10 @@ echo ""
 # ============================================================================
 step "1. Domain / FQDN Configuration"
 
-SERVER_IP=$(hostname -I | awk '{print $1}')
+# The address the server reaches the world from. The first of `hostname -I` can be a
+# tunnel, which is gone when the tunnel is.
+SERVER_IP=$(ip -4 route get 1.1.1.1 2>/dev/null | sed -n 's/.* src \([0-9.]*\).*/\1/p' | head -1)
+[ -n "$SERVER_IP" ] || SERVER_IP=$(hostname -I | awk '{print $1}')
 if is_upgrade; then
     # Domain and certificate come from the existing installation.
     PORTAL_DOMAIN="$(env_get PORTAL_DOMAIN)"
@@ -1468,7 +1471,7 @@ cat > /etc/systemd/system/aipbx-netcfg-boot.service << 'NETCFGUNIT'
 [Unit]
 Description=AiPBX: an address change not confirmed before a reboot goes back
 Before=network-online.target
-After=systemd-networkd.service
+After=systemd-networkd.service NetworkManager.service
 
 [Service]
 Type=oneshot
@@ -2224,6 +2227,13 @@ chown turnserver:turnserver /var/log/turnserver 2>/dev/null || true
 # Restart only when the configuration changed (or coturn is down): a restart
 # drops every WebRTC/app call relayed through TURN, and an update that keeps
 # Asterisk running must not drop them here instead.
+# coturn serves the addresses it finds at its start: the list follows the cards then.
+mkdir -p /etc/systemd/system/coturn.service.d
+cat > /etc/systemd/system/coturn.service.d/aipbx-addresses.conf << 'TURNDROPIN'
+[Service]
+ExecStartPre=-+/usr/local/sbin/aipbx-netcfg coturn-addresses
+TURNDROPIN
+systemctl daemon-reload
 if cmp -s /etc/turnserver.conf.new /etc/turnserver.conf && systemctl is-active --quiet coturn; then
     rm -f /etc/turnserver.conf.new
 else
@@ -2293,18 +2303,25 @@ fi   # install mode
 # ("Disconnected after permitted retries", live system 2026-10-22). Opened on
 # upgrade too, but only where the RTP range is open as installed, so an admin
 # who closed media ports on purpose is not overruled.
-if command -v firewall-cmd >/dev/null 2>&1 \
-   && firewall-cmd --permanent --query-port=10000-20000/udp >/dev/null 2>&1 \
-   && ! firewall-cmd --permanent --query-port=4100-4999/udp >/dev/null 2>&1; then
-    firewall-cmd --permanent --add-port=4100-4999/udp >/dev/null 2>&1 && firewall-cmd --reload >/dev/null 2>&1 || true
+# A card with its own rules (portal: Firewall) has a zone aipbx-cardN, and an update changes it
+# like the default zone. Every port an update opens or closes goes through this list.
+FW_ZONES=""
+if command -v firewall-cmd >/dev/null 2>&1; then
+    FW_ZONES="$(firewall-cmd --get-default-zone 2>/dev/null) $(firewall-cmd --permanent --get-zones 2>/dev/null | tr ' ' '\n' | grep -E '^aipbx-card[0-9]+$' | tr '\n' ' ')"
 fi
-
-# Asterisk's direct WSS (8089) now listens on loopback only; clients use 443 /ws.
-# Close the port that earlier versions opened.
-if firewall-cmd --permanent --query-port=8089/tcp >/dev/null 2>&1; then
-    firewall-cmd --permanent --remove-port=8089/tcp >/dev/null 2>&1 || true
-    firewall-cmd --reload >/dev/null 2>&1 || true
-fi
+FW_CHANGED=0
+for z in $FW_ZONES; do
+    if firewall-cmd --permanent --zone="$z" --query-port=10000-20000/udp >/dev/null 2>&1 \
+       && ! firewall-cmd --permanent --zone="$z" --query-port=4100-4999/udp >/dev/null 2>&1; then
+        firewall-cmd --permanent --zone="$z" --add-port=4100-4999/udp >/dev/null 2>&1 && FW_CHANGED=1
+    fi
+    # Asterisk's direct WSS (8089) now listens on loopback only; clients use 443 /ws.
+    # Close the port that earlier versions opened.
+    if firewall-cmd --permanent --zone="$z" --query-port=8089/tcp >/dev/null 2>&1; then
+        firewall-cmd --permanent --zone="$z" --remove-port=8089/tcp >/dev/null 2>&1 && FW_CHANGED=1
+    fi
+done
+[ "$FW_CHANGED" = 0 ] || firewall-cmd --reload >/dev/null 2>&1 || true
 
 # 13b. Asterisk security logging
 sed -i "s/^;security\.log => security/security.log => security/" /etc/asterisk/logger.conf 2>/dev/null || true

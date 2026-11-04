@@ -7,7 +7,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ## 1.60.24
 
-- **Network settings is simpler.** One table of network cards, each with an Edit button for its address where netplan manages it; virtual interfaces such as VPN tunnels and containers are folded away. A card a server manages another way shows a lock and why.
+- **Network settings is simpler.** One row per network card with its IP address, subnet mask, gateway and DNS, and an Edit button beside it. Gateway and DNS may stay empty on an inner card, a new card with no configuration can be set up here too, and every interface has its Edit button. Confirming a new address now also moves the phone files, settings and certificate, so *Apply the new address* only appears when the address changed outside this page.
+- **Firewall rules per network card.** Each card has its own tab, so you can close the web page on the internet card and keep it on the office card. All rules now look the same, including SSH and web, which were not listed before. Nothing is locked for an admin any more: before a rule that can cut your connection, calls or phones goes, the page says what it will do.
+- **Each card can have its own router.** One card holds the server's default gateway; another keeps its router for traffic that arrives on it, and the routes behind a router go in the same Edit window. Cards under NetworkManager can now be edited too.
+- **Servers with several cards.** The networks of the server's own cards count as local without being typed in. TURN now follows new card addresses and no longer settles on a VPN tunnel address.
 
 ## 1.60.23
 

@@ -14,14 +14,21 @@ class Checks(unittest.TestCase):
                          ('10.23.3.70/24', '10.23.3.1', ['10.0.0.4', '10.0.0.5']))
 
     def test_bad(self):
-        for a, g, d in [('10.23.3.70', '10.23.3.1', '8.8.8.8'), ('10.23.3.70/32', '10.23.3.1', '8.8.8.8'),
-                        ('10.23.3.0/24', '10.23.3.1', '8.8.8.8'), ('10.23.3.255/24', '10.23.3.1', '8.8.8.8'),
-                        ('127.0.0.2/8', '127.0.0.1', '8.8.8.8'), ('10.23.3.70/24', '10.23.4.1', '8.8.8.8'),
+        for a, g, d in [('10.23.3.70', '10.23.3.1', '8.8.8.8'), ('x/24', '10.23.3.1', '8.8.8.8'),
                         ('10.23.3.70/24', '10.23.3.70', '8.8.8.8'), ('10.23.3.70/24', 'x', '8.8.8.8'),
-                        ('10.23.3.70/24', '10.23.3.1', ''), ('10.23.3.70/24', '10.23.3.1', 'a'),
-                        ('10.23.3.70/24', '10.23.3.1', '1.1.1.1,2.2.2.2,3.3.3.3,4.4.4.4'), ('$(reboot)/24', '1.1.1.1', '8.8.8.8')]:
+                        ('10.23.3.70/24', '10.23.3.1', 'x'), ('10.23.3.70/24', '10.23.3.1', '1.1.1.1,2.2.2.2,3.3.3.3,4.4.4.4')]:
             with self.assertRaises(nc.Refused, msg=(a, g, d)):
                 nc.check_static(a, g, d)
+
+    def test_unusual_addresses_are_the_admin_s_choice(self):
+        self.assertEqual(nc.check_static('203.0.113.5/32', '203.0.113.1', ''), ('203.0.113.5/32', '203.0.113.1', []))
+        e = nc.edit_config({'network': {'ethernets': {'eth1': {}}}}, 'eth1', 'static', '203.0.113.5/32', '203.0.113.1', [])['network']['ethernets']['eth1']
+        self.assertEqual(e['routes'], [{'to': 'default', 'via': '203.0.113.1', 'on-link': True}])
+
+    def test_inner_card_needs_no_gateway_or_dns(self):
+        self.assertEqual(nc.check_static('10.23.3.70/24', '', ''), ('10.23.3.70/24', '', []))
+        e = nc.edit_config({'network': {'ethernets': {'eth1': {}}}}, 'eth1', 'static', '10.23.3.70/24', '', [])['network']['ethernets']['eth1']
+        self.assertEqual(e, {'dhcp4': False, 'addresses': ['10.23.3.70/24']})
 
     def test_iface_name(self):
         self.assertTrue(nc.valid_iface('ens192'))
@@ -60,6 +67,59 @@ class Edit(unittest.TestCase):
                 f.write('x')
             self.assertEqual(nc.files_with('ens192', d), ['00-a.yaml'])
             self.assertEqual(nc.files_with('eth9', d), [])
+
+
+
+class Router(unittest.TestCase):
+    def test_a_card_with_its_own_router(self):
+        e = nc.edit_config({'network': {'ethernets': {'eth1': {}}}}, 'eth1', 'static', '10.1.1.5/24', '10.1.1.1', [], False, ['10.12.0.0/16'])['network']['ethernets']['eth1']
+        t = nc.table_of('eth1')
+        self.assertEqual(e['routes'], [{'to': 'default', 'via': '10.1.1.1', 'table': t}, {'to': '10.12.0.0/16', 'via': '10.1.1.1'}])
+        self.assertEqual(e['routing-policy'], [{'from': '10.1.1.5', 'table': t}])
+
+    def test_nets_need_a_router(self):
+        self.assertEqual(nc.check_nets('10.12.3.9/16, 192.168.5.0/24', '10.1.1.1'), ['10.12.0.0/16', '192.168.5.0/24'])
+        for nets, gw in [('10.0.0.0/8', ''), ('x', '10.1.1.1'), ('0.0.0.0/0', '10.1.1.1')]:
+            with self.assertRaises(nc.Refused):
+                nc.check_nets(nets, gw)
+
+    def test_the_old_default_keeps_its_router(self):
+        eth = {'addresses': ['10.0.0.5/24'], 'routes': [{'to': 'default', 'via': '10.0.0.1'}]}
+        self.assertTrue(nc.demote_default(eth, 'eth0'))
+        self.assertEqual(eth['routes'], [{'to': 'default', 'via': '10.0.0.1', 'table': nc.table_of('eth0')}])
+        self.assertEqual(eth['routing-policy'], [{'from': '10.0.0.5', 'table': nc.table_of('eth0')}])
+        self.assertFalse(nc.demote_default({'addresses': ['10.1.1.1/24']}, 'eth2'))
+        dhcp = {'dhcp4': True}
+        self.assertTrue(nc.demote_default(dhcp, 'eth3'))
+        self.assertEqual(dhcp['dhcp4-overrides'], {'use-routes': False})
+
+    def test_network_manager_settings(self):
+        a = nc.nm_settings('static', '10.1.1.5/24', '10.1.1.1', ['9.9.9.9'], False, ['10.12.0.0/16'], 200)
+        d = dict(zip(a[::2], a[1::2]))
+        self.assertEqual(d['ipv4.gateway'], '')
+        self.assertEqual(d['ipv4.routes'], '10.12.0.0/16 10.1.1.1, 0.0.0.0/0 10.1.1.1 table=200')
+        self.assertEqual(d['ipv4.routing-rules'], 'priority 200 from 10.1.1.5/32 table 200')
+        self.assertEqual(d['ipv4.never-default'], 'yes')
+        d = dict(zip(*[iter(nc.nm_settings('static', '10.1.1.5/24', '10.1.1.1', [], True))] * 2))
+        self.assertEqual((d['ipv4.gateway'], d['ipv4.routes'], d['ipv4.never-default']), ('10.1.1.1', '', 'no'))
+
+
+class Coturn(unittest.TestCase):
+    CONF = 'realm=x\nrelay-ip=10.0.0.1\nallowed-peer-ip=10.0.0.1\nallowed-peer-ip=10.0.0.2\ndenied-peer-ip=10.0.0.0-10.255.255.255\n'
+
+    def test_nothing_changes_when_the_addresses_are_the_same(self):
+        self.assertEqual(nc.coturn_conf(self.CONF, ['10.0.0.1', '10.0.0.2'], '10.0.0.2'), self.CONF)
+
+    def test_a_new_card_is_allowed_and_the_relay_stays(self):
+        out = nc.coturn_conf(self.CONF, ['10.0.0.1', '10.0.0.2', '192.168.7.1'], '10.0.0.2')
+        self.assertIn('relay-ip=10.0.0.1\n', out)
+        self.assertIn('allowed-peer-ip=192.168.7.1\ndenied-peer-ip', out)
+
+    def test_a_relay_address_that_went_away_moves(self):
+        out = nc.coturn_conf(self.CONF, ['10.0.0.9'], '10.0.0.9')
+        self.assertEqual(out.count('allowed-peer-ip='), 1)
+        self.assertIn('relay-ip=10.0.0.9\n', out)
+        self.assertNotIn('10.0.0.2', out)
 
 
 if __name__ == '__main__':
