@@ -1,0 +1,305 @@
+#!/usr/bin/python3 -I
+"""aipbx-netcfg - shows and changes this server's own address (Network settings page).
+
+  status                      JSON: address method per interface, whether it can be changed
+  apply iface=X mode=dhcp
+  apply iface=X mode=static address=A/P gateway=G dns=D1,D2
+  confirm                     keep the change
+  revert                      go back now
+
+A wrong address cuts the server off, so a change goes back by itself unless it is confirmed
+in CONFIRM_SECONDS, from the new address. Only an interface netplan and systemd-networkd
+manage can be changed; on any other the page only shows it.
+
+The work runs in its own systemd units: the portal's Apache sandbox keeps /etc read-only,
+and the network may go away under the request that asked for this.
+"""
+import ipaddress, json, os, re, shutil, subprocess, sys, time
+
+NETPLAN = '/etc/netplan'
+STATE_DIR = '/var/lib/aipbx/netcfg'
+STATE = STATE_DIR + '/state.json'
+BACKUP = STATE_DIR + '/backup'
+CLOUD_OFF = '/etc/cloud/cloud.cfg.d/99-aipbx-disable-network-config.cfg'
+SELF = '/usr/local/sbin/aipbx-netcfg'
+APPLY_UNIT = 'aipbx-netcfg-apply'
+REVERT_UNIT = 'aipbx-netcfg-revert'
+CONFIRM_SECONDS = 180
+
+
+class Refused(Exception):
+    pass
+
+
+def run(args, check=False):
+    p = subprocess.run(args, capture_output=True, text=True, timeout=120)
+    if check and p.returncode != 0:
+        raise Refused((p.stderr or p.stdout).strip()[:300] or 'command failed: ' + args[0])
+    return p
+
+
+# ---------------------------------------------------------------- checks (no root needed)
+
+def valid_iface(name):
+    return re.fullmatch(r'[A-Za-z0-9_.:-]{1,15}', name or '') is not None
+
+
+def check_static(address, gateway, dns):
+    """Returns (cidr, gateway, [dns]) or raises Refused."""
+    try:
+        iface = ipaddress.IPv4Interface(address)
+    except ValueError:
+        raise Refused('The address must look like 192.168.1.10/24.')
+    if '/' not in address or not 8 <= iface.network.prefixlen <= 30:
+        raise Refused('The address must have a prefix from /8 to /30.')
+    ip = iface.ip
+    if ip in (iface.network.network_address, iface.network.broadcast_address) or ip.is_loopback or ip.is_multicast or ip.is_unspecified:
+        raise Refused('This address cannot be given to a server.')
+    try:
+        gw = ipaddress.IPv4Address(gateway)
+    except ValueError:
+        raise Refused('The gateway must be an IPv4 address.')
+    if gw not in iface.network or gw == ip:
+        raise Refused('The gateway must be another address in the same network.')
+    servers = [d.strip() for d in (dns or '').split(',') if d.strip()]
+    if not 1 <= len(servers) <= 3:
+        raise Refused('Give one to three DNS servers.')
+    for d in servers:
+        try:
+            ipaddress.IPv4Address(d)
+        except ValueError:
+            raise Refused('A DNS server must be an IPv4 address.')
+    return str(iface), str(gw), servers
+
+
+def edit_config(cfg, iface, mode, address='', gateway='', dns=None):
+    """The netplan config with this interface's addressing replaced; other keys stay."""
+    eth = cfg['network']['ethernets'][iface]
+    for key in ('addresses', 'gateway4', 'routes', 'nameservers', 'dhcp4', 'dhcp4-overrides'):
+        eth.pop(key, None)
+    if mode == 'dhcp':
+        eth['dhcp4'] = True
+    else:
+        eth['dhcp4'] = False
+        eth['addresses'] = [address]
+        eth['routes'] = [{'to': 'default', 'via': gateway}]
+        eth['nameservers'] = {'addresses': list(dns or [])}
+    return cfg
+
+
+def files_with(iface, directory=NETPLAN):
+    import yaml
+    found = []
+    for name in sorted(os.listdir(directory)):
+        if not name.endswith('.yaml'):
+            continue
+        with open(os.path.join(directory, name), encoding='utf-8') as f:
+            cfg = yaml.safe_load(f) or {}
+        network = cfg.get('network') or {}
+        if iface in (network.get('ethernets') or {}):
+            found.append(name)
+    return found
+
+
+# ---------------------------------------------------------------- state of the system
+
+def ip_json(*args):
+    p = run(['ip', '-j', *args])
+    try:
+        return json.loads(p.stdout or '[]')
+    except ValueError:
+        return []
+
+
+def manageable(iface):
+    """(can it be changed here, why not)."""
+    if not shutil.which('netplan'):
+        return False, 'netplan'
+    if run(['systemctl', 'is-active', '--quiet', 'NetworkManager']).returncode == 0:
+        p = run(['nmcli', '-t', '-f', 'DEVICE,STATE', 'device'])
+        if re.search(r'^' + re.escape(iface) + r':connected', p.stdout, re.M):
+            return False, 'networkmanager'
+    p = run(['networkctl', 'list', '--no-legend', '--no-pager', iface])
+    if ' configured' not in p.stdout:
+        return False, 'not_networkd'
+    try:
+        found = files_with(iface)
+    except Exception:
+        return False, 'not_readable'
+    if len(found) != 1:
+        return False, 'no_single_file'
+    return True, ''
+
+
+def load_state():
+    try:
+        with open(STATE, encoding='utf-8') as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(state):
+    os.makedirs(STATE_DIR, mode=0o750, exist_ok=True)
+    tmp = STATE + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f:
+        json.dump(state, f)
+    os.replace(tmp, STATE)
+
+
+def cmd_status(_args):
+    routes = ip_json('-4', 'route', 'show', 'default')
+    default_dev = routes[0].get('dev', '') if routes else ''
+    out = []
+    for link in ip_json('-4', 'addr', 'show'):
+        name = link.get('ifname', '')
+        if name == 'lo' or name.startswith(('aipbx', 'tun', 'wg', 'docker', 'veth', 'lxd', 'br-', 'virbr')):
+            continue
+        infos = [a for a in link.get('addr_info', []) if a.get('family') == 'inet']
+        can, why = manageable(name)
+        out.append({
+            'name': name,
+            'addresses': [f"{a['local']}/{a['prefixlen']}" for a in infos],
+            'method': 'dhcp' if any(a.get('dynamic') for a in infos) else 'static',
+            'default_route': name == default_dev,
+            'can_change': can,
+            'why_not': why,
+        })
+    state = load_state()
+    if state.get('state') == 'pending':
+        state['seconds_left'] = max(0, int(state.get('deadline', 0) - time.time()))
+    print(json.dumps({'interfaces': out, 'change': state}))
+
+
+# ---------------------------------------------------------------- changing
+
+def unit(name, *command, delay=None):
+    args = ['systemd-run', '--quiet', '--collect', f'--unit={name}', f'--description=AiPBX address change ({name})']
+    if delay is not None:
+        args.append(f'--on-active={delay}')
+    run([*args, SELF, *command], check=True)
+
+
+def restore_backup():
+    if not os.path.isdir(BACKUP):
+        return
+    for name in os.listdir(NETPLAN):
+        if name.endswith('.yaml') and not os.path.exists(os.path.join(BACKUP, name)):
+            os.unlink(os.path.join(NETPLAN, name))
+    for name in os.listdir(BACKUP):
+        shutil.copy2(os.path.join(BACKUP, name), os.path.join(NETPLAN, name))
+
+
+def cmd_apply(args):
+    a = dict(x.split('=', 1) for x in args if '=' in x)
+    iface, mode = a.get('iface', ''), a.get('mode', '')
+    if not valid_iface(iface) or mode not in ('dhcp', 'static'):
+        raise Refused('Choose an interface and dhcp or static.')
+    if load_state().get('state') == 'pending':
+        raise Refused('An address change is waiting to be confirmed.')
+    can, why = manageable(iface)
+    if not can:
+        raise Refused(f'This interface cannot be changed here ({why}).')
+    extra = []
+    if mode == 'static':
+        cidr, gw, dns = check_static(a.get('address', ''), a.get('gateway', ''), a.get('dns', ''))
+        extra = [f'address={cidr}', f'gateway={gw}', 'dns=' + ','.join(dns)]
+    run(['systemctl', 'reset-failed', APPLY_UNIT, REVERT_UNIT])
+    unit(APPLY_UNIT, 'do-apply', f'iface={iface}', f'mode={mode}', *extra)
+
+
+def cmd_do_apply(args):
+    import yaml
+    a = dict(x.split('=', 1) for x in args if '=' in x)
+    iface, mode = a['iface'], a['mode']
+    before = [x for link in ip_json('-4', 'addr', 'show', iface) for x in link.get('addr_info', [])]
+    old_ip = before[0]['local'] if before else ''
+    name = files_with(iface)[0]
+    path = os.path.join(NETPLAN, name)
+    shutil.rmtree(BACKUP, ignore_errors=True)
+    os.makedirs(BACKUP, mode=0o700)
+    for n in os.listdir(NETPLAN):
+        if n.endswith('.yaml'):
+            shutil.copy2(os.path.join(NETPLAN, n), os.path.join(BACKUP, n))
+    with open(path, encoding='utf-8') as f:
+        cfg = yaml.safe_load(f)
+    dns = [d for d in a.get('dns', '').split(',') if d]
+    edit_config(cfg, iface, mode, a.get('address', ''), a.get('gateway', ''), dns)
+    with open(path, 'w', encoding='utf-8') as f:
+        yaml.safe_dump(cfg, f, default_flow_style=False, sort_keys=False)
+    os.chmod(path, 0o600)
+    if run(['netplan', 'generate']).returncode != 0:
+        restore_backup()
+        save_state({'state': 'failed', 'error': 'netplan refused the new configuration'})
+        return
+    new_ip = a.get('address', '').split('/')[0]
+    save_state({'state': 'pending', 'iface': iface, 'mode': mode, 'address': a.get('address', ''),
+                'old_ip': old_ip, 'new_ip': new_ip, 'deadline': time.time() + CONFIRM_SECONDS})
+    # The timer first: from here on the server may be unreachable.
+    unit(REVERT_UNIT, 'do-revert', delay=CONFIRM_SECONDS)
+    run(['netplan', 'apply'])
+
+
+def stop_timer():
+    run(['systemctl', 'stop', REVERT_UNIT + '.timer'])
+
+
+def cmd_confirm(_args):
+    if load_state().get('state') != 'pending':
+        raise Refused('No address change is waiting.')
+    # Before the unit that does the rest can be slow: the deadline must not win.
+    stop_timer()
+    unit(APPLY_UNIT + '-end', 'do-confirm')
+
+
+def cmd_do_confirm(_args):
+    state = load_state()
+    if os.path.isdir('/etc/cloud/cloud.cfg.d') and os.path.isdir(BACKUP) and '50-cloud-init.yaml' in os.listdir(BACKUP):
+        # Otherwise cloud-init writes its own network file back at a reboot.
+        with open(CLOUD_OFF, 'w', encoding='utf-8') as f:
+            f.write('network: {config: disabled}\n')
+    shutil.rmtree(BACKUP, ignore_errors=True)
+    save_state({'state': 'confirmed', 'old_ip': state.get('old_ip', ''), 'new_ip': state.get('new_ip', ''), 'at': time.time()})
+
+
+def cmd_revert(_args):
+    if load_state().get('state') != 'pending':
+        raise Refused('No address change is waiting.')
+    stop_timer()
+    unit(APPLY_UNIT + '-end', 'do-revert')
+
+
+def cmd_do_revert(_args):
+    state = load_state()
+    if state.get('state') != 'pending':
+        return
+    restore_backup()
+    run(['netplan', 'apply'])
+    shutil.rmtree(BACKUP, ignore_errors=True)
+    save_state({'state': 'reverted', 'old_ip': state.get('old_ip', ''), 'at': time.time()})
+
+
+def cmd_boot_check(_args):
+    # The timer does not survive a reboot, and a wrong address must not either.
+    if load_state().get('state') == 'pending':
+        cmd_do_revert([])
+
+
+COMMANDS = {'boot-check': cmd_boot_check, 'status': cmd_status, 'apply': cmd_apply, 'confirm': cmd_confirm, 'revert': cmd_revert,
+            'do-apply': cmd_do_apply, 'do-confirm': cmd_do_confirm, 'do-revert': cmd_do_revert}
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] not in COMMANDS:
+        print('usage: aipbx-netcfg ' + '|'.join(k for k in COMMANDS if not k.startswith('do-') and k != 'boot-check'), file=sys.stderr)
+        return 64
+    try:
+        COMMANDS[sys.argv[1]](sys.argv[2:])
+    except Refused as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

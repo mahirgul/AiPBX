@@ -65,6 +65,62 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
     </div>
 </div>
 
+<?php $netcfg = NetworkConfigService::status(); $change = $netcfg['change']; $pending = ($change['state'] ?? '') === 'pending'; ?>
+<div class="card" id="netcfg">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-ethernet u-primary"></i> <?php echo t('netcfg.title'); ?></div>
+    </div>
+    <div style="padding: 0 20px 6px;" class="u-muted u-fs-12"><?php echo t('netcfg.help'); ?></div>
+    <?php if ($pending): ?>
+        <div class="alert alert-warning" style="margin: 8px 20px;">
+            <strong><i class="fas fa-hourglass-half"></i> <?php echo sprintf(t('netcfg.pending'), (int) ($change['seconds_left'] ?? 0)); ?></strong>
+            <form method="POST" action="/network-settings#netcfg" class="u-flex-gap" style="margin-top: 8px;">
+                <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+                <button type="submit" name="netcfg_confirm" value="1" class="btn btn-primary btn-sm"><i class="fas fa-check"></i> <?php echo t('netcfg.confirm'); ?></button>
+                <button type="submit" name="netcfg_revert" value="1" class="btn btn-secondary btn-sm"><i class="fas fa-rotate-left"></i> <?php echo t('netcfg.revert'); ?></button>
+            </form>
+        </div>
+    <?php elseif (($change['state'] ?? '') === 'reverted'): ?>
+        <div class="alert alert-info" style="margin: 8px 20px;"><?php echo t('netcfg.was_reverted'); ?></div>
+    <?php elseif (($change['state'] ?? '') === 'failed'): ?>
+        <div class="alert alert-danger" style="margin: 8px 20px;"><?php echo $h($change['error'] ?? ''); ?></div>
+    <?php elseif (($change['state'] ?? '') === 'confirmed' && ($change['new_ip'] ?? '') !== '' && $change['new_ip'] !== ($change['old_ip'] ?? '')): ?>
+        <div class="alert alert-info" style="margin: 8px 20px;"><?php echo sprintf(t('netcfg.next_readdress'), $h($change['old_ip'] ?? ''), $h($change['new_ip'])); ?></div>
+    <?php endif; ?>
+    <?php foreach ($netcfg['interfaces'] as $i => $if): $static = $if['method'] === 'static'; $first = $if['addresses'][0] ?? ''; ?>
+        <div style="padding: 8px 20px; border-top: 1px solid var(--border-color);">
+            <strong><code><?php echo $h($if['name']); ?></code></strong>
+            <span class="badge <?php echo $static ? 'badge-primary' : 'badge-info'; ?>"><?php echo $static ? t('netcfg.static') : 'DHCP'; ?></span>
+            <span class="u-fs-12"><?php echo $h(implode(', ', $if['addresses']) ?: '-'); ?></span>
+            <?php if (!$if['can_change']): ?>
+                <div class="u-muted u-fs-11 u-mt-4"><?php echo t('netcfg.not_here'); ?></div>
+            <?php elseif (!$pending): ?>
+                <form method="POST" action="/network-settings#netcfg" autocomplete="off" style="margin-top: 8px;" onsubmit="return confirm(<?php echo jsArg(t('netcfg.confirm_apply')); ?>);">
+                    <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+                    <input type="hidden" name="netcfg_apply" value="1">
+                    <input type="hidden" name="iface" value="<?php echo $h($if['name']); ?>">
+                    <div class="u-flex-gap" style="flex-wrap: wrap;">
+                        <div class="form-group" style="margin: 0;">
+                            <label class="form-label"><?php echo t('netcfg.mode'); ?></label>
+                            <select name="mode" class="form-control" onchange="this.form.querySelector('.netcfg-static').style.display = this.value === 'static' ? 'flex' : 'none';">
+                                <option value="static" <?php echo $static ? 'selected' : ''; ?>><?php echo t('netcfg.static'); ?></option>
+                                <option value="dhcp" <?php echo $static ? '' : 'selected'; ?>>DHCP</option>
+                            </select>
+                        </div>
+                        <div class="netcfg-static u-flex-gap" style="flex-wrap: wrap; display: <?php echo $static ? 'flex' : 'none'; ?>;">
+                            <div class="form-group" style="margin: 0;"><label class="form-label"><?php echo t('netcfg.address'); ?></label><input type="text" name="address" class="form-control" maxlength="18" placeholder="192.168.1.10/24" value="<?php echo $h($first); ?>"></div>
+                            <div class="form-group" style="margin: 0;"><label class="form-label"><?php echo t('netset.gateway'); ?></label><input type="text" name="gateway" class="form-control" maxlength="15" value="<?php echo $h($if['default_route'] ? $system['gateway'] : ''); ?>"></div>
+                            <div class="form-group" style="margin: 0;"><label class="form-label"><?php echo t('netset.dns'); ?></label><input type="text" name="dns" class="form-control" maxlength="50" placeholder="1.1.1.1,8.8.8.8" value="<?php echo $h(implode(',', array_slice(array_filter($system['dns'], fn($d) => strpos((string) $d, ':') === false), 0, 3))); ?>"></div>
+                        </div>
+                    </div>
+                    <label class="u-check-label u-fs-12" style="display: block; margin: 8px 0;"><input type="checkbox" name="end_calls" value="1" class="u-accent"> <?php echo t('netcfg.end_calls'); ?></label>
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('netcfg.apply'); ?></button>
+                </form>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+</div>
+
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-network-wired u-primary"></i> <?php echo t('netset.server_title'); ?></div>

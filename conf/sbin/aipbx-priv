@@ -1006,6 +1006,16 @@ FTPCONF
         esac
         ;;
 
+    netcfg)
+        # netcfg status|apply|confirm|revert — this server's own address (Network settings).
+        # aipbx-netcfg checks every value; its do-* steps are for its own units, not offered here.
+        case "${1:-}" in
+            status|apply|confirm|revert) ;;
+            *) die "unknown netcfg command: ${1:-<empty>}" ;;
+        esac
+        exec /usr/local/sbin/aipbx-netcfg "$@"
+        ;;
+
     vpn)
         # vpn SUBCOMMAND ... — Network -> VPN Server and VPN Client. aipbx-vpn checks every
         # value (profiles arrive on stdin) and is what holds the keys; "run" is for its
