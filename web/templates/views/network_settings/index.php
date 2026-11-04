@@ -1,6 +1,6 @@
 <?php
 /**
- * Network → Network settings: the server's own network (read only), its
+ * Network → Network settings: the server's network cards (editable where netplan manages them), its
  * addresses as AiPBX uses them, the addresses desk phones are told, and moving
  * them all after the server's IP changed.
  *
@@ -34,43 +34,20 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
 </div></div>
 <?php endif; ?>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-server u-primary"></i> <?php echo t('netset.system_title'); ?></div>
-    </div>
-    <div style="padding: 0 20px 6px;" class="u-muted u-fs-12"><?php echo t('netset.system_help'); ?></div>
-    <div class="u-grid-2" style="padding: 0 20px;">
-        <div><span class="u-muted u-fs-12"><?php echo t('netset.hostname'); ?></span><br><strong><?php echo $h($system['hostname']); ?></strong>
-            <?php if ($system['fqdn'] !== '' && $system['fqdn'] !== $system['hostname']): ?><span class="u-muted"> · <?php echo $h($system['fqdn']); ?></span><?php endif; ?></div>
-        <div><span class="u-muted u-fs-12"><?php echo t('netset.gateway'); ?></span><br><strong><?php echo $h($system['gateway'] ?: '-'); ?></strong>
-            <?php if ($system['gateway_dev'] !== ''): ?><span class="u-muted"> · <?php echo $h($system['gateway_dev']); ?></span><?php endif; ?></div>
-        <div class="u-mt-12"><span class="u-muted u-fs-12"><?php echo t('netset.dns'); ?></span><br><strong><?php echo $h(implode(', ', $system['dns']) ?: '-'); ?></strong></div>
-        <div class="u-mt-12"><span class="u-muted u-fs-12"><?php echo t('netset.primary'); ?></span><br><strong><?php echo $h($system['primary'] ?: '-'); ?></strong></div>
-    </div>
-    <div class="table-responsive" style="padding: 12px 20px 20px;">
-        <table class="data-table no-dt">
-            <thead><tr><th><?php echo t('netset.interface'); ?></th><th><?php echo t('netset.addresses'); ?></th><th>MAC</th><th><?php echo t('netset.state'); ?></th></tr></thead>
-            <tbody>
-            <?php foreach ($system['interfaces'] as $if): ?>
-                <tr>
-                    <td><code><?php echo $h($if['name']); ?></code></td>
-                    <td><?php echo $h(implode(', ', $if['addresses']) ?: '-'); ?></td>
-                    <td class="u-fs-11"><?php echo $h($if['mac']); ?></td>
-                    <td><?php echo uiStatusBadge($if['up'] ? 'up' : 'down', ['up' => 'success', 'down' => 'secondary'], 'secondary', $if['up'] ? t('netset.up') : t('netset.down')); ?></td>
-                </tr>
-            <?php endforeach; ?>
-            </tbody>
-        </table>
-        <div class="u-muted u-fs-11 u-mt-4"><?php echo t('netset.os_note'); ?></div>
-    </div>
-</div>
-
-<?php $netcfg = NetworkConfigService::status(); $change = $netcfg['change']; $pending = ($change['state'] ?? '') === 'pending'; ?>
+<?php
+$netcfg = NetworkConfigService::status();
+$change = $netcfg['change'];
+$pending = ($change['state'] ?? '') === 'pending';
+$cfgByName = array_column($netcfg['interfaces'], null, 'name');
+$isVirtual = static fn(string $name): bool => preg_match('/^(veth|docker|lxd|incus|br-|virbr|tun|tap|wg|aipbx|p2p)/', $name) === 1;
+$cards = array_values(array_filter($system['interfaces'], fn($i) => !$isVirtual($i['name'])));
+$others = array_values(array_filter($system['interfaces'], fn($i) => $isVirtual($i['name'])));
+$anyLocked = false;
+?>
 <div class="card" id="netcfg">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-ethernet u-primary"></i> <?php echo t('netcfg.title'); ?></div>
+        <div class="card-title"><i class="fas fa-ethernet u-primary"></i> <?php echo t('netcfg.cards_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 6px;" class="u-muted u-fs-12"><?php echo t('netcfg.help'); ?></div>
     <?php if ($pending): ?>
         <div class="alert alert-warning" style="margin: 8px 20px;">
             <strong><i class="fas fa-hourglass-half"></i> <?php echo sprintf(t('netcfg.pending'), (int) ($change['seconds_left'] ?? 0)); ?></strong>
@@ -87,43 +64,100 @@ $suggestNew = $system['primary'] !== '' ? $system['primary'] : ($localIps[0] ?? 
     <?php elseif (($change['state'] ?? '') === 'confirmed' && ($change['new_ip'] ?? '') !== '' && $change['new_ip'] !== ($change['old_ip'] ?? '')): ?>
         <div class="alert alert-info" style="margin: 8px 20px;"><?php echo sprintf(t('netcfg.next_readdress'), $h($change['old_ip'] ?? ''), $h($change['new_ip'])); ?></div>
     <?php endif; ?>
-    <?php foreach ($netcfg['interfaces'] as $i => $if): $static = $if['method'] === 'static'; $first = $if['addresses'][0] ?? ''; ?>
-        <div style="padding: 8px 20px; border-top: 1px solid var(--border-color);">
-            <strong><code><?php echo $h($if['name']); ?></code></strong>
-            <span class="badge <?php echo $static ? 'badge-primary' : 'badge-info'; ?>"><?php echo $static ? t('netcfg.static') : 'DHCP'; ?></span>
-            <span class="u-fs-12"><?php echo $h(implode(', ', $if['addresses']) ?: '-'); ?></span>
-            <?php if (!$if['can_change']): ?>
-                <div class="u-muted u-fs-11 u-mt-4"><?php echo t('netcfg.not_here'); ?></div>
-            <?php elseif (!$pending): ?>
-                <form method="POST" action="/network-settings#netcfg" autocomplete="off" style="margin-top: 8px;" onsubmit="return confirm(<?php echo jsArg(t('netcfg.confirm_apply')); ?>);">
-                    <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
-                    <input type="hidden" name="netcfg_apply" value="1">
-                    <input type="hidden" name="iface" value="<?php echo $h($if['name']); ?>">
-                    <div class="u-flex-gap" style="flex-wrap: wrap;">
-                        <div class="form-group" style="margin: 0;">
-                            <label class="form-label"><?php echo t('netcfg.mode'); ?></label>
-                            <select name="mode" class="form-control" onchange="this.form.querySelector('.netcfg-static').style.display = this.value === 'static' ? 'flex' : 'none';">
-                                <option value="static" <?php echo $static ? 'selected' : ''; ?>><?php echo t('netcfg.static'); ?></option>
-                                <option value="dhcp" <?php echo $static ? '' : 'selected'; ?>>DHCP</option>
-                            </select>
-                        </div>
-                        <div class="netcfg-static u-flex-gap" style="flex-wrap: wrap; display: <?php echo $static ? 'flex' : 'none'; ?>;">
-                            <div class="form-group" style="margin: 0;"><label class="form-label"><?php echo t('netcfg.address'); ?></label><input type="text" name="address" class="form-control" maxlength="18" placeholder="192.168.1.10/24" value="<?php echo $h($first); ?>"></div>
-                            <div class="form-group" style="margin: 0;"><label class="form-label"><?php echo t('netset.gateway'); ?></label><input type="text" name="gateway" class="form-control" maxlength="15" value="<?php echo $h($if['default_route'] ? $system['gateway'] : ''); ?>"></div>
-                            <div class="form-group" style="margin: 0;"><label class="form-label"><?php echo t('netset.dns'); ?></label><input type="text" name="dns" class="form-control" maxlength="50" placeholder="1.1.1.1,8.8.8.8" value="<?php echo $h(implode(',', array_slice(array_filter($system['dns'], fn($d) => strpos((string) $d, ':') === false), 0, 3))); ?>"></div>
-                        </div>
-                    </div>
-                    <label class="u-check-label u-fs-12" style="display: block; margin: 8px 0;"><input type="checkbox" name="end_calls" value="1" class="u-accent"> <?php echo t('netcfg.end_calls'); ?></label>
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('netcfg.apply'); ?></button>
-                </form>
-            <?php endif; ?>
-        </div>
-    <?php endforeach; ?>
+    <div class="table-responsive" style="padding: 4px 20px 8px;">
+        <table class="data-table no-dt">
+            <thead><tr><th><?php echo t('netset.interface'); ?></th><th><?php echo t('netcfg.mode'); ?></th><th><?php echo t('netset.addresses'); ?></th><th>MAC</th><th><?php echo t('netset.state'); ?></th><th></th></tr></thead>
+            <tbody>
+            <?php foreach ($cards as $i => $if):
+                $cfg = $cfgByName[$if['name']] ?? null;
+                $v4 = array_values(array_filter($if['addresses'], fn($a) => strpos($a, ':') === false));
+                $editable = $cfg !== null && !empty($cfg['can_change']) && !$pending;
+                $anyLocked = $anyLocked || ($cfg !== null && empty($cfg['can_change']));
+            ?>
+                <tr>
+                    <td><code><?php echo $h($if['name']); ?></code><?php if ($system['gateway_dev'] === $if['name']): ?> <i class="fas fa-globe u-muted" title="<?php echo $h(t('netset.gateway')); ?>"></i><?php endif; ?></td>
+                    <td><?php if ($cfg !== null): ?><span class="badge <?php echo $cfg['method'] === 'static' ? 'badge-primary' : 'badge-info'; ?>"><?php echo $cfg['method'] === 'static' ? t('netcfg.static') : 'DHCP'; ?></span><?php else: ?>-<?php endif; ?></td>
+                    <td><?php echo $h(implode(', ', $v4) ?: '-'); ?></td>
+                    <td class="u-fs-11"><?php echo $h($if['mac']); ?></td>
+                    <td><?php echo uiStatusBadge($if['up'] ? 'up' : 'down', ['up' => 'success', 'down' => 'secondary'], 'secondary', $if['up'] ? t('netset.up') : t('netset.down')); ?></td>
+                    <td class="u-text-right">
+                        <?php if ($editable): ?>
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('netcfgModal<?php echo $i; ?>')"><i class="fas fa-pen"></i> <?php echo t('common.edit'); ?></button>
+                        <?php elseif ($cfg !== null && empty($cfg['can_change'])): ?>
+                            <i class="fas fa-lock u-muted" title="<?php echo $h(t('netcfg.not_here')); ?>"></i>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php if ($anyLocked): ?><div class="u-muted u-fs-11 u-mt-4"><i class="fas fa-lock"></i> <?php echo t('netcfg.not_here'); ?></div><?php endif; ?>
+    </div>
+    <div class="u-grid-2" style="padding: 0 20px 12px;">
+        <div><span class="u-muted u-fs-12"><?php echo t('netset.gateway'); ?></span><br><strong><?php echo $h($system['gateway'] ?: '-'); ?></strong></div>
+        <div><span class="u-muted u-fs-12"><?php echo t('netset.dns'); ?></span><br><strong><?php echo $h(implode(', ', $system['dns']) ?: '-'); ?></strong></div>
+        <div class="u-mt-12"><span class="u-muted u-fs-12"><?php echo t('netset.hostname'); ?></span><br><strong><?php echo $h($system['hostname']); ?></strong>
+            <?php if ($system['fqdn'] !== '' && $system['fqdn'] !== $system['hostname']): ?><span class="u-muted"> · <?php echo $h($system['fqdn']); ?></span><?php endif; ?></div>
+        <div class="u-mt-12"><span class="u-muted u-fs-12"><?php echo t('netset.primary'); ?></span><br><strong><?php echo $h($system['primary'] ?: '-'); ?></strong></div>
+    </div>
+    <?php if ($others !== []): ?>
+        <details style="padding: 0 20px 16px;">
+            <summary class="u-muted u-fs-12" style="cursor: pointer;"><?php echo sprintf(t('netcfg.other_ifaces'), count($others)); ?></summary>
+            <div class="u-muted u-fs-11 u-mt-4"><?php echo t('netcfg.other_help'); ?></div>
+            <div class="table-responsive u-mt-4">
+                <table class="data-table no-dt">
+                    <tbody>
+                    <?php foreach ($others as $if): ?>
+                        <tr><td><code><?php echo $h($if['name']); ?></code></td><td><?php echo $h(implode(', ', $if['addresses']) ?: '-'); ?></td><td><?php echo uiStatusBadge($if['up'] ? 'up' : 'down', ['up' => 'success', 'down' => 'secondary'], 'secondary', $if['up'] ? t('netset.up') : t('netset.down')); ?></td></tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    <?php endif; ?>
 </div>
+
+<?php foreach ($cards as $i => $if):
+    $cfg = $cfgByName[$if['name']] ?? null;
+    if ($cfg === null || empty($cfg['can_change']) || $pending) { continue; }
+    $static = $cfg['method'] === 'static';
+    $first = $cfg['addresses'][0] ?? '';
+?>
+<div class="modal-overlay" id="netcfgModal<?php echo $i; ?>">
+    <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+            <h3 class="u-title"><i class="fas fa-ethernet u-primary"></i> <code><?php echo $h($if['name']); ?></code></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('netcfgModal<?php echo $i; ?>')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" action="/network-settings#netcfg" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('netcfg.confirm_apply')); ?>);">
+                <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+                <input type="hidden" name="netcfg_apply" value="1">
+                <input type="hidden" name="iface" value="<?php echo $h($if['name']); ?>">
+                <p class="text-muted u-fs-12"><?php echo t('netcfg.help'); ?></p>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('netcfg.mode'); ?></label>
+                    <select name="mode" class="form-control" onchange="this.form.querySelector('.netcfg-static').style.display = this.value === 'static' ? 'block' : 'none';">
+                        <option value="static" <?php echo $static ? 'selected' : ''; ?>><?php echo t('netcfg.static'); ?></option>
+                        <option value="dhcp" <?php echo $static ? '' : 'selected'; ?>>DHCP</option>
+                    </select>
+                </div>
+                <div class="netcfg-static" style="display: <?php echo $static ? 'block' : 'none'; ?>;">
+                    <div class="form-group"><label class="form-label"><?php echo t('netcfg.address'); ?></label><input type="text" name="address" class="form-control" maxlength="18" placeholder="192.168.1.10/24" value="<?php echo $h($first); ?>"></div>
+                    <div class="form-group"><label class="form-label"><?php echo t('netset.gateway'); ?></label><input type="text" name="gateway" class="form-control" maxlength="15" value="<?php echo $h($cfg['default_route'] ? $system['gateway'] : ''); ?>"></div>
+                    <div class="form-group"><label class="form-label"><?php echo t('netset.dns'); ?></label><input type="text" name="dns" class="form-control" maxlength="50" placeholder="1.1.1.1,8.8.8.8" value="<?php echo $h(implode(',', array_slice(array_filter($system['dns'], fn($d) => strpos((string) $d, ':') === false), 0, 3))); ?>"></div>
+                </div>
+                <label class="u-check-label u-fs-12" style="display: block; margin: 8px 0;"><input type="checkbox" name="end_calls" value="1" class="u-accent"> <?php echo t('netcfg.end_calls'); ?></label>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('netcfgModal{$i}')", t('netcfg.apply'), '', 'fa-save'); ?>
+            </form>
+        </div>
+    </div>
+</div>
+<?php endforeach; ?>
 
 <div class="card">
     <div class="card-header">
-        <div class="card-title"><i class="fas fa-network-wired u-primary"></i> <?php echo t('netset.server_title'); ?></div>
+        <div class="card-title"><i class="fas fa-network-wired u-primary"></i> <?php echo t('netcfg.pbx_addresses_title'); ?></div>
     </div>
     <form method="POST" autocomplete="off" style="padding: 0 20px 20px;">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
