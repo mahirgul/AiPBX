@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.24
+
+- **Network settings is simpler.** One table of network cards, each with an Edit button for its address where netplan manages it; virtual interfaces such as VPN tunnels and containers are folded away. A card a server manages another way shows a lock and why.
+
 ## 1.60.23
 
 - **Adding a user takes two fields.** Only the username and extension are required, and they are now one under the other at the top of the form. An empty password is generated, as an invitation or a one-time password shown to you, and an empty full name becomes the username.
