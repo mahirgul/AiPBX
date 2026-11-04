@@ -28,8 +28,13 @@ final class PhoneProvisionTest extends TestCase
     private int $userId;
     private int $user2Id;
 
+    private string $zoneBefore = '';
+
     protected function setUp(): void
     {
+        // Phones get their offset from the system's zone: fixed, so the tests do not depend on the machine.
+        $this->zoneBefore = date_default_timezone_get();
+        date_default_timezone_set('Europe/Istanbul');
         $this->db = getDB();
         $this->cleanUp();
         putenv('PORTAL_DOMAIN=pbx.test.example');
@@ -45,6 +50,7 @@ final class PhoneProvisionTest extends TestCase
 
     protected function tearDown(): void
     {
+        date_default_timezone_set($this->zoneBefore);
         $this->cleanUp();
         putenv('PORTAL_DOMAIN');
     }
