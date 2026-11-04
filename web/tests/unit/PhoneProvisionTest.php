@@ -764,4 +764,50 @@ final class PhoneProvisionTest extends TestCase
             $this->assertFalse($r['success'], $bad);
         }
     }
+
+    public function testModelSettingsParseAndSafety(): void
+    {
+        $p = PhoneModelSettingsService::parse("# note\n\nline.1.digitmap = [36]xxx|x.T\nphone.a=1\nphone.a=2\n");
+        $this->assertSame(['line.1.digitmap' => '[36]xxx|x.T', 'phone.a' => '2'], $p['settings']);
+        $this->assertSame([], $p['errors']);
+        foreach (['no equals sign', 'bad name" x=y = 1', '<x> = 1', '= 1'] as $bad) {
+            $this->assertNotSame([], PhoneModelSettingsService::parse($bad)['errors'], $bad);
+        }
+    }
+
+    public function testModelSettingsReachEveryVendorFile(): void
+    {
+        $extra = ['extra_settings' => ['line.1.digitmap' => '[36]xxx|x.T', 'zz.new' => '1"><x>']];
+
+        $ctx = $extra + $this->context('nec-dt710');
+        $tpl = new NecTemplate();
+        foreach ([$tpl->render($ctx), $tpl->renderLocal($ctx)] as $body) {
+            $this->assertStringContainsString('digitmap="[36]xxx|x.T"', $body);
+            $this->assertStringNotContainsString('digitmap="x.T', $body, 'replaced, not added twice');
+            $this->assertStringNotContainsString('"><x>', $body, 'escaped');
+            $this->assertNotFalse(simplexml_load_string($body));
+        }
+
+        $this->assertStringEndsWith("line.1.digitmap = [36]xxx|x.T\nzz.new = 1\"><x>\n", (new YealinkTemplate())->render($extra + $this->context('yealink-t46u')));
+        foreach ([[new GrandstreamTemplate(), 'grandstream-gxp2170', ['P999' => 'a&b'], '<P999>a&amp;b</P999>'], [new PolyTemplate(), 'poly-vvx450', ['a.b' => 'x"y'], 'a.b="x&quot;y"']] as [$t, $m, $e, $want]) {
+            $this->assertStringContainsString($want, $t->render(['extra_settings' => $e] + $this->context($m)));
+        }
+        $this->assertFalse((new SnomTemplate())->supportsExtraSettings());
+    }
+
+    public function testASavedModelSettingChangesTheVersionAndOnlyThatModel(): void
+    {
+        $this->assertArrayHasKey('nec-dt710', PhoneModelSettingsService::supportedModels());
+        $this->assertArrayNotHasKey('snom-d735', PhoneModelSettingsService::supportedModels());
+        $db = getDB();
+        try {
+            $db->exec("INSERT INTO pbx_phone_model_settings (model, extra_settings) VALUES ('nec-dt710', 'a.b = 1')");
+            PhoneModelSettingsService::resetCache();
+            $this->assertSame(['a.b' => '1'], PhoneModelSettingsService::forModel('nec-dt710'));
+            $this->assertSame([], PhoneModelSettingsService::forModel('yealink-t46u'));
+        } finally {
+            $db->exec("DELETE FROM pbx_phone_model_settings WHERE model = 'nec-dt710'");
+            PhoneModelSettingsService::resetCache();
+        }
+    }
 }

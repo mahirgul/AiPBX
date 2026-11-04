@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.22
+
+- **Model settings for desk phones.** The Phones page can add settings to the files of every phone of one model, one `name = value` per line, such as a dial plan for NEC phones. They are kept in the database, so updates keep them, and they win over what AiPBX writes. Available for NEC, Yealink, Grandstream and Poly.
+
 ## 1.60.21
 
 - **The caller header can be seen and changed on each desk phone extension.** The extension form now has a *Send the caller in a header* box, on by default, as it has been for every desk phone since 1.60.16. It can be turned off for a phone that has trouble with this header.

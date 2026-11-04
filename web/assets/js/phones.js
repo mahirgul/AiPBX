@@ -95,3 +95,9 @@ function showPhoneAdminPassword(phoneId) {
         })
         .catch(() => alert(__('js.phones.failed')));
 }
+
+function phonesShowModelSettings() {
+    const model = document.getElementById('modelSettingsModel');
+    const text = document.getElementById('modelSettingsText');
+    if (model && text) text.value = (window.PHONE_MODEL_SETTINGS || {})[model.value] || '';
+}

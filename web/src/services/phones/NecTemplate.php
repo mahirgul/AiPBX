@@ -69,6 +69,11 @@ final class NecTemplate extends PhoneTemplate
         return ['dt-' . $mac . '.cfg', 'dt-' . $mac . '-phone.cfg', 'dt-' . $mac . '-local.cfg'];
     }
 
+    public function supportsExtraSettings(): bool
+    {
+        return true;
+    }
+
     public function renderFile(string $file, array $ctx): string
     {
         if (preg_match('/-local\.cfg$/i', $file)) {
@@ -154,6 +159,10 @@ final class NecTemplate extends PhoneTemplate
         ] + $g['DT_PHONE_NETWORK_DATA'];
         foreach (self::LOG_AREAS as $area) {
             $attrs["log.level.$area"] = '1';
+        }
+        // The local file wins over the data file, so an extra setting has to be here too.
+        foreach (self::extras($ctx) as $name => $value) {
+            $attrs[$name] = self::xml($value, 500);
         }
         $out = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n<PHONE_CONFIG>\n<VERSION Version=\"" . max(1, (int) ($ctx['config_version'] ?? 1)) . "\"/>\n<NEC_Override>\n<DT_PHONE_CONFIG_DATA \n";
         foreach ($attrs as $name => $value) {
@@ -301,6 +310,16 @@ final class NecTemplate extends PhoneTemplate
         }
         // No user.lang.menu.*: each entry makes the phone fetch <lang>.mo from the
         // file server at boot (9 failed downloads); the menu language itself works without.
+        foreach (self::extras($ctx) as $name => $value) {
+            $target = 'DT_PHONE_DATA';
+            foreach ($groups as $group => $attrs) {
+                if (array_key_exists($name, $attrs)) {
+                    $target = $group;
+                    break;
+                }
+            }
+            $groups[$target][$name] = self::xml($value, 500);
+        }
         return $groups;
     }
 

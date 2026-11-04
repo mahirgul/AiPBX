@@ -243,3 +243,15 @@ The templates live in `web/src/services/phones/`: a `PhoneTemplate` subclass per
 names, rendering, NOTIFY events), the models with their key counts in `PhoneModels`, and the
 NOTIFY sections in `conf/asterisk/pjsip_notify.conf`. Values go through `PhoneTemplate::clean()`
 (line-based files) or `PhoneTemplate::xml()` (XML), so a name or label cannot add settings.
+
+## Model settings
+
+**Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
+
+For example, to make NEC phones dial known numbers without waiting:
+
+```
+line.1.digitmap = [36789]xxx|1[3-9]xxx|0[2-58]xxxxxxxxx|x.T|[*]x.T|[#]x.T
+```
+
+Names and values go to the phone as they are, so a wrong one can stop a phone working: try a new setting on a model with one phone first where you can. Phones read them when they next fetch their configuration, usually at a restart. Delete the lines to go back to what AiPBX writes.

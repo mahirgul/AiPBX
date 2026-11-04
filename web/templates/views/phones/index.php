@@ -52,6 +52,7 @@ $userOptions = function () use ($users) {
             <?php if ($canEdit): ?>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('discoverySettingsModal')" title="<?php echo t('phonedisc.settings_title'); ?>"><i class="fas fa-wifi"></i></button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('provisionSettingsModal')" title="<?php echo t('phones.settings_title'); ?>"><i class="fas fa-sliders-h"></i></button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('modelSettingsModal'); phonesShowModelSettings();" title="<?php echo t('phones.extra_title'); ?>"><i class="fas fa-sliders-h"></i> <?php echo t('phones.extra_title'); ?></button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('phoneImportModal')" title="<?php echo t('phones.import_title'); ?>"><i class="fas fa-file-csv"></i></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="openCreatePhoneModal()" title="<?php echo t('phones.add'); ?>"><i class="fas fa-plus-circle"></i></button>
             <?php endif; ?>
@@ -380,6 +381,35 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
 </div>
 
 <!-- Modal: CSV import -->
+<div class="modal-overlay" id="modelSettingsModal">
+    <div class="modal-card" style="max-width: 640px;">
+        <div class="modal-header">
+            <h3 class="u-title"><i class="fas fa-sliders-h u-primary"></i> <?php echo t('phones.extra_title'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('modelSettingsModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="save_model_settings" value="1">
+                <p class="text-muted u-fs-12"><?php echo t('phones.extra_help'); ?></p>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.extra_model'); ?></label>
+                    <select name="model" id="modelSettingsModel" class="form-control" onchange="phonesShowModelSettings()">
+                        <?php foreach ($extraModels as $key => $label): ?>
+                            <option value="<?php echo htmlspecialchars($key); ?>"><?php echo htmlspecialchars($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <textarea name="extra_settings" id="modelSettingsText" class="form-control" rows="10" style="font-family: monospace;" placeholder="line.1.digitmap = [36789]xxx|x.T"></textarea>
+                </div>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('modelSettingsModal')", t('common.save'), '', 'fa-save'); ?>
+            </form>
+        </div>
+    </div>
+</div>
+<script>window.PHONE_MODEL_SETTINGS = <?php echo json_encode($extraTexts, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;</script>
+
 <div class="modal-overlay" id="phoneImportModal">
     <div class="modal-card" style="max-width: 560px;">
         <div class="modal-header">

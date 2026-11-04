@@ -789,6 +789,7 @@ class PhoneProvisionService
             'cisco_load' => PhoneFirmwareService::loadForPhoneFile($phone),
             'admin_password' => SecretBox::decrypt((string) $phone['admin_password']),
             'keys' => self::getKeys((int) $user['id']),
+            'extra_settings' => PhoneModelSettingsService::forModel((string) $phone['model']),
         ];
     }
 
