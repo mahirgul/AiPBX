@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.28
+
+- **Phones on TCP or TLS now get their calls.** They registered fine but no incoming call reached them, as every extension was tied to UDP. A call now goes back over the transport the phone registered on. This also applies to TLS set in provisioning or in a region.
+- **Transports page.** See UDP, TCP, TLS, WS and WSS in one list, change an address or port, turn TCP and TLS on or off, and add your own transports, each with its own public address if you need one. A new port opens in the firewall, and the page says when Asterisk needs a restart.
+- **More SIP settings on each extension.** Transport, DTMF mode, media encryption, NAT options, codec order, devices at once, check interval and prompt language.
+- **TCP for desk phones.** Provisioning and regions can now choose TCP (Yealink, Grandstream, Fanvil, Snom, Cisco SPA, Poly). A region can also name the SIP port of a transport added for it.
+
 ## 1.60.27
 
 - **Regions for desk phones.** Phones can get different addresses and settings by region: SIP server, outbound proxy, address for phone files, transport, SRTP, codecs, NTP, syslog, time zone and language. Internal and External come ready, you can add more, and you choose the region on each phone. New phones start in Internal, and nothing changes until you fill a region.

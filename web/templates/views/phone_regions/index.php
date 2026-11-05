@@ -68,10 +68,16 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
                     </div>
                     <?php endforeach; ?>
                     <div class="form-group">
+                        <label class="form-label"><?php echo t('phones.region_sip_port'); ?></label>
+                        <input type="number" name="sip_port" id="region_sip_port" class="form-control" min="1" max="65535" placeholder="<?php echo t('phones.region_general'); ?>">
+                        <small class="u-hint"><?php echo t('phones.region_sip_port_help'); ?></small>
+                    </div>
+                    <div class="form-group">
                         <label class="form-label"><?php echo t('phones.region_transport'); ?></label>
                         <select name="transport" id="region_transport" class="form-control">
                             <option value=""><?php echo t('phones.region_general'); ?></option>
                             <option value="udp">UDP</option>
+                            <option value="tcp">TCP</option>
                             <option value="tls">TLS</option>
                         </select>
                     </div>

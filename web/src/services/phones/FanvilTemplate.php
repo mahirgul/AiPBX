@@ -70,7 +70,7 @@ final class FanvilTemplate extends PhoneTemplate
             'SIP1 Register Pswd :' . self::clean($ctx['sip_password'], 128),
             'SIP1 Register TTL  :1800',
             'SIP1 Enable Reg    :1',
-            'SIP1 Transport     :' . ($tls ? 2 : 0),
+            'SIP1 Transport     :' . (['udp' => 0, 'tcp' => 1, 'tls' => 2][$ctx['transport']] ?? 0),
             'SIP1 Enable SRTP   :' . ((int) $ctx['srtp'] > 0 ? 1 : 0),
             'SIP1 MWI Num       :' . self::clean($ctx['voicemail']),
             'SIP1 BLF Pickup Num:' . self::clean($ctx['pickup_prefix']),

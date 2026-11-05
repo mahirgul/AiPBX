@@ -44,6 +44,7 @@ return [
             ['href' => '/system-users', 'icon' => 'fas fa-users-cog', 'label' => 'sidebar.item_system_users', 'show' => $can('system_users'), 'pages' => ['system_users.php']],
             ['href' => '/roles', 'icon' => 'fas fa-user-shield', 'label' => 'sidebar.item_roles', 'show' => $can('roles'), 'pages' => ['roles.php']],
             ['href' => '/asterisk-settings', 'icon' => 'fas fa-cogs', 'label' => 'sidebar.item_asterisk_settings', 'show' => $can('asterisk_settings'), 'pages' => ['asterisk_settings.php']],
+            ['href' => '/transports', 'icon' => 'fas fa-route', 'label' => 'sidebar.item_transports', 'show' => $isAdmin, 'pages' => ['transports.php']],
             ['href' => '/brand-settings', 'icon' => 'fas fa-palette', 'label' => 'sidebar.item_brand_settings', 'show' => $can('brand_settings'), 'pages' => ['brand_settings.php']],
             ['href' => '/push-settings', 'icon' => 'fas fa-bell', 'label' => 'sidebar.item_push_settings', 'show' => $can('push_settings'), 'pages' => ['push_settings.php']],
             ['href' => '/mail-settings', 'icon' => 'fas fa-envelope-open-text', 'label' => 'sidebar.item_mail_settings', 'show' => $can('mail_settings'), 'pages' => ['mail_settings.php']],

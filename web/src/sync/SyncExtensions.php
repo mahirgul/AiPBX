@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__DIR__) . '/services/ExtensionSipOptions.php';
 /**
  * Single Master File Extension Sync Module (/etc/asterisk/pbx/pjsip_endpoints.conf)
  * Consolidates all active subscriber endpoints into a single master configuration file reading from `sip` key-value table.
@@ -157,7 +158,9 @@ function __syncAllExtensionsBody() {
     $conf .= "context=from-internal-pbx\n";
     $conf .= "disallow=all\n";
     $conf .= "allow={$wired_codecs}\n";
-    $conf .= "transport=transport-udp\n";
+    // No transport= here: a call to the phone goes back over the transport it registered on. With
+    // transport-udp a phone on TCP or TLS registered fine and never got a call (measured,
+    // PJSIP_ETPNOTSUITABLE). An extension can still name one (ExtensionSipOptions).
     $conf .= "identify_by=auth_username,username\n";
     $conf .= "rtp_symmetric={$rtp_symmetric}\n";
     $conf .= "rewrite_contact=yes\n";
@@ -295,7 +298,6 @@ function __syncAllExtensionsBody() {
         if (preg_match('/^"(.*)"\s*<([^<>]*)>$/s', (string) $callerid, $cidParts)) {
             $callerid = '"' . str_replace(['"', '\\'], '', $cidParts[1]) . '" <' . $cidParts[2] . '>';
         }
-        $transport = !empty($sip_map['transport']) ? $sip_map['transport'] : 'transport-wss';
         $max_contacts = !empty($sip_map['max_contacts']) ? $sip_map['max_contacts'] : '5';
 
         // The user's internal/external call CID preferences are embedded into
@@ -342,9 +344,7 @@ function __syncAllExtensionsBody() {
             $conf .= "mailboxes={$ext}@default\n";
         }
 
-        if ($transport !== 'transport-wss') {
-            $conf .= "transport={$transport}\n";
-        }
+        $conf .= ExtensionSipOptions::endpointLines($sip_map);
 
         // Pass-through any extra custom PJSIP parameters stored in `sip` table.
         // WebRTC-specific keys (dtls/ice/avpf/direct_media) are NEVER written to
@@ -357,7 +357,7 @@ function __syncAllExtensionsBody() {
             'dtls_cert_file', 'dtls_ca_file', 'dtls_rekey', 'force_avp'
         ];
         foreach ($sip_map as $k => $v) {
-            if (in_array($k, $ignore_keys) || $v === '') continue;
+            if (in_array($k, $ignore_keys) || $v === '' || ExtensionSipOptions::isOwnKey((string) $k)) continue;
             if (!in_array($k, $sip_blocked)) {
                 $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
             }
@@ -422,7 +422,8 @@ function __syncAllExtensionsBody() {
         $max_c = (intval($max_contacts) > 0) ? intval($max_contacts) : 10;
         $conf .= "[{$ext}-webrtc](aor-dual)\nmax_contacts={$max_c}\n\n";
         $conf .= "[{$ext}-mob-webrtc](aor-mobile)\n\n";
-        $conf .= "[{$ext}-sip](aor-dual)\nmax_contacts={$max_c}\n\n";
+        $qualify = ExtensionSipOptions::qualifyFrequency($sip_map);
+        $conf .= "[{$ext}-sip](aor-dual)\nmax_contacts={$max_c}\n" . ($qualify !== '' ? "qualify_frequency={$qualify}\n" : '') . "\n";
         $conf .= "[{$ext}](aor-dual)\nmax_contacts={$max_c}\n\n";
     }
 

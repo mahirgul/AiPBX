@@ -526,6 +526,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                         <label class="form-label"><?php echo t('phones.transport'); ?></label>
                         <select name="provision_transport" class="form-control">
                             <option value="udp" <?php echo $settings['provision_transport'] === 'udp' ? 'selected' : ''; ?>>UDP</option>
+<option value="tcp" <?php echo $settings['provision_transport'] === 'tcp' ? 'selected' : ''; ?>>TCP</option>
                             <option value="tls" <?php echo $settings['provision_transport'] === 'tls' ? 'selected' : ''; ?>>TLS</option>
                         </select>
                     </div>

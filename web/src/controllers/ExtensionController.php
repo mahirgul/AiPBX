@@ -24,6 +24,11 @@ class ExtensionController extends BaseController
         ]);
 
         $extensions = ExtensionRepository::allWithExtension();
+        $sipOptions = ExtensionSipOptions::allStored();
+        foreach ($extensions as &$extensionRow) {
+            $extensionRow['sip_options'] = $sipOptions[(string) ($extensionRow['extension'] ?? '')] ?? [];
+        }
+        unset($extensionRow);
         $pjsip_statuses = ExtensionRepository::livePjsipStatuses();
         $permission_groups = DialPermissionService::getGroups();
         $boss_secretary_groups = BossSecretaryService::getGroups();

@@ -213,6 +213,7 @@ function check_rbac(): void
         '/phones',
         '/phone-keys',
         '/phone-regions',
+        '/transports',
         '/web-widgets',
         '/plugins',
         '/api-keys',
