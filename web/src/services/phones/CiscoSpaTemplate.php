@@ -19,6 +19,12 @@ final class CiscoSpaTemplate extends PhoneTemplate
         'pt' => 'Portuguese', 'nl' => 'Dutch', 'ru' => 'Russian', 'tr' => 'Turkish',
     ];
 
+    /** The phone fills in $MA with its own MAC address. */
+    public function urlFile(string $mac): string
+    {
+        return 'spa$MA.xml';
+    }
+
     public function vendor(): string
     {
         return 'cisco';

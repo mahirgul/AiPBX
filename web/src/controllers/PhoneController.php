@@ -77,7 +77,10 @@ class PhoneController extends BaseController
         $phones = PhoneProvisionService::listPhones();
         foreach ($phones as &$p) {
             $tpl = PhoneTemplates::forModel($p['model']);
-            $p['url'] = PhoneProvisionService::provisioningUrl($p);
+            $file = $tpl ? $tpl->urlFile((string) $p['mac']) : '';
+            $p['url'] = PhoneProvisionService::provisioningUrl($p) . $file;
+            $https = PhoneProvisionService::httpsProvisioningUrl($p);
+            $p['url_https'] = $https !== null ? $https . $file : '';
             $p['device_file'] = $tpl ? $tpl->deviceFile($p['mac']) : '';
             $p['can_reboot'] = $tpl !== null && $tpl->notifyReboot() !== '';
             unset($p['admin_password'], $p['token']);

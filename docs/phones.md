@@ -81,11 +81,13 @@ server in the phone's web interface:
 | Yealink | *Settings → Auto Provision → Server URL* |
 | Grandstream | *Maintenance → Upgrade and Provisioning → Config Server Path* (HTTPS) |
 | Fanvil | *Maintenance → Auto Provision → Server Address* (HTTPS) |
-| Snom | *Setup → Advanced → Update → Setting URL*: the copied URL followed by `snom-{mac}.xml` |
-| Cisco SPA | *Admin login → Advanced → Voice → Provisioning → Profile Rule*: the copied URL followed by `spa$MA.xml` |
+| Snom | *Setup → Advanced → Update → Setting URL*: the copied URL |
+| Cisco SPA | *Admin login → Advanced → Voice → Provisioning → Profile Rule*: the copied URL |
 | Poly | *Settings → Provisioning Server*: server type HTTPS, the copied URL as server address |
 | NEC | The phone's file (configuration) server setting, or DHCP option 66: the copied URL |
 | Cisco 79xx/88xx (CallManager) | Not a URL: these phones ask their server for `SEP<MAC>.cnf.xml` by name, so they are pointed at the PBX by DHCP **option 150** and read the file from the TFTP folder. See [Cisco 7900 / 8800 series](cisco-callmanager.md). |
+
+Files are served over both HTTP and HTTPS. **Copy URL** gives the address from the provisioning settings; when that is plain HTTP, an **HTTPS** button gives the one under the portal's name. HTTP on an internal address needs nothing from the phone, but the file, with its SIP password, travels unencrypted. HTTPS needs the phone to reach that name and trust its certificate.
 
 The phone then asks for its own file under that URL; AiPBX checks that the MAC in the file name
 is the phone's:

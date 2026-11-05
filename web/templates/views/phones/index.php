@@ -123,6 +123,9 @@ $userOptions = function () use ($users) {
                                 <button type="button" class="btn btn-secondary btn-sm" data-url="<?php echo htmlspecialchars($p['url']); ?>" onclick="copyProvisionUrl(this)" title="<?php echo htmlspecialchars($p['url']); ?>">
                                     <i class="fas fa-copy"></i> <?php echo t('phones.copy_url'); ?>
                                 </button>
+                                <?php if ($p['url_https'] !== ''): ?>
+                                <button type="button" class="btn btn-secondary btn-sm" data-url="<?php echo htmlspecialchars($p['url_https']); ?>" onclick="copyProvisionUrl(this)" title="<?php echo t('phones.copy_https'); ?>"><i class="fas fa-lock"></i> HTTPS</button>
+                                <?php endif; ?>
                                 <div class="text-muted u-fs-11"><?php echo htmlspecialchars($p['device_file']); ?></div>
                             </td>
                             <td class="text-right">
@@ -142,7 +145,7 @@ $userOptions = function () use ($users) {
                                             <button type="submit" name="regenerate_token" value="1" class="btn btn-secondary btn-sm" title="<?php echo t('phones.new_url'); ?>" onclick="return confirm(<?php echo htmlspecialchars(json_encode(t('phones.new_url_confirm')), ENT_QUOTES); ?>);"><i class="fas fa-key"></i></button>
                                         </form>
                                         <button type="button" class="btn btn-secondary btn-sm" onclick="showPhoneAdminPassword(<?php echo (int) $p['id']; ?>)" title="<?php echo t('phones.admin_password'); ?>"><i class="fas fa-user-lock"></i></button>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditPhoneModal(<?php echo jsArg(['id' => (int) $p['id'], 'mac' => PhoneModels::formatMac($p['mac']), 'model' => $p['model'], 'user_id' => (int) $p['user_id'], 'notes' => $p['notes']]); ?>)' title="<?php echo t('common.edit'); ?>"><i class="fas fa-edit"></i></button>
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditPhoneModal(<?php echo jsArg(['id' => (int) $p['id'], 'mac' => PhoneModels::formatMac($p['mac']), 'model' => $p['model'], 'user_id' => (int) $p['user_id'], 'notes' => $p['notes'], 'region_id' => (int) ($p['region_id'] ?? 0)]); ?>)' title="<?php echo t('common.edit'); ?>"><i class="fas fa-edit"></i></button>
                                     <?php endif; ?>
                                     <?php if (hasModulePermission('phones', 'delete')): ?>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('phones.delete_confirm')), ENT_QUOTES); ?>);">
@@ -380,6 +383,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                             <option value="<?php echo (int) $r['id']; ?>"<?php echo (int) $r['id'] === (int) $defaultRegion ? ' selected' : ''; ?>><?php echo htmlspecialchars((string) $r['name']); ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <small class="u-hint"><?php echo t('phones.region_field_help'); ?> <a href="/phone-regions"><?php echo t('phones.region_title'); ?></a></small>
                 </div>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('phones.notes'); ?></label>

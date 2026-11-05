@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.61.2
+
+- **A phone keeps its region when you edit it.** The form always showed the default region, and saving it without a change moved the phone there.
+- **Copy URL gives the whole address.** For Snom and Cisco SPA it left out the file name, so a phone given that address found nothing. A second button copies the HTTPS address when the first is plain HTTP.
+
 ## 1.61.1
 
 - **Link anyone to a fax unit.** Fax Units can list the people who use a unit, such as extension users, so nobody needs a second account for fax. They see its numbers under Fax, and can send from them. A unit can have no login of its own, and its e-mail address no longer has to be unique.

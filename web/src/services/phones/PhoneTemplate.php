@@ -52,6 +52,15 @@ abstract class PhoneTemplate
         return $this->render($ctx);
     }
 
+    /**
+     * What goes after the phone's URL when it is entered by hand: most phones ask for their file under
+     * the URL by themselves, and those that need its name given return it here.
+     */
+    public function urlFile(string $mac): string
+    {
+        return '';
+    }
+
     /** Can this vendor's file take "name = value" settings from the Phones page? */
     public function supportsExtraSettings(): bool
     {

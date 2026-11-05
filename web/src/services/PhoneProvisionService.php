@@ -309,6 +309,20 @@ class PhoneProvisionService
         )->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /**
+     * The URL to enter on the phone over HTTPS, under the portal's own name, which its certificate is
+     * for. Files are served over both, so a phone can use either. Null when the portal has no https
+     * address, or when the phone's URL is that address already.
+     */
+    public static function httpsProvisioningUrl(array $phone): ?string
+    {
+        $portal = ForgotPasswordService::portalUrl();
+        if (stripos($portal, 'https://') !== 0 || stripos(self::baseUrl($phone), 'https://') === 0) {
+            return null;
+        }
+        return rtrim($portal, '/') . '/provision/' . $phone['token'] . '/';
+    }
+
     public static function provisioningUrl(array $phone): string
     {
         return self::baseUrl($phone) . '/provision/' . $phone['token'] . '/';

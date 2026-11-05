@@ -902,4 +902,17 @@ final class PhoneProvisionTest extends TestCase
         $out = (new SnomTemplate())->render(['extra_settings' => $hostile['settings'], 'extra_attributes' => $hostile['attributes']] + $this->hostileContext('snom-d865'));
         $this->assertNotFalse(simplexml_load_string($out), 'an attribute cannot break the file');
     }
+
+    public function testTheCopiedUrlNamesTheFileWhereThePhoneNeedsIt(): void
+    {
+        $this->assertSame('snom-000413aabbcc.xml', (new SnomTemplate())->urlFile('000413aabbcc'));
+        $this->assertSame('spa$MA.xml', (new CiscoSpaTemplate())->urlFile('000413aabbcc'));
+        $this->assertSame('', (new YealinkTemplate())->urlFile('000413aabbcc'));
+    }
+
+    public function testTheEditFormIsToldThePhonesRegion(): void
+    {
+        $view = (string) file_get_contents(dirname(__DIR__, 2) . '/templates/views/phones/index.php');
+        $this->assertMatchesRegularExpression("/openEditPhoneModal\(<\?php echo jsArg\(\[[^\n]*'region_id' =>/", $view, 'without it, saving moves the phone to the default region');
+    }
 }

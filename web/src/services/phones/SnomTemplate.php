@@ -31,6 +31,11 @@ final class SnomTemplate extends PhoneTemplate
         return true;
     }
 
+    public function urlFile(string $mac): string
+    {
+        return $this->deviceFile($mac);
+    }
+
     public function macFromFile(string $file): string
     {
         return preg_match('/^snom(?:[a-z0-9]+)?-([0-9a-f]{12})\.(?:htm|xml)$/i', $file, $m) ? PhoneModels::normalizeMac($m[1]) : '';
