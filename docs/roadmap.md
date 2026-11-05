@@ -479,7 +479,7 @@ phones also get no voicemail lamp: their endpoints have no `mailboxes=`.
 **Goal.** A new desk phone works within a minute: plug it in, it fetches its configuration from
 AiPBX and registers with the right extension, keys and settings, without anyone typing on it.
 
-**Admin page** (*Network & devices → Phones*):
+**Admin page** (*Provisioning → Phones*):
 
 - **Phone list:** MAC address, model, assigned extension, IP, firmware, last configuration
   download, registration state.
@@ -510,7 +510,7 @@ needed.
 **Goal.** Phones find the provisioning server by themselves: the DHCP server tells them its
 address (option 66), and TFTP serves the files of phones that need it.
 
-**Admin page** (*Network & devices → Network services*):
+**Admin page** (*Network → Network services*):
 
 - **Off by default.** A second DHCP server on a network breaks it, so it has to be switched on
   deliberately, with a clear warning and a check for another DHCP server already answering.
@@ -579,7 +579,7 @@ register to the old address, the portal's certificate no longer matches.
 
 ## 13. Network settings page
 
-**Done in 1.33.0** (*Network & devices → Network settings*), except the last point: changing the
+**Done in 1.33.0** (*Network → Network settings*), except the last point: changing the
 server's own address, gateway and DNS with a roll-back is still open. Planned 2026-10-16. Network settings are spread over *Asterisk settings* (external IP, local
 networks, RTP ports), *Phones → Provisioning settings* (addresses for the phones, allowed networks)
 and *Network services*. One page collects them:
@@ -604,7 +604,7 @@ pages. Proposed groups:
 | Panel | Overview, My phone, Chat, Reports |
 | Lines | Trunks, Inbound routes, Outbound routes, Dial permissions |
 | PBX | Extensions, IVR, Time plans, Ring groups, Queues, Conferences, Boss–secretary, Hangup actions, Sounds, Feature codes, Active codes |
-| **Network & devices** (new) | Network settings (13), Network services, Phones (provisioning), Phone logs |
+| **Network** (new) | Network settings (13), Network services, Phones (provisioning), Phone logs |
 | Call centre | unchanged |
 | Fax | unchanged |
 | AI | unchanged |

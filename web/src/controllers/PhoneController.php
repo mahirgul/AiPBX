@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../services/PhoneRegionService.php';
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/PhoneProvisionService.php';
 require_once __DIR__ . '/../services/NetworkServicesService.php';
@@ -88,6 +89,8 @@ class PhoneController extends BaseController
             'waiting' => PhoneProvisionService::listWaiting(),
             'users' => PhoneProvisionService::assignableUsers(),
             'settings' => PhoneProvisionService::settings(),
+            'regions' => PhoneRegionService::all(),
+            'defaultRegion' => PhoneRegionService::defaultId(),
             'extraModels' => PhoneModelSettingsService::supportedModels(),
             'extraTexts' => PhoneModelSettingsService::all(),
             // Phones the discovery engine (cron, every 5 minutes) found on the

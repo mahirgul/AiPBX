@@ -212,6 +212,7 @@ function check_rbac(): void
         '/asterisk-settings',
         '/phones',
         '/phone-keys',
+        '/phone-regions',
         '/web-widgets',
         '/plugins',
         '/api-keys',

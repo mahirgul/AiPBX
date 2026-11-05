@@ -1,6 +1,6 @@
 # Network settings and a new server address
 
-*Network & devices → Network settings* (admin only) collects the server's addresses in one place
+*Network → Network settings* (admin only) collects the server's addresses in one place
 and moves all of them in one step when the server's IP address changes.
 
 ## What the page shows

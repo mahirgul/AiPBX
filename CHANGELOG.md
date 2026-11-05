@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.27
+
+- **Regions for desk phones.** Phones can get different addresses and settings by region: SIP server, outbound proxy, address for phone files, transport, SRTP, codecs, NTP, syslog, time zone and language. Internal and External come ready, you can add more, and you choose the region on each phone. New phones start in Internal, and nothing changes until you fill a region.
+- **Provisioning has its own menu.** Phones, Regions and phone logs now sit under Provisioning.
+- **Snom model settings take XML.** Paste single lines or a whole Snom file; attributes such as `perm` and a key's `label` reach the phone.
+
 ## 1.60.26
 
 - **All services on the dashboard.** Every service of the server is listed with its state and a restart button, not only four restart buttons.

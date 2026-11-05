@@ -1,6 +1,6 @@
 # Desk phones (provisioning)
 
-**Network & devices → Phones** sets up SIP desk phones without typing anything on them: the phone fetches its
+**Provisioning → Phones** sets up SIP desk phones without typing anything on them: the phone fetches its
 configuration over HTTPS from AiPBX and registers with the right extension, keys and settings.
 Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom** (including the D865), **Cisco SPA**, **Poly** and **NEC** DT700/DT800 (models listed
 on the page).
@@ -115,7 +115,7 @@ DHCP server: see [Network services](network-services.md).
 ## Server addresses (networks without DNS)
 
 Phone networks often have no DNS or no internet access, so a phone cannot resolve the PBX's name.
-*Network & devices → Network settings → Addresses for desk phones* takes IP addresses instead (empty: the domain):
+*Network → Network settings → Addresses for desk phones* takes IP addresses instead (empty: the domain):
 
 | Field | Written to / used for |
 |-------|-----------------------|
@@ -123,7 +123,7 @@ Phone networks often have no DNS or no internet access, so a phone cannot resolv
 | **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
 | **Provisioning address** | where phones fetch their files, e.g. `192.168.1.70` (no scheme: HTTP), `192.168.1.70:8080` or `https://pbx.example.com:8443`: the per-phone URLs on the page and DHCP option 66/160 |
 | **NTP server** | a name or an IP address (NEC: IP address only); this server's IP with [NTP server](network-services.md#ntp-server-time) on under Network services |
-| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [Network & devices → Phone logs](network-services.md#syslog-phone-logs) |
+| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [Provisioning → Phone logs](network-services.md#syslog-phone-logs) |
 
 Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**
 (no redirect to HTTPS), for phones that cannot do HTTPS to an IP address or do not follow a
@@ -244,9 +244,35 @@ names, rendering, NOTIFY events), the models with their key counts in `PhoneMode
 NOTIFY sections in `conf/asterisk/pjsip_notify.conf`. Values go through `PhoneTemplate::clean()`
 (line-based files) or `PhoneTemplate::xml()` (XML), so a name or label cannot add settings.
 
+## Regions
+
+**Provisioning → Regions** gives groups of phones their own addresses and settings, for example one set inside your network
+and another for phones outside it. Installations start with **Internal** (the default) and **External**. You can add
+more, rename them and delete any but the default; a region that still has phones stays until they are moved.
+
+You choose the region on each phone. A new phone starts in the default region, however it was added: the form, CSV
+import, discovery or the automatic pool.
+
+Each region can set the SIP server, outbound proxy, address for phone files, transport, SRTP, codecs, NTP, syslog, time
+zone and language. An empty field takes the general value, so a region changes nothing until you fill it. Write `none`
+in the proxy or syslog field when these phones should use none.
+
+Some limits:
+
+- **A phone has to reach the server once.** It learns its first address from DHCP, plug and play or a URL you enter; the region's settings arrive with its file.
+- **Outside phones need more than this.** The server's NAT settings, firewall and certificate have to be right too.
+- **The SIP port is not per region,** as it is the port the server listens on. Allowed networks stay general as well.
+
 ## Model settings
 
 **Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here, whatever its case, and the file holds only that value. On Snom, `name.2` means idx 2 of a setting and `fkey.0` sets a function key. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
+
+Snom models also take Snom's own XML, single lines or a whole file, so you can paste from Snom's documentation. Attributes such as `perm` and a key's `label` reach the phone:
+
+```xml
+<language perm="RW">Deutsch</language>
+<fkey idx="0" context="active" label="Boss" perm="">speed 100</fkey>
+```
 
 For example, to make NEC phones dial known numbers without waiting:
 
