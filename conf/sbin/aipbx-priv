@@ -48,7 +48,13 @@ case "$cmd" in
         # service restart|reload UNIT
         [ $# -eq 2 ] || die "usage: service restart|reload UNIT"
         case "$1" in restart|reload) ;; *) die "invalid operation: $1" ;; esac
-        case "$2" in asterisk|apache2|mariadb|postfix|fail2ban|firewalld) ;; *) die "service not allowed: $2" ;; esac
+        # The same list as SystemServicesService (dashboard).
+        case "$2" in
+            asterisk|apache2|nginx|mariadb|postfix|coturn|firewalld|fail2ban|chrony|ssh|ollama) ;;
+            aipbx-chat|aipbx-signaling|aipbx-webhook-worker|aipbx-ai|aipbx-mdns|aipbx-dnsmasq|aipbx-syslog|aipbx-vsftpd) ;;
+            aipbx-vpn@*) match "$2" '^aipbx-vpn@[A-Za-z0-9_-]{1,32}$' ;;
+            *) die "service not allowed: $2" ;;
+        esac
         exec systemctl "$1" "$2"
         ;;
 

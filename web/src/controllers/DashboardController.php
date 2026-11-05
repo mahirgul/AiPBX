@@ -7,6 +7,8 @@
 require_once __DIR__ . '/../asterisk_sync.php';
 require_once __DIR__ . '/../priv_helper.php';
 
+require_once __DIR__ . '/../services/SystemServicesService.php';
+
 class DashboardController extends BaseController
 {
     public static function index(): void
@@ -31,7 +33,7 @@ class DashboardController extends BaseController
         $metrics['live'] = DashboardRepository::getLiveStats();
 
         $page_title = t('dashboard.title');
-        static::renderPage('dashboard/index', array_merge($stats, $metrics), ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
+        static::renderPage('dashboard/index', array_merge($stats, $metrics, ['services' => SystemServicesService::status()]), ['title' => $page_title, 'message' => $message ?? '', 'error' => $error ?? '']);
     }
 
     /**
@@ -64,25 +66,19 @@ class DashboardController extends BaseController
         }
 
         if ($action === 'restart_service') {
-            $allowed_services = [
-                'asterisk' => t('dashboard.service_asterisk_name'),
-                'apache2' => t('dashboard.service_httpd_name'),
-                'mariadb' => t('dashboard.service_mariadb_name'),
-                'postfix' => t('dashboard.service_postfix_name'),
-            ];
-            if (isset($allowed_services[$service])) {
+            if (SystemServicesService::isAllowed($service)) {
                 // Unlike asterisk -rx, systemctl returns a REAL exit code
                 // (verified live: a failed restart gives a non-zero code) —
                 // $ret is reliable here.
                 $res = PrivHelper::run(['service', 'restart', $service]);
                 $output = $res['output'];
                 $failed = !$res['success'];
-                $label = $allowed_services[$service] . ' (systemctl restart)' . ($failed ? ': ' . mb_substr($output, 0, 200) : '');
+                $label = $service . ' (systemctl restart)' . ($failed ? ': ' . mb_substr($output, 0, 200) : '');
                 writeAuditLog(null, 'system_service', $service, $label, $failed ? 'restart_failed' : 'restart', $uid);
                 if ($failed) {
-                    return ['', $allowed_services[$service] . ' ' . t('dashboard.msg_restart_failed') . ' ' . $output];
+                    return ['', $service . ' ' . t('dashboard.msg_restart_failed') . ' ' . $output];
                 }
-                return [$allowed_services[$service] . ' ' . t('dashboard.msg_service_restarted'), ''];
+                return [$service . ' ' . t('dashboard.msg_service_restarted'), ''];
             }
             return ['', t('dashboard.msg_invalid_service')];
         }

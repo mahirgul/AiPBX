@@ -150,7 +150,7 @@ window.DASHBOARD_PAGE = {
 <!-- 3. Server info and service management grid -->
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
     <!-- Server metrics -->
-    <div class="card u-mb-0">
+    <div class="card u-mb-0" style="grid-column: 1 / -1;">
         <div class="card-header" style="padding-bottom: 12px;">
             <div class="card-title">
                 <i class="fas fa-microchip u-primary"></i> <?php echo t('dashboard.server_metrics'); ?>
@@ -176,49 +176,29 @@ window.DASHBOARD_PAGE = {
         </div>
     </div>
 
-    <!-- Service restarts and reboot -->
-    <div class="card u-mb-0">
+    <!-- All services, each with its state and a restart button -->
+    <div class="card u-mb-0" style="grid-column: 1 / -1;">
         <div class="card-header" style="padding-bottom: 12px;">
             <div class="card-title">
                 <i class="fas fa-cogs u-primary"></i> <?php echo t('dashboard.service_control'); ?>
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_asterisk')); ?>);">
-                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
-                <input type="hidden" name="system_action" value="restart_service">
-                <input type="hidden" name="service_name" value="asterisk">
-                <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_asterisk')); ?>">
-                    <i class="fas fa-phone-alt u-primary"></i> <?php echo t('dashboard.restart_asterisk'); ?>
-                </button>
-            </form>
-
-            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_httpd')); ?>);">
-                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
-                <input type="hidden" name="system_action" value="restart_service">
-                <input type="hidden" name="service_name" value="apache2">
-                <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_httpd')); ?>">
-                    <i class="fas fa-globe" style="color: var(--secondary);"></i> <?php echo t('dashboard.restart_httpd'); ?>
-                </button>
-            </form>
-
-            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_mariadb')); ?>);">
-                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
-                <input type="hidden" name="system_action" value="restart_service">
-                <input type="hidden" name="service_name" value="mariadb">
-                <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_mariadb')); ?>">
-                    <i class="fas fa-database u-warning"></i> <?php echo t('dashboard.restart_mariadb'); ?>
-                </button>
-            </form>
-
-            <form method="POST" autocomplete="off" onsubmit="return confirm(<?php echo jsArg(t('dashboard.confirm_restart_postfix')); ?>);">
-                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
-                <input type="hidden" name="system_action" value="restart_service">
-                <input type="hidden" name="service_name" value="postfix">
-                <button type="submit" class="btn btn-secondary btn-sm" style="width: 100%; justify-content: center; gap: 6px;" title="<?php echo htmlspecialchars(t('dashboard.tooltip_restart_postfix')); ?>">
-                    <i class="fas fa-paper-plane u-success"></i> <?php echo t('dashboard.restart_postfix'); ?>
-                </button>
-            </form>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 16px;">
+            <?php foreach ($services as $svc): $color = ['on' => 'var(--success)', 'failed' => 'var(--danger)'][$svc['state']] ?? 'var(--text-muted)'; ?>
+                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <i class="fas fa-circle" style="font-size: 9px; color: <?php echo $color; ?>;" title="<?php echo htmlspecialchars(t('dashboard.svc_state_' . $svc['state'])); ?>"></i>
+                    <div style="flex: 1; min-width: 0;">
+                        <div class="u-fs-12 u-fw-700"><?php echo htmlspecialchars($svc['label']); ?></div>
+                        <div class="u-muted u-fs-11"><?php echo htmlspecialchars($svc['unit']); ?> · <?php echo t('dashboard.svc_state_' . $svc['state']); ?></div>
+                    </div>
+                    <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg($svc['unit'] === 'asterisk' ? t('dashboard.confirm_restart_asterisk') : sprintf(t('dashboard.confirm_restart'), $svc['label'])); ?>);">
+                        <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                        <input type="hidden" name="system_action" value="restart_service">
+                        <input type="hidden" name="service_name" value="<?php echo htmlspecialchars($svc['unit']); ?>">
+                        <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.restart')); ?>"><i class="fas fa-rotate"></i></button>
+                    </form>
+                </div>
+            <?php endforeach; ?>
         </div>
     </div>
 </div>

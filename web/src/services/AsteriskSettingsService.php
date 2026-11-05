@@ -17,7 +17,7 @@ class AsteriskSettingsService {
             'pjsip_external_ip' => '',
             'pjsip_local_net' => '192.168.1.0/24',
             'pjsip_codecs' => 'opus,alaw,ulaw',
-            'pjsip_wired_codecs' => 'alaw,ulaw,g729',
+            'pjsip_wired_codecs' => 'opus,g722,alaw,ulaw',
             'pjsip_user_agent' => 'Asterisk PBX',
             'pjsip_direct_media' => 'no',
             'pjsip_rtp_symmetric' => 'yes',
@@ -162,9 +162,11 @@ class AsteriskSettingsService {
         $submitted_codecs = isset($post['codecs'])
             ? $filter_codecs($post['codecs'], $allowed_webrtc, 'opus,alaw,ulaw')
             : 'opus,alaw,ulaw';
+        // Desk phones: preferred first, whatever order the form sent. A phone without Opus goes on
+        // with the next one it has.
         $submitted_wired_codecs = isset($post['wired_codecs'])
-            ? $filter_codecs($post['wired_codecs'], $allowed_audio, 'alaw,ulaw')
-            : 'alaw,ulaw,g729';
+            ? implode(',', array_intersect(['opus', 'g722', 'alaw', 'ulaw', 'g729'], explode(',', $filter_codecs($post['wired_codecs'], $allowed_audio, 'alaw,ulaw'))))
+            : 'opus,g722,alaw,ulaw';
 
         $wss_port_val = filter_var(trim((string)($post['pjsip_wss_port'] ?? '8089')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
         $udp_port_val = filter_var(trim((string)($post['pjsip_udp_port'] ?? '5060')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
