@@ -162,7 +162,7 @@ final class NecTemplate extends PhoneTemplate
         }
         // The local file wins over the data file, so an extra setting has to be here too.
         foreach (self::extras($ctx) as $name => $value) {
-            $attrs[$name] = self::xml($value, 500);
+            $attrs[self::settingName($attrs, $name)] = self::xml($value, 500);
         }
         $out = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>\n<PHONE_CONFIG>\n<VERSION Version=\"" . max(1, (int) ($ctx['config_version'] ?? 1)) . "\"/>\n<NEC_Override>\n<DT_PHONE_CONFIG_DATA \n";
         foreach ($attrs as $name => $value) {
@@ -313,8 +313,10 @@ final class NecTemplate extends PhoneTemplate
         foreach (self::extras($ctx) as $name => $value) {
             $target = 'DT_PHONE_DATA';
             foreach ($groups as $group => $attrs) {
-                if (array_key_exists($name, $attrs)) {
+                $found = self::settingName($attrs, $name);
+                if (array_key_exists($found, $attrs)) {
                     $target = $group;
+                    $name = $found;
                     break;
                 }
             }

@@ -792,13 +792,13 @@ final class PhoneProvisionTest extends TestCase
         foreach ([[new GrandstreamTemplate(), 'grandstream-gxp2170', ['P999' => 'a&b'], '<P999>a&amp;b</P999>'], [new PolyTemplate(), 'poly-vvx450', ['a.b' => 'x"y'], 'a.b="x&quot;y"']] as [$t, $m, $e, $want]) {
             $this->assertStringContainsString($want, $t->render(['extra_settings' => $e] + $this->context($m)));
         }
-        $this->assertFalse((new SnomTemplate())->supportsExtraSettings());
+        $this->assertFalse((new FanvilTemplate())->supportsExtraSettings());
     }
 
     public function testASavedModelSettingChangesTheVersionAndOnlyThatModel(): void
     {
         $this->assertArrayHasKey('nec-dt710', PhoneModelSettingsService::supportedModels());
-        $this->assertArrayNotHasKey('snom-d735', PhoneModelSettingsService::supportedModels());
+        $this->assertArrayNotHasKey('fanvil-x3u', PhoneModelSettingsService::supportedModels());
         $db = getDB();
         try {
             $db->exec("INSERT INTO pbx_phone_model_settings (model, extra_settings) VALUES ('nec-dt710', 'a.b = 1')");
@@ -808,6 +808,63 @@ final class PhoneProvisionTest extends TestCase
         } finally {
             $db->exec("DELETE FROM pbx_phone_model_settings WHERE model = 'nec-dt710'");
             PhoneModelSettingsService::resetCache();
+        }
+    }
+
+    public function testSnomD865WritesItsOwnLoginsAndFortyKeys(): void
+    {
+        $xml = simplexml_load_string((new SnomTemplate())->render($this->hostileContext('snom-d865')));
+        $this->assertNotFalse($xml);
+        $ps = $xml->{'phone-settings'};
+        $this->assertSame('admin', (string) $ps->webserver_admin_name);
+        $this->assertSame(self::$adminPassword, (string) $ps->webserver_admin_password);
+        $this->assertSame(self::$adminPassword, (string) $ps->webserver_user_password);
+        $this->assertSame(self::$adminPassword, (string) $ps->http_pass);
+        $this->assertCount(40, $xml->functionKeys->fkey);
+        $this->assertSame('', (string) (simplexml_load_string((new SnomTemplate())->render($this->hostileContext('snom-d785')))->{'phone-settings'}->webserver_admin_name));
+        $this->assertSame(PhoneModels::normalizeMac('000413aabbcc'), (new SnomTemplate())->macFromFile('snomD865-000413AABBCC.htm'));
+    }
+
+    public function testSnomExtraSettingsReplaceWhatTheTemplateWrites(): void
+    {
+        $extras = ['extra_settings' => [
+            'LANGUAGE' => 'Deutsch', 'user_host.1' => 'other.example', 'user_srtp' => 'on', 'new_one' => '1"><x>',
+            'new_two.3' => 'a', 'fkey.0' => 'speed 123', 'bad.name.x' => '1', '9bad' => '1',
+        ]] + $this->hostileContext('snom-d865');
+        $out = (new SnomTemplate())->render($extras);
+        $xml = simplexml_load_string($out);
+        $this->assertNotFalse($xml, 'hostile or invalid extra settings must not break the file');
+        $ps = $xml->{'phone-settings'};
+        $this->assertCount(1, $ps->language);
+        $this->assertSame('Deutsch', (string) $ps->language);
+        $this->assertCount(1, $ps->user_host);
+        $this->assertSame('other.example', (string) $ps->user_host);
+        $this->assertSame('on', (string) $ps->user_srtp);
+        $this->assertSame('1"><x>', (string) $ps->new_one);
+        $this->assertSame('3', (string) $ps->new_two['idx']);
+        $this->assertSame('speed 123', (string) $xml->functionKeys->fkey[0]);
+        $this->assertStringNotContainsString('bad', $out);
+    }
+
+    /** Every vendor with extra settings: one value in the file, the administrator's, whatever the case. */
+    public function testExtraSettingsWinOnEveryVendor(): void
+    {
+        $this->assertTrue((new SnomTemplate())->supportsExtraSettings());
+        $yealink = (new YealinkTemplate())->render(['extra_settings' => ['LANG.GUI' => 'Polski']] + $this->context('yealink-t46u'));
+        $this->assertSame(0, preg_match('/^lang\.gui = /m', $yealink));
+        $this->assertSame(1, preg_match_all('/^LANG\.GUI = Polski$/m', $yealink));
+        foreach ([
+            [new GrandstreamTemplate(), 'grandstream-grp2612'],
+            [new PolyTemplate(), 'poly-vvx450'],
+        ] as [$tpl, $model]) {
+            $base = $tpl->render($this->context($model));
+            if (!preg_match('/<([A-Za-z0-9]+)>[^<]*<\/\1>\s*<\/config>|^\s+([A-Za-z0-9_.]+)="[^"]*"\s*\n\s*\/>/m', $base, $m)) {
+                $this->fail('no setting found in ' . $model);
+            }
+            $name = $m[1] !== '' ? $m[1] : $m[2];
+            $out = $tpl->render(['extra_settings' => [strtolower($name) === $name ? strtoupper($name) : strtolower($name) => 'MINE']] + $this->context($model));
+            $this->assertSame(1, preg_match_all('/[<\s]' . preg_quote($name, '/') . '[>=]/i', $out), $model);
+            $this->assertStringContainsString('MINE', $out, $model);
         }
     }
 }

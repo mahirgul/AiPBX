@@ -64,6 +64,22 @@ abstract class PhoneTemplate
         return $ctx['extra_settings'] ?? [];
     }
 
+    /**
+     * An extra setting replaces what the template writes under the same name, whatever its case:
+     * the name the template uses is the one kept, so the file cannot end up with both.
+     *
+     * @param array<string, mixed> $settings
+     */
+    protected static function settingName(array $settings, string $name): string
+    {
+        foreach (array_keys($settings) as $existing) {
+            if (strcasecmp((string) $existing, $name) === 0) {
+                return (string) $existing;
+            }
+        }
+        return $name;
+    }
+
     /** pjsip_notify.conf section that makes the phone fetch its configuration again. */
     abstract public function notifyResync(): string;
 

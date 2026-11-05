@@ -2,7 +2,7 @@
 
 **Network & devices → Phones** sets up SIP desk phones without typing anything on them: the phone fetches its
 configuration over HTTPS from AiPBX and registers with the right extension, keys and settings.
-Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom**, **Cisco SPA**, **Poly** and **NEC** DT700/DT800 (models listed
+Supported: **Yealink**, **Grandstream**, **Fanvil**, **Snom** (including the D865), **Cisco SPA**, **Poly** and **NEC** DT700/DT800 (models listed
 on the page).
 Cisco's enterprise **7900/8800 series** (CallManager firmware) are supported too, but they need firmware, an
 Asterisk patch and a folder of shared files that AiPBX cannot ship: see [Cisco 7900 / 8800 series](cisco-callmanager.md).
@@ -246,7 +246,7 @@ NOTIFY sections in `conf/asterisk/pjsip_notify.conf`. Values go through `PhoneTe
 
 ## Model settings
 
-**Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
+**Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here, whatever its case, and the file holds only that value. On Snom, `name.2` means idx 2 of a setting and `fkey.0` sets a function key. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
 
 For example, to make NEC phones dial known numbers without waiting:
 
