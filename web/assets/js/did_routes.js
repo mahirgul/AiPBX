@@ -13,6 +13,7 @@ function openCreateDidModal() {
     document.getElementById('modal_dest_type').value = 'time_condition';
     const recCb = document.getElementById('modal_record_call');
     if (recCb) recCb.checked = false;
+    fillDidFax({});
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = true;
     const langSel = document.getElementById('modal_language');
@@ -34,6 +35,7 @@ function openEditDidModal(route) {
     document.getElementById('modal_dest_type').value = route.dest_type || 'time_condition';
     const recCb = document.getElementById('modal_record_call');
     if (recCb) recCb.checked = (parseInt(route.record_call) === 1);
+    fillDidFax(route);
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = (parseInt(route.is_active) === 1);
     const langSel = document.getElementById('modal_language');
@@ -43,6 +45,22 @@ function openEditDidModal(route) {
 
     UIHelper.openOverlayModal('didModal');
 }
+
+function fillDidFax(route) {
+    document.getElementById('modal_fax_detect').checked = parseInt(route.fax_detect) === 1;
+    document.getElementById('modal_fax_seconds').value = route.fax_detect_seconds || 5;
+    document.getElementById('modal_fax_target').value = route.fax_target || '';
+    didFaxDetectChanged();
+}
+
+// A route whose destination is the fax has nothing to tell apart.
+function didFaxDetectChanged() {
+    const isFax = document.getElementById('modal_dest_type').value === 'fax';
+    document.getElementById('fax_detect_group').style.display = isFax ? 'none' : '';
+    document.getElementById('fax_detect_fields').style.display = document.getElementById('modal_fax_detect').checked ? '' : 'none';
+}
+
+document.getElementById('modal_dest_type').addEventListener('change', didFaxDetectChanged);
 
 function closeDidModal() {
     UIHelper.closeOverlayModal('didModal');

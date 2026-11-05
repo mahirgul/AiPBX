@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 require_once dirname(__DIR__, 2) . '/src/services/TransportService.php';
 require_once dirname(__DIR__, 2) . '/src/services/ExtensionSipOptions.php';
 require_once dirname(__DIR__, 2) . '/src/services/PhoneProvisionService.php';
+require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 
 final class TransportAndSipOptionsTest extends TestCase
 {
@@ -103,5 +104,25 @@ final class TransportAndSipOptionsTest extends TestCase
             'server' => 'pbx.example', 'proxy' => '', 'port' => 5060, 'srtp' => 0, 'codecs' => ['pcma'], 'ntp' => 'n', 'syslog' => '', 'utc_offset' => 0, 'language' => 'en',
             'voicemail' => '*97', 'pickup_prefix' => '*21', 'cisco_load' => '', 'admin_password' => 'p', 'keys' => [], 'extra_settings' => [], 'extra_attributes' => [], 'config_version' => 1];
         $this->assertStringContainsString($line, $template->render($ctx));
+    }
+
+    public function testFaxDetectionOnlyWhereARouteAsks(): void
+    {
+        $this->assertSame('', faxDetectLines(['fax_detect' => 0, 'dest_type' => 'queue'], '100'));
+        $this->assertSame('', faxDetectLines(['fax_detect' => 1, 'dest_type' => 'fax'], '100'), 'a fax route has nothing to tell apart');
+        $lines = faxDetectLines(['fax_detect' => 1, 'dest_type' => 'queue', 'fax_detect_seconds' => 99, 'fax_target' => "90\n same => n,System(x)"], '${EXTEN}');
+        $this->assertStringContainsString('Gosub(sub-fax-detect,s,1(15))', $lines);
+        $this->assertStringContainsString('Set(FAX_TARGET=90)', $lines);
+        $this->assertStringNotContainsString('System', $lines);
+        $this->assertStringContainsString('Set(FAX_TARGET=${EXTEN})', faxDetectLines(['fax_detect' => 1, 'dest_type' => 'ivr', 'fax_detect_seconds' => 5, 'fax_target' => ''], '${EXTEN}'));
+    }
+
+    public function testTheFaxJumpLivesInItsOwnContext(): void
+    {
+        $sub = faxDetectSubroutine();
+        $this->assertStringStartsWith('[sub-fax-detect]', $sub);
+        $this->assertStringContainsString('exten => fax,1,', $sub);
+        $this->assertStringContainsString('Goto(from-trunk-fax,${FAX_TARGET},1)', $sub);
+        $this->assertSame(1, substr_count($sub, '['), 'a trunk with fax_detect on must not find a fax extension on other routes');
     }
 }

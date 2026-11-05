@@ -67,6 +67,9 @@ $destOptionsCache = [];
                                 <?php endif; ?>
                             </td>
                             <td class="col-hide-mobile">
+                                <?php if (!empty($r['fax_detect'])): ?>
+                                    <span class="u-primary" title="<?php echo t('did.field_fax_detect'); ?>"><i class="fas fa-fax"></i></span>
+                                <?php endif; ?>
                                 <?php if (!empty($r['record_call'])): ?>
                                     <span class="badge badge-danger"><i class="fas fa-microphone"></i> <?php echo t('did.recording_forced'); ?></span>
                                 <?php else: ?>
@@ -146,6 +149,24 @@ $destOptionsCache = [];
                             <i class="fas fa-microphone u-danger"></i> <?php echo t('did.field_record_call'); ?>
                         </span>
                     </label>
+                </div>
+
+                <div class="form-group" id="fax_detect_group" style="margin-top: 12px; background: var(--bg-input); padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px;">
+                    <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin: 0; cursor: pointer;">
+                        <input type="checkbox" name="fax_detect" id="modal_fax_detect" value="1" style="width: 18px; height: 18px;" onchange="didFaxDetectChanged()">
+                        <span class="u-fs-13 u-fw-600 u-text-main"><i class="fas fa-fax u-primary"></i> <?php echo t('did.field_fax_detect'); ?></span>
+                    </label>
+                    <div id="fax_detect_fields" class="u-grid-2" style="margin-top: 10px; display: none;">
+                        <div class="form-group">
+                            <label class="form-label"><?php echo t('did.field_fax_seconds'); ?></label>
+                            <input type="number" name="fax_detect_seconds" id="modal_fax_seconds" class="form-control" min="3" max="15" value="5">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label"><?php echo t('did.field_fax_target'); ?></label>
+                            <input type="text" name="fax_target" id="modal_fax_target" class="form-control" maxlength="32" placeholder="<?php echo t('did.fax_target_placeholder'); ?>">
+                        </div>
+                    </div>
+                    <small class="u-hint"><?php echo t('did.fax_detect_help'); ?></small>
                 </div>
 
                 <div class="form-group u-mt-10">
