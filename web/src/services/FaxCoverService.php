@@ -24,6 +24,70 @@ final class FaxCoverService
         ];
     }
 
+    /** @return list<array{id: int|string, name: string, company: string, notice: string, logo: int|string}> a user's own templates */
+    public static function templatesFor(int $userId): array
+    {
+        $stmt = getDB()->prepare('SELECT id, name, company, notice, logo FROM pbx_fax_cover_templates WHERE user_id = ? ORDER BY name');
+        $stmt->execute([$userId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * The organisation's settings with the template the sender chose. A template is its owner's: an
+     * id of someone else's falls back to the organisation's, except for an administrator.
+     *
+     * @return array{mode: string, company: string, notice: string, logo: bool}
+     */
+    public static function settingsFor(array $post, int $userId, string $role): array
+    {
+        $settings = self::settings();
+        $id = (int) ($post['cover_template'] ?? 0);
+        if ($id <= 0) {
+            return $settings;
+        }
+        $stmt = getDB()->prepare('SELECT user_id, company, notice, logo FROM pbx_fax_cover_templates WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row || ((int) $row['user_id'] !== $userId && $role !== 'admin')) {
+            return $settings;
+        }
+        return ['mode' => $settings['mode'], 'company' => (string) $row['company'], 'notice' => (string) $row['notice'], 'logo' => (int) $row['logo'] === 1];
+    }
+
+    public static function saveTemplate(array $post, int $userId): array
+    {
+        if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
+        $name = mb_substr(trim((string) ($post['template_name'] ?? '')), 0, 60);
+        if ($name === '') {
+            return ['success' => false, 'error' => t('fax_cover.err_template_name')];
+        }
+        $id = (int) ($post['template_id'] ?? 0);
+        $db = getDB();
+        $same = $db->prepare('SELECT id FROM pbx_fax_cover_templates WHERE user_id = ? AND name = ? AND id <> ?');
+        $same->execute([$userId, $name, $id]);
+        if ($same->fetchColumn() !== false) {
+            return ['success' => false, 'error' => t('fax_cover.err_template_taken')];
+        }
+        $values = [$name, mb_substr(trim((string) ($post['template_company'] ?? '')), 0, 120), mb_substr(trim((string) ($post['template_notice'] ?? '')), 0, 1000), empty($post['template_logo']) ? 0 : 1];
+        if ($id > 0) {
+            $db->prepare('UPDATE pbx_fax_cover_templates SET name = ?, company = ?, notice = ?, logo = ? WHERE id = ? AND user_id = ?')->execute([...$values, $id, $userId]);
+        } else {
+            $db->prepare('INSERT INTO pbx_fax_cover_templates (name, company, notice, logo, user_id) VALUES (?, ?, ?, ?, ?)')->execute([...$values, $userId]);
+        }
+        return ['success' => true, 'message' => sprintf(t('fax_cover.template_saved'), $name)];
+    }
+
+    public static function deleteTemplate(array $post, int $userId): array
+    {
+        if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
+        getDB()->prepare('DELETE FROM pbx_fax_cover_templates WHERE id = ? AND user_id = ?')->execute([(int) ($post['template_id'] ?? 0), $userId]);
+        return ['success' => true, 'message' => t('fax_cover.template_deleted')];
+    }
+
     public static function saveSettings(array $post): array
     {
         if (!verifyCSRFToken($post['csrf_token'] ?? '')) {
@@ -142,9 +206,8 @@ final class FaxCoverService
      *
      * @param array{to: string, subject: string, message: string} $fields
      */
-    public static function prepend(string $pdf, array $fields, string $senderExt, string $toNumber): void
+    public static function prepend(string $pdf, array $fields, string $senderExt, array $settings, string $toNumber): void
     {
-        $settings = self::settings();
         $pages = self::pageCount($pdf);
         if ($pages < 1) {
             throw new \RuntimeException(t('fax_cover.err_read'));

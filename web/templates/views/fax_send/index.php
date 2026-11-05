@@ -42,8 +42,14 @@
                     <?php endforeach; ?>
                 </select>
                 <small class="u-hint u-fs-11"><?php echo t('fax_send.sender_admin_help'); ?></small>
+            <?php elseif (count($own_numbers) > 1): ?>
+                <select name="sender_did" class="form-control" required>
+                    <?php foreach ($own_numbers as $number): ?>
+                        <option value="<?php echo htmlspecialchars($number); ?>"<?php echo $number === (string) $user_ext ? ' selected' : ''; ?>><?php echo htmlspecialchars($number); ?></option>
+                    <?php endforeach; ?>
+                </select>
             <?php else: ?>
-                <input type="text" name="sender_did" class="form-control" value="<?php echo htmlspecialchars($user_ext); ?>" readonly style="opacity: 0.8;">
+                <input type="text" name="sender_did" class="form-control" value="<?php echo htmlspecialchars($user_ext !== '' ? $user_ext : ($own_numbers[0] ?? '')); ?>" readonly style="opacity: 0.8;">
             <?php endif; ?>
         </div>
 
@@ -102,6 +108,15 @@
                 <input type="checkbox" name="cover_enabled" value="1" checked <?php echo $cover['mode'] === 'required' ? 'disabled' : ''; ?>>
                 <?php echo t($cover['mode'] === 'required' ? 'fax_cover.field_required' : 'fax_cover.field_enabled'); ?>
             </label>
+            <?php if (!empty($templates)): ?>
+            <div class="form-group u-mt-12 u-mb-0">
+                <label class="form-label"><?php echo t('fax_cover.field_template'); ?></label>
+                <select name="cover_template" class="form-control">
+                    <option value="0"><?php echo t('fax_cover.template_org'); ?></option>
+                    <?php foreach ($templates as $tpl): ?><option value="<?php echo (int) $tpl['id']; ?>"><?php echo htmlspecialchars((string) $tpl['name']); ?></option><?php endforeach; ?>
+                </select>
+            </div>
+            <?php endif; ?>
             <div class="u-grid-2 u-mt-12">
                 <div class="form-group u-mb-0">
                     <label class="form-label"><?php echo t('fax_cover.label_to'); ?></label>
@@ -136,3 +151,70 @@
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/fax_send.css'); ?>">
 <script src="<?php echo asset('/assets/js/quill.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/fax_send.js'); ?>"></script>
+
+<div class="card" id="fax-templates">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-file-alt u-primary"></i> <?php echo t('fax_cover.my_templates'); ?></div>
+        <button type="button" class="btn btn-secondary btn-sm" onclick="faxEditTemplate({})"><i class="fas fa-plus"></i> <?php echo t('fax_cover.template_add'); ?></button>
+    </div>
+    <p class="u-muted u-fs-12" style="margin: 0 20px 12px;"><?php echo t($cover['mode'] === 'off' ? 'fax_cover.templates_help_off' : 'fax_cover.templates_help'); ?></p>
+    <?php if (!empty($templates)): ?>
+    <div class="table-responsive"><table class="data-table"><tbody>
+        <?php foreach ($templates as $tpl): ?>
+            <tr>
+                <td class="u-strong"><?php echo htmlspecialchars((string) $tpl['name']); ?></td>
+                <td class="text-muted u-fs-12"><?php echo htmlspecialchars((string) $tpl['company']); ?></td>
+                <td class="text-right" style="white-space: nowrap;">
+                    <button type="button" class="btn btn-xs btn-secondary" onclick='faxEditTemplate(<?php echo htmlspecialchars(json_encode($tpl), ENT_QUOTES); ?>)'><i class="fas fa-edit"></i></button>
+                    <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('fax_cover.template_delete_confirm')), ENT_QUOTES); ?>);">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                        <input type="hidden" name="delete_cover_template" value="1">
+                        <input type="hidden" name="template_id" value="<?php echo (int) $tpl['id']; ?>">
+                        <button type="submit" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></button>
+                    </form>
+                </td>
+            </tr>
+        <?php endforeach; ?>
+    </tbody></table></div>
+    <?php endif; ?>
+</div>
+
+<div class="modal-overlay" id="faxTemplateModal">
+    <div class="modal-card" style="max-width: 520px;">
+        <div class="modal-header">
+            <h3 class="u-title"><i class="fas fa-file-alt u-primary"></i> <?php echo t('fax_cover.my_templates'); ?></h3>
+            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('faxTemplateModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                <input type="hidden" name="save_cover_template" value="1">
+                <input type="hidden" name="template_id" id="template_id" value="0">
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('fax_cover.template_name'); ?></label>
+                    <input type="text" name="template_name" id="template_name" class="form-control" maxlength="60" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('fax_cover.template_company'); ?></label>
+                    <input type="text" name="template_company" id="template_company" class="form-control" maxlength="120">
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('fax_cover.template_notice'); ?></label>
+                    <textarea name="template_notice" id="template_notice" class="form-control" rows="3" maxlength="1000"></textarea>
+                </div>
+                <label class="u-check-label" style="margin-bottom: 12px;"><input type="checkbox" name="template_logo" id="template_logo" value="1" class="u-accent"> <?php echo t('fax_cover.template_logo'); ?></label>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('faxTemplateModal')", t('common.save'), '', 'fa-save'); ?>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+function faxEditTemplate(t) {
+    document.getElementById('template_id').value = t.id || 0;
+    document.getElementById('template_name').value = t.name || '';
+    document.getElementById('template_company').value = t.company || '';
+    document.getElementById('template_notice').value = t.notice || '';
+    document.getElementById('template_logo').checked = parseInt(t.logo || 0, 10) === 1;
+    UIHelper.openOverlayModal('faxTemplateModal');
+}
+</script>

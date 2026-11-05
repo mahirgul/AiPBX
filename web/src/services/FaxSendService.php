@@ -1,4 +1,5 @@
 <?php
+require_once dirname(__DIR__) . '/repositories/FaxInboxRepository.php';
 require_once __DIR__ . '/../asterisk_helper.php';
 require_once __DIR__ . '/../text_fax_helper.php';
 require_once __DIR__ . '/../db_helper.php';
@@ -42,13 +43,13 @@ class FaxSendService {
         $requested_sender_did = preg_replace('/[^0-9]/', '', trim($post['sender_did'] ?? ''));
         $current_role = $_SESSION['user_role'] ?? 'user';
         if ($current_role === 'admin' && $requested_sender_did !== '') {
-            $valid_ext = DBHelper::fetchColumn(
-                "SELECT extension FROM sys_users WHERE extension = ? AND extension_type = 'fax' AND is_active = 1",
-                [$requested_sender_did]
-            );
-            $sender_did = $valid_ext ?: $userExt;
+            $sender_did = self::faxOwner($requested_sender_did) !== [] ? $requested_sender_did : $userExt;
+        } elseif ($requested_sender_did !== '' && in_array($requested_sender_did, FaxInboxRepository::getAllowedDIDs((int) ($_SESSION['user_id'] ?? 0), (string) $userExt), true)) {
+            // A fax user with several numbers sends from the one they choose, and only from theirs.
+            $sender_did = $requested_sender_did;
         } else {
-            $sender_did = $userExt;
+            // All of a user's numbers can be shared, and then they have no login number.
+            $sender_did = $userExt !== '' ? $userExt : (FaxInboxRepository::getAllowedDIDs((int) ($_SESSION['user_id'] ?? 0), '')[0] ?? '');
         }
 
         if (!verifyCSRFToken($csrf_token)) {
@@ -134,7 +135,7 @@ class FaxSendService {
         }
         if (FaxCoverService::wanted($post)) {
             try {
-                FaxCoverService::prepend($archived_pdf, FaxCoverService::fieldsFromPost($post), (string) $sender_did, (string) $dest_number);
+                FaxCoverService::prepend($archived_pdf, FaxCoverService::fieldsFromPost($post), (string) $sender_did, FaxCoverService::settingsFor($post, (int) $userId, (string) $current_role), (string) $dest_number);
             } catch (\Throwable $e) {
                 @unlink($archived_pdf);
                 return ['success' => false, 'error' => sprintf(t('fax_cover.err_make'), $e->getMessage())];
@@ -221,9 +222,24 @@ class FaxSendService {
         return !str_contains((string) ($res['output'] ?? ''), 'There is no existence');
     }
 
+    /**
+     * The active fax user a number belongs to, by login number or by a further number of theirs.
+     *
+     * @return array<string, mixed>
+     */
+    private static function faxOwner(string $number): array
+    {
+        return DBHelper::fetchOne(
+            "SELECT u.full_name, u.extension, u.cid_external, u.permission_group_id, u.outbound_group
+             FROM sys_users u LEFT JOIN sys_did_mappings m ON m.assigned_user_id = u.id AND m.is_active = 1
+             WHERE u.extension_type = 'fax' AND u.is_active = 1 AND (u.extension = ? OR m.did_extension = ?) LIMIT 1",
+            [$number, $number]
+        ) ?: [];
+    }
+
     private static function dialContextFor(string $senderExt): string
     {
-        $row = DBHelper::fetchOne('SELECT outbound_group FROM sys_users WHERE extension = ?', [$senderExt]);
+        $row = self::faxOwner($senderExt) ?: DBHelper::fetchOne('SELECT outbound_group FROM sys_users WHERE extension = ?', [$senderExt]);
         $group = max(1, (int) ($row['outbound_group'] ?? 1));
         return $group > 1 ? "from-internal-desktop-{$group}" : 'from-internal-desktop';
     }
@@ -250,7 +266,11 @@ class FaxSendService {
         $db = getDB();
         $stmt = $db->prepare("SELECT full_name, cid_external, permission_group_id, outbound_group FROM sys_users WHERE extension = ?");
         $stmt->execute([$senderExt]);
-        $sender_row = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+        $sender_row = self::faxOwner($senderExt) ?: ($stmt->fetch(PDO::FETCH_ASSOC) ?: []);
+        // cid_external goes with the account's login number; another number of theirs is sent as itself.
+        if (isset($sender_row['extension']) && (string) $sender_row['extension'] !== (string) $senderExt) {
+            $sender_row['cid_external'] = '';
+        }
 
         $perm_grp = (int)($sender_row['permission_group_id'] ?? 0);
         $out_grp = max(1, (int)($sender_row['outbound_group'] ?? 1));

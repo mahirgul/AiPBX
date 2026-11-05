@@ -26,4 +26,20 @@ class FaxSettingsRepository extends BaseRepository
             "SELECT id, extension, full_name FROM sys_users WHERE extension_type = 'fax' AND extension IS NOT NULL AND extension != '' AND is_active = 1 ORDER BY extension ASC"
         )->fetchAll();
     }
+
+    /**
+     * What the admin can send from: every number of every active fax account.
+     *
+     * @return list<array{extension: string, full_name: string}>
+     */
+    public static function faxNumbersForDropdown(): array
+    {
+        return static::db()->query(
+            "SELECT u.extension, u.full_name FROM sys_users u WHERE u.extension_type = 'fax' AND u.is_active = 1 AND u.extension IS NOT NULL AND u.extension != ''
+             UNION
+             SELECT m.did_extension, u.full_name FROM sys_did_mappings m JOIN sys_users u ON u.id = m.assigned_user_id
+             WHERE m.is_active = 1 AND u.is_active = 1 AND u.extension_type = 'fax' AND m.did_extension IS NOT NULL AND m.did_extension != ''
+             ORDER BY 2, 1"
+        )->fetchAll();
+    }
 }

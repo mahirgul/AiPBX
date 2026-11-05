@@ -30,6 +30,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📥 [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
 | 🛣️ [Transports](transports.md) | Where Asterisk listens for SIP: ports, TCP and TLS, your own transports |
 | 🎛️ [Advanced Configuration](advanced-config.md) | Your own Asterisk options, objects and file text that survive regeneration and updates, versions, generated files changed by hand |
+| 📠 [Fax users and numbers](fax-users.md) | One place for fax users, several numbers per user, shared numbers, who can delete |
 | 📠 [Fax cover page](fax-cover-page.md) | One cover template for the organisation, logo, preview as a fax |
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |

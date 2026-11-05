@@ -12,7 +12,10 @@ class FaxSentController extends BaseController
 {
     public static function index(): void
     {
-        static::requireRole(['admin', 'fax_user']);
+        // A role an administrator made for fax users opens these pages too.
+        if (!hasModulePermission('fax_sent', 'access')) {
+            static::requireRole(['admin', 'fax_user']);
+        }
 
         $user_id = $_SESSION['user_id'];
         $user_role = $_SESSION['user_role'] ?? '';

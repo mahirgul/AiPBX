@@ -17,19 +17,19 @@ class FaxSettingsController extends BaseController
         static::requireRole('admin');
 
         $notices = static::handlePost([
-            'save_did' => fn() => FaxSettingsService::saveDidMapping($_POST),
-            'toggle_status' => fn() => PBXHelper::toggleStatus('sys_did_mappings', $_POST['did_id'] ?? 0, static::csrfToken()),
+            'save_did' => fn() => FaxSettingsService::saveAccount($_POST),
+            'toggle_status' => fn() => FaxSettingsService::toggleAccount($_POST),
             'save_fax_cover' => fn() => FaxCoverService::saveSettings($_POST),
-            'delete_did' => fn() => FaxSettingsService::deleteDidMapping($_POST['did_id'] ?? 0, static::csrfToken()),
+            'delete_did' => fn() => FaxSettingsService::deleteAccount($_POST),
         ]);
 
-        $mappings = FaxSettingsRepository::allMappingsWithUser();
-        $fax_users = FaxSettingsRepository::faxUsersForDropdown();
+        $accounts = FaxSettingsService::accounts();
 
         $page_title = t('fax_settings.title');
         static::renderPage('fax_settings/index', [
-            'mappings' => $mappings,
-            'fax_users' => $fax_users,
+            'accounts' => $accounts,
+            'permissionGroups' => DialPermissionService::getGroups(),
+            'faxRoles' => FaxSettingsService::faxRoles(),
             'cover' => FaxCoverService::settings(),
             'coverLogoFound' => FaxCoverService::logoPath() !== null,
         ], ['title' => $page_title] + $notices);

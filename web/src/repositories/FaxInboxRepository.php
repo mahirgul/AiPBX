@@ -17,7 +17,7 @@ class FaxInboxRepository extends BaseRepository
             $dids[] = $ext;
         }
         if ($userId > 0) {
-            $stmt = static::db()->prepare("SELECT did_extension FROM sys_did_mappings WHERE assigned_user_id = ? AND is_active = 1");
+            $stmt = static::db()->prepare("SELECT m.did_extension FROM sys_did_mappings m JOIN pbx_fax_number_users f ON f.did_mapping_id = m.id WHERE f.user_id = ? AND m.is_active = 1");
             $stmt->execute([$userId]);
             foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $d) {
                 $d = trim((string)$d);

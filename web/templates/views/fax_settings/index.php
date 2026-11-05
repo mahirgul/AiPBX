@@ -25,31 +25,27 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
                     <th><?php echo t('fax_settings.col_dept'); ?></th>
-                    <th><?php echo t('fax_settings.col_did'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_settings.col_fax_user'); ?></th>
+                    <th><?php echo t('fax_settings.col_numbers'); ?></th>
+                    <th class="col-hide-mobile"><?php echo t('fax_settings.col_login'); ?></th>
                     <th><?php echo t('fax_settings.col_email'); ?></th>
                     <th><?php echo t('fax_settings.col_status'); ?></th>
                     <th class="text-right"><?php echo t('fax_settings.col_actions'); ?></th>
                 </tr>
             </thead>
             <tbody>
-                <?php if (empty($mappings)): ?>
-                    <?php echo uiTableEmptyRow(7, t('fax_settings.empty'), 'fa-building'); ?>
+                <?php if (empty($accounts)): ?>
+                    <?php echo uiTableEmptyRow(6, t('fax_settings.empty'), 'fa-building'); ?>
                 <?php else: ?>
-                    <?php foreach ($mappings as $m): ?>
+                    <?php foreach ($accounts as $m): ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $m['id']; ?></td>
                             <td class="u-strong"><i class="fas fa-building u-primary u-mr-6"></i> <?php echo htmlspecialchars($m['department_name']); ?></td>
-                            <td><?php echo !empty($m['did_extension']) ? '<span class="badge badge-info">' . htmlspecialchars($m['did_extension']) . '</span>' : '<span class="text-muted">-</span>'; ?></td>
-                            <td class="col-hide-mobile"><?php echo !empty($m['assigned_user_id']) ? '<span class="badge badge-warning"><i class="fas fa-fax"></i> ' . htmlspecialchars($m['fax_user_extension'] . ' - ' . $m['fax_user_name']) . '</span>' : '<span class="text-muted">-</span>'; ?></td>
+                            <td><?php foreach ($m['numbers'] as $number): ?><span class="badge badge-info"<?php echo in_array($number, $m['shared'], true) ? ' title="' . t('fax_settings.shared') . '"' : ''; ?>><?php echo in_array($number, $m['shared'], true) ? '<i class="fas fa-users"></i> ' : ''; ?><?php echo htmlspecialchars($number); ?></span> <?php endforeach; ?></td>
+                            <td class="col-hide-mobile"><?php echo $m['username'] !== '' ? htmlspecialchars($m['username']) . ($m['has_password'] ? '' : ' <span class="text-muted u-fs-11">' . t('fax_settings.no_password') . '</span>') : '-'; ?></td>
                             <td><?php echo htmlspecialchars($m['notification_email'] ?: '-'); ?></td>
-                            <td>
-                                <?php echo uiStatusToggleForm($m['id'], $m['is_active'] ?? 1, 'did_id'); ?>
-                            </td>
+                            <td><?php echo uiStatusToggleForm($m['id'], $m['is_active'] ?? 1, 'did_id'); ?></td>
                             <td class="text-right">
-                                <?php echo uiRowActions($m, 'openEditFaxDidModal', 'did_id', 'delete_did', sprintf(t('fax_settings.delete_confirm'), $m['department_name'])); ?>
+                                <?php echo uiRowActions($m, 'openEditFaxDidModal', 'did_id', 'delete_did', sprintf(t('fax_settings.delete_confirm_account'), $m['department_name'])); ?>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -74,38 +70,54 @@
 
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_settings.field_dept'); ?></label>
-                    <input type="text" name="department_name" id="modal_department_name" class="form-control" required placeholder="<?php echo t('fax_settings.field_dept_placeholder'); ?>">
+                    <input type="text" name="department_name" id="modal_department_name" class="form-control" required>
                 </div>
-
                 <div class="form-group">
-                    <label class="form-label"><?php echo t('fax_settings.field_did'); ?></label>
-                    <input type="text" name="did_extension" id="modal_did_extension" class="form-control" placeholder="<?php echo t('fax_settings.field_did_placeholder'); ?>">
-                    <small class="u-hint"><?php echo t('fax_settings.did_help'); ?></small>
+                    <label class="form-label"><?php echo t('fax_settings.field_numbers'); ?></label>
+                    <input type="text" name="did_extension" id="modal_did_extension" class="form-control" required placeholder="9391, 9392">
+                    <small class="u-hint"><?php echo t('fax_settings.field_numbers_help'); ?></small>
                 </div>
-
-                <div class="form-group">
-                    <label class="form-label"><?php echo t('fax_settings.field_fax_user'); ?></label>
-                    <select name="assigned_user_id" id="modal_assigned_user_id" class="form-control">
-                        <option value="0"><?php echo t('fax_settings.not_selected'); ?></option>
-                        <?php foreach ($fax_users as $fu): ?>
-                            <option value="<?php echo $fu['id']; ?>"><?php echo htmlspecialchars($fu['extension'] . ' - ' . $fu['full_name']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <small class="u-hint"><?php echo t('fax_settings.fax_user_help'); ?></small>
-                </div>
-
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_settings.field_email'); ?></label>
-                    <input type="email" name="notification_email" id="modal_notification_email" class="form-control" placeholder="fax@example.com">
+                    <input type="email" name="notification_email" id="modal_notification_email" class="form-control">
                 </div>
-
-                <div class="form-group u-mt-10">
-                    <label class="form-label u-check-label">
-                        <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
-                        <span class="u-fw-600"><?php echo t('fax_settings.field_active'); ?></span>
-                    </label>
+                <div class="u-grid-2">
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('fax_settings.field_username'); ?></label>
+                        <input type="text" name="username" id="modal_username" class="form-control" maxlength="64" autocomplete="off" placeholder="fax9391">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('fax_settings.field_password'); ?></label>
+                        <input type="password" name="password" id="modal_password" class="form-control" autocomplete="new-password">
+                        <small class="u-hint"><?php echo t('fax_settings.field_password_help'); ?></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('extensions.field_outbound_group'); ?></label>
+                        <input type="number" name="outbound_group" id="modal_outbound_group" class="form-control" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('fax_settings.field_cid'); ?></label>
+                        <input type="text" name="cid_external" id="modal_cid_external" class="form-control" maxlength="32">
+                    </div>
                 </div>
-
+                <label class="u-check-label" style="margin-bottom: 12px; display: block;"><input type="checkbox" name="fax_mail" id="modal_fax_mail" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_fax_mail'); ?></label>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('fax_settings.field_role'); ?></label>
+                    <select name="role" id="modal_role" class="form-control">
+                        <?php foreach ($faxRoles as $r): ?><option value="<?php echo htmlspecialchars((string) $r['role_key']); ?>"><?php echo htmlspecialchars((string) $r['role_name']); ?></option><?php endforeach; ?>
+                    </select>
+                    <small class="u-hint"><?php echo t('fax_settings.field_role_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('fax_settings.field_permission'); ?></label>
+                    <select name="permission_group_id" id="modal_permission_group_id" class="form-control">
+                        <option value="0"><?php echo t('fax_settings.not_selected'); ?></option>
+                        <?php foreach ($permissionGroups as $g): ?><option value="<?php echo (int) $g['id']; ?>"><?php echo htmlspecialchars((string) $g['group_name']); ?></option><?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label u-check-label"><input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_active'); ?></label>
+                </div>
                 <?php echo uiModalFooter('closeFaxDidModal()'); ?>
             </form>
         </div>

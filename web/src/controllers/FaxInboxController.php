@@ -12,7 +12,10 @@ class FaxInboxController extends BaseController
 {
     public static function index(): void
     {
-        static::requireRole(['admin', 'fax_user']);
+        // A role an administrator made for fax users opens these pages too.
+        if (!hasModulePermission('fax_inbox', 'access')) {
+            static::requireRole(['admin', 'fax_user']);
+        }
 
         $user_role = $_SESSION['user_role'] ?? '';
         $user_id = intval($_SESSION['user_id'] ?? 0);
