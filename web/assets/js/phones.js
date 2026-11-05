@@ -28,7 +28,7 @@ function copyProvisionUrl(btn) {
 }
 
 // ---- The file a phone gets (passwords hidden until asked for) ----
-const phoneFile = { id: 0, mac: '', files: [], current: 0, revealed: false };
+var phoneFile = { id: 0, mac: '', files: [], current: 0, revealed: false };
 
 function showPhoneFile(phoneId, mac, reveal, index) {
     const form = new FormData();
