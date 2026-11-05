@@ -5,6 +5,17 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.61.0
+
+The same code as 1.60.28, numbered for what 1.60.26 to 1.60.28 add together:
+
+- **Phones on TCP and TLS get their calls,** and a new Transports page and SIP settings on each extension let you choose how phones connect.
+- **Provisioning has its own menu,** with regions for phones inside and outside your network, Snom D865 and Snom XML in model settings.
+- **Advanced Configuration** reaches more Asterisk files, groups of extensions and trunks, new objects and raw text.
+- **Fax:** one number for voice and fax, fax users in one place with several or shared numbers, and cover templates for each user.
+
+After updating, phones on TCP or TLS need no change. The fax user role no longer deletes received faxes: grant it under Roles if needed.
+
 ## 1.60.28
 
 - **Phones on TCP or TLS now get their calls.** They registered fine but no incoming call reached them, as every extension was tied to UDP. A call now goes back over the transport the phone registered on. This also applies to TLS set in provisioning or in a region.
