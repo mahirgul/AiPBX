@@ -164,6 +164,16 @@ fi
 log "Department: $DEPT_NAME | Email: ${NOTIFY_EMAIL:-NONE} | RX_Enabled: $RX_ENABLED"
 
 # 5. Send email notification if enabled
+# Everyone on the number who wants it gets the e-mail. A number with users answers for them all, also
+# when none of them wants mail; only a number without users falls back to the address above.
+MEMBER_COUNT=$($MYSQL_QUERY -e \
+  "SELECT COUNT(*) FROM pbx_fax_number_users f JOIN sys_did_mappings m ON m.id = f.did_mapping_id WHERE m.did_extension = '$EXTEN';" 2>/dev/null)
+if [ "${MEMBER_COUNT:-0}" -gt 0 ] 2>/dev/null; then
+    NOTIFY_EMAIL=$($MYSQL_QUERY -e \
+      "SELECT GROUP_CONCAT(DISTINCT u.email) FROM pbx_fax_number_users f JOIN sys_did_mappings m ON m.id = f.did_mapping_id JOIN sys_users u ON u.id = f.user_id WHERE m.did_extension = '$EXTEN' AND u.is_active = 1 AND u.fax_mail = 1 AND u.email <> '';" 2>/dev/null)
+    [ "$NOTIFY_EMAIL" = "NULL" ] && NOTIFY_EMAIL=""
+fi
+
 if [ "$RX_ENABLED" = "yes" ] && [ -n "$NOTIFY_EMAIL" ] && [[ "$NOTIFY_EMAIL" =~ @ ]]; then
 
     TIMESTAMP=$(date '+%d.%m.%Y %H:%M:%S')
@@ -183,12 +193,15 @@ if [ "$RX_ENABLED" = "yes" ] && [ -n "$NOTIFY_EMAIL" ] && [[ "$NOTIFY_EMAIL" =~ 
     if [ "$ATTACH_PDF_ENABLED" = "yes" ] && [ -f "$ARCHIVE_PDF" ]; then
         ATTACH_ARG=("--attach=$ARCHIVE_PDF|$ATTACH_NAME|application/pdf")
     fi
-    /usr/bin/php "$(dirname "$(readlink -f "$0")")/send_template_mail.php" fax_received "$NOTIFY_EMAIL" --sender=fax \
-        "${ATTACH_ARG[@]}" \
-        "department=$DEPT_NAME" "did=$EXTEN" "caller=$CALLERID" "pages=$PAGES" "date=$TIMESTAMP" \
-        "portal_link=https://${PORTAL_DOMAIN}/fax-inbox" >>"$LOGFILE" 2>&1
-
-    MAIL_STATUS=$?
+    # One mail per person: the template is in each recipient's own language.
+    MAIL_STATUS=1
+    for ONE_EMAIL in ${NOTIFY_EMAIL//,/ }; do
+        /usr/bin/php "$(dirname "$(readlink -f "$0")")/send_template_mail.php" fax_received "$ONE_EMAIL" --sender=fax \
+            "${ATTACH_ARG[@]}" \
+            "department=$DEPT_NAME" "did=$EXTEN" "caller=$CALLERID" "pages=$PAGES" "date=$TIMESTAMP" \
+            "portal_link=https://${PORTAL_DOMAIN}/fax-inbox" >>"$LOGFILE" 2>&1
+        [ $? -eq 0 ] && MAIL_STATUS=0
+    done
 
     if [ $MAIL_STATUS -eq 0 ]; then
         [[ "$FAX_DB_ID" =~ ^[0-9]+$ ]] && $MYSQL_QUERY -e \

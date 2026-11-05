@@ -12,6 +12,9 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **More SIP settings on each extension.** Transport, DTMF mode, media encryption, NAT options, codec order, devices at once, check interval and prompt language.
 - **TCP for desk phones.** Provisioning and regions can now choose TCP (Yealink, Grandstream, Fanvil, Snom, Cisco SPA, Poly). A region can also name the SIP port of a transport added for it.
 - **One number for voice and fax.** An inbound route can listen for a fax tone first: a fax goes to fax, everyone else to the route's destination. Callers hear ringing for those seconds, 5 by default. Thanks to @quietvw for the request (#151).
+- **Fax users are managed in one place.** Fax Units now adds a fax user with their login, e-mail and numbers in one form. They no longer appear under Extensions or System Users. One user can have several numbers, separated by commas, and chooses which to send from. Write a number for two users and they share it: one copy, seen by both, with an e-mail to each who wants it.
+- **Cover templates for each user.** A user can keep their own templates and choose one when sending; the organisation's stays the default.
+- **Deleting received faxes is granted by role.** The fax user role no longer has it. Grant it under Roles, on a role of its own if only some should have it; fax users can have that role.
 
 ## 1.60.27
 

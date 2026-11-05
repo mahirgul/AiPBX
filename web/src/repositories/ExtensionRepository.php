@@ -22,7 +22,7 @@ class ExtensionRepository extends BaseRepository
              FROM sys_users u
              LEFT JOIN pbx_permission_groups pg ON u.permission_group_id = pg.id
              LEFT JOIN pbx_boss_secretary_groups bsg ON u.boss_secretary_group_id = bsg.id
-             WHERE u.extension IS NOT NULL AND u.extension != ''
+             WHERE u.extension IS NOT NULL AND u.extension != '' AND COALESCE(u.extension_type, 'sip') <> 'fax'
              ORDER BY u.extension ASC"
         )->fetchAll();
     }

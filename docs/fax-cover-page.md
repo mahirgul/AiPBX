@@ -1,6 +1,6 @@
 # Fax Cover Page
 
-AiPBX can put a cover page in front of faxes sent from the portal. There is one template for the whole organisation.
+AiPBX can put a cover page in front of faxes sent from the portal. There is one template for the whole organisation, and each user can keep their own under *Send Fax* and choose one when sending.
 
 ## Setting it up
 

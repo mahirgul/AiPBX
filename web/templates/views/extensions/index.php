@@ -167,14 +167,8 @@
                 </div>
 
                 <div class="u-grid-2">
-                    <div class="form-group">
-                        <label class="form-label"><?php echo t('extensions.field_type'); ?></label>
-                        <select name="extension_type" id="modal_extension_type" class="form-control" onchange="toggleExtensionTypeFields()">
-                            <option value="sip"><?php echo t('extensions.type_option_sip'); ?></option>
-                            <option value="fax"><?php echo t('extensions.type_option_fax'); ?></option>
-                        </select>
-                        <small class="u-hint u-fs-11"><?php echo t('extensions.type_help'); ?></small>
-                    </div>
+                    <input type="hidden" name="extension_type" id="modal_extension_type" value="sip">
+                    <div class="form-group u-fs-12 text-muted" style="align-self: center;"><i class="fas fa-fax"></i> <?php echo t('extensions.fax_moved'); ?> <a href="/fax-settings"><?php echo t('fax_settings.title'); ?></a></div>
 
                     <div class="form-group" id="sip_auth_digest_group">
                         <label class="form-label"><?php echo t('extensions.field_auth_digest'); ?></label>
