@@ -63,6 +63,51 @@ function inboundNormLines(array $rules, string $trunk, string $target): string
         . " same => n,GosubIf(\$[\${DIALPLAN_EXISTS({$ctx},\${AIPBX_NORM_IN},1)}]?{$ctx},\${AIPBX_NORM_IN},1)\n";
 }
 
+/**
+ * Lines of a voice route that also takes faxes (issue #151). A route whose destination is the fax
+ * itself needs none of this.
+ *
+ * @param array<string, mixed> $d row of pbx_dids
+ * @param string $did the number as dialplan text, ${EXTEN} on a pattern route
+ */
+function faxDetectLines(array $d, string $did): string
+{
+    if (empty($d['fax_detect']) || ($d['dest_type'] ?? '') === 'fax') {
+        return '';
+    }
+    $seconds = max(3, min(15, (int) ($d['fax_detect_seconds'] ?? 5)));
+    $target = (string) preg_replace('/[^0-9]/', '', (string) ($d['fax_target'] ?? ''));
+    return " same => n,Set(FAX_TARGET=" . ($target !== '' ? $target : $did) . ")\n"
+        . " same => n,Gosub(sub-fax-detect,s,1({$seconds}))\n";
+}
+
+/**
+ * Asterisk jumps to the extension "fax" of the channel's context when it hears the tone, so listening
+ * has to happen in a context that has one: it cannot go on inside an IVR or a queue. It is its own
+ * context because a trunk with fax_detect on would also jump to a "fax" extension in the inbound one,
+ * on a route that never asked for this.
+ *
+ * The call is answered first: a fax machine sends its tone only then. Ringback plays meanwhile, so a
+ * person hears a phone ringing.
+ */
+function faxDetectSubroutine(): string
+{
+    return "[sub-fax-detect]\n"
+        . "exten => s,1,Answer()\n"
+        . " same => n,Set(FAXOPT(faxdetect)=yes,\${ARG1})\n"
+        . " same => n,Playtones(ring)\n"
+        . " same => n,Wait(\${ARG1})\n"
+        . " same => n,StopPlaytones()\n"
+        . " same => n,Set(FAXOPT(faxdetect)=no)\n"
+        . " same => n,Return()\n"
+        . "exten => fax,1,NoOp(Fax tone on a voice route: \${FAX_TARGET})\n"
+        . " same => n,StopPlaytones()\n"
+        // The fax is filed under this number, also when it is not the number that was dialled.
+        . " same => n,Set(CDR(did)=\${FAX_TARGET})\n"
+        . " same => n,Goto(from-trunk-fax,\${FAX_TARGET},1)\n\n";
+}
+
+
 function syncInboundDialplan() {
     return withSyncLock('inbound_dialplan', '__syncInboundDialplanBody');
 }
@@ -192,6 +237,7 @@ function __syncInboundDialplanBody() {
 
     $conf .= inboundBlacklistSubroutine();
     $conf .= trunkLimitSubroutine();
+    $conf .= faxDetectSubroutine();
     $conf .= "[from-trunk-inbound]\n\n";
 
     $pattern_lengths = [];
@@ -217,6 +263,9 @@ function __syncInboundDialplanBody() {
                 $lang = preg_replace('/[^a-zA-Z_]/', '', $d['language']);
                 $conf .= " same => n,Set(CHANNEL(language)={$lang})\n";
             }
+            // Before the privacy notice and the recording: a fax machine cannot answer one, and
+            // the other would only be modem noise.
+            $conf .= faxDetectLines($d, $did_cdr);
             if ($privacyNotice !== null) {
                 $conf .= " same => n,Gosub(sub-privacy-consent,s,1)\n";
             }

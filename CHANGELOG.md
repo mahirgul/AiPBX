@@ -11,6 +11,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Transports page.** See UDP, TCP, TLS, WS and WSS in one list, change an address or port, turn TCP and TLS on or off, and add your own transports, each with its own public address if you need one. A new port opens in the firewall, and the page says when Asterisk needs a restart.
 - **More SIP settings on each extension.** Transport, DTMF mode, media encryption, NAT options, codec order, devices at once, check interval and prompt language.
 - **TCP for desk phones.** Provisioning and regions can now choose TCP (Yealink, Grandstream, Fanvil, Snom, Cisco SPA, Poly). A region can also name the SIP port of a transport added for it.
+- **One number for voice and fax.** An inbound route can listen for a fax tone first: a fax goes to fax, everyone else to the route's destination. Callers hear ringing for those seconds, 5 by default. Thanks to @quietvw for the request (#151).
 
 ## 1.60.27
 

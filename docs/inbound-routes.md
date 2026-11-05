@@ -26,3 +26,18 @@ Optional per route: call recording and the channel language.
 A route with destination **Fax** answers with fax detection and stores the document for the department
 mapped to that DID (**Fax Settings**). The department mapping uses the same number as the route; when
 you renumber fax DIDs, update both, otherwise faxes are received but not delivered to the right inbox.
+
+## One number for voice and fax
+
+A route whose destination is a queue, an IVR or anything but fax can still take faxes. Turn on **Also take faxes on this number**:
+
+1. The call is answered, and the caller hears ringing while AiPBX listens for a fax tone. The default is 5 seconds, from 3 to 15.
+2. With a tone, the call goes to fax. Without one, it goes to the route's destination.
+
+**File faxes under number** decides which fax number the fax belongs to; empty means this route's number.
+
+Some limits:
+
+- **Every caller waits those seconds,** and the call counts as answered from the start, which can matter for carrier billing.
+- **A fax machine needs to send its calling tone.** One dialled by hand often does not, and goes to the destination.
+- **Listening happens only in those seconds,** not later in an IVR or a queue, because Asterisk can only move a call from where it has a fax extension to jump to.
