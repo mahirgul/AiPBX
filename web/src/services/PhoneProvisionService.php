@@ -32,13 +32,13 @@ class PhoneProvisionService
     public const VOICEMAIL_CODE = '*97';
     public const PICKUP_PREFIX = '*21';
 
-    public const CODECS = ['g722', 'pcma', 'pcmu', 'g729', 'opus'];
+    public const CODECS = ['opus', 'g722', 'pcma', 'pcmu', 'g729'];
 
     /** sys_settings keys and their defaults. */
     public const SETTINGS = [
         'provision_transport' => 'udp',
         'provision_srtp' => '0',
-        'provision_codecs' => 'g722,pcma,pcmu',
+        'provision_codecs' => 'opus,g722,pcma,pcmu',
         'provision_ntp' => 'pool.ntp.org',
         'provision_timezone' => '',
         'provision_language' => 'en',
@@ -160,7 +160,8 @@ class PhoneProvisionService
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
             $transport = ($data['provision_transport'] ?? '') === 'tls' ? 'tls' : 'udp';
             $srtp = (string) max(0, min(2, (int) ($data['provision_srtp'] ?? 0)));
-            $codecs = array_values(array_intersect((array) ($data['provision_codecs'] ?? []), self::CODECS));
+            // In the order of CODECS, preferred first, whatever order the form sent.
+            $codecs = array_values(array_intersect(self::CODECS, (array) ($data['provision_codecs'] ?? [])));
             if (empty($codecs)) {
                 throw new \Exception(t('phones.err_codecs'));
             }

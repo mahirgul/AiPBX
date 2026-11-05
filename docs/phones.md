@@ -146,7 +146,7 @@ is switched off. The files contain the SIP password; TFTP and FTP answer only th
 | Transport | UDP (port 5060) or TLS (5061), from *PBX Settings* ports |
 | Account | the extension number as user and authentication name, its SIP password, the user's name as display name |
 | SRTP | off, optional or required |
-| Codecs | the selected ones, in the order G.722, PCMA, PCMU, G.729, Opus |
+| Codecs | the selected ones, in the order Opus, G.722, PCMA, PCMU, G.729. A phone without Opus uses the next one it has |
 | Time | NTP server and the offset of the chosen time zone |
 | Language | the phone's display language |
 | Voicemail | `*97` on the message key |

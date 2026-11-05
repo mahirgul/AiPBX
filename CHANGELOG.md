@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.60.26
+
+- **All services on the dashboard.** Every service of the server is listed with its state and a restart button, not only four restart buttons.
+- **Advanced Configuration is a list with an Add button.** Adding and editing open in a window, and a save Asterisk refuses keeps what you typed.
+- **Opus first for desk phones on new installations.** The order is Opus, G.722, PCMA, PCMU, and a phone without Opus uses the next one it has. On an existing server, tick Opus under PBX settings and Phones to use it.
+
 ## 1.60.25
 
 - **Fix: installing and updating stopped at the firewall step.** 1.60.24 stopped there on any server without a card that has its own firewall rules, so an update failed and a new install did not finish. Update from an earlier version straight to this one.

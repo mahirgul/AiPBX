@@ -140,7 +140,7 @@ function __syncAllExtensionsBody() {
     // Video codecs only while video calls are on (Admin -> Asterisk -> Video).
     $video_codecs = pbxVideoCodecs();
     $webrtc_codecs = implode(',', array_merge(pbxAudioCodecs(getSystemSetting('pjsip_codecs', 'opus,ulaw,alaw,g722')), $video_codecs));
-    $wired_codecs = implode(',', array_merge(pbxAudioCodecs(getSystemSetting('pjsip_wired_codecs', 'alaw,ulaw,g729')), $video_codecs));
+    $wired_codecs = implode(',', array_merge(pbxAudioCodecs(getSystemSetting('pjsip_wired_codecs', 'opus,g722,alaw,ulaw')), $video_codecs));
     $direct_media = getSystemSetting('pjsip_direct_media', 'no');
     $rtp_symmetric = getSystemSetting('pjsip_rtp_symmetric', 'yes');
     $qualify_frequency = intval(getSystemSetting('pjsip_qualify_frequency', '60'));

@@ -120,6 +120,9 @@
             <label class="form-label"><?php echo t('asterisk_settings.field_wired_codecs'); ?></label>
             <div style="display: flex; gap: 16px; margin-top: 6px;">
                 <label class="u-check-label-6">
+                    <input type="checkbox" name="wired_codecs[]" value="opus" <?php echo in_array('opus', $active_wired_codecs) ? 'checked' : ''; ?>> Opus
+                </label>
+                <label class="u-check-label-6">
                     <input type="checkbox" name="wired_codecs[]" value="alaw" <?php echo in_array('alaw', $active_wired_codecs) ? 'checked' : ''; ?>> aLaw (PCMA)
                 </label>
                 <label class="u-check-label-6">
