@@ -829,7 +829,7 @@ final class PhoneProvisionTest extends TestCase
     {
         $extras = ['extra_settings' => [
             'LANGUAGE' => 'Deutsch', 'user_host.1' => 'other.example', 'user_srtp' => 'on', 'new_one' => '1"><x>',
-            'new_two.3' => 'a', 'fkey.0' => 'speed 123', 'bad.name.x' => '1', '9bad' => '1',
+            'new_two.3' => 'a', 'fkey.0' => 'speed 123', 'not_valid.name.x' => '1', '9not_valid' => '1',
         ]] + $this->hostileContext('snom-d865');
         $out = (new SnomTemplate())->render($extras);
         $xml = simplexml_load_string($out);
@@ -843,7 +843,7 @@ final class PhoneProvisionTest extends TestCase
         $this->assertSame('1"><x>', (string) $ps->new_one);
         $this->assertSame('3', (string) $ps->new_two['idx']);
         $this->assertSame('speed 123', (string) $xml->functionKeys->fkey[0]);
-        $this->assertStringNotContainsString('bad', $out);
+        $this->assertStringNotContainsString('not_valid', $out);
     }
 
     /** Every vendor with extra settings: one value in the file, the administrator's, whatever the case. */
@@ -866,5 +866,40 @@ final class PhoneProvisionTest extends TestCase
             $this->assertSame(1, preg_match_all('/[<\s]' . preg_quote($name, '/') . '[>=]/i', $out), $model);
             $this->assertStringContainsString('MINE', $out, $model);
         }
+    }
+
+    public function testSnomModelSettingsTakeXml(): void
+    {
+        $text = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<settings>\n<phone-settings e=\"2\">\n<language perm=\"RW\">Deutsch</language>\n<user_host idx=\"1\" perm=\"\">xml.example</user_host>\n<brand_new perm=\"\">1 &amp; 2</brand_new>\n</phone-settings>\n<functionKeys e=\"2\">\n<fkey idx=\"0\" context=\"active\" label=\"Boss\" perm=\"RW\">speed 100</fkey>\n</functionKeys>\n</settings>\n# a comment\nntp_server = plain.example";
+        $parsed = PhoneModelSettingsService::parse($text, 'snom-d865');
+        $this->assertSame([], $parsed['errors']);
+        $this->assertSame('Deutsch', $parsed['settings']['language']);
+        $this->assertSame('plain.example', $parsed['settings']['ntp_server']);
+        $ctx = ['extra_settings' => $parsed['settings'], 'extra_attributes' => $parsed['attributes']] + $this->hostileContext('snom-d865');
+        $out = (new SnomTemplate())->render($ctx);
+        $xml = simplexml_load_string($out);
+        $this->assertNotFalse($xml);
+        $ps = $xml->{'phone-settings'};
+        $this->assertCount(1, $ps->language);
+        $this->assertSame('RW', (string) $ps->language['perm'], 'a perm given in XML reaches the phone');
+        $this->assertSame('xml.example', (string) $ps->user_host);
+        $this->assertSame('1 & 2', (string) $ps->brand_new);
+        $this->assertSame('plain.example', (string) $ps->ntp_server);
+        $fkey = $xml->functionKeys->fkey[0];
+        $this->assertSame('speed 100', (string) $fkey);
+        $this->assertSame('Boss', (string) $fkey['label']);
+        $this->assertSame('RW', (string) $fkey['perm']);
+        $this->assertSame('', (string) $xml->functionKeys->fkey[1]['perm'], 'other keys keep the template');
+    }
+
+    public function testBadSnomXmlIsRefusedAndOtherVendorsDoNotTakeIt(): void
+    {
+        foreach (['<language>Deutsch', '<a><b></a></b>', '<!DOCTYPE x [<!ENTITY e SYSTEM "file:///etc/passwd">]><language>&e;</language>'] as $bad) {
+            $this->assertNotSame([], PhoneModelSettingsService::parse($bad, 'snom-d865')['errors'], $bad);
+        }
+        $this->assertNotSame([], PhoneModelSettingsService::parse('<language>Deutsch</language>', 'yealink-t46u')['errors']);
+        $hostile = PhoneModelSettingsService::parse('<language onload="x" perm="a&quot;b">1</language>', 'snom-d865');
+        $out = (new SnomTemplate())->render(['extra_settings' => $hostile['settings'], 'extra_attributes' => $hostile['attributes']] + $this->hostileContext('snom-d865'));
+        $this->assertNotFalse(simplexml_load_string($out), 'an attribute cannot break the file');
     }
 }

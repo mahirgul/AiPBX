@@ -311,7 +311,7 @@ class PhoneProvisionService
 
     public static function provisioningUrl(array $phone): string
     {
-        return self::baseUrl() . '/provision/' . $phone['token'] . '/';
+        return self::baseUrl($phone) . '/provision/' . $phone['token'] . '/';
     }
 
     public static function savePhone(array $data): array
@@ -322,7 +322,8 @@ class PhoneProvisionService
                 (string) ($data['mac'] ?? ''),
                 (string) ($data['model'] ?? ''),
                 (int) ($data['user_id'] ?? 0),
-                (string) ($data['notes'] ?? '')
+                (string) ($data['notes'] ?? ''),
+                isset($data['region_id']) ? (int) $data['region_id'] : null
             );
             self::exportTftpQuietly();
             return sprintf(t('phones.saved'), PhoneModels::formatMac((string) self::getPhone($id)['mac']));
@@ -332,10 +333,15 @@ class PhoneProvisionService
     /**
      * Creates or updates a phone (by id, or by MAC when $id is 0 and the MAC
      * is known) and returns its id. A new phone gets its token and web admin
-     * password here; a MAC that was waiting leaves the waiting list.
+     * password here; a MAC that was waiting leaves the waiting list. Without a region, a new phone
+     * goes in the default one and an existing phone stays where it is.
      */
-    public static function upsertPhone(int $id, string $rawMac, string $model, int $userId, string $notes = ''): int
+    public static function upsertPhone(int $id, string $rawMac, string $model, int $userId, string $notes = '', ?int $regionId = null): int
     {
+        require_once __DIR__ . '/PhoneRegionService.php';
+        if ($regionId !== null && !PhoneRegionService::exists($regionId)) {
+            throw new \Exception(t('phones.region_err_missing'));
+        }
         $mac = PhoneModels::normalizeMac($rawMac);
         if ($mac === '') {
             throw new \Exception(t('phones.err_mac'));
@@ -362,12 +368,12 @@ class PhoneProvisionService
             if (self::getPhone($id) === null) {
                 throw new \Exception(t('phones.err_not_found'));
             }
-            $db->prepare('UPDATE pbx_phones SET mac = ?, model = ?, user_id = ?, notes = ? WHERE id = ?')
-                ->execute([$mac, $model, $userId, $notes, $id]);
+            $db->prepare('UPDATE pbx_phones SET mac = ?, model = ?, user_id = ?, notes = ?, region_id = COALESCE(?, region_id) WHERE id = ?')
+                ->execute([$mac, $model, $userId, $notes, $regionId, $id]);
             $action = 'update';
         } else {
-            $db->prepare('INSERT INTO pbx_phones (mac, model, user_id, token, admin_password, notes) VALUES (?, ?, ?, ?, ?, ?)')
-                ->execute([$mac, $model, $userId, self::newToken(), SecretBox::encrypt(self::newPassword()), $notes]);
+            $db->prepare('INSERT INTO pbx_phones (mac, model, user_id, token, admin_password, notes, region_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                ->execute([$mac, $model, $userId, self::newToken(), SecretBox::encrypt(self::newPassword()), $notes, $regionId ?? (PhoneRegionService::defaultId() ?: null)]);
             $id = (int) $db->lastInsertId();
             $action = 'create';
         }
@@ -756,7 +762,9 @@ class PhoneProvisionService
     /** Everything a template needs for one phone. */
     public static function buildContext(array $phone, array $user): array
     {
-        $s = self::settings();
+        require_once __DIR__ . '/PhoneRegionService.php';
+        $region = PhoneRegionService::forPhone($phone);
+        $s = PhoneRegionService::apply(self::settings(), $region);
         $ext = (string) preg_replace('/[^0-9]/', '', (string) $user['extension']);
         $sipMap = SIPHelper::getSettingsMap($ext);
         $secret = !empty($sipMap['secret']) ? (string) $sipMap['secret'] : (string) $user['sip_password'];
@@ -772,7 +780,7 @@ class PhoneProvisionService
             'extension' => $ext,
             'display_name' => toCleanAscii((string) $user['full_name']) ?: $ext,
             'sip_password' => $secret,
-            'server' => self::sipServer(),
+            'server' => (string) ($region['sip_server'] ?? '') ?: self::sipServer(),
             // Outbound proxy ('' = none): same port as the SIP server.
             'proxy' => $s['provision_sip_proxy'],
             'port' => self::sipPort($tls),
@@ -791,6 +799,7 @@ class PhoneProvisionService
             'admin_password' => SecretBox::decrypt((string) $phone['admin_password']),
             'keys' => self::getKeys((int) $user['id']),
             'extra_settings' => PhoneModelSettingsService::forModel((string) $phone['model']),
+            'extra_attributes' => PhoneModelSettingsService::attributesForModel((string) $phone['model']),
         ];
     }
 
@@ -814,11 +823,17 @@ class PhoneProvisionService
      * Where phones fetch their files (http(s)://host[:port], no slash at the
      * end): the provisioning settings' address, else the portal's address.
      * An address without a scheme (just an IP or name) means http: phone
-     * networks without DNS rarely have a certificate for an IP.
+     * networks without DNS rarely have a certificate for an IP. A phone's region can name its own.
+     *
+     * @param array<string, mixed>|null $phone
      */
-    public static function baseUrl(): string
+    public static function baseUrl(?array $phone = null): string
     {
         $set = trim((string) getSystemSetting('provision_base_url', ''));
+        if ($phone !== null) {
+            require_once __DIR__ . '/PhoneRegionService.php';
+            $set = trim((string) (PhoneRegionService::forPhone($phone)['base_url'] ?? '')) ?: $set;
+        }
         if ($set === '') {
             return ForgotPasswordService::portalUrl();
         }

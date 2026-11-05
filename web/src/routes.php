@@ -43,6 +43,7 @@ return [
     '/extensions'      => ['controller' => ExtensionController::class, 'action' => 'index', 'module' => 'extensions.php'],
     '/phones'          => ['controller' => PhoneController::class, 'action' => 'index', 'module' => 'phones.php'],
     '/phone-keys'      => ['controller' => PhoneKeysController::class, 'action' => 'index', 'module' => 'phone_keys.php'],
+    '/phone-regions'   => ['controller' => PhoneRegionsController::class, 'action' => 'index', 'module' => 'phone_regions.php'],
     '/ring-groups'      => ['controller' => RingGroupController::class, 'action' => 'index', 'module' => 'ring_groups.php'],
     '/conferences'      => ['controller' => ConferenceController::class, 'action' => 'index', 'module' => 'conferences.php'],
     '/meetings'         => ['controller' => MeetingController::class, 'action' => 'index', 'module' => 'meetings.php'],

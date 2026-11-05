@@ -52,6 +52,7 @@ $userOptions = function () use ($users) {
             <?php if ($canEdit): ?>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('discoverySettingsModal')" title="<?php echo t('phonedisc.settings_title'); ?>"><i class="fas fa-wifi"></i></button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('provisionSettingsModal')" title="<?php echo t('phones.settings_title'); ?>"><i class="fas fa-sliders-h"></i></button>
+                <a href="/phone-regions" class="btn btn-secondary btn-sm" title="<?php echo t('phones.region_title'); ?>"><i class="fas fa-map-marker-alt"></i></a>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('modelSettingsModal'); phonesShowModelSettings();" title="<?php echo t('phones.extra_title'); ?>"><i class="fas fa-sliders-h"></i> <?php echo t('phones.extra_title'); ?></button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('phoneImportModal')" title="<?php echo t('phones.import_title'); ?>"><i class="fas fa-file-csv"></i></button>
                 <button type="button" class="btn btn-primary btn-sm" onclick="openCreatePhoneModal()" title="<?php echo t('phones.add'); ?>"><i class="fas fa-plus-circle"></i></button>
@@ -76,6 +77,7 @@ $userOptions = function () use ($users) {
                     <th><?php echo t('phones.col_mac'); ?></th>
                     <th><?php echo t('phones.col_model'); ?></th>
                     <th><?php echo t('phones.col_extension'); ?></th>
+                    <th><?php echo t('phones.col_region'); ?></th>
                     <th><?php echo t('phones.col_last_fetch'); ?></th>
                     <th><?php echo t('phones.col_url'); ?></th>
                     <th class="text-right"><?php echo t('phones.col_actions'); ?></th>
@@ -107,6 +109,7 @@ $userOptions = function () use ($users) {
                                     <span class="badge badge-warning"><?php echo t('phones.unassigned'); ?></span>
                                 <?php endif; ?>
                             </td>
+                            <td class="u-fs-12"><?php echo htmlspecialchars((string) (PhoneRegionService::forPhone($p)['name'] ?? '')); ?></td>
                             <td class="u-fs-11">
                                 <?php if ($p['last_fetch_at']): ?>
                                     <?php echo htmlspecialchars($p['last_fetch_at']); ?><br>
@@ -371,6 +374,14 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                     <select name="user_id" id="phone_user" class="form-control"><?php echo $userOptions(); ?></select>
                 </div>
                 <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.col_region'); ?></label>
+                    <select name="region_id" id="phone_region" class="form-control" data-default="<?php echo (int) $defaultRegion; ?>">
+                        <?php foreach ($regions as $r): ?>
+                            <option value="<?php echo (int) $r['id']; ?>"<?php echo (int) $r['id'] === (int) $defaultRegion ? ' selected' : ''; ?>><?php echo htmlspecialchars((string) $r['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label class="form-label"><?php echo t('phones.notes'); ?></label>
                     <input type="text" name="notes" id="phone_notes" class="form-control" maxlength="255">
                 </div>
@@ -396,13 +407,14 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                     <label class="form-label"><?php echo t('phones.extra_model'); ?></label>
                     <select name="model" id="modelSettingsModel" class="form-control" onchange="phonesShowModelSettings()">
                         <?php foreach ($extraModels as $key => $label): ?>
-                            <option value="<?php echo htmlspecialchars($key); ?>"><?php echo htmlspecialchars($label); ?></option>
+                            <option value="<?php echo htmlspecialchars($key); ?>"<?php echo ($_POST['model'] ?? '') === $key && isset($_POST['save_model_settings']) ? ' selected' : ''; ?>><?php echo htmlspecialchars($label); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
                     <textarea name="extra_settings" id="modelSettingsText" class="form-control" rows="10" style="font-family: monospace;" placeholder="line.1.digitmap = [36789]xxx|x.T"></textarea>
                 </div>
+                <small class="u-hint"><?php echo t('phones.extra_help_snom'); ?></small>
                 <?php echo uiModalFooter("UIHelper.closeOverlayModal('modelSettingsModal')", t('common.save'), '', 'fa-save'); ?>
             </form>
         </div>

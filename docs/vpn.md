@@ -1,6 +1,6 @@
 # VPN server and VPN client
 
-**Network & devices → VPN Server** and **VPN Client**. Both pages are admin-only and everything is off by default.
+**Network → VPN Server** and **VPN Client**. Both pages are admin-only and everything is off by default.
 You can choose **WireGuard** or **OpenVPN** on each page.
 
 ## VPN Server: devices reach this PBX

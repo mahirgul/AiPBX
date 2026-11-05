@@ -6,6 +6,8 @@ function openCreatePhoneModal() {
     document.getElementById('phone_mac').value = '';
     document.getElementById('phone_user').value = '0';
     document.getElementById('phone_notes').value = '';
+    const region = document.getElementById('phone_region');
+    region.value = region.dataset.default;
     UIHelper.openOverlayModal('phoneModal');
 }
 
@@ -16,6 +18,8 @@ function openEditPhoneModal(p) {
     document.getElementById('phone_model').value = p.model || '';
     document.getElementById('phone_user').value = String(p.user_id || 0);
     document.getElementById('phone_notes').value = p.notes || '';
+    const region = document.getElementById('phone_region');
+    region.value = String(p.region_id || region.dataset.default);
     UIHelper.openOverlayModal('phoneModal');
 }
 
