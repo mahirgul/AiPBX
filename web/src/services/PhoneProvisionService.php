@@ -158,7 +158,7 @@ class PhoneProvisionService
             PhoneFirmwareService::SETTING => (string) getSystemSetting(PhoneFirmwareService::SETTING, ''),
         ];
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
-            $transport = ($data['provision_transport'] ?? '') === 'tls' ? 'tls' : 'udp';
+            $transport = in_array($data['provision_transport'] ?? '', ['tcp', 'tls'], true) ? (string) $data['provision_transport'] : 'udp';
             $srtp = (string) max(0, min(2, (int) ($data['provision_srtp'] ?? 0)));
             // In the order of CODECS, preferred first, whatever order the form sent.
             $codecs = array_values(array_intersect(self::CODECS, (array) ($data['provision_codecs'] ?? [])));
@@ -768,7 +768,7 @@ class PhoneProvisionService
         $ext = (string) preg_replace('/[^0-9]/', '', (string) $user['extension']);
         $sipMap = SIPHelper::getSettingsMap($ext);
         $secret = !empty($sipMap['secret']) ? (string) $sipMap['secret'] : (string) $user['sip_password'];
-        $tls = $s['provision_transport'] === 'tls';
+        $transport = in_array($s['provision_transport'], ['tcp', 'tls'], true) ? $s['provision_transport'] : 'udp';
         try {
             $offset = intdiv((new \DateTimeZone($s['provision_timezone']))->getOffset(new \DateTimeImmutable('now')), 60);
         } catch (\Exception $e) {
@@ -783,8 +783,9 @@ class PhoneProvisionService
             'server' => (string) ($region['sip_server'] ?? '') ?: self::sipServer(),
             // Outbound proxy ('' = none): same port as the SIP server.
             'proxy' => $s['provision_sip_proxy'],
-            'port' => self::sipPort($tls),
-            'transport' => $tls ? 'tls' : 'udp',
+            // A region can name the port of a transport added for it.
+            'port' => (int) ($region['sip_port'] ?? 0) ?: self::sipPort($transport),
+            'transport' => $transport,
             'srtp' => (int) $s['provision_srtp'],
             'codecs' => array_values(array_intersect(explode(',', $s['provision_codecs']), self::CODECS)),
             'ntp' => $s['provision_ntp'],
@@ -840,12 +841,13 @@ class PhoneProvisionService
         return preg_match('~^https?://~i', $set) ? $set : 'http://' . $set;
     }
 
-    private static function sipPort(bool $tls): int
+    private static function sipPort(string $transport): int
     {
+        $keyword = ['udp' => 'bindport', 'tcp' => 'tcp_bindport', 'tls' => 'tls_bindport'][$transport] ?? 'bindport';
         $stmt = getDB()->prepare('SELECT data FROM pjsipsettings WHERE keyword = ?');
-        $stmt->execute([$tls ? 'tls_bindport' : 'bindport']);
+        $stmt->execute([$keyword]);
         $port = (int) $stmt->fetchColumn();
-        return $port > 0 ? $port : ($tls ? 5061 : 5060);
+        return $port > 0 ? $port : ($transport === 'tls' ? 5061 : 5060);
     }
 
     /**

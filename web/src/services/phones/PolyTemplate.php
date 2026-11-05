@@ -93,7 +93,7 @@ final class PolyTemplate extends PhoneTemplate
             'reg.1.auth.password' => self::xml($ctx['sip_password'], 128),
             'reg.1.server.1.address' => self::xml($ctx['server'], 255),
             'reg.1.server.1.port' => (string) (int) $ctx['port'],
-            'reg.1.server.1.transport' => $tls ? 'TLS' : 'UDPOnly',
+            'reg.1.server.1.transport' => ['udp' => 'UDPOnly', 'tcp' => 'TCPOnly', 'tls' => 'TLS'][$ctx['transport']] ?? 'UDPOnly',
             'reg.1.outboundProxy.address' => self::xml($ctx['proxy'], 255),
             'reg.1.outboundProxy.port' => $ctx['proxy'] !== '' ? (string) (int) $ctx['port'] : '',
             'sec.srtp.enable' => (int) $ctx['srtp'] > 0 ? '1' : '0',

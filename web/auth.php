@@ -191,6 +191,7 @@ function getModuleKeyForPage($page = null) {
         'system_users.php'      => 'system_users',
         'roles.php'             => 'roles',
         'asterisk_settings.php' => 'asterisk_settings',
+        'transports.php'        => 'asterisk_settings',
         'brand_settings.php'    => 'brand_settings',
         'fax_mail_settings.php' => 'fax_mail_settings',
         'fax_settings.php'      => 'fax_settings',

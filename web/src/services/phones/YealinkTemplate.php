@@ -68,7 +68,7 @@ final class YealinkTemplate extends PhoneTemplate
             'account.1.password = ' . self::clean($ctx['sip_password'], 128),
             'account.1.sip_server.1.address = ' . self::clean($ctx['server'], 255),
             'account.1.sip_server.1.port = ' . (int) $ctx['port'],
-            'account.1.sip_server.1.transport_type = ' . ($tls ? 2 : 0),
+            'account.1.sip_server.1.transport_type = ' . (['udp' => 0, 'tcp' => 1, 'tls' => 2][$ctx['transport']] ?? 0),
             'account.1.outbound_proxy_enable = ' . ($ctx['proxy'] !== '' ? 1 : 0),
             'account.1.outbound_proxy.1.address = ' . self::clean($ctx['proxy'], 255),
             'account.1.outbound_proxy.1.port = ' . ($ctx['proxy'] !== '' ? (int) $ctx['port'] : ''),

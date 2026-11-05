@@ -54,26 +54,9 @@
             <?php echo t('asterisk_settings.help_body'); ?>
         </div>
 
-        <div class="u-grid-2">
-            <div class="form-group">
-                <label class="form-label"><?php echo t('asterisk_settings.field_wss_port'); ?></label>
-                <input type="number" name="pjsip_wss_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_wss_port']); ?>" required min="1" max="65535">
-                <small class="u-hint"><?php echo t('asterisk_settings.wss_port_help'); ?></small>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label"><?php echo t('asterisk_settings.field_udp_port'); ?></label>
-                <input type="number" name="pjsip_udp_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_udp_port']); ?>" required min="1" max="65535">
-                <small class="u-hint"><?php echo t('asterisk_settings.udp_port_help'); ?></small>
-            </div>
-        </div>
+        <p class="u-muted u-fs-12"><i class="fas fa-route"></i> <?php echo t('asterisk_settings.ports_moved'); ?> <a href="/transports"><?php echo t('transports.title'); ?></a></p>
 
         <div class="u-grid-2 u-mt-12">
-            <div class="form-group">
-                <label class="form-label"><?php echo t('asterisk_settings.field_tls_port'); ?></label>
-                <input type="number" name="pjsip_tls_port" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_tls_port'] ?? '5061'); ?>" required min="1" max="65535">
-                <small class="u-hint"><?php echo t('asterisk_settings.tls_port_help'); ?></small>
-            </div>
 
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_tls_method'); ?></label>

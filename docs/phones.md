@@ -253,7 +253,7 @@ more, rename them and delete any but the default; a region that still has phones
 You choose the region on each phone. A new phone starts in the default region, however it was added: the form, CSV
 import, discovery or the automatic pool.
 
-Each region can set the SIP server, outbound proxy, address for phone files, transport, SRTP, codecs, NTP, syslog, time
+Each region can set the SIP server, SIP port, outbound proxy, address for phone files, transport, SRTP, codecs, NTP, syslog, time
 zone and language. An empty field takes the general value, so a region changes nothing until you fill it. Write `none`
 in the proxy or syslog field when these phones should use none.
 
@@ -261,7 +261,8 @@ Some limits:
 
 - **A phone has to reach the server once.** It learns its first address from DHCP, plug and play or a URL you enter; the region's settings arrive with its file.
 - **Outside phones need more than this.** The server's NAT settings, firewall and certificate have to be right too.
-- **The SIP port is not per region,** as it is the port the server listens on. Allowed networks stay general as well.
+- **Allowed networks stay general.** To give a region its own SIP port, add a transport for it first (*Admin → Transports*).
+- **TCP is written for Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly.** NEC and Cisco CallManager phones stay on UDP when TCP is chosen, as their values for it are not confirmed.
 
 ## Model settings
 

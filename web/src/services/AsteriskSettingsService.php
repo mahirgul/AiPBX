@@ -168,9 +168,9 @@ class AsteriskSettingsService {
             ? implode(',', array_intersect(['opus', 'g722', 'alaw', 'ulaw', 'g729'], explode(',', $filter_codecs($post['wired_codecs'], $allowed_audio, 'alaw,ulaw'))))
             : 'opus,g722,alaw,ulaw';
 
-        $wss_port_val = filter_var(trim((string)($post['pjsip_wss_port'] ?? '8089')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
-        $udp_port_val = filter_var(trim((string)($post['pjsip_udp_port'] ?? '5060')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
-        $tls_port_val = filter_var(trim((string)($post['pjsip_tls_port'] ?? '5061')), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+        $wss_port_val = filter_var(trim((string)($post['pjsip_wss_port'] ?? getSystemSetting('pjsip_wss_port', '8089'))), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+        $udp_port_val = filter_var(trim((string)($post['pjsip_udp_port'] ?? getSystemSetting('pjsip_udp_port', '5060'))), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
+        $tls_port_val = filter_var(trim((string)($post['pjsip_tls_port'] ?? getSystemSetting('pjsip_tls_port', '5061'))), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 65535]]);
         if ($wss_port_val === false || $udp_port_val === false || $tls_port_val === false) {
             return ['success' => false, 'error' => 'Invalid PJSIP port (1-65535).'];
         }

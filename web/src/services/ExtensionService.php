@@ -7,6 +7,7 @@ require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../internal_numbers.php';
 require_once __DIR__ . '/../sip_helper.php';
 
+require_once __DIR__ . '/ExtensionSipOptions.php';
 class ExtensionService {
     public static function saveExtension($data) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
@@ -147,6 +148,8 @@ class ExtensionService {
                         'secret' => $sip_password !== '' ? $sip_password : null,
                         'auth_digest' => $sip_auth_digest ? 'yes' : 'no',
                     ]);
+                    ExtensionSipOptions::save($extension, $data);
+                    self::saveMaxContacts($extension, $data);
                 } else {
                     SIPHelper::deleteSettings($extension);
                 }
@@ -198,6 +201,10 @@ class ExtensionService {
                     'created_at' => date('Y-m-d H:i:s')
                 ]);
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $sip_password, $sip_auth_digest);
+                if ($extension_type === 'sip') {
+                    ExtensionSipOptions::save($extension, $data);
+                    self::saveMaxContacts($extension, $data);
+                }
                 markPendingSync('extensions', 'extension', $extension, "Extension: {$extension} ({$full_name})", 'create', $_SESSION['user_id'] ?? null);
                 markPendingSync('general_dialplan', 'general_dialplan', 'dialplan', "Extension dialplan ({$extension})", 'update', $_SESSION['user_id'] ?? null);
                 markPendingSync('ivrs', 'ivrs', 'all', "IVR direct extension dialing ({$extension})", 'update', $_SESSION['user_id'] ?? null);
@@ -207,6 +214,15 @@ class ExtensionService {
             }
             return $msg;
         });
+    }
+
+    /** Devices that may register at once. A blank field keeps what is stored. */
+    private static function saveMaxContacts(string $extension, array $data): void
+    {
+        $value = trim((string) ($data['max_contacts'] ?? ''));
+        if (ctype_digit($value) && (int) $value >= 1 && (int) $value <= 50) {
+            SIPHelper::setSettings($extension, ['max_contacts' => (string) (int) $value]);
+        }
     }
 
     public static function removeExtension($user_id, $csrf_token) {

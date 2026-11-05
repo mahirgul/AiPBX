@@ -133,7 +133,12 @@ final class PhoneRegionService
         }
         $out['base_url'] = $baseUrl;
         $transport = (string) ($data['transport'] ?? '');
-        $out['transport'] = in_array($transport, ['udp', 'tls'], true) ? $transport : '';
+        $out['transport'] = in_array($transport, ['udp', 'tcp', 'tls'], true) ? $transport : '';
+        $port = trim((string) ($data['sip_port'] ?? ''));
+        if ($port !== '' && (!ctype_digit($port) || (int) $port < 1 || (int) $port > 65535)) {
+            throw new \Exception(t('phones.region_err_port'));
+        }
+        $out['sip_port'] = $port;
         $srtp = (string) ($data['srtp'] ?? '');
         $out['srtp'] = in_array($srtp, ['0', '1', '2'], true) ? $srtp : '';
         // In the order of CODECS, as in the general settings; none ticked takes the general list.

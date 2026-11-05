@@ -4,6 +4,28 @@
  * Generates global PJSIP transports (UDP, TCP, TLS, WSS, WS) reading strictly from `pjsipsettings` key-value DB table.
  */
 
+/**
+ * A transport the administrator added (Transports page). symmetric_transport makes Asterisk answer
+ * and call a phone from the port it registered on: with two transports of a protocol it would
+ * otherwise send from the first.
+ *
+ * @param array<string, mixed> $t row of pbx_transports
+ */
+function buildCustomTransport(array $t, string $localNets, string $external, string $cert, string $key, string $method): string
+{
+    $name = (string) preg_replace('/[^a-z0-9-]/', '', (string) $t['name']);
+    $protocol = in_array($t['protocol'], ['udp', 'tcp', 'tls'], true) ? $t['protocol'] : 'udp';
+    $addr = (string) preg_replace('/[^0-9a-fA-F:.]/', '', (string) $t['bind_addr']);
+    $conf = "[{$name}]\ntype=transport\nprotocol={$protocol}\nbind={$addr}:" . (int) $t['port'] . "\nsymmetric_transport=yes\n";
+    if ($protocol === 'tls') {
+        $conf .= ($cert !== '' ? "cert_file={$cert}\n" : '') . ($key !== '' ? "priv_key_file={$key}\n" : '') . "method={$method}\n";
+    }
+    $own = (string) preg_replace('/[^A-Za-z0-9.-]/', '', (string) $t['external_address']);
+    $conf .= $localNets;
+    $conf .= $own !== '' ? "external_media_address={$own}\nexternal_signaling_address={$own}\n" : $external;
+    return $conf . "\n";
+}
+
 function syncTransports() {
     return withSyncLock('transports', '__syncTransportsBody');
 }
@@ -180,6 +202,10 @@ function __syncTransportsBody() {
         $conf .= $local_net_lines;
         $conf .= $external_lines;
         $conf .= "\n";
+    }
+
+    foreach ($db->query('SELECT * FROM pbx_transports WHERE is_active = 1 ORDER BY name')->fetchAll(PDO::FETCH_ASSOC) as $t) {
+        $conf .= buildCustomTransport($t, $local_net_lines, $external_lines, (string) $tls_cert, (string) $tls_priv_key, $tls_method);
     }
 
     return writeConfWithRollback("pjsip_transports.conf", $conf, function() {

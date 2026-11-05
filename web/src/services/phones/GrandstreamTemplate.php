@@ -70,7 +70,7 @@ final class GrandstreamTemplate extends PhoneTemplate
             'P34' => self::clean($ctx['sip_password'], 128),   // authenticate password
             'P3' => self::clean($ctx['display_name']),         // display name
             'P33' => self::clean($ctx['voicemail']),           // voicemail access number
-            'P130' => $tls ? '2' : '0',                        // transport: 0 UDP, 2 TLS
+            'P130' => ['udp' => '0', 'tcp' => '1', 'tls' => '2'][$ctx['transport']] ?? '0', // transport: 0 UDP, 1 TCP, 2 TLS
             'P183' => (string) (int) $ctx['srtp'],             // SRTP: 0 off, 1 optional, 2 forced
             'P30' => self::clean($ctx['ntp'], 255),            // NTP server
             'P64' => 'customize',                              // time zone: custom POSIX rule in P246

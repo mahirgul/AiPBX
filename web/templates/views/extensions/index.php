@@ -193,6 +193,49 @@
                         </label>
                         <small class="u-hint u-fs-11" style="display: block;"><?php echo t('extensions.send_pai_help'); ?></small>
                     </div>
+
+                    <details class="form-group" id="sip_options_group" style="grid-column: 1 / -1;">
+                        <summary class="form-label" style="cursor: pointer;"><?php echo t('extensions.sip_options'); ?></summary>
+                        <small class="u-hint u-fs-11" style="display: block; margin-bottom: 8px;"><?php echo t('extensions.sip_options_help'); ?></small>
+                        <div class="u-grid-2">
+                            <?php
+                            $sipSelect = static function (string $name, string $label, array $values, string $help = ''): void {
+                                echo '<div class="form-group"><label class="form-label">' . t($label) . '</label>';
+                                echo '<select name="adv_' . $name . '" id="modal_adv_' . $name . '" class="form-control sip-option"><option value="">' . t('extensions.sip_default') . '</option>';
+                                foreach ($values as $value => $text) {
+                                    echo '<option value="' . htmlspecialchars((string) $value) . '">' . htmlspecialchars((string) $text) . '</option>';
+                                }
+                                echo '</select>' . ($help !== '' ? '<small class="u-hint u-fs-11">' . t($help) . '</small>' : '') . '</div>';
+                            };
+                            $yesNo = ['yes' => t('common.yes'), 'no' => t('common.no')];
+                            $sipSelect('transport', 'extensions.sip_transport', ['udp' => 'UDP', 'tcp' => 'TCP', 'tls' => 'TLS'], 'extensions.sip_transport_help');
+                            $sipSelect('dtmf_mode', 'extensions.sip_dtmf', ['rfc4733' => 'RFC 4733', 'inband' => 'Inband', 'info' => 'SIP INFO', 'auto' => 'Auto']);
+                            $sipSelect('media_encryption', 'extensions.sip_srtp', ['no' => t('extensions.sip_srtp_off'), 'sdes' => 'SRTP (SDES)'], 'extensions.sip_srtp_help');
+                            $sipSelect('force_rport', 'extensions.sip_force_rport', $yesNo);
+                            $sipSelect('rewrite_contact', 'extensions.sip_rewrite_contact', $yesNo);
+                            $sipSelect('rtp_symmetric', 'extensions.sip_rtp_symmetric', $yesNo);
+                            $sipSelect('direct_media', 'extensions.sip_direct_media', $yesNo);
+                            ?>
+                            <div class="form-group">
+                                <label class="form-label"><?php echo t('extensions.sip_codecs'); ?></label>
+                                <input type="text" name="adv_allow" id="modal_adv_allow" class="form-control sip-option" placeholder="opus,g722,alaw,ulaw" maxlength="60">
+                                <small class="u-hint u-fs-11"><?php echo t('extensions.sip_codecs_help'); ?></small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><?php echo t('extensions.sip_max_contacts'); ?></label>
+                                <input type="number" name="max_contacts" id="modal_max_contacts" class="form-control sip-option" min="1" max="50">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><?php echo t('extensions.sip_qualify'); ?></label>
+                                <input type="number" name="adv_qualify_frequency" id="modal_adv_qualify_frequency" class="form-control sip-option" min="0" max="3600">
+                                <small class="u-hint u-fs-11"><?php echo t('extensions.sip_qualify_help'); ?></small>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label"><?php echo t('extensions.sip_language'); ?></label>
+                                <input type="text" name="adv_language" id="modal_adv_language" class="form-control sip-option" placeholder="tr" maxlength="5">
+                            </div>
+                        </div>
+                    </details>
                 </div>
 
                 <div class="form-group">
