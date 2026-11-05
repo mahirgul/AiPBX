@@ -164,13 +164,13 @@ fi
 log "Department: $DEPT_NAME | Email: ${NOTIFY_EMAIL:-NONE} | RX_Enabled: $RX_ENABLED"
 
 # 5. Send email notification if enabled
-# Everyone on the number who wants it gets the e-mail. A number with users answers for them all, also
-# when none of them wants mail; only a number without users falls back to the address above.
+# Everyone on the number who wants it gets the e-mail, and the unit's own address if it has one. A
+# number with users answers for them all; only a number without users falls back to the address above.
 MEMBER_COUNT=$($MYSQL_QUERY -e \
   "SELECT COUNT(*) FROM pbx_fax_number_users f JOIN sys_did_mappings m ON m.id = f.did_mapping_id WHERE m.did_extension = '$EXTEN';" 2>/dev/null)
 if [ "${MEMBER_COUNT:-0}" -gt 0 ] 2>/dev/null; then
     NOTIFY_EMAIL=$($MYSQL_QUERY -e \
-      "SELECT GROUP_CONCAT(DISTINCT u.email) FROM pbx_fax_number_users f JOIN sys_did_mappings m ON m.id = f.did_mapping_id JOIN sys_users u ON u.id = f.user_id WHERE m.did_extension = '$EXTEN' AND u.is_active = 1 AND u.fax_mail = 1 AND u.email <> '';" 2>/dev/null)
+      "SELECT GROUP_CONCAT(DISTINCT e) FROM (SELECT LOWER(TRIM(u.email)) AS e FROM pbx_fax_number_users f JOIN sys_did_mappings m ON m.id = f.did_mapping_id JOIN sys_users u ON u.id = f.user_id WHERE m.did_extension = '$EXTEN' AND u.is_active = 1 AND f.mail = 1 AND u.email <> '' UNION SELECT LOWER(TRIM(notification_email)) FROM sys_did_mappings WHERE did_extension = '$EXTEN' AND is_active = 1 AND notification_email <> '') x;" 2>/dev/null)
     [ "$NOTIFY_EMAIL" = "NULL" ] && NOTIFY_EMAIL=""
 fi
 

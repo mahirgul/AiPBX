@@ -79,7 +79,7 @@ class FaxSettingsService {
      *
      * @param list<array<string, mixed>> $users rows of sys_users with extension_type fax
      * @param list<array<string, mixed>> $mappings rows of sys_did_mappings
-     * @param list<array{did_mapping_id: int|string, user_id: int|string}> $links who uses which number
+     * @param list<array{did_mapping_id: int|string, user_id: int|string, mail?: int|string}> $links who uses which number
      * @return list<array<string, mixed>>
      */
     public static function groupAccounts(array $users, array $mappings, array $links): array
@@ -88,11 +88,18 @@ class FaxSettingsService {
         foreach ($links as $link) {
             $byMapping[(int) $link['did_mapping_id']][] = (int) $link['user_id'];
         }
+        /** @var array<int, true> $mailOff */
+        $mailOff = [];
+        foreach ($links as $link) {
+            if (isset($link['mail']) && (int) $link['mail'] === 0) {
+                $mailOff[(int) $link['user_id']] = true;
+            }
+        }
         $accounts = [];
         foreach ($users as $u) {
             $accounts[(int) $u['id']] = [
                 'id' => 'u' . $u['id'], 'user_id' => (int) $u['id'], 'department_name' => (string) $u['full_name'],
-                'numbers' => (string) $u['extension'] !== '' ? [(string) $u['extension']] : [], 'shared' => [],
+                'numbers' => (string) $u['extension'] !== '' ? [(string) $u['extension']] : [], 'shared' => [], 'linked' => [], 'linked_mail' => 1,
                 'notification_email' => (string) ($u['email'] ?? ''), 'username' => (string) $u['username'],
                 'has_password' => (string) ($u['password_hash'] ?? '') !== '', 'fax_mail' => (int) ($u['fax_mail'] ?? 1),
                 'role' => (string) ($u['role'] ?? 'fax_user'),
@@ -103,8 +110,14 @@ class FaxSettingsService {
         $loose = [];
         foreach ($mappings as $m) {
             $number = trim((string) ($m['did_extension'] ?? ''));
-            $members = array_values(array_filter($byMapping[(int) $m['id']] ?? [], static fn(int $id): bool => isset($accounts[$id])));
+            $all = $byMapping[(int) $m['id']] ?? [];
+            $members = array_values(array_filter($all, static fn(int $id): bool => isset($accounts[$id])));
+            // People with an account of their own (a phone, an admin) on this number.
+            $linked = array_values(array_diff($all, $members));
+            $linkedMail = $linked === [] || array_filter($linked, static fn(int $id): bool => !isset($mailOff[$id])) !== [] ? 1 : 0;
             foreach ($members as $id) {
+                $accounts[$id]['linked'] = array_values(array_unique(array_merge($accounts[$id]['linked'], $linked)));
+                $accounts[$id]['linked_mail'] = $linkedMail;
                 // The unit's name says more than the login's, which often only repeats the number.
                 // A shared number names no one user.
                 if (count($members) === 1) {
@@ -119,7 +132,7 @@ class FaxSettingsService {
             if ($members === []) {
                 $loose[] = [
                     'id' => 'm' . $m['id'], 'user_id' => 0, 'department_name' => (string) $m['department_name'],
-                    'numbers' => $number !== '' ? [$number] : [], 'shared' => [], 'notification_email' => (string) $m['notification_email'],
+                    'numbers' => $number !== '' ? [$number] : [], 'shared' => [], 'linked' => $linked, 'linked_mail' => $linkedMail, 'notification_email' => (string) $m['notification_email'],
                     'username' => '', 'has_password' => false, 'fax_mail' => 1, 'role' => 'fax_user', 'outbound_group' => 1, 'permission_group_id' => 0,
                     'cid_external' => '', 'is_active' => (int) ($m['is_active'] ?? 1),
                 ];
@@ -137,8 +150,14 @@ class FaxSettingsService {
         return self::groupAccounts(
             $db->query("SELECT id, username, full_name, email, extension, role, password_hash, fax_mail, outbound_group, permission_group_id, cid_external, is_active FROM sys_users WHERE extension_type = 'fax'")->fetchAll(PDO::FETCH_ASSOC),
             $db->query('SELECT id, department_name, notification_email, did_extension, assigned_user_id, is_active FROM sys_did_mappings ORDER BY id')->fetchAll(PDO::FETCH_ASSOC),
-            $db->query('SELECT did_mapping_id, user_id FROM pbx_fax_number_users')->fetchAll(PDO::FETCH_ASSOC)
+            $db->query('SELECT did_mapping_id, user_id, mail FROM pbx_fax_number_users')->fetchAll(PDO::FETCH_ASSOC)
         );
+    }
+
+    /** @return list<array{id: int|string, username: string, full_name: string}> people who can be put on a fax number */
+    public static function linkableUsers(): array
+    {
+        return getDB()->query("SELECT id, username, full_name FROM sys_users WHERE is_active = 1 AND COALESCE(extension_type, 'sip') <> 'fax' ORDER BY full_name, username")->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /** @return list<array{role_key: string, role_name: string}> roles a fax user can have: those that may open the fax inbox */
@@ -194,6 +213,12 @@ class FaxSettingsService {
             if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
                 throw new \Exception(t('srv_user.err_email_invalid'));
             }
+            $linked = array_values(array_intersect(array_map('intval', (array) ($data['linked_users'] ?? [])), array_map('intval', array_column(self::linkableUsers(), 'id'))));
+            $linkedMail = empty($data['linked_mail']) ? 0 : 1;
+            // A unit needs no login of its own when people with accounts use it.
+            if ($userId === 0 && empty($data['create_login'])) {
+                return self::saveUnit($looseMapping, $name, $numbers, $email, empty($data['is_active']) ? 0 : 1, $linked, $linkedMail);
+            }
             $password = (string) ($data['password'] ?? '');
             if ($password !== '' && strlen($password) < 8) {
                 throw new \Exception(t('fax_settings.err_password'));
@@ -208,9 +233,9 @@ class FaxSettingsService {
             if (DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE username = ? AND id != ?', [$username, $userId]) > 0) {
                 throw new \Exception(sprintf(t('srv_user.err_username_taken'), $username));
             }
-            if ($email !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE LOWER(TRIM(email)) = ? AND id != ?', [mb_strtolower($email), $userId]) > 0) {
-                throw new \Exception(sprintf(t('srv_user.err_email_taken'), $email));
-            }
+            // The address is where the unit's faxes go. A login's e-mail has to be unique, so one
+            // already on someone's account is used for the faxes only.
+            $loginEmail = $email !== '' && DBHelper::fetchColumn('SELECT COUNT(*) FROM sys_users WHERE LOWER(TRIM(email)) = ? AND id != ?', [mb_strtolower($email), $userId]) > 0 ? '' : $email;
             $role = (string) ($data['role'] ?? 'fax_user');
             if (!in_array($role, array_column(self::faxRoles(), 'role_key'), true)) {
                 $role = 'fax_user';
@@ -220,7 +245,7 @@ class FaxSettingsService {
             $taken->execute(array_merge([$userId], $numbers));
             $active = empty($data['is_active']) ? 0 : 1;
             $fields = [
-                'full_name' => $name, 'username' => $username, 'email' => $email, 'role' => $role, 'is_active' => $active,
+                'full_name' => $name, 'username' => $username, 'email' => $loginEmail, 'role' => $role, 'is_active' => $active,
                 'extension' => self::loginNumber($numbers, array_map('strval', $taken->fetchAll(PDO::FETCH_COLUMN))),
                 'fax_mail' => empty($data['fax_mail']) ? 0 : 1,
                 'outbound_group' => max(1, (int) ($data['outbound_group'] ?? 1)),
@@ -242,7 +267,9 @@ class FaxSettingsService {
                 if ($looseMapping > 0) {
                     $db->prepare('INSERT IGNORE INTO pbx_fax_number_users (did_mapping_id, user_id) VALUES (?, ?)')->execute([$looseMapping, $userId]);
                 }
-                self::setNumbers($userId, $numbers, $name, $email, $active);
+                $mailOn = empty($data['fax_mail']) ? 0 : 1;
+                self::setNumbers($userId, $numbers, $name, $mailOn ? $email : '', $active, $mailOn);
+                self::setLinked($userId, $linked, $linkedMail);
                 $db->commit();
             } catch (\Throwable $e) {
                 $db->rollBack();
@@ -261,7 +288,7 @@ class FaxSettingsService {
      *
      * @param list<string> $numbers
      */
-    private static function setNumbers(int $userId, array $numbers, string $name, string $email, int $active): void
+    private static function setNumbers(int $userId, array $numbers, string $name, string $email, int $active, int $mail = 1): void
     {
         $db = getDB();
         $current = $db->prepare('SELECT m.id, m.did_extension FROM sys_did_mappings m JOIN pbx_fax_number_users f ON f.did_mapping_id = m.id WHERE f.user_id = ?');
@@ -278,9 +305,64 @@ class FaxSettingsService {
                     ->execute([$name, $email, $number, $userId, $active]);
                 $mappingId = (int) $db->lastInsertId();
             }
-            $db->prepare('INSERT IGNORE INTO pbx_fax_number_users (did_mapping_id, user_id) VALUES (?, ?)')->execute([$mappingId, $userId]);
+            $db->prepare('INSERT INTO pbx_fax_number_users (did_mapping_id, user_id, mail) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mail = VALUES(mail)')->execute([$mappingId, $userId, $mail]);
         }
         self::tidyNumbers($userId, $name, $email);
+    }
+
+    /**
+     * The people with accounts of their own on a fax user's numbers.
+     *
+     * @param list<int> $linked
+     */
+    private static function setLinked(int $faxUserId, array $linked, int $mail): void
+    {
+        $db = getDB();
+        $mine = $db->prepare('SELECT did_mapping_id FROM pbx_fax_number_users WHERE user_id = ?');
+        $mine->execute([$faxUserId]);
+        foreach (array_map('intval', $mine->fetchAll(PDO::FETCH_COLUMN)) as $mappingId) {
+            self::setMappingLinked($mappingId, $linked, $mail);
+        }
+    }
+
+    /** @param list<int> $linked */
+    private static function setMappingLinked(int $mappingId, array $linked, int $mail): void
+    {
+        $db = getDB();
+        $db->prepare("DELETE f FROM pbx_fax_number_users f JOIN sys_users u ON u.id = f.user_id WHERE f.did_mapping_id = ? AND COALESCE(u.extension_type, 'sip') <> 'fax'")->execute([$mappingId]);
+        $add = $db->prepare('INSERT INTO pbx_fax_number_users (did_mapping_id, user_id, mail) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE mail = VALUES(mail)');
+        foreach ($linked as $id) {
+            $add->execute([$mappingId, $id, $mail]);
+        }
+    }
+
+    /**
+     * A fax unit with no login of its own: numbers, an address and the people who use them. Each number
+     * is its own row, so a comma adds rows.
+     *
+     * @param list<string> $numbers
+     * @param list<int> $linked
+     */
+    private static function saveUnit(int $mappingId, string $name, array $numbers, string $email, int $active, array $linked, int $linkedMail): string
+    {
+        $db = getDB();
+        if ($mappingId > 0) {
+            $first = array_shift($numbers);
+            $db->prepare('UPDATE sys_did_mappings SET department_name = ?, notification_email = ?, did_extension = ?, is_active = ? WHERE id = ?')->execute([$name, $email, $first, $active, $mappingId]);
+            self::setMappingLinked($mappingId, $linked, $linkedMail);
+        }
+        foreach ($numbers as $number) {
+            $existing = (int) DBHelper::fetchColumn('SELECT id FROM sys_did_mappings WHERE did_extension = ? LIMIT 1', [$number]);
+            if ($existing === 0) {
+                $db->prepare('INSERT INTO sys_did_mappings (department_name, notification_email, did_extension, is_active) VALUES (?, ?, ?, ?)')->execute([$name, $email, $number, $active]);
+                $existing = (int) $db->lastInsertId();
+            }
+            self::setMappingLinked($existing, $linked, $linkedMail);
+        }
+        $uid = $_SESSION['user_id'] ?? null;
+        markPendingSync('general_dialplan', 'did_mapping', $mappingId, "Fax unit: {$name}", $mappingId > 0 ? 'update' : 'create', $uid);
+        writeAuditLog('fax', 'fax_unit', $mappingId, $name, $mappingId > 0 ? 'update' : 'create', $uid);
+        return sprintf(t('fax_settings.account_saved'), $name);
     }
 
     /** Numbers without users go; a number with one user follows that user's name and address. */
@@ -289,10 +371,9 @@ class FaxSettingsService {
         $db = getDB();
         $db->exec('DELETE m FROM sys_did_mappings m LEFT JOIN pbx_fax_number_users f ON f.did_mapping_id = m.id WHERE f.user_id IS NULL AND m.assigned_user_id IS NOT NULL');
         // assigned_user_id keeps naming a user of the number, for what still reads it.
-        $db->exec('UPDATE sys_did_mappings m SET m.assigned_user_id = (SELECT MIN(f.user_id) FROM pbx_fax_number_users f WHERE f.did_mapping_id = m.id)
-            WHERE EXISTS (SELECT 1 FROM pbx_fax_number_users f WHERE f.did_mapping_id = m.id)');
-        $db->exec('UPDATE sys_did_mappings m SET m.is_active = EXISTS (SELECT 1 FROM pbx_fax_number_users f JOIN sys_users u ON u.id = f.user_id WHERE f.did_mapping_id = m.id AND u.is_active = 1)
-            WHERE EXISTS (SELECT 1 FROM pbx_fax_number_users f WHERE f.did_mapping_id = m.id)');
+        $faxUsers = "SELECT %s FROM pbx_fax_number_users f JOIN sys_users u ON u.id = f.user_id AND u.extension_type = 'fax' WHERE f.did_mapping_id = m.id";
+        $db->exec('UPDATE sys_did_mappings m SET m.assigned_user_id = (' . sprintf($faxUsers, 'MIN(f.user_id)') . ') WHERE EXISTS (SELECT 1 FROM pbx_fax_number_users f WHERE f.did_mapping_id = m.id)');
+        $db->exec('UPDATE sys_did_mappings m SET m.is_active = EXISTS (' . sprintf($faxUsers, '1') . ' AND u.is_active = 1) WHERE EXISTS (' . sprintf($faxUsers, '1') . ')');
         if ($userId !== null) {
             $db->prepare('UPDATE sys_did_mappings m JOIN pbx_fax_number_users f ON f.did_mapping_id = m.id SET m.department_name = ?, m.notification_email = ?
                 WHERE f.user_id = ? AND (SELECT COUNT(*) FROM pbx_fax_number_users g WHERE g.did_mapping_id = m.id) = 1')->execute([$name, $email, $userId]);

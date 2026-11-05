@@ -16,6 +16,7 @@ class SystemUpdateController extends BaseController
             'current' => SystemUpdateService::currentVersion(),
             'check' => SystemUpdateService::lastCheck(),
             'status' => SystemUpdateService::status(),
+            'pageTestFailedAt' => SystemUpdateService::pageTestFailedAt(),
             'log_tail' => SystemUpdateService::logTail(),
         ], ['title' => t('system_update.page_title')]);
     }

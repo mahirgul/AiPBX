@@ -44,12 +44,13 @@ class FaxSendService {
         $current_role = $_SESSION['user_role'] ?? 'user';
         if ($current_role === 'admin' && $requested_sender_did !== '') {
             $sender_did = self::faxOwner($requested_sender_did) !== [] ? $requested_sender_did : $userExt;
-        } elseif ($requested_sender_did !== '' && in_array($requested_sender_did, FaxInboxRepository::getAllowedDIDs((int) ($_SESSION['user_id'] ?? 0), (string) $userExt), true)) {
+        } elseif ($requested_sender_did !== '' && in_array($requested_sender_did, FaxInboxRepository::sendableNumbers((int) ($_SESSION['user_id'] ?? 0)), true)) {
             // A fax user with several numbers sends from the one they choose, and only from theirs.
             $sender_did = $requested_sender_did;
         } else {
-            // All of a user's numbers can be shared, and then they have no login number.
-            $sender_did = $userExt !== '' ? $userExt : (FaxInboxRepository::getAllowedDIDs((int) ($_SESSION['user_id'] ?? 0), '')[0] ?? '');
+            // All of a user's numbers can be shared, and then they have no login number; a person
+            // linked to a unit has a phone extension, which is no fax number.
+            $sender_did = FaxInboxRepository::sendableNumbers((int) ($_SESSION['user_id'] ?? 0))[0] ?? ($current_role === 'admin' ? $userExt : '');
         }
 
         if (!verifyCSRFToken($csrf_token)) {

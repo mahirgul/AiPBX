@@ -50,6 +50,8 @@
     var form = document.getElementById('faxSendForm');
     if (form) {
         form.addEventListener('submit', function (e) {
+            // The cover preview needs no document or text: it only shows the cover.
+            if (e.submitter && e.submitter.name === 'cover_preview') return;
             var modeInput = document.getElementById('fax_compose_mode_input');
             var mode = modeInput ? modeInput.value : 'pdf';
 

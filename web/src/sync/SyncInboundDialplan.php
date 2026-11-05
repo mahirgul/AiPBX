@@ -244,8 +244,8 @@ function __syncInboundDialplanBody() {
     if (!empty($dids)) {
         foreach ($dids as $d) {
             $raw_did = ltrim(strtoupper(trim($d['did_number'])), '_');
-            $num = preg_replace('/[^0-9XZN.!]/', '', $raw_did);
-            if ($num === '') continue;
+            $num = (str_starts_with($raw_did, '+') ? '+' : '') . preg_replace('/[^0-9XZN.!]/', '', $raw_did);
+            if ($num === '' || $num === '+') continue;
             $is_pattern = (bool)preg_match('/[XZN.!]/', $num);
             $exten_key = $is_pattern ? "_{$num}" : $num;
             $did_cdr = $is_pattern ? '${EXTEN}' : $num;
@@ -295,9 +295,7 @@ function __syncInboundDialplanBody() {
     $notfound_body = "";
     foreach (array_keys($pattern_lengths) as $pLen) {
         $pLen = (int)$pLen;
-        if ($pLen > 0) {
-            $notfound_body .= " same => n,GotoIf(\$[\$[\${LEN(\${EXTEN})} > {$pLen}] & \$[\${DIALPLAN_EXISTS(from-trunk-inbound,\${EXTEN:-{$pLen}},1)}]]?from-trunk-inbound,\${EXTEN:-{$pLen}},1)\n";
-        }
+        $notfound_body .= " same => n,GotoIf(\$[\$[\${LEN(\${EXTEN})} > {$pLen}] & \$[\${DIALPLAN_EXISTS(from-trunk-inbound,\${EXTEN:-{$pLen}},1)}]]?from-trunk-inbound,\${EXTEN:-{$pLen}},1)\n";
     }
     $notfound_body .= " same => n,Playtones(congestion)\n same => n,Congestion(10)\n same => n,Hangup(1)\n";
     $conf .= buildCatchAllExtensions(

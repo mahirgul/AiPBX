@@ -285,6 +285,26 @@ function getRolePermissionsMap($role_key = null, bool $reset = false) {
 /**
  * Check if current user's role has permission for a module action ('view', 'access', 'edit', 'delete')
  */
+/** Whether the signed-in user is on a fax number (Fax Units). Asked often, so kept for the request. */
+function userIsOnFaxNumber(): bool
+{
+    static $cache = [];
+    $userId = (int) ($_SESSION['user_id'] ?? 0);
+    if ($userId <= 0) {
+        return false;
+    }
+    if (!isset($cache[$userId])) {
+        try {
+            $stmt = getDB()->prepare('SELECT 1 FROM pbx_fax_number_users f JOIN sys_did_mappings m ON m.id = f.did_mapping_id WHERE f.user_id = ? AND m.is_active = 1 LIMIT 1');
+            $stmt->execute([$userId]);
+            $cache[$userId] = $stmt->fetchColumn() !== false;
+        } catch (\Throwable $e) {
+            $cache[$userId] = false; // During an update, before the table exists.
+        }
+    }
+    return $cache[$userId];
+}
+
 function hasModulePermission($module_key, $action = 'access') {
     $role = $_SESSION['user_role'] ?? '';
 
@@ -339,6 +359,13 @@ function hasModulePermission($module_key, $action = 'access') {
     // Editing ('edit') and deleting ('delete') are open ONLY to the 'admin' role.
     if ($module_key === 'push_settings' && ($action === 'edit' || $action === 'delete')) {
         return $role === 'admin';
+    }
+
+    // Being on a fax number opens the fax pages for it, whatever the role: a person with a phone needs
+    // no second account. Deleting stays a right of the role.
+    if (in_array($module_key, ['fax_inbox', 'fax_send', 'fax_sent'], true) && $action !== 'delete'
+        && ($module_key === 'fax_send' || $action !== 'edit') && userIsOnFaxNumber()) {
+        return true;
     }
 
     $map = getRolePermissionsMap($role);

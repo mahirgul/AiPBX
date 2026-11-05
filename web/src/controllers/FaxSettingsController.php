@@ -30,6 +30,7 @@ class FaxSettingsController extends BaseController
             'accounts' => $accounts,
             'permissionGroups' => DialPermissionService::getGroups(),
             'faxRoles' => FaxSettingsService::faxRoles(),
+            'linkableUsers' => FaxSettingsService::linkableUsers(),
             'cover' => FaxCoverService::settings(),
             'coverLogoFound' => FaxCoverService::logoPath() !== null,
         ], ['title' => $page_title] + $notices);
