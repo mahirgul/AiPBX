@@ -108,8 +108,9 @@ final class YealinkTemplate extends PhoneTemplate
             }
         }
 
-        // Later lines win in a Yealink file.
+        // The template's own line goes, so the file holds one value for each setting.
         foreach (self::extras($ctx) as $name => $value) {
+            $lines = array_values(array_filter($lines, static fn(string $line): bool => strcasecmp(trim(explode('=', $line, 2)[0]), (string) $name) !== 0));
             $lines[] = $name . ' = ' . self::clean($value, 500);
         }
 

@@ -38,6 +38,8 @@ final class PhoneModels
         'snom-d715' => ['vendor' => 'snom', 'label' => 'Snom D715', 'keys' => 5, 'exp_keys' => 18, 'exp_max' => 3],
         'snom-d735' => ['vendor' => 'snom', 'label' => 'Snom D735', 'keys' => 32, 'exp_keys' => 18, 'exp_max' => 3],
         'snom-d785' => ['vendor' => 'snom', 'label' => 'Snom D785', 'keys' => 24, 'exp_keys' => 18, 'exp_max' => 3],
+        // 10 keys on 4 pages (data sheet). The D8C module's numbering is not confirmed, so none is written.
+        'snom-d865' => ['vendor' => 'snom', 'label' => 'Snom D865', 'keys' => 40, 'exp_keys' => 0, 'exp_max' => 0],
         // Cisco SPA (Linksys-style XML; SPA500S: 32 keys per module)
         'cisco-spa303' => ['vendor' => 'cisco', 'label' => 'Cisco SPA303', 'keys' => 3, 'exp_keys' => 0, 'exp_max' => 0],
         'cisco-spa504g' => ['vendor' => 'cisco', 'label' => 'Cisco SPA504G', 'keys' => 4, 'exp_keys' => 32, 'exp_max' => 2],

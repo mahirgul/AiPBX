@@ -13,6 +13,8 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Advanced Configuration reaches more files and whole groups.** Beside PJSIP you can add lines to rtp, features, queues, voicemail, musiconhold, cdr, logger, manager, udptl, indications and confbridge; they live in their own file, so Apply and updates do not replace them, and a set Asterisk refuses is rolled back. A PJSIP entry can apply to all extensions (SIP), all trunks or one phone model. Options that run a program or open AMI to others cannot be set.
 - **Advanced Configuration helps you write it.** Find an option offers Asterisk's names with a short description, and recipes fill the form for NAT, voice priority, P-Asserted-Identity, codec order, voicemail time zone and a hand-written trunk.
 - **New objects, raw text, export and import.** Create PJSIP objects AiPBX does not generate, write your part of a file as text, see line changes while editing, and move the list between servers. Each entry says whether a reload is enough, and whether your value replaces a generated one or has no effect.
+- **Snom D865 provisioning.** The phone gets its account, 40 function keys on 4 pages and the logins of its new web interface. An expansion module is not written yet.
+- **Model settings always win.** A setting you add for a phone model replaces the one AiPBX writes, whatever its case, so the file holds one value. Snom phones now take model settings too: `name.2` means idx 2, `fkey.0` sets a function key.
 
 ## 1.60.25
 
