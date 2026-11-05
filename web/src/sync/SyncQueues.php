@@ -72,6 +72,7 @@ function __syncAllQueuesBody() {
     }
 
     $result = writeConfWithRollback("queues_pbx.conf", $conf, function() {
+        refreshAdvancedFileOverlay('queues');
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadQueue('all')], t('sync.ctx_queues'));
     }, t('sync.ctx_queues'));
 

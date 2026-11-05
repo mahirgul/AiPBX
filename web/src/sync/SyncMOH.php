@@ -31,6 +31,7 @@ function __syncAsteriskMOHBody() {
     }
 
     return writeConfWithRollback('musiconhold_pbx.conf', $conf, function() {
+        refreshAdvancedFileOverlay('musiconhold');
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadMOH()], t('pending_sync.domain_moh'));
     }, t('pending_sync.domain_moh'));
 }

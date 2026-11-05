@@ -1792,6 +1792,15 @@ MANAGER
 chown asterisk:root /etc/asterisk/manager.conf
 chmod 600 /etc/asterisk/manager.conf
 
+# Administrator's lines from the Advanced configuration page live in pbx/user_<file>.conf. The line
+# goes in here because this script replaces several of these files on every upgrade. It takes effect
+# on the next reload, so no restart is needed; a file that is not there yet is simply skipped.
+for f in rtp features queues voicemail musiconhold cdr logger manager udptl indications confbridge; do
+    [[ -f "/etc/asterisk/$f.conf" ]] || continue
+    grep -q "pbx/user_$f.conf" "/etc/asterisk/$f.conf" \
+        || printf '\n#tryinclude "pbx/user_%s.conf"\n' "$f" >> "/etc/asterisk/$f.conf"
+done
+
 # Install Asterisk Sound Prompts (Turkish & WebRTC/IVR custom sounds)
 info "Installing Asterisk sound prompts (Turkish & WebRTC/IVR sounds)..."
 mkdir -p /var/lib/asterisk/sounds/custom /var/lib/asterisk/sounds/tr
