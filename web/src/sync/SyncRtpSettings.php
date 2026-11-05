@@ -121,6 +121,7 @@ function buildRtpConf(): string
         $conf .= "{$local_ip} => {$extern_ip},include_local_address\n";
     }
 
+    $conf .= "\n#tryinclude \"pbx/user_rtp.conf\"\n";
     return $conf;
 }
 

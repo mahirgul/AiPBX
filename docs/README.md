@@ -28,7 +28,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📤 [Outbound routes](outbound-routes.md) | Dial patterns, number manipulation, trunk failover, route groups, RFC 6442 / RFC 6443 Geolocation emergency headers |
 | 🎛️ [Outbound and inbound call normalization](call-normalization.md) | Rules for dialled numbers per device (mobile, desk, web), rules for incoming numbers per trunk, ready-made rules per country, E.164, SIP headers |
 | 📥 [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
-| 🎛️ [Advanced Configuration](advanced-config.md) | Your own PJSIP options that survive regeneration and updates, versions, generated files changed by hand |
+| 🎛️ [Advanced Configuration](advanced-config.md) | Your own Asterisk options, objects and file text that survive regeneration and updates, versions, generated files changed by hand |
 | 📠 [Fax cover page](fax-cover-page.md) | One cover template for the organisation, logo, preview as a fax |
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |

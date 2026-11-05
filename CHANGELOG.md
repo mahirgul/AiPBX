@@ -10,6 +10,9 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **All services on the dashboard.** Every service of the server is listed with its state and a restart button, not only four restart buttons.
 - **Advanced Configuration is a list with an Add button.** Adding and editing open in a window, and a save Asterisk refuses keeps what you typed.
 - **Opus first for desk phones on new installations.** The order is Opus, G.722, PCMA, PCMU, and a phone without Opus uses the next one it has. On an existing server, tick Opus under PBX settings and Phones to use it.
+- **Advanced Configuration reaches more files and whole groups.** Beside PJSIP you can add lines to rtp, features, queues, voicemail, musiconhold, cdr, logger, manager, udptl, indications and confbridge; they live in their own file, so Apply and updates do not replace them, and a set Asterisk refuses is rolled back. A PJSIP entry can apply to all extensions (SIP), all trunks or one phone model. Options that run a program or open AMI to others cannot be set.
+- **Advanced Configuration helps you write it.** Find an option offers Asterisk's names with a short description, and recipes fill the form for NAT, voice priority, P-Asserted-Identity, codec order, voicemail time zone and a hand-written trunk.
+- **New objects, raw text, export and import.** Create PJSIP objects AiPBX does not generate, write your part of a file as text, see line changes while editing, and move the list between servers. Each entry says whether a reload is enough, and whether your value replaces a generated one or has no effect.
 
 ## 1.60.25
 
