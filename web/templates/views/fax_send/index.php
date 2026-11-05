@@ -49,7 +49,7 @@
                     <?php endforeach; ?>
                 </select>
             <?php else: ?>
-                <input type="text" name="sender_did" class="form-control" value="<?php echo htmlspecialchars($user_ext !== '' ? $user_ext : ($own_numbers[0] ?? '')); ?>" readonly style="opacity: 0.8;">
+                <input type="text" name="sender_did" class="form-control" value="<?php echo htmlspecialchars($own_numbers[0] ?? $user_ext); ?>" readonly style="opacity: 0.8;">
             <?php endif; ?>
         </div>
 

@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.61.1
+
+- **Link anyone to a fax unit.** Fax Units can list the people who use a unit, such as extension users, so nobody needs a second account for fax. They see its numbers under Fax, and can send from them. A unit can have no login of its own, and its e-mail address no longer has to be unique.
+- **Inbound routes can start with +.** The form dropped it without a word, so a carrier that delivers +1844… could not match a route written that way. Thanks to @quietvw for reporting it (#150).
+- **Preview as a fax works again.** The button sent the form to its own page: on Fax Units it saved the settings instead of showing the cover, and on Send Fax it asked for a document first.
+- **Updates finish sooner.** The test of every page now runs after the update, and the System Update page tells you if it found a problem.
+
 ## 1.61.0
 
 The same code as 1.60.28, numbered for what 1.60.26 to 1.60.28 add together:

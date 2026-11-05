@@ -404,15 +404,15 @@ domain="${domain#[\"\']}"; domain="${domain%[\"\']}"
 [[ -z "$domain" ]] && domain=127.0.0.1
 code="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 --resolve "${domain}:443:127.0.0.1" "https://${domain}/login" || echo 000)"
 [[ "$code" == 200 ]] || rollback "Portal not responding (HTTP $code)"
-# The services and the portal are up, so a page test that fails is reported, not a reason
-# to take a working system back.
+# The services and the portal are up, so the update is done. The test of every page takes minutes on a
+# small server and decides nothing here, so it runs afterwards and only reports: the System Update page
+# shows the result file if it found a problem.
+SMOKE_RESULT="$STATE_DIR/update-page-test-failed"
+rm -f "$SMOKE_RESULT"
 SMOKE_NOTE=""
-status running "Testing every page, this can take a few minutes"
-log "Testing every page. This can take a few minutes on a small server and needs nothing from you."
-if ! (cd "$INSTALL_DIR/web" && timeout 900 sudo -n -u www-data php bin/smoke.php >>"$LOG_FILE" 2>&1); then
-    log "WARNING: the page tests (smoke) found problems; see above. The update stays."
-    SMOKE_NOTE=", page tests found problems (see the log)"
-fi
+systemd-run --quiet --collect --unit="aipbx-update-page-test-$$" --description='AiPBX: test every page after an update' /bin/bash -c \
+    "cd '$INSTALL_DIR/web' && timeout 900 sudo -n -u www-data php bin/smoke.php >>'$LOG_FILE' 2>&1 || { date '+%F %T' > '$SMOKE_RESULT'; chmod 644 '$SMOKE_RESULT'; echo 'WARNING: the page tests (smoke) found problems; see above. The update stays.' >>'$LOG_FILE'; }" \
+    2>>"$LOG_FILE" || log "The page test could not be started; run bin/smoke.php by hand if you want it."
 
 log "===== Update completed: $CURRENT → $TARGET ====="
 FROM_VERSION="$CURRENT"

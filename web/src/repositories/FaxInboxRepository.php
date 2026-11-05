@@ -27,6 +27,20 @@ class FaxInboxRepository extends BaseRepository
         return array_values(array_unique($dids));
     }
 
+    /**
+     * The numbers a user can send from: those they are on, and a fax user's own. A SIP extension is
+     * not a fax number, so a person with a phone and a fax number sends from the fax number.
+     *
+     * @return list<string>
+     */
+    public static function sendableNumbers(int $userId): array
+    {
+        $own = static::db()->prepare("SELECT extension, extension_type FROM sys_users WHERE id = ?");
+        $own->execute([$userId]);
+        $user = $own->fetch(PDO::FETCH_ASSOC) ?: [];
+        return static::getAllowedDIDs($userId, ($user['extension_type'] ?? '') === 'fax' ? (string) ($user['extension'] ?? '') : '');
+    }
+
     public static function search(string $userRole, string $userExt, string $search, string $dateFrom, string $dateTo, int $perPage, int $offset, int $userId = 0): array
     {
         $where = " WHERE 1=1";

@@ -13,9 +13,21 @@ function fillFaxAccount(item) {
     set('modal_cid_external', item.cid_external || '');
     set('modal_permission_group_id', String(item.permission_group_id || 0));
     set('modal_role', item.role || 'fax_user');
+    const linked = (item.linked || []).map(String);
+    Array.prototype.forEach.call(document.getElementById('modal_linked_users').options, (o) => { o.selected = linked.includes(o.value); });
+    document.getElementById('modal_linked_mail').checked = item.linked_mail === undefined || parseInt(item.linked_mail, 10) === 1;
+    // An existing fax login stays; a new unit needs one only if someone has no account to link.
+    const hasLogin = parseInt(item.user_id || 0, 10) > 0;
+    document.getElementById('modal_create_login').checked = hasLogin;
+    document.getElementById('modal_create_login_group').style.display = hasLogin ? 'none' : '';
+    faxLoginChanged();
     document.getElementById('modal_fax_mail').checked = item.fax_mail === undefined || parseInt(item.fax_mail, 10) === 1;
     document.getElementById('modal_is_active').checked = item.is_active === undefined || parseInt(item.is_active, 10) === 1;
     UIHelper.openOverlayModal('didModal');
+}
+
+function faxLoginChanged() {
+    document.getElementById('fax_login_fields').style.display = document.getElementById('modal_create_login').checked ? '' : 'none';
 }
 
 function openCreateFaxDidModal() {

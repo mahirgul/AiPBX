@@ -2,20 +2,24 @@
 
 **Fax → Fax Units** is the one place for fax users. They do not appear under Extensions or System Users, though they sign in to the portal like anyone else.
 
-## Adding one
+## Adding a unit
 
-The form holds everything: the name, the fax numbers, the e-mail address, the portal username and password, the outgoing caller ID, the dial permission group and the role. Press **Apply** afterwards so the numbers work.
+Give the unit a name, its fax numbers and an e-mail address, and choose **People who use this unit**. Press **Apply** afterwards so the numbers work.
+
+Anyone with an account can be chosen, such as an extension user. They sign in as usual and find the unit's numbers under Fax, whatever their role, so nobody needs a second account for fax.
+
+For someone with no account, tick **Create a fax-only login** and fill in the username and password. Such logins appear here, not under Extensions or System Users.
 
 ## Several numbers, shared numbers
 
-- **One user, several numbers:** separate them with commas. Faxes to all of them reach the same inbox, and the user chooses which number to send from.
-- **One number, several users:** write the same number for each user. A shared number is marked in the list.
+- **Several numbers:** separate them with commas. A person sees the faxes of all their numbers and chooses which to send from. A person sends from fax numbers only, not from their phone extension.
+- **Several people on one number:** choose them on the unit, or write the same number for two fax logins. A shared number is marked in the list.
 
-A received fax on a shared number is **one copy**, seen by everyone on that number. Anyone with the right to delete it deletes it for all.
+A received fax is **one copy**, seen by everyone on that number. Anyone with the right to delete it deletes it for all.
 
-**E-mail** goes to each user on the number who has an address and has *E-mail incoming faxes to this user* ticked, in that person's own language. A number with users mails only them, even if none of them wants mail.
+**E-mail** goes to the unit's address, and to the people on the number if *E-mail incoming faxes to them too* is ticked, each in their own language and once per address. The address can be one that is already on someone's account.
 
-A number stays on while one of its users is active, and goes when its last user is deleted. Received and sent faxes stay.
+A number with a fax login stays on while one of those logins is active, and goes when the last one is deleted. Received and sent faxes stay.
 
 ## Deleting received faxes
 

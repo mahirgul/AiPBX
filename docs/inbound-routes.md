@@ -6,6 +6,7 @@ Optional per route: call recording and the channel language.
 
 ## Matching
 
+- **A leading `+`** is kept. A carrier such as Twilio can deliver `+1844…`, and you can write the route that way or trim the number on the trunk.
 - The DID is compared with the number the trunk sends, **after** the trunk's
   [DID trimming](trunks.md#inbound-did-normalization). Define routes in exactly that format — if a NEC
   system sends `9391`, the route is `9391`, not `19391`.

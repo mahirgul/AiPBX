@@ -111,6 +111,12 @@
             if (!form || form.getAttribute('data-no-spa') === 'true' || form.target === '_blank') {
                 return;
             }
+            // A button with its own target or address (Preview as a fax opens a picture in a new tab) is
+            // the browser's to send: handled here, it was posted to the page's own form instead.
+            const clicked = e.submitter;
+            if (clicked && (clicked.getAttribute('data-no-spa') === 'true' || clicked.hasAttribute('formtarget') || clicked.hasAttribute('formaction'))) {
+                return;
+            }
 
             const contentArea = form.closest('.content-area');
             if (!contentArea) return;

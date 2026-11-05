@@ -1,3 +1,6 @@
+<?php if (!empty($pageTestFailedAt)): ?>
+<div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> <?php echo htmlspecialchars(sprintf(t('system_update.page_test_failed'), $pageTestFailedAt)); ?></div>
+<?php endif; ?>
 <?php
 $latest = $check['latest'] ?? '';
 $available = !empty($check['available']);

@@ -13,6 +13,7 @@ class SystemUpdateService
 {
     public const CHECK_FILE = '/var/lib/aipbx/update-check.json';
     public const STATUS_FILE = '/var/lib/aipbx/update-status.json';
+    private const PAGE_TEST_FAILED = '/var/lib/aipbx/update-page-test-failed';
     public const LOG_FILE = '/var/log/aipbx/update.log';
 
     public static function currentVersion(): string
@@ -135,5 +136,11 @@ class SystemUpdateService
         }
         $data = json_decode((string) file_get_contents($file), true);
         return is_array($data) ? $data : null;
+    }
+
+    /** When the page test after the last update found a problem, or null. It runs after the update ends. */
+    public static function pageTestFailedAt(): ?string
+    {
+        return is_readable(self::PAGE_TEST_FAILED) ? trim((string) file_get_contents(self::PAGE_TEST_FAILED)) : null;
     }
 }

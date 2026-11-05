@@ -9,7 +9,9 @@ class RouteService {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data) {
             $route_id = intval($data['route_id'] ?? 0);
             $raw_did = ltrim(strtoupper(trim($data['did_number'] ?? '')), '_');
-            $did_number = preg_replace('/[^0-9XZN.!]/', '', $raw_did);
+            // A leading + stays: carriers such as Twilio deliver the number with it, and a route
+            // matches the number exactly as it arrives. It used to be dropped without a word.
+            $did_number = (str_starts_with($raw_did, '+') ? '+' : '') . preg_replace('/[^0-9XZN.!]/', '', $raw_did);
             $title = trim($data['title'] ?? '');
             $dest_type = sanitizeDestType($data['dest_type'] ?? 'time_condition');
             $dest_id = trim($data['dest_id'] ?? '');

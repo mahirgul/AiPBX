@@ -9,6 +9,8 @@ require_once dirname(__DIR__, 2) . '/src/services/FaxCoverService.php';
 require_once dirname(__DIR__, 2) . '/src/repositories/FaxInboxRepository.php';
 require_once dirname(__DIR__, 2) . '/src/repositories/SystemUserRepository.php';
 require_once dirname(__DIR__, 2) . '/src/repositories/ExtensionRepository.php';
+require_once dirname(__DIR__, 2) . '/src/services/RouteService.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
 
 final class FaxAccountsTest extends TestCase
 {
@@ -32,11 +34,13 @@ final class FaxAccountsTest extends TestCase
         $db->exec("DELETE FROM pbx_fax_cover_templates WHERE name LIKE 'zz%'");
         $db->exec("DELETE FROM sys_did_mappings WHERE did_extension IN ('88801','88802','88803')");
         $db->exec("DELETE FROM sys_users WHERE username LIKE 'zzfax%'");
+        $db->exec("DELETE FROM sys_did_mappings WHERE department_name LIKE 'zzUnit%'");
+        $db->exec("DELETE f FROM pbx_fax_number_users f LEFT JOIN sys_did_mappings m ON m.id = f.did_mapping_id WHERE m.id IS NULL");
     }
 
     private function save(array $data): array
     {
-        return FaxSettingsService::saveAccount($data + ['csrf_token' => 'test', 'is_active' => 1, 'fax_mail' => 1]);
+        return FaxSettingsService::saveAccount($data + ['csrf_token' => 'test', 'is_active' => 1, 'fax_mail' => 1, 'create_login' => isset($data['username']) ? 1 : 0]);
     }
 
     private function userId(string $username): int
@@ -127,5 +131,62 @@ final class FaxAccountsTest extends TestCase
     public function testFaxUsersCannotDeleteReceivedFaxesByDefault(): void
     {
         $this->assertStringContainsString("('fax_user','fax_inbox',1,1,1,0,", (string) file_get_contents(dirname(__DIR__, 3) . '/db/seed.sql'));
+    }
+
+    private function sipUser(): int
+    {
+        DBHelper::insert('sys_users', ['username' => 'zzfaxsip', 'password_hash' => '', 'full_name' => 'Sip Person', 'email' => 'zzperson@test.invalid', 'role' => 'user', 'extension' => '88899', 'extension_type' => 'sip', 'sip_password' => 'x']);
+        return $this->userId('zzfaxsip');
+    }
+
+    public function testAPersonWithAnAccountIsLinkedWithoutASecondOne(): void
+    {
+        $person = $this->sipUser();
+        $res = $this->save(['department_name' => 'zzUnit', 'did_extension' => '88801, 88802', 'notification_email' => 'zzperson@test.invalid', 'linked_users' => [$person], 'linked_mail' => 1]);
+        $this->assertNotEmpty($res['success'] ?? false, json_encode($res));
+        $this->assertSame(1, (int) DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE username LIKE 'zzfax%'"), 'no fax login was made');
+        $this->assertSame(['88801', '88802'], FaxInboxRepository::sendableNumbers($person), 'the fax numbers, not the phone extension');
+        $this->assertContains('88801', FaxInboxRepository::getAllowedDIDs($person, '88899'));
+        $this->assertSame('zzperson@test.invalid', DBHelper::fetchColumn("SELECT notification_email FROM sys_did_mappings WHERE did_extension = '88801'"), 'an address on an account is fine for a unit');
+
+        $_SESSION['user_id'] = $person;
+        $_SESSION['user_role'] = 'user';
+        try {
+            $this->assertTrue(userIsOnFaxNumber());
+            $this->assertTrue(hasModulePermission('fax_inbox', 'access'));
+            $this->assertTrue(hasModulePermission('fax_send', 'edit'));
+            $this->assertFalse(hasModulePermission('fax_inbox', 'delete'), 'deleting stays with the role');
+        } finally {
+            unset($_SESSION['user_id'], $_SESSION['user_role']);
+        }
+
+        $row = array_values(array_filter(FaxSettingsService::accounts(), static fn(array $a): bool => $a['department_name'] === 'zzUnit' && $a['numbers'] === ['88801']))[0];
+        $this->assertSame([$person], $row['linked']);
+        $this->save(['did_id' => $row['id'], 'department_name' => 'zzUnit', 'did_extension' => '88801', 'linked_users' => []]);
+        $this->assertNotContains('88801', FaxInboxRepository::sendableNumbers($person), 'taking someone off works');
+        $this->assertTrue((bool) DBHelper::fetchColumn("SELECT id FROM sys_did_mappings WHERE did_extension = '88801'"), 'the unit stays without them');
+    }
+
+    public function testAFaxLoginTakesAnAddressThatIsAlreadyOnAnAccount(): void
+    {
+        $this->sipUser();
+        $res = $this->save(['department_name' => 'zzUnit', 'did_extension' => '88803', 'create_login' => 1, 'username' => 'zzfaxd', 'notification_email' => 'zzperson@test.invalid']);
+        $this->assertNotEmpty($res['success'] ?? false, json_encode($res));
+        $id = $this->userId('zzfaxd');
+        $this->assertSame('', (string) DBHelper::fetchColumn('SELECT email FROM sys_users WHERE id = ?', [$id]), 'the login stays unique');
+        $this->assertSame('zzperson@test.invalid', DBHelper::fetchColumn("SELECT notification_email FROM sys_did_mappings WHERE did_extension = '88803'"));
+    }
+
+    public function testARouteKeepsItsPlus(): void
+    {
+        $_SESSION['csrf_token'] = 'test';
+        $res = RouteService::saveDIDRoute(['csrf_token' => 'test', 'did_number' => '+18885550123', 'title' => 'zzplus', 'dest_type' => 'hangup', 'dest_id' => '']);
+        $db = getDB();
+        try {
+            $this->assertNotEmpty($res['success'] ?? false, json_encode($res));
+            $this->assertSame('+18885550123', DBHelper::fetchColumn("SELECT did_number FROM pbx_dids WHERE title = 'zzplus'"));
+        } finally {
+            $db->exec("DELETE FROM pbx_dids WHERE title = 'zzplus'");
+        }
     }
 }

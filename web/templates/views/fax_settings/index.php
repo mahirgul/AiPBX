@@ -41,7 +41,7 @@
                         <tr>
                             <td class="u-strong"><i class="fas fa-building u-primary u-mr-6"></i> <?php echo htmlspecialchars($m['department_name']); ?></td>
                             <td><?php foreach ($m['numbers'] as $number): ?><span class="badge badge-info"<?php echo in_array($number, $m['shared'], true) ? ' title="' . t('fax_settings.shared') . '"' : ''; ?>><?php echo in_array($number, $m['shared'], true) ? '<i class="fas fa-users"></i> ' : ''; ?><?php echo htmlspecialchars($number); ?></span> <?php endforeach; ?></td>
-                            <td class="col-hide-mobile"><?php echo $m['username'] !== '' ? htmlspecialchars($m['username']) . ($m['has_password'] ? '' : ' <span class="text-muted u-fs-11">' . t('fax_settings.no_password') . '</span>') : '-'; ?></td>
+                            <td class="col-hide-mobile"><?php if ($m['linked'] !== []): ?><span class="text-muted u-fs-11" title="<?php echo t('fax_settings.field_linked'); ?>"><i class="fas fa-users"></i> <?php echo count($m['linked']); ?></span> <?php endif; ?><?php echo $m['username'] !== '' ? htmlspecialchars($m['username']) . ($m['has_password'] ? '' : ' <span class="text-muted u-fs-11">' . t('fax_settings.no_password') . '</span>') : '-'; ?></td>
                             <td><?php echo htmlspecialchars($m['notification_email'] ?: '-'); ?></td>
                             <td><?php echo uiStatusToggleForm($m['id'], $m['is_active'] ?? 1, 'did_id'); ?></td>
                             <td class="text-right">
@@ -81,6 +81,16 @@
                     <label class="form-label"><?php echo t('fax_settings.field_email'); ?></label>
                     <input type="email" name="notification_email" id="modal_notification_email" class="form-control">
                 </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('fax_settings.field_linked'); ?></label>
+                    <select name="linked_users[]" id="modal_linked_users" class="form-control" multiple size="5">
+                        <?php foreach ($linkableUsers as $lu): ?><option value="<?php echo (int) $lu['id']; ?>"><?php echo htmlspecialchars(trim($lu['full_name'] . ' (' . $lu['username'] . ')')); ?></option><?php endforeach; ?>
+                    </select>
+                    <small class="u-hint"><?php echo t('fax_settings.field_linked_help'); ?></small>
+                    <label class="u-check-label" style="display: block; margin-top: 6px;"><input type="checkbox" name="linked_mail" id="modal_linked_mail" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_linked_mail'); ?></label>
+                </div>
+                <label class="u-check-label" id="modal_create_login_group" style="display: block; margin-bottom: 12px;"><input type="checkbox" name="create_login" id="modal_create_login" value="1" class="u-accent" onchange="faxLoginChanged()"> <?php echo t('fax_settings.field_create_login'); ?></label>
+                <div id="fax_login_fields">
                 <div class="u-grid-2">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('fax_settings.field_username'); ?></label>
@@ -114,6 +124,7 @@
                         <option value="0"><?php echo t('fax_settings.not_selected'); ?></option>
                         <?php foreach ($permissionGroups as $g): ?><option value="<?php echo (int) $g['id']; ?>"><?php echo htmlspecialchars((string) $g['group_name']); ?></option><?php endforeach; ?>
                     </select>
+                </div>
                 </div>
                 <div class="form-group">
                     <label class="form-label u-check-label"><input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_active'); ?></label>

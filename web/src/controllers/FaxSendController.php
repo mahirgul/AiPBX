@@ -50,7 +50,7 @@ class FaxSendController extends BaseController
         // user request).
         $fax_users = ($user_role === 'admin') ? FaxSettingsRepository::faxNumbersForDropdown() : [];
         // A fax user with several numbers chooses which one to send from.
-        $own_numbers = ($user_role === 'admin') ? [] : FaxInboxRepository::getAllowedDIDs((int) ($_SESSION['user_id'] ?? 0), (string) $user_ext);
+        $own_numbers = ($user_role === 'admin') ? [] : FaxInboxRepository::sendableNumbers((int) ($_SESSION['user_id'] ?? 0));
 
         $page_title = t('fax_send.title');
         static::renderPage('fax_send/index', [
