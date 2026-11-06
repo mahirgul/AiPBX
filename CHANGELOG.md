@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.71.1
+
+- **SIP over TLS on port 443 works when set in the portal.** Saving a region wrote nginx's lists from inside Apache's sandbox, where /etc/nginx is read-only, and the failure went unnoticed: the phones' connections still went to the TURN server. The lists now live in /etc/nginx/aipbx-sip443/, the one folder there the portal may write, a failed write shows an error, and the update writes them again from the regions already saved.
+- **Copy a SIP password from the Extensions table** without showing it.
+
 ## 1.71.0
 
 - **SIP over TLS on port 443 for a phone region**, for networks that let TLS out only on 443. Its phones get TLS and port 443, and nginx on 443 hands them to Asterisk by the region's own SIP server name (sip1.example.com, sip2.example.com beside the portal's name), so browsers keep TURN on 443; a region without a name of its own lists its phones' addresses instead. Let's Encrypt puts the regions' names on the one certificate.

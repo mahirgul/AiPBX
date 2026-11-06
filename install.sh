@@ -1381,12 +1381,30 @@ ok "Database schema migrated, seed data and ODBC user in place"
 # goes through a local relay (127.0.0.1:15349) that strips it. Desk phones on
 # networks that let TLS out only on 443 (Provisioning → Regions, SIP on 443) go
 # to Asterisk's TLS transport (5061): by their region's own server name
-# (aipbx-sip443-names.conf), or without a name by their addresses
-# (aipbx-sip443.conf) when they send no ALPN, as TURN does. aipbx-priv sip443
-# writes both; the relay is a socket, so it takes no port a transport could want.
-for f in aipbx-sip443-names.conf aipbx-sip443.conf; do
-    [ -f "/etc/nginx/$f" ] || echo "# Written by aipbx-priv sip443 (Provisioning → Regions)" > "/etc/nginx/$f"
+# (aipbx-sip443/names.conf), or without a name by their addresses
+# (aipbx-sip443/addresses.conf) when they send no ALPN, as TURN does. aipbx-priv
+# sip443 writes both, from the portal: their folder is writable in Apache's
+# sandbox (ReadWritePaths below). The relay is a socket, so it takes no port a
+# transport could want.
+mkdir -p /etc/nginx/aipbx-sip443
+# 1.71.0 kept the lists beside nginx.conf, where the portal could not write them.
+[ -f /etc/nginx/aipbx-sip443-names.conf ] && mv -f /etc/nginx/aipbx-sip443-names.conf /etc/nginx/aipbx-sip443/names.conf
+[ -f /etc/nginx/aipbx-sip443.conf ] && mv -f /etc/nginx/aipbx-sip443.conf /etc/nginx/aipbx-sip443/addresses.conf
+rm -f /etc/nginx/aipbx-sip443-names.conf.prev /etc/nginx/aipbx-sip443.conf.prev
+for f in names.conf addresses.conf; do
+    [ -f "/etc/nginx/aipbx-sip443/$f" ] || echo "# Written by aipbx-priv sip443 (Provisioning → Regions)" > "/etc/nginx/aipbx-sip443/$f"
 done
+# The lists again from the regions, so an update never leaves them behind the database.
+if sip443_lines="$(php -r "require '$INSTALL_DIR/web/config.php'; require_once '$INSTALL_DIR/web/src/services/PhoneRegionService.php'; echo implode(PHP_EOL, PhoneRegionService::sip443Lines());" 2>/dev/null)"; then
+    printf '# Written by aipbx-priv sip443 (Provisioning → Regions)\n' | tee /etc/nginx/aipbx-sip443/names.conf > /etc/nginx/aipbx-sip443/addresses.conf
+    while read -r kind value; do
+        [[ "$value" =~ ^[A-Za-z0-9.:/-]{1,253}$ ]] || continue
+        case "$kind" in
+            name) echo "$value 1;" >> /etc/nginx/aipbx-sip443/names.conf ;;
+            addr) echo "$value 1;" >> /etc/nginx/aipbx-sip443/addresses.conf ;;
+        esac
+    done <<< "$sip443_lines"
+fi
 cat > /etc/nginx/aipbx-stream.conf << 'STREAM'
 # AI PBX edge multiplexer on 443 (managed by install.sh)
 stream {
@@ -1395,12 +1413,12 @@ stream {
 
     map $ssl_preread_server_name $aipbx_sip_name {
         default 0;
-        include /etc/nginx/aipbx-sip443-names.conf;
+        include /etc/nginx/aipbx-sip443/names.conf;
     }
 
     geo $aipbx_sip_addr {
         default 0;
-        include /etc/nginx/aipbx-sip443.conf;
+        include /etc/nginx/aipbx-sip443/addresses.conf;
     }
 
     # Key: region name? : region address? : ALPN
@@ -1458,8 +1476,9 @@ ProtectProc=default
 InaccessiblePaths=
 InaccessiblePaths=/boot /root -/etc/ssh -/etc/apt -/etc/.git -/etc/.svn
 # ProtectSystem=full makes /etc read-only for Apache and for aipbx-priv run
-# through sudo inside it: "Apply" writes generated dialplan/endpoint files under /etc/asterisk/pbx and settings in /etc/asterisk.
-ReadWritePaths=/etc/asterisk /etc/postfix /etc/fail2ban/jail.d -/etc/chrony/conf.d
+# through sudo inside it: "Apply" writes generated dialplan/endpoint files under /etc/asterisk/pbx and settings in /etc/asterisk;
+# phone regions write nginx's lists for SIP on 443.
+ReadWritePaths=/etc/asterisk /etc/postfix /etc/fail2ban/jail.d -/etc/chrony/conf.d -/etc/nginx/aipbx-sip443
 APACHEOVERRIDE
 systemctl daemon-reload
 

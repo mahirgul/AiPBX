@@ -198,12 +198,12 @@ final class PhoneRegionService
 
     /**
      * What nginx on 443 sends to Asterisk's TLS transport instead of the web server or TURN, for
-     * every region with SIP on 443: a connection naming the region's own name, or one without ALPN
-     * from its addresses when it has none. Written by aipbx-priv; returns the names.
+     * every region with SIP on 443: a connection naming the region's own name ("name HOST"), or one
+     * without ALPN from its addresses when it has none ("addr ADDRESS"). install.sh writes the same.
      *
      * @return list<string>
      */
-    private static function syncSip443(): array
+    public static function sip443Lines(): array
     {
         $names = $addrs = [];
         foreach (self::all() as $r) {
@@ -212,13 +212,18 @@ final class PhoneRegionService
                 $name !== '' ? $names[] = $name : array_push($addrs, ...self::sources((string) $r['sip443_sources']));
             }
         }
-        $names = array_values(array_unique($names));
-        $lines = [...array_map(static fn(string $n): string => "name {$n}", $names), ...array_map(static fn(string $a): string => "addr {$a}", array_unique($addrs))];
+        return [...array_map(static fn(string $n): string => "name {$n}", array_unique($names)), ...array_map(static fn(string $a): string => "addr {$a}", array_unique($addrs))];
+    }
+
+    /** Writes nginx's lists through aipbx-priv; returns the names in them. */
+    private static function syncSip443(): array
+    {
+        $lines = self::sip443Lines();
         $res = PrivHelper::run(['sip443', 'set'], implode("\n", $lines) . "\n");
         if (!$res['success']) {
             throw new \Exception(t('phones.region_err_sip443_apply') . ' ' . $res['output']);
         }
-        return $names;
+        return array_values(array_map(static fn(string $l): string => substr($l, 5), array_filter($lines, static fn(string $l): bool => str_starts_with($l, 'name '))));
     }
 
     /**

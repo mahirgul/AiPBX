@@ -190,7 +190,7 @@ do_letsencrypt() {
     # Phone regions with SIP on 443 by their own name (Provisioning → Regions): the same
     # certificate carries those names too, for phones that check it.
     local extra
-    for extra in $(sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443-names.conf 2>/dev/null); do
+    for extra in $(sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443/names.conf 2>/dev/null); do
         [ "$extra" = "$d" ] || args+=(-d "$extra")
     done
 

@@ -597,6 +597,7 @@ return [
     'extensions.type_sip' => 'SIP',
     'extensions.no_sip_registration' => '— (Fax user, no SIP registration)',
     'extensions.show_hide_password_tooltip' => 'Show / Hide Password',
+    'extensions.copy_password_tooltip' => 'Copy the SIP password',
     'extensions.status_busy' => 'On a Call',
     'extensions.status_idle' => 'Registered (Idle)',
     'extensions.status_down' => 'Unreachable',

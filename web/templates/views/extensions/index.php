@@ -85,6 +85,9 @@
                                         <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleRowPassword(this)" title="<?php echo t('extensions.show_hide_password_tooltip'); ?>">
                                             <i class="fas fa-eye"></i>
                                         </button>
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="copyRowPassword(this)" title="<?php echo t('extensions.copy_password_tooltip'); ?>">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
                                     </div>
                                 <?php endif; ?>
                             </td>
