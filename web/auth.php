@@ -239,6 +239,10 @@ function getModuleKeyForPage($page = null) {
     if (str_starts_with((string)$page, 'plugin_') && str_ends_with((string)$page, '.php')) {
         return 'plugins';
     }
+    // A plugin's page for users (/apps/<slug>): the plugin's user/visible.php decides who opens it.
+    if (str_starts_with((string)$page, 'app_') && str_ends_with((string)$page, '.php')) {
+        return 'plugin_apps';
+    }
     return $map[$page] ?? str_replace('.php', '', $page);
 }
 

@@ -931,6 +931,55 @@ final class PluginManager
     }
 
     /**
+     * The `user_page` hook: a page at /apps/<slug> for signed-in users, not only administrators
+     * (AiPBX 1.71+). The plugin decides who sees it: `user/visible.php` returns
+     * fn(array $user, array $settings): bool (no file: everyone). Returns the plugin's directory,
+     * or null when the plugin is off, has no such page or does not show it to this user.
+     */
+    public static function userPageDir(string $slug, array $user): ?string
+    {
+        $p = self::getPlugin($slug);
+        $dir = (string) (self::discoverManifests()[$slug]['dir'] ?? '');
+        if (!$p || !$p['enabled'] || !is_array($p['hooks']['user_page'] ?? null) || $dir === '' || !is_file($dir . '/user/page.php')) {
+            return null;
+        }
+        if (is_file($dir . '/user/visible.php')) {
+            try {
+                $fn = require $dir . '/user/visible.php';
+                if (!is_callable($fn) || !$fn($user, self::getAllSettings($slug, false))) {
+                    return null;
+                }
+            } catch (\Throwable $e) {
+                error_log("plugin {$slug} user/visible.php: " . $e->getMessage());
+                return null;
+            }
+        }
+        return $dir;
+    }
+
+    /** Sidebar items of the plugins' user pages this user may open. */
+    public static function userSidebarItems(array $user): array
+    {
+        $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
+        $items = [];
+        foreach (self::allPlugins() as $p) {
+            $hook = $p['hooks']['user_page'] ?? null;
+            if (!$p['enabled'] || !is_array($hook) || self::userPageDir($p['slug'], $user) === null) {
+                continue;
+            }
+            $items[] = [
+                'href'  => '/apps/' . $p['slug'],
+                'icon'  => (string) ($hook['icon'] ?? $p['icon']),
+                'label' => ['plugin.user.' . $p['slug'], (string) ($hook['label_i18n'][$lang] ?? $hook['label'] ?? $p['name'])],
+                'show'  => true,
+                'pages' => ['app_' . $p['slug'] . '.php'],
+                'uri'   => '/apps/' . $p['slug'],
+            ];
+        }
+        return $items;
+    }
+
+    /**
      * Return dynamic sidebar items for enabled custom/catalog plugins that do
      * not already have a dedicated built-in route in `sidebar_menu.php`.
      *

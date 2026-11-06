@@ -125,4 +125,51 @@ class PluginsController extends BaseController
             'error'   => $error,
         ]);
     }
+
+    /**
+     * /apps/<slug>: a plugin's page for signed-in users (`user_page` hook). On POST, after the
+     * CSRF check, `user/action.php` runs as fn(string $slug, array $settings, array $user): array;
+     * ['json' => ...] answers a script, ['message' => ...] or ['error' => ...] a form.
+     */
+    public static function userPage(string $slug): void
+    {
+        static::requireLogin();
+        $user = (array) getCurrentUser();
+        $dir = PluginManager::userPageDir($slug, $user);
+        if ($dir === null) {
+            http_response_code(404);
+            static::renderPage('errors/404', [], ['title' => '404']);
+            return;
+        }
+        $settings = PluginManager::getAllSettings($slug, false);
+        $message = $error = '';
+        if (static::isPost() && is_file($dir . '/user/action.php')) {
+            $res = ['error' => t('common.invalid_csrf')];
+            if (static::verifyCsrf()) {
+                try {
+                    $fn = require $dir . '/user/action.php';
+                    $res = is_callable($fn) ? (array) $fn($slug, $settings, $user) : [];
+                } catch (\Throwable $e) {
+                    $res = ['error' => $e->getMessage()];
+                }
+            }
+            if (array_key_exists('json', $res)) {
+                static::json((array) $res['json']);
+            }
+            $message = (string) ($res['message'] ?? '');
+            $error = (string) ($res['error'] ?? '');
+        }
+        $plugin = PluginManager::getPlugin($slug);
+        static::renderPage('plugins/user_page', [
+            'page_path'  => $dir . '/user/page.php',
+            'slug'       => $slug,
+            'settings'   => $settings,
+            'user'       => $user,
+            'csrf_token' => getCSRFToken(),
+        ], [
+            'title'   => (string) ($plugin['hooks']['user_page']['label'] ?? $plugin['name'] ?? $slug),
+            'message' => $message,
+            'error'   => $error,
+        ]);
+    }
 }

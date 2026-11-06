@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.71.0
+
+- **SIP over TLS on port 443 for a phone region**, for networks that let TLS out only on 443. Its phones get TLS and port 443, and nginx on 443 hands them to Asterisk by the region's own SIP server name (sip1.example.com, sip2.example.com beside the portal's name), so browsers keep TURN on 443; a region without a name of its own lists its phones' addresses instead. Let's Encrypt puts the regions' names on the one certificate.
+- **Plugins can give users a page.** A plugin's `user_page` is opened at /apps/<plugin> by the signed-in users it chooses, with its own line in the menu; until now plugin pages were for administrators only. The SMS/MMS plugin (#152) uses it.
+- **A region's own SIP server name is accepted by Asterisk.** Phones that used a name other than the server's own were not recognised; the regions' names now join the names an extension answers to (on Apply).
+
 ## 1.70.0
 
 - **One look across the portal.** Tabs join the page below them on every screen, and My Phone's are real tabs now. Row buttons are one size, and Save sits at the end of a form on the right, as in a window.

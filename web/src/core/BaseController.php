@@ -121,7 +121,9 @@ abstract class BaseController
         // (RBAC matrix).
         requireLogin();
         $module = getModuleKeyForPage();
-        if ($module === 'cdr_reports') {
+        if ($module === 'plugin_apps') {
+            // PluginsController::userPage() asked the plugin (PluginManager::userPageDir()).
+        } elseif ($module === 'cdr_reports') {
             if (!hasModulePermission('cdr_reports', 'view') && !hasModulePermission('cc_reports', 'view')) {
                 requireModulePermission('cdr_reports', 'view');
             }

@@ -172,6 +172,15 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
 - **`admin/action.php`**: returns `function (string $slug, array $settings): array`, run on every request
   to `/plugins/<slug>` before the page is drawn. Check CSRF (`verifyCSRFToken($_POST['csrf_token'])`) for
   your own forms; return `['message' => ...]`, `['error' => ...]` or `[]`.
+- **`user_page`** (AiPBX 1.71+): a page for signed-in users, not only administrators, at `/apps/<slug>`,
+  with a line in the sidebar under the dashboard group. Declare it in `hooks`:
+  `"user_page": {"label": "Messages", "label_i18n": {"tr": "Mesajlar"}, "icon": "fas fa-comment-sms"}`.
+  `user/page.php` draws it with `$slug`, `$settings`, `$user` (the signed-in user's row) and `$csrf_token`.
+  `user/visible.php` (optional) returns `function (array $user, array $settings): bool` and decides who
+  sees the line and may open the page; without it every signed-in user does. On POST the core checks the
+  CSRF token and runs `user/action.php`, `function (string $slug, array $settings, array $user): array`;
+  return `['message' => ...]` or `['error' => ...]` for a form, or `['json' => [...]]` to answer a script.
+  Check what the user may touch yourself: the page is open to every signed-in user `visible.php` lets in.
 - **Alerts in the bell** (AiPBX 1.50.8+): `NoticeService::raise($key, 'warn'|'fail', $title, $message, $link, $slug)`
   opens or updates one problem, `NoticeService::resolve($key)` ends it. Raise the same key on every pass
   while the problem lasts and resolve it when it is gone; the bell shows it to administrators until then,

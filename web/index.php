@@ -113,6 +113,15 @@ if (preg_match('#^/plugins/([a-z0-9][a-z0-9-]{1,48})$#', $path, $_pluginMatch)) 
     exit;
 }
 
+// 0f2. A plugin's page for signed-in users (/apps/<slug>, `user_page` hook)
+if (preg_match('#^/apps/([a-z0-9][a-z0-9-]{1,48})$#', $path, $_appMatch)) {
+    require_once __DIR__ . '/src/core/BaseController.php';
+    require_once __DIR__ . '/src/controllers/PluginsController.php';
+    $_SERVER['PHP_SELF'] = '/app_' . $_appMatch[1] . '.php';
+    PluginsController::userPage($_appMatch[1]);
+    exit;
+}
+
 // 0g. Public Video Meeting Lobby (/meet and /meet/<token>)
 if ($path === '/meet' || str_starts_with($path, '/meet/')) {
     $meetToken = trim(substr($path, strlen('/meet')), '/');
