@@ -177,7 +177,6 @@ class AssistantModel
         ]);
         $out = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
         if ($code !== 200 || !is_string($out) || $out === '') {
             return null;
         }

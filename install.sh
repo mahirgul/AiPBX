@@ -31,14 +31,62 @@ export HOME="${HOME:-/root}"
 export COMPOSER_HOME="${COMPOSER_HOME:-$HOME/.config/composer}"
 
 # --- Color codes ---
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
+# --- Output style ---
+# Colours only on a terminal (not in a log file, CI or with NO_COLOR); Unicode marks only with a
+# UTF-8 locale, plain ASCII otherwise. The words of every message stay the same either way.
+if [[ -t 1 && -z "${NO_COLOR:-}" && "${TERM:-dumb}" != dumb ]]; then
+    RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+    BLUE='\033[0;34m'; CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
+    GRAD=('\033[38;5;33m' '\033[38;5;39m' '\033[38;5;38m' '\033[38;5;37m' '\033[38;5;36m' '\033[38;5;35m')
+else
+    RED=''; GREEN=''; YELLOW=''; BLUE=''; CYAN=''; BOLD=''; DIM=''; NC=''
+    GRAD=('' '' '' '' '' '')
+fi
+case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
+    *UTF-8*|*utf-8*|*UTF8*|*utf8*)
+        I_OK='✔'; I_WARN='⚠'; I_INFO='ℹ'; I_ERR='✖'; BAR_ON='▰'; BAR_OFF='▱'; SEP='·'
+        B_TL='╭'; B_TR='╮'; B_BL='╰'; B_BR='╯'; B_H='─'; B_V='│' ;;
+    *)
+        I_OK='+'; I_WARN='!'; I_INFO='i'; I_ERR='x'; BAR_ON='#'; BAR_OFF='.'; SEP='-'
+        B_TL='+'; B_TR='+'; B_BL='+'; B_BR='+'; B_H='-'; B_V='|' ;;
+esac
+TOTAL_STEPS=13
+START_SECONDS=$SECONDS
 
-info()  { echo -e "${BLUE}[INFO]${NC}  $*"; }
-ok()    { echo -e "${GREEN}[ OK ]${NC}  $*"; }
-warn()  { echo -e "${YELLOW}[WARN]${NC}  $*"; }
-error() { echo -e "${RED}[ERR ]${NC}  $*"; exit 1; }
-step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
+info()  { echo -e "   ${BLUE}${I_INFO}${NC} $*"; }
+ok()    { echo -e "   ${GREEN}${I_OK}${NC} $*"; }
+warn()  { echo -e "   ${YELLOW}${I_WARN} $*${NC}"; }
+error() { echo -e "   ${RED}${BOLD}${I_ERR} $*${NC}"; exit 1; }
+# step "3. Installing System Packages": a progress bar and 3/13 before the title.
+step() {
+    local n="${1%%.*}" title="${1#*. }" bar="" i
+    if [[ "$n" =~ ^[0-9]+$ ]]; then
+        for ((i = 1; i <= TOTAL_STEPS; i++)); do
+            if ((i <= n)); then bar+="$BAR_ON"; else bar+="$BAR_OFF"; fi
+        done
+        echo -e "\n ${CYAN}${bar}${NC} ${BOLD}$(printf '%2d' "$n")/${TOTAL_STEPS}  ${title}${NC}"
+    else
+        echo -e "\n ${CYAN}${BOLD}${BAR_ON} $*${NC}"
+    fi
+}
+# box "Title" "line" ...: a rounded frame 60 columns wide; lines may carry colour codes.
+box() {
+    local title="$1" line plain pad w=58
+    shift
+    # As wide as the longest line, at least 58 columns.
+    for line in "$@"; do
+        plain="$(echo -e "$line" | sed 's/\x1b\[[0-9;]*m//g')"
+        ((${#plain} + 4 > w)) && w=$((${#plain} + 4))
+    done
+    printf ' %s%s %s %s%s\n' "$B_TL" "$B_H" "$(echo -e "${BOLD}${title}${NC}")" "$(printf "%*s" $((w - ${#title} - 3)) '' | sed "s/ /$B_H/g")" "$B_TR"
+    for line in "$@"; do
+        plain="$(echo -e "$line" | sed 's/\x1b\[[0-9;]*m//g')"
+        pad=$((w - 2 - ${#plain}))
+        ((pad < 0)) && pad=0
+        printf ' %s  %s%*s%s\n' "$B_V" "$(echo -e "$line")" "$pad" '' "$B_V"
+    done
+    printf ' %s%s%s\n' "$B_BL" "$(printf "%*s" "$w" '' | sed "s/ /$B_H/g")" "$B_BR"
+}
 
 # --- Root check ---
 [[ $EUID -ne 0 ]] && error "Run this script as root: sudo bash install.sh"
@@ -384,19 +432,39 @@ fi
 # ============================================================================
 # STEP 0: WELCOME BANNER
 # ============================================================================
-clear 2>/dev/null || true
-echo -e "${CYAN}${BOLD}"
-echo "  ╔══════════════════════════════════════════════════════════════╗"
-if is_upgrade; then
-echo "  ║                    AI PBX — Upgrade                          ║"
+[[ -t 1 ]] && { clear 2>/dev/null || true; }
+AIPBX_VER="$(cat "$SCRIPT_DIR/VERSION" 2>/dev/null || echo dev)"
+if [[ "$SEP" == "·" ]]; then
+    # "ANSI Shadow" letters; a terminal without UTF-8 gets the plain ones below.
+    LOGO=(
+' █████╗ ██╗██████╗ ██████╗ ██╗  ██╗'
+'██╔══██╗██║██╔══██╗██╔══██╗╚██╗██╔╝'
+'███████║██║██████╔╝██████╔╝ ╚███╔╝ '
+'██╔══██║██║██╔═══╝ ██╔══██╗ ██╔██╗ '
+'██║  ██║██║██║     ██████╔╝██╔╝ ██╗'
+'╚═╝  ╚═╝╚═╝╚═╝     ╚═════╝ ╚═╝  ╚═╝'
+    )
 else
-echo "  ║              AI PBX — Fresh Installation                    ║"
+    LOGO=(
+'     _    _ ____  ______  __'
+'    / \  (_)  _ \| __ ) \/ /'
+'   / _ \ | | |_) |  _ \\  / '
+'  / ___ \| |  __/| |_) /  \ '
+' /_/   \_\_|_|   |____/_/\_\'
+''
+    )
 fi
-echo "  ║         Open Source Enterprise Phone System                  ║"
-echo "  ╚══════════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
-echo -e "  Source directory : ${YELLOW}$SCRIPT_DIR${NC}"
-echo -e "  Install directory: ${YELLOW}$INSTALL_DIR${NC}"
+LOGO_SIDE=('' '' "   ${BOLD}Open-source IP PBX with AI${NC}" "   v${AIPBX_VER} ${SEP} Asterisk 22" "   ${DIM}aipbx.bid${NC}" '')
+echo ""
+for i in "${!LOGO[@]}"; do
+    printf '%b%s%b%b\n' "${GRAD[$i]}${BOLD}" "${LOGO[$i]}" "$NC" "${LOGO_SIDE[$i]}"
+done
+echo ""
+OS_NAME="$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}")"
+box "$(is_upgrade && echo Upgrade || echo 'Fresh installation')" \
+    "Server   $(hostname -f 2>/dev/null || hostname) ${SEP} ${OS_NAME} ${SEP} $(uname -m)" \
+    "Source   $SCRIPT_DIR" \
+    "Install  $INSTALL_DIR"
 echo ""
 echo -e "  ${YELLOW}${BOLD}NOTICE & DISCLAIMER (MIT License):${NC}"
 echo -e "  AiPBX is open-source software provided ${BOLD}\"AS IS\"${NC} without warranty of any kind."
@@ -2505,57 +2573,49 @@ chmod 600 "$CREDS_FILE"
 # ============================================================================
 # DONE — PRINT SUMMARY
 # ============================================================================
+TOOK=$((SECONDS - START_SECONDS))
 echo ""
-echo -e "${GREEN}${BOLD}"
-echo "  ╔══════════════════════════════════════════════════════════════╗"
-echo "  ║           ✅  AI PBX Installation Complete!                  ║"
-echo "  ╚══════════════════════════════════════════════════════════════╝"
-echo -e "${NC}"
-
-echo -e "  ${BOLD}WEB PORTAL & DEFAULT EXTENSION${NC}"
-echo -e "  ┌─────────────────────────────────────────────────────────┐"
-echo -e "  │  URL          : ${CYAN}https://${PORTAL_DOMAIN}${NC}"
-echo -e "  │  Username     : ${YELLOW}admin${NC}"
-echo -e "  │  Password     : ${YELLOW}${ADMIN_PASS}${NC}"
-echo -e "  │  Extension    : ${YELLOW}1000${NC} (Web/Mobile/SIP)"
-echo -e "  │  SIP Password : ${YELLOW}${ADMIN_SIP_PASS}${NC}"
-echo -e "  └─────────────────────────────────────────────────────────┘"
+box "${I_OK} AiPBX is ready  ${SEP}  $((TOOK / 60)) min $((TOOK % 60)) s" \
+    "Portal        ${CYAN}https://${PORTAL_DOMAIN}${NC}" \
+    "Username      ${YELLOW}admin${NC}" \
+    "Password      ${YELLOW}${ADMIN_PASS}${NC}" \
+    "Extension     ${YELLOW}1000${NC} (web, mobile, SIP)" \
+    "SIP password  ${YELLOW}${ADMIN_SIP_PASS}${NC}"
 echo ""
-
-echo -e "  ${BOLD}DATABASE (MariaDB)${NC}"
-echo -e "  ┌─────────────────────────────────────────────────────────┐"
-echo -e "  │  App User    : ${YELLOW}${DB_USER}${NC}"
-echo -e "  │  App Password: ${YELLOW}${DB_PASS}${NC}"
-echo -e "  │  DDL User    : ${YELLOW}${MIGRATOR_USER}${NC}"
-echo -e "  │  DDL Password: ${YELLOW}${MIGRATOR_PASS}${NC}"
-echo -e "  └─────────────────────────────────────────────────────────┘"
+box "Database (MariaDB)" \
+    "App user      ${YELLOW}${DB_USER}${NC}" \
+    "App password  ${YELLOW}${DB_PASS}${NC}" \
+    "DDL user      ${YELLOW}${MIGRATOR_USER}${NC}" \
+    "DDL password  ${YELLOW}${MIGRATOR_PASS}${NC}"
+echo ""
+box "Asterisk AMI" \
+    "User          ${YELLOW}${AMI_USER}${NC}" \
+    "Password      ${YELLOW}${AMI_PASS}${NC}"
 echo ""
 
-echo -e "  ${BOLD}ASTERISK AMI${NC}"
-echo -e "  ┌─────────────────────────────────────────────────────────┐"
-echo -e "  │  User    : ${YELLOW}${AMI_USER}${NC}"
-echo -e "  │  Password: ${YELLOW}${AMI_PASS}${NC}"
-echo -e "  └─────────────────────────────────────────────────────────┘"
-echo ""
-
-echo -e "  ${BOLD}TLS CERTIFICATE${NC}"
+echo -e " ${BOLD}TLS certificate${NC}"
 if [[ "${USE_LETSENCRYPT:-false}" == "true" ]]; then
-    echo -e "  ✅ Let's Encrypt certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
+    ok "Let's Encrypt certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
 else
-    echo -e "  ⚠️  Self-signed certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
-    echo -e "     Your browser will show a warning — click Advanced → Proceed to continue."
-    echo -e "     WebRTC TURNS (calls behind strict firewalls) needs a trusted certificate."
-    echo -e "     Get one later in the portal: ${CYAN}Security → Certificates${NC}"
+    warn "Self-signed certificate for ${PORTAL_DOMAIN}"
+    info "Your browser will show a warning: click Advanced → Proceed to continue."
+    info "WebRTC TURNS (calls behind strict firewalls) needs a trusted certificate."
+    info "Get one later in the portal: ${CYAN}Security → Certificates${NC}"
 fi
 echo ""
 
-echo -e "  ${BOLD}SERVICE STATUS${NC}"
-systemctl is-active --quiet mariadb    && echo -e "  ✅ MariaDB  : ${GREEN}running${NC}"  || echo -e "  ❌ MariaDB  : ${RED}stopped${NC}"
-systemctl is-active --quiet asterisk   && echo -e "  ✅ Asterisk : ${GREEN}running${NC}"  || echo -e "  ❌ Asterisk : ${RED}stopped${NC}"
-systemctl is-active --quiet nginx      && echo -e "  ✅ Nginx    : ${GREEN}running${NC} (Edge 443 ALPN Multiplexer)" || echo -e "  ❌ Nginx    : ${RED}stopped${NC}"
-systemctl is-active --quiet apache2    && echo -e "  ✅ Apache2  : ${GREEN}running${NC} (80 / 8443 Backend)"  || echo -e "  ❌ Apache2  : ${RED}stopped${NC}"
-systemctl is-active --quiet coturn     && echo -e "  ✅ coturn   : ${GREEN}running${NC}"  || echo -e "  ⚠️  coturn   : ${YELLOW}not running${NC}"
-systemctl is-active --quiet aipbx-chat && echo -e "  ✅ Chat     : ${GREEN}running${NC}"  || echo -e "  ⚠️  Chat     : ${YELLOW}not running (optional)${NC}"
+echo -e " ${BOLD}Services${NC}"
+svc() { # svc unit "Label" "detail" [optional]
+    if systemctl is-active --quiet "$1"; then ok "$(printf '%-9s' "$2") ${GREEN}running${NC}${3:+ ($3)}"
+    elif [[ -n "${4:-}" ]]; then warn "$(printf '%-9s' "$2") not running$([[ "$4" != - ]] && echo " ($4)")"
+    else echo -e "   ${RED}${I_ERR}${NC} $(printf '%-9s' "$2") ${RED}stopped${NC}"; fi
+}
+svc mariadb MariaDB
+svc asterisk Asterisk
+svc nginx nginx "edge 443"
+svc apache2 Apache2 "80 / 8443 backend"
+svc coturn coturn "" -
+svc aipbx-chat Chat "" "optional"
 echo ""
 
 # A crontab nobody reads is worse than none: the nightly backup, phone discovery
@@ -2568,11 +2628,11 @@ systemctl enable --now cron >/dev/null 2>&1 || warn "cron did not start — sche
 echo ""
 
 # Self test (Admin -> Health checks): what this install set up, checked from the outside.
-echo -e "  ${BOLD}SELF TEST${NC} (sudo aipbx-selftest)"
-if /usr/local/sbin/aipbx-selftest 2>&1 | sed 's/^/  /'; then
-    echo -e "  ✅ ${GREEN}No check failed${NC}"
+echo -e " ${BOLD}Self test${NC} ${DIM}(sudo aipbx-selftest)${NC}"
+if /usr/local/sbin/aipbx-selftest 2>&1 | sed 's/^/   /'; then
+    ok "No check failed"
 else
-    echo -e "  ⚠️  ${YELLOW}A check failed — see above (the line marked FAIL)${NC}"
+    warn "A check failed: see above (the line marked FAIL)"
 fi
 echo ""
 
@@ -2583,12 +2643,11 @@ echo ""
 # 1 — and `aipbx-update` rolled a healthy box back over it.
 ssh_cfg="$(sshd -T 2>/dev/null || true)"
 if grep -qi '^permitrootlogin yes' <<<"$ssh_cfg" && grep -qi '^passwordauthentication yes' <<<"$ssh_cfg"; then
-    echo -e "  ${YELLOW}⚠️  SSH allows root login with a password. Consider key-only logins and${NC}"
-    echo -e "  ${YELLOW}   limiting port 22 to trusted networks (see docs/security.md).${NC}"
+    warn "SSH allows root login with a password. Consider key-only logins and"
+    warn "limiting port 22 to trusted networks (see docs/security.md)."
     echo ""
 fi
-echo -e "  ${BOLD}📄 All credentials saved to:${NC} ${CYAN}${CREDS_FILE}${NC}"
-echo -e "  ${YELLOW}⚠️  Note these credentials now! Delete the file after saving them securely.${NC}"
-echo ""
-echo -e "  All passwords can be changed later from: ${CYAN}Admin Panel → Settings → System${NC}"
+info "All credentials saved to ${CYAN}${CREDS_FILE}${NC}"
+warn "Note these credentials now! Delete the file after saving them securely."
+info "All passwords can be changed later from: ${CYAN}Admin Panel → Settings → System${NC}"
 echo ""

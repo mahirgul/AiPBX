@@ -471,7 +471,6 @@ class WebhookService
         $respBody = curl_exec($ch);
         $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlErr = curl_error($ch);
-        curl_close($ch);
 
         $ok = ($respBody !== false && $httpCode >= 200 && $httpCode < 300);
         $errText = $ok ? '' : ($curlErr !== '' ? $curlErr : 'HTTP ' . $httpCode);

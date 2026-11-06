@@ -115,7 +115,6 @@ final class LoginCaptchaService
         ]);
         $body = curl_exec($ch);
         $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
         if (!is_string($body) || $status < 200 || $status >= 500) {
             return null;
         }

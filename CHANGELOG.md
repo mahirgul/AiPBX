@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.2
+
+- **The update's page test no longer fails on /plugins.** With the community catalog on, PHP 8.5 warned that `curl_close()` is deprecated, and the test after the update reported it as an error (the update itself had gone through). The call did nothing since PHP 8.0 and is gone everywhere (webhooks, captcha, AI services, the IVR data step); the page test now refuses it in the code.
+- **A tidier installer.** The AiPBX logo at the start, a box with the server and folders, a progress bar with the step number (3/13), ✔ ⚠ ℹ ✖ marks in their colours, and the result in boxes with how long it took. Colours only on a terminal (not in a log file or with NO_COLOR), plain ASCII without a UTF-8 locale; the messages' words are unchanged.
+
 ## 1.72.1
 
 - **The installer's admin account can be renamed and deleted** (#156), like any other administrator: the user name is no longer locked, and Delete shows on every account but your own. The last active administrator still cannot be deleted.

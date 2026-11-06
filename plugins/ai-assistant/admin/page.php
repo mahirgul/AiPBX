@@ -79,7 +79,6 @@ SYS;
             curl_setopt_array($ch, $curlOpts);
             $resp = curl_exec($ch);
             $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
 
             if (is_string($resp) && $code >= 200 && $code < 300) {
                 $decoded = json_decode($resp, true);
