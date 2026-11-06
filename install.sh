@@ -1378,18 +1378,40 @@ ok "Database schema migrated, seed data and ODBC user in place"
 # Nginx Stream Multiplexer on Port 443 (ALPN routing: HTTPS/WSS -> Apache 8443, TURNS -> coturn 5349)
 # nginx never decrypts TLS here, so the client address reaches Apache only
 # through a PROXY protocol header. coturn cannot parse that header, so TURNS
-# goes through a local relay (127.0.0.1:15349) that strips it.
+# goes through a local relay (127.0.0.1:15349) that strips it. Desk phones on
+# networks that let TLS out only on 443 (Provisioning → Regions, SIP on 443) go
+# to Asterisk's TLS transport (5061): by their region's own server name
+# (aipbx-sip443-names.conf), or without a name by their addresses
+# (aipbx-sip443.conf) when they send no ALPN, as TURN does. aipbx-priv sip443
+# writes both; the relay is a socket, so it takes no port a transport could want.
+for f in aipbx-sip443-names.conf aipbx-sip443.conf; do
+    [ -f "/etc/nginx/$f" ] || echo "# Written by aipbx-priv sip443 (Provisioning → Regions)" > "/etc/nginx/$f"
+done
 cat > /etc/nginx/aipbx-stream.conf << 'STREAM'
 # AI PBX edge multiplexer on 443 (managed by install.sh)
 stream {
     log_format aipbx_stream '$remote_addr [$time_local] alpn="$ssl_preread_alpn_protocols" backend=$aipbx_backend status=$status bytes_s=$bytes_sent bytes_r=$bytes_received';
     access_log /var/log/nginx/stream.log aipbx_stream;
 
-    map $ssl_preread_alpn_protocols $aipbx_backend {
+    map $ssl_preread_server_name $aipbx_sip_name {
+        default 0;
+        include /etc/nginx/aipbx-sip443-names.conf;
+    }
+
+    geo $aipbx_sip_addr {
+        default 0;
+        include /etc/nginx/aipbx-sip443.conf;
+    }
+
+    # Key: region name? : region address? : ALPN
+    map "$aipbx_sip_name:$aipbx_sip_addr:$ssl_preread_alpn_protocols" $aipbx_backend {
         default     127.0.0.1:8443;
         # Browsers send no ALPN for TURNS; RFC 7443 clients send stun.turn.
-        ""          127.0.0.1:15349;
+        "0:0:"      127.0.0.1:15349;
         ~stun\.turn 127.0.0.1:15349;
+        # A phone region's own name, or no ALPN from its addresses: SIP over TLS.
+        ~^1:        unix:/run/aipbx-sip443.sock;
+        "0:1:"      unix:/run/aipbx-sip443.sock;
     }
 
     server {
@@ -1405,6 +1427,13 @@ stream {
     server {
         listen 127.0.0.1:15349 proxy_protocol;
         proxy_pass 127.0.0.1:5349;
+        proxy_timeout 3600s;
+        proxy_connect_timeout 5s;
+    }
+
+    server {
+        listen unix:/run/aipbx-sip443.sock proxy_protocol;
+        proxy_pass 127.0.0.1:5061;
         proxy_timeout 3600s;
         proxy_connect_timeout 5s;
     }

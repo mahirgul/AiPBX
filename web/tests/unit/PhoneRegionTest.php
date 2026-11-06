@@ -57,6 +57,11 @@ final class PhoneRegionTest extends TestCase
             'syslog' => [['syslog' => 'host.name']],
             'url' => [['base_url' => 'ftp://x']],
             'time zone' => [['timezone' => 'Mars/Base']],
+            'sip443 name' => [['sip443_sources' => 'phones.example.org']],
+            'sip443 prefix' => [['sip443_sources' => '10.0.0.0/33']],
+            'sip443 inject' => [['sip443_sources' => '10.0.0.1 1; } include /etc/passwd;']],
+            'sip443 with nothing' => [['sip443' => '1']],
+            'sip443 by an address only' => [['sip443' => '1', 'sip_server' => '10.0.0.5']],
         ];
     }
 
@@ -75,6 +80,18 @@ final class PhoneRegionTest extends TestCase
         $this->assertSame('opus,pcmu', $out['codecs']);
         $this->assertSame('none', $out['sip_proxy']);
         $this->assertSame('', PhoneRegionService::validate(['transport' => 'carrier-pigeon'])['transport']);
+        $this->assertSame('91.113.163.218, 10.1.0.0/16, 2001:db8::/32',
+            PhoneRegionService::validate(['sip443_sources' => ' 91.113.163.218,10.1.0.0/16 , 2001:db8::/32, 91.113.163.218'])['sip443_sources']);
+    }
+
+    public function testSip443TakesTheRegionsOwnNameOrItsAddresses(): void
+    {
+        $out = PhoneRegionService::validate(['sip443' => '1', 'sip_server' => 'sip1.example.org', 'transport' => 'udp', 'sip_port' => '5060']);
+        $this->assertSame(['1', 'tls', '443'], [$out['sip443'], $out['transport'], $out['sip_port']], 'these phones talk TLS to 443');
+        $this->assertSame('sip1.example.org', PhoneRegionService::sip443Name($out));
+        $this->assertSame('', PhoneRegionService::sip443Name(['sip_server' => '10.0.0.5']), 'an IP address names nothing');
+        $this->assertSame('1', PhoneRegionService::validate(['sip443' => '1', 'sip443_sources' => '91.113.163.218'])['sip443']);
+        $this->assertSame('0', PhoneRegionService::validate([])['sip443']);
     }
 
     public function testAPhoneGetsItsRegionsAddresses(): void
