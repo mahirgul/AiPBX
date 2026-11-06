@@ -393,4 +393,4 @@ status running "Verifying"
 verify || go_back "The system did not come back after the restore"
 
 log "===== Restore of $NAME finished ====="
-status done "Restored from $NAME. Safety backup: $(basename "$SAFETY")"
+status "done" "Restored from $NAME. Safety backup: $(basename "$SAFETY")"

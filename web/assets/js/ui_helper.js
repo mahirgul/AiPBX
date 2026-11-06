@@ -150,6 +150,23 @@ const UIHelper = {
      * app actually uses (classList 'active' + display:flex) — NOT showModal()/closeModal() above,
      * which use a different '.show'/display:block convention that nothing currently calls.
      */
+    /** Shows a tab of uiTabs() and its pane (data-tab-pane). The tabs' parent holds both; the bar fires 'tabchange'. */
+    selectTab(btn) {
+        const bar = btn.closest('.ui-tabs');
+        if (!bar) return;
+        bar.querySelectorAll('.ui-tab').forEach((tab) => {
+            const on = tab === btn;
+            tab.classList.toggle('active', on);
+            tab.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        const root = bar.parentElement;
+        root.querySelectorAll(':scope > [data-tab-pane]').forEach((pane) => {
+            pane.hidden = pane.getAttribute('data-tab-pane') !== btn.getAttribute('data-tab');
+        });
+        // A page that does more on a tab (remember it, load data) listens for this.
+        bar.dispatchEvent(new CustomEvent('tabchange', { bubbles: true, detail: btn.getAttribute('data-tab') }));
+    },
+
     openOverlayModal(modalId) {
         const modal = typeof modalId === 'string' ? document.getElementById(modalId) : modalId;
         if (modal) {

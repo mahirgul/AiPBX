@@ -3,28 +3,29 @@
 /**
  * My Phone page JS functions
  */
+/** Opens a tab from a button elsewhere on the page (uiTabs, shared switching). */
 function switchMyPhoneTab(tabName) {
-    const panes = { history: "block", calls: "grid", settings: "grid", voicemail: "block" };
-    if (!panes[tabName]) tabName = "history";
-    Object.keys(panes).forEach(function (name) {
-        const pane = document.getElementById("tab-pane-" + name);
-        const btn = document.getElementById("btn-tab-" + name);
-        if (pane) pane.style.display = (name === tabName) ? panes[name] : "none";
-        if (btn) {
-            btn.classList.toggle("btn-primary", name === tabName);
-            btn.classList.toggle("btn-secondary", name !== tabName);
-        }
-    });
+    const btn = document.querySelector('.ui-tab[data-tab="' + tabName + '"]') || document.querySelector('.ui-tab[data-tab="history"]');
+    if (btn) UIHelper.selectTab(btn);
+}
 
+/** A tab was opened: keep it in the address and for the next visit; Settings lists the audio devices. */
+function onMyPhoneTab(e) {
+    if (!document.getElementById("tab-pane-history")) return;
+    const tabName = e.detail;
     const urlParams = new URLSearchParams(window.location.search);
     if (tabName === "history") urlParams.delete("tab"); else urlParams.set("tab", tabName);
     const queryStr = urlParams.toString();
     history.replaceState(null, "", "/my-phone" + (queryStr ? "?" + queryStr : ""));
-    try { localStorage.setItem("my_phone_active_tab", tabName); } catch (e) {}
-
+    try { localStorage.setItem("my_phone_active_tab", tabName); } catch (err) {}
     if (tabName === "settings" && typeof loadMyPhoneAudioDevices === "function") {
         loadMyPhoneAudioDevices();
     }
+}
+// Once: the page script runs again on every visit through the page router.
+if (!window.myPhoneTabListener) {
+    window.myPhoneTabListener = true;
+    document.addEventListener("tabchange", onMyPhoneTab);
 }
 
 function deleteVoicemailMessage(msgId) {

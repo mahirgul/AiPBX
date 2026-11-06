@@ -1,14 +1,5 @@
 /* Page styles of templates/views/my_phone/index.php */
 
-.my-phone-header-card {
-    padding: 12px 18px;
-    border-left: 4px solid var(--primary);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
 .my-phone-badges-wrapper {
     display: flex;
     align-items: center;
@@ -36,6 +27,7 @@
     border: 1px solid var(--border-color);
 }
 .my-phone-settings-grid {
+    display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
     align-items: start;
@@ -48,6 +40,7 @@
 
 @media (max-width: 768px) {
     .my-phone-header-card {
+        --card-pad: 14px;
         padding: 12px 14px !important;
         flex-direction: column !important;
         align-items: flex-start !important;

@@ -12,7 +12,7 @@ $can_delete = $canDelete ?? false;
 <?php if (!empty($notices['warnings'])): ?>
     <div class="alert alert-warning">
         <i class="fas fa-exclamation-circle"></i> <strong><?php echo t('custom_dialplan.warnings_title', 'Sözdizimi Uyarıları'); ?>:</strong>
-        <ul style="margin: 4px 0 0 20px;">
+        <ul class="u-m-4-0-0-20">
             <?php foreach ($notices['warnings'] as $w): ?>
                 <li><?php echo htmlspecialchars($w); ?></li>
             <?php endforeach; ?>
@@ -21,14 +21,9 @@ $can_delete = $canDelete ?? false;
 <?php endif; ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-code text-primary"></i> <?php echo t('custom_dialplan.title', 'Özel Arama Planı (Custom Dialplan)'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('customDialplanHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-code', t('custom_dialplan.title', 'Özel Arama Planı (Custom Dialplan)'), 'customDialplanHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <button type="button" class="btn btn-secondary btn-sm" onclick="openPreviewModal()" title="<?php echo t('custom_dialplan.preview_conf', 'Arama Planı Önizleme'); ?>">
                 <i class="fas fa-eye"></i> <?php echo t('custom_dialplan.btn_preview', 'Önizle'); ?>
             </button>
@@ -37,34 +32,26 @@ $can_delete = $canDelete ?? false;
                     <i class="fas fa-plus-circle"></i> <?php echo t('custom_dialplan.new_entry', 'Yeni Özel Context'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="customDialplanHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('custom_dialplan.help_title', 'Özel Arama Planı (Custom Dialplan) Rehberi'); ?></h4>
+        <?php echo uiHelpBoxOpen('customDialplanHelpBox', t('custom_dialplan.help_title', 'Özel Arama Planı (Custom Dialplan) Rehberi')); ?>
         <p><?php echo t('custom_dialplan.help_desc', 'Bu sayfa üzerinden Asterisk santralinize doğrudan özel dialplan blokları, context\'ler ve kod kancaları ekleyebilirsiniz. Tanımladığınız girişler /etc/asterisk/pbx/extensions_custom.conf dosyasına otomatik yazılır ve santral yeniden yüklenir.'); ?></p>
-        <ul style="margin: 8px 0 0 20px; font-size: 13px;">
+        <ul class="u-m-8-0-0-20 u-fs-13">
             <li><strong><?php echo t('custom_dialplan.help_internal_title', 'Dahili Aramalara Dahil Et'); ?>:</strong> <?php echo t('custom_dialplan.help_internal_desc', 'İşaretlendiğinde, bu context otomatik olarak [from-internal-pbx-ortak] içine dahil edilir. Böylece tüm dahili telefonlar bu context içindeki özel kodları (*80, *55 vb.) tuşlayabilir.'); ?></li>
             <li><strong><?php echo t('custom_dialplan.help_standalone_title', 'Bağımsız Context'); ?>:</strong> <?php echo t('custom_dialplan.help_standalone_desc', 'Dahili plana dahil edilmeyen context\'ler dış hat (trunk) gelen çağrı filtreleri, IVR kancaları veya özel AGI senaryoları için kullanılır.'); ?></li>
             <li><strong><?php echo t('custom_dialplan.help_syntax_title', 'Sözdizimi'); ?>:</strong> <?php echo t('custom_dialplan.help_syntax_desc', 'Standart Asterisk dialplan formatı: exten => ..., same => ..., include => ... kuralları geçerlidir.'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table" id="customDialplanTable">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50"><?php echo t('custom_dialplan.col_order', 'Sıra'); ?></th>
-                    <th><?php echo t('custom_dialplan.col_title', 'Başlık'); ?></th>
-                    <th><?php echo t('custom_dialplan.col_context', 'Context Adı'); ?></th>
-                    <th><?php echo t('custom_dialplan.col_internal', 'Dahili Plan'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('custom_dialplan.col_desc', 'Açıklama'); ?></th>
-                    <th><?php echo t('common.status'); ?></th>
-                    <th class="text-right"><?php echo t('common.actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => t('custom_dialplan.col_order', 'Sıra'), 'class' => 'col-hide-mobile u-w-50'],
+        t('custom_dialplan.col_title', 'Başlık'),
+        t('custom_dialplan.col_context', 'Context Adı'),
+        t('custom_dialplan.col_internal', 'Dahili Plan'),
+        ['label' => t('custom_dialplan.col_desc', 'Açıklama'), 'class' => 'col-hide-mobile'],
+        t('common.status'),
+        ['label' => t('common.actions'), 'class' => 'text-right'],
+    ], ['id' => 'customDialplanTable']); ?>
                 <?php if (empty($entries)): ?>
                     <?php echo uiTableEmptyRow(7, t('custom_dialplan.empty', 'Kayıtlı özel arama planı context\'i bulunmamaktadır.'), 'fa-code'); ?>
                 <?php else: ?>
@@ -95,7 +82,7 @@ $can_delete = $canDelete ?? false;
                             </td>
                             <td>
                                 <?php if ($can_edit): ?>
-                                    <form method="POST" style="display:inline;">
+                                    <form method="POST" class="u-d-inline">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="action" value="toggle_active">
                                         <input type="hidden" name="entry_id" value="<?php echo (int)$e['id']; ?>">
@@ -111,16 +98,16 @@ $can_delete = $canDelete ?? false;
                             </td>
                             <td class="text-right">
                                 <?php if ($can_edit): ?>
-                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="openEditCustomDialplanModal(<?php echo (int)$e['id']; ?>)" title="<?php echo t('common.edit'); ?>">
+                                    <button type="button" class="btn btn-icon btn-sm btn-outline-primary" onclick="openEditCustomDialplanModal(<?php echo (int)$e['id']; ?>)" title="<?php echo t('common.edit'); ?>">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 <?php endif; ?>
                                 <?php if ($can_delete): ?>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo jsArg(t('custom_dialplan.confirm_delete')); ?>);">
+                                    <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('custom_dialplan.confirm_delete')); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="action" value="delete_entry">
                                         <input type="hidden" name="entry_id" value="<?php echo (int)$e['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="<?php echo t('common.delete'); ?>">
+                                        <button type="submit" class="btn btn-icon btn-sm btn-outline-danger" title="<?php echo t('common.delete'); ?>">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
@@ -129,27 +116,22 @@ $can_delete = $canDelete ?? false;
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: Create / Edit Custom Dialplan -->
-<div class="modal fade" id="customDialplanModal" tabindex="-1" role="dialog" aria-hidden="true" style="display:none;">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
+<div class="modal-overlay" id="customDialplanModal">
+    <div class="modal-card u-maxw-800">
             <form method="POST" id="customDialplanForm">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="action" value="save_entry">
                 <input type="hidden" name="entry_id" id="cdEntryId" value="">
 
                 <div class="modal-header">
-                    <h5 class="modal-title" id="customDialplanModalTitle">
-                        <i class="fas fa-code text-primary"></i> <?php echo t('custom_dialplan.modal_new_title', 'Yeni Özel Arama Planı Context\'i'); ?>
-                    </h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closeCustomDialplanModal()">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
+                    <h3 class="u-title" id="customDialplanModalTitle">
+                        <i class="fas fa-code u-primary"></i> <?php echo t('custom_dialplan.modal_new_title', 'Yeni Özel Arama Planı Context\'i'); ?>
+                    </h3>
+                    <button type="button" class="btn btn-icon btn-secondary u-btn-pad" aria-label="Close" onclick="closeCustomDialplanModal()"><i class="fas fa-times"></i></button>
                 </div>
 
                 <div class="modal-body">
@@ -216,13 +198,13 @@ $can_delete = $canDelete ?? false;
                     </div>
 
                     <div class="form-group mb-3">
-                        <div class="custom-control custom-checkbox">
+                        <div class="custom-control">
                             <input type="checkbox" class="custom-control-input" name="include_in_internal" id="cdIncludeInternal" value="1" checked>
                             <label class="custom-control-label font-weight-bold" for="cdIncludeInternal">
                                 <i class="fas fa-link text-info"></i> <?php echo t('custom_dialplan.lbl_include_internal', 'Dahili arama planına dahil et (from-internal-pbx-ortak)'); ?>
                             </label>
                         </div>
-                        <small class="form-text text-muted" style="margin-left: 24px;">
+                        <small class="form-text text-muted u-ml-24">
                             <?php echo t('custom_dialplan.include_internal_help', 'İşaretliyse, tüm dahili telefonlar ve yumuşak telefonlar bu context içindeki numaraları tuşlayabilir.'); ?>
                         </small>
                     </div>
@@ -236,7 +218,7 @@ $can_delete = $canDelete ?? false;
                                 <i class="fas fa-spell-check"></i> <?php echo t('custom_dialplan.btn_check_syntax', 'Sözdizimini Denetle'); ?>
                             </button>
                         </div>
-                        <textarea class="form-control font-monospace" name="dialplan_content" id="cdDialplanContent" rows="10" required spellcheck="false" style="font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 13px; line-height: 1.5; white-space: pre; tab-size: 4;" placeholder="exten => *80.,1,NoOp(...)&#10; same => n,Dial(...)&#10; same => n,Hangup()"></textarea>
+                        <textarea class="form-control font-monospace u-font-family-sfmono-regular-consolas-liberation-mono-menlo-monospace u-fs-13 u-lh-1-5 u-white-space-pre u-tab-size-4" name="dialplan_content" id="cdDialplanContent" rows="10" required spellcheck="false" placeholder="exten => *80.,1,NoOp(...)&#10; same => n,Dial(...)&#10; same => n,Hangup()"></textarea>
                         <div id="syntaxCheckFeedback" class="mt-2" style="display:none;"></div>
                     </div>
                 </div>
@@ -250,47 +232,34 @@ $can_delete = $canDelete ?? false;
             </form>
         </div>
     </div>
-</div>
 
 <!-- Modal: Full Preview of extensions_custom.conf -->
-<div class="modal fade" id="previewModal" tabindex="-1" role="dialog" aria-hidden="true" style="display:none;">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
+<div class="modal-overlay" id="previewModal">
+    <div class="modal-card u-maxw-800">
             <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-file-code text-primary"></i> <?php echo t('custom_dialplan.preview_title', '/etc/asterisk/pbx/extensions_custom.conf Önizlemesi'); ?>
-                </h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="closePreviewModal()">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+                <h3 class="u-title">
+                    <i class="fas fa-file-code u-primary"></i> <?php echo t('custom_dialplan.preview_title', '/etc/asterisk/pbx/extensions_custom.conf Önizlemesi'); ?>
+                </h3>
+                <button type="button" class="btn btn-icon btn-secondary u-btn-pad" aria-label="Close" onclick="closePreviewModal()"><i class="fas fa-times"></i></button>
             </div>
             <div class="modal-body">
-                <pre id="previewConfContent" style="background: #1e1e1e; color: #d4d4d4; padding: 15px; border-radius: 6px; font-size: 12px; max-height: 480px; overflow-y: auto; font-family: 'SFMono-Regular', Consolas, monospace; line-height: 1.45;"></pre>
+                <pre class="u-bg-1e1e1e u-c-d4d4d4 u-p-16 u-r-8 u-fs-12 u-maxh-480 u-overflow-y-auto u-font-family-sfmono-regular-consolas-monospace u-lh-1-45" id="previewConfContent"></pre>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closePreviewModal()"><?php echo t('common.close'); ?></button>
             </div>
         </div>
     </div>
-</div>
 
 <script>
-function toggleModuleHelp(id) {
-    const el = document.getElementById(id);
-    if (el) {
-        el.style.display = (el.style.display === 'none' || el.style.display === '') ? 'block' : 'none';
-    }
-}
-
 function openCreateCustomDialplanModal() {
     document.getElementById('customDialplanForm').reset();
     document.getElementById('cdEntryId').value = '';
-    document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-code text-primary"></i> ' + <?php echo jsValue(t('custom_dialplan.modal_new_title', 'Yeni Özel Arama Planı Context\'i')); ?>;
+    document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-code u-primary"></i> ' + <?php echo jsValue(t('custom_dialplan.modal_new_title', 'Yeni Özel Arama Planı Context\'i')); ?>;
     document.getElementById('cdIsActive').checked = true;
     document.getElementById('cdIncludeInternal').checked = true;
     document.getElementById('syntaxCheckFeedback').style.display = 'none';
-    document.getElementById('customDialplanModal').style.display = 'block';
-    document.getElementById('customDialplanModal').classList.add('show');
+    UIHelper.openOverlayModal('customDialplanModal');
 }
 
 function openEditCustomDialplanModal(id) {
@@ -311,8 +280,7 @@ function openEditCustomDialplanModal(id) {
                 document.getElementById('syntaxCheckFeedback').style.display = 'none';
 
                 document.getElementById('customDialplanModalTitle').innerHTML = '<i class="fas fa-edit text-primary"></i> ' + <?php echo jsValue(t('custom_dialplan.modal_edit_title', 'Özel Arama Planı Düzenle')); ?>;
-                document.getElementById('customDialplanModal').style.display = 'block';
-                document.getElementById('customDialplanModal').classList.add('show');
+                UIHelper.openOverlayModal('customDialplanModal');
             } else {
                 alert(<?php echo jsValue(t('common.action_failed')); ?>);
             }
@@ -324,15 +292,13 @@ function openEditCustomDialplanModal(id) {
 }
 
 function closeCustomDialplanModal() {
-    document.getElementById('customDialplanModal').style.display = 'none';
-    document.getElementById('customDialplanModal').classList.remove('show');
+    UIHelper.closeOverlayModal('customDialplanModal');
 }
 
 function openPreviewModal() {
     const pre = document.getElementById('previewConfContent');
     pre.textContent = <?php echo jsValue(t('js.common.loading', 'Yükleniyor...')); ?>;
-    document.getElementById('previewModal').style.display = 'block';
-    document.getElementById('previewModal').classList.add('show');
+    UIHelper.openOverlayModal('previewModal');
 
     fetch('/custom-dialplan?action=preview_conf')
         .then(r => r.json())
@@ -349,8 +315,7 @@ function openPreviewModal() {
 }
 
 function closePreviewModal() {
-    document.getElementById('previewModal').style.display = 'none';
-    document.getElementById('previewModal').classList.remove('show');
+    UIHelper.closeOverlayModal('previewModal');
 }
 
 function applyTemplate(key) {

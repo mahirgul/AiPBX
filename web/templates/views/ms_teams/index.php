@@ -20,11 +20,8 @@ if (!$cert['exists']) {
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/ms_teams.css'); ?>">
 
 <div class="card">
-    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-        <div class="card-title" style="display: flex; align-items: center; gap: 10px; font-size: 18px; font-weight: 700;">
-            <i class="fab fa-microsoft" style="color: #6264a7; font-size: 22px;"></i>
-            <span><?php echo t('ms_teams.title'); ?></span>
-            <?php if ($is_teams_enabled): ?>
+    <?php echo uiPageHeaderOpen('fab fa-microsoft', t('ms_teams.title'), 'teamsHelpBox'); ?>
+<?php if ($is_teams_enabled): ?>
                 <span class="teams-header-badge badge-active"><i class="fas fa-check-circle"></i> <?php echo t('ms_teams.badge_dr_active'); ?></span>
             <?php else: ?>
                 <span class="teams-header-badge badge-inactive"><i class="fas fa-pause-circle"></i> <?php echo t('ms_teams.badge_dr_inactive'); ?></span>
@@ -32,24 +29,20 @@ if (!$cert['exists']) {
             <?php if ($is_webhook_enabled): ?>
                 <span class="teams-header-badge badge-active"><i class="fas fa-bell"></i> <?php echo t('ms_teams.badge_webhook_active'); ?></span>
             <?php endif; ?>
-        </div>
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="toggleTeamsHelp()" title="<?php echo t('ms_teams.guide'); ?>">
-            <i class="fas fa-question-circle"></i> <?php echo t('ms_teams.help_and_guide'); ?>
-        </button>
-    </div>
+<?php echo uiPageHeaderActions(); ?>
+<?php echo uiPageHeaderClose(); ?>
 
     <!-- Guide box -->
-    <div class="module-help-box" id="teamsHelpBox">
-        <h4 style="color: #464775; margin-top: 0;"><i class="fab fa-microsoft"></i> <?php echo t('ms_teams.guide_title'); ?></h4>
-        <p style="font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
+    <?php echo uiHelpBoxOpen('teamsHelpBox', t('ms_teams.guide_title')); ?>
+        <p class="u-fs-13 u-lh-1-6 u-mb-8">
             <?php echo t('ms_teams.guide_intro'); ?>
         </p>
-        <ul style="font-size: 13px; line-height: 1.6; margin-bottom: 8px;">
+        <ul class="u-fs-13 u-lh-1-6 u-mb-8">
             <li><strong><?php echo t('ms_teams.guide_dr_title'); ?></strong> <?php echo t('ms_teams.guide_dr_desc'); ?></li>
             <li><strong><?php echo t('ms_teams.guide_webhook_title'); ?></strong> <?php echo t('ms_teams.guide_webhook_desc'); ?></li>
             <li><strong><?php echo t('ms_teams.guide_ps_title'); ?></strong> <?php echo t('ms_teams.guide_ps_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Sekmeler (Tabs) -->
     <div class="teams-tabs">
@@ -75,7 +68,7 @@ if (!$cert['exists']) {
             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
             <input type="hidden" name="save_direct_routing" value="1">
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-320-1fr u-gap-20 u-mb-20">
                 <div class="form-group">
                     <label class="form-label u-fw-600"><?php echo t('ms_teams.dr_status'); ?></label>
                     <select name="teams_enabled" class="form-control" <?php echo !$can_edit ? 'disabled' : ''; ?>>
@@ -92,7 +85,7 @@ if (!$cert['exists']) {
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; margin-bottom: 20px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-320-1fr u-gap-20 u-mb-20">
                 <div class="form-group">
                     <label class="form-label u-fw-600"><?php echo t('ms_teams.sip_tls_port'); ?></label>
                     <input type="number" name="teams_sip_port" class="form-control" value="<?php echo htmlspecialchars($settings['teams_sip_port'] ?: '5061'); ?>" min="1" max="65535" <?php echo !$can_edit ? 'disabled' : ''; ?>>
@@ -108,10 +101,10 @@ if (!$cert['exists']) {
 
             <!-- Certificate status and paths -->
             <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 18px; margin-bottom: 24px;">
-                <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                <h4 class="u-mt-0 u-fs-15 u-fw-700 u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-lock u-success"></i> <?php echo t('ms_teams.tls_section_title'); ?>
                 </h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+                <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-320-1fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label u-fs-13 u-fw-600"><?php echo t('ms_teams.tls_cert_path'); ?></label>
                         <input type="text" name="teams_tls_cert_path" class="form-control" value="<?php echo htmlspecialchars($settings['teams_tls_cert_path']); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
@@ -124,9 +117,9 @@ if (!$cert['exists']) {
 
                 <!-- Certificate inspection badge -->
                 <div class="cert-card">
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                    <div class="u-d-flex u-ai-center u-jc-space-between u-wrap u-gap-8">
                         <div>
-                            <span class="badge badge-<?php echo htmlspecialchars($cert['color'] ?? 'secondary'); ?>" style="font-size: 12px; padding: 4px 8px;">
+                            <span class="badge badge-<?php echo htmlspecialchars($cert['color'] ?? 'secondary'); ?> u-fs-12 u-p-4-8">
                                 <?php echo htmlspecialchars($cert_badge_text); ?>
                             </span>
                             <?php if (!empty($cert['cn'])): ?>
@@ -144,23 +137,23 @@ if (!$cert['exists']) {
             </div>
 
             <!-- Microsoft PSTN hub proxy info card -->
-            <div style="background: rgba(98, 100, 167, 0.05); border: 1px solid rgba(98, 100, 167, 0.2); border-radius: 8px; padding: 16px; margin-bottom: 24px;">
-                <h5 style="margin: 0 0 10px 0; color: #464775; font-size: 14px; font-weight: 700;">
+            <div class="u-bg-rgba-98-100-167-0-05 u-bd-1-solid-rgba-98-100-167-0-2 u-r-8 u-p-16 u-mb-24">
+                <h5 class="u-m-0-0-12-0 u-c-464775 u-fs-14 u-fw-700">
                     <i class="fas fa-globe"></i> <?php echo t('ms_teams.proxy_title'); ?>
                 </h5>
                 <p class="u-fs-12 u-muted u-mb-8">
                     <?php echo t('ms_teams.proxy_desc'); ?>
                 </p>
-                <div style="display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px;">
-                    <code style="background: #ffffff; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">sip.pstnhub.microsoft.com:5061</code>
-                    <code style="background: #ffffff; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">sip2.pstnhub.microsoft.com:5061</code>
-                    <code style="background: #ffffff; padding: 4px 8px; border-radius: 4px; border: 1px solid #e2e8f0;">sip3.pstnhub.microsoft.com:5061</code>
+                <div class="u-d-flex u-wrap u-gap-12 u-fs-13">
+                    <code class="u-bg-bg-card u-p-4-8 u-r-4 u-bd-1-solid-e2e8f0">sip.pstnhub.microsoft.com:5061</code>
+                    <code class="u-bg-bg-card u-p-4-8 u-r-4 u-bd-1-solid-e2e8f0">sip2.pstnhub.microsoft.com:5061</code>
+                    <code class="u-bg-bg-card u-p-4-8 u-r-4 u-bd-1-solid-e2e8f0">sip3.pstnhub.microsoft.com:5061</code>
                 </div>
             </div>
 
             <?php if ($can_edit): ?>
-                <div style="display: flex; justify-content: flex-end;">
-                    <button type="submit" class="btn btn-teams" style="padding: 10px 24px; font-size: 14px; font-weight: 600;">
+                <div class="u-d-flex u-jc-flex-end">
+                    <button type="submit" class="btn btn-teams u-fw-600">
                         <i class="fas fa-save"></i> <?php echo t('ms_teams.save_dr_settings'); ?>
                     </button>
                 </div>
@@ -172,10 +165,10 @@ if (!$cert['exists']) {
     <!-- TAB 2: User mapping                        -->
     <!-- ========================================== -->
     <div id="tab-users" class="teams-tab-pane <?php echo $active_tab === 'users' ? 'active' : ''; ?>">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div class="u-d-flex u-jc-space-between u-ai-center u-mb-16 u-wrap u-gap-10">
             <div>
                 <h4 class="u-title u-m-0"><?php echo t('ms_teams.users_title'); ?></h4>
-                <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">
+                <p class="u-m-4-0-0-0 u-fs-13 u-muted">
                     <?php echo t('ms_teams.users_desc'); ?>
                 </p>
             </div>
@@ -186,26 +179,19 @@ if (!$cert['exists']) {
             <?php endif; ?>
         </div>
 
-        <div class="table-responsive" style="border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px;">
-            <table class="table mapping-table u-mb-0">
-                <thead style="background: var(--bg-surface, #f8fafc);">
-                    <tr>
-                        <th style="width: 140px;"><?php echo t('ms_teams.col_ext'); ?></th>
-                        <th><?php echo t('ms_teams.col_user_name'); ?></th>
-                        <th><?php echo t('ms_teams.col_upn'); ?></th>
-                        <th><?php echo t('ms_teams.col_phone'); ?></th>
-                        <th style="text-align: center; width: 100px;"><?php echo t('ms_teams.col_direct_route'); ?></th>
-                        <th><?php echo t('ms_teams.col_notes'); ?></th>
-                        <?php if ($can_edit || $can_delete): ?>
-                            <th style="text-align: right; width: 120px;"><?php echo t('ms_teams.col_actions'); ?></th>
-                        <?php endif; ?>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            ['label' => t('ms_teams.col_ext'), 'class' => 'u-w-140'],
+            t('ms_teams.col_user_name'),
+            t('ms_teams.col_upn'),
+            t('ms_teams.col_phone'),
+            ['label' => t('ms_teams.col_direct_route'), 'class' => 'u-ta-center u-w-100-2'],
+            t('ms_teams.col_notes'),
+            $can_edit || $can_delete ? ['label' => t('ms_teams.col_actions'), 'class' => 'u-ta-right u-w-120'] : null,
+        ], ['class' => 'mapping-table']); ?>
                     <?php if (empty($mappings)): ?>
                         <tr>
                             <td colspan="7" class="u-text-center u-p-30 u-muted">
-                                <i class="fas fa-user-slash" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                                <i class="fas fa-user-slash u-fs-24 u-mb-8" style="display: block;"></i>
                                 <?php echo t('ms_teams.empty_mappings'); ?>
                             </td>
                         </tr>
@@ -213,7 +199,7 @@ if (!$cert['exists']) {
                         <?php foreach ($mappings as $m): ?>
                             <tr id="mapping-row-<?php echo $m['id']; ?>">
                                 <td>
-                                    <span style="font-family: monospace; font-size: 14px; font-weight: 700; color: #6264a7;">
+                                    <span class="u-mono u-fs-14 u-fw-700 u-c-6264a7">
                                         <i class="fas fa-phone-alt u-fs-11"></i> <?php echo htmlspecialchars($m['extension']); ?>
                                     </span>
                                 </td>
@@ -221,7 +207,7 @@ if (!$cert['exists']) {
                                     <strong><?php echo htmlspecialchars($m['full_name'] ?: '-'); ?></strong>
                                 </td>
                                 <td>
-                                    <i class="fab fa-microsoft" style="color: #6264a7; margin-right: 4px;"></i>
+                                    <i class="fab fa-microsoft u-c-6264a7 u-mr-4"></i>
                                     <code><?php echo htmlspecialchars($m['teams_upn']); ?></code>
                                 </td>
                                 <td>
@@ -239,14 +225,14 @@ if (!$cert['exists']) {
                                 </td>
                                 <?php if ($can_edit || $can_delete): ?>
                                     <td class="u-text-right">
-                                        <div style="display: inline-flex; gap: 6px;">
+                                        <div class="u-d-inline-flex u-gap-6">
                                             <?php if ($can_edit): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick='editMapping(<?php echo json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="<?php echo t('ms_teams.btn_edit'); ?>">
+                                                <button type="button" class="btn btn-icon btn-sm btn-outline-primary" onclick='editMapping(<?php echo json_encode($m, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="<?php echo t('ms_teams.btn_edit'); ?>">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
                                             <?php endif; ?>
                                             <?php if ($can_delete): ?>
-                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteMapping(<?php echo (int)$m['id']; ?>, <?php echo jsArg($m['extension']); ?>)" title="<?php echo t('ms_teams.btn_delete'); ?>">
+                                                <button type="button" class="btn btn-icon btn-sm btn-outline-danger" onclick="deleteMapping(<?php echo (int)$m['id']; ?>, <?php echo jsArg($m['extension']); ?>)" title="<?php echo t('ms_teams.btn_delete'); ?>">
                                                     <i class="fas fa-trash-alt"></i>
                                                 </button>
                                             <?php endif; ?>
@@ -256,9 +242,7 @@ if (!$cert['exists']) {
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
     </div>
 
     <!-- ========================================== -->
@@ -270,14 +254,14 @@ if (!$cert['exists']) {
             <input type="hidden" name="save_webhook_settings" value="1">
 
             <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; color: #464775; display: flex; align-items: center; gap: 8px;">
+                <h4 class="u-mt-0 u-fs-16 u-fw-700 u-c-464775 u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-plug"></i> <?php echo t('ms_teams.webhook_section_title'); ?>
                 </h4>
                 <p class="u-fs-13 u-muted u-mb-16">
                     <?php echo t('ms_teams.webhook_section_desc'); ?>
                 </p>
 
-                <div style="display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: start;">
+                <div class="u-d-grid u-gtc-200-1fr u-gap-16 u-ai-start">
                     <div class="form-group">
                         <label class="form-label u-fw-600"><?php echo t('ms_teams.webhook_status'); ?></label>
                         <select name="teams_webhook_enabled" id="webhookEnabledSelect" class="form-control" <?php echo !$can_edit ? 'disabled' : ''; ?>>
@@ -291,7 +275,7 @@ if (!$cert['exists']) {
                         <div class="u-flex-gap">
                             <input type="url" name="teams_webhook_url" id="teamsWebhookUrlInput" class="form-control" value="<?php echo htmlspecialchars($settings['teams_webhook_url']); ?>" placeholder="<?php echo t('ms_teams.webhook_url_placeholder'); ?>" <?php echo !$can_edit ? 'disabled' : ''; ?>>
                             <?php if ($can_edit): ?>
-                                <button type="button" class="btn btn-outline-secondary" id="btnTestWebhook" onclick="testTeamsWebhook()" style="white-space: nowrap;">
+                                <button type="button" class="btn btn-outline-secondary u-nowrap" id="btnTestWebhook" onclick="testTeamsWebhook()">
                                     <i class="fas fa-paper-plane"></i> <?php echo t('ms_teams.btn_test'); ?>
                                 </button>
                             <?php endif; ?>
@@ -300,50 +284,50 @@ if (!$cert['exists']) {
                     </div>
                 </div>
 
-                <div id="webhookTestResult" style="display: none; margin-top: 12px;"></div>
+                <div class="u-mt-12" id="webhookTestResult" style="display: none;"></div>
             </div>
 
             <!-- Notification events (event toggles) -->
-            <div style="background: #ffffff; border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
-                <h4 style="margin-top: 0; font-size: 15px; font-weight: 700; margin-bottom: 16px;">
+            <div style="background: var(--bg-card); border: 1px solid var(--border-color, #e2e8f0); border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+                <h4 class="u-mt-0 u-fs-15 u-fw-700 u-mb-16">
                     <i class="fas fa-bell u-primary"></i> <?php echo t('ms_teams.events_title'); ?>
                 </h4>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
-                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" name="teams_notify_missed_calls" value="1" <?php echo !empty($settings['teams_notify_missed_calls']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
+                <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-280-1fr u-gap-16">
+                    <label class="u-d-flex u-ai-flex-start u-gap-10 u-pointer">
+                        <input class="u-mt-4" type="checkbox" name="teams_notify_missed_calls" value="1" <?php echo !empty($settings['teams_notify_missed_calls']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?>>
                         <div>
                             <strong><?php echo t('ms_teams.event_missed_calls'); ?></strong>
                             <div class="u-muted u-fs-12"><?php echo t('ms_teams.event_missed_calls_desc'); ?></div>
                         </div>
                     </label>
 
-                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" name="teams_notify_voicemail" value="1" <?php echo !empty($settings['teams_notify_voicemail']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
+                    <label class="u-d-flex u-ai-flex-start u-gap-10 u-pointer">
+                        <input class="u-mt-4" type="checkbox" name="teams_notify_voicemail" value="1" <?php echo !empty($settings['teams_notify_voicemail']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?>>
                         <div>
                             <strong><?php echo t('ms_teams.event_voicemail'); ?></strong>
                             <div class="u-muted u-fs-12"><?php echo t('ms_teams.event_voicemail_desc'); ?></div>
                         </div>
                     </label>
 
-                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" name="teams_notify_queue_alerts" value="1" <?php echo !empty($settings['teams_notify_queue_alerts']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
+                    <label class="u-d-flex u-ai-flex-start u-gap-10 u-pointer">
+                        <input class="u-mt-4" type="checkbox" name="teams_notify_queue_alerts" value="1" <?php echo !empty($settings['teams_notify_queue_alerts']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?>>
                         <div>
                             <strong><?php echo t('ms_teams.event_queue_alerts'); ?></strong>
                             <div class="u-muted u-fs-12"><?php echo t('ms_teams.event_queue_alerts_desc'); ?></div>
                         </div>
                     </label>
 
-                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" name="teams_notify_fax" value="1" <?php echo !empty($settings['teams_notify_fax']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
+                    <label class="u-d-flex u-ai-flex-start u-gap-10 u-pointer">
+                        <input class="u-mt-4" type="checkbox" name="teams_notify_fax" value="1" <?php echo !empty($settings['teams_notify_fax']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?>>
                         <div>
                             <strong><?php echo t('ms_teams.event_fax'); ?></strong>
                             <div class="u-muted u-fs-12"><?php echo t('ms_teams.event_fax_desc'); ?></div>
                         </div>
                     </label>
 
-                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer;">
-                        <input type="checkbox" name="teams_notify_cdr_summary" value="1" <?php echo !empty($settings['teams_notify_cdr_summary']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?> style="margin-top: 3px;">
+                    <label class="u-d-flex u-ai-flex-start u-gap-10 u-pointer">
+                        <input class="u-mt-4" type="checkbox" name="teams_notify_cdr_summary" value="1" <?php echo !empty($settings['teams_notify_cdr_summary']) ? 'checked' : ''; ?> <?php echo !$can_edit ? 'disabled' : ''; ?>>
                         <div>
                             <strong><?php echo t('ms_teams.event_cdr_summary'); ?></strong>
                             <div class="u-muted u-fs-12"><?php echo t('ms_teams.event_cdr_summary_desc'); ?></div>
@@ -353,8 +337,8 @@ if (!$cert['exists']) {
             </div>
 
             <?php if ($can_edit): ?>
-                <div style="display: flex; justify-content: flex-end;">
-                    <button type="submit" class="btn btn-teams" style="padding: 10px 24px; font-size: 14px; font-weight: 600;">
+                <div class="u-d-flex u-jc-flex-end">
+                    <button type="submit" class="btn btn-teams u-fw-600">
                         <i class="fas fa-save"></i> <?php echo t('ms_teams.save_webhook_settings'); ?>
                     </button>
                 </div>
@@ -366,10 +350,10 @@ if (!$cert['exists']) {
     <!-- TAB 4: M365 PowerShell guide             -->
     <!-- ========================================== -->
     <div id="tab-powershell" class="teams-tab-pane <?php echo $active_tab === 'powershell' ? 'active' : ''; ?>">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+        <div class="u-d-flex u-jc-space-between u-ai-center u-mb-16 u-wrap u-gap-10">
             <div>
                 <h4 class="u-title u-m-0"><?php echo t('ms_teams.ps_title'); ?></h4>
-                <p style="margin: 4px 0 0 0; font-size: 13px; color: var(--text-muted);">
+                <p class="u-m-4-0-0-0 u-fs-13 u-muted">
                     <?php echo t('ms_teams.ps_desc'); ?>
                 </p>
             </div>
@@ -389,7 +373,7 @@ if (!$cert['exists']) {
             <h5 class="u-mt-0 u-fs-14 u-fw-700">
                 <i class="fas fa-info-circle u-primary"></i> <?php echo t('ms_teams.ps_steps_title'); ?>
             </h5>
-            <ol style="font-size: 13px; line-height: 1.7; margin-bottom: 0; padding-left: 20px;">
+            <ol class="u-fs-13 u-lh-1-7 u-mb-0 u-pl-20">
                 <li><?php echo t('ms_teams.ps_step_1'); ?></li>
                 <li><?php echo t('ms_teams.ps_step_2'); ?></li>
                 <li><?php echo t('ms_teams.ps_step_3'); ?></li>
@@ -402,16 +386,17 @@ if (!$cert['exists']) {
 <!-- ========================================== -->
 <!-- USER MAPPING MODAL                         -->
 <!-- ========================================== -->
-<div class="modal fade" id="mappingModal" tabindex="-1" style="display: none; background: rgba(0,0,0,0.5); position: fixed; inset: 0; z-index: 9999; overflow-y: auto;">
-    <div style="max-width: 540px; margin: 60px auto; background: var(--bg-card, #ffffff); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); overflow: hidden;">
-        <div style="padding: 16px 20px; background: #6264a7; color: #ffffff; display: flex; justify-content: space-between; align-items: center;">
-            <h5 class="u-title u-m-0" id="mappingModalTitle">
-                <i class="fas fa-user-plus"></i> <?php echo t('ms_teams.modal_new_title'); ?>
-            </h5>
-            <button type="button" onclick="closeMappingModal()" style="background: transparent; border: none; color: #ffffff; font-size: 20px; cursor: pointer;">&times;</button>
+<div class="modal-overlay" id="mappingModal">
+    <div class="modal-card u-maxw-540">
+        <div class="modal-header">
+            <h3 class="u-title" id="mappingModalTitle">
+                <i class="fas fa-user-plus u-primary"></i> <?php echo t('ms_teams.modal_new_title'); ?>
+            </h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="closeMappingModal()"><i class="fas fa-times"></i></button>
         </div>
+        <div class="modal-body">
 
-        <form id="mappingForm" onsubmit="submitMappingForm(event)" style="padding: 20px;">
+        <form id="mappingForm" onsubmit="submitMappingForm(event)">
             <input type="hidden" name="id" id="mapId" value="">
             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
@@ -452,15 +437,16 @@ if (!$cert['exists']) {
                 <input type="text" name="notes" id="mapNotes" class="form-control" placeholder="<?php echo t('ms_teams.modal_notes_placeholder'); ?>">
             </div>
 
-            <div id="modalAlert" style="display: none; margin-bottom: 14px;"></div>
+            <div class="u-mb-16" id="modalAlert" style="display: none;"></div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn btn-outline-secondary" onclick="closeMappingModal()"><?php echo t('ms_teams.btn_cancel'); ?></button>
-                <button type="submit" class="btn btn-teams" id="btnSaveMapping">
+            <div class="u-d-flex u-jc-flex-end u-gap-8">
+                <button type="button" class="btn btn-secondary" onclick="closeMappingModal()"><?php echo t('ms_teams.btn_cancel'); ?></button>
+                <button type="submit" class="btn btn-primary" id="btnSaveMapping">
                     <i class="fas fa-save"></i> <?php echo t('ms_teams.btn_save'); ?>
                 </button>
             </div>
         </form>
+        </div>
     </div>
 </div>
 

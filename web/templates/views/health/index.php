@@ -9,34 +9,24 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-heart-pulse u-primary"></i> <?php echo t('health.header_title'); ?>
-            <span class="badge <?php echo $problems ? 'badge-danger' : 'badge-success'; ?>" style="margin-left: 8px; font-size: 11px;">
+    <?php echo uiPageHeaderOpen('fa-heart-pulse', t('health.header_title'), 'healthHelpBox'); ?>
+<span class="badge <?php echo $problems ? 'badge-danger' : 'badge-success'; ?> u-ml-8 u-fs-11">
                 <?php echo $problems ? $h(sprintf(t('health.sum_state_problems'), $problems)) : t('health.sum_state_ok'); ?>
             </span>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('healthHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
-    <div class="module-help-box" id="healthHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('health.help_title'); ?></h4>
-        <?php echo t('health.help_body'); ?>
-    </div>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('health.col_check'); ?></th>
-                    <th><?php echo t('health.col_status'); ?></th>
-                    <th><?php echo t('health.col_result'); ?></th>
-                    <th><?php echo t('health.col_checked'); ?></th>
-                    <th><?php echo t('health.col_interval'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('healthHelpBox', t('health.help_title')); ?>
+        <?php echo t('health.help_body'); ?>
+<?php echo uiHelpBoxClose(); ?>
+
+    <?php echo uiTableOpen([
+        t('health.col_check'),
+        t('health.col_status'),
+        t('health.col_result'),
+        t('health.col_checked'),
+        t('health.col_interval'),
+    ]); ?>
                 <?php foreach ($checks as $key => $c): ?>
                     <tr>
                         <td><strong><?php echo $h(t('health.check_' . $key)); ?></strong><br><span class="u-muted u-fs-11"><?php echo $h(t('health.desc_' . $key)); ?></span></td>
@@ -48,9 +38,9 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
                             <?php endif; ?>
                         </td>
                         <td class="u-fs-12"><?php echo $h($c['message']); ?></td>
-                        <td class="u-fs-12 u-muted" style="white-space: nowrap;"><?php echo $c['checked_at'] ? $h(date('d.m H:i', strtotime($c['checked_at']))) : '—'; ?></td>
+                        <td class="u-fs-12 u-muted u-nowrap"><?php echo $c['checked_at'] ? $h(date('d.m H:i', strtotime($c['checked_at']))) : '—'; ?></td>
                         <td>
-                            <select name="interval[<?php echo $h($key); ?>]" class="form-control" style="min-width: 120px;">
+                            <select name="interval[<?php echo $h($key); ?>]" class="form-control u-minw-120">
                                 <?php foreach (HealthChecks::INTERVALS as $m): ?>
                                     <option value="<?php echo $m; ?>" <?php echo $c['interval'] === $m ? 'selected' : ''; ?>><?php echo $h($intervalLabel($m)); ?></option>
                                 <?php endforeach; ?>
@@ -58,10 +48,8 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <div style="padding: 12px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <?php echo uiTableClose(); ?>
+    <div class="u-p-12-20 u-d-flex u-gap-8 u-wrap u-ai-center">
         <button type="submit" name="save_health" value="1" class="btn btn-primary"><i class="fas fa-check"></i> <?php echo t('health.save'); ?></button>
         <button type="submit" name="run_all" value="1" class="btn btn-secondary"><i class="fas fa-rotate"></i> <?php echo t('health.run_now'); ?></button>
         <?php if ($runQueued): ?><span class="u-muted u-fs-12"><i class="fas fa-hourglass-half"></i> <?php echo t('health.run_queued'); ?></span><?php endif; ?>
@@ -72,8 +60,8 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
     <div class="card-header">
         <div class="card-title"><i class="fas fa-envelope u-primary"></i> <?php echo t('health.alarms_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
-        <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('health.alarms_help'); ?></p>
+    <div class="u-card-pad">
+        <p class="u-muted u-fs-12 u-mt-0"><?php echo t('health.alarms_help'); ?></p>
         <div class="form-group">
             <label class="form-label"><?php echo t('health.recipients'); ?></label>
             <?php if ($users === []): ?>
@@ -114,17 +102,17 @@ $problems = count(array_filter($checks, fn($c) => $c['interval'] > 0 && in_array
     <div class="card-header">
         <div class="card-title"><i class="fas fa-chart-column u-primary"></i> <?php echo t('health.summary_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
-        <p class="u-muted u-fs-12" style="margin-top: 0;"><?php echo t('health.summary_help'); ?></p>
-        <label class="u-check-label-6" style="display: block; margin-bottom: 8px;">
+    <div class="u-card-pad">
+        <p class="u-muted u-fs-12 u-mt-0"><?php echo t('health.summary_help'); ?></p>
+        <label class="u-check-label-6 u-mb-8" style="display: block;">
             <input type="checkbox" name="health_summary_enabled" value="1" class="u-accent" <?php echo $settings['health_summary_enabled'] === '1' ? 'checked' : ''; ?>>
             <?php echo t('health.summary_enabled'); ?>
         </label>
-        <div class="form-group" style="max-width: 200px;">
+        <div class="form-group u-maxw-200">
             <label class="form-label"><?php echo t('health.summary_time'); ?></label>
             <input type="time" name="health_summary_time" class="form-control" value="<?php echo $h($settings['health_summary_time']); ?>">
         </div>
-        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <div class="u-d-flex u-gap-8 u-wrap">
             <button type="submit" name="save_health" value="1" class="btn btn-primary"><i class="fas fa-check"></i> <?php echo t('health.save'); ?></button>
             <button type="submit" name="send_summary" value="1" class="btn btn-secondary"><i class="fas fa-paper-plane"></i> <?php echo t('health.send_summary'); ?></button>
         </div>

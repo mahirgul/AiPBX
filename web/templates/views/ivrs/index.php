@@ -1,50 +1,37 @@
 <?php $destResolveCache = []; ?>
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/ivr_flow.css'); ?>">
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-microphone-alt u-primary"></i> <?php echo t('ivr.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <?php if (hasModulePermission('external_dbs', 'access')): ?>
+    <?php echo uiPageHeaderOpen('fa-microphone-alt', t('ivr.title'), 'ivrHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+<?php if (hasModulePermission('external_dbs', 'access')): ?>
             <a href="/ivr-data-steps" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('ivr_data.page_title')); ?>">
                 <i class="fas fa-database"></i> <?php echo htmlspecialchars(t('ivr_data.nav_button')); ?>
             </a>
             <?php endif; ?>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('ivrHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+            
             <?php if (hasModulePermission('ivrs', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateIvrModal()" title="<?php echo t('common.add_new'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('common.add_new'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="ivrHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('ivr.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('ivrHelpBox', t('ivr.help_title')); ?>
         <?php echo t('ivr.help_body'); ?><br>
         - <strong><?php echo t('ivr.help_digits'); ?></strong><br>
         - <strong><?php echo t('ivr.help_timeout'); ?></strong>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-45">#</th>
-                    <th><?php echo t('ivr.col_ivr'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('ivr.col_audio'); ?></th>
-                    <th><?php echo t('ivr.col_timeout'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('ivr.col_digits'); ?></th>
-                    <th><?php echo t('ivr.col_status'); ?></th>
-                    <th class="u-text-right"></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-45'],
+        t('ivr.col_ivr'),
+        ['label' => t('internal_number.col'), 'class' => 'col-hide-mobile'],
+        ['label' => t('ivr.col_audio'), 'class' => 'col-hide-mobile'],
+        t('ivr.col_timeout'),
+        ['label' => t('ivr.col_digits'), 'class' => 'col-hide-mobile'],
+        t('ivr.col_status'),
+        ['label' => '', 'class' => 'u-text-right'],
+    ]); ?>
                 <?php foreach ($ivrs as $ivr):
                     $entries = $entries_by_ivr[$ivr['id']] ?? [];
                 ?>
@@ -60,7 +47,7 @@
                             <span class="badge badge-info"><i class="fas fa-volume-up"></i> <?php echo htmlspecialchars($ivr['prompt_file']); ?></span>
                         </td>
                         <td>
-                            <div style="font-size: 11px; display: flex; flex-direction: column; gap: 4px;">
+                            <div class="u-fs-11 u-d-flex u-col u-gap-4">
                                 <span><i class="fas fa-clock u-primary"></i> <strong><?php echo sprintf(t('ivr.timeout_label'), intval($ivr['timeout_seconds'])); ?></strong> <?php echo IvrRepository::destBadge($ivr['timeout_dest_type'], $ivr['timeout_dest_id'], $destResolveCache); ?></span>
                                 <span><i class="fas fa-exclamation-triangle u-danger"></i> <strong><?php echo t('ivr.invalid_label'); ?></strong> <?php echo IvrRepository::destBadge($ivr['invalid_dest_type'] ?? 'hangup', $ivr['invalid_dest_id'] ?? 'hangup', $destResolveCache); ?></span>
                                 <?php if (!empty($ivr['allow_direct_dial'])): ?>
@@ -71,9 +58,9 @@
                             </div>
                         </td>
                         <td class="col-hide-mobile">
-                            <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                            <div class="u-d-flex u-gap-6 u-wrap u-ai-center">
                                 <?php foreach ($entries as $en): ?>
-                                    <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 4px; padding: 2px 6px;">
+                                    <span class="u-d-inline-flex u-ai-center u-gap-4 u-fs-11 u-bg-rgba-0-0-0-0-02 u-bd-1-solid-border-color u-r-4 u-p-2-8">
                                         <strong><?php echo t('ivr.key_label'); ?> <?php echo htmlspecialchars($en['digit']); ?>:</strong> <?php echo IvrRepository::destBadge($en['dest_type'], $en['dest_id'], $destResolveCache); ?>
                                     </span>
                                 <?php endforeach; ?>
@@ -85,11 +72,11 @@
                         <td>
                             <?php echo uiStatusToggleForm($ivr['id'], $ivr['is_active'], 'ivr_id'); ?>
                         </td>
-                        <td style="text-align: right; display: flex; gap: 6px; justify-content: flex-end;">
-                            <button class="btn btn-secondary btn-sm" onclick='openIvrFlowModal(<?php echo (int) $ivr['id']; ?>, <?php echo jsArg($ivr['title']); ?>)' title="<?php echo htmlspecialchars(t('ivr_flow.title')); ?>">
+                        <td class="u-ta-right u-d-flex u-gap-6 u-jc-flex-end">
+                            <button class="btn btn-icon btn-secondary btn-sm" onclick='openIvrFlowModal(<?php echo (int) $ivr['id']; ?>, <?php echo jsArg($ivr['title']); ?>)' title="<?php echo htmlspecialchars(t('ivr_flow.title')); ?>">
                                 <i class="fas fa-project-diagram"></i>
                             </button>
-                            <button class="btn btn-secondary btn-sm" onclick='openIvrEntriesModal(<?php echo (int) $ivr['id']; ?>, <?php echo jsArg($ivr['title']); ?>)' title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>">
+                            <button class="btn btn-icon btn-secondary btn-sm" onclick='openIvrEntriesModal(<?php echo (int) $ivr['id']; ?>, <?php echo jsArg($ivr['title']); ?>)' title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>">
                                 <i class="fas fa-th"></i>
                             </button>
                             <?php echo uiEditButton($ivr, 'openEditIvrModal'); ?>
@@ -97,9 +84,7 @@
                         </td>
                     </tr>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit IVR Modal -->
@@ -107,7 +92,7 @@
     <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="ivrModalTitle"><i class="fas fa-microphone-alt u-primary"></i> <?php echo t('ivr.new_ivr'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeIvrModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeIvrModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -149,14 +134,14 @@
                         <label class="form-label"><?php echo t('ivr.field_max_failures'); ?></label>
                         <input type="number" name="max_failures" id="modal_max_failures" class="form-control" value="3" min="1" max="10">
                         <small class="u-hint"><?php echo t('ivr.max_failures_help'); ?></small>
-                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-8 u-pointer u-mt-8">
                             <input type="checkbox" name="timeout_repeat" id="modal_timeout_repeat" value="1" class="u-check">
                             <span><?php echo t('ivr.field_timeout_repeat'); ?></span>
                         </label>
                         <small class="u-hint"><?php echo t('ivr.timeout_repeat_help'); ?></small>
                     </div>
                     <div class="form-group">
-                        <label class="form-label" style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
+                        <label class="form-label u-d-inline-flex u-ai-center u-gap-8 u-pointer u-mt-8">
                             <input type="checkbox" name="allow_direct_dial" id="modal_allow_direct_dial" value="1" checked class="u-check" onchange="toggleDirectDialTimeout()">
                             <span class="u-fw-600"><?php echo t('ivr.field_allow_direct_dial'); ?></span>
                         </label>
@@ -182,9 +167,9 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 12px;">
+                <div class="form-group u-bg-rgba-255-255-255-0-03 u-p-12 u-r-8 u-bd-1-solid-border-color u-mb-12">
                     <label class="form-label u-fw-700 u-primary"><i class="fas fa-clock"></i> <?php echo t('ivr.timeout_box_title'); ?></label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
                         <div>
                             <select name="timeout_dest_type" id="modal_timeout_dest_type" class="form-control">
                                 <?php foreach ($modules as $m): ?>
@@ -200,9 +185,9 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <div class="form-group u-bg-rgba-255-255-255-0-03 u-p-12 u-r-8 u-bd-1-solid-border-color">
                     <label class="form-label u-fw-700 u-danger"><i class="fas fa-exclamation-triangle"></i> <?php echo t('ivr.invalid_box_title'); ?></label>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
                         <div>
                             <select name="invalid_dest_type" id="modal_invalid_dest_type" class="form-control">
                                 <?php foreach ($modules as $m): ?>
@@ -225,11 +210,11 @@
                     </label>
                 </div>
 
-                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeIvrModal()" title="<?php echo t('common.cancel'); ?>">
+                <div class="u-d-flex u-gap-12 u-jc-flex-end u-mt-24">
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="closeIvrModal()" title="<?php echo t('common.cancel'); ?>">
                         <i class="fas fa-times"></i>
                     </button>
-                    <button type="submit" class="btn btn-primary" title="<?php echo t('common.save'); ?>">
+                    <button type="submit" class="btn btn-icon btn-primary" title="<?php echo t('common.save'); ?>">
                         <i class="fas fa-save"></i>
                     </button>
                 </div>
@@ -240,10 +225,10 @@
 
 <!-- IVR Keypress Entries Modal -->
 <div class="modal-overlay" id="ivrEntriesModal">
-    <div class="modal-card" style="max-width: 580px;">
+    <div class="modal-card u-maxw-580">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-th u-primary"></i> <?php echo t('ivr.entries_modal_title'); ?> <span id="entries_title_label"></span></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeIvrEntriesModal()" title="<?php echo t('common.close'); ?>"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeIvrEntriesModal()" title="<?php echo t('common.close'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <?php
@@ -255,25 +240,25 @@
                 $entries_l = $entries_by_ivr[$ivr_l['id']] ?? [];
                 $digits_l  = implode(',', array_column($entries_l, 'digit'));
             ?>
-                <div class="ivr-entries-list" id="entries_list_<?php echo (int) $ivr_l['id']; ?>"
+                <div class="ivr-entries-list u-mb-16" id="entries_list_<?php echo (int) $ivr_l['id']; ?>"
                      data-digits="<?php echo htmlspecialchars($digits_l, ENT_QUOTES); ?>"
-                     style="display: none; margin-bottom: 16px;">
+                     style="display: none;">
                     <?php if (empty($entries_l)): ?>
-                        <p style="color: var(--text-muted); font-size: 12px; margin: 0 0 4px;">
+                        <p class="u-muted u-fs-12 u-m-0-0-4">
                             <?php echo t('ivr.no_entries'); ?>
                         </p>
                     <?php else: ?>
-                        <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <div class="u-d-flex u-col u-gap-6">
                             <?php foreach ($entries_l as $en_l): ?>
-                                <div style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: rgba(0,0,0,0.02); border: 1px solid var(--border-color); border-radius: 6px;">
-                                    <strong style="font-size: 12px; min-width: 54px;"><?php echo t('ivr.key_label'); ?> <?php echo htmlspecialchars($en_l['digit']); ?>:</strong>
+                                <div class="u-d-flex u-ai-center u-gap-8 u-p-8-12 u-bg-rgba-0-0-0-0-02 u-bd-1-solid-border-color u-r-8">
+                                    <strong class="u-fs-12 u-minw-54"><?php echo t('ivr.key_label'); ?> <?php echo htmlspecialchars($en_l['digit']); ?>:</strong>
                                     <span class="u-fs-12 u-flex-1"><?php echo IvrRepository::destBadge($en_l['dest_type'], $en_l['dest_id'], $destResolveCache); ?></span>
                                     <form method="POST" autocomplete="off" class="u-m-0 u-inline"
                                           onsubmit="return confirm(<?php echo jsArg(sprintf(t('ivr.entry_delete_confirm'), $en_l['digit'])); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_ivr_entry" value="1">
                                         <input type="hidden" name="entry_id" value="<?php echo (int) $en_l['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 4px 8px;" title="<?php echo htmlspecialchars(t('ivr.entry_delete_tooltip')); ?>">
+                                        <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo htmlspecialchars(t('ivr.entry_delete_tooltip')); ?>">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -284,16 +269,16 @@
                 </div>
             <?php endforeach; ?>
 
-            <p id="entry_overwrite_warning" style="display: none; color: var(--warning); font-size: 12px; margin: 0 0 8px;">
+            <p class="u-warning u-fs-12 u-m-0-0-8" id="entry_overwrite_warning" style="display: none;">
                 <i class="fas fa-triangle-exclamation"></i> <?php echo t('ivr.entry_overwrite_warning'); ?>
             </p>
 
-            <form method="POST" autocomplete="off" style="margin-bottom: 20px; background: rgba(255, 255, 255, 0.03); padding: 14px; border-radius: 10px; border: 1px solid var(--border-color);">
+            <form class="u-mb-20 u-bg-rgba-255-255-255-0-03 u-p-16 u-r-12 u-bd-1-solid-border-color" method="POST" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="save_ivr_entry" value="1">
                 <input type="hidden" name="ivr_id" id="entries_ivr_id">
 
-                <div style="display: grid; grid-template-columns: 80px 1fr 1fr; gap: 10px; align-items: flex-end;">
+                <div class="u-d-grid u-gtc-80-1fr-1fr u-gap-12 u-ai-flex-end">
                     <div>
                         <label class="form-label"><?php echo t('ivr.field_digit'); ?></label>
                         <select name="digit" class="form-control" required>
@@ -328,7 +313,7 @@
                 </div>
 
                 <div class="u-text-right u-mt-12">
-                    <button type="submit" class="btn btn-primary btn-sm" title="<?php echo htmlspecialchars(t('ivr.add_entry_tooltip')); ?>">
+                    <button type="submit" class="btn btn-icon btn-primary btn-sm" title="<?php echo htmlspecialchars(t('ivr.add_entry_tooltip')); ?>">
                         <i class="fas fa-plus"></i>
                     </button>
                 </div>
@@ -339,14 +324,14 @@
 
 <!-- IVR Call Flow Modal (#16): read-only diagram, drawn on the server -->
 <div class="modal-overlay" id="ivrFlowModal">
-    <div class="modal-card" style="max-width: 960px; width: 96%;">
+    <div class="modal-card u-maxw-960 u-w-96pc">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-project-diagram u-primary"></i> <?php echo t('ivr_flow.title'); ?>: <span id="flow_title_label"></span></h3>
             <div class="u-flex-gap">
                 <?php if (hasModulePermission('ivrs', 'edit')): ?>
-                    <button type="button" class="btn btn-secondary btn-sm" id="flow_edit_keys_btn" title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>"><i class="fas fa-th"></i></button>
+                    <button type="button" class="btn btn-icon btn-secondary btn-sm" id="flow_edit_keys_btn" title="<?php echo htmlspecialchars(t('ivr.entries_map_tooltip')); ?>"><i class="fas fa-th"></i></button>
                 <?php endif; ?>
-                <button class="btn btn-secondary u-btn-pad" onclick="closeIvrFlowModal()" title="<?php echo t('common.close'); ?>"><i class="fas fa-times"></i></button>
+                <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeIvrFlowModal()" title="<?php echo t('common.close'); ?>"><i class="fas fa-times"></i></button>
             </div>
         </div>
         <div class="modal-body">

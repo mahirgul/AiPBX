@@ -57,7 +57,7 @@ class FaxSendService {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         if (empty($sender_did) || !preg_match('/^\d+$/', (string)$sender_did)) {
-            return ['success' => false, 'error' => 'Sender extension is required.'];
+            return ['success' => false, 'error' => t('fax_send.no_number')];
         }
         if (empty($dest_number)) {
             return ['success' => false, 'error' => t('srv_fax.err_to')];

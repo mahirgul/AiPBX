@@ -1,0 +1,299 @@
+/* ===== Mobile Sidebar Drawer ===== */
+.mobile-sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1040;
+    backdrop-filter: blur(2px);
+}
+
+.mobile-sidebar-overlay.active {
+    display: block;
+}
+
+@media (max-width: 900px) {
+    .mobile-menu-btn {
+        display: inline-flex;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: -270px;
+        margin-left: 0 !important;
+        /* .app-footer-bar is 1050 too: coming before it in the DOM, it stayed
+           underneath at the same z-index and cut off the user badge. An open
+           menu must always be on top. */
+        z-index: 1060;
+        transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .sidebar.mobile-open {
+        left: 0;
+        margin-left: 0 !important;
+        width: 260px !important;
+        min-width: 260px !important;
+        max-width: 260px !important;
+    }
+
+    .sidebar.mobile-open .brand,
+    .sidebar.mobile-open .nav-menu {
+        opacity: 1;
+        visibility: visible;
+        pointer-events: auto;
+        width: auto;
+        height: auto;
+    }
+
+    .app-footer-bar {
+        left: 0;
+        height: auto;
+        min-height: 40px;
+        padding: 6px 12px;
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+    .footer-left-group,
+    .footer-right-group {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* The mobile margin override of .content-area moved to style.css (this
+       file loads before ui/*.css, so the rule here never took effect
+       — see style.css). */
+
+    .card {
+        --card-pad: 16px;
+        padding: var(--card-pad);
+        border-radius: 12px;
+        margin-bottom: 16px;
+    }
+
+    .card-header {
+        margin-bottom: 16px;
+        padding-left: 10px;
+    }
+
+    .page-header-card {
+        --card-pad: 14px;
+        margin-bottom: 16px;
+        border-radius: 12px;
+    }
+
+    /* Top bar: the phone/CID/pause controls did not fit a narrow screen (the
+       number input was clipped) — instead of a fixed 70px height it wraps to
+       a second line: ☰/status/mode on the first line, the number input on its
+       own full-width line. */
+    .top-bar {
+        height: auto;
+        min-height: 56px;
+        padding: 8px 10px;
+    }
+
+    /* Keep everything on one line: ☰ / status badge / mode switch keep their
+       fixed size and the number input fills the remaining space and shrinks
+       (instead of wrapping to a second line). */
+    .top-bar-left {
+        flex-wrap: nowrap;
+        column-gap: 6px;
+        flex: 1 1 auto;
+        min-width: 0;
+        width: auto;
+    }
+
+    .top-bar-right {
+        margin-left: 6px;
+        flex-shrink: 0;
+    }
+
+    .header-sync-btn .header-sync-label {
+        display: none;
+    }
+
+    .header-sync-btn {
+        padding: 5px 9px;
+        gap: 5px;
+    }
+
+    .mobile-menu-btn,
+    .header-phone-status-pill {
+        flex-shrink: 0;
+    }
+
+    .header-quick-dial-wrapper {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .header-quick-dial-input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+
+    .header-phone-status-pill {
+        padding: 4px 8px;
+        gap: 4px;
+    }
+
+    .header-phone-status-pill .status-text {
+        display: none;
+    }
+
+    /* Answer/Reject/Hold/Transfer/Hang up: icon only on mobile, text hidden */
+    .topbar-btn-label {
+        display: none;
+    }
+
+    .topbar-btn {
+        padding: 8px 10px !important;
+        width: 38px;
+        justify-content: center;
+    }
+
+    /* Dozens of form pages use inline "display:grid;
+       grid-template-columns: 1fr 1fr[ 1fr]" — side-by-side columns look good
+       on desktop, but on mobile they squeezed the fields and left a narrow,
+       empty-looking layout. Inline styles have the highest specificity, so
+       they can only be overridden with !important. */
+    [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+/* ===== Responsive Utility & Helpers ===== */
+.d-none { display: none !important; }
+.d-block { display: block !important; }
+.d-inline { display: inline !important; }
+.d-inline-flex { display: inline-flex !important; }
+.d-flex { display: flex !important; }
+
+@media (min-width: 769px) {
+    .d-md-none { display: none !important; }
+    .d-md-block { display: block !important; }
+    .d-md-inline { display: inline !important; }
+    .d-md-inline-flex { display: inline-flex !important; }
+    .d-md-flex { display: flex !important; }
+}
+
+@media (max-width: 900px) {
+    .col-hide-mobile {
+        display: none !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .d-mobile-none { display: none !important; }
+    .d-mobile-block { display: block !important; }
+    .d-mobile-inline { display: inline !important; }
+    .d-mobile-inline-flex { display: inline-flex !important; }
+    .d-mobile-flex { display: flex !important; }
+
+    /* Make modals fit the screen fully and comfortably on mobile */
+    .modal-overlay {
+        padding: 10px !important;
+    }
+    .modal-card {
+        width: 96% !important;
+        max-width: 96% !important;
+        margin: 8px auto !important;
+        border-radius: 12px !important;
+    }
+    .modal-header {
+        padding: 12px 16px !important;
+    }
+    .modal-body {
+        padding: 14px 16px !important;
+        max-height: 82dvh !important;
+    }
+    .modal-footer {
+        padding: 12px 16px !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+    .modal-footer button {
+        flex: 1 1 auto !important;
+    }
+
+    /* Card & header wrapping on mobile */
+    .card {
+        --card-pad: 12px;
+        padding: 14px 12px;
+        border-radius: 12px;
+        margin-bottom: 14px;
+    }
+    .card-header {
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 14px;
+        padding-left: 10px;
+    }
+    .card-title {
+        font-size: 15px;
+        min-width: 0;
+    }
+
+    /* Compact table cells & sticky actions column on mobile */
+    .table-responsive {
+        -webkit-overflow-scrolling: touch;
+        border-radius: 8px;
+    }
+    .data-table thead th,
+    .portal-table thead th,
+    .table thead th {
+        padding: 9px 10px;
+        font-size: 11px;
+    }
+    .data-table tbody td,
+    .portal-table tbody td,
+    .table tbody td {
+        padding: 9px 10px;
+        font-size: 12.5px;
+    }
+    .data-table th.text-right,
+    .data-table td.text-right,
+    .portal-table th.text-right,
+    .portal-table td.text-right {
+        padding-left: 6px;
+        padding-right: 6px;
+    }
+
+    /* Mobile DataTable search & pagination controls */
+    .dt-controls-bar {
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+    .dt-search-box {
+        min-width: 140px;
+        max-width: none;
+        flex: 1 1 150px;
+    }
+    .dt-search-box input {
+        height: 36px;
+        font-size: 14px !important;
+    }
+    .dt-length-box select {
+        height: 36px;
+        font-size: 13px !important;
+        padding: 4px 8px;
+    }
+    .dt-pagination-bar {
+        gap: 10px;
+        margin-top: 10px;
+        padding-top: 10px;
+    }
+    .dt-pagination-nav {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    /* Keep header & footer popovers within viewport on small phones */
+    .header-sync-dropdown,
+    .user-profile-dropdown {
+        max-width: calc(100vw - 20px);
+    }
+}

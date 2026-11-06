@@ -7,15 +7,15 @@
             </div>
             <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_sub); ?></p>
             <?php else: ?>
-            <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
+            <div class="brand-icon u-w-56 u-h-56 u-m-0-auto-16-auto u-fs-24">
                 <?php if ($site_logo_type === 'image' && !empty($site_logo_image)): ?>
-                    <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="Logo" class="<?php echo !empty($site_logo_image_dark) ? 'brand-logo-light' : ''; ?>" style="max-width: 100%; max-height: 100%; object-fit: contain;">
-                    <?php if (!empty($site_logo_image_dark)): ?><img src="<?php echo htmlspecialchars($site_logo_image_dark); ?>" alt="Logo" class="brand-logo-dark" style="max-width: 100%; max-height: 100%; object-fit: contain;"><?php endif; ?>
+                    <img src="<?php echo htmlspecialchars($site_logo_image); ?>" alt="Logo" class="<?php echo !empty($site_logo_image_dark) ? 'brand-logo-light' : ''; ?> u-maxw-100pc u-maxh-100pc u-object-fit-contain">
+                    <?php if (!empty($site_logo_image_dark)): ?><img src="<?php echo htmlspecialchars($site_logo_image_dark); ?>" alt="Logo" class="brand-logo-dark u-maxw-100pc u-maxh-100pc u-object-fit-contain"><?php endif; ?>
                 <?php else: ?>
                     <i class="fas <?php echo htmlspecialchars($site_logo_icon); ?> u-primary"></i>
                 <?php endif; ?>
             </div>
-            <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
+            <h2 class="u-fs-22 u-fw-800"><?php echo htmlspecialchars($brand_title); ?></h2>
             <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_sub); ?></p>
             <?php endif; ?>
         </div>

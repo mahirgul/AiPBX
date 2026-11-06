@@ -1,4 +1,6 @@
-<!-- 3-Tab Navigation Bar -->
+<!-- One card: the page title, the tabs and the panes (like Time Plan). -->
+<div class="card tabbed-page">
+    <?php echo uiPageHeader('fa-volume-up', t('sounds.title')); ?>
 <div class="sub-tab-nav">
     <button type="button" class="sub-tab-btn active" id="tab-btn-announcements" onclick="switchSoundTab('announcements')">
         <i class="fas fa-volume-up"></i> <?php echo t('sounds.tab_announcements'); ?>
@@ -15,43 +17,32 @@
 <div class="tab-pane active" id="tab-pane-announcements">
     <div class="card">
         <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-volume-up u-primary"></i> <?php echo t('sounds.announcements_title'); ?>
-            </div>
+            <div class="card-title"><i class="fas fa-volume-up u-primary"></i> <?php echo t('sounds.announcements_title'); ?></div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                    <i class="fas fa-question-circle"></i>
-                </button>
+                <?php echo uiHelpButton('soundHelpBox'); ?>
                 <?php if (hasModulePermission('sounds', 'edit')): ?>
                     <button class="btn btn-primary btn-sm" onclick="openUploadSoundModal()" title="<?php echo t('sounds.new_tooltip'); ?>">
-                        <i class="fas fa-file-audio"></i>
+                        <i class="fas fa-file-audio"></i> <?php echo t('sounds.new_tooltip'); ?>
                     </button>
                 <?php endif; ?>
             </div>
         </div>
 
-        <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="soundHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('sounds.help_title'); ?></h4>
+                <?php echo uiHelpBoxOpen('soundHelpBox', t('sounds.help_title')); ?>
             <?php echo t('sounds.help_body'); ?><br>
             - <strong><?php echo t('sounds.help_wavesurfer'); ?></strong><br>
             - <strong><?php echo t('sounds.help_autoconvert'); ?></strong>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th class="col-hide-mobile u-w-45">#</th>
-                        <th><?php echo t('sounds.col_announcement'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sounds.col_audio_file'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sounds.col_size_date'); ?></th>
-                        <th><?php echo t('sounds.col_status'); ?></th>
-                        <th class="u-text-right"></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            ['label' => '#', 'class' => 'col-hide-mobile u-w-45'],
+            t('sounds.col_announcement'),
+            ['label' => t('internal_number.col'), 'class' => 'col-hide-mobile'],
+            ['label' => t('sounds.col_audio_file'), 'class' => 'col-hide-mobile'],
+            ['label' => t('sounds.col_size_date'), 'class' => 'col-hide-mobile'],
+            t('sounds.col_status'),
+            ['label' => '', 'class' => 'u-text-right'],
+        ]); ?>
                     <?php if (empty($announcements)): ?>
                         <?php echo uiTableEmptyRow(6, t('sounds.empty'), 'fa-volume-up'); ?>
                     <?php else: ?>
@@ -60,7 +51,7 @@
                         ?>
                             <tr>
                                 <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $anc['id']; ?></td>
-                                <td style="font-weight: 700; color: var(--primary); cursor: pointer;" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)">
+                                <td class="u-fw-700 u-primary u-pointer" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)">
                                     <i class="fas fa-volume-up u-primary u-mr-6"></i> <?php echo htmlspecialchars($anc['title']); ?>
                                 </td>
                                 <td class="col-hide-mobile">
@@ -69,7 +60,7 @@
                                         : t('internal_number.none'); ?>
                                 </td>
                                 <td>
-                                    <span class="sound-badge" style="cursor: pointer;" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)">
+                                    <span class="sound-badge u-pointer" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)">
                                         <code><?php echo htmlspecialchars($anc['audio_file']); ?></code>
                                     </span>
                                 </td>
@@ -87,10 +78,10 @@
                                     <?php echo uiStatusToggleForm($anc['id'], $anc['is_active'] ?? 1, 'anc_id'); ?>
                                 </td>
                                 <td class="u-text-right u-nowrap">
-                                    <button class="btn btn-secondary btn-sm btn-play-sound" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)" title="<?php echo t('sounds.listen_tooltip'); ?>">
+                                    <button class="btn btn-icon btn-secondary btn-sm btn-play-sound" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)" title="<?php echo t('sounds.listen_tooltip'); ?>">
                                         <i class="fas fa-play"></i>
                                     </button>
-                                    <a href="/api/sound_play.php?file=<?php echo htmlspecialchars($file_name); ?>&download=1" class="btn btn-secondary btn-sm" title="<?php echo t('sounds.download_tooltip'); ?>">
+                                    <a href="/api/sound_play.php?file=<?php echo htmlspecialchars($file_name); ?>&download=1" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('sounds.download_tooltip'); ?>">
                                         <i class="fas fa-download"></i>
                                     </a>
                                     <?php echo uiEditButton($anc, 'openEditSoundModal'); ?>
@@ -99,9 +90,7 @@
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
     </div>
 </div>
 
@@ -112,38 +101,29 @@
                 <i class="fas fa-music u-primary"></i> <?php echo t('sounds.moh_section_title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('mohHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                    <i class="fas fa-question-circle"></i>
-                </button>
+                <?php echo uiHelpButton('mohHelpBox'); ?>
                 <?php if (hasModulePermission('sounds', 'edit')): ?>
-                    <button class="btn btn-primary btn-sm" onclick="openMohModal()" title="<?php echo t('sounds.new_moh_tooltip'); ?>">
+                    <button class="btn btn-icon btn-primary btn-sm" onclick="openMohModal()" title="<?php echo t('sounds.new_moh_tooltip'); ?>">
                         <i class="fas fa-plus-circle"></i>
                     </button>
                 <?php endif; ?>
             </div>
         </div>
 
-        <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="mohHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('sounds.moh_help_title'); ?></h4>
+                <?php echo uiHelpBoxOpen('mohHelpBox', t('sounds.moh_help_title')); ?>
             <?php echo t('sounds.moh_help_body'); ?><br>
             <?php echo t('sounds.moh_help_sync'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th class="col-hide-mobile u-w-45">#</th>
-                        <th><?php echo t('sounds.col_moh_class'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sounds.col_directory'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sounds.col_mode'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sounds.col_sort'); ?></th>
-                        <th><?php echo t('sounds.col_files'); ?></th>
-                        <th class="u-text-right"></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            ['label' => '#', 'class' => 'col-hide-mobile u-w-45'],
+            t('sounds.col_moh_class'),
+            ['label' => t('sounds.col_directory'), 'class' => 'col-hide-mobile'],
+            ['label' => t('sounds.col_mode'), 'class' => 'col-hide-mobile'],
+            ['label' => t('sounds.col_sort'), 'class' => 'col-hide-mobile'],
+            t('sounds.col_files'),
+            ['label' => '', 'class' => 'u-text-right'],
+        ]); ?>
                     <?php foreach ($moh_classes as $mc): ?>
                         <tr>
                             <td class="col-hide-mobile u-muted u-fs-12">#<?php echo $mc['id']; ?></td>
@@ -161,7 +141,7 @@
                                 ?>
                             </td>
                             <td class="u-text-right u-nowrap">
-                                <button class="btn btn-secondary btn-sm" onclick="openMohUploadModal(<?php echo jsArg($mc['name']); ?>)" title="<?php echo t('sounds.upload_music_tooltip'); ?>">
+                                <button class="btn btn-icon btn-secondary btn-sm" onclick="openMohUploadModal(<?php echo jsArg($mc['name']); ?>)" title="<?php echo t('sounds.upload_music_tooltip'); ?>">
                                     <i class="fas fa-upload"></i>
                                 </button>
                                 <?php if ($mc['name'] !== 'default'): ?>
@@ -170,9 +150,7 @@
                             </td>
                         </tr>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
     </div>
 </div>
 
@@ -184,19 +162,16 @@
                 <i class="fas fa-box-archive u-primary"></i> <?php echo t('sound_packs.title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('soundPackHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                    <i class="fas fa-question-circle"></i>
-                </button>
+                <?php echo uiHelpButton('soundPackHelpBox'); ?>
             </div>
         </div>
 
-        <div class="module-help-box" id="soundPackHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('sound_packs.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('soundPackHelpBox', t('sound_packs.help_title')); ?>
             <?php echo t('sound_packs.help_body'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
         <?php if (hasModulePermission('sounds', 'edit')): ?>
-            <div class="u-flex-gap" style="flex-wrap: wrap; align-items: flex-end; margin-bottom: 16px;">
+            <div class="u-flex-gap u-wrap u-ai-flex-end u-mb-16">
                 <div class="form-group u-m-0">
                     <label class="form-label" for="sp-kind"><?php echo t('sound_packs.field_kind'); ?></label>
                     <select id="sp-kind" class="form-control" onchange="spFillLanguages()">
@@ -223,28 +198,21 @@
             </div>
         <?php endif; ?>
 
-        <div id="sp-state" class="u-fw-600" style="margin-bottom: 10px;"></div>
+        <div id="sp-state" class="u-fw-600 u-mb-10"></div>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th><?php echo t('sound_packs.col_pack'); ?></th>
-                        <th><?php echo t('sound_packs.col_lang'); ?></th>
-                        <th><?php echo t('sound_packs.field_format'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sound_packs.col_version'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sound_packs.col_files'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('sound_packs.col_installed_at'); ?></th>
-                        <th class="u-text-right"></th>
-                    </tr>
-                </thead>
-                <tbody id="sp-installed"></tbody>
-            </table>
-        </div>
+        <?php echo uiTableOpen([
+            t('sound_packs.col_pack'),
+            t('sound_packs.col_lang'),
+            t('sound_packs.field_format'),
+            ['label' => t('sound_packs.col_version'), 'class' => 'col-hide-mobile'],
+            ['label' => t('sound_packs.col_files'), 'class' => 'col-hide-mobile'],
+            ['label' => t('sound_packs.col_installed_at'), 'class' => 'col-hide-mobile'],
+            ['label' => '', 'class' => 'u-text-right'],
+        ], ['body_id' => 'sp-installed']); ?><?php echo uiTableClose(); ?>
 
-        <details style="margin-top: 16px;">
-            <summary class="u-strong" style="cursor: pointer;"><?php echo t('sound_packs.log'); ?></summary>
-            <pre id="sp-log" style="white-space: pre-wrap; background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 12px; font-size: 11px; max-height: 280px; overflow: auto; margin-top: 8px;"></pre>
+        <details class="u-mt-16">
+            <summary class="u-strong u-pointer"><?php echo t('sound_packs.log'); ?></summary>
+            <pre class="u-white-space-pre-wrap u-bg-0f172a u-c-e2e8f0 u-r-8 u-p-12 u-fs-11 u-maxh-280 u-of-auto u-mt-8" id="sp-log"></pre>
         </details>
     </div>
 </div>
@@ -272,12 +240,14 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
 </script>
 
 <!-- Upload Announcement Modal -->
+</div><!-- /tabbed-page -->
+
 <!-- Upload / Edit Announcement Modal -->
 <div class="modal-overlay" id="uploadSoundModal">
-    <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-card u-maxw-500">
         <div class="modal-header">
             <h3 class="u-title" id="soundModalTitle"><i class="fas fa-file-audio u-primary"></i> <?php echo t('sounds.modal_upload_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeUploadSoundModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeUploadSoundModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" enctype="multipart/form-data" id="soundModalForm">
@@ -311,9 +281,9 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
                     <small class="u-muted u-fs-11" id="audio_file_help"><?php echo t('sounds.field_audio_file_help'); ?></small>
                 </div>
 
-                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeUploadSoundModal()" title="<?php echo t('sounds.cancel_tooltip'); ?>"><i class="fas fa-times"></i></button>
-                    <button type="submit" class="btn btn-primary" id="modal_sound_submit" title="<?php echo t('sounds.save_tooltip'); ?>"><i class="fas fa-save"></i></button>
+                <div class="u-d-flex u-gap-12 u-jc-flex-end u-mt-24">
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="closeUploadSoundModal()" title="<?php echo t('sounds.cancel_tooltip'); ?>"><i class="fas fa-times"></i></button>
+                    <button type="submit" class="btn btn-icon btn-primary" id="modal_sound_submit" title="<?php echo t('sounds.save_tooltip'); ?>"><i class="fas fa-save"></i></button>
                 </div>
             </form>
         </div>
@@ -322,10 +292,10 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
 
 <!-- Create MOH Class Modal -->
 <div class="modal-overlay" id="mohModal">
-    <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-card u-maxw-500">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('sounds.modal_moh_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeMohModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeMohModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -338,9 +308,9 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
                     <small class="u-hint"><?php echo t('sounds.field_class_name_help'); ?></small>
                 </div>
 
-                <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
-                    <button type="button" class="btn btn-secondary" onclick="closeMohModal()" title="<?php echo t('sounds.cancel_tooltip'); ?>"><i class="fas fa-times"></i></button>
-                    <button type="submit" class="btn btn-primary" title="<?php echo t('sounds.save_tooltip'); ?>"><i class="fas fa-save"></i></button>
+                <div class="u-d-flex u-gap-12 u-jc-flex-end u-mt-24">
+                    <button type="button" class="btn btn-icon btn-secondary" onclick="closeMohModal()" title="<?php echo t('sounds.cancel_tooltip'); ?>"><i class="fas fa-times"></i></button>
+                    <button type="submit" class="btn btn-icon btn-primary" title="<?php echo t('sounds.save_tooltip'); ?>"><i class="fas fa-save"></i></button>
                 </div>
             </form>
         </div>
@@ -349,10 +319,10 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
 
 <!-- WaveSurfer Audio Player Modal -->
 <div class="modal-overlay" id="audioPlayerModal">
-    <div class="modal-card" style="max-width: 620px;">
+    <div class="modal-card u-maxw-620">
         <div class="modal-header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(79, 70, 229, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <div class="u-d-flex u-ai-center u-gap-10">
+                <div class="u-w-36 u-h-36 u-r-12 u-bg-rgba-79-70-229-0-12 u-primary u-d-flex u-ai-center u-jc-center u-fs-18">
                     <i class="fas fa-file-audio"></i>
                 </div>
                 <div>
@@ -360,21 +330,21 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
                     <small class="u-muted u-fs-11" id="playerModalFile">custom/welcome.wav</small>
                 </div>
             </div>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeAudioPlayerModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeAudioPlayerModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body u-p-20">
             <!-- Waveform visualizer container -->
-            <div style="background: rgba(0, 0, 0, 0.04); padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 16px; position: relative;">
-                <div id="waveform" style="width: 100%; min-height: 90px;"></div>
-                <div id="waveformLoading" style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.85); border-radius: 12px; font-size: 13px; color: var(--primary); gap: 8px; font-weight: 600; z-index: 5;">
+            <div class="u-bg-rgba-0-0-0-0-04 u-p-16 u-r-12 u-bd-1-solid-border-color u-mb-16 u-relative">
+                <div class="u-w-100 u-minh-90" id="waveform"></div>
+                <div class="u-pos-absolute u-inset-0 u-ai-center u-jc-center u-bg-rgba-255-255-255-0-85 u-r-12 u-fs-13 u-primary u-gap-8 u-fw-600 u-z-index-5" id="waveformLoading" style="display: flex;">
                     <i class="fas fa-spinner fa-spin"></i> <?php echo t('sounds.waveform_loading'); ?>
                 </div>
             </div>
 
             <!-- Controls bar -->
-            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+            <div class="u-d-flex u-ai-center u-jc-space-between u-gap-12 u-wrap">
                 <div class="u-flex-center">
-                    <button class="btn btn-primary" id="wavePlayBtn" onclick="toggleWavePlay()" style="min-width: 110px;">
+                    <button class="btn btn-primary u-minw-110" id="wavePlayBtn" onclick="toggleWavePlay()">
                         <i class="fas fa-play"></i> <?php echo t('sounds.play'); ?>
                     </button>
                     <button class="btn btn-secondary btn-sm" onclick="waveSkip(-5)" title="<?php echo t('sounds.back5s_tooltip'); ?>">
@@ -389,16 +359,16 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
                 </div>
 
                 <!-- Time display -->
-                <div style="font-family: monospace; font-size: 14px; font-weight: 700; color: var(--primary); background: rgba(79, 70, 229, 0.1); padding: 6px 14px; border-radius: 8px;">
+                <div class="u-mono u-fs-14 u-fw-700 u-primary u-bg-rgba-79-70-229-0-1 u-p-8-16 u-r-8">
                     <span id="waveCurrentTime">00:00</span> / <span id="waveTotalDuration">00:00</span>
                 </div>
 
                 <!-- Volume control -->
                 <div class="u-flex-center">
-                    <button class="btn btn-secondary btn-sm" id="muteBtn" onclick="toggleWaveMute()" style="padding: 6px 10px;">
+                    <button class="btn btn-icon btn-secondary btn-sm" id="muteBtn" onclick="toggleWaveMute()">
                         <i class="fas fa-volume-up" id="muteIcon"></i>
                     </button>
-                    <input type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" style="width: 80px; cursor: pointer;" oninput="setWaveVolume(this.value)">
+                    <input class="u-w-80 u-pointer" type="range" id="volumeSlider" min="0" max="1" step="0.05" value="1" oninput="setWaveVolume(this.value)">
                 </div>
             </div>
         </div>
@@ -415,10 +385,10 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
     opened; the upload_moh_file backend was dead because of it (2026-09-01).
 -->
 <div class="modal-overlay" id="mohUploadModal">
-    <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-card u-maxw-480">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-music u-primary"></i> <?php echo t('sounds.moh_upload_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeMohUploadModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeMohUploadModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" enctype="multipart/form-data">
@@ -440,8 +410,8 @@ window.SOUND_PACKS_PAGE = <?php echo json_encode($sound_packs + [
                     <small class="u-muted u-fs-11"><?php echo t('sounds.moh_upload_file_help'); ?></small>
                 </div>
 
-                <div style="text-align: right; margin-top: 16px;">
-                    <button type="submit" class="btn btn-primary" title="<?php echo htmlspecialchars(t('sounds.moh_upload_submit')); ?>">
+                <div class="u-ta-right u-mt-16">
+                    <button type="submit" class="btn btn-icon btn-primary" title="<?php echo htmlspecialchars(t('sounds.moh_upload_submit')); ?>">
                         <i class="fas fa-upload"></i>
                     </button>
                 </div>

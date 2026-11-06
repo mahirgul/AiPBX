@@ -1,6 +1,8 @@
 <?php use PBX\Destinations\DestinationRegistry; ?>
 
 <!-- Tabs Header -->
+<div class="card tabbed-page">
+    <?php echo uiPageHeader('fa-clock', t('sidebar.item_time_conditions')); ?>
 <div class="tc-tabs">
     <button class="tc-tab-btn active" id="tab-btn-tcs" onclick="switchTcTab('tcs')">
         <i class="fas fa-clock"></i> <?php echo t('tc.tab_conditions'); ?>
@@ -18,39 +20,30 @@
                 <i class="fas fa-clock u-warning"></i> <?php echo t('tc.header'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                    <i class="fas fa-question-circle"></i>
-                </button>
+                <?php echo uiHelpButton('tcHelpBox'); ?>
                 <?php if (hasModulePermission('time_conditions', 'edit')): ?>
-                    <button class="btn btn-primary btn-sm" onclick="openCreateTcModal()" title="<?php echo t('common.add_new'); ?>">
+                    <button class="btn btn-icon btn-primary btn-sm" onclick="openCreateTcModal()" title="<?php echo t('common.add_new'); ?>">
                         <i class="fas fa-plus-circle"></i>
                     </button>
                 <?php endif; ?>
             </div>
         </div>
 
-        <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="tcHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('tc.help_title'); ?></h4>
+                <?php echo uiHelpBoxOpen('tcHelpBox', t('tc.help_title')); ?>
             <?php echo t('tc.help_body'); ?><br>
             - <strong><?php echo t('tc.help_rules'); ?></strong><br>
             - <strong><?php echo t('tc.help_default'); ?></strong>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th class="col-hide-mobile u-w-50">#</th>
-                        <th><?php echo t('tc.col_condition'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
-                        <th><?php echo t('tc.col_rules'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('tc.col_default_target'); ?></th>
-                        <th><?php echo t('tc.col_status'); ?></th>
-                        <th class="text-right"><?php echo t('tc.col_actions'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+            t('tc.col_condition'),
+            ['label' => t('internal_number.col'), 'class' => 'col-hide-mobile'],
+            t('tc.col_rules'),
+            ['label' => t('tc.col_default_target'), 'class' => 'col-hide-mobile'],
+            t('tc.col_status'),
+            ['label' => t('tc.col_actions'), 'class' => 'text-right'],
+        ]); ?>
                     <?php if (empty($tcs)): ?>
                         <?php echo uiTableEmptyRow(6, t('tc.empty'), 'fa-clock'); ?>
                     <?php else: ?>
@@ -79,7 +72,7 @@
                                         : t('internal_number.none'); ?>
                                 </td>
                                 <td>
-                                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                                    <div class="u-d-flex u-col u-gap-6">
                                         <?php foreach ($rules as $idx => $r):
                                             $tgInfo = $tg_map[$r['time_group_id']] ?? null;
                                             $tgTitle = $tgInfo ? $tgInfo['title'] : t('tc.group_prefix') . " #{$r['time_group_id']}";
@@ -87,7 +80,7 @@
                                             $mName = $mMod ? $mMod->getName() : $r['match_dest_type'];
                                             $mLabel = DestinationRegistry::resolveLabel($r['match_dest_type'], $r['match_dest_id'], $tcDestCache);
                                         ?>
-                                            <div style="font-size: 12px; background: rgba(0,0,0,0.02); padding: 4px 8px; border-radius: 4px; border: 1px solid var(--border-color); display: flex; align-items: center; gap: 6px; white-space: nowrap;">
+                                            <div class="u-fs-12 u-bg-rgba-0-0-0-0-02 u-p-4-8 u-r-4 u-bd-1-solid-border-color u-d-flex u-ai-center u-gap-8 u-nowrap">
                                                 <strong>#<?php echo ($idx + 1); ?>:</strong>
                                                 <span class="badge badge-info u-fs-10"><i class="fas fa-calendar-check"></i> <?php echo htmlspecialchars($tgTitle); ?></span>
                                                 <span>➔</span>
@@ -108,9 +101,7 @@
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
     </div>
 </div>
 
@@ -122,31 +113,24 @@
                 <i class="fas fa-calendar-alt u-primary"></i> <?php echo t('tc.groups_title'); ?>
             </div>
             <div class="u-flex-gap">
-                <button type="button" class="btn-help" onclick="toggleModuleHelp('tcHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                    <i class="fas fa-question-circle"></i>
-                </button>
+                <?php echo uiHelpButton('tcHelpBox'); ?>
                 <?php if (hasModulePermission('time_conditions', 'edit')): ?>
-                    <button class="btn btn-primary btn-sm" onclick="openCreateTgModal()" title="<?php echo t('common.add_new'); ?>">
+                    <button class="btn btn-icon btn-primary btn-sm" onclick="openCreateTgModal()" title="<?php echo t('common.add_new'); ?>">
                         <i class="fas fa-plus-circle"></i>
                     </button>
                 <?php endif; ?>
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th class="col-hide-mobile u-w-50">#</th>
-                        <th><?php echo t('tc.col_group'); ?></th>
-                        <th><?php echo t('tc.col_hours'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('tc.col_days'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('tc.col_holidays'); ?></th>
-                        <th><?php echo t('tc.col_status'); ?></th>
-                        <th class="text-right"><?php echo t('tc.col_actions'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+            t('tc.col_group'),
+            t('tc.col_hours'),
+            ['label' => t('tc.col_days'), 'class' => 'col-hide-mobile'],
+            ['label' => t('tc.col_holidays'), 'class' => 'col-hide-mobile'],
+            t('tc.col_status'),
+            ['label' => t('tc.col_actions'), 'class' => 'text-right'],
+        ]); ?>
                     <?php if (empty($time_groups)): ?>
                         <?php echo uiTableEmptyRow(7, t('tc.groups_empty'), 'fa-calendar-alt'); ?>
                     <?php else: ?>
@@ -185,18 +169,17 @@
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
     </div>
+</div>
 </div>
 
 <!-- Modal 1: Create / Edit Time Condition -->
 <div class="modal-overlay" id="tcModal">
-    <div class="modal-card" style="max-width: 680px; max-height: 90vh; overflow-y: auto;">
+    <div class="modal-card u-maxw-680 u-maxh-90vh u-overflow-y-auto">
         <div class="modal-header">
             <h3 class="u-title" id="tcModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('tc.new_condition'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeTcModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeTcModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -217,7 +200,7 @@
                     <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
                 </div>
 
-                <div class="form-group" style="margin-top: 10px; margin-bottom: 15px;">
+                <div class="form-group u-mt-10 u-mb-15">
                     <label class="form-label u-check-label">
                         <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
                         <span class="u-fw-600"><?php echo t('tc.field_active'); ?></span>
@@ -228,22 +211,22 @@
                 <div class="u-mb-20">
                     <div class="u-flex-between u-mb-10">
                         <label class="form-label u-mb-0"><i class="fas fa-list-ol"></i> <?php echo t('tc.rules_label'); ?></label>
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="addTcRuleRow()" title="<?php echo t('time_conditions.add_rule'); ?>">
+                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="addTcRuleRow()" title="<?php echo t('time_conditions.add_rule'); ?>">
                             <i class="fas fa-plus-circle"></i>
                         </button>
                     </div>
 
-                    <div id="tc_rules_container" style="display: flex; flex-direction: column; gap: 8px;">
+                    <div id="tc_rules_container" class="u-d-flex u-col u-gap-8">
                         <!-- Dynamic Rule Rows Injected via JS -->
                     </div>
                 </div>
 
                 <!-- Fallback General NoMatch Destination -->
-                <div style="background: rgba(239, 68, 68, 0.05); padding: 14px; border-radius: 8px; border: 1px solid rgba(239, 68, 68, 0.2); margin-top: 16px;">
+                <div class="u-bg-rgba-239-68-68-0-05 u-p-16 u-r-8 u-bd-1-solid-rgba-239-68-68-0-2 u-mt-16">
                     <div class="u-fw-700 u-danger u-fs-13 u-mb-8">
                         <i class="fas fa-moon"></i> <?php echo t('tc.default_target_box'); ?>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
                         <div class="form-group u-mb-0">
                             <label class="form-label"><?php echo t('tc.field_dest_type'); ?></label>
                             <select name="nomatch_dest_type" id="modal_nomatch_dest_type" class="form-control">
@@ -269,10 +252,10 @@
 
 <!-- Modal 2: Create / Edit Time Group -->
 <div class="modal-overlay" id="tgModal">
-    <div class="modal-card" style="max-width: 540px;">
+    <div class="modal-card u-maxw-540">
         <div class="modal-header">
             <h3 class="u-title" id="tgModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('tc.new_group'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeTgModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeTgModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">

@@ -147,6 +147,8 @@ function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503
         echo json_encode(['success' => false, 'error' => $message]);
         exit;
     }
+    // This page can come before the end of this file loads the UI helpers.
+    require_once __DIR__ . '/src/ui_helpers.php';
     ?><!DOCTYPE html>
 <html lang="<?php echo htmlspecialchars(getUserLanguage()); ?>">
 <head>
@@ -155,8 +157,7 @@ function renderFatalErrorPage($title, $message, $logDetail = '', $httpCode = 503
 <title><?php echo htmlspecialchars($title); ?></title>
 <link rel="stylesheet" href="/assets/css/variables.css">
 <link rel="stylesheet" href="/assets/css/layout.css">
-<link rel="stylesheet" href="/assets/css/components.css">
-<link rel="stylesheet" href="/assets/css/fontawesome.min.css">
+<?php echo uiStylesheets(); ?><link rel="stylesheet" href="/assets/css/fontawesome.min.css">
 <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body class="auth-body" data-theme="light">

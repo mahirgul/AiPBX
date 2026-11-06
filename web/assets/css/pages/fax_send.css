@@ -1,11 +1,5 @@
 /* Page styles of templates/views/fax_send/index.php */
 
-.fax-compose-tab-btn {
-    background: none; border: none; border-bottom: 3px solid transparent;
-    padding: 10px 16px; font-size: 13px; font-weight: 700; color: var(--text-muted);
-    cursor: pointer; display: flex; align-items: center; gap: 6px;
-}
-.fax-compose-tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 #fax-text-editor { background: #fff; color: #1a1a1a; min-height: 260px; }
 #fax-text-editor .ql-editor { min-height: 260px; font-size: 12px; }
 /* Quill's class-based ql-size sizing is disabled - a style-based attributor

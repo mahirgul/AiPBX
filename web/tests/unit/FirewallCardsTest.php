@@ -109,4 +109,31 @@ TXT;
         $this->assertSame(['172.16.0.0/255.255.0.0'], NetworkSettingsService::connectedNetworks(['10.0.0.0/8'], $addresses), 'covered, virtual and /32 are left out');
         $this->assertSame(['10.23.3.0/255.255.255.0', '172.16.0.0/255.255.0.0'], NetworkSettingsService::connectedNetworks(['10.23.3.128/255.255.255.128'], $addresses), 'a smaller listed network does not cover the card');
     }
+
+    public function testACardWithItsOwnZoneShowsOnlyWhatDiffersFromTheCommonRules(): void
+    {
+        // eth1 has its own copy: 8080 closed there, 9000 added.
+        $text = str_replace('iface eth1 public', 'iface eth1 aipbx-card1', self::OVERVIEW) . <<<'TXT'
+
+### zone aipbx-card1
+aipbx-card1 (active)
+  target: default
+  services: dhcpv6-client http https ssh
+  ports: 5060/udp 10000-20000/udp 9000/tcp
+  rich rules: 
+	rule family="ipv4" source address="192.168.1.0/24" port port="123" protocol="udp" accept
+	rule family="ipv4" source address="10.0.0.5" service name="tftp" log prefix="x" accept
+TXT;
+        $built = FirewallService::buildCards(FirewallService::parseOverview($text), self::IPS, null);
+        $cards = array_column($built['cards'], null, 'iface');
+        $this->assertSame([], $cards['eth0']['extra'], 'a card on the common rules has nothing of its own');
+        $this->assertSame([], $cards['eth0']['closed_common']);
+        $this->assertSame(['9000/tcp'], array_column($cards['eth1']['extra'], 'value'));
+        $this->assertSame(['8080/tcp'], array_column($cards['eth1']['closed_common'], 'value'));
+        $common = array_column($built['common'], null, 'value');
+        $this->assertSame(['eth1'], $common['8080/tcp']['closed_on']);
+        $this->assertSame([], $common['5060/udp']['closed_on']);
+        $this->assertSame('session', $common['ssh']['warn'], 'removing SSH from every card can cut the session');
+        $this->assertSame('', $common['8080/tcp']['warn']);
+    }
 }

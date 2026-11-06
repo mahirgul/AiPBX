@@ -1,41 +1,28 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-phone-slash u-danger"></i> <?php echo t('end_call.header_title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('endCallHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-phone-slash', t('end_call.header_title'), 'endCallHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('end_call', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateHangupModal()" title="<?php echo t('end_call.new_tooltip'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('end_call.new_tooltip'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="endCallHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('end_call.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('endCallHelpBox', t('end_call.help_title')); ?>
         <?php echo t('end_call.help_body'); ?><br>
         <?php echo t('end_call.help_body2'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th class="col-hide-mobile"><?php echo t('end_call.col_key'); ?></th>
-                    <th><?php echo t('end_call.col_title'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
-                    <th><?php echo t('end_call.col_action'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('end_call.col_announcement'); ?></th>
-                    <th class="text-right"><?php echo t('end_call.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        ['label' => t('end_call.col_key'), 'class' => 'col-hide-mobile'],
+        t('end_call.col_title'),
+        ['label' => t('internal_number.col'), 'class' => 'col-hide-mobile'],
+        t('end_call.col_action'),
+        ['label' => t('end_call.col_announcement'), 'class' => 'col-hide-mobile'],
+        ['label' => t('end_call.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($actions)): ?>
                     <?php echo uiTableEmptyRow(6, t('end_call.empty'), 'fa-phone-slash'); ?>
                 <?php else: ?>
@@ -71,9 +58,7 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit Hangup Action Modal -->
@@ -81,7 +66,7 @@
     <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="hangupModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('end_call.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeHangupModal()" title="<?php echo t('end_call.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeHangupModal()" title="<?php echo t('end_call.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">

@@ -177,7 +177,7 @@ class SIPHelper {
         }
 
         if (isset($t['fax_detect']) && (int)$t['fax_detect'] === 1) {
-            $f_timeout = intval($t['fax_detect_timeout'] ?? 30) ?: 30;
+            $f_timeout = intval($t['fax_detect_timeout'] ?? 10) ?: 10;
             $defaults['fax_detect'] = 'yes';
             $defaults['fax_detect_timeout'] = (string)$f_timeout;
         } else {

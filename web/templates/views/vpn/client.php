@@ -10,17 +10,14 @@ $tunnels = $status['tunnels'];
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-plug u-primary"></i> <?php echo t('vpn.client_title'); ?></div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('vpnClientHelp')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
+        <?php echo uiHelpButton('vpnClientHelp'); ?>
     </div>
 
-    <div class="module-help-box" id="vpnClientHelp">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('vpn.client_title'); ?></h4>
+    <?php echo uiHelpBoxOpen('vpnClientHelp', t('vpn.client_title')); ?>
         <?php echo t('vpn.client_help'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <form method="POST" enctype="multipart/form-data" autocomplete="off" style="padding: 0 20px 20px;">
+    <form method="POST" enctype="multipart/form-data" autocomplete="off" class="u-card-pad">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
         <div class="form-group">
             <label class="form-label" for="tunnel_name"><?php echo t('vpn.connection_name'); ?></label>
@@ -40,7 +37,7 @@ $tunnels = $status['tunnels'];
         </div>
         <div class="form-group">
             <label class="form-label" for="tunnel_config"><?php echo t('vpn.profile_text'); ?></label>
-            <textarea name="tunnel_config" id="tunnel_config" class="form-control" rows="6" spellcheck="false" style="font-family: monospace; font-size: 12px;"></textarea>
+            <textarea name="tunnel_config" id="tunnel_config" class="form-control u-mono u-fs-12" rows="6" spellcheck="false"></textarea>
         </div>
         <div class="form-group">
             <label class="form-label" for="tunnel_routes"><?php echo t('vpn.routes'); ?></label>
@@ -70,17 +67,17 @@ $tunnels = $status['tunnels'];
 </div>
 
 <?php foreach ($tunnels as $tunnel): ?>
-<div class="card" style="margin-top: 16px;">
+<div class="card u-mt-16">
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-plug u-primary"></i> <?php echo $h($tunnel['name']); ?>
             <span class="u-muted u-fs-12"><?php echo $tunnel['type'] === 'wg' ? 'WireGuard' : 'OpenVPN'; ?> · <?php echo $h($tunnel['remote']); ?></span>
-            <span class="badge <?php echo !empty($tunnel['online']) ? 'badge-success' : 'badge-warning'; ?>" style="margin-left: 8px; font-size: 11px;">
+            <span class="badge <?php echo !empty($tunnel['online']) ? 'badge-success' : 'badge-warning'; ?> u-ml-8 u-fs-11">
                 <?php echo !$tunnel['enabled'] ? t('vpn.off') : (!empty($tunnel['online']) ? t('vpn.connected') : t('vpn.not_connected')); ?>
             </span>
         </div>
     </div>
-    <div style="padding: 0 20px 20px;">
+    <div class="u-card-pad">
         <?php if ($tunnel['address'] !== ''): ?>
             <p class="u-muted u-fs-12"><?php echo t('vpn.address'); ?>: <code><?php echo $h($tunnel['address']); ?></code> · <code><?php echo $h($tunnel['iface']); ?></code></p>
         <?php endif; ?>
@@ -115,9 +112,9 @@ $tunnels = $status['tunnels'];
 <?php endforeach; ?>
 
 <?php if ($log !== null): ?>
-<div class="card" style="margin-top: 16px;" id="vpnLog">
+<div class="card u-mt-16" id="vpnLog">
     <div class="card-header"><div class="card-title"><i class="fas fa-scroll u-primary"></i> <?php echo t('vpn.show_log'); ?></div></div>
-    <pre style="padding: 0 20px 20px; margin: 0; overflow-x: auto; font-size: 12px;"><?php echo $h($log !== '' ? $log : t('vpn.log_empty')); ?></pre>
+    <pre class="u-card-pad u-m-0 u-overflow-x-auto u-fs-12"><?php echo $h($log !== '' ? $log : t('vpn.log_empty')); ?></pre>
 </div>
 <?php endif; ?>
 

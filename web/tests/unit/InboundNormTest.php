@@ -138,6 +138,21 @@ final class InboundNormTest extends TestCase
         $db->exec('DELETE FROM pbx_inbound_norm_rules');
     }
 
+    public function testInboundNormalizationIsOnUnlessSwitchedOff(): void
+    {
+        $db = getDB();
+        $set = $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('inbound_norm_enabled', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)");
+        try {
+            $this->assertTrue(InboundNormService::isEnabled(), 'on unless switched off');
+            $set->execute(['0']);
+            $this->assertFalse(InboundNormService::isEnabled());
+            $set->execute(['1']);
+            $this->assertTrue(InboundNormService::isEnabled());
+        } finally {
+            $db->exec("DELETE FROM sys_settings WHERE setting_key = 'inbound_norm_enabled'");
+        }
+    }
+
     public function testAPatternCannotCarryDialplanText(): void
     {
         $this->assertTrue(InboundNormService::isValidPattern('_+43.'));

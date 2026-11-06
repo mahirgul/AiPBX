@@ -7,50 +7,37 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
 ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-video u-primary"></i> <?php echo t('meetings.title', 'Video Meetings'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($meetings); ?></span>
-        </div>
-        <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('meetingsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-video', t('meetings.title', 'Video Meetings'), 'meetingsHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($meetings); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if ($canEdit): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateMeetingModal()" title="<?php echo t('meetings.btn_new_meeting', 'Schedule Meeting'); ?>">
                     <i class="fas fa-calendar-plus"></i> <span class="u-ml-4"><?php echo t('meetings.btn_new_meeting', 'Schedule Meeting'); ?></span>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="meetingsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('meetings.help_title', 'Video Meetings & Asterisk ConfBridge SFU'); ?></h4>
+        <?php echo uiHelpBoxOpen('meetingsHelpBox', t('meetings.help_title', 'Video Meetings & Asterisk ConfBridge SFU')); ?>
         <p><?php echo t('meetings.help_intro', 'AiPBX provides WebRTC multi-party video conferencing backed by Asterisk app_confbridge SFU / Follow-Talker modes.'); ?></p>
         <ul>
             <li><strong><?php echo t('meetings.help_sfu_title', 'SFU Mode (Selective Forwarding Unit):'); ?></strong> <?php echo t('meetings.help_sfu_desc', 'For modern WebRTC browsers. Streams are forwarded without re-encoding, allowing responsive multi-speaker gallery grids with minimal server CPU.'); ?></li>
             <li><strong><?php echo t('meetings.help_talker_title', 'Follow-Talker Mode:'); ?></strong> <?php echo t('meetings.help_talker_desc', 'For SIP hardware video phones. Actively switches the dominant speaker to all endpoints.'); ?></li>
             <li><strong><?php echo t('meetings.help_guests_title', 'Guest Magic Links:'); ?></strong> <?php echo t('meetings.help_guests_desc', 'Invite external clients or non-subscribers via email with a one-click magic link (/meet/{token}) and downloadable .ics calendar invite.'); ?></li>
         </ul>
-        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('meetings.limit_gone'); ?></li></ul></div>
-    </div>
+        <div class="u-mt-10"><strong><?php echo t('common.help_limits'); ?></strong><ul class="u-m-4-0-0-20"><li><?php echo t('meetings.limit_gone'); ?></li></ul></div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width: 80px;"><?php echo t('conferences.col_room'); ?></th>
-                    <th><?php echo t('meetings.col_topic', 'Topic / Meeting'); ?></th>
-                    <th><?php echo t('meetings.col_schedule', 'Schedule'); ?></th>
-                    <th><?php echo t('meetings.col_mode', 'Video Mode'); ?></th>
-                    <th><?php echo t('meetings.col_access', 'Access & PIN'); ?></th>
-                    <th><?php echo t('meetings.col_participants', 'Participants'); ?></th>
-                    <th><?php echo t('common.status'); ?></th>
-                    <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => t('conferences.col_room'), 'class' => 'u-w-80'],
+        t('meetings.col_topic', 'Topic / Meeting'),
+        t('meetings.col_schedule', 'Schedule'),
+        t('meetings.col_mode', 'Video Mode'),
+        t('meetings.col_access', 'Access & PIN'),
+        t('meetings.col_participants', 'Participants'),
+        t('common.status'),
+        ['label' => t('my_phone.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($meetings)): ?>
                     <?php echo uiTableEmptyRow(8, t('meetings.empty', 'No scheduled meetings yet.'), 'fa-video'); ?>
                 <?php else: ?>
@@ -102,7 +89,7 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px;">
+                                <div class="u-d-flex u-gap-4 u-wrap u-fs-11">
                                     <?php if ($roomPin !== ''): ?>
                                         <span class="badge badge-secondary" title="<?php echo t('conferences.user_pin'); ?>"><i class="fas fa-key"></i> <?php echo htmlspecialchars($roomPin); ?></span>
                                     <?php endif; ?>
@@ -110,7 +97,7 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
                                         <span class="badge badge-warning" title="<?php echo t('conferences.admin_pin'); ?>"><i class="fas fa-crown"></i> <?php echo htmlspecialchars($hostPin); ?></span>
                                     <?php endif; ?>
                                     <?php if ($roomPin === '' && $hostPin === ''): ?>
-                                        <span class="badge badge-secondary" style="opacity: 0.7;"><?php echo t('conferences.no_pin'); ?></span>
+                                        <span class="badge badge-secondary u-opacity-0-7"><?php echo t('conferences.no_pin'); ?></span>
                                     <?php endif; ?>
                                 </div>
                             </td>
@@ -131,23 +118,23 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
-                                <div style="display: inline-flex; gap: 4px;">
+                                <div class="u-d-inline-flex u-gap-4">
                                     <?php if (!$isCancelled): ?>
                                         <a href="/meet/<?php echo urlencode($guestToken); ?>" target="_blank" class="btn btn-success btn-sm" title="<?php echo t('meetings.btn_join', 'Join Room'); ?>">
                                             <i class="fas fa-video"></i> <?php echo t('meetings.btn_join', 'Join'); ?>
                                         </a>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="copyGuestLink(<?php echo jsArg($guestUrl); ?>)" title="<?php echo t('meetings.btn_copy_link', 'Copy Link'); ?>">
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="copyGuestLink(<?php echo jsArg($guestUrl); ?>)" title="<?php echo t('meetings.btn_copy_link', 'Copy Link'); ?>">
                                             <i class="fas fa-link"></i>
                                         </button>
                                         <?php if ($canEdit): ?>
-                                            <button type="button" class="btn btn-info btn-sm" onclick="openInviteModal(<?php echo jsArg($m); ?>)" title="<?php echo t('meetings.btn_invite_guest', 'Invite Guest'); ?>">
+                                            <button type="button" class="btn btn-icon btn-info btn-sm" onclick="openInviteModal(<?php echo jsArg($m); ?>)" title="<?php echo t('meetings.btn_invite_guest', 'Invite Guest'); ?>">
                                                 <i class="fas fa-envelope"></i>
                                             </button>
-                                            <button type="button" class="btn btn-secondary btn-sm" onclick="openEditMeetingModal(<?php echo jsArg($m); ?>)" title="<?php echo t('common.edit'); ?>">
+                                            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="openEditMeetingModal(<?php echo jsArg($m); ?>)" title="<?php echo t('common.edit'); ?>">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         <?php endif; ?>
-                                        <a href="/meetings?ics=<?php echo (int)$m['id']; ?>" class="btn btn-secondary btn-sm" title="<?php echo t('meetings.btn_download_ics', 'Download .ics'); ?>">
+                                        <a href="/meetings?ics=<?php echo (int)$m['id']; ?>" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('meetings.btn_download_ics', 'Download .ics'); ?>">
                                             <i class="fas fa-calendar-alt"></i>
                                         </a>
                                         <?php if ($canDelete): ?>
@@ -155,7 +142,7 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
                                                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                                 <input type="hidden" name="cancel_meeting" value="1">
                                                 <input type="hidden" name="meeting_id" value="<?php echo (int)$m['id']; ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.cancel'); ?>">
+                                                <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.cancel'); ?>">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -166,17 +153,15 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: Schedule / Edit Meeting -->
 <div class="modal-overlay" id="meetingModal">
-    <div class="modal-card" style="max-width: 620px;">
+    <div class="modal-card u-maxw-620">
         <div class="modal-header">
             <h3 class="u-title" id="meetingModalTitle"><i class="fas fa-calendar-plus u-primary"></i> <?php echo t('meetings.modal_schedule_title', 'Schedule Video Meeting'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('meetingModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('meetingModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" id="meetingForm">
@@ -240,7 +225,7 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
 
                 <div class="form-group">
                     <input type="hidden" name="allow_guests" value="0">
-                    <label class="u-flex-center u-pointer" style="gap: 8px; font-weight: 500;">
+                    <label class="u-flex-center u-pointer u-gap-8 u-fw-500">
                         <input type="checkbox" name="allow_guests" id="modal_meeting_allow_guests" value="1" checked>
                         <span><?php echo t('meetings.allow_guests_lbl', 'Allow External Guests (Can join via link)'); ?></span>
                     </label>
@@ -254,10 +239,10 @@ $canDelete = $can_delete ?? hasModulePermission('meetings', 'delete');
 
 <!-- Modal: Add Single Invite -->
 <div class="modal-overlay" id="inviteModal">
-    <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-card u-maxw-480">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-envelope u-primary"></i> <?php echo t('meetings.modal_invite_title', 'Invite Guest'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('inviteModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('inviteModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">

@@ -1,55 +1,95 @@
 <?php
 $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
 ?>
-<?php if (!empty($message)): ?><div class="alert alert-success"><i class="fas fa-check-circle"></i> <?php echo $h($message); ?></div><?php endif; ?>
-<?php if (!empty($error)): ?><div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> <?php echo $h($error); ?></div><?php endif; ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-map-marker-alt u-primary"></i> <?php echo t('phones.region_title'); ?></div>
-        <div class="u-flex-gap">
-            <a href="/phones" class="btn btn-secondary btn-sm" title="<?php echo t('phones.title'); ?>"><i class="fas fa-phone"></i></a>
+    <?php echo uiPageHeaderOpen('fa-map-marker-alt', t('phones.region_title'), 'regionsHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+<a href="/phones" class="btn btn-secondary btn-sm" title="<?php echo t('phones.title'); ?>"><i class="fas fa-phone"></i> <?php echo t('phones.title'); ?></a>
             <button type="button" class="btn btn-primary btn-sm" onclick="phonesEditRegion(0)"><i class="fas fa-plus"></i> <?php echo t('phones.region_add'); ?></button>
-        </div>
-    </div>
-    <p class="u-muted u-fs-12" style="margin: 0 20px 12px;"><?php echo t('phones.region_help'); ?></p>
-    <div class="table-responsive"><table class="data-table">
-        <thead><tr>
-            <th><?php echo t('phones.region_name'); ?></th>
-            <th><?php echo t('phones.region_sip_server'); ?></th>
-            <th><?php echo t('phones.region_transport'); ?></th>
-            <th><?php echo t('phones.region_col_phones'); ?></th>
-            <th></th>
-        </tr></thead>
-        <tbody>
+<?php echo uiPageHeaderClose(); ?>
+<?php echo uiHelpBoxOpen('regionsHelpBox', t('common.module_guide')); ?><?php echo t('phones.region_help'); ?><?php echo uiHelpBoxClose(); ?>
+    
+    <?php echo uiTableOpen([
+        t('phones.region_name'),
+        t('phones.region_sip_server'),
+        t('phones.region_transport'),
+        t('phones.region_col_phones'),
+        '',
+    ]); ?>
         <?php foreach ($regions as $r): ?>
             <tr>
                 <td><?php echo $h($r['name']); ?><?php if (!empty($r['is_default'])): ?> <span class="badge badge-secondary"><?php echo t('phones.region_default'); ?></span><?php endif; ?></td>
                 <td><?php echo $r['sip_server'] !== '' ? $h($r['sip_server']) : '<span class="u-muted">' . t('phones.region_general') . '</span>'; ?></td>
                 <td><?php echo $r['transport'] !== '' ? $h(strtoupper((string) $r['transport'])) : '<span class="u-muted">' . t('phones.region_general') . '</span>'; ?></td>
                 <td><?php echo (int) ($phoneCounts[(int) $r['id']] ?? 0); ?></td>
-                <td class="text-right" style="white-space: nowrap;">
-                    <button type="button" class="btn btn-xs btn-secondary" onclick="phonesEditRegion(<?php echo (int) $r['id']; ?>)"><i class="fas fa-edit"></i></button>
+                <td class="text-right u-nowrap">
+                    <button type="button" class="btn btn-icon btn-xs btn-secondary" onclick="phonesEditRegion(<?php echo (int) $r['id']; ?>)"><i class="fas fa-edit"></i></button>
                     <?php if (empty($r['is_default'])): ?>
                     <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo $h(json_encode(t('phones.region_delete_confirm'))); ?>);">
                         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                         <input type="hidden" name="delete_region" value="1">
                         <input type="hidden" name="region_id" value="<?php echo (int) $r['id']; ?>">
-                        <button type="submit" class="btn btn-xs btn-danger"><i class="fas fa-trash"></i></button>
+                        <button type="submit" class="btn btn-icon btn-xs btn-danger"><i class="fas fa-trash"></i></button>
                     </form>
                     <?php endif; ?>
                 </td>
             </tr>
         <?php endforeach; ?>
-        </tbody>
-    </table></div>
+        <?php echo uiTableClose(); ?>
+</div>
+
+<datalist id="regionLocalIps">
+    <?php foreach ($localIps as $ip): ?><option value="<?php echo $h($ip); ?>"><?php endforeach; ?>
+</datalist>
+
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-phone u-primary"></i> <?php echo t('phones.region_defaults_title'); ?></div>
+    </div>
+    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('phones.region_defaults_help'); ?> <?php echo t('phones.addresses_help'); ?></div>
+    <form method="POST" action="/phone-regions" autocomplete="off" class="u-card-pad">
+        <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+        <input type="hidden" name="save_phones" value="1">
+        <div class="u-grid-2">
+            <div class="form-group">
+                <label class="form-label"><?php echo t('phones.sip_server'); ?></label>
+                <input type="text" name="provision_sip_server" class="form-control" maxlength="255" list="regionLocalIps" value="<?php echo $h($settings['provision_sip_server']); ?>" placeholder="<?php echo $h(PhoneProvisionService::sipServer() === $settings['provision_sip_server'] ? '' : PhoneProvisionService::sipServer()); ?>">
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('phones.sip_proxy'); ?></label>
+                <input type="text" name="provision_sip_proxy" class="form-control" maxlength="255" value="<?php echo $h($settings['provision_sip_proxy']); ?>" placeholder="<?php echo $h(t('phones.sip_proxy_none')); ?>">
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('phones.base_url'); ?></label>
+                <input type="text" name="provision_base_url" class="form-control" maxlength="300" value="<?php echo $h($settings['provision_base_url']); ?>" placeholder="<?php echo $h(ForgotPasswordService::portalUrl()); ?>">
+                <div class="text-muted u-fs-11"><?php echo t('phones.base_url_help'); ?></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('phones.syslog'); ?></label>
+                <input type="text" name="provision_syslog" class="form-control" maxlength="15" list="regionLocalIps" value="<?php echo $h($settings['provision_syslog']); ?>" placeholder="<?php echo $h(t('phones.sip_proxy_none')); ?>">
+                <div class="text-muted u-fs-11"><?php echo t('phones.syslog_help'); ?></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('phones.ntp'); ?></label>
+                <input type="text" name="provision_ntp" class="form-control" value="<?php echo $h($settings['provision_ntp']); ?>" required>
+                <div class="text-muted u-fs-11"><?php echo t('phones.ntp_help'); ?></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('phones.allowed_networks'); ?></label>
+                <textarea name="provision_allowed_networks" class="form-control" rows="3" placeholder="192.168.1.0/24&#10;10.0.0.0/8"><?php echo $h($settings['provision_allowed_networks']); ?></textarea>
+                <div class="text-muted u-fs-11"><?php echo t('phones.allowed_networks_help'); ?></div>
+            </div>
+        </div>
+        <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button></div>
+    </form>
 </div>
 
 <div class="modal-overlay" id="phoneRegionModal">
-    <div class="modal-card" style="max-width: 720px;">
+    <div class="modal-card u-maxw-720">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-map-marker-alt u-primary"></i> <?php echo t('phones.region_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('phoneRegionModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('phoneRegionModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" id="phoneRegionForm">

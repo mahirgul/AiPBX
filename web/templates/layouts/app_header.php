@@ -125,8 +125,8 @@ if (!$is_cc_agent && !empty($user['extension'])) {
     <link rel="stylesheet" href="<?php echo asset('/assets/css/variables.css'); ?>">
     <?php renderBrandColorOverrideCSS(); ?>
     <link rel="stylesheet" href="<?php echo asset('/assets/css/layout.css'); ?>">
-    <link rel="stylesheet" href="<?php echo asset('/assets/css/components.css'); ?>">
-    <link rel="stylesheet" href="/assets/css/fontawesome.min.css">
+    <?php echo uiStylesheets(); ?>
+    <link rel="stylesheet" href="<?php echo asset('/assets/css/fontawesome.min.css'); ?>">
     <link rel="stylesheet" href="<?php echo asset('/assets/css/style.css'); ?>">
     <audio id="globalRemoteAudio" autoplay></audio>
     <script src="<?php echo asset('/assets/js/jssip.min.js'); ?>"></script>

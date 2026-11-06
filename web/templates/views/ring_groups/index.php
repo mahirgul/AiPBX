@@ -6,49 +6,36 @@ use PBX\Destinations\DestinationRegistry;
 ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.title'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($ring_groups); ?></span>
-        </div>
-        <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('rgHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-users', t('ring_groups.title'), 'rgHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($ring_groups); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('ring_groups', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateRgModal()" title="<?php echo t('ring_groups.new_group_btn'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('ring_groups.new_group_btn'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="rgHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('ring_groups.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('rgHelpBox', t('ring_groups.help_title')); ?>
         <p><?php echo t('ring_groups.help_body'); ?></p>
         <ul>
             <li><strong><?php echo t('ring_groups.help_mixed'); ?></strong> <?php echo t('ring_groups.help_mixed_desc'); ?></li>
             <li><strong><?php echo t('ring_groups.help_first_wins'); ?></strong> <?php echo t('ring_groups.help_first_wins_desc'); ?></li>
             <li><strong><?php echo t('ring_groups.help_internal_ext'); ?></strong> <?php echo t('ring_groups.help_internal_ext_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width: 70px;"><?php echo t('ring_groups.col_ext'); ?></th>
-                    <th><?php echo t('common.group_name'); ?></th>
-                    <th><?php echo t('ring_groups.col_targets'); ?></th>
-                    <th><?php echo t('ring_groups.col_strategy'); ?></th>
-                    <th><?php echo t('ring_groups.col_time'); ?></th>
-                    <th><?php echo t('ring_groups.col_recording'); ?></th>
-                    <th><?php echo t('common.status'); ?></th>
-                    <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => t('ring_groups.col_ext'), 'class' => 'u-w-70'],
+        t('common.group_name'),
+        t('ring_groups.col_targets'),
+        t('ring_groups.col_strategy'),
+        t('ring_groups.col_time'),
+        t('ring_groups.col_recording'),
+        t('common.status'),
+        ['label' => t('my_phone.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($ring_groups)): ?>
                     <?php echo uiTableEmptyRow(8, t('ring_groups.empty'), 'fa-users'); ?>
                 <?php else: ?>
@@ -61,7 +48,7 @@ use PBX\Destinations\DestinationRegistry;
                             <td><span class="badge badge-info u-fs-13"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($rg['group_number']); ?></span></td>
                             <td class="u-strong"><?php echo htmlspecialchars($rg['name']); ?></td>
                             <td>
-                                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                <div class="u-d-flex u-gap-4 u-wrap">
                                     <?php foreach ($num_array as $num): ?>
                                         <?php if (strlen($num) > 6): ?>
                                             <span class="badge badge-warning" title="<?php echo t('ring_groups.external'); ?>"><i class="fas fa-globe"></i> <?php echo htmlspecialchars($num); ?></span>
@@ -97,15 +84,15 @@ use PBX\Destinations\DestinationRegistry;
                             </td>
                             <td class="text-right">
                                 <?php if (hasModulePermission('ring_groups', 'edit')): ?>
-                                    <div style="display: inline-flex; gap: 4px;">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRgModal(<?php echo jsArg($rg); ?>)' title="<?php echo t('common.edit'); ?>">
+                                    <div class="u-d-inline-flex u-gap-4">
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditRgModal(<?php echo jsArg($rg); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('ring_groups.confirm_delete')), ENT_QUOTES); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_ring_group" value="1">
                                             <input type="hidden" name="ring_group_id" value="<?php echo $rg['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
+                                            <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -115,17 +102,15 @@ use PBX\Destinations\DestinationRegistry;
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: add / edit ring group -->
 <div class="modal-overlay" id="rgModal">
-    <div class="modal-card" style="max-width: 600px;">
+    <div class="modal-card u-maxw-600">
         <div class="modal-header">
             <h3 class="u-title" id="rgModalTitle"><i class="fas fa-users u-primary"></i> <?php echo t('ring_groups.modal_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('rgModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('rgModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -133,7 +118,7 @@ use PBX\Destinations\DestinationRegistry;
                 <input type="hidden" name="save_ring_group" value="1">
                 <input type="hidden" name="id" id="modal_rg_id" value="0">
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                <div class="u-d-grid u-gtc-1fr-2fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('ring_groups.group_number'); ?></label>
                         <input type="text" name="group_number" id="modal_rg_number" class="form-control" placeholder="<?php echo t('common.eg'); ?> 7000" pattern="[0-9]{3,6}" required>
@@ -165,7 +150,7 @@ use PBX\Destinations\DestinationRegistry;
 
                     <div class="form-group">
                         <label class="form-label"><?php echo t('common.ring_timeout'); ?></label>
-                        <div style="display: flex; align-items: center; gap: 6px;">
+                        <div class="u-d-flex u-ai-center u-gap-6">
                             <input type="number" name="ring_timeout" id="modal_rg_timeout" class="form-control" value="30" min="5" max="300" required>
                             <span class="u-muted u-fs-12"><?php echo t('common.seconds'); ?></span>
                         </div>
@@ -178,7 +163,7 @@ use PBX\Destinations\DestinationRegistry;
                         <input type="text" name="cid_prefix" id="modal_rg_cid_prefix" class="form-control" placeholder="<?php echo t('ring_groups.cid_prefix_ph'); ?>">
                     </div>
 
-                    <div class="form-group" style="display: flex; align-items: flex-end; padding-bottom: 8px;">
+                    <div class="form-group u-d-flex u-ai-flex-end u-pb-8">
                         <label class="form-label u-check-label u-m-0">
                             <input type="checkbox" name="record_call" id="modal_rg_record" value="1" checked class="u-check">
                             <span class="u-fw-600"><?php echo t('ring_groups.record'); ?></span>

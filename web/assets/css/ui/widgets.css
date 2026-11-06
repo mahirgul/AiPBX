@@ -1,0 +1,166 @@
+/* ===== Module Help Button ===== */
+.btn-help {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+}
+
+.btn-help:hover {
+    background: rgba(59, 130, 246, 0.15);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.btn-help:active {
+    transform: translateY(0);
+}
+
+/* ===== Module Help Box ===== */
+.module-help-box {
+    display: none;
+    margin-bottom: 20px;
+    background: var(--nav-active-bg);
+    border: 1px solid var(--border-glow);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.7;
+}
+
+.module-help-box h4 {
+    color: var(--text-main);
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.module-help-box code {
+    background: var(--bg-input);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: var(--primary);
+}
+
+/* ===== Empty Table State ===== */
+.empty-table-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 48px 20px;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.empty-table-box i {
+    font-size: 36px;
+    opacity: 0.45;
+}
+
+/* ===== Sound Badge ===== */
+.sound-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--text-main);
+    transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.sound-badge:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.sound-badge code {
+    background: transparent;
+    color: inherit;
+    font-size: 11px;
+}
+
+/* ===== Permission Matrix Checkboxes ===== */
+.perm-cb {
+    width: 17px;
+    height: 17px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.perm-view { accent-color: var(--secondary); }
+.perm-access { accent-color: var(--primary); }
+.perm-edit { accent-color: var(--warning); }
+.perm-delete { accent-color: var(--danger); }
+
+/* ===== Time Condition Days Grid ===== */
+.tc-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+}
+
+.tc-day-checkbox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.tc-day-checkbox:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.tc-day-checkbox input[type="checkbox"] {
+    width: 15px;
+    height: 15px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}
+
+.tc-day-checkbox:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--nav-active-bg);
+    color: var(--primary);
+}
+
+/* ===== Queue Agent Checkbox ===== */
+.modal-agent-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary);
+    cursor: pointer;
+}

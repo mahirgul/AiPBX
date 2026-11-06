@@ -24,6 +24,9 @@ class FirewallController extends BaseController
             ),
             'remove_rule' => fn() => FirewallService::removeRule($_POST['iface'] ?? '', $_POST['kind'] ?? '', $_POST['value'] ?? '', static::csrfToken()),
             'use_general' => fn() => FirewallService::useGeneralRules($_POST['iface'] ?? '', static::csrfToken()),
+            'toggle_rule' => fn() => FirewallService::toggleRule($_POST['scope'] ?? '', $_POST['kind'] ?? '', $_POST['value'] ?? '', ($_POST['on'] ?? '') === '1', static::csrfToken()),
+            'delete_disabled' => fn() => FirewallService::deleteDisabled($_POST['scope'] ?? '', $_POST['kind'] ?? '', $_POST['value'] ?? '', static::csrfToken()),
+            'common_on_card' => fn() => FirewallService::commonOnCard($_POST['iface'] ?? '', $_POST['kind'] ?? '', $_POST['value'] ?? '', ($_POST['on'] ?? '') === '1', static::csrfToken()),
         ]);
 
         $page_title = t('firewall.title');

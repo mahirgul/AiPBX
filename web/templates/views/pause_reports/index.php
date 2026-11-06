@@ -1,5 +1,17 @@
+<div class="card page-header-card">
+    <?php echo uiPageHeaderOpen('fa-mug-hot', t('pause_reports.header_title'), 'pauseReportHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+<?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
+            
+<?php echo uiPageHeaderClose(); ?>
+
+        <?php echo uiHelpBoxOpen('pauseReportHelpBox', t('pause_reports.help_title')); ?>
+        <?php echo t('pause_reports.help_body'); ?>
+<?php echo uiHelpBoxClose(); ?>
+</div>
+
 <!-- Statistics Overview Cards -->
-<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 20px;">
+<div class="u-d-grid u-gtc-repeat-4-1fr u-gap-20 u-mb-20">
     <div class="card u-mb-0">
         <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_total_breaks'); ?></div>
         <div class="u-fs-28 u-fw-800 u-mt-6 u-primary">
@@ -21,54 +33,37 @@
 
     <div class="card u-mb-0">
         <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_avg_duration'); ?></div>
-        <div style="font-size: 28px; font-weight: 800; margin-top: 6px; color: var(--info);">
+        <div class="u-fs-28 u-fw-700 u-mt-8 u-c-info">
             <?php echo PauseReportRepository::formatSeconds($avg_sec); ?>
         </div>
     </div>
 
     <div class="card u-mb-0">
         <div class="u-muted u-fs-13 u-fw-600"><?php echo t('pause_reports.stat_top_reason'); ?></div>
-        <div style="font-size: 22px; font-weight: 800; margin-top: 6px; color: var(--success); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        <div class="u-fs-24 u-fw-700 u-mt-8 u-success u-nowrap u-of-hidden u-text-overflow-ellipsis">
             <?php echo htmlspecialchars($top_reason); ?>
         </div>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-mug-hot u-warning"></i> <?php echo t('pause_reports.header_title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('pauseReportHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="pauseReportHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('pause_reports.help_title'); ?></h4>
-        <?php echo t('pause_reports.help_body'); ?>
-    </div>
 
     <!-- Filter Form -->
-    <form method="GET" autocomplete="off" style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; align-items: flex-end;">
-        <div style="display: flex; flex-direction: column; gap: 4px;">
+    <form method="GET" autocomplete="off" class="u-d-flex u-wrap u-gap-12 u-mb-20 u-ai-flex-end">
+        <div class="u-d-flex u-col u-gap-4">
             <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_start_date'); ?></label>
             <input type="date" name="start_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($start_date); ?>">
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="u-d-flex u-col u-gap-4">
             <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_end_date'); ?></label>
             <input type="date" name="end_date" class="form-control form-control-sm" value="<?php echo htmlspecialchars($end_date); ?>">
         </div>
 
         <?php if ($can_view_all): ?>
-            <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div class="u-d-flex u-col u-gap-4">
                 <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_agent_filter'); ?></label>
-                <select name="agent_filter" class="form-control form-control-sm" style="min-width: 180px;">
+                <select name="agent_filter" class="form-control form-control-sm u-minw-180">
                     <option value=""><?php echo t('pause_reports.all_agents'); ?></option>
                     <?php foreach ($agents as $a):
                         $sel = $agent_filter === $a['agent_extension'] ? 'selected' : '';
@@ -81,9 +76,9 @@
             </div>
         <?php endif; ?>
 
-        <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div class="u-d-flex u-col u-gap-4">
             <label class="u-muted u-fw-600 u-fs-12"><?php echo t('pause_reports.field_reason_filter'); ?></label>
-            <select name="reason_filter" class="form-control form-control-sm" style="min-width: 160px;">
+            <select name="reason_filter" class="form-control form-control-sm u-minw-160">
                 <option value=""><?php echo t('pause_reports.all_reasons'); ?></option>
                 <?php foreach ($reasons_list as $r):
                     $sel = $reason_filter === $r ? 'selected' : '';
@@ -93,30 +88,25 @@
             </select>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('pause_reports.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
-        <a href="/pause-reports" class="btn btn-secondary btn-sm" title="<?php echo t('pause_reports.reset_tooltip'); ?>"><i class="fas fa-undo"></i></a>
+        <button type="submit" class="btn btn-icon btn-primary btn-sm" title="<?php echo t('pause_reports.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
+        <a href="/pause-reports" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('pause_reports.reset_tooltip'); ?>"><i class="fas fa-undo"></i></a>
     </form>
 
     <!-- Detailed Logs Table -->
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('pause_reports.col_id'); ?></th>
-                    <th><?php echo t('pause_reports.col_agent'); ?></th>
-                    <th><?php echo t('pause_reports.col_extension'); ?></th>
-                    <th><?php echo t('pause_reports.col_reason'); ?></th>
-                    <th><?php echo t('pause_reports.col_start'); ?></th>
-                    <th><?php echo t('pause_reports.col_end'); ?></th>
-                    <th><?php echo t('pause_reports.col_total_duration'); ?></th>
-                    <th><?php echo t('pause_reports.col_status'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('pause_reports.col_id'),
+        t('pause_reports.col_agent'),
+        t('pause_reports.col_extension'),
+        t('pause_reports.col_reason'),
+        t('pause_reports.col_start'),
+        t('pause_reports.col_end'),
+        t('pause_reports.col_total_duration'),
+        t('pause_reports.col_status'),
+    ]); ?>
                 <?php if (empty($logs)): ?>
                     <tr>
                         <td colspan="8" class="u-text-center u-p-30 u-muted">
-                            <i class="fas fa-coffee" style="font-size: 32px; margin-bottom: 10px; display: block;"></i>
+                            <i class="fas fa-coffee u-fs-32 u-mb-12" style="display: block;"></i>
                             <?php echo t('pause_reports.empty'); ?>
                         </td>
                     </tr>
@@ -144,7 +134,7 @@
                             </td>
                             <td>
                                 <?php if ($is_active): ?>
-                                    <span class="badge badge-warning" style="animation: pulse 1.5s infinite;"><i class="fas fa-spinner fa-spin"></i> <?php echo t('pause_reports.status_active'); ?></span>
+                                    <span class="badge badge-warning u-animation-pulse-1-5s-infinite"><i class="fas fa-spinner fa-spin"></i> <?php echo t('pause_reports.status_active'); ?></span>
                                 <?php else: ?>
                                     <span class="badge badge-success"><i class="fas fa-check"></i> <?php echo t('pause_reports.status_completed'); ?></span>
                                 <?php endif; ?>
@@ -152,7 +142,5 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>

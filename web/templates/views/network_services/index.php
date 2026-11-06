@@ -7,73 +7,68 @@ $tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === 
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-ethernet u-primary"></i> <?php echo t('netsvc.header_title'); ?>
-            <span class="badge <?php echo $status === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="margin-left: 8px; font-size: 11px;">
+    <?php echo uiPageHeaderOpen('fa-ethernet', t('netsvc.header_title'), 'netsvcHelpBox'); ?>
+<span class="badge <?php echo $status === 'active' ? 'badge-success' : 'badge-warning'; ?> u-ml-8 u-fs-11">
                 <?php echo $mode === 'off' ? t('netsvc.mode_off') : ($status === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive')); ?>
             </span>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('netsvcHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div class="module-help-box" id="netsvcHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('netsvc.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+    <?php echo uiHelpBoxOpen('netsvcHelpBox', t('netsvc.help_title')); ?>
         <?php echo t('netsvc.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <form method="POST" autocomplete="off" style="padding: 0 20px 20px;" id="netsvcForm">
+    <form method="POST" autocomplete="off" class="u-card-pad" id="netsvcForm">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
 
         <div class="form-group">
             <label class="form-label"><?php echo t('netsvc.services'); ?></label>
-            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+            <label class="u-check-label-6 u-mb-4" style="display: block;">
                 <input type="checkbox" name="netsvc_dhcp_on" value="1" class="u-accent netsvc-switch" id="netsvc_dhcp_on" <?php echo $mode === 'dhcp' ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.switch_dhcp'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.mode_dhcp_desc'); ?></span>
             </label>
-            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+            <label class="u-check-label-6 u-mb-4" style="display: block;">
                 <input type="checkbox" name="netsvc_tftp" value="1" class="u-accent netsvc-switch" id="netsvc_tftp_on" <?php echo $tftpOn ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.switch_tftp'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_tftp_desc'); ?></span>
-                <span class="u-fs-12 u-warning" style="display: block; margin-left: 24px;"><i class="fas fa-triangle-exclamation"></i> <?php echo t('netsvc.tftp_warning'); ?></span>
+                <span class="u-fs-12 u-warning u-ml-24" style="display: block;"><i class="fas fa-triangle-exclamation"></i> <?php echo t('netsvc.tftp_warning'); ?></span>
             </label>
-            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+            <label class="u-check-label-6 u-mb-4" style="display: block;">
                 <input type="checkbox" name="netsvc_ftp" value="1" class="u-accent netsvc-switch" id="netsvc_ftp_on" <?php echo $settings['netsvc_ftp'] === '1' ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.switch_ftp'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_ftp_desc'); ?></span>
                 <?php if ($settings['netsvc_ftp'] === '1'): ?>
-                    <span class="badge <?php echo $ftpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $ftpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
+                    <span class="badge <?php echo $ftpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?> u-fs-11"><?php echo $ftpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
                 <?php endif; ?>
             </label>
-            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+            <label class="u-check-label-6 u-mb-4" style="display: block;">
                 <input type="checkbox" name="netsvc_syslog" value="1" class="u-accent netsvc-switch" id="netsvc_syslog_on" <?php echo $settings['netsvc_syslog'] === '1' ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.switch_syslog'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.switch_syslog_desc'); ?> <a href="/phone-logs"><?php echo t('sidebar.item_phone_logs'); ?></a></span>
                 <?php if ($settings['netsvc_syslog'] === '1'): ?>
-                    <span class="badge <?php echo $syslogStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $syslogStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
+                    <span class="badge <?php echo $syslogStatus === 'active' ? 'badge-success' : 'badge-warning'; ?> u-fs-11"><?php echo $syslogStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
                 <?php endif; ?>
             </label>
-            <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+            <label class="u-check-label-6 u-mb-4" style="display: block;">
                 <input type="checkbox" name="netsvc_ntp_server" value="1" class="u-accent netsvc-switch" id="netsvc_ntp_server_on" <?php echo $settings['netsvc_ntp_server'] === '1' ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.switch_ntp_server'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo sprintf(t('netsvc.switch_ntp_server_desc'), $h($serverIp)); ?></span>
                 <?php if ($settings['netsvc_ntp_server'] === '1'): ?>
-                    <span class="badge <?php echo $ntpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?>" style="font-size: 11px;"><?php echo $ntpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
+                    <span class="badge <?php echo $ntpStatus === 'active' ? 'badge-success' : 'badge-warning'; ?> u-fs-11"><?php echo $ntpStatus === 'active' ? t('netsvc.status_active') : t('netsvc.status_inactive'); ?></span>
                 <?php endif; ?>
             </label>
         </div>
 
         <div class="netsvc-ftp">
-            <p class="u-fs-12" style="margin: 0 0 8px;"><?php echo sprintf(t('netsvc.ftp_fixed_user'), '<code>' . NetworkServicesService::FTP_FIXED_USER . '</code>', '<code>' . NetworkServicesService::FTP_FIXED_DEFAULT_PASSWORD . '</code>'); ?>
-                <span class="badge <?php echo $settings['netsvc_ftp_fixed_hash'] === '' ? 'badge-warning' : 'badge-success'; ?>" style="font-size: 11px;"><?php echo t($settings['netsvc_ftp_fixed_hash'] === '' ? 'netsvc.ftp_fixed_is_default' : 'netsvc.ftp_fixed_is_custom'); ?></span></p>
-            <div class="form-group" style="max-width: 360px;">
+            <p class="u-fs-12 u-m-0-0-8"><?php echo sprintf(t('netsvc.ftp_fixed_user'), '<code>' . NetworkServicesService::FTP_FIXED_USER . '</code>', '<code>' . NetworkServicesService::FTP_FIXED_DEFAULT_PASSWORD . '</code>'); ?>
+                <span class="badge <?php echo $settings['netsvc_ftp_fixed_hash'] === '' ? 'badge-warning' : 'badge-success'; ?> u-fs-11"><?php echo t($settings['netsvc_ftp_fixed_hash'] === '' ? 'netsvc.ftp_fixed_is_default' : 'netsvc.ftp_fixed_is_custom'); ?></span></p>
+            <div class="form-group u-maxw-360">
                 <label class="form-label"><?php echo sprintf(t('netsvc.ftp_fixed_password'), NetworkServicesService::FTP_FIXED_USER); ?></label>
                 <input type="password" name="netsvc_ftp_fixed_password" class="form-control" maxlength="64" autocomplete="new-password" placeholder="<?php echo $h(t('netsvc.ftp_fixed_keep')); ?>">
             </div>
-            <label class="u-check-label-6" style="display: block; margin-bottom: 8px;">
+            <label class="u-check-label-6 u-mb-8" style="display: block;">
                 <input type="checkbox" name="netsvc_ftp_anonymous" value="1" class="u-accent" <?php echo $settings['netsvc_ftp_anonymous'] === '1' ? 'checked' : ''; ?>>
                 <strong><?php echo t('netsvc.ftp_anonymous'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('netsvc.ftp_anonymous_desc'); ?></span>
@@ -81,7 +76,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <?php $ftpUsers = NetworkServicesService::ftpUsers($settings['netsvc_ftp_users']); ?>
             <?php if ($ftpUsers !== []): ?>
                 <label class="form-label"><?php echo t('netsvc.ftp_users'); ?></label>
-                <div style="margin-bottom: 8px;">
+                <div class="u-mb-8">
                     <?php foreach ($ftpUsers as $u): ?>
                         <label class="u-check-label-6" style="display: block;">
                             <input type="checkbox" name="netsvc_ftp_remove[]" value="<?php echo $h($u['user']); ?>" class="u-accent">
@@ -118,7 +113,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         </div>
 
         <div class="netsvc-dhcp">
-            <p style="color: var(--warning); margin: 0 0 12px;">
+            <p class="u-warning u-m-0-0-12">
                 <i class="fas fa-triangle-exclamation"></i> <?php echo t('netsvc.dhcp_warning'); ?>
             </p>
             <div class="u-grid-2">
@@ -158,7 +153,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             </div>
             <div class="form-group">
                 <label class="form-label"><?php echo t('netsvc.dhcp_options'); ?></label>
-                <textarea name="netsvc_dhcp_options" class="form-control" rows="3" spellcheck="false" style="font-family: monospace;"
+                <textarea name="netsvc_dhcp_options" class="form-control u-mono" rows="3" spellcheck="false"
                           placeholder="66,ftp://192.168.10.2/&#10;43,0a:04:c0:a8:0a:02"><?php echo $h($settings['netsvc_dhcp_options']); ?></textarea>
                 <small class="u-hint u-fs-11"><?php echo t('netsvc.dhcp_options_help'); ?></small>
             </div>
@@ -181,7 +176,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             </small>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+        <div class="u-d-flex u-gap-8 u-mt-12 u-wrap">
             <button type="submit" name="save_netsvc" value="1" class="btn btn-primary"><i class="fas fa-check"></i> <?php echo t('netsvc.save'); ?></button>
             <button type="submit" name="probe_dhcp" value="1" class="btn btn-secondary netsvc-needs-iface"><i class="fas fa-magnifying-glass"></i> <?php echo t('netsvc.probe'); ?></button>
         </div>
@@ -192,52 +187,40 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
     <div class="card-header">
         <div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('netsvc.hints_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 8px;" class="u-muted u-fs-12"><?php echo t('netsvc.hints_help'); ?></div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('netsvc.col_option'); ?></th>
-                    <th><?php echo t('netsvc.col_value'); ?></th>
-                    <th><?php echo t('netsvc.col_for'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('netsvc.hints_help'); ?></div>
+    <?php echo uiTableOpen([
+        t('netsvc.col_option'),
+        t('netsvc.col_value'),
+        t('netsvc.col_for'),
+    ]); ?>
                 <?php foreach ($hints as $row): ?>
                     <tr>
                         <td class="u-fw-700"><?php echo $h($row['option']); ?></td>
-                        <td style="font-family: monospace;"><?php echo $h($row['value']); ?></td>
+                        <td class="u-mono"><?php echo $h($row['value']); ?></td>
                         <td class="u-muted u-fs-12"><?php echo $h($row['for']); ?></td>
                     </tr>
                 <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-address-book u-primary"></i> <?php echo t('netsvc.leases_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 8px;" class="u-muted u-fs-12"><?php echo t('netsvc.leases_help'); ?></div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('netsvc.col_mac'); ?></th>
-                    <th><?php echo t('netsvc.col_ip'); ?></th>
-                    <th><?php echo t('netsvc.col_hostname'); ?></th>
-                    <th><?php echo t('netsvc.col_vendor'); ?></th>
-                    <th><?php echo t('netsvc.col_expires'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('netsvc.leases_help'); ?></div>
+    <?php echo uiTableOpen([
+        t('netsvc.col_mac'),
+        t('netsvc.col_ip'),
+        t('netsvc.col_hostname'),
+        t('netsvc.col_vendor'),
+        t('netsvc.col_expires'),
+    ]); ?>
                 <?php if ($leases === []): ?>
                     <?php echo uiTableEmptyRow(5, t('netsvc.leases_empty'), 'fa-address-book'); ?>
                 <?php else: ?>
                     <?php foreach ($leases as $l): ?>
                         <tr>
-                            <td style="font-family: monospace;"><?php echo $h(PhoneModels::formatMac($l['mac'])); ?></td>
+                            <td class="u-mono"><?php echo $h(PhoneModels::formatMac($l['mac'])); ?></td>
                             <td><?php echo $h($l['ip']); ?></td>
                             <td><?php echo $h($l['hostname']); ?></td>
                             <td><?php echo $l['vendor'] !== '' ? '<span class="badge badge-info">' . $h(PhoneModels::VENDORS[$l['vendor']] ?? $l['vendor']) . '</span>' : ''; ?></td>
@@ -245,52 +228,43 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-folder-open u-primary"></i> <?php echo t('netsvc.tftp_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 4px;" class="u-fs-12"><i class="fas fa-folder u-muted"></i> <?php echo sprintf(t('netsvc.tftp_folder'), '<code>' . $h($tftpDir) . '</code>'); ?></div>
-    <div style="padding: 0 20px 8px;" class="u-muted u-fs-12"><?php echo t('netsvc.tftp_help'); ?></div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('netsvc.col_file'); ?></th>
-                    <th><?php echo t('netsvc.col_size'); ?></th>
-                    <th class="u-text-right"></th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="u-fs-12 u-p-0-20-4"><i class="fas fa-folder u-muted"></i> <?php echo sprintf(t('netsvc.tftp_folder'), '<code>' . $h($tftpDir) . '</code>'); ?></div>
+    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('netsvc.tftp_help'); ?></div>
+    <?php echo uiTableOpen([
+        t('netsvc.col_file'),
+        t('netsvc.col_size'),
+        ['label' => '', 'class' => 'u-text-right'],
+    ]); ?>
                 <?php if ($tftpFiles === []): ?>
                     <?php echo uiTableEmptyRow(3, t('netsvc.tftp_empty'), 'fa-folder-open'); ?>
                 <?php else: ?>
                     <?php foreach ($tftpFiles as $f): ?>
                         <tr>
-                            <td style="font-family: monospace;"><?php echo $h($f['name']); ?></td>
+                            <td class="u-mono"><?php echo $h($f['name']); ?></td>
                             <td class="u-muted u-fs-12"><?php echo $h(number_format($f['size'] / 1024, 1) . ' KB'); ?></td>
                             <td class="u-text-right">
                                 <form method="POST" autocomplete="off" class="u-inline" onsubmit="return confirm(<?php echo jsArg(t('netsvc.tftp_delete_confirm')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                                     <input type="hidden" name="delete_tftp" value="1">
                                     <input type="hidden" name="name" value="<?php echo $h($f['name']); ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>"><i class="fas fa-trash-alt"></i></button>
+                                    <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>"><i class="fas fa-trash-alt"></i></button>
                                 </form>
                             </td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
-    <form method="POST" enctype="multipart/form-data" autocomplete="off" style="padding: 12px 20px 20px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <?php echo uiTableClose(); ?>
+    <form class="u-p-12-20-20 u-d-flex u-gap-8 u-wrap u-ai-center" method="POST" enctype="multipart/form-data" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
         <input type="hidden" name="upload_tftp" value="1">
-        <input type="file" name="tftp_file" class="form-control" style="max-width: 360px;" required>
+        <input type="file" name="tftp_file" class="form-control u-maxw-360" required>
         <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> <?php echo t('netsvc.tftp_upload'); ?></button>
     </form>
 </div>

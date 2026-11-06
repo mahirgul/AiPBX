@@ -1,19 +1,13 @@
 <!-- Global Fax Email & Notification Settings Card -->
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-paper-plane u-primary"></i> <?php echo t('fax_mail_settings.title'); ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxMailHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-paper-plane', t('fax_mail_settings.title'), 'faxMailHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="faxMailHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_mail_settings.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+        <?php echo uiHelpBoxOpen('faxMailHelpBox', t('fax_mail_settings.help_title')); ?>
         <?php echo t('fax_mail_settings.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
     <form method="POST" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
@@ -45,7 +39,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_rx_enabled'); ?></label>
                     <select name="fax_email_rx_enabled" class="form-control">
@@ -71,7 +65,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+            <div class="u-d-grid u-gtc-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_retention'); ?></label>
                     <select name="fax_retention_days" class="form-control">
@@ -101,7 +95,7 @@
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+            <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_mail_settings.field_max_retries'); ?></label>
                     <input type="number" name="fax_max_retries" class="form-control" value="<?php echo htmlspecialchars($fax_max_retries); ?>" min="1" max="10" required>
@@ -128,9 +122,9 @@
         </div>
 
         <?php if (hasModulePermission('fax_mail_settings', 'edit')): ?>
-            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 20px;" title="<?php echo t('fax_mail_settings.save_tooltip'); ?>">
+            <div class="form-actions"><button type="submit" class="btn btn-primary" title="<?php echo t('fax_mail_settings.save_tooltip'); ?>">
                 <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
-            </button>
+            </button></div>
         <?php endif; ?>
     </form>
 </div>

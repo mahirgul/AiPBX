@@ -1,0 +1,106 @@
+/* Auth Pages (Login & 403) */
+/* The app layout fixes body to the screen height with overflow:hidden (each
+   panel scrolls by itself); the sign-in pages must scroll as a whole — on a
+   phone the card is taller than the screen. margin:auto on the card centres
+   it when it fits and keeps its top visible when it does not (align-items:
+   center pushed the top off-screen). */
+body.auth-body {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-y: auto;
+    background: var(--bg-body);
+    color: var(--text-main);
+    padding: 24px;
+}
+body.auth-body > .auth-card {
+    margin: auto;
+}
+
+@media (max-width: 520px), (max-height: 520px) {
+    body.auth-body {
+        padding: 60px 12px 16px;
+    }
+    body.auth-body > .auth-card {
+        padding: 24px 18px;
+    }
+    body.auth-body .auth-lang-switch {
+        position: absolute;
+    }
+}
+
+/* Animated background of the sign-in pages (assets/js/auth_background.js) */
+.auth-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.6s ease-in;
+}
+.auth-bg.ready {
+    opacity: 1;
+}
+#auth-bg-particles {
+    position: absolute;
+    inset: 0;
+}
+.auth-bg-line {
+    position: absolute;
+    top: -60px;
+    font-family: 'Courier New', monospace;
+    font-weight: 900;
+    white-space: nowrap;
+    will-change: transform;
+}
+body.auth-body > .auth-card,
+body.auth-body > .auth-cards {
+    position: relative;
+    z-index: 1;
+}
+
+/* Language switch in the top-right corner of the sign-in pages */
+.auth-lang-switch {
+    position: fixed;
+    top: 14px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    z-index: 10;
+}
+.auth-lang-switch .fa-globe {
+    position: absolute;
+    left: 11px;
+    color: var(--text-muted);
+    font-size: 13px;
+    pointer-events: none;
+}
+.auth-lang-switch select {
+    appearance: none;
+    padding: 6px 30px 6px 31px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2394a3b8'/%3E%3C/svg%3E") no-repeat right 11px center;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.auth-lang-switch select:hover,
+.auth-lang-switch select:focus {
+    border-color: var(--primary);
+    outline: none;
+}
+
+.auth-card {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: var(--card-shadow);
+}

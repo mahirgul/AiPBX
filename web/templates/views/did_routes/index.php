@@ -3,43 +3,30 @@ use PBX\Destinations\DestinationRegistry;
 $destOptionsCache = [];
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-route u-primary"></i> <?php echo t('did.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('didHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-route', t('did.title'), 'didHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('did_routes', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateDidModal()" title="<?php echo t('common.add_new'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('common.add_new'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="didHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('did.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('didHelpBox', t('did.help_title')); ?>
         <?php echo t('did.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('did.col_did'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('did.col_desc'); ?></th>
-                    <th><?php echo t('did.col_target'); ?></th>
-                    <th><?php echo t('did.col_detail'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('did.col_recording'); ?></th>
-                    <th><?php echo t('did.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('did.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        t('did.col_did'),
+        ['label' => t('did.col_desc'), 'class' => 'col-hide-mobile'],
+        t('did.col_target'),
+        t('did.col_detail'),
+        ['label' => t('did.col_recording'), 'class' => 'col-hide-mobile'],
+        t('did.col_status'),
+        ['label' => t('did.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($routes)): ?>
                     <?php echo uiTableEmptyRow(8, t('did.empty'), 'fa-route'); ?>
                 <?php else: ?>
@@ -73,7 +60,7 @@ $destOptionsCache = [];
                                 <?php if (!empty($r['record_call'])): ?>
                                     <span class="badge badge-danger"><i class="fas fa-microphone"></i> <?php echo t('did.recording_forced'); ?></span>
                                 <?php else: ?>
-                                    <span class="badge badge-secondary" style="opacity: 0.6;"><?php echo t('did.recording_off'); ?></span>
+                                    <span class="badge badge-secondary u-opacity-0-6"><?php echo t('did.recording_off'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -85,17 +72,15 @@ $destOptionsCache = [];
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit DID Modal -->
 <div class="modal-overlay" id="didModal">
-    <div class="modal-card" style="max-width: 540px;">
+    <div class="modal-card u-maxw-540">
         <div class="modal-header">
             <h3 class="u-title" id="didModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('did.new_route'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeDidModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeDidModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -142,24 +127,24 @@ $destOptionsCache = [];
                     <small class="u-hint"><?php echo t('did.language_help'); ?></small>
                 </div>
 
-                <div class="form-group" style="margin-top: 12px; background: var(--bg-input); padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 8px;">
-                    <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin: 0; cursor: pointer;">
-                        <input type="checkbox" name="record_call" id="modal_record_call" value="1" style="width: 18px; height: 18px; accent-color: var(--danger);">
+                <div class="form-group u-mt-12 u-bg-bg-input u-p-12-16 u-bd-1-solid-border-color u-r-8">
+                    <label class="form-label u-d-flex u-ai-center u-gap-10 u-m-0 u-pointer">
+                        <input class="u-w-18 u-h-18 u-accent-color-danger" type="checkbox" name="record_call" id="modal_record_call" value="1">
                         <span class="u-fs-13 u-fw-600 u-text-main">
                             <i class="fas fa-microphone u-danger"></i> <?php echo t('did.field_record_call'); ?>
                         </span>
                     </label>
                 </div>
 
-                <div class="form-group" id="fax_detect_group" style="margin-top: 12px; background: var(--bg-input); padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px;">
-                    <label class="form-label" style="display: flex; align-items: center; gap: 10px; margin: 0; cursor: pointer;">
-                        <input type="checkbox" name="fax_detect" id="modal_fax_detect" value="1" style="width: 18px; height: 18px;" onchange="didFaxDetectChanged()">
+                <div class="form-group u-mt-12 u-bg-bg-input u-p-12-16 u-bd-1-solid-border u-r-8" id="fax_detect_group">
+                    <label class="form-label u-d-flex u-ai-center u-gap-10 u-m-0 u-pointer">
+                        <input class="u-w-18 u-h-18" type="checkbox" name="fax_detect" id="modal_fax_detect" value="1" onchange="didFaxDetectChanged()">
                         <span class="u-fs-13 u-fw-600 u-text-main"><i class="fas fa-fax u-primary"></i> <?php echo t('did.field_fax_detect'); ?></span>
                     </label>
-                    <div id="fax_detect_fields" class="u-grid-2" style="margin-top: 10px; display: none;">
+                    <div id="fax_detect_fields" class="u-grid-2 u-mt-12" style="display: none;">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('did.field_fax_seconds'); ?></label>
-                            <input type="number" name="fax_detect_seconds" id="modal_fax_seconds" class="form-control" min="3" max="15" value="5">
+                            <input type="number" name="fax_detect_seconds" id="modal_fax_seconds" class="form-control" min="3" max="15" value="10">
                         </div>
                         <div class="form-group">
                             <label class="form-label"><?php echo t('did.field_fax_target'); ?></label>

@@ -146,7 +146,7 @@ case "$cmd" in
             [ $# -ge 2 ] || die "usage: fw zone ZONE COMMAND ..."
             match "$1" "$RE_FW_ZONE"
             zone_arg=("--zone=$1"); sub="$2"; shift 2
-            case "$sub" in add-port|remove-port|add-source-rule|remove-rich-rule|remove-service) ;; *) die "unknown fw zone command: $sub" ;; esac
+            case "$sub" in add-port|remove-port|add-source-rule|remove-rich-rule|add-service|remove-service) ;; *) die "unknown fw zone command: $sub" ;; esac
         fi
         case "$sub" in
             overview)
@@ -219,12 +219,12 @@ case "$cmd" in
                     firewall-cmd --reload >/dev/null || die "firewall reload failed"
                 fi
                 ;;
-            remove-service)
-                # fw remove-service NAME [--permanent]
-                [ $# -eq 1 ] || [ $# -eq 2 ] || die "usage: fw remove-service NAME [--permanent]"
+            add-service|remove-service)
+                # fw add-service|remove-service NAME [--permanent] — add: a rule turned back on (Firewall page)
+                [ $# -eq 1 ] || [ $# -eq 2 ] || die "usage: fw $sub NAME [--permanent]"
                 match "$1" '^[A-Za-z0-9_-]{1,64}$'
                 perm="$(permanent_flag "${2:-}")" || exit 64
-                exec firewall-cmd "${zone_arg[@]}" "--remove-service=$1" ${perm:+"$perm"}
+                exec firewall-cmd "${zone_arg[@]}" "--$sub=$1" ${perm:+"$perm"}
                 ;;
             get-default-zone)
                 [ $# -eq 0 ] || die "usage: fw get-default-zone"

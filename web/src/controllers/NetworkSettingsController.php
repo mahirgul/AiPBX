@@ -15,48 +15,28 @@ class NetworkSettingsController extends BaseController
     {
         static::requireRole('admin');
 
-        $preview = null;
-        $previewError = '';
-        if (static::isPost() && ($_POST['action'] ?? '') === 'readdress_preview') {
-            if (!verifyCSRFToken($_POST['csrf_token'] ?? '')) {
-                $previewError = t('common.invalid_csrf');
-            } else {
-                try {
-                    $preview = [
-                        'old' => trim((string) ($_POST['old_ip'] ?? '')),
-                        'new' => trim((string) ($_POST['new_ip'] ?? '')),
-                    ];
-                    $preview['changes'] = NetworkSettingsService::readdressPreview($preview['old'], $preview['new']);
-                } catch (\Exception $e) {
-                    $preview = null;
-                    $previewError = $e->getMessage();
-                }
-            }
-        }
         $natResults = null;
         if (static::isPost() && ($_POST['action'] ?? '') === 'nat_check' && verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             $natResults = NatDiagnosticsService::evaluate(NatDiagnosticsService::gather());
         }
         $notices = static::handlePost([
-            'save_server' => fn() => NetworkSettingsService::saveServer($_POST),
             'netcfg_apply' => fn() => NetworkConfigService::apply($_POST),
             'restart_for_networks' => fn() => NetworkSettingsService::restartForNetworks($_POST),
             'netcfg_confirm' => fn() => NetworkConfigService::confirm($_POST),
             'netcfg_revert' => fn() => NetworkConfigService::revert($_POST),
-            'save_phones' => fn() => NetworkSettingsService::savePhones($_POST),
-            'readdress_apply' => fn() => NetworkSettingsService::readdressAction($_POST),
         ]);
 
         $files = NetworkSettingsService::fileStatus();
+        $stale = NetworkSettingsService::staleAddresses(null, null, $files);
+        // A changed address waits on Apply, with what it changes (pending page).
+        NetworkSettingsService::queueReaddress($stale);
         static::renderPage('network_settings/index', [
             'csrf' => getCSRFToken(),
             'system' => NetworkSettingsService::system(),
             'settings' => NetworkSettingsService::settings(),
             'localIps' => NetworkSettingsService::localIps(),
-            'stale' => NetworkSettingsService::staleAddresses(null, null, $files),
+            'stale' => $stale,
             'files' => $files,
-            'preview' => $preview,
-            'previewError' => $previewError,
             'natResults' => $natResults,
         ] + $notices, ['title' => t('sidebar.item_network_settings')]);
     }

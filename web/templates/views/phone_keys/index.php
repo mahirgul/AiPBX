@@ -22,17 +22,14 @@ for ($page = 0; $page < PhoneModels::pageCount($model); $page++) {
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/phones.css'); ?>">
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-th u-primary"></i> <?php echo t('phones.keys_title'); ?>
-            <?php if ($user): ?>
+    <?php echo uiPageHeaderOpen('fa-th', t('phones.keys_title'), 'phoneKeysHelpBox'); ?>
+<?php if ($user): ?>
                 <span class="badge badge-info u-ml-8"><?php echo htmlspecialchars($user['extension'] . ' — ' . $user['full_name']); ?></span>
             <?php endif; ?>
-        </div>
-        <div class="u-flex-center">
-            <a href="/phones" class="btn btn-secondary btn-sm" title="<?php echo t('phones.title'); ?>"><i class="fas fa-phone"></i></a>
-        </div>
-    </div>
+<?php echo uiPageHeaderActions(); ?>
+<a href="/phones" class="btn btn-secondary btn-sm" title="<?php echo t('phones.title'); ?>"><i class="fas fa-phone"></i> <?php echo t('phones.title'); ?></a>
+<?php echo uiPageHeaderClose(); ?>
+<?php echo uiHelpBoxOpen('phoneKeysHelpBox', t('common.module_guide')); ?><?php echo t('phone_keys.help_body'); ?><?php echo uiHelpBoxClose(); ?>
 
     <form method="GET" class="phone-keys-toolbar">
         <div class="form-group">

@@ -1,12 +1,5 @@
 /* Page script of templates/views/push_settings/index.php */
 
-function toggleModuleHelp(boxId) {
-    var box = document.getElementById(boxId);
-    if (box) {
-        box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
-    }
-}
-
 function togglePushFields() {
     var provider = document.getElementById('pushProviderSelect').value;
     var fcmSection = document.getElementById('fcmConfigSection');

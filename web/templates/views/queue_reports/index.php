@@ -68,9 +68,9 @@ $barChart = function (array $rows, array $series, string $ariaLabel, int $width 
     return $svg . '</svg>';
 };
 $legend = function (array $series) use ($h) {
-    $out = '<div class="u-flex-gap u-fs-12" style="flex-wrap: wrap; margin-bottom: 6px;">';
+    $out = '<div class="u-flex-gap u-fs-12 u-wrap u-mb-6">';
     foreach ($series as [, $label, $color]) {
-        $out .= '<span style="display: inline-flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: ' . $color . ';"></span>' . $h($label) . '</span>';
+        $out .= '<span class="u-d-inline-flex u-ai-center u-gap-6"><span style="width: 10px; height: 10px; border-radius: 2px; background: ' . $color . ';"></span>' . $h($label) . '</span>';
     }
     return $out . '</div>';
 };
@@ -91,16 +91,15 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
 };
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-chart-column u-primary"></i> <?php echo t('queue_reports.title'); ?></div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('qrHelpBox')" title="<?php echo t('common.module_guide'); ?>"><i class="fas fa-question-circle"></i></button>
-    </div>
-    <div class="module-help-box" id="qrHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('queue_reports.help_title'); ?></h4>
-        <?php echo sprintf(t('queue_reports.help_body'), QueueStats::SHORT_ABANDON); ?>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-chart-column', t('queue_reports.title'), 'qrHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <form method="GET" autocomplete="off" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; background: var(--bg-input); padding: 14px 16px; border-radius: 12px; border: 1px solid var(--border-color);">
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('qrHelpBox', t('queue_reports.help_title')); ?>
+        <?php echo sprintf(t('queue_reports.help_body'), QueueStats::SHORT_ABANDON); ?>
+<?php echo uiHelpBoxClose(); ?>
+
+    <form class="u-d-flex u-gap-12 u-wrap u-ai-center u-bg-bg-input u-p-16-16 u-r-12 u-bd-1-solid-border-color" method="GET" autocomplete="off">
         <input type="hidden" name="tab" value="<?php echo $h($tab); ?>">
         <select name="date_range" class="form-control form-control-sm u-w-auto" onchange="document.getElementById('qrCustom').style.display = this.value === 'custom' ? 'flex' : 'none'; if (this.value !== 'custom') this.form.submit();">
             <?php foreach (['today', 'yesterday', 'week', 'month', 'custom'] as $r): ?>
@@ -118,17 +117,17 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                 <option value="<?php echo $h($qn); ?>" <?php echo $queue === $qn ? 'selected' : ''; ?>><?php echo $h($qt); ?></option>
             <?php endforeach; ?>
         </select>
-        <label class="u-fs-12 u-muted" style="display: inline-flex; align-items: center; gap: 6px;" title="<?php echo $h(t('queue_reports.sl_hint')); ?>">
+        <label class="u-fs-12 u-muted u-d-inline-flex u-ai-center u-gap-6" title="<?php echo $h(t('queue_reports.sl_hint')); ?>">
             <?php echo t('queue_reports.sl_target'); ?>
-            <input type="number" name="sl" min="5" max="300" value="<?php echo (int) $sl; ?>" class="form-control form-control-sm" style="width: 72px;"> <?php echo t('queue_reports.seconds_short'); ?>
+            <input type="number" name="sl" min="5" max="300" value="<?php echo (int) $sl; ?>" class="form-control form-control-sm u-w-72"> <?php echo t('queue_reports.seconds_short'); ?>
         </label>
-        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-filter"></i></button>
+        <button type="submit" class="btn btn-icon btn-primary btn-sm"><i class="fas fa-filter"></i></button>
         <span class="u-muted u-fs-12"><?php echo date('d.m.Y', $from); ?><?php echo date('Y-m-d', $from) !== date('Y-m-d', $to) ? ' – ' . date('d.m.Y', $to) : ''; ?></span>
-        <span style="margin-left: auto; display: inline-flex; gap: 6px;"><?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?></span>
+        <span class="u-ml-auto u-d-inline-flex u-gap-8"><?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?></span>
     </form>
 </div>
 
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px;">
+<div class="u-d-grid u-gtc-repeat-auto-fit-minmax-170-1fr u-gap-16 u-mb-20">
     <?php
     echo $tile(t('queue_reports.kpi_offered'), (string) $k['offered'], t('queue_reports.kpi_offered_sub'));
     echo $tile(t('queue_reports.kpi_answered'), $k['answered'] . ' <span class="u-fs-12 u-muted">%' . $k['answer_rate'] . '</span>', t('queue_reports.kpi_answered_sub'), 'var(--success)');
@@ -145,7 +144,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
 </div>
 
 <div class="card">
-    <div style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid var(--border-color); margin-bottom: 16px;">
+    <div class="u-d-flex u-gap-4 u-wrap u-border-bottom-1-solid-border-color u-mb-16">
         <?php foreach ($tabs as $tk => [$ticon, $tlabel]): ?>
             <a href="<?php echo $h($url(['tab' => $tk, 'unresolved' => null])); ?>"
                style="padding: 10px 14px; font-size: 13px; font-weight: 600; text-decoration: none; border-bottom: 2px solid <?php echo $tab === $tk ? 'var(--primary)' : 'transparent'; ?>; color: <?php echo $tab === $tk ? 'var(--primary)' : 'var(--text-muted)'; ?>;">
@@ -171,7 +170,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
             $bucketRows[$b['to'] === null ? $b['from'] . '+' : $b['from'] . '-' . $b['to']] = $b;
         }
     ?>
-        <div class="u-grid-2" style="gap: 24px;">
+        <div class="u-grid-2 u-gap-24">
             <div>
                 <div class="u-strong u-mb-10"><?php echo t('queue_reports.chart_hourly'); ?></div>
                 <?php echo $legend($series); ?>
@@ -190,36 +189,38 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                 $dayRows[date('d.m', strtotime($d))] = $v;
             }
         ?>
-            <div style="margin-top: 24px;">
+            <div class="u-mt-24">
                 <div class="u-strong u-mb-10"><?php echo t('queue_reports.chart_daily'); ?></div>
                 <?php echo $legend($series); ?>
                 <?php echo $barChart($dayRows, $series, t('queue_reports.chart_daily'), 1320); ?>
             </div>
         <?php endif; ?>
-        <details style="margin-top: 16px;">
+        <details class="u-mt-16">
             <summary class="u-fs-12 u-muted u-pointer"><?php echo t('queue_reports.as_table'); ?></summary>
-            <div class="table-responsive" style="margin-top: 8px;">
-                <table class="data-table" data-no-dt="true">
-                    <thead><tr><th><?php echo t('queue_reports.col_hour'); ?></th><th><?php echo t('queue_reports.col_offered'); ?></th><th><?php echo t('queue_reports.answered'); ?></th><th><?php echo t('queue_reports.lost'); ?></th></tr></thead>
-                    <tbody>
+            <?php echo uiTableOpen([
+                t('queue_reports.col_hour'),
+                t('queue_reports.col_offered'),
+                t('queue_reports.answered'),
+                t('queue_reports.lost'),
+            ], ['search' => false, 'frame' => 'u-mt-8']); ?>
                     <?php foreach ($hourRows as $hr => $v): ?>
                         <tr><td><?php echo $hr; ?>:00</td><td><?php echo $v['offered']; ?></td><td><?php echo $v['answered']; ?></td><td><?php echo $v['lost']; ?></td></tr>
                     <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php echo uiTableClose(); ?>
         </details>
 
     <?php elseif ($tab === 'queues'): ?>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead><tr>
-                    <th><?php echo t('queue_reports.col_queue'); ?></th><th><?php echo t('queue_reports.col_offered'); ?></th><th><?php echo t('queue_reports.answered'); ?></th>
-                    <th><?php echo t('queue_reports.lost'); ?></th><th><?php echo sprintf(t('queue_reports.col_sl'), $sl); ?></th>
-                    <th title="<?php echo $h(t('queue_reports.asa_hint')); ?>">ASA</th><th title="<?php echo $h(t('queue_reports.aht_hint')); ?>">AHT</th>
-                    <th><?php echo t('queue_reports.col_max_wait'); ?></th><th><?php echo t('queue_reports.col_lost_wait'); ?></th>
-                </tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('queue_reports.col_queue'),
+            t('queue_reports.col_offered'),
+            t('queue_reports.answered'),
+            t('queue_reports.lost'),
+            sprintf(t('queue_reports.col_sl'), $sl),
+            '">ASA',
+            '">AHT',
+            t('queue_reports.col_max_wait'),
+            t('queue_reports.col_lost_wait'),
+        ]); ?>
                 <?php foreach ($by_queue as $qn => $q): ?>
                     <tr>
                         <td class="u-strong"><?php echo $h($queues[$qn] ?? $qn); ?></td>
@@ -231,37 +232,32 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                         <td><?php echo $dur($q['max_wait']); ?></td><td><?php echo $dur($q['avg_lost_wait']); ?></td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
 
     <?php elseif ($tab === 'agents'): ?>
         <?php if (!$by_agent): ?>
             <div class="u-muted u-text-center u-p-24"><?php echo t('queue_reports.empty'); ?></div>
         <?php else: $maxAnswered = max(1, max(array_column($by_agent, 'answered'))); ?>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead><tr>
-                    <th><?php echo t('queue_reports.col_agent'); ?></th>
-                    <th><?php echo t('queue_reports.answered'); ?></th>
-                    <th><?php echo t('queue_reports.col_talk_total'); ?></th>
-                    <th title="<?php echo $h(t('queue_reports.aht_hint')); ?>">AHT</th>
-                    <th><?php echo t('queue_reports.col_talk_max'); ?></th>
-                    <th title="<?php echo $h(t('queue_reports.avg_ring_hint')); ?>"><?php echo t('queue_reports.col_avg_ring'); ?></th>
-                    <th title="<?php echo $h(t('queue_reports.missed_hint')); ?>"><?php echo t('queue_reports.col_missed'); ?></th>
-                    <th title="<?php echo $h(t('queue_reports.pickup_hint')); ?>"><?php echo t('queue_reports.col_pickup'); ?></th>
-                    <th title="<?php echo $h(t('queue_reports.agent_hangup_hint')); ?>"><?php echo t('queue_reports.col_agent_hangup'); ?></th>
-                    <th><?php echo t('queue_reports.col_pause'); ?></th>
-                    <th><?php echo t('queue_reports.col_notes'); ?></th>
-                </tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('queue_reports.col_agent'),
+            t('queue_reports.answered'),
+            t('queue_reports.col_talk_total'),
+            '">AHT',
+            t('queue_reports.col_talk_max'),
+            '">' . t('queue_reports.col_avg_ring'),
+            '">' . t('queue_reports.col_missed'),
+            '">' . t('queue_reports.col_pickup'),
+            '">' . t('queue_reports.col_agent_hangup'),
+            t('queue_reports.col_pause'),
+            t('queue_reports.col_notes'),
+        ]); ?>
                 <?php foreach ($by_agent as $ext => $a): ?>
                     <tr>
                         <td class="u-strong"><?php echo $h($agentLabel($ext)); ?></td>
-                        <td style="min-width: 140px;">
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span class="u-strong" style="min-width: 28px;"><?php echo $a['answered']; ?></span>
-                                <span style="flex: 1; height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden;"><span style="display: block; height: 100%; width: <?php echo round($a['answered'] * 100 / $maxAnswered); ?>%; background: var(--primary); border-radius: 3px;"></span></span>
+                        <td class="u-minw-140">
+                            <div class="u-d-flex u-ai-center u-gap-8">
+                                <span class="u-strong u-minw-28"><?php echo $a['answered']; ?></span>
+                                <span class="u-flex-1 u-h-6 u-bg-bg-input u-r-4 u-of-hidden"><span style="display: block; height: 100%; width: <?php echo round($a['answered'] * 100 / $maxAnswered); ?>%; background: var(--primary); border-radius: 3px;"></span></span>
                                 <span class="u-muted u-fs-11">%<?php echo $a['share']; ?></span>
                             </div>
                         </td>
@@ -276,28 +272,27 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                         <td><?php echo $a['notes'] ?: '-'; ?></td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
         <?php endif; ?>
 
     <?php elseif ($tab === 'lost'):
         $onlyOpen = !empty($_GET['unresolved']);
         $list = $onlyOpen ? array_values(array_filter($lost, fn($l) => $l['resolved_at'] === null)) : $lost;
     ?>
-        <div class="u-flex-gap u-mb-10" style="align-items: center;">
+        <div class="u-flex-gap u-mb-10 u-ai-center">
             <a href="<?php echo $h($url(['unresolved' => $onlyOpen ? null : '1'])); ?>" class="btn btn-sm <?php echo $onlyOpen ? 'btn-primary' : 'btn-secondary'; ?>">
                 <i class="fas fa-filter"></i> <?php echo sprintf(t('queue_reports.only_unresolved'), $unresolved); ?>
             </a>
             <span class="u-muted u-fs-12"><?php echo t('queue_reports.lost_hint'); ?></span>
         </div>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead><tr>
-                    <th><?php echo t('queue_reports.col_time'); ?></th><th><?php echo t('queue_reports.col_caller'); ?></th><th><?php echo t('queue_reports.col_queue'); ?></th>
-                    <th><?php echo t('queue_reports.col_wait'); ?></th><th><?php echo t('queue_reports.col_reason'); ?></th><th><?php echo t('queue_reports.col_callback'); ?></th>
-                </tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('queue_reports.col_time'),
+            t('queue_reports.col_caller'),
+            t('queue_reports.col_queue'),
+            t('queue_reports.col_wait'),
+            t('queue_reports.col_reason'),
+            t('queue_reports.col_callback'),
+        ]); ?>
                 <?php if (!$list): ?>
                     <tr><td colspan="6" class="u-muted u-text-center u-p-24"><?php echo t('queue_reports.no_lost'); ?></td></tr>
                 <?php endif; ?>
@@ -317,20 +312,19 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                         </td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
         <?php if (count($list) > 500): ?><div class="u-muted u-fs-12 u-mt-10"><?php echo sprintf(t('queue_reports.truncated'), count($list)); ?></div><?php endif; ?>
 
     <?php elseif ($tab === 'repeat'): ?>
         <div class="u-muted u-fs-12 u-mb-10"><?php echo t('queue_reports.repeat_hint'); ?></div>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead><tr>
-                    <th><?php echo t('queue_reports.col_caller'); ?></th><th><?php echo t('queue_reports.col_calls'); ?></th><th><?php echo t('queue_reports.answered'); ?></th>
-                    <th><?php echo t('queue_reports.lost'); ?></th><th><?php echo t('queue_reports.col_first'); ?></th><th><?php echo t('queue_reports.col_last'); ?></th>
-                </tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('queue_reports.col_caller'),
+            t('queue_reports.col_calls'),
+            t('queue_reports.answered'),
+            t('queue_reports.lost'),
+            t('queue_reports.col_first'),
+            t('queue_reports.col_last'),
+        ]); ?>
                 <?php if (!$repeat): ?>
                     <tr><td colspan="6" class="u-muted u-text-center u-p-24"><?php echo t('queue_reports.no_repeat'); ?></td></tr>
                 <?php endif; ?>
@@ -344,9 +338,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                         <td><?php echo date('d.m.Y H:i', $r['last']); ?></td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
 
     <?php elseif ($tab === 'notes'):
         $perDisp = $notes['per_disposition'];
@@ -356,14 +348,11 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
         <?php if (!$perDisp): ?>
             <div class="u-muted u-text-center u-p-24"><?php echo t('queue_reports.no_notes'); ?></div>
         <?php else: ?>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead><tr>
-                    <th><?php echo t('queue_reports.col_disposition'); ?></th>
-                    <?php foreach ($exts as $e): ?><th><?php echo $h($agentLabel($e)); ?></th><?php endforeach; ?>
-                    <th><?php echo t('queue_reports.col_total'); ?></th>
-                </tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('queue_reports.col_disposition'),
+            ...array_map(fn($e) => $h($agentLabel($e)), $exts),
+            t('queue_reports.col_total'),
+        ]); ?>
                 <?php foreach ($perDisp as $disp => $per): ?>
                     <tr>
                         <td class="u-strong"><?php echo $h($disp === '-' ? t('queue_reports.no_disposition') : $disp); ?></td>
@@ -371,9 +360,7 @@ $tile = function (string $label, string $value, string $sub, string $color = 'va
                         <td class="u-strong"><?php echo array_sum($per); ?></td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
         <?php endif; ?>
     <?php endif; ?>
 </div>

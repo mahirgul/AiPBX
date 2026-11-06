@@ -35,6 +35,7 @@ class InboundNormController extends BaseController
             'delete_rule' => fn() => InboundNormService::delete($_POST),
             'toggle_status' => fn() => InboundNormService::toggle($_POST),
             'load_presets' => fn() => InboundNormService::loadPresets($_POST),
+            'set_enabled' => fn() => InboundNormService::setEnabled($_POST),
         ]);
 
         $countries = [];
@@ -49,6 +50,7 @@ class InboundNormController extends BaseController
             'countries' => $countries,
             'csrf' => getCSRFToken(),
             'rules' => InboundNormService::all(),
+            'enabled' => InboundNormService::isEnabled(),
             'trunks' => InboundNormService::trunkNames(),
             'canEdit' => hasModulePermission('did_routes', 'edit'),
         ], ['title' => t('inbound_norm.title')] + $notices);

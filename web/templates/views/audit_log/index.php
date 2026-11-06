@@ -1,21 +1,14 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-shield-alt u-primary"></i> <?php echo t('audit_log.header_title_pbx'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('auditHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
-        </div>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-shield-alt', t('audit_log.header_title_pbx'), 'auditHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div class="module-help-box" id="auditHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('audit_log.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+    <?php echo uiHelpBoxOpen('auditHelpBox', t('audit_log.help_title')); ?>
         <?php echo t('audit_log.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+    <form method="GET" autocomplete="off" class="u-d-flex u-gap-12 u-mb-20 u-wrap u-ai-center">
         <input type="hidden" name="login_status" value="<?php echo htmlspecialchars($login_status_filter); ?>">
         <input type="hidden" name="login_search" value="<?php echo htmlspecialchars($login_search_query); ?>">
         <select name="date_range" class="form-control form-control-sm u-w-auto">
@@ -66,30 +59,25 @@
         </select>
 
         <div class="u-relative u-maxw-220">
-            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('audit_log.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
+            <i class="fas fa-search u-pos-absolute u-left-10 u-top-50pc u-transform-translatey-50pc u-muted u-fs-12 u-pointer-events-none"></i>
+            <input type="text" name="search" class="form-control form-control-sm u-pl-28" placeholder="<?php echo t('audit_log.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>">
         </div>
 
-        <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
+        <button type="submit" class="btn btn-icon btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
     </form>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('audit_log.col_date'); ?></th>
-                    <th><?php echo t('audit_log.col_user'); ?></th>
-                    <th><?php echo t('audit_log.col_domain'); ?></th>
-                    <th><?php echo t('audit_log.col_action'); ?></th>
-                    <th><?php echo t('audit_log.col_change'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('audit_log.col_ip'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('audit_log.col_date'),
+        t('audit_log.col_user'),
+        t('audit_log.col_domain'),
+        t('audit_log.col_action'),
+        t('audit_log.col_change'),
+        ['label' => t('audit_log.col_ip'), 'class' => 'col-hide-mobile'],
+    ]); ?>
                 <?php if (empty($logs)): ?>
                     <tr>
                         <td colspan="6" class="u-text-center u-muted u-p-30">
-                            <i class="fas fa-search-minus" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
+                            <i class="fas fa-search-minus u-fs-32 u-mb-8" style="display: block;"></i>
                             <?php echo t('audit_log.empty'); ?>
                         </td>
                     </tr>
@@ -121,13 +109,11 @@
                             </td>
                             <td><?php echo uiStatusBadge($log['action'], $auditActionBadgeMap, 'info', $auditActionLabelMap[$log['action']] ?? t('audit_log.action_' . $log['action'], $log['action'])); ?></td>
                             <td><?php echo htmlspecialchars($log['entity_label']); ?></td>
-                            <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($log['ip_address'] ?? '—'); ?></td>
+                            <td class="col-hide-mobile u-mono u-fs-12 u-muted"><?php echo htmlspecialchars($log['ip_address'] ?? '—'); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card">
@@ -137,7 +123,7 @@
         </div>
     </div>
 
-    <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+    <form method="GET" autocomplete="off" class="u-d-flex u-gap-12 u-mb-20 u-wrap u-ai-center">
         <input type="hidden" name="date_range" value="<?php echo htmlspecialchars($date_filter); ?>">
         <input type="hidden" name="domain" value="<?php echo htmlspecialchars($domain_filter); ?>">
         <input type="hidden" name="action" value="<?php echo htmlspecialchars($action_filter); ?>">
@@ -152,29 +138,24 @@
         </select>
 
         <div class="u-relative u-maxw-220">
-            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
-            <input type="text" name="login_search" class="form-control form-control-sm" placeholder="<?php echo t('audit_log.login_search_placeholder'); ?>" value="<?php echo htmlspecialchars($login_search_query); ?>" style="padding-left: 28px;">
+            <i class="fas fa-search u-pos-absolute u-left-10 u-top-50pc u-transform-translatey-50pc u-muted u-fs-12 u-pointer-events-none"></i>
+            <input type="text" name="login_search" class="form-control form-control-sm u-pl-28" placeholder="<?php echo t('audit_log.login_search_placeholder'); ?>" value="<?php echo htmlspecialchars($login_search_query); ?>">
         </div>
 
-        <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
+        <button type="submit" class="btn btn-icon btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
     </form>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('audit_log.col_date'); ?></th>
-                    <th><?php echo t('audit_log.col_username'); ?></th>
-                    <th><?php echo t('audit_log.col_status'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('audit_log.col_ip'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('audit_log.col_user_agent'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('audit_log.col_date'),
+        t('audit_log.col_username'),
+        t('audit_log.col_status'),
+        ['label' => t('audit_log.col_ip'), 'class' => 'col-hide-mobile'],
+        ['label' => t('audit_log.col_user_agent'), 'class' => 'col-hide-mobile'],
+    ]); ?>
                 <?php if (empty($login_attempts)): ?>
                     <tr>
                         <td colspan="5" class="u-text-center u-muted u-p-30">
-                            <i class="fas fa-search-minus" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
+                            <i class="fas fa-search-minus u-fs-32 u-mb-8" style="display: block;"></i>
                             <?php echo t('audit_log.empty'); ?>
                         </td>
                     </tr>
@@ -185,12 +166,10 @@
                             <td class="u-nowrap u-fs-12 u-muted"><?php echo htmlspecialchars($la['created_at']); ?></td>
                             <td><?php echo htmlspecialchars($la['username']); ?></td>
                             <td><?php echo uiStatusBadge($la['status'], $loginBadgeMap, 'info', ['SUCCESS' => t('audit_log.login_success'), 'RESET_REQ' => t('audit_log.login_reset_request')][$la['status']] ?? t('audit_log.login_failed')); ?></td>
-                            <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($la['ip_address']); ?></td>
-                            <td class="col-hide-mobile" style="font-size: 11px; color: var(--text-muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="<?php echo htmlspecialchars($la['user_agent'] ?? ''); ?>"><?php echo htmlspecialchars($la['user_agent'] ?? '—'); ?></td>
+                            <td class="col-hide-mobile u-mono u-fs-12 u-muted"><?php echo htmlspecialchars($la['ip_address']); ?></td>
+                            <td class="col-hide-mobile u-fs-11 u-muted u-maxw-260 u-of-hidden u-text-overflow-ellipsis u-nowrap" title="<?php echo htmlspecialchars($la['user_agent'] ?? ''); ?>"><?php echo htmlspecialchars($la['user_agent'] ?? '—'); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>

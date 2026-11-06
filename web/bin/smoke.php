@@ -214,6 +214,7 @@ function check_rbac(): void
         '/phone-keys',
         '/phone-regions',
         '/transports',
+        '/ui-kit',
         '/web-widgets',
         '/plugins',
         '/api-keys',
@@ -462,10 +463,127 @@ function check_conventions(): void
     $n = 0;
     $rel = function (string $p): string { return str_replace(SMOKE_ROOT . '/', '', $p); };
 
+    // 0) One way to draw a window and a table (templates/views/ui_kit). These forms came from another
+    //    CSS framework and have no styles here, so they looked broken or differed from every other page.
+    $n++;
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
+        if (preg_match('/class="(table(?: [^"]*)?|modal fade[^"]*|modal-backdrop|modal-dialog[^"]*|modal-content|modal-close|btn-close|close)"/', (string) file_get_contents($f), $m) === 1) {
+            fail('conventions', $rel($f), "old markup class=\"{$m[1]}\": use the shared one, see /ui-kit");
+        }
+    }
+
+    // 0b) One page title and one help, written in src/ui_helpers.php. Pages that wrote their own came out
+    //     with always-open help, no help button and buttons of different sizes (2026-11-05).
+    $n++;
+    $noTitle = ['force_reset', 'forgot_password', 'help', 'login', 'mobile_login', 'reset_password'];
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
+        $src = (string) file_get_contents($f);
+        if (preg_match('/class="[^"]*(module-help-box|btn-help)\b/', $src, $m)) {
+            fail('conventions', $rel($f), "own {$m[1]}: use uiHelpBoxOpen() / uiHelpButton()");
+        }
+        if (basename($f) === 'index.php' && !in_array(basename(dirname($f)), $noTitle, true)
+            && !str_contains($src, 'uiPageHeader')) {
+            fail('conventions', $rel($f), 'no page title: use uiPageHeader()');
+        }
+        preg_match_all("/uiHelpBoxOpen\\('(\\w+)'/", $src, $boxes);
+        foreach ($boxes[1] as $id) {
+            if (substr_count($src, "'{$id}'") < 2) {
+                fail('conventions', $rel($f), "help box {$id} has no button");
+            }
+        }
+    }
+
+    // 0c) No fixed inline styles in views: that is how every page came to differ. Allowed: display, which
+    //     scripts toggle, and values PHP computes.
+    $n++;
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
+        if (in_array(basename($f), ['lobby.php', 'try.php'], true) || basename(dirname($f)) === 'ui_kit') {
+            continue;
+        }
+        $html = (string) preg_replace(['/<script\b.*?<\/script>/si', '/<style\b.*?<\/style>/si', '/<\?(php|=).*?\?>/s'], ['', '', '@php@'], (string) file_get_contents($f));
+        if (preg_match_all('/<[a-zA-Z][^<>]*?\sstyle="([^"@]*)"/', $html, $m)) {
+            foreach ($m[1] as $style) {
+                if (!preg_match('/^\s*(display:\s*[\w-]+;?\s*)?$/', $style) && !str_contains($style, 'url(') && !str_contains($style, '--')) {
+                    fail('conventions', $rel($f), "inline style \"{$style}\": use a class, see assets/css/ui/utilities.css");
+                }
+            }
+        }
+    }
+
+    // 0h) Tables come from uiTableOpen()/uiTableClose(): 101 hand-written ones had drifted in frame,
+    //     font size and borders (2026-11-06).
+    $n++;
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
+        if (basename(dirname($f)) !== 'ui_kit' && preg_match('/<table\b/i', (string) file_get_contents($f))) {
+            fail('conventions', $rel($f), 'hand-written <table>: use uiTableOpen() / uiTableClose()');
+        }
+    }
+
+    // 0d) Every <div> a view opens it closes. My Phone closed one too many, which closed the page's
+    //     .app-container early and pushed its window and the footer out of it (2026-11-06).
+    $n++;
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
+        $html = (string) preg_replace(['/<script\b.*?<\/script>/si', '/<\?(php|=).*?\?>/s'], ['', ''], (string) file_get_contents($f));
+        $open = preg_match_all('/<div\b/i', $html);
+        $close = preg_match_all('/<\/div\s*>/i', $html);
+        if ($open !== $close) {
+            fail('conventions', $rel($f), "opens {$open} <div> but closes {$close}");
+        }
+    }
+
+    // 0e) Every u-* class a template uses exists in a stylesheet: u-grid-3 was used and never defined,
+    //     so three columns fell under each other (2026-11-06).
+    $n++;
+    $css = '';
+    foreach (glob(SMOKE_ROOT . '/assets/css/{,*/}*.css', GLOB_BRACE) ?: [] as $c) {
+        $css .= (string) file_get_contents($c);
+    }
+    preg_match_all('/\.(u-[\w-]+)/', $css, $m);
+    $defined = array_flip($m[1]);
+    foreach (glob(SMOKE_ROOT . '/templates/{views/*/,layouts/,}*.php', GLOB_BRACE) ?: [] as $f) {
+        preg_match_all('/class="([^"]*)"/', (string) file_get_contents($f), $m);
+        foreach ($m[1] as $classes) {
+            foreach (preg_split('/\s+/', $classes) ?: [] as $c) {
+                if (preg_match('/^u-[\w-]+$/', $c) && !isset($defined[$c])) {
+                    fail('conventions', $rel($f), "class {$c} is in no stylesheet");
+                }
+            }
+        }
+    }
+
+    // 0f) Status badges stand by the title, left of uiPageHeaderActions(); after it they landed among
+    //     the buttons on four pages (2026-11-06).
+    $n++;
+    foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
+        preg_match_all('/uiPageHeaderActions\(\).*?uiPageHeaderClose\(\)/s', (string) file_get_contents($f), $m);
+        foreach ($m[0] as $actions) {
+            if (preg_match('/class="badge\b/', $actions)) {
+                fail('conventions', $rel($f), 'badge among the header actions: put it before uiPageHeaderActions()');
+            }
+        }
+    }
+
+    // 0g) Every /assets/ file the PHP names exists. Pages written as plain HTML strings (403, blocked,
+    //     database down) still asked for components.css after it was split up (2026-11-06).
+    $n++;
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(SMOKE_ROOT, FilesystemIterator::SKIP_DOTS));
+    foreach ($files as $file) {
+        $p = (string) $file;
+        if (!str_ends_with($p, '.php') || str_contains($p, '/vendor/') || str_contains($p, '/tests/')) {
+            continue;
+        }
+        preg_match_all('#["\'(](/assets/[\w./-]+\.(?:css|js|png|svg|jpg|ico|woff2?))#', (string) file_get_contents($p), $m);
+        foreach (array_unique($m[1]) as $asset) {
+            if (!is_file(SMOKE_ROOT . $asset)) {
+                fail('conventions', $rel($p), "{$asset} does not exist");
+            }
+        }
+    }
+
     // 1) The service layer must not call sync directly — that bypasses the
     //    deferred reload ("Apply") system. Incident: PBXHelper::toggleStatus()
     //    had been skipped in the rollout and kept reloading instantly (2026-08-24).
-    $n++;
+$n++;
     foreach (glob(SMOKE_ROOT . '/src/services/*.php') as $f) {
         $src = php_code_without_comments($f);
         if (preg_match('/(?<![\w:>$])(syncAll[A-Za-z]+|sync[A-Za-z]+Dialplan|syncEverything)\s*\(/', $src, $m)) {

@@ -6,8 +6,38 @@ $formatDuration = function(int $seconds): string {
 };
 ?>
 
+<div class="card page-header-card">
+    <?php echo uiPageHeaderOpen('fa-list-alt', t('queue_logs.header_title'), 'qlogHelpBox'); ?>
+<?php if ($view_mode === 'grouped'): ?>
+                <span class="badge badge-info u-fs-11 u-ml-8">
+                    <i class="fas fa-route"></i> <?php echo t('queue_logs.mode_grouped'); ?>
+                </span>
+            <?php else: ?>
+                <span class="badge badge-secondary u-fs-11 u-ml-8">
+                    <i class="fas fa-stream"></i> <?php echo t('queue_logs.mode_raw'); ?>
+                </span>
+            <?php endif; ?>
+<?php echo uiPageHeaderActions(); ?>
+<button type="button" class="btn btn-outline-primary btn-sm" id="btnToggleAllJourneys" onclick="toggleAllQueueJourneys()" title="<?php echo t('queue_logs.btn_expand_all'); ?>" style="<?php echo ($view_mode !== 'grouped' || empty($parsed_logs)) ? 'display: none;' : ''; ?>">
+                <i class="fas fa-layer-group"></i> <span id="toggleAllJourneysText"><?php echo t('queue_logs.btn_expand_all'); ?></span>
+            </button>
+            
+<?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
+            <a href="/queue-logs" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('queue_logs.refresh_tooltip'); ?>"><i class="fas fa-sync-alt"></i></a>
+<?php echo uiPageHeaderClose(); ?>
+
+        <?php echo uiHelpBoxOpen('qlogHelpBox', t('queue_logs.help_title')); ?>
+        <p><?php echo t('queue_logs.help_body'); ?></p>
+        <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-8 u-mt-8">
+            <div><strong>ENTERQUEUE:</strong> <?php echo t('queue_logs.help_enterqueue'); ?></div>
+            <div><strong>CONNECT:</strong> <?php echo t('queue_logs.help_connect'); ?></div>
+            <div><strong>ABANDON:</strong> <?php echo t('queue_logs.help_abandon'); ?></div>
+        </div>
+<?php echo uiHelpBoxClose(); ?>
+</div>
+
 <!-- Statistics Overview -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 20px;">
+<div class="u-d-grid u-gtc-repeat-auto-fit-minmax-170-1fr u-gap-16 u-mb-20">
     <div class="card u-mb-0">
         <div class="u-muted u-fs-12 u-fw-600 u-uppercase"><?php echo t('queue_logs.stat_entered'); ?></div>
         <div class="u-fs-26 u-fw-800 u-mt-4 u-primary"><?php echo $stat_total_enter; ?></div>
@@ -26,49 +56,14 @@ $formatDuration = function(int $seconds): string {
     </div>
     <div class="card u-mb-0">
         <div class="u-muted u-fs-12 u-fw-600 u-uppercase"><?php echo t('queue_logs.stat_ring_no_answer'); ?></div>
-        <div style="font-size: 26px; font-weight: 800; margin-top: 4px; color: #ec4899;"><?php echo $stat_ring_no_answer; ?></div>
+        <div class="u-fs-28 u-fw-700 u-mt-4 u-c-ec4899"><?php echo $stat_ring_no_answer; ?></div>
     </div>
 </div>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-list-alt u-primary"></i> <?php echo t('queue_logs.header_title'); ?>
-            <?php if ($view_mode === 'grouped'): ?>
-                <span class="badge badge-info u-fs-11 u-ml-8">
-                    <i class="fas fa-route"></i> <?php echo t('queue_logs.mode_grouped'); ?>
-                </span>
-            <?php else: ?>
-                <span class="badge badge-secondary u-fs-11 u-ml-8">
-                    <i class="fas fa-stream"></i> <?php echo t('queue_logs.mode_raw'); ?>
-                </span>
-            <?php endif; ?>
-        </div>
-        <div class="u-flex-center">
-            <button type="button" class="btn btn-outline-primary btn-sm" id="btnToggleAllJourneys" onclick="toggleAllQueueJourneys()" title="<?php echo t('queue_logs.btn_expand_all'); ?>" style="<?php echo ($view_mode !== 'grouped' || empty($parsed_logs)) ? 'display: none;' : ''; ?>">
-                <i class="fas fa-layer-group"></i> <span id="toggleAllJourneysText"><?php echo t('queue_logs.btn_expand_all'); ?></span>
-            </button>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('qlogHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
-<?php require dirname(__DIR__, 2) . '/export_buttons.php'; ?>
-            <a href="/queue-logs" class="btn btn-secondary btn-sm" title="<?php echo t('queue_logs.refresh_tooltip'); ?>"><i class="fas fa-sync-alt"></i></a>
-        </div>
-    </div>
-
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="qlogHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('queue_logs.help_title'); ?></h4>
-        <p><?php echo t('queue_logs.help_body'); ?></p>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 8px;">
-            <div><strong>ENTERQUEUE:</strong> <?php echo t('queue_logs.help_enterqueue'); ?></div>
-            <div><strong>CONNECT:</strong> <?php echo t('queue_logs.help_connect'); ?></div>
-            <div><strong>ABANDON:</strong> <?php echo t('queue_logs.help_abandon'); ?></div>
-        </div>
-    </div>
 
     <!-- Filter Form -->
-    <form method="GET" autocomplete="off" style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; align-items: center;">
+    <form method="GET" autocomplete="off" class="u-d-flex u-gap-12 u-mb-20 u-wrap u-ai-center">
         <select name="date_range" class="form-control form-control-sm u-w-auto" onchange="this.form.submit()">
             <option value="today" <?php echo $date_filter === 'today' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_today'); ?></option>
             <option value="yesterday" <?php echo $date_filter === 'yesterday' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_yesterday'); ?></option>
@@ -76,7 +71,7 @@ $formatDuration = function(int $seconds): string {
             <option value="month" <?php echo $date_filter === 'month' ? 'selected' : ''; ?>><?php echo t('queue_logs.range_month'); ?></option>
         </select>
 
-        <select name="view_mode" class="form-control form-control-sm" style="width: auto; font-weight: 700; color: var(--primary);" onchange="this.form.submit()">
+        <select name="view_mode" class="form-control form-control-sm u-w-auto u-fw-700 u-primary" onchange="this.form.submit()">
             <option value="grouped" <?php echo $view_mode === 'grouped' ? 'selected' : ''; ?>>
                 <i class="fas fa-layer-group"></i> <?php echo t('queue_logs.mode_grouped'); ?>
             </option>
@@ -107,14 +102,14 @@ $formatDuration = function(int $seconds): string {
         </select>
 
         <div class="u-relative u-maxw-220">
-            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
-            <input type="text" name="search" class="form-control form-control-sm" placeholder="<?php echo t('queue_logs.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>" style="padding-left: 28px;">
+            <i class="fas fa-search u-pos-absolute u-left-10 u-top-50pc u-transform-translatey-50pc u-muted u-fs-12 u-pointer-events-none"></i>
+            <input type="text" name="search" class="form-control form-control-sm u-pl-28" placeholder="<?php echo t('queue_logs.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search_query); ?>">
         </div>
         <input type="hidden" name="size" value="<?php echo (int)$page_size; ?>">
 
-        <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
+        <button type="submit" class="btn btn-icon btn-primary btn-sm" title="<?php echo t('queue_logs.filter_tooltip'); ?>"><i class="fas fa-filter"></i></button>
         <?php if (!empty($event_filter) || !empty($agent_filter) || !empty($search_query) || $date_filter !== 'today' || $view_mode !== 'grouped'): ?>
-            <a href="/queue-logs" class="btn btn-secondary btn-sm" title="<?php echo t('common.reset'); ?>"><i class="fas fa-undo"></i></a>
+            <a href="/queue-logs" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('common.reset'); ?>"><i class="fas fa-undo"></i></a>
         <?php endif; ?>
     </form>
 
@@ -127,26 +122,22 @@ $formatDuration = function(int $seconds): string {
             <!-- ======================================================== -->
             <!-- GROUPED VIEW: 1 CALL = 1 ROW (WITH THE CALL JOURNEY)     -->
             <!-- ======================================================== -->
-            <table class="data-table" data-no-dt="true">
-                <thead>
-                    <tr>
-                        <th class="col-hide-mobile u-w-45">#</th>
-                        <th><?php echo t('queue_logs.col_date'); ?></th>
-                        <th><?php echo t('queue_logs.col_caller'); ?></th>
-                        <th><?php echo t('queue_logs.col_queue'); ?></th>
-                        <th><?php echo t('queue_logs.col_status'); ?></th>
-                        <th><?php echo t('queue_logs.col_answering_agent'); ?></th>
-                        <th><?php echo t('queue_logs.col_hold_time'); ?></th>
-                        <th><?php echo t('queue_logs.col_talk_time'); ?></th>
-                        <th><?php echo t('queue_logs.col_journey'); ?></th>
-                        <th class="u-text-right"><?php echo t('queue_logs.col_call_id'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+            <?php echo uiTableOpen([
+                ['label' => '#', 'class' => 'col-hide-mobile u-w-45'],
+                t('queue_logs.col_date'),
+                t('queue_logs.col_caller'),
+                t('queue_logs.col_queue'),
+                t('queue_logs.col_status'),
+                t('queue_logs.col_answering_agent'),
+                t('queue_logs.col_hold_time'),
+                t('queue_logs.col_talk_time'),
+                t('queue_logs.col_journey'),
+                ['label' => t('queue_logs.col_call_id'), 'class' => 'u-text-right'],
+            ], ['search' => false]); ?>
                     <?php if (empty($parsed_logs)): ?>
                         <tr>
                             <td colspan="10" class="u-text-center u-muted u-p-30">
-                                <i class="fas fa-search-minus" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
+                                <i class="fas fa-search-minus u-fs-32 u-mb-8" style="display: block;"></i>
                                 <?php echo t('queue_logs.empty'); ?>
                             </td>
                         </tr>
@@ -157,7 +148,7 @@ $formatDuration = function(int $seconds): string {
                                 <td class="u-nowrap u-fw-600"><?php echo $c['datetime']; ?></td>
                                 <td>
                                     <strong class="u-primary">
-                                        <i class="fas fa-phone-alt" style="font-size: 11px; margin-right: 4px; opacity: 0.7;"></i>
+                                        <i class="fas fa-phone-alt u-fs-11 u-mr-4 u-opacity-0-7"></i>
                                         <?php echo htmlspecialchars($c['caller_num']); ?>
                                     </strong>
                                 </td>
@@ -171,38 +162,38 @@ $formatDuration = function(int $seconds): string {
                                     <?php if (!empty($c['agent_ext'])): ?>
                                         <strong><?php echo htmlspecialchars($c['agent_ext']); ?></strong>
                                         <?php if (!empty($c['agent_name'])): ?>
-                                            <small style="color: var(--text-muted); display: block; font-size: 11px;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
+                                            <small class="u-muted u-fs-11" style="display: block;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
                                         <?php endif; ?>
                                     <?php else: ?>
                                         <span class="u-muted u-fs-12">-</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <div style="font-family: monospace; font-size: 12px; font-weight: 600; color: var(--warning);">
-                                        <i class="fas fa-hourglass-half" style="font-size: 10px; margin-right: 3px;"></i>
+                                    <div class="u-mono u-fs-12 u-fw-600 u-warning">
+                                        <i class="fas fa-hourglass-half u-fs-10 u-mr-3"></i>
                                         <?php echo $formatDuration($c['hold_sec']); ?>
                                     </div>
                                 </td>
                                 <td>
                                     <?php if ($c['talk_sec'] > 0): ?>
-                                        <div style="font-family: monospace; font-size: 12.5px; font-weight: 700; color: var(--success);">
+                                        <div class="u-mono u-fs-13 u-fw-700 u-success">
                                             <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i>
                                             <?php echo $formatDuration($c['talk_sec']); ?>
                                         </div>
                                     <?php else: ?>
-                                        <span style="color: var(--text-muted); font-size: 12px; font-family: monospace;">-</span>
+                                        <span class="u-muted u-fs-12 u-mono">-</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-outline-primary btn-sm queue-journey-btn" id="journey-btn-<?php echo $idx; ?>" onclick="toggleQueueJourney('<?php echo $idx; ?>')" style="padding: 2px 8px; font-size: 11px; border-radius: 6px; font-weight: 700; line-height: 1.3;" title="<?php echo t('queue_logs.journey_title'); ?>">
-                                        <i class="fas fa-route"></i> <?php echo sprintf(t('queue_logs.journey_steps'), $c['steps_count']); ?> <i class="fas fa-chevron-down queue-journey-icon" style="font-size: 9px; transition: transform 0.2s;"></i>
+                                    <button type="button" class="btn btn-outline-primary btn-sm queue-journey-btn u-r-8 u-fw-700" id="journey-btn-<?php echo $idx; ?>" onclick="toggleQueueJourney('<?php echo $idx; ?>')" title="<?php echo t('queue_logs.journey_title'); ?>">
+                                        <i class="fas fa-route"></i> <?php echo sprintf(t('queue_logs.journey_steps'), $c['steps_count']); ?> <i class="fas fa-chevron-down queue-journey-icon u-fs-10 u-transition-transform-0-2s"></i>
                                     </button>
                                 </td>
                                 <td class="u-text-right u-nowrap">
                                     <?php if (!empty($c['has_recording']) && !empty($c['cdr_id'])): ?>
                                         <?php if ($can_listen_all || (!empty($user_ext) && $c['agent_ext'] === $user_ext)): ?>
-                                            <button type="button" class="btn btn-secondary btn-sm" onclick="playCdrAudio(<?php echo (int) $c['cdr_id']; ?>, '<?php echo htmlspecialchars(addslashes($c['caller_num']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars($c['datetime'], ENT_QUOTES); ?>')" title="<?php echo t('cdr_reports.listen_tooltip'); ?>"><i class="fas fa-play"></i></button>
-                                            <a href="/api/cc_audio.php?id=<?php echo (int) $c['cdr_id']; ?>&download=1" class="btn btn-secondary btn-sm" title="<?php echo t('cdr_reports.download_tooltip'); ?>"><i class="fas fa-download"></i></a>
+                                            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="playCdrAudio(<?php echo (int) $c['cdr_id']; ?>, '<?php echo htmlspecialchars(addslashes($c['caller_num']), ENT_QUOTES); ?>', '<?php echo htmlspecialchars($c['datetime'], ENT_QUOTES); ?>')" title="<?php echo t('cdr_reports.listen_tooltip'); ?>"><i class="fas fa-play"></i></button>
+                                            <a href="/api/cc_audio.php?id=<?php echo (int) $c['cdr_id']; ?>&download=1" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('cdr_reports.download_tooltip'); ?>"><i class="fas fa-download"></i></a>
                                         <?php else: ?>
                                             <span class="badge badge-secondary u-fs-10" title="<?php echo t('cdr_reports.locked_tooltip'); ?>"><i class="fas fa-lock"></i></span>
                                         <?php endif; ?>
@@ -215,19 +206,19 @@ $formatDuration = function(int $seconds): string {
 
                             <!-- Expandable call journey (timeline) row -->
                             <tr id="journey-row-<?php echo $idx; ?>" class="queue-journey-row" style="display: none;">
-                                <td colspan="10" style="padding: 14px 20px; background: rgba(0, 242, 254, 0.02); border-bottom: 2px solid var(--border-color);">
-                                    <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 12px; padding: 14px 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+                                <td class="u-p-16-20 u-bg-rgba-0-242-254-0-02 u-border-bottom-2-solid-border-color" colspan="10">
+                                    <div class="u-bg-bg-card u-bd-1-solid-border-color u-r-12 u-p-16-20 u-box-shadow-0-2-8-rgba-0-0-0-0-03">
                                         <!-- Timeline header & duration summary -->
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 8px;">
-                                            <div style="font-size: 13px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
-                                                <span style="width: 24px; height: 24px; border-radius: 6px; background: rgba(0, 242, 254, 0.12); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; font-size: 12px;">
+                                        <div class="u-d-flex u-jc-space-between u-ai-center u-mb-16 u-pb-8 u-border-bottom-1-solid-border-color u-wrap u-gap-8">
+                                            <div class="u-fs-13 u-fw-700 u-text-main u-d-flex u-ai-center u-gap-8">
+                                                <span class="u-w-24 u-h-24 u-r-8 u-bg-rgba-0-242-254-0-12 u-primary u-d-inline-flex u-ai-center u-jc-center u-fs-12">
                                                     <i class="fas fa-route"></i>
                                                 </span>
                                                 <span><?php echo t('queue_logs.journey_title'); ?></span>
                                                 <span class="badge badge-info u-fs-11"><?php echo sprintf(t('queue_logs.journey_steps'), $c['steps_count']); ?></span>
-                                                <code style="font-size: 11px; color: var(--text-muted); background: var(--bg-input); padding: 2px 6px; border-radius: 4px;"><?php echo htmlspecialchars($c['call_id']); ?></code>
+                                                <code class="u-fs-11 u-muted u-bg-bg-input u-p-2-8 u-r-4"><?php echo htmlspecialchars($c['call_id']); ?></code>
                                             </div>
-                                            <div style="font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 10px;">
+                                            <div class="u-fs-12 u-muted u-d-flex u-ai-center u-gap-10">
                                                 <span><?php echo t('queue_logs.journey_wait'); ?>: <strong class="u-warning"><?php echo $formatDuration($c['hold_sec']); ?></strong></span>
                                                 <span>•</span>
                                                 <span><?php echo t('queue_logs.journey_talk'); ?>: <strong class="u-success"><?php echo $formatDuration($c['talk_sec']); ?></strong></span>
@@ -237,7 +228,7 @@ $formatDuration = function(int $seconds): string {
                                         </div>
 
                                         <!-- Vertical timeline -->
-                                        <div style="position: relative; padding-left: 24px; margin-left: 8px; border-left: 2px dashed var(--border-color);">
+                                        <div class="u-relative u-pl-24 u-ml-8 u-border-left-2-dashed-border-color">
                                             <?php foreach ($c['steps'] as $step): ?>
                                                 <div class="u-relative u-mb-10">
                                                     <!-- Node dot -->
@@ -246,23 +237,23 @@ $formatDuration = function(int $seconds): string {
                                                     </div>
 
                                                     <!-- Step card -->
-                                                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; background: var(--bg-input); padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap;">
-                                                        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                                                            <span style="font-family: monospace; font-size: 11px; font-weight: 700; color: var(--text-muted); background: var(--bg-card); padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border-color);">
+                                                    <div class="u-d-flex u-jc-space-between u-ai-center u-gap-12 u-bg-bg-input u-p-8-12 u-r-8 u-bd-1-solid-border-color u-wrap">
+                                                        <div class="u-d-flex u-ai-center u-gap-10 u-wrap">
+                                                            <span class="u-mono u-fs-11 u-fw-700 u-muted u-bg-bg-card u-p-2-8 u-r-4 u-bd-1-solid-border-color">
                                                                 <?php echo $step['time']; ?>
                                                             </span>
-                                                            <span style="font-size: 12.5px; font-weight: 700; color: var(--text-main);">
-                                                                <i class="fas <?php echo $step['icon']; ?>" style="color: var(--primary); font-size: 11px; margin-right: 4px;"></i>
+                                                            <span class="u-fs-13 u-fw-700 u-text-main">
+                                                                <i class="fas <?php echo $step['icon']; ?> u-primary u-fs-11 u-mr-4"></i>
                                                                 <?php echo $step['title']; ?>
                                                             </span>
-                                                            <span class="badge <?php echo $step['badge']; ?>" style="font-size: 10px; padding: 2px 6px;">
+                                                            <span class="badge <?php echo $step['badge']; ?> u-fs-10 u-p-2-8">
                                                                 <?php echo htmlspecialchars($step['event']); ?>
                                                             </span>
                                                             <span class="u-muted u-fs-12">
                                                                 <?php echo $step['detail']; ?>
                                                             </span>
                                                         </div>
-                                                        <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;">
+                                                        <div class="u-fs-11 u-muted u-mono">
                                                             #<?php echo $step['id']; ?>
                                                         </div>
                                                     </div>
@@ -274,29 +265,24 @@ $formatDuration = function(int $seconds): string {
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
+                <?php echo uiTableClose(); ?>
         <?php else: ?>
             <!-- ======================================================== -->
             <!-- RAW VIEW: LISTING BY RAW EVENT                           -->
             <!-- ======================================================== -->
-            <table class="data-table" data-no-dt="true">
-                <thead>
-                    <tr>
-                        <th class="col-hide-mobile u-w-45">#</th>
-                        <th><?php echo t('queue_logs.col_date'); ?></th>
-                        <th><?php echo t('queue_logs.col_event'); ?></th>
-                        <th><?php echo t('queue_logs.col_queue'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('queue_logs.col_agent'); ?></th>
-                        <th class="col-hide-mobile"><?php echo t('queue_logs.col_call_id'); ?></th>
-                        <th><?php echo t('queue_logs.col_detail'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+            <?php echo uiTableOpen([
+                ['label' => '#', 'class' => 'col-hide-mobile u-w-45'],
+                t('queue_logs.col_date'),
+                t('queue_logs.col_event'),
+                t('queue_logs.col_queue'),
+                ['label' => t('queue_logs.col_agent'), 'class' => 'col-hide-mobile'],
+                ['label' => t('queue_logs.col_call_id'), 'class' => 'col-hide-mobile'],
+                t('queue_logs.col_detail'),
+            ], ['search' => false]); ?>
                     <?php if (empty($parsed_logs)): ?>
                         <tr>
                             <td colspan="7" class="u-text-center u-muted u-p-30">
-                                <i class="fas fa-search-minus" style="font-size: 32px; margin-bottom: 8px; display: block;"></i>
+                                <i class="fas fa-search-minus u-fs-32 u-mb-8" style="display: block;"></i>
                                 <?php echo t('queue_logs.empty'); ?>
                             </td>
                         </tr>
@@ -323,7 +309,7 @@ $formatDuration = function(int $seconds): string {
                                         <span class="u-muted"><?php echo htmlspecialchars($log['agent']); ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td class="col-hide-mobile" style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><?php echo htmlspecialchars($log['call_id']); ?></td>
+                                <td class="col-hide-mobile u-mono u-fs-12 u-muted"><?php echo htmlspecialchars($log['call_id']); ?></td>
                                 <td class="u-fs-13">
                                     <?php
                                     if ($log['event'] === 'CONNECT') {
@@ -344,8 +330,7 @@ $formatDuration = function(int $seconds): string {
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
+                <?php echo uiTableClose(); ?>
         <?php endif; ?>
     </div>
 

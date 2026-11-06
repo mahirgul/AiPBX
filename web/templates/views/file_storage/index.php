@@ -7,32 +7,27 @@ $migration = $status['migration'] ?? [];
 $localFiles = (int) ($status['local_files'] ?? 0);
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-hard-drive u-primary"></i> <?php echo t('storage.header_title'); ?>
-            <?php if (empty($status['reachable'])): ?>
-                <span class="badge badge-warning" style="margin-left: 8px; font-size: 11px;"><?php echo t('storage.chat_unreachable'); ?></span>
+    <?php echo uiPageHeaderOpen('fa-hard-drive', t('storage.header_title'), 'storageHelpBox'); ?>
+<?php if (empty($status['reachable'])): ?>
+                <span class="badge badge-warning u-ml-8 u-fs-11"><?php echo t('storage.chat_unreachable'); ?></span>
             <?php else: ?>
-                <span class="badge badge-success" style="margin-left: 8px; font-size: 11px;"><?php echo t('storage.in_use_' . ($inUse === 's3' ? 's3' : 'local')); ?></span>
+                <span class="badge badge-success u-ml-8 u-fs-11"><?php echo t('storage.in_use_' . ($inUse === 's3' ? 's3' : 'local')); ?></span>
             <?php endif; ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('storageHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div class="module-help-box" id="storageHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('storage.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+    <?php echo uiHelpBoxOpen('storageHelpBox', t('storage.help_title')); ?>
         <?php echo t('storage.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <form method="POST" autocomplete="off" style="padding: 0 20px 20px;" id="storageForm">
+    <form method="POST" autocomplete="off" class="u-card-pad" id="storageForm">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
 
         <div class="form-group">
             <label class="form-label"><?php echo t('storage.backend'); ?></label>
             <?php foreach (FileStorageService::BACKENDS as $b): ?>
-                <label class="u-check-label-6" style="display: block; margin-bottom: 4px;">
+                <label class="u-check-label-6 u-mb-4" style="display: block;">
                     <input type="radio" name="storage_backend" value="<?php echo $b; ?>" class="u-accent storage-backend" <?php echo $backend === $b ? 'checked' : ''; ?>>
                     <strong><?php echo t('storage.backend_' . $b); ?></strong>
                     <span class="u-muted u-fs-12">· <?php echo t('storage.backend_' . $b . '_desc'); ?></span>
@@ -74,24 +69,24 @@ $localFiles = (int) ($status['local_files'] ?? 0);
                 <input type="checkbox" name="storage_s3_path_style" value="1" class="u-accent" <?php echo $settings['storage_s3_path_style'] === '1' ? 'checked' : ''; ?>>
                 <?php echo t('storage.path_style'); ?>
             </label>
-            <label class="u-check-label-6" style="display: block; margin-top: 8px;">
+            <label class="u-check-label-6 u-mt-8" style="display: block;">
                 <input type="checkbox" name="recordings_storage" value="s3" class="u-accent" <?php echo ($settings['recordings_storage'] ?? 'local') === 's3' ? 'checked' : ''; ?>>
                 <strong><?php echo t('storage.recordings'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('storage.recordings_help'); ?></span>
             </label>
-            <label class="u-check-label-6" style="display: block; margin-top: 4px;">
+            <label class="u-check-label-6 u-mt-4" style="display: block;">
                 <input type="checkbox" name="faxes_storage" value="s3" class="u-accent" <?php echo ($settings['faxes_storage'] ?? 'local') === 's3' ? 'checked' : ''; ?>>
                 <strong><?php echo t('storage.faxes'); ?></strong>
                 <span class="u-muted u-fs-12">· <?php echo t('storage.faxes_help'); ?></span>
             </label>
-            <div class="form-group" style="margin-top: 8px; max-width: 420px;">
+            <div class="form-group u-mt-8 u-maxw-420">
                 <label class="form-label"><?php echo t('storage.voicemail_days'); ?></label>
                 <input type="number" min="0" max="3650" name="voicemail_archive_days" class="form-control" value="<?php echo (int) ($settings['voicemail_archive_days'] ?? 0); ?>">
                 <small class="u-hint u-fs-11"><?php echo t('storage.voicemail_days_help'); ?></small>
             </div>
         </div>
 
-        <div style="display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap;">
+        <div class="u-d-flex u-gap-8 u-mt-12 u-wrap">
             <button type="submit" name="save_storage" value="1" class="btn btn-primary"><i class="fas fa-check"></i> <?php echo t('storage.save'); ?></button>
             <button type="submit" name="test_storage" value="1" class="btn btn-secondary storage-s3"><i class="fas fa-plug-circle-check"></i> <?php echo t('storage.test'); ?></button>
         </div>
@@ -99,11 +94,11 @@ $localFiles = (int) ($status['local_files'] ?? 0);
 </div>
 
 <?php if (!empty($status['reachable']) && ($inUse === 's3' || !empty($migration['started']))): ?>
-<div class="card" style="margin-top: 16px;">
+<div class="card u-mt-16">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-cloud-arrow-up u-primary"></i> <?php echo t('storage.migrate_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
+    <div class="u-card-pad">
         <p><?php echo sprintf(t('storage.local_files'), $localFiles); ?></p>
         <?php if (!empty($migration['started'])): ?>
             <p class="u-muted u-fs-12">
@@ -116,7 +111,7 @@ $localFiles = (int) ($status['local_files'] ?? 0);
             </p>
         <?php endif; ?>
         <?php if ($inUse === 's3' && $localFiles > 0 && empty($migration['running'])): ?>
-            <form method="POST" style="margin: 0;">
+            <form method="POST" class="u-m-0">
                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                 <button type="submit" name="migrate_storage" value="1" class="btn btn-secondary"><i class="fas fa-truck-moving"></i> <?php echo t('storage.migrate'); ?></button>
             </form>

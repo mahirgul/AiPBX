@@ -15,21 +15,18 @@ $size = function (int $bytes): string {
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-shield-halved u-primary"></i> <?php echo t('vpn.server_title'); ?>
-            <span class="badge <?php echo $server['active'] ? 'badge-success' : 'badge-warning'; ?>" style="margin-left: 8px; font-size: 11px;">
+            <span class="badge <?php echo $server['active'] ? 'badge-success' : 'badge-warning'; ?> u-ml-8 u-fs-11">
                 <?php echo $type === 'off' ? t('vpn.off') : ($server['active'] ? t('vpn.running') : t('vpn.not_running')); ?>
             </span>
         </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('vpnServerHelp')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
+        <?php echo uiHelpButton('vpnServerHelp'); ?>
     </div>
 
-    <div class="module-help-box" id="vpnServerHelp">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('vpn.server_title'); ?></h4>
+    <?php echo uiHelpBoxOpen('vpnServerHelp', t('vpn.server_title')); ?>
         <?php echo t('vpn.server_help'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <form method="POST" autocomplete="off" style="padding: 0 20px 20px;" id="vpnServerForm">
+    <form method="POST" autocomplete="off" class="u-card-pad" id="vpnServerForm">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
 
         <div class="form-group">
@@ -73,11 +70,11 @@ $size = function (int $bytes): string {
 </div>
 
 <?php if ($type !== 'off'): ?>
-<div class="card" style="margin-top: 16px;">
+<div class="card u-mt-16">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-laptop u-primary"></i> <?php echo t('vpn.devices'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
+    <div class="u-card-pad">
         <p class="u-muted u-fs-12">
             <?php echo sprintf(t('vpn.server_address'), '<strong>' . $h($server['address']) . '</strong>'); ?>
             <?php if ($server['public_key'] !== ''): ?>
@@ -85,47 +82,48 @@ $size = function (int $bytes): string {
             <?php endif; ?>
         </p>
 
-        <form method="POST" autocomplete="off" style="display: flex; gap: 8px; margin-bottom: 16px;">
+        <form method="POST" autocomplete="off" class="u-d-flex u-gap-8 u-mb-16">
             <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
             <input type="text" name="peer_name" class="form-control" maxlength="40" required placeholder="<?php echo t('vpn.device_name'); ?>" aria-label="<?php echo t('vpn.device_name'); ?>">
-            <button type="submit" name="peer_add" value="1" class="btn btn-primary" style="white-space: nowrap;"><i class="fas fa-plus"></i> <?php echo t('vpn.add_device'); ?></button>
+            <button type="submit" name="peer_add" value="1" class="btn btn-primary u-nowrap"><i class="fas fa-plus"></i> <?php echo t('vpn.add_device'); ?></button>
         </form>
 
         <?php if ($server['peers'] === []): ?>
             <p class="u-muted"><?php echo t('vpn.no_devices'); ?></p>
         <?php else: ?>
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead><tr><th><?php echo t('vpn.device_name'); ?></th><th><?php echo t('vpn.address'); ?></th><th><?php echo t('vpn.state'); ?></th><th><?php echo t('vpn.traffic'); ?></th><th></th></tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('vpn.device_name'),
+            t('vpn.address'),
+            t('vpn.state'),
+            t('vpn.traffic'),
+            '',
+        ]); ?>
                 <?php foreach ($server['peers'] as $peer): $live = $peer['live'] ?? null; $online = is_array($live) && !empty($live['online']); ?>
                     <tr>
                         <td><?php echo $h($peer['name']); ?></td>
                         <td><code><?php echo $h($peer['ip']); ?></code></td>
                         <td><span class="badge <?php echo $online ? 'badge-success' : 'badge-warning'; ?>"><?php echo $online ? t('vpn.connected') : t('vpn.not_connected'); ?></span></td>
                         <td class="u-fs-12"><?php echo is_array($live) ? '↓ ' . $size((int) $live['rx']) . ' · ↑ ' . $size((int) $live['tx']) : '–'; ?></td>
-                        <td style="white-space: nowrap; text-align: right;">
-                            <form method="POST" style="display: inline;">
+                        <td class="u-nowrap u-ta-right">
+                            <form method="POST" class="u-d-inline">
                                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                                 <input type="hidden" name="peer_id" value="<?php echo (int) $peer['id']; ?>">
                                 <button type="submit" name="peer_download" value="1" class="btn btn-xs btn-secondary" title="<?php echo t('vpn.download'); ?>"><i class="fas fa-download"></i> <?php echo t('vpn.download'); ?></button>
                                 <?php if ($type === 'wg'): ?>
                                     <button type="submit" name="peer_qr" value="1" class="btn btn-xs btn-secondary" title="<?php echo t('vpn.qr'); ?>"><i class="fas fa-qrcode"></i> <?php echo t('vpn.qr'); ?></button>
                                 <?php endif; ?>
-                                <button type="submit" name="peer_delete" value="1" class="btn btn-xs btn-danger" title="<?php echo t('common.delete'); ?>" onclick="return confirm(<?php echo jsArg(t('vpn.confirm_delete_device')); ?>);"><i class="fas fa-trash"></i></button>
+                                <button type="submit" name="peer_delete" value="1" class="btn btn-icon btn-xs btn-danger" title="<?php echo t('common.delete'); ?>" onclick="return confirm(<?php echo jsArg(t('vpn.confirm_delete_device')); ?>);"><i class="fas fa-trash"></i></button>
                             </form>
                         </td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
         <?php endif; ?>
 
         <?php if ($qr !== null): ?>
-            <div style="margin-top: 16px; text-align: center;">
+            <div class="u-mt-16 u-ta-center">
                 <p><strong><?php echo $h($qr['name']); ?></strong> · <?php echo t('vpn.qr_hint'); ?></p>
-                <img src="<?php echo $h($qr['image']); ?>" alt="<?php echo t('vpn.qr'); ?>" style="width: 320px; max-width: 100%; background: #fff;">
+                <img class="u-w-320 u-maxw-100pc u-bg-fff" src="<?php echo $h($qr['image']); ?>" alt="<?php echo t('vpn.qr'); ?>">
             </div>
         <?php endif; ?>
     </div>
@@ -133,9 +131,9 @@ $size = function (int $bytes): string {
 <?php endif; ?>
 
 <?php if ($log !== null): ?>
-<div class="card" style="margin-top: 16px;" id="vpnLog">
+<div class="card u-mt-16" id="vpnLog">
     <div class="card-header"><div class="card-title"><i class="fas fa-scroll u-primary"></i> <?php echo t('vpn.show_log'); ?></div></div>
-    <pre style="padding: 0 20px 20px; margin: 0; overflow-x: auto; font-size: 12px;"><?php echo $h($log !== '' ? $log : t('vpn.log_empty')); ?></pre>
+    <pre class="u-card-pad u-m-0 u-overflow-x-auto u-fs-12"><?php echo $h($log !== '' ? $log : t('vpn.log_empty')); ?></pre>
 </div>
 <?php endif; ?>
 

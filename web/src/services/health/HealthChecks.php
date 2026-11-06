@@ -424,7 +424,9 @@ final class HealthChecks
             return ['ok', t('health.msg_address_ok')];
         }
         $list = implode(', ', array_unique(array_map(fn($s) => $s['value'], $stale)));
-        return ['warn', sprintf(t('health.msg_address_stale'), $list, implode(', ', NetworkSettingsService::localIps()))];
+        // The move waits on Apply, so the admin sees what it changes before it happens.
+        NetworkSettingsService::queueReaddress($stale);
+        return ['warn', sprintf(t('health.msg_address_stale_pending'), $list, implode(', ', NetworkSettingsService::localIps()))];
     }
 
     private static function localAi(): array

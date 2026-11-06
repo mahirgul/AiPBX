@@ -1,0 +1,162 @@
+/* Status Badges */
+.badge {
+    background: var(--bg-input);
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.badge-secondary { background: var(--bg-input); color: var(--text-muted); border: 1px solid var(--border-color); }
+.badge-success { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+.badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+.badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); }
+.badge-info { background: rgba(59, 130, 246, 0.2); color: var(--secondary); }
+.badge-primary { background: var(--primary-glow); color: var(--primary); border: 1px solid var(--border-glow); }
+.badge-purple { background: rgba(167, 139, 250, 0.2); color: var(--purple); }
+.badge-teal { background: rgba(45, 212, 191, 0.2); color: var(--teal); }
+
+/* Modals */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh; height: 100dvh;
+    background: rgba(0, 0, 0, 0.75);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1150;
+    backdrop-filter: blur(8px);
+}
+
+.modal-overlay.active {
+    display: flex !important;
+}
+
+/* Edit dialogs sit at a fixed distance from the top, so switching tabs only
+   moves their bottom edge instead of re-centering the whole dialog. */
+.modal-overlay:has(.modal-card form) {
+    align-items: flex-start;
+    padding-top: 5vh;
+}
+
+.modal-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--card-shadow);
+    animation: modalAppear 0.2s ease-out;
+    overflow: hidden;
+}
+
+/* Tabbed edit dialogs grow with the screen so the tab row fits without scrolling. */
+.modal-card:has(.modal-tabs) {
+    max-width: min(1080px, 96vw) !important;
+}
+
+@keyframes modalAppear {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    border-left: 4px solid var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+/* Footer Toast Notifications */
+.footer-toast-container {
+    /* Appended inside .app-footer-bar (position:fixed, 40px) (see
+       footer_notify.js) — "position:absolute; bottom:4px" put it INSIDE that
+       bar, overlapping the footer text. Now it sits COMPLETELY ABOVE the
+       footer, in its own fixed position. */
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 52px;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    gap: 6px;
+    z-index: 1200;
+    pointer-events: none;
+}
+
+.footer-center-toast {
+    pointer-events: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 10px 5px 16px;
+    border-radius: 20px;
+    /* --bg-card is 85% opaque (semi-transparent) in dark mode — --bg-sidebar
+       is used so the notification is fully opaque (in both themes). */
+    background: var(--bg-sidebar);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.15));
+    color: var(--text-main);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+    white-space: nowrap;
+    transition: all 0.25s ease;
+    max-width: 90vw;
+}
+
+.footer-center-toast.toast-success {
+    background: var(--bg-sidebar);
+    border-color: rgba(16, 185, 129, 0.5);
+    color: var(--success);
+}
+
+.footer-center-toast.toast-danger,
+.footer-center-toast.toast-error {
+    background: var(--bg-sidebar);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: var(--danger);
+}
+
+.footer-center-toast .toast-text {
+    color: var(--text-main);
+}
+
+.footer-center-toast .toast-close-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 16px;
+    line-height: 1;
+    border-radius: 50%;
+    cursor: pointer;
+    padding: 0;
+}
+
+.footer-center-toast .toast-close-btn:hover {
+    background: var(--bg-card-hover, rgba(148, 163, 184, 0.15));
+    color: var(--text-main);
+}

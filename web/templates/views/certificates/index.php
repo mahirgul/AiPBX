@@ -16,21 +16,16 @@ $is_le = $st['mode'] === 'letsencrypt' && $st['le_lineage'];
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-certificate u-primary"></i> <?php echo t('certificates.header_title'); ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('certHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
-    <div class="module-help-box" id="certHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('certificates.help_title'); ?></h4>
-        <?php echo t('certificates.help_body'); ?>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-certificate', t('certificates.header_title'), 'certHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div style="padding: 16px 20px;">
-        <div class="u-flex-gap" style="align-items: center; margin-bottom: 14px;">
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('certHelpBox', t('certificates.help_title')); ?>
+        <?php echo t('certificates.help_body'); ?>
+<?php echo uiHelpBoxClose(); ?>
+
+    <div class="u-p-16-20">
+        <div class="u-flex-gap u-ai-center u-mb-14">
             <i class="fas <?php echo $level_icon; ?>" style="font-size: 28px; color: <?php echo $level_color; ?>;"></i>
             <div>
                 <div style="font-size: 18px; font-weight: 800; color: <?php echo $level_color; ?>;"><?php echo t('certificates.level_' . $a['level']); ?></div>
@@ -39,7 +34,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         </div>
 
         <?php if (!empty($a['issues'])): ?>
-            <ul style="margin: 0 0 16px 18px; padding: 0;">
+            <ul class="u-m-0-0-16-20 u-p-0">
                 <?php foreach ($a['issues'] as $issue): ?>
                     <li class="u-fs-12 u-mb-4"><?php echo sprintf(t('certificates.issue_' . $issue), $h($domain)); ?></li>
                 <?php endforeach; ?>
@@ -47,16 +42,14 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         <?php endif; ?>
 
         <?php if ($leaf): ?>
-        <div class="table-responsive">
-            <table class="data-table">
-                <tbody>
-                    <tr><td class="u-muted" style="width: 220px;"><?php echo t('certificates.field_subject'); ?></td><td><?php echo $h($leaf['subject_cn']); ?></td></tr>
-                    <tr><td class="u-muted"><?php echo t('certificates.field_names'); ?></td><td style="font-family: monospace; font-size: 12px;"><?php echo $h(implode(', ', array_column($leaf['san'], 'value')) ?: '—'); ?></td></tr>
+        <?php echo uiTableOpen([]); ?>
+                    <tr><td class="u-muted u-w-220"><?php echo t('certificates.field_subject'); ?></td><td><?php echo $h($leaf['subject_cn']); ?></td></tr>
+                    <tr><td class="u-muted"><?php echo t('certificates.field_names'); ?></td><td class="u-mono u-fs-12"><?php echo $h(implode(', ', array_column($leaf['san'], 'value')) ?: '—'); ?></td></tr>
                     <tr><td class="u-muted"><?php echo t('certificates.field_issuer'); ?></td><td><?php echo $h(trim($leaf['issuer_o'] . ' ' . $leaf['issuer_cn'])); ?></td></tr>
                     <tr><td class="u-muted"><?php echo t('certificates.field_valid'); ?></td><td><?php echo $fmt($leaf['not_before']); ?> → <strong><?php echo $fmt($leaf['not_after']); ?></strong>
-                        <span class="badge <?php echo $a['days_left'] < 0 ? 'badge-danger' : ($a['days_left'] < CertificateService::WARN_DAYS ? 'badge-warning' : 'badge-success'); ?> u-fs-11" style="margin-left: 6px;"><?php echo sprintf(t('certificates.days_left'), $a['days_left']); ?></span></td></tr>
+                        <span class="badge <?php echo $a['days_left'] < 0 ? 'badge-danger' : ($a['days_left'] < CertificateService::WARN_DAYS ? 'badge-warning' : 'badge-success'); ?> u-fs-11 u-ml-6"><?php echo sprintf(t('certificates.days_left'), $a['days_left']); ?></span></td></tr>
                     <tr><td class="u-muted"><?php echo t('certificates.field_chain'); ?></td><td><?php echo (int) $a['chain_length']; ?></td></tr>
-                    <tr><td class="u-muted"><?php echo t('certificates.field_fingerprint'); ?></td><td style="font-family: monospace; font-size: 11px; word-break: break-all;"><?php echo $h(strtoupper(implode(':', str_split($leaf['fingerprint'], 2)))); ?></td></tr>
+                    <tr><td class="u-muted"><?php echo t('certificates.field_fingerprint'); ?></td><td class="u-mono u-fs-11 u-word-break-break-all"><?php echo $h(strtoupper(implode(':', str_split($leaf['fingerprint'], 2)))); ?></td></tr>
                     <tr><td class="u-muted"><?php echo t('certificates.field_services'); ?></td><td>
                         <span class="badge badge-success u-fs-11"><i class="fas fa-check"></i> <?php echo t('certificates.svc_portal'); ?></span>
                         <?php foreach (['coturn' => t('certificates.svc_turn'), 'asterisk' => t('certificates.svc_sip')] as $svc => $label): ?>
@@ -75,9 +68,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                         <?php echo $fmt(strtotime((string) ($st['last']['at'] ?? '')) ?: null); ?> — <span class="u-fs-12"><?php echo $h($st['last']['message'] ?? ''); ?></span>
                     </td></tr>
                     <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
         <?php endif; ?>
     </div>
 </div>
@@ -85,21 +76,21 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 <?php if ($output !== ''): ?>
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-terminal u-primary"></i> <?php echo t('certificates.output'); ?></div></div>
-    <pre style="margin: 0; white-space: pre-wrap; background: #0f172a; color: #e2e8f0; padding: 12px 16px; font-size: 11px; max-height: 320px; overflow: auto;"><?php echo $h($output); ?></pre>
+    <pre class="u-m-0 u-white-space-pre-wrap u-bg-0f172a u-c-e2e8f0 u-p-12-16 u-fs-11 u-maxh-320 u-of-auto"><?php echo $h($output); ?></pre>
 </div>
 <?php endif; ?>
 
 <!-- Let's Encrypt -->
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-lock u-primary"></i> <?php echo t('certificates.le_title'); ?></div></div>
-    <div style="padding: 16px 20px;">
+    <div class="u-p-16-20">
         <?php if (!$st['le_possible']): ?>
             <div class="u-muted"><?php echo sprintf(t('certificates.le_not_possible_long'), $h($domain)); ?></div>
         <?php elseif (!$st['certbot']): ?>
             <div class="u-danger"><?php echo t('certificates.le_no_certbot'); ?></div>
         <?php elseif ($is_le): ?>
             <p class="u-fs-12 u-mt-0"><?php echo t('certificates.le_active_text'); ?></p>
-            <div class="u-flex-gap" style="flex-wrap: wrap;">
+            <div class="u-flex-gap u-wrap">
                 <form method="POST" class="u-inline cert-form">
                     <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
                     <input type="hidden" name="action" value="renew_test">
@@ -121,14 +112,14 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <form method="POST" class="cert-form" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
 
-                <div class="form-group" style="max-width: 520px; margin-bottom: 14px;">
+                <div class="form-group u-maxw-520 u-mb-14">
                     <label class="form-label"><?php echo t('certificates.field_validation_method'); ?></label>
-                    <div style="display: flex; gap: 16px; margin-top: 6px;">
-                        <label class="u-check-label u-fs-12" style="cursor: pointer;">
+                    <div class="u-d-flex u-gap-16 u-mt-6">
+                        <label class="u-check-label u-fs-12 u-pointer">
                             <input type="radio" name="validation_method" value="http01" <?php echo $selValMethod === 'http01' ? 'checked' : ''; ?> onchange="toggleValMethod(this.value)">
                             <strong>HTTP-01</strong> (<?php echo t('certificates.val_http01_desc'); ?>)
                         </label>
-                        <label class="u-check-label u-fs-12" style="cursor: pointer;">
+                        <label class="u-check-label u-fs-12 u-pointer">
                             <input type="radio" name="validation_method" value="dns_cloudflare" <?php echo $selValMethod === 'dns_cloudflare' ? 'checked' : ''; ?> onchange="toggleValMethod(this.value)">
                             <strong>DNS-01 Cloudflare</strong> (<?php echo t('certificates.val_dns_cloudflare_desc'); ?>)
                         </label>
@@ -136,7 +127,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 </div>
 
                 <div id="cfDnsFields" style="display: <?php echo $selValMethod === 'dns_cloudflare' ? 'block' : 'none'; ?>; background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 6px; padding: 14px; margin-bottom: 16px; max-width: 520px;">
-                    <div class="form-group" style="margin-bottom: 12px;">
+                    <div class="form-group u-mb-12">
                         <label class="form-label"><?php echo t('certificates.field_cf_token'); ?> <span class="u-danger">*</span></label>
                         <input type="password" name="cf_api_token" id="cfApiTokenInput" class="form-control" placeholder="<?php echo !empty($st['cf_configured']) ? '•••••••• (Saved on server)' : 'Cloudflare API Token'; ?>" autocomplete="new-password">
                         <div class="u-hint"><?php echo t('certificates.cf_token_hint'); ?></div>
@@ -147,13 +138,13 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                     </label>
                 </div>
 
-                <div class="form-group" style="max-width: 520px;">
+                <div class="form-group u-maxw-520">
                     <label class="form-label"><?php echo t('certificates.field_email'); ?></label>
                     <input type="email" name="email" class="form-control" value="<?php echo $h($selEmail); ?>" placeholder="admin@<?php echo $h($domain); ?>">
                     <div class="u-hint"><?php echo t('certificates.email_hint'); ?></div>
                 </div>
 
-                <div class="u-flex-gap" style="flex-wrap: wrap;">
+                <div class="u-flex-gap u-wrap">
                     <button type="submit" name="action" value="le_test" class="btn btn-secondary"><i class="fas fa-vial"></i> <?php echo t('certificates.btn_le_test'); ?></button>
                     <button type="submit" name="action" value="le_issue" class="btn btn-primary" data-confirm="<?php echo $h(t('certificates.confirm_switch')); ?>"><i class="fas fa-certificate"></i> <?php echo t('certificates.btn_le_issue'); ?></button>
                 </div>
@@ -173,7 +164,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 <!-- Uploaded certificate -->
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-file-arrow-up u-primary"></i> <?php echo t('certificates.upload_title'); ?></div></div>
-    <form method="POST" enctype="multipart/form-data" class="cert-form" autocomplete="off" style="padding: 16px 20px;" data-confirm="<?php echo $h(t('certificates.confirm_switch')); ?>">
+    <form method="POST" enctype="multipart/form-data" class="cert-form u-p-16-20" autocomplete="off" data-confirm="<?php echo $h(t('certificates.confirm_switch')); ?>">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <input type="hidden" name="action" value="upload">
         <p class="u-fs-12 u-mt-0"><?php echo t('certificates.upload_text'); ?></p>
@@ -217,7 +208,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 <?php if ($st['mode'] !== 'selfsigned'): ?>
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-rotate-left u-primary"></i> <?php echo t('certificates.selfsigned_title'); ?></div></div>
-    <form method="POST" class="cert-form" style="padding: 16px 20px;" data-confirm="<?php echo $h(t('certificates.confirm_selfsigned')); ?>">
+    <form method="POST" class="cert-form u-p-16-20" data-confirm="<?php echo $h(t('certificates.confirm_selfsigned')); ?>">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <input type="hidden" name="action" value="selfsigned">
         <p class="u-fs-12 u-mt-0"><?php echo t('certificates.selfsigned_text'); ?></p>

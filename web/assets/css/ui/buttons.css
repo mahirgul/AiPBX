@@ -1,0 +1,92 @@
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: var(--btn-h, 36px);
+    padding: 0 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    /* Browsers do not let <button> inherit color from body (they use the UA
+       default, usually black) — plain .btn elements without a colour (e.g. the
+       sidebar theme button) always looked black/dark regardless of the theme. */
+    color: inherit;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    color: #ffffff;
+    box-shadow: 0 4px 14px var(--primary-glow);
+}
+
+.btn-primary:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--bg-input);
+    color: var(--text-main);
+    border: 1px solid var(--border-color);
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-muted);
+}
+
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+}
+
+/* Used by the Active/Passive toggles and a few other buttons but was never
+   defined: in dark mode they were nearly invisible. */
+.btn-success {
+    background: var(--success);
+    color: #fff;
+}
+.btn-success:hover,
+.btn-danger:hover {
+    opacity: 0.92;
+}
+
+/* Quiet button for the unselected option of a group (e.g. My Phone call
+   filters); undefined before, so it showed as a white browser button. */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-color);
+}
+.btn-ghost:hover {
+    background: var(--bg-input);
+    color: var(--text-main);
+}
+
+/* Outline buttons (used across the pages but were never defined, so they
+   rendered as bare text): coloured border and text, filled on hover. */
+.btn-outline-primary   { --btn-c: var(--primary); }
+.btn-outline-secondary { --btn-c: var(--text-muted); }
+.btn-outline-success   { --btn-c: var(--success); }
+.btn-outline-danger    { --btn-c: var(--danger); }
+.btn-outline-warning   { --btn-c: var(--warning); }
+.btn-outline-info      { --btn-c: var(--info, #0ea5e9); }
+.btn-outline-primary, .btn-outline-secondary, .btn-outline-success,
+.btn-outline-danger, .btn-outline-warning, .btn-outline-info {
+    background: transparent;
+    color: var(--btn-c);
+    border: 1px solid var(--btn-c);
+}
+.btn-outline-primary:hover, .btn-outline-secondary:hover, .btn-outline-success:hover,
+.btn-outline-danger:hover, .btn-outline-warning:hover, .btn-outline-info:hover {
+    background: var(--btn-c);
+    color: #fff;
+}

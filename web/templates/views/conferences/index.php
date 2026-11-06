@@ -5,26 +5,18 @@
 ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-users-rectangle u-primary"></i> <?php echo t('conferences.title'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($conferences); ?></span>
-        </div>
-        <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('confHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-users-rectangle', t('conferences.title'), 'confHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($conferences); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('conferences', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateConfModal()" title="<?php echo t('conferences.new_conf_btn'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('conferences.new_conf_btn'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="confHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('conferences.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('confHelpBox', t('conferences.help_title')); ?>
         <p><?php echo t('conferences.help_body'); ?></p>
         <ul>
             <li><strong><?php echo t('conferences.help_quick_dial'); ?></strong> <?php $p = htmlspecialchars($confPrefix ?? '#9'); echo sprintf(t('conferences.help_quick_dial_desc'), $p, $p); ?></li>
@@ -32,41 +24,36 @@
             <li><strong><?php echo t('conferences.help_wait_leader'); ?></strong> <?php echo t('conferences.help_wait_leader_desc'); ?></li>
             <li><strong><?php echo t('conferences.help_live_ctrl'); ?></strong> <?php echo t('conferences.help_live_ctrl_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width: 70px;"><?php echo t('conferences.col_room'); ?></th>
-                    <th><?php echo t('conferences.col_title'); ?></th>
-                    <th><?php echo t('conferences.col_pins'); ?></th>
-                    <th><?php echo t('conferences.col_features'); ?></th>
-                    <th><?php echo t('conferences.col_capacity'); ?></th>
-                    <th><?php echo t('conferences.col_recording'); ?></th>
-                    <th><?php echo t('common.status'); ?></th>
-                    <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => t('conferences.col_room'), 'class' => 'u-w-70'],
+        t('conferences.col_title'),
+        t('conferences.col_pins'),
+        t('conferences.col_features'),
+        t('conferences.col_capacity'),
+        t('conferences.col_recording'),
+        t('common.status'),
+        ['label' => t('my_phone.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($conferences)): ?>
                     <?php echo uiTableEmptyRow(8, t('conferences.empty'), 'fa-users-rectangle'); ?>
                 <?php else: ?>
                     <?php foreach ($conferences as $cf): ?>
                         <tr>
                             <td>
-                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <div class="u-d-flex u-col u-gap-3">
                                     <span class="badge badge-info u-fs-13"><i class="fas fa-hashtag"></i> <?php echo htmlspecialchars($cf['room_number']); ?></span>
-                                    <span class="badge badge-secondary u-fs-11" title="<?php echo t('conferences.quick_dial'); ?>" style="font-family: monospace; letter-spacing: 0.5px;"><?php echo htmlspecialchars(($confPrefix ?? '#9') . $cf['room_number']); ?></span>
+                                    <span class="badge badge-secondary u-fs-11 u-mono u-letter-spacing-0-5" title="<?php echo t('conferences.quick_dial'); ?>"><?php echo htmlspecialchars(($confPrefix ?? '#9') . $cf['room_number']); ?></span>
                                 </div>
                             </td>
                             <td class="u-strong"><?php echo htmlspecialchars($cf['title']); ?></td>
                             <td>
-                                <div style="display: flex; gap: 4px; flex-wrap: wrap; font-size: 11px;">
+                                <div class="u-d-flex u-gap-4 u-wrap u-fs-11">
                                     <?php if (!empty($cf['user_pin'])): ?>
                                         <span class="badge badge-secondary" title="<?php echo t('conferences.user_pin'); ?>"><i class="fas fa-key"></i> <?php echo t('conferences.participant'); ?>: <?php echo htmlspecialchars($cf['user_pin']); ?></span>
                                     <?php else: ?>
-                                        <span class="badge badge-secondary" style="opacity: 0.7;"><?php echo t('conferences.no_pin'); ?></span>
+                                        <span class="badge badge-secondary u-opacity-0-7"><?php echo t('conferences.no_pin'); ?></span>
                                     <?php endif; ?>
                                     <?php if (!empty($cf['admin_pin'])): ?>
                                         <span class="badge badge-warning" title="<?php echo t('conferences.admin_pin'); ?>"><i class="fas fa-crown"></i> <?php echo t('conferences.moderator'); ?>: <?php echo htmlspecialchars($cf['admin_pin']); ?></span>
@@ -74,7 +61,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                <div class="u-d-flex u-gap-4 u-wrap">
                                     <?php if ((int)$cf['wait_marked'] === 1): ?>
                                         <span class="badge badge-warning" title="<?php echo t('conferences.wait_leader_t'); ?>"><i class="fas fa-user-clock"></i> <?php echo t('conferences.wait_leader_short'); ?></span>
                                     <?php endif; ?>
@@ -105,12 +92,12 @@
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
-                                <div style="display: inline-flex; gap: 4px;">
+                                <div class="u-d-inline-flex u-gap-4">
                                     <button type="button" class="btn btn-info btn-sm" onclick="showLiveMembers(<?php echo jsArg($cf['room_number']); ?>, <?php echo jsArg($cf['title']); ?>)" title="<?php echo t('conferences.live_members'); ?>">
                                         <i class="fas fa-users-viewfinder"></i> <?php echo t('conferences.live'); ?>
                                     </button>
                                     <?php if (hasModulePermission('conferences', 'edit')): ?>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditConfModal(<?php echo jsArg($cf); ?>)' title="<?php echo t('common.edit'); ?>">
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditConfModal(<?php echo jsArg($cf); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     <?php endif; ?>
@@ -119,7 +106,7 @@
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_conference" value="1">
                                             <input type="hidden" name="conference_id" value="<?php echo $cf['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
+                                            <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -129,25 +116,23 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: live participants -->
 <div class="modal-overlay" id="liveMembersModal">
-    <div class="modal-card" style="max-width: 640px;">
+    <div class="modal-card u-maxw-640">
         <div class="modal-header">
             <h3 class="u-title" id="liveMembersTitle"><i class="fas fa-users-viewfinder u-primary"></i> <?php echo t('conferences.live_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('liveMembersModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('liveMembersModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
-            <div id="liveMembersBody" style="min-height: 120px;">
+            <div class="u-minh-120" id="liveMembersBody">
                 <div class="text-center text-muted u-p-30">
                     <i class="fas fa-spinner fa-spin fa-2x"></i><br><br><?php echo t('conferences.loading_members'); ?>
                 </div>
             </div>
-            <div style="margin-top: 15px; display: flex; justify-content: space-between; align-items: center;">
+            <div class="u-mt-15 u-d-flex u-jc-space-between u-ai-center">
                 <button type="button" class="btn btn-secondary btn-sm" onclick="refreshLiveMembers()">
                     <i class="fas fa-sync-alt"></i> <?php echo t('common.refresh'); ?>
                 </button>
@@ -159,10 +144,10 @@
 
 <!-- Modal: add / edit conference room -->
 <div class="modal-overlay" id="confModal">
-    <div class="modal-card" style="max-width: 600px;">
+    <div class="modal-card u-maxw-600">
         <div class="modal-header">
             <h3 class="u-title" id="confModalTitle"><i class="fas fa-users-rectangle u-primary"></i> <?php echo t('conferences.room'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('confModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('confModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -170,11 +155,11 @@
                 <input type="hidden" name="save_conference" value="1">
                 <input type="hidden" name="id" id="modal_conf_id" value="0">
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                <div class="u-d-grid u-gtc-1fr-2fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('conferences.room_number'); ?></label>
                         <input type="text" name="room_number" id="modal_conf_number" class="form-control" placeholder="<?php echo t('common.eg'); ?> 1001" pattern="[0-9]{3,6}" required oninput="updateConfDialPreview(this.value)">
-                        <small class="u-muted" style="display: block; margin-top: 4px; font-size: 11px;">
+                        <small class="u-muted u-mt-4 u-fs-11" style="display: block;">
                             <?php echo t('conferences.quick_dial'); ?>: <strong class="u-primary"><?php echo htmlspecialchars($confPrefix ?? '#9'); ?><span id="modal_conf_number_preview">1001</span></strong>
                         </small>
                     </div>
@@ -225,9 +210,9 @@
                     </div>
                 </div>
 
-                <div style="background: var(--bg-input); padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                <div class="u-bg-bg-input u-p-12 u-r-8 u-mb-16">
                     <div class="u-fw-600 u-fs-13 u-mb-10 u-text-main"><?php echo t('conferences.advanced'); ?></div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12 u-fs-12">
                         <label class="u-check-label-6">
                             <input type="checkbox" name="wait_marked" id="modal_conf_wait_marked" value="1" class="u-accent">
                             <span><?php echo t('conferences.wait_leader'); ?></span>

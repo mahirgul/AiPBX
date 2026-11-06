@@ -12,6 +12,8 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
 ?>
 
 <!-- Mail Settings Single-Line Fixed Tabs -->
+<div class="card tabbed-page">
+    <?php echo uiPageHeader('fa-envelope', t('mail_settings.title')); ?>
 <div class="settings-tabs">
     <button type="button" class="settings-tab-btn active" data-tab="smtp" onclick="switchSettingsTab('smtp', this)">
         <i class="fas fa-server"></i> <?php echo t('mail_settings.tab_smtp'); ?>
@@ -22,7 +24,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
     <button type="button" class="settings-tab-btn" data-tab="test" onclick="switchSettingsTab('test', this)">
         <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.tab_test'); ?>
     </button>
-    <a class="settings-tab-btn" href="/mail-templates" style="text-decoration: none;">
+    <a class="settings-tab-btn u-text-decoration-none" href="/mail-templates">
         <i class="fas fa-envelope-open-text"></i> <?php echo t('mail_templates.tab'); ?>
     </a>
 </div>
@@ -39,18 +41,14 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             <div class="card-title">
                 <i class="fas fa-server u-primary"></i> <?php echo t('mail_settings.section_smtp'); ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('mailHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+            <?php echo uiHelpButton('mailHelpBox'); ?>
         </div>
 
-        <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="mailHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.help_title'); ?></h4>
+                <?php echo uiHelpBoxOpen('mailHelpBox', t('mail_settings.help_title')); ?>
             <p><?php echo t('mail_settings.help_body'); ?></p>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+        <div class="u-d-grid u-gtc-2fr-1fr u-gap-16">
             <div class="form-group">
                 <label class="form-label"><i class="fas fa-network-wired"></i> <?php echo t('mail_settings.field_host'); ?></label>
                 <input type="text" name="mail_relay_host" class="form-control" value="<?php echo htmlspecialchars($host); ?>" placeholder="192.168.1.25 / mail.example.com">
@@ -95,17 +93,17 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </div>
         </div>
 
-        <div class="form-group" style="margin-top: 16px;">
-            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+        <div class="form-group u-mt-16">
+            <label class="u-d-flex u-ai-center u-gap-8 u-pointer">
                 <input type="checkbox" name="mail_sync_postfix" value="1" <?php echo $sync_postfix ? 'checked' : ''; ?>>
                 <span class="u-fw-600 u-text-main"><?php echo t('mail_settings.sync_postfix_label'); ?></span>
             </label>
-            <small style="color: var(--text-muted); display: block; margin-left: 24px; margin-top: 2px;">
+            <small class="u-muted u-ml-24 u-mt-2" style="display: block;">
                 <?php echo t('mail_settings.sync_postfix_help'); ?>
             </small>
         </div>
 
-        <div style="margin-top: 20px; text-align: right;">
+        <div class="u-mt-20 u-ta-right">
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
             </button>
@@ -135,7 +133,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px;">
+        <div class="u-d-grid u-gtc-1fr-1fr u-gap-16 u-mt-16">
             <div class="form-group">
                 <label class="form-label"><?php echo t('mail_settings.fax_from_addr'); ?></label>
                 <input type="email" name="fax_email_from_address" class="form-control" value="<?php echo htmlspecialchars($fax_from_addr); ?>" required>
@@ -148,7 +146,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </div>
         </div>
 
-        <div style="margin-top: 20px; text-align: right;">
+        <div class="u-mt-20 u-ta-right">
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
             </button>
@@ -166,10 +164,10 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
         </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px;">
+    <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-280-1fr u-gap-20">
         <!-- Status summary -->
-        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
-            <div style="font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+        <div class="u-bg-bg-input u-bd-1-solid-border-color u-r-12 u-p-16">
+            <div class="u-fs-13 u-fw-700 u-text-main u-mb-12 u-d-flex u-ai-center u-jc-space-between">
                 <span><i class="fas fa-info-circle"></i> <?php echo t('mail_settings.mta_status'); ?></span>
                 <?php if ($postfix['is_running']): ?>
                     <span class="badge badge-success u-fs-11"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
@@ -178,18 +176,18 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
                 <?php endif; ?>
             </div>
 
-            <div style="font-size: 12px; line-height: 1.8; color: var(--text-muted);">
+            <div class="u-fs-12 u-lh-1-8 u-muted">
                 <div><?php echo t('mail_settings.active_relay'); ?> <strong class="u-primary"><?php echo htmlspecialchars($postfix['relayhost'] ?: t('dashboard.not_configured')); ?></strong></div>
                 <div><?php echo t('mail_settings.queue_status'); ?> <strong style="color: <?php echo $postfix['queue_count'] > 0 ? 'var(--warning)' : 'var(--success)'; ?>;"><?php echo htmlspecialchars($postfix['queue_summary']); ?></strong></div>
             </div>
         </div>
 
         <!-- Test email form -->
-        <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px;">
+        <div class="u-bg-bg-input u-bd-1-solid-border-color u-r-12 u-p-16">
             <div class="u-fs-13 u-fw-700 u-text-main u-mb-8">
                 <i class="fas fa-paper-plane"></i> <?php echo t('mail_settings.test_title'); ?>
             </div>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 0 0 12px 0;">
+            <p class="u-fs-12 u-muted u-m-0-0-12-0">
                 <?php echo t('mail_settings.test_desc'); ?>
             </p>
 
@@ -205,6 +203,7 @@ $sync_postfix = ($settings['mail_sync_postfix'] ?? 'yes') === 'yes';
             </form>
         </div>
     </div>
+</div>
 </div>
 </div>
 

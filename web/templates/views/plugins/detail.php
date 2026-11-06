@@ -25,23 +25,23 @@ $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
                 <span class="badge badge-warning u-fs-11 u-ml-4"><?php echo htmlspecialchars(t('common.passive', 'Disabled')); ?></span>
             <?php endif; ?>
         </div>
-        <div class="u-flex-center" style="gap: 8px;">
+        <div class="u-flex-center u-gap-8">
             <a href="/plugins" class="btn btn-secondary btn-sm">
                 <i class="fas fa-arrow-left"></i> <?php echo htmlspecialchars(t('plugins.back_to_catalog', 'Back to Plugin Catalog')); ?>
             </a>
         </div>
     </div>
 
-    <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); color: var(--text-muted); font-size: 13px;">
+    <div class="u-p-16-20 u-border-bottom-1-solid-border-color u-muted u-fs-13">
         <?php echo htmlspecialchars($plugin['description']); ?>
     </div>
 
     <?php if (!empty($schema)): ?>
-        <form method="POST" style="padding: 20px;">
+        <form method="POST" class="u-p-20">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <input type="hidden" name="save_plugin_settings" value="1">
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-280-1fr u-gap-16">
                 <?php foreach ($schema as $field): ?>
                     <?php
                     $fKey = (string)($field['key'] ?? '');
@@ -54,15 +54,15 @@ $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
                     $maskedVal = (string)($masked_settings[$fKey] ?? '');
                     ?>
                     <div class="form-group">
-                        <label class="form-label" style="font-weight: 600;">
+                        <label class="form-label u-fw-600">
                             <?php echo htmlspecialchars($fLabel); ?>
                             <?php if ($isSecret && $maskedVal !== ''): ?>
                                 <span class="badge badge-info u-fs-11"><?php echo htmlspecialchars($maskedVal); ?></span>
                             <?php endif; ?>
                         </label>
                         <?php if ($fType === 'boolean' || $fType === 'checkbox'): ?>
-                            <div style="margin-top: 6px;">
-                                <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <div class="u-mt-6">
+                                <label class="u-d-inline-flex u-ai-center u-gap-8 u-pointer">
                                     <input type="checkbox" name="<?php echo htmlspecialchars($fKey); ?>" value="1" <?php echo ($curVal === '1' || $curVal === 'true' || $curVal === 'yes') ? 'checked' : ''; ?>>
                                     <span><?php echo htmlspecialchars($fHelp !== '' ? $fHelp : $fLabel); ?></span>
                                 </label>
@@ -96,7 +96,7 @@ $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
                 <?php endforeach; ?>
             </div>
 
-            <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+            <div class="u-mt-20 u-d-flex u-jc-flex-end">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> <?php echo htmlspecialchars(t('common.save', 'Save Settings')); ?>
                 </button>

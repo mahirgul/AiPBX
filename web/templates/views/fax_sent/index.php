@@ -1,35 +1,24 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-history u-primary"></i> <?php echo t('fax_sent.header_title'); ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSentHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-history', t('fax_sent.header_title'), 'faxSentHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="faxSentHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_sent.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+        <?php echo uiHelpBoxOpen('faxSentHelpBox', t('fax_sent.help_title')); ?>
         <?php echo t('fax_sent.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('fax_sent.col_sender'); ?></th>
-                    <th><?php echo t('fax_sent.col_recipient'); ?></th>
-                    <th><?php echo t('fax_sent.col_date'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_sent.col_completed'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_sent.col_pages'); ?></th>
-                    <th><?php echo t('fax_sent.col_status'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_sent.col_detail'); ?></th>
-                    <th class="text-right"><?php echo t('fax_sent.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        t('fax_sent.col_sender'),
+        t('fax_sent.col_recipient'),
+        t('fax_sent.col_date'),
+        ['label' => t('fax_sent.col_completed'), 'class' => 'col-hide-mobile'],
+        ['label' => t('fax_sent.col_pages'), 'class' => 'col-hide-mobile'],
+        t('fax_sent.col_status'),
+        ['label' => t('fax_sent.col_detail'), 'class' => 'col-hide-mobile'],
+        ['label' => t('fax_sent.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($sent_faxes)): ?>
                     <?php echo uiTableEmptyRow(9, t('fax_sent.empty'), 'fa-paper-plane'); ?>
                 <?php else: ?>
@@ -66,10 +55,10 @@
                             <td class="text-right">
                                 <div class="table-actions-cell">
                                     <?php if ($fax['pdf_path'] && (str_starts_with($fax['pdf_path'], 's3:') || file_exists($fax['pdf_path']))): ?>
-                                        <button class="btn btn-secondary btn-sm" onclick="viewPdf('/api/fax_download.php?id=<?php echo $fax['id']; ?>&type=sent&view=1')" title="<?php echo t('fax_sent.view_tooltip'); ?>">
+                                        <button class="btn btn-icon btn-secondary btn-sm" onclick="viewPdf('/api/fax_download.php?id=<?php echo $fax['id']; ?>&type=sent&view=1')" title="<?php echo t('fax_sent.view_tooltip'); ?>">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <a href="/api/fax_download.php?id=<?php echo $fax['id']; ?>&type=sent" class="btn btn-primary btn-sm" target="_blank" title="<?php echo t('fax_sent.download_tooltip'); ?>">
+                                        <a href="/api/fax_download.php?id=<?php echo $fax['id']; ?>&type=sent" class="btn btn-icon btn-primary btn-sm" target="_blank" title="<?php echo t('fax_sent.download_tooltip'); ?>">
                                             <i class="fas fa-download"></i>
                                         </a>
                                     <?php else: ?>
@@ -80,7 +69,7 @@
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="resend_sent_fax" value="1">
                                             <input type="hidden" name="fax_id" value="<?php echo $fax['id']; ?>">
-                                            <button type="submit" class="btn btn-warning btn-sm" title="<?php echo t('fax_sent.resend_tooltip'); ?>">
+                                            <button type="submit" class="btn btn-icon btn-warning btn-sm" title="<?php echo t('fax_sent.resend_tooltip'); ?>">
                                                 <i class="fas fa-redo"></i>
                                             </button>
                                         </form>
@@ -90,7 +79,7 @@
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_sent_fax" value="1">
                                         <input type="hidden" name="fax_id" value="<?php echo $fax['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('fax_sent.delete_tooltip'); ?>">
+                                        <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('fax_sent.delete_tooltip'); ?>">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
@@ -100,9 +89,7 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- PDF Viewer Modal -->
@@ -112,8 +99,8 @@
             <h3 class="u-title"><i class="fas fa-file-pdf u-danger"></i> <?php echo t('fax_sent.preview_title'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="closePdfModal()"><i class="fas fa-times"></i> <?php echo t('fax_sent.close'); ?></button>
         </div>
-        <div class="modal-body" style="padding: 0; min-height: 500px;">
-            <iframe id="pdfFrame" src="" style="width: 100%; height: 550px; border: none;"></iframe>
+        <div class="modal-body u-p-0 u-minh-500">
+            <iframe class="u-w-100 u-h-550 u-bd-none" id="pdfFrame" src=""></iframe>
         </div>
     </div>
 </div>

@@ -27,7 +27,7 @@ class RouteService {
             }
 
             $fax_detect = PBXHelper::boolFlag($data, 'fax_detect', 0);
-            $fax_seconds = max(3, min(15, (int) ($data['fax_detect_seconds'] ?? 5)));
+            $fax_seconds = max(3, min(15, (int) ($data['fax_detect_seconds'] ?? 10)));
             $fax_target = trim((string) ($data['fax_target'] ?? ''));
             if ($fax_target !== '' && preg_match('/^[0-9]{1,32}$/D', $fax_target) !== 1) {
                 throw new \Exception(t('did.err_fax_target'));

@@ -1,0 +1,169 @@
+/* UI Components, Cards, Forms, Modals, Badges, Tables, Toast Notifications */
+
+/* Cards & Components */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    --card-pad: 24px;
+    padding: var(--card-pad);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 20px;
+    backdrop-filter: blur(10px);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 20px;
+    min-height: 32px;
+}
+
+/* The accent bar sits on the card's own left edge. */
+.card > .card-header,
+.page-header-card .card-header {
+    border-left: 4px solid var(--primary);
+    margin-left: calc(-1 * var(--card-pad, 24px));
+    padding-left: calc(var(--card-pad, 24px) - 4px);
+}
+
+.card-title {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* One page-title form: accent bar + soft primary icon tile, on every page. */
+.card-title > i:first-child {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    background: rgba(0, 242, 254, 0.1);
+    color: var(--primary) !important;
+    font-size: 16px !important;
+}
+/* Page with tabs: one card holds the page title, the tabs and the panes. The cards of a pane lie flat
+   on it, and their titles become section titles without the bar and tile. */
+.tabbed-page {
+    backdrop-filter: none;
+}
+:is(.tabbed-page > .card, .tabbed-page .settings-tab-pane > .card, .tabbed-page .tc-tab-pane > .card, .tabbed-page .tab-pane > .card) {
+    --card-pad: 0px;
+    padding: 0;
+    margin: 0 0 24px 0;
+    background: none;
+    border: 0;
+    border-radius: 0 !important;
+    box-shadow: none;
+    backdrop-filter: none;
+}
+:is(.tabbed-page > .card, .tabbed-page .settings-tab-pane > .card, .tabbed-page .tc-tab-pane > .card, .tabbed-page .tab-pane > .card):last-child {
+    margin-bottom: 0;
+}
+:is(.tabbed-page > .card, .tabbed-page .settings-tab-pane > .card, .tabbed-page .tc-tab-pane > .card, .tabbed-page .tab-pane > .card) > .card-header {
+    border-left: 0;
+    margin-left: 0;
+    padding-left: 0;
+    min-height: 0;
+    margin-bottom: 14px;
+}
+:is(.tabbed-page > .card, .tabbed-page .settings-tab-pane > .card, .tabbed-page .tc-tab-pane > .card, .tabbed-page .tab-pane > .card) > .card-header .card-title {
+    font-size: 14px;
+}
+:is(.tabbed-page > .card, .tabbed-page .settings-tab-pane > .card, .tabbed-page .tc-tab-pane > .card, .tabbed-page .tab-pane > .card) > .card-header .card-title > i:first-child {
+    width: auto;
+    height: auto;
+    flex: none;
+    background: none;
+    font-size: 14px !important;
+}
+.tabbed-page > :is(.settings-tabs, .tc-tabs, .sub-tab-nav) + .card {
+    margin-top: 16px;
+}
+/* Panes laid out as a grid of boxes (My Phone): the boxes stay, flat and outlined. */
+.tabbed-page :is(.my-phone-settings-grid, .grid-2) > .card {
+    box-shadow: none;
+    backdrop-filter: none;
+    background: transparent;
+}
+.tabbed-page > .ui-tabs {
+    margin-top: 16px;
+}
+.tabbed-page > :is(.tc-tab-pane, .tab-pane),
+.tabbed-page > .ui-tabs ~ [data-tab-pane] {
+    padding-top: 16px;
+}
+
+/* One size per place, whatever the page wrote: titles 32, form and window buttons 36, table rows 28.
+   A button with only an icon is a square of the same height. */
+:is(.card-header, .page-actions) .btn,
+:is(.card-header, .page-actions) .btn-sm,
+:is(.card-header, .page-actions) .btn-xs {
+    --btn-h: 32px;
+    padding: 0 12px;
+    font-size: 12px;
+    border-radius: 8px;
+    gap: 6px;
+}
+:is(.form-actions, .modal-footer) .btn,
+:is(.form-actions, .modal-footer) .btn-sm {
+    --btn-h: 36px;
+    padding: 0 16px;
+    font-size: 13px;
+    border-radius: 10px;
+    gap: 8px;
+}
+:is(.card-header, .page-actions) .btn.btn-icon {
+    width: 32px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+}
+.data-table td .btn.btn-icon,
+.table-actions-cell .btn.btn-icon {
+    width: 28px;
+    min-width: 28px;
+    padding: 0 !important;
+}
+.page-actions .form-control-sm {
+    min-height: 32px;
+}
+
+/* The right side of a title: help first, then the page's own buttons. */
+/* Many badges wrap inside the title, so the actions stay on the right of the same row. */
+.card-header:has(> .page-actions) > .card-title {
+    flex: 1 1 0;
+    min-width: min(100%, 240px);
+}
+.page-actions {
+    margin-left: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+.card-title {
+    flex-wrap: wrap;
+}
+
+/* A card holding only the title. */
+.page-header-card .card-header {
+    margin-bottom: 0;
+}
+.page-header-card .module-help-box {
+    margin: 16px 0 0;
+}
+
+/* Cards with a padding utility: keep the bar on the edge. */
+.card.u-p-16 { --card-pad: 16px; }
+.card.u-p-20 { --card-pad: 20px; }

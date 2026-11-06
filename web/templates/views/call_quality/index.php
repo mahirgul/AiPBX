@@ -5,17 +5,14 @@ $pct = fn($v) => CallQualityService::pct($v);
 $badge = fn(string $level) => ['poor' => 'badge-danger', 'fair' => 'badge-warning'][$level] ?? 'badge-success';
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-chart-line u-primary"></i> <?php echo t('call_quality.header_title'); ?></div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('cqHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
-    <div class="module-help-box" id="cqHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('call_quality.help_title'); ?></h4>
+    <?php echo uiPageHeaderOpen('fa-chart-line', t('call_quality.header_title'), 'cqHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('cqHelpBox', t('call_quality.help_title')); ?>
         <?php echo sprintf(t('call_quality.help_body'), $h(CallQualityService::FAIR_PCT)); ?>
-    </div>
-    <div style="padding: 0 4px 8px;">
+<?php echo uiHelpBoxClose(); ?>
+    <div class="u-p-0-4-8">
         <?php if (!$status['capture']): ?>
             <p class="u-warning"><strong><?php echo t('call_quality.capture_off'); ?></strong>
                 <a href="/asterisk-settings"><?php echo t('call_quality.capture_off_link'); ?> →</a></p>
@@ -32,18 +29,15 @@ $badge = fn(string $level) => ['poor' => 'badge-danger', 'fair' => 'badge-warnin
 
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-table"></i> <?php echo t('call_quality.summary_title'); ?></div></div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead><tr>
-                <th><?php echo t('call_quality.col_leg'); ?></th>
-                <th><?php echo t('call_quality.col_calls'); ?></th>
-                <th><?php echo t('call_quality.col_poor'); ?></th>
-                <th><?php echo t('call_quality.col_fair'); ?></th>
-                <th><?php echo t('call_quality.col_loss_in'); ?></th>
-                <th><?php echo t('call_quality.col_loss_out'); ?></th>
-                <th><?php echo t('call_quality.col_jitter'); ?></th>
-            </tr></thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('call_quality.col_leg'),
+        t('call_quality.col_calls'),
+        t('call_quality.col_poor'),
+        t('call_quality.col_fair'),
+        t('call_quality.col_loss_in'),
+        t('call_quality.col_loss_out'),
+        t('call_quality.col_jitter'),
+    ]); ?>
             <?php if (!$summary): ?>
                 <?php echo uiTableEmptyRow(7, t('call_quality.empty_summary'), 'fa-chart-line'); ?>
             <?php endif; ?>
@@ -58,26 +52,21 @@ $badge = fn(string $level) => ['poor' => 'badge-danger', 'fair' => 'badge-warnin
                     <td><?php echo (int) $r['jit_in'] . ' / ' . (int) $r['jit_out']; ?></td>
                 </tr>
             <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-triangle-exclamation"></i> <?php echo t('call_quality.bad_title'); ?></div></div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead><tr>
-                <th><?php echo t('call_quality.col_time'); ?></th>
-                <th><?php echo t('call_quality.col_level'); ?></th>
-                <th><?php echo t('call_quality.col_leg'); ?></th>
-                <th><?php echo t('call_quality.col_media_from'); ?></th>
-                <th><?php echo t('call_quality.col_loss_in_max'); ?></th>
-                <th><?php echo t('call_quality.col_loss_out_max'); ?></th>
-                <th><?php echo t('call_quality.col_reports'); ?></th>
-                <th>Call-ID</th>
-            </tr></thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('call_quality.col_time'),
+        t('call_quality.col_level'),
+        t('call_quality.col_leg'),
+        t('call_quality.col_media_from'),
+        t('call_quality.col_loss_in_max'),
+        t('call_quality.col_loss_out_max'),
+        t('call_quality.col_reports'),
+        'Call-ID',
+    ]); ?>
             <?php if (!$bad): ?>
                 <?php echo uiTableEmptyRow(8, t('call_quality.empty_bad'), 'fa-circle-check'); ?>
             <?php endif; ?>
@@ -93,16 +82,14 @@ $badge = fn(string $level) => ['poor' => 'badge-danger', 'fair' => 'badge-warnin
                     <td class="u-fs-11"><code><?php echo $h(mb_substr($r['call_id'], 0, 24)); ?></code></td>
                 </tr>
             <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <form method="POST" autocomplete="off" class="card">
     <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
     <input type="hidden" name="save_call_quality" value="1">
     <div class="card-header"><div class="card-title"><i class="fas fa-sliders-h"></i> <?php echo t('call_quality.settings_title'); ?></div></div>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+    <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16">
         <div class="form-group">
             <label class="form-label"><?php echo t('call_quality.field_poor_pct'); ?></label>
             <input type="number" name="poor_pct" class="form-control" min="1" max="50" value="<?php echo $h((int) $settings['poor_pct']); ?>" required>
@@ -119,5 +106,5 @@ $badge = fn(string $level) => ['poor' => 'badge-danger', 'fair' => 'badge-warnin
             <small class="u-hint">7–3650</small>
         </div>
     </div>
-    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+    <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button></div>
 </form>

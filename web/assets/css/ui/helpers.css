@@ -1,0 +1,426 @@
+/* Top bar bell (templates/topbar.php, assets/js/notices.js); the dropdown reuses .header-sync-dropdown. */
+.header-notices-wrapper { position: relative; display: inline-flex; align-items: center; }
+.header-notices-btn { position: relative; padding: 7px 10px; }
+.header-notices-btn.has-new::after {
+    content: ''; position: absolute; top: 4px; right: 4px; width: 8px; height: 8px;
+    border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 2px var(--bg-card);
+}
+.header-notices-count {
+    background: var(--warning); color: #1a1a1a; padding: 1px 6px; border-radius: 10px;
+    font-size: 11px; font-weight: 800; line-height: 1.3;
+}
+.header-notices-count.is-fail { background: var(--danger); color: #fff; }
+.header-notices-dropdown { width: 360px; max-height: 70vh; overflow-y: auto; }
+.header-notices-section {
+    padding: 8px 16px 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.4px; color: var(--text-muted);
+}
+.header-notices-item {
+    display: flex; gap: 10px; padding: 8px 16px; color: var(--text-main); text-decoration: none;
+    align-items: flex-start;
+}
+a.header-notices-item:hover { background: var(--bg-card-hover); }
+.header-notices-icon { margin-top: 2px; font-size: 14px; }
+.header-notices-item.is-fail .header-notices-icon { color: var(--danger); }
+.header-notices-item.is-warn .header-notices-icon { color: var(--warning); }
+.header-notices-item.is-ok .header-notices-icon { color: var(--success); }
+.header-notices-text { min-width: 0; }
+.header-notices-item-title { font-weight: 700; font-size: 13px; }
+.header-notices-msg { font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; }
+.header-notices-time { font-size: 11px; color: var(--text-muted); opacity: 0.8; }
+.header-notices-empty { padding: 14px 16px; font-size: 13px; color: var(--text-muted); }
+.header-notices-foot {
+    display: block; padding: 9px 16px; margin-top: 4px; border-top: 1px solid var(--border-color);
+    font-size: 12px; font-weight: 700; color: var(--primary); text-decoration: none;
+}
+@media (max-width: 600px) {
+    .header-notices-dropdown { position: fixed; top: 56px; left: 10px; right: 10px; width: auto; }
+}
+
+/* Disabled buttons must not look usable (make it obvious they cannot be clicked). */
+.btn:disabled, .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+
+/* Utility classes — the counterparts of inline styles repeated in the templates.
+   The :not(#u):not(#u) specificity (2,1,0) beats every class/ID rule, but an
+   inline style set by JS (el.style.display = ...) still overrides them —
+   so the behaviour of the old inline style is kept. No !important. */
+.u-hint:not(#u):not(#u) { color: var(--text-muted); display: block; margin-top: 4px; }
+.u-grid-2:not(#u):not(#u) { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.u-grid-3:not(#u):not(#u) { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 768px) {
+    .u-grid-2:not(#u):not(#u), .u-grid-3:not(#u):not(#u) { grid-template-columns: 1fr; gap: 12px; }
+    .u-flex-between:not(#u):not(#u) { flex-wrap: wrap; gap: 8px; }
+    .card-header .u-flex-gap:not(#u):not(#u) { flex-wrap: wrap; gap: 6px; }
+}
+.u-check-label:not(#u):not(#u) { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
+.u-check-label-6:not(#u):not(#u) { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+.u-flex-between:not(#u):not(#u) { display: flex; align-items: center; justify-content: space-between; }
+.u-flex-center:not(#u):not(#u) { display: flex; align-items: center; gap: 8px; }
+.u-check:not(#u):not(#u) { width: 18px; height: 18px; accent-color: var(--primary); }
+.u-title:not(#u):not(#u) { font-size: 16px; font-weight: 700; }
+.u-strong:not(#u):not(#u) { font-weight: 700; color: var(--text-main); }
+.u-flex-gap:not(#u):not(#u) { display: flex; gap: 8px; }
+.u-btn-pad:not(#u):not(#u) { padding: 6px 12px; }
+.u-primary:not(#u):not(#u) { color: var(--primary); }
+.u-danger:not(#u):not(#u) { color: var(--danger); }
+.u-warning:not(#u):not(#u) { color: var(--warning); }
+.u-success:not(#u):not(#u) { color: var(--success); }
+.u-info:not(#u):not(#u) { color: var(--info); }
+.u-muted:not(#u):not(#u) { color: var(--text-muted); }
+.u-accent:not(#u):not(#u) { accent-color: var(--primary); }
+.u-fw-600:not(#u):not(#u) { font-weight: 600; }
+.u-fs-10:not(#u):not(#u) { font-size: 10px; }
+.u-fs-11:not(#u):not(#u) { font-size: 11px; }
+.u-fs-12:not(#u):not(#u) { font-size: 12px; }
+.u-text-right:not(#u):not(#u) { text-align: right; }
+.u-text-center:not(#u):not(#u) { text-align: center; }
+.u-w-auto:not(#u):not(#u) { width: auto; }
+.u-w-50:not(#u):not(#u) { width: 50px; }
+.u-m-0:not(#u):not(#u) { margin: 0; }
+.u-mb-0:not(#u):not(#u) { margin-bottom: 0; }
+.u-mb-10:not(#u):not(#u) { margin-bottom: 10px; }
+.u-mb-20:not(#u):not(#u) { margin-bottom: 20px; }
+.u-mt-4:not(#u):not(#u) { margin-top: 4px; }
+.u-mt-10:not(#u):not(#u) { margin-top: 10px; }
+.u-mt-12:not(#u):not(#u) { margin-top: 12px; }
+.u-p-24:not(#u):not(#u) { padding: 24px; }
+.u-flex-1:not(#u):not(#u) { flex: 1; }
+.u-inline:not(#u):not(#u) { display: inline; }
+.u-fs-13:not(#u):not(#u) { font-size: 13px; }
+.u-fs-14:not(#u):not(#u) { font-size: 14px; }
+.u-fs-16:not(#u):not(#u) { font-size: 16px; }
+.u-fs-20:not(#u):not(#u) { font-size: 20px; }
+.u-fs-26:not(#u):not(#u) { font-size: 26px; }
+.u-fs-28:not(#u):not(#u) { font-size: 28px; }
+.u-fw-700:not(#u):not(#u) { font-weight: 700; }
+.u-fw-800:not(#u):not(#u) { font-weight: 800; }
+.u-maxw-220:not(#u):not(#u) { max-width: 220px; }
+.u-maxw-520:not(#u):not(#u) { max-width: 520px; }
+.u-mb-14:not(#u):not(#u) { margin-bottom: 14px; }
+.u-mb-16:not(#u):not(#u) { margin-bottom: 16px; }
+.u-mb-18:not(#u):not(#u) { margin-bottom: 18px; }
+.u-mb-24:not(#u):not(#u) { margin-bottom: 24px; }
+.u-mb-4:not(#u):not(#u) { margin-bottom: 4px; }
+.u-mb-8:not(#u):not(#u) { margin-bottom: 8px; }
+.u-ml-8:not(#u):not(#u) { margin-left: 8px; }
+.u-mr-4:not(#u):not(#u) { margin-right: 4px; }
+.u-mr-6:not(#u):not(#u) { margin-right: 6px; }
+.u-mt-0:not(#u):not(#u) { margin-top: 0; }
+.u-mt-2:not(#u):not(#u) { margin-top: 2px; }
+.u-mt-6:not(#u):not(#u) { margin-top: 6px; }
+.u-nowrap:not(#u):not(#u) { white-space: nowrap; }
+.u-p-20:not(#u):not(#u) { padding: 20px; }
+.u-p-30:not(#u):not(#u) { padding: 30px; }
+.u-pointer:not(#u):not(#u) { cursor: pointer; }
+.u-relative:not(#u):not(#u) { position: relative; }
+.u-text-main:not(#u):not(#u) { color: var(--text-main); }
+.u-uppercase:not(#u):not(#u) { text-transform: uppercase; }
+.u-w-100p:not(#u):not(#u) { width: 100%; }
+.u-w-45:not(#u):not(#u) { width: 45px; }
+
+/* Drag-and-drop row ordering (UIHelper.enableRowReorder) */
+.row-drag-handle { width: 28px; cursor: grab; color: var(--text-muted); text-align: center; }
+.row-drag-handle:active { cursor: grabbing; }
+tr.row-dragging { opacity: 0.45; }
+
+/* Dashboard: live status */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); animation: livePulse 2s infinite; }
+@keyframes livePulse { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
+.dash-trunk-usage { display: flex; flex-direction: column; gap: 8px; }
+.dash-trunk-row { display: grid; grid-template-columns: minmax(90px, 180px) 1fr auto; align-items: center; gap: 12px; font-size: 13px; }
+.dash-trunk-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-trunk-bar { height: 8px; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; }
+.dash-trunk-bar > span { display: block; height: 100%; background: var(--primary); transition: width 0.4s; }
+.dash-trunk-count { font-variant-numeric: tabular-nums; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+/* Inline error box on sign-in style pages (templates/auth_error.php). */
+.auth-error {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid var(--danger);
+    color: var(--danger);
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Interface language dropdown in the user menu (app_footer.php) */
+.user-lang-form {
+    flex: 0 0 auto;
+    display: flex;
+}
+.user-lang-form select {
+    width: auto;
+    max-width: 96px;
+    appearance: none;
+    padding: 5px 6px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-main);
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+}
+.user-lang-form select:hover,
+.user-lang-form select:focus {
+    background: var(--bg-input);
+    outline: none;
+}
+
+/* Show / hide password (password_reveal.js) */
+.password-reveal-btn { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border: 0; background: transparent; color: var(--text-muted); cursor: pointer; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; }
+.password-reveal-btn:hover, .password-reveal-btn:focus-visible { color: var(--primary); background: var(--bg-input); }
+
+/* "Need help?" contact on the sign-in pages (templates/auth_support_contact.php) */
+.auth-support-contact { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-color); font-size: 12.5px; line-height: 1.7; text-align: center; color: var(--text-main); word-break: break-word; }
+.auth-support-contact a { color: var(--primary); text-decoration: none; white-space: nowrap; }
+.auth-support-contact a:hover { text-decoration: underline; }
+
+/* A message inside a page (the result of an action shows as a notice at the corner instead). */
+.alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    font-size: 13.5px;
+    line-height: 1.5;
+    color: var(--text-main);
+}
+.alert > i:first-child { margin-top: 3px; flex-shrink: 0; }
+.alert-success { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.35); }
+.alert-success > i:first-child { color: var(--success); }
+.alert-warning { background: rgba(245, 158, 11, 0.1); border-color: rgba(245, 158, 11, 0.35); }
+.alert-warning > i:first-child { color: var(--warning); }
+.alert-danger { background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.35); }
+.alert-danger > i:first-child { color: var(--danger); }
+.alert-info { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.35); }
+.alert-info > i:first-child { color: var(--secondary); }
+
+/* The buttons of a table row are one size on every page, whatever size class or style they carry. */
+.data-table td .btn,
+.table-actions-cell .btn {
+    height: 28px !important;
+    min-height: 28px;
+    padding: 0 9px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    vertical-align: middle;
+}
+
+/* The bottom of a window: its buttons, at the right. */
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+/* Everyday helper classes. Pages used them for years with no rule behind them, so "muted" text was not
+   muted and spacing did nothing. They live here, on the portal's own values. */
+.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-info { color: var(--secondary); }
+.text-secondary { color: var(--text-muted); }
+.text-center { text-align: center; }
+.small, small { font-size: 12px; }
+.font-weight-bold { font-weight: 600; }
+.font-monospace { font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace); }
+.form-text { display: block; margin-top: 4px; font-size: 12px; color: var(--text-muted); }
+.w-100 { width: 100%; }
+.d-none { display: none; }
+.d-flex { display: flex; }
+.m-0 { margin: 0; }
+.mt-0 { margin-top: 0; } .mt-1 { margin-top: 4px; } .mt-2 { margin-top: 8px; } .mt-3 { margin-top: 16px; } .mt-4 { margin-top: 24px; }
+.mb-0 { margin-bottom: 0; } .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 16px; } .mb-4 { margin-bottom: 24px; }
+.ml-4 { margin-left: 24px; }
+.py-2 { padding-top: 8px; padding-bottom: 8px; }
+
+/* A label in a form field, also where a page left out form-label. */
+.form-group > label:not(.form-label):not(.u-check-label):not([class*="custom-"]):not([class*="form-check"]) {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+/* Columns inside a form. */
+.row { display: grid; grid-template-columns: repeat(12, 1fr); column-gap: 16px; }
+.row > [class*="col-md-"] { grid-column: span 12; min-width: 0; }
+@media (min-width: 768px) {
+    .row > .col-md-2 { grid-column: span 2; }
+    .row > .col-md-3 { grid-column: span 3; }
+    .row > .col-md-4 { grid-column: span 4; }
+    .row > .col-md-5 { grid-column: span 5; }
+    .row > .col-md-6 { grid-column: span 6; }
+    .row > .col-md-7 { grid-column: span 7; }
+    .row > .col-md-8 { grid-column: span 8; }
+}
+
+/* A field with a mark on its sides, such as [ name ]. */
+.input-group { display: flex; align-items: stretch; }
+.input-group > .form-control { flex: 1; min-width: 0; border-radius: 0; }
+.input-group > :first-child.form-control { border-top-left-radius: 8px; border-bottom-left-radius: 8px; }
+.input-group > :last-child.form-control { border-top-right-radius: 8px; border-bottom-right-radius: 8px; }
+.input-group-prepend, .input-group-append { display: flex; }
+.input-group-text {
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace);
+    color: var(--text-muted);
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+}
+.input-group-prepend .input-group-text { border-right: 0; border-radius: 8px 0 0 8px; }
+.input-group-append .input-group-text { border-left: 0; border-radius: 0 8px 8px 0; }
+
+/* A checkbox or switch with its label. */
+.custom-control, .form-check { display: flex; align-items: flex-start; gap: 8px; min-height: 22px; }
+.custom-control-label, .form-check-label { font-size: 13.5px; color: var(--text-main); font-weight: 500; }
+.custom-control-input, .form-check-input { margin-top: 3px; flex-shrink: 0; accent-color: var(--primary); }
+
+/* Spacing and layout helpers, in place of inline styles. Same weight as an inline style. */
+.u-ai-baseline:not(#u):not(#u) { align-items: baseline; }
+.u-ai-center:not(#u):not(#u) { align-items: center; }
+.u-ai-flex-end:not(#u):not(#u) { align-items: flex-end; }
+.u-ai-flex-start:not(#u):not(#u) { align-items: flex-start; }
+.u-card-pad:not(#u):not(#u) { padding: 0 20px 20px; }
+.u-card-text:not(#u):not(#u) { margin: 0 20px 12px; }
+.u-col:not(#u):not(#u) { flex-direction: column; }
+.u-d-flex:not(#u):not(#u) { display: flex; }
+.u-d-grid:not(#u):not(#u) { display: grid; }
+.u-d-inline:not(#u):not(#u) { display: inline; }
+.u-d-inline-block:not(#u):not(#u) { display: inline-block; }
+.u-d-inline-flex:not(#u):not(#u) { display: inline-flex; }
+.u-fs-10-5:not(#u):not(#u) { font-size: 10.5px; }
+.u-fs-11-5:not(#u):not(#u) { font-size: 11.5px; }
+.u-fs-12-5:not(#u):not(#u) { font-size: 12.5px; }
+.u-fs-13-5:not(#u):not(#u) { font-size: 13.5px; }
+.u-fs-15:not(#u):not(#u) { font-size: 15px; }
+.u-fs-18:not(#u):not(#u) { font-size: 18px; }
+.u-fs-22:not(#u):not(#u) { font-size: 22px; }
+.u-fs-24:not(#u):not(#u) { font-size: 24px; }
+.u-fs-32:not(#u):not(#u) { font-size: 32px; }
+.u-fs-40:not(#u):not(#u) { font-size: 40px; }
+.u-fs-48:not(#u):not(#u) { font-size: 48px; }
+.u-fs-6:not(#u):not(#u) { font-size: 6px; }
+.u-fs-8:not(#u):not(#u) { font-size: 8px; }
+.u-fs-9:not(#u):not(#u) { font-size: 9px; }
+.u-fs-9-5:not(#u):not(#u) { font-size: 9.5px; }
+.u-fw-500:not(#u):not(#u) { font-weight: 500; }
+.u-gap-10:not(#u):not(#u) { gap: 10px; }
+.u-gap-12:not(#u):not(#u) { gap: 12px; }
+.u-gap-14:not(#u):not(#u) { gap: 14px; }
+.u-gap-16:not(#u):not(#u) { gap: 16px; }
+.u-gap-2:not(#u):not(#u) { gap: 2px; }
+.u-gap-20:not(#u):not(#u) { gap: 20px; }
+.u-gap-24:not(#u):not(#u) { gap: 24px; }
+.u-gap-3:not(#u):not(#u) { gap: 3px; }
+.u-gap-4:not(#u):not(#u) { gap: 4px; }
+.u-gap-6:not(#u):not(#u) { gap: 6px; }
+.u-gap-8:not(#u):not(#u) { gap: 8px; }
+.u-jc-center:not(#u):not(#u) { justify-content: center; }
+.u-jc-flex-end:not(#u):not(#u) { justify-content: flex-end; }
+.u-jc-space-between:not(#u):not(#u) { justify-content: space-between; }
+.u-maxw-130:not(#u):not(#u) { max-width: 130px; }
+.u-maxw-160:not(#u):not(#u) { max-width: 160px; }
+.u-maxw-180:not(#u):not(#u) { max-width: 180px; }
+.u-maxw-200:not(#u):not(#u) { max-width: 200px; }
+.u-maxw-240:not(#u):not(#u) { max-width: 240px; }
+.u-maxw-260:not(#u):not(#u) { max-width: 260px; }
+.u-maxw-320:not(#u):not(#u) { max-width: 320px; }
+.u-maxw-360:not(#u):not(#u) { max-width: 360px; }
+.u-maxw-380:not(#u):not(#u) { max-width: 380px; }
+.u-maxw-400:not(#u):not(#u) { max-width: 400px; }
+.u-maxw-420:not(#u):not(#u) { max-width: 420px; }
+.u-maxw-440:not(#u):not(#u) { max-width: 440px; }
+.u-maxw-460:not(#u):not(#u) { max-width: 460px; }
+.u-maxw-480:not(#u):not(#u) { max-width: 480px; }
+.u-maxw-500:not(#u):not(#u) { max-width: 500px; }
+.u-maxw-540:not(#u):not(#u) { max-width: 540px; }
+.u-maxw-560:not(#u):not(#u) { max-width: 560px; }
+.u-maxw-580:not(#u):not(#u) { max-width: 580px; }
+.u-maxw-600:not(#u):not(#u) { max-width: 600px; }
+.u-maxw-620:not(#u):not(#u) { max-width: 620px; }
+.u-maxw-640:not(#u):not(#u) { max-width: 640px; }
+.u-maxw-680:not(#u):not(#u) { max-width: 680px; }
+.u-maxw-720:not(#u):not(#u) { max-width: 720px; }
+.u-maxw-800:not(#u):not(#u) { max-width: 800px; }
+.u-maxw-900:not(#u):not(#u) { max-width: 900px; }
+.u-maxw-920:not(#u):not(#u) { max-width: 920px; }
+.u-maxw-960:not(#u):not(#u) { max-width: 960px; }
+.u-mb-12:not(#u):not(#u) { margin-bottom: 12px; }
+.u-mb-15:not(#u):not(#u) { margin-bottom: 15px; }
+.u-mb-2:not(#u):not(#u) { margin-bottom: 2px; }
+.u-mb-22:not(#u):not(#u) { margin-bottom: 22px; }
+.u-mb-30:not(#u):not(#u) { margin-bottom: 30px; }
+.u-mb-6:not(#u):not(#u) { margin-bottom: 6px; }
+.u-ml-24:not(#u):not(#u) { margin-left: 24px; }
+.u-ml-26:not(#u):not(#u) { margin-left: 26px; }
+.u-ml-4:not(#u):not(#u) { margin-left: 4px; }
+.u-ml-6:not(#u):not(#u) { margin-left: 6px; }
+.u-mono:not(#u):not(#u) { font-family: monospace; }
+.u-mr-2:not(#u):not(#u) { margin-right: 2px; }
+.u-mr-3:not(#u):not(#u) { margin-right: 3px; }
+.u-mt-14:not(#u):not(#u) { margin-top: 14px; }
+.u-mt-15:not(#u):not(#u) { margin-top: 15px; }
+.u-mt-16:not(#u):not(#u) { margin-top: 16px; }
+.u-mt-18:not(#u):not(#u) { margin-top: 18px; }
+.u-mt-20:not(#u):not(#u) { margin-top: 20px; }
+.u-mt-24:not(#u):not(#u) { margin-top: 24px; }
+.u-mt-28:not(#u):not(#u) { margin-top: 28px; }
+.u-mt-3:not(#u):not(#u) { margin-top: 3px; }
+.u-mt-8:not(#u):not(#u) { margin-top: 8px; }
+.u-p-10:not(#u):not(#u) { padding: 10px; }
+.u-p-12:not(#u):not(#u) { padding: 12px; }
+.u-p-14:not(#u):not(#u) { padding: 14px; }
+.u-p-16:not(#u):not(#u) { padding: 16px; }
+.u-p-16-20:not(#u):not(#u) { padding: 16px 20px; }
+.u-p-4:not(#u):not(#u) { padding: 4px; }
+.u-pb-12:not(#u):not(#u) { padding-bottom: 12px; }
+.u-pb-8:not(#u):not(#u) { padding-bottom: 8px; }
+.u-pl-20:not(#u):not(#u) { padding-left: 20px; }
+.u-pl-24:not(#u):not(#u) { padding-left: 24px; }
+.u-pl-28:not(#u):not(#u) { padding-left: 28px; }
+.u-pl-32:not(#u):not(#u) { padding-left: 32px; }
+.u-pl-44:not(#u):not(#u) { padding-left: 44px; }
+.u-pt-18:not(#u):not(#u) { padding-top: 18px; }
+.u-pt-20:not(#u):not(#u) { padding-top: 20px; }
+.u-ta-center:not(#u):not(#u) { text-align: center; }
+.u-ta-left:not(#u):not(#u) { text-align: left; }
+.u-ta-right:not(#u):not(#u) { text-align: right; }
+.u-w-100:not(#u):not(#u) { width: 100%; }
+.u-wrap:not(#u):not(#u) { flex-wrap: wrap; }
+
+/* The buttons at the end of a form: at the right, like in a window. */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+}
+.u-ta-right > .form-actions { margin-top: 0; }
+
+/* The content under these tabs has no wrapper of its own to give it air. */
+.card .fax-compose-tabs { margin-bottom: 16px; }
+
+/* A plain link in a page. Without this it was the browser's dark blue, hard to read on the dark theme. */
+.content-area a:not(.btn):not([class*="tab"]):not(.nav-link) { color: var(--primary); }
+
+/* A hidden element stays hidden whatever display a class gives it (tab panes, UIHelper.selectTab). */
+[hidden] { display: none !important; }

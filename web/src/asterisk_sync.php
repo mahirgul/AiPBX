@@ -187,6 +187,7 @@ const PENDING_SYNC_DOMAIN_MAP = [
     'ai_apps'           => 'syncAiApps',
     'custom_dialplan'   => 'syncCustomDialplan',
     'advanced_pjsip'    => 'syncAdvancedPjsip',
+    'readdress'         => 'syncReaddress',
 ];
 
 /**
@@ -351,6 +352,7 @@ require_once __DIR__ . '/sync/SyncWidgets.php';
 require_once __DIR__ . '/sync/SyncAiApps.php';
 require_once __DIR__ . '/sync/SyncCustomDialplan.php';
 require_once __DIR__ . '/sync/SyncAdvancedPjsip.php';
+require_once __DIR__ . '/sync/SyncReaddress.php';
 
 /**
  * Updates the system default language (/etc/asterisk/asterisk.conf [options]
