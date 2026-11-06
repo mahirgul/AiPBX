@@ -168,6 +168,17 @@ function toggleSipPasswordField() {
     if (el) el.type = (el.type === 'password') ? 'text' : 'password';
 }
 
+/** Puts the row's SIP password on the clipboard without showing it. */
+function copyRowPassword(btn) {
+    const code = btn.parentElement ? btn.parentElement.querySelector('code') : null;
+    if (!code || !code.dataset.pw || !navigator.clipboard) return;
+    navigator.clipboard.writeText(code.dataset.pw).then(function () {
+        if (window.showFooterToast) {
+            showFooterToast(__('js.my_phone.sip_copied'), 'success');
+        }
+    });
+}
+
 function toggleRowPassword(btn) {
     const code = btn.parentElement ? btn.parentElement.querySelector('code') : null;
     if (!code) return;

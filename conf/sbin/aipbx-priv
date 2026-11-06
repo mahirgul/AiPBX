@@ -534,9 +534,10 @@ case "$cmd" in
         # sip443 set < lines — "name HOST" or "addr ADDRESS[/PREFIX]" per line (none: SIP on 443
         # off). nginx on 443 sends a TLS connection naming HOST, or one without ALPN from ADDRESS,
         # to Asterisk's TLS transport instead of Apache or coturn (aipbx-stream.conf includes both
-        # files). Phone regions in the portal give the lines.
+        # files). Phone regions in the portal give the lines; Apache's sandbox lets only this
+        # folder under /etc/nginx be written.
         [ "${1:-}" = set ] && [ $# -eq 1 ] || die "usage: sip443 set < lines"
-        names=/etc/nginx/aipbx-sip443-names.conf addrs=/etc/nginx/aipbx-sip443.conf
+        names=/etc/nginx/aipbx-sip443/names.conf addrs=/etc/nginx/aipbx-sip443/addresses.conf
         tn="$(mktemp)" ta="$(mktemp)"
         trap 'rm -f "$tn" "$ta"' EXIT
         echo "# Host names of phone regions with SIP on 443 (Provisioning → Regions; written by aipbx-priv)" > "$tn"
@@ -552,13 +553,13 @@ case "$cmd" in
                 *) die "invalid line: $kind" ;;
             esac
         done
-        for f in "$names" "$addrs"; do [ -f "$f" ] && cp -p "$f" "$f.prev"; done
-        install -m 0644 "$tn" "$names"; install -m 0644 "$ta" "$addrs"
+        for f in "$names" "$addrs"; do [ -f "$f" ] && { cp -p "$f" "$f.prev" || die "cannot write $(dirname "$f")"; }; done
+        install -m 0644 "$tn" "$names" && install -m 0644 "$ta" "$addrs" || die "cannot write the lists in $(dirname "$names")"
         if ! nginx -t -q 2>/dev/null; then
             for f in "$names" "$addrs"; do [ -f "$f.prev" ] && mv "$f.prev" "$f"; done
             die "nginx refused the lists; the previous ones stay"
         fi
-        systemctl reload nginx
+        systemctl reload nginx || die "nginx did not reload"
         ;;
 
     asterisk-lang)
