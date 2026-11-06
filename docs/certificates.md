@@ -6,7 +6,12 @@ AiPBX uses **one TLS certificate** for everything that speaks TLS:
 |---------|-------------|
 | Apache (behind the 443 edge) | the portal, the mobile API, WebRTC signalling (`/ws`), chat |
 | coturn | TURNS, the encrypted media relay for WebRTC clients on restricted networks |
-| Asterisk | SIP-TLS (5061) and its WSS transport |
+| Asterisk | SIP-TLS (5061) and its WSS transport, also reached on 443 by phone regions with SIP over TLS on port 443 |
+
+A phone region with its own SIP server name for SIP on 443 (`sip1.example.com`, even in another
+domain) adds that name to the Let's Encrypt request: one certificate carries every name. Each name must
+point to this server in DNS, and port 80 must reach it (or, with Cloudflare DNS validation, the token
+must cover that domain too). After adding a name, request the certificate again on this page.
 
 The active certificate lives in `/etc/ssl/aipbx/active.{crt,key}`. coturn and Asterisk run as their
 own users, so they get copies (`/etc/coturn/aipbx.*`, `/etc/asterisk/keys/`); `/etc/ssl/aipbx/mode`

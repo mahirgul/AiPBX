@@ -30,8 +30,11 @@
 │   ├── [ ALPN Present ] (http/1.1, h2 from Web Browsers, Mobile Apps, REST API)          │
 │   │     └──► Streamed directly to Apache 2.4 (127.0.0.1:8443)                           │
 │   │                                                                                     │
-│   └── [ ALPN Empty / None ] (WebRTC TURNS media relay behind restrictive firewalls)     │
-│         └──► coturn TURNS via a PROXY-stripping relay (127.0.0.1:15349 ──► 5349)        │
+│   ├── [ ALPN Empty / None ] (WebRTC TURNS media relay behind restrictive firewalls)     │
+│   │     └──► coturn TURNS via a PROXY-stripping relay (127.0.0.1:15349 ──► 5349)        │
+│   │                                                                                     │
+│   └── [ SNI = a phone region's name, or no ALPN from its addresses ] (desk phones)      │
+│         └──► Asterisk SIP-TLS via a relay socket (/run/aipbx-sip443.sock ──► 5061)      │
 └───────────────────────────────────┬────────────────────────────────┬────────────────────┘
                                     │                                │
                      [ ALPN Present ]                                [ No ALPN ]
