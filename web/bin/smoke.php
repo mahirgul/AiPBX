@@ -463,6 +463,18 @@ function check_conventions(): void
     $n = 0;
     $rel = function (string $p): string { return str_replace(SMOKE_ROOT . '/', '', $p); };
 
+    // 00) Functions PHP 8.5 calls deprecated: their warning broke the page test of an update (1.72.1,
+    //     curl_close in the plugin catalog). curl_close and curl_share_close have done nothing since 8.0.
+    $n++;
+    $code = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(SMOKE_ROOT, FilesystemIterator::SKIP_DOTS));
+    foreach ($code as $f) {
+        $p = (string) $f;
+        if (str_ends_with($p, '.php') && !str_contains($p, '/vendor/') && !str_contains($p, '/tests/') && !str_ends_with($p, 'bin/smoke.php')
+            && preg_match('/\b(curl_close|curl_share_close)\s*\(/', (string) file_get_contents($p), $m) === 1) {
+            fail('conventions', $rel($p), "{$m[1]}() is deprecated in PHP 8.5 and does nothing: remove it");
+        }
+    }
+
     // 0) One way to draw a window and a table (templates/views/ui_kit). These forms came from another
     //    CSS framework and have no styles here, so they looked broken or differed from every other page.
     $n++;

@@ -686,7 +686,6 @@ final class PluginManager
             CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_MAXFILESIZE => $max, CURLOPT_USERAGENT => 'AiPBX/' . (defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev')]);
         $data = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        curl_close($ch);
         return is_string($data) && $code === 200 && strlen($data) <= $max ? $data : null;
     }
 

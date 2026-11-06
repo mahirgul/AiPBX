@@ -113,7 +113,6 @@ final class VoicemailAiService
             CURLOPT_SSL_VERIFYPEER => false, CURLOPT_SSL_VERIFYHOST => 0,
         ]);
         $d = json_decode((string) curl_exec($ch), true);
-        curl_close($ch);
         if (!is_array($d) || !isset($d['transcript'])) {
             return null;
         }

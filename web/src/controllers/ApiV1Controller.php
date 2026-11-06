@@ -574,7 +574,6 @@ final class ApiV1Controller
 
         $raw = curl_exec($ch);
         $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
 
         $decoded = is_string($raw) ? json_decode($raw, true) : null;
         return [
