@@ -190,6 +190,10 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
 
 ---
 
+### `requires_aipbx` (AiPBX 1.72+)
+`"requires_aipbx": "1.71.0"` in `plugin.json`: an older AiPBX refuses to install the plugin and says which
+version it needs, instead of the plugin failing at its first missing hook.
+
 ## 4. Packaging and Uploading Your Custom `.zip` Plugin
 
 1. Package your plugin folder into a `.zip` file:
@@ -201,6 +205,14 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
 4. AiPBX validates the archive (blocks path traversal, checks `plugin.json`, and runs `php -l` syntax checks on every `.php` file), extracts it to `/var/lib/aipbx/plugins/my-crm-bridge/`, enables it, and adds it to the sidebar menu (`Integrations` or `AI`).
 
 ---
+
+### From the community catalog (AiPBX 1.72+)
+Community plugins live in [mahirgul/aipbx-plugins](https://github.com/mahirgul/aipbx-plugins) under
+`plugins/community/<slug>/`. Its CI builds each one as `<slug>.zip` (the `tests/` folder left out) with
+`catalog.json` (slug, name, version, SHA-256) on the release `catalog`. On **Integrations → Plugins**,
+**Show community plugins from the catalog** (off by default) lists them with **Install & Enable**, and
+**Update to vX** when the catalog has a newer version of an installed one. The download is checked
+against the catalog's SHA-256 and then installed exactly like an uploaded `.zip`.
 
 ## 5. Safety & Fault Isolation ("Safe Mode")
 

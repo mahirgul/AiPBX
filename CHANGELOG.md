@@ -5,6 +5,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.0
+
+- **Community plugins from the catalog, without a .zip** (#152). A switch on Integrations → Plugins lists the community plugins of github.com/mahirgul/aipbx-plugins there; Install and, when a newer version is out, Update fetch the plugin, check it against the catalog's SHA-256 and install it like an upload. Off by default, as it installs code from the internet.
+- **A plugin can name the AiPBX it needs.** `"requires_aipbx": "1.71.0"` in plugin.json: an older AiPBX refuses it with that message instead of failing later.
+
 ## 1.71.1
 
 - **SIP over TLS on port 443 works when set in the portal.** Saving a region wrote nginx's lists from inside Apache's sandbox, where /etc/nginx is read-only, and the failure went unnoticed: the phones' connections still went to the TURN server. The lists now live in /etc/nginx/aipbx-sip443/, the one folder there the portal may write, a failed write shows an error, and the update writes them again from the regions already saved.
