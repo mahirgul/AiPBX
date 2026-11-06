@@ -21,6 +21,7 @@ final class PluginManager
     /** A plugin zip may unpack to this much. */
     private const MAX_UNPACKED_BYTES = 209715200;
     private const MAX_ZIP_ENTRIES = 20000;
+    private const MAX_ZIP_BYTES = 25 * 1024 * 1024;
 
     /** @var array<string, array<string, mixed>>|null */
     private static ?array $dbCache = null;
@@ -379,188 +380,314 @@ final class PluginManager
             if (($fileEntry['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || empty($fileEntry['tmp_name'])) {
                 throw new \Exception(t('plugins.err_upload_failed', 'Please select a valid .zip plugin archive.'));
             }
-            if (($fileEntry['size'] ?? 0) > 25 * 1024 * 1024) {
+            if (($fileEntry['size'] ?? 0) > self::MAX_ZIP_BYTES) {
                 throw new \Exception(t('plugins.err_zip_too_large', 'Plugin archive must not exceed 25 MB.'));
             }
-            if (!class_exists('ZipArchive')) {
-                throw new \Exception('PHP ZipArchive extension is required to extract plugin packages.');
-            }
-
-            $zip = new \ZipArchive();
-            if ($zip->open($fileEntry['tmp_name']) !== true) {
-                throw new \Exception(t('plugins.err_invalid_zip', 'Could not open the uploaded .zip archive.'));
-            }
-
-            // Security inspection: block path traversal (Zip-Slip), absolute paths, and locate plugin.json
-            $manifestContent = null;
-            $prefixDir = '';
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $stat = $zip->statIndex($i);
-                $entryName = (string)($stat['name'] ?? '');
-                if ($entryName === '' || str_contains($entryName, '..') || str_starts_with($entryName, '/') || str_starts_with($entryName, '\\')) {
-                    $zip->close();
-                    throw new \Exception(t('plugins.err_unsafe_zip', 'Unsafe path detected inside plugin archive.'));
-                }
-                if ($entryName === 'plugin.json') {
-                    $manifestContent = $zip->getFromIndex($i);
-                    $prefixDir = '';
-                } elseif (preg_match('#^([a-zA-Z0-9_-]+/)plugin\.json$#', $entryName, $m) && $manifestContent === null) {
-                    $manifestContent = $zip->getFromIndex($i);
-                    $prefixDir = $m[1];
-                }
-            }
-
-            if (!is_string($manifestContent) || $manifestContent === '') {
-                $zip->close();
-                throw new \Exception(t('plugins.err_missing_manifest', 'Archive does not contain a valid plugin.json manifest.'));
-            }
-
-            $manifest = json_decode($manifestContent, true);
-            if (!is_array($manifest)) {
-                $zip->close();
-                throw new \Exception(t('plugins.err_invalid_manifest', 'plugin.json is not valid JSON.'));
-            }
-
-            $slug = trim((string)($manifest['slug'] ?? ''));
-            $name = trim((string)($manifest['name'] ?? ''));
-            $version = trim((string)($manifest['version'] ?? '1.0.0'));
-            if (!preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', $slug) || $name === '') {
-                $zip->close();
-                throw new \Exception(t('plugins.err_manifest_fields', 'plugin.json must define a valid "slug" (lowercase alphanumeric + hyphens) and "name".'));
-            }
-
-            // Prevent overwriting official catalog plugins via custom upload
-            if (is_dir(self::catalogDir() . '/' . $slug)) {
-                $zip->close();
-                throw new \Exception(sprintf(t('plugins.err_reserved_slug', 'Slug "%s" is reserved by an official catalog plugin.'), $slug));
-            }
-
-            // The upload limit counts the compressed size: a small zip can unpack to fill the disk.
-            $unpacked = 0;
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $unpacked += (int) ($zip->statIndex($i)['size'] ?? 0);
-            }
-            if ($zip->numFiles > self::MAX_ZIP_ENTRIES || $unpacked > self::MAX_UNPACKED_BYTES) {
-                $zip->close();
-                throw new \Exception(t('plugins.err_zip_unpacked'));
-            }
-
-            // Extract to a staging directory and syntax-check all PHP files before moving into place.
-            // The staging directory sits inside the plugins directory: Apache runs with
-            // PrivateTmp, and rename() cannot move a directory from that /tmp to another
-            // mount (EXDEV), so every upload failed with "Failed to move extracted plugin".
-            // glob('*') in discoverManifests() skips the dot directory.
-            $targetBase = self::customDir();
-            if (!is_dir($targetBase)) {
-                @mkdir($targetBase, 0750, true);
-            }
-            $stageDir = $targetBase . '/.stage-' . bin2hex(random_bytes(8));
-            @mkdir($stageDir, 0700, true);
-
-            try {
-                $written = 0;
-                for ($i = 0; $i < $zip->numFiles; $i++) {
-                    $entryName = (string)$zip->getNameIndex($i);
-                    if ($prefixDir !== '' && str_starts_with($entryName, $prefixDir)) {
-                        $relPath = substr($entryName, strlen($prefixDir));
-                    } else {
-                        $relPath = $entryName;
-                    }
-                    if ($relPath === '' || str_ends_with($relPath, '/')) {
-                        continue;
-                    }
-                    $destFile = $stageDir . '/' . $relPath;
-                    $destParent = dirname($destFile);
-                    if (!is_dir($destParent)) {
-                        @mkdir($destParent, 0750, true);
-                    }
-                    $stream = $zip->getStream($entryName);
-                    if ($stream === false) {
-                        continue;
-                    }
-                    // The sizes in a zip are only what the zip says they are.
-                    $left = self::MAX_UNPACKED_BYTES - $written;
-                    $data = stream_get_contents($stream, $left + 1);
-                    fclose($stream);
-                    $written += strlen((string) $data);
-                    if ($written > self::MAX_UNPACKED_BYTES) {
-                        throw new \Exception(t('plugins.err_zip_unpacked'));
-                    }
-                    file_put_contents($destFile, $data);
-
-                    if (str_ends_with(strtolower($destFile), '.php')) {
-                        $lintOut = [];
-                        $lintCode = 0;
-                        exec('php -l ' . escapeshellarg($destFile) . ' 2>&1', $lintOut, $lintCode);
-                        if ($lintCode !== 0) {
-                            throw new \Exception("PHP syntax error in {$relPath}: " . implode(' ', $lintOut));
-                        }
-                    }
-                }
-                $zip->close();
-
-                $targetDir = $targetBase . '/' . $slug;
-                if (is_dir($targetDir)) {
-                    self::removeDirectoryRecursive($targetDir);
-                }
-                if (!@rename($stageDir, $targetDir)) {
-                    throw new \Exception('Failed to move extracted plugin into plugins directory.');
-                }
-            } catch (\Throwable $e) {
-                self::removeDirectoryRecursive($stageDir);
-                throw $e;
-            }
-
-            self::resetCache();
-
-            // Register and enable the custom plugin in sys_plugins
-            $db = getDB();
-            $hasWorker = !empty($manifest['hooks']['worker']) ? 1 : 0;
-            $db->prepare(
-                "INSERT INTO sys_plugins (slug, name, version, source, enabled, worker_enabled, config_version, installed_at, updated_at)
-                 VALUES (?, ?, ?, 'custom', 1, ?, 1, NOW(), NOW())
-                 ON DUPLICATE KEY UPDATE name = VALUES(name), version = VALUES(version), source = 'custom', enabled = 1, updated_at = NOW()"
-            )->execute([$slug, $name, $version, $hasWorker]);
-
-            if (!empty($manifest['settings_schema']) && is_array($manifest['settings_schema'])) {
-                foreach ($manifest['settings_schema'] as $field) {
-                    $k = (string)($field['key'] ?? '');
-                    if ($k === '' || !isset($field['default'])) {
-                        continue;
-                    }
-                    $existing = DBHelper::fetchColumn(
-                        'SELECT setting_value FROM sys_plugin_settings WHERE plugin_slug = ? AND setting_key = ?',
-                        [$slug, $k]
-                    );
-                    if ($existing === false) {
-                        self::setSetting($slug, $k, (string)$field['default'], !empty($field['secret']));
-                    }
-                }
-            }
-
-            if ($hasWorker || !empty($manifest['scopes'])) {
-                $scopes = is_array($manifest['scopes'] ?? null) ? $manifest['scopes'] : [];
-                $rawToken = ApiTokenService::issuePluginToken($slug, $name, $scopes);
-                self::setSetting($slug, '_worker_api_token', $rawToken, true);
-            }
-
-            // Apply plugin database schema (schema.sql -> plg_* tables only)
-            self::applyPluginSchema($slug, $targetDir);
-
-            if (!empty($manifest['hooks']['sync_domain'])) {
-                try {
-                    require_once dirname(__DIR__) . '/asterisk_sync.php';
-                    $dom = (string)$manifest['hooks']['sync_domain'];
-                    $targetDom = defined('PENDING_SYNC_DOMAIN_MAP') && isset(PENDING_SYNC_DOMAIN_MAP[$dom]) ? $dom : 'general_dialplan';
-                    markPendingSync($targetDom, 'plugin', $slug, "Custom plugin uploaded & enabled: {$name}", 'update', $_SESSION['user_id'] ?? null);
-                } catch (\Throwable $e) {
-                }
-            }
-
-            self::resetCache();
-            writeAuditLog('plugins', 'plugin', $slug, "Custom plugin uploaded & enabled: {$name} (v{$version})", 'create', $_SESSION['user_id'] ?? null);
-            return sprintf(t('plugins.msg_uploaded', 'Custom plugin "%s" (v%s) uploaded and enabled.'), $name, $version);
+            return self::installArchive((string) $fileEntry['tmp_name'], 'uploaded');
         });
+    }
+
+    /**
+     * Checks a plugin .zip (paths, manifest, sizes, PHP syntax), puts it in the custom plugins
+     * folder and enables it: the one way in for an upload and for the community catalog.
+     * $how ("uploaded", "installed from the catalog") goes into the audit log.
+     */
+    private static function installArchive(string $zipPath, string $how): string
+    {
+        if (!class_exists('ZipArchive')) {
+            throw new \Exception('PHP ZipArchive extension is required to extract plugin packages.');
+        }
+
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath) !== true) {
+            throw new \Exception(t('plugins.err_invalid_zip', 'Could not open the uploaded .zip archive.'));
+        }
+
+        // Security inspection: block path traversal (Zip-Slip), absolute paths, and locate plugin.json
+        $manifestContent = null;
+        $prefixDir = '';
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $stat = $zip->statIndex($i);
+            $entryName = (string)($stat['name'] ?? '');
+            if ($entryName === '' || str_contains($entryName, '..') || str_starts_with($entryName, '/') || str_starts_with($entryName, '\\')) {
+                $zip->close();
+                throw new \Exception(t('plugins.err_unsafe_zip', 'Unsafe path detected inside plugin archive.'));
+            }
+            if ($entryName === 'plugin.json') {
+                $manifestContent = $zip->getFromIndex($i);
+                $prefixDir = '';
+            } elseif (preg_match('#^([a-zA-Z0-9_-]+/)plugin\.json$#', $entryName, $m) && $manifestContent === null) {
+                $manifestContent = $zip->getFromIndex($i);
+                $prefixDir = $m[1];
+            }
+        }
+
+        if (!is_string($manifestContent) || $manifestContent === '') {
+            $zip->close();
+            throw new \Exception(t('plugins.err_missing_manifest', 'Archive does not contain a valid plugin.json manifest.'));
+        }
+
+        $manifest = json_decode($manifestContent, true);
+        if (!is_array($manifest)) {
+            $zip->close();
+            throw new \Exception(t('plugins.err_invalid_manifest', 'plugin.json is not valid JSON.'));
+        }
+
+        $slug = trim((string)($manifest['slug'] ?? ''));
+        $name = trim((string)($manifest['name'] ?? ''));
+        $version = trim((string)($manifest['version'] ?? '1.0.0'));
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', $slug) || $name === '') {
+            $zip->close();
+            throw new \Exception(t('plugins.err_manifest_fields', 'plugin.json must define a valid "slug" (lowercase alphanumeric + hyphens) and "name".'));
+        }
+
+        // "requires_aipbx": "1.71.0" — a plugin that needs a newer AiPBX says so instead of failing later.
+        $needs = (string) ($manifest['requires_aipbx'] ?? '');
+        if ($needs !== '' && AIPBX_VERSION !== 'dev' && version_compare(AIPBX_VERSION, $needs, '<')) {
+            $zip->close();
+            throw new \Exception(sprintf(t('plugins.err_requires_aipbx'), $name, $needs));
+        }
+
+        // Prevent overwriting official catalog plugins via custom upload
+        if (is_dir(self::catalogDir() . '/' . $slug)) {
+            $zip->close();
+            throw new \Exception(sprintf(t('plugins.err_reserved_slug', 'Slug "%s" is reserved by an official catalog plugin.'), $slug));
+        }
+
+        // The upload limit counts the compressed size: a small zip can unpack to fill the disk.
+        $unpacked = 0;
+        for ($i = 0; $i < $zip->numFiles; $i++) {
+            $unpacked += (int) ($zip->statIndex($i)['size'] ?? 0);
+        }
+        if ($zip->numFiles > self::MAX_ZIP_ENTRIES || $unpacked > self::MAX_UNPACKED_BYTES) {
+            $zip->close();
+            throw new \Exception(t('plugins.err_zip_unpacked'));
+        }
+
+        // Extract to a staging directory and syntax-check all PHP files before moving into place.
+        // The staging directory sits inside the plugins directory: Apache runs with
+        // PrivateTmp, and rename() cannot move a directory from that /tmp to another
+        // mount (EXDEV), so every upload failed with "Failed to move extracted plugin".
+        // glob('*') in discoverManifests() skips the dot directory.
+        $targetBase = self::customDir();
+        if (!is_dir($targetBase)) {
+            @mkdir($targetBase, 0750, true);
+        }
+        $stageDir = $targetBase . '/.stage-' . bin2hex(random_bytes(8));
+        @mkdir($stageDir, 0700, true);
+
+        try {
+            $written = 0;
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $entryName = (string)$zip->getNameIndex($i);
+                if ($prefixDir !== '' && str_starts_with($entryName, $prefixDir)) {
+                    $relPath = substr($entryName, strlen($prefixDir));
+                } else {
+                    $relPath = $entryName;
+                }
+                if ($relPath === '' || str_ends_with($relPath, '/')) {
+                    continue;
+                }
+                $destFile = $stageDir . '/' . $relPath;
+                $destParent = dirname($destFile);
+                if (!is_dir($destParent)) {
+                    @mkdir($destParent, 0750, true);
+                }
+                $stream = $zip->getStream($entryName);
+                if ($stream === false) {
+                    continue;
+                }
+                // The sizes in a zip are only what the zip says they are.
+                $left = self::MAX_UNPACKED_BYTES - $written;
+                $data = stream_get_contents($stream, $left + 1);
+                fclose($stream);
+                $written += strlen((string) $data);
+                if ($written > self::MAX_UNPACKED_BYTES) {
+                    throw new \Exception(t('plugins.err_zip_unpacked'));
+                }
+                file_put_contents($destFile, $data);
+
+                if (str_ends_with(strtolower($destFile), '.php')) {
+                    $lintOut = [];
+                    $lintCode = 0;
+                    exec('php -l ' . escapeshellarg($destFile) . ' 2>&1', $lintOut, $lintCode);
+                    if ($lintCode !== 0) {
+                        throw new \Exception("PHP syntax error in {$relPath}: " . implode(' ', $lintOut));
+                    }
+                }
+            }
+            $zip->close();
+
+            $targetDir = $targetBase . '/' . $slug;
+            if (is_dir($targetDir)) {
+                self::removeDirectoryRecursive($targetDir);
+            }
+            if (!@rename($stageDir, $targetDir)) {
+                throw new \Exception('Failed to move extracted plugin into plugins directory.');
+            }
+        } catch (\Throwable $e) {
+            self::removeDirectoryRecursive($stageDir);
+            throw $e;
+        }
+
+        self::resetCache();
+
+        // Register and enable the custom plugin in sys_plugins
+        $db = getDB();
+        $hasWorker = !empty($manifest['hooks']['worker']) ? 1 : 0;
+        $db->prepare(
+            "INSERT INTO sys_plugins (slug, name, version, source, enabled, worker_enabled, config_version, installed_at, updated_at)
+             VALUES (?, ?, ?, 'custom', 1, ?, 1, NOW(), NOW())
+             ON DUPLICATE KEY UPDATE name = VALUES(name), version = VALUES(version), source = 'custom', enabled = 1, updated_at = NOW()"
+        )->execute([$slug, $name, $version, $hasWorker]);
+
+        if (!empty($manifest['settings_schema']) && is_array($manifest['settings_schema'])) {
+            foreach ($manifest['settings_schema'] as $field) {
+                $k = (string)($field['key'] ?? '');
+                if ($k === '' || !isset($field['default'])) {
+                    continue;
+                }
+                $existing = DBHelper::fetchColumn(
+                    'SELECT setting_value FROM sys_plugin_settings WHERE plugin_slug = ? AND setting_key = ?',
+                    [$slug, $k]
+                );
+                if ($existing === false) {
+                    self::setSetting($slug, $k, (string)$field['default'], !empty($field['secret']));
+                }
+            }
+        }
+
+        if ($hasWorker || !empty($manifest['scopes'])) {
+            $scopes = is_array($manifest['scopes'] ?? null) ? $manifest['scopes'] : [];
+            $rawToken = ApiTokenService::issuePluginToken($slug, $name, $scopes);
+            self::setSetting($slug, '_worker_api_token', $rawToken, true);
+        }
+
+        // Apply plugin database schema (schema.sql -> plg_* tables only)
+        self::applyPluginSchema($slug, $targetDir);
+
+        if (!empty($manifest['hooks']['sync_domain'])) {
+            try {
+                require_once dirname(__DIR__) . '/asterisk_sync.php';
+                $dom = (string)$manifest['hooks']['sync_domain'];
+                $targetDom = defined('PENDING_SYNC_DOMAIN_MAP') && isset(PENDING_SYNC_DOMAIN_MAP[$dom]) ? $dom : 'general_dialplan';
+                markPendingSync($targetDom, 'plugin', $slug, "Custom plugin uploaded & enabled: {$name}", 'update', $_SESSION['user_id'] ?? null);
+            } catch (\Throwable $e) {
+            }
+        }
+
+        self::resetCache();
+        writeAuditLog('plugins', 'plugin', $slug, "Custom plugin {$how} & enabled: {$name} (v{$version})", 'create', $_SESSION['user_id'] ?? null);
+        return sprintf(t('plugins.msg_uploaded', 'Custom plugin "%s" (v%s) uploaded and enabled.'), $name, $version);
+    }
+
+    // --- Community catalog (github.com/mahirgul/aipbx-plugins) ---
+    // That repository's CI publishes every community plugin as a .zip, with catalog.json listing
+    // them (slug, name, version, sha256, size), on its release "catalog". An administrator opts in
+    // on /plugins; installing downloads the .zip, checks its SHA-256 and installs it as an upload.
+
+    public const CATALOG_BASE = 'https://github.com/mahirgul/aipbx-plugins/releases/download/catalog/';
+
+    public static function communityCatalogOn(): bool
+    {
+        return getSystemSetting('plugins_community_catalog', '0') === '1';
+    }
+
+    /** @return array<string, array<string, mixed>> slug => catalog entry; empty when off or unreachable */
+    public static function communityCatalog(): array
+    {
+        if (!self::communityCatalogOn()) {
+            return [];
+        }
+        $cache = self::customDir() . '/.catalog.json';
+        if (!is_file($cache) || time() - (int) filemtime($cache) > 3600) {
+            $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024);
+            if ($json !== null && is_array(json_decode($json, true))) {
+                @file_put_contents($cache, $json);
+            } elseif (is_file($cache)) {
+                @touch($cache); // keep the last good list, ask again in an hour
+            }
+        }
+        $out = [];
+        foreach ((array) (json_decode((string) @file_get_contents($cache), true)['plugins'] ?? []) as $p) {
+            if (is_array($p) && preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', (string) ($p['slug'] ?? '')) && preg_match('/^[a-f0-9]{64}$/', (string) ($p['sha256'] ?? ''))) {
+                $out[(string) $p['slug']] = $p;
+            }
+        }
+        return $out;
+    }
+
+    /** Turns the community catalog on or off for /plugins. */
+    public static function setCommunityCatalog(bool $on, string $csrfToken): array
+    {
+        return PBXHelper::handleAction($csrfToken, static function () use ($on): string {
+            setSystemSetting('plugins_community_catalog', $on ? '1' : '0');
+            @unlink(self::customDir() . '/.catalog.json');
+            writeAuditLog('plugins', 'plugin', 'catalog', 'Community plugin catalog ' . ($on ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+            return $on ? t('plugins.catalog_on') : t('plugins.catalog_off');
+        });
+    }
+
+    /** Installs or updates a community plugin from the catalog. */
+    public static function installFromCatalog(string $slug, string $csrfToken): array
+    {
+        return PBXHelper::handleAction($csrfToken, static function () use ($slug): string {
+            $entry = self::communityCatalog()[$slug] ?? null;
+            if ($entry === null) {
+                throw new \Exception(t('plugins.err_catalog_missing'));
+            }
+            $data = self::download(self::CATALOG_BASE . rawurlencode($slug) . '.zip', self::MAX_ZIP_BYTES);
+            if ($data === null || !hash_equals((string) $entry['sha256'], hash('sha256', $data))) {
+                throw new \Exception(t('plugins.err_catalog_download'));
+            }
+            $zipPath = self::customDir() . '/.download-' . bin2hex(random_bytes(8)) . '.zip';
+            file_put_contents($zipPath, $data);
+            try {
+                return self::installArchive($zipPath, 'installed from the catalog');
+            } finally {
+                @unlink($zipPath);
+            }
+        });
+    }
+
+    /** The plugins list with the community catalog: rows to install, and newer versions of installed ones. */
+    public static function withCatalog(array $plugins): array
+    {
+        $catalog = self::communityCatalog();
+        foreach ($plugins as &$p) {
+            $c = $catalog[$p['slug']] ?? null;
+            if ($c !== null && $p['source'] === 'custom' && version_compare((string) $c['version'], (string) $p['version'], '>')) {
+                $p['catalog_update'] = (string) $c['version'];
+            }
+            unset($catalog[$p['slug']]);
+        }
+        unset($p);
+        $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
+        foreach ($catalog as $slug => $c) {
+            $plugins[] = [
+                'slug' => $slug, 'name' => (string) ($c['name_i18n'][$lang] ?? $c['name'] ?? $slug),
+                'description' => (string) ($c['description_i18n'][$lang] ?? $c['description'] ?? ''),
+                'version' => (string) ($c['version'] ?? ''), 'author' => (string) ($c['author'] ?? ''),
+                'author_url' => preg_match('#^https://#', (string) ($c['author_url'] ?? '')) ? (string) $c['author_url'] : '',
+                'type' => 'community', 'category' => 'integration', 'icon' => (string) ($c['icon'] ?? 'fas fa-puzzle-piece'),
+                'icon_style' => '', 'source' => 'custom', 'installed' => false, 'enabled' => false, 'settings_url' => null,
+                'hooks' => [], 'scopes' => [], 'from_catalog' => true,
+            ];
+        }
+        return $plugins;
+    }
+
+    /** An HTTPS download of at most $max bytes (GitHub's release links redirect once or twice). */
+    private static function download(string $url, int $max): ?string
+    {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 5,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_TIMEOUT => 30,
+            CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_MAXFILESIZE => $max, CURLOPT_USERAGENT => 'AiPBX/' . (defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev')]);
+        $data = curl_exec($ch);
+        $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        curl_close($ch);
+        return is_string($data) && $code === 200 && strlen($data) <= $max ? $data : null;
     }
 
     /**

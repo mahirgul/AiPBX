@@ -3,6 +3,7 @@
  * Admin -> Plugins: Official Plugin Catalog + Custom .zip Upload & Management.
  *
  * @var list<array<string, mixed>> $plugins
+ * @var bool $catalog_on
  * @var string $csrf_token
  */
 
@@ -66,6 +67,12 @@ foreach ($plugins as $p) {
             </div>
         </form>
     </div>
+    <form method="POST" class="u-p-16 u-d-flex u-wrap u-ai-center u-gap-12">
+        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+        <input type="hidden" name="community_catalog" value="1">
+        <label class="u-fs-13"><input type="checkbox" name="catalog_on" value="1" onchange="this.form.submit()" <?php echo $catalog_on ? 'checked' : ''; ?>> <?php echo htmlspecialchars(t('plugins.catalog_label')); ?></label>
+        <small class="u-hint"><?php echo htmlspecialchars(t('plugins.catalog_help')); ?></small>
+    </form>
 </div>
 
 <?php foreach ($categories as $catKey => $catMeta): ?>
@@ -144,7 +151,18 @@ foreach ($plugins as $p) {
                                         </a>
                                     <?php endif; ?>
 
-                                    <?php if (!$p['enabled']): ?>
+                                    <?php if (!empty($p['from_catalog']) || !empty($p['catalog_update'])): ?>
+                                        <form method="POST" class="u-d-inline">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
+                                            <input type="hidden" name="install_catalog_plugin" value="<?php echo htmlspecialchars($p['slug']); ?>">
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="fas fa-cloud-download-alt"></i> <?php echo htmlspecialchars(!empty($p['catalog_update']) ? sprintf(t('plugins.btn_catalog_update'), $p['catalog_update']) : t('plugins.btn_install_enable', 'Install & Enable')); ?>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($p['from_catalog'])): ?>
+                                    <?php elseif (!$p['enabled']): ?>
                                         <form method="POST" class="u-d-inline">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                             <input type="hidden" name="enable_plugin" value="<?php echo htmlspecialchars($p['slug']); ?>">

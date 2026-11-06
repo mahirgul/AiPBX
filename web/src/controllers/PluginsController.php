@@ -34,13 +34,20 @@ class PluginsController extends BaseController
                 } elseif (isset($_POST['upload_plugin_zip']) && isset($_FILES['plugin_zip'])) {
                     $res = PluginManager::installFromZip($_FILES['plugin_zip'], $csrf);
                     ['message' => $message, 'error' => $error] = static::notices($res);
+                } elseif (isset($_POST['install_catalog_plugin'])) {
+                    $res = PluginManager::installFromCatalog(trim((string)$_POST['install_catalog_plugin']), $csrf);
+                    ['message' => $message, 'error' => $error] = static::notices($res);
+                } elseif (isset($_POST['community_catalog'])) {
+                    $res = PluginManager::setCommunityCatalog(!empty($_POST['catalog_on']), $csrf);
+                    ['message' => $message, 'error' => $error] = static::notices($res);
                 }
                 PluginManager::$menuChanged = !empty($res['success'] ?? false);
             }
         }
 
         static::renderPage('plugins/index', [
-            'plugins'    => PluginManager::allPlugins(),
+            'plugins'    => PluginManager::withCatalog(PluginManager::allPlugins()),
+            'catalog_on' => PluginManager::communityCatalogOn(),
             'csrf_token' => getCSRFToken(),
             'new_token'  => $newToken,
         ], [
