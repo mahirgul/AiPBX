@@ -275,6 +275,14 @@ Some networks let TLS out only on 443. Tick **SIP over TLS on port 443** on the 
 
 Either way the phones' calls still need their audio (RTP over UDP) to get through, and Asterisk sees them as 127.0.0.1: fail2ban does not block them and address checks do not apply.
 
+Checking it on the server:
+
+- `/etc/nginx/aipbx-sip443/names.conf` and `addresses.conf` hold the lists the regions wrote. An update writes them again from the saved regions.
+- `/var/log/nginx/stream.log`: a phone's connection shows `backend=unix:/run/aipbx-sip443.sock`. `backend=127.0.0.1:15349` means it went to the TURN server: the name or address is not in the lists. A registered phone keeps its connection open, so its line appears when the connection ends.
+- `asterisk -rx "pjsip show contacts"`: the phone appears with a `127.0.0.1` contact and `transport=TLS`.
+
+Tried on a live installation (v1.71.1): a Snom desk phone registers over 443 with a region name in another domain than the portal's. Calls with audio from a network that allows only 443 are not tried yet.
+
 ## Model settings
 
 **Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here, whatever its case, and the file holds only that value. On Snom, `name.2` means idx 2 of a setting and `fkey.0` sets a function key. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.

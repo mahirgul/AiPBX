@@ -12,7 +12,7 @@ This document details all network ports, protocols, and access scopes required b
 | **5061** | TCP | SIP-TLS Signaling | Public / LAN | **YES** | Encrypted SIP signaling over TLS. |
 | **10000–20000** | UDP | RTP / SRTP Media Streams | Public / LAN | **YES** | 2-way audio & video RTP packets. Must route directly. |
 | **80** | TCP | HTTP Web & Provisioning | Public / LAN | NO | Web portal, phone auto-provisioning, ACME HTTP-01. |
-| **443** | TCP | HTTPS Web Portal & API | Public / LAN | NO | Secure web interface, REST API, WebRTC WSS upgrade. |
+| **443** | TCP | HTTPS Web Portal & API | Public / LAN | NO | Secure web interface, REST API, WebRTC WSS upgrade, TURNS, and SIP over TLS for phone regions that use it ([phones](phones.md#sip-over-tls-on-port-443)). |
 | **8089** | TCP | Asterisk WSS | Localhost (127.0.0.1) | NO | Not used by clients and never opened: browsers and the mobile apps use 443 `/ws`. |
 | **8088** | TCP | Asterisk HTTP / WS | Localhost (127.0.0.1) | NO | Behind `/ws` of the portal. A reverse proxy connects to the portal, not to this port. |
 | **3478** | UDP / TCP | STUN / TURN (coturn) | Public | **YES** | NAT traversal candidate discovery & media relay. |

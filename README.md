@@ -183,6 +183,8 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Zero-Touch Pool Provisioning** — automatically allocates extensions from an administrator-configured pool (`provision_discovery_pool`) and maps detected OUI vendors to default models (`provision_discovery_models`), producing TFTP/HTTP configuration files without manual entry
 - **Multi-Vendor Provisioning Engine** — automated configuration generation for Yealink (T3x, T4x, T5x), Fanvil (X series), Grandstream (GXP, GRP), Snom, Gigaset, and Cisco (SPA series and CallManager enterprise series)
 - **Cisco 7900 & 8800 CallManager Series** — native `SEP<MAC>.cnf.xml` XML profile generation, XML directory services, and line keys across 11 enterprise models (`cisco-cm-7941g` through `7975g`, `8841`, `8851`, `8861`); see [docs/cisco-callmanager.md](docs/cisco-callmanager.md)
+- **Phone regions** — groups of phones get their own SIP server, port, transport, proxy, NTP, syslog, codecs, time zone and language (*Provisioning → Regions*), e.g. one set inside the network and one outside
+- **SIP over TLS on port 443 (v1.71+)** — for desk phones on networks that let TLS out only on 443: the same 443 port serves the portal, TURN and these phones. nginx tells them apart by the region's own SIP server name (`sip1.example.com` beside the portal's name) or, without one, by the phones' addresses; Asterisk accepts the name and Let's Encrypt puts it on the one certificate. One switch on the region; see [docs/phones.md](docs/phones.md#sip-over-tls-on-port-443)
 - **Automated SCCP-to-SIP Firmware Switching** — model-by-model firmware migration pipeline that moves Cisco 7900 phones from proprietary SCCP to Cisco SIP firmware upon restart, with server-side `.loads` manifest validation before deployment
 
 ### 📠 Fax
@@ -223,6 +225,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **1-to-1 and group chat** (Go WebSocket service `aipbx-chat`), group admins, member management
 - **Photos and files** with thumbnails; access limited to the conversation's participants
 - **Presence, typing indicators, read receipts**; push notifications on mobile
+- **SMS / MMS on your numbers (community plugin, v1.71+)** — Twilio, Vonage, Plivo, Telnyx, Bandwidth, Sinch or VoIP.ms; the users a number is given read and answer its messages under *Messages* ([`sms`](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/sms) in the plugin catalog)
 
 ### 📱 Mobile Apps
 
@@ -263,7 +266,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Stateless REST API (`/api/v1/*`) & OpenAPI 3.1** — 100+ endpoints covering extensions, trunks, inbound/outbound routes, queues, ring groups, IVRs, time conditions, conferences, dial permissions, call center, CDRs, recordings, voicemails, faxes, phones, sounds, AI, chat, system settings, and sync
 - **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
 - **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
-- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`google-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`), dedicated `plg_*` MySQL table sandbox (`schema.sql`), custom `.zip` plugin uploader, encrypted secret storage, and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
+- **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`google-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`, `ai-assistant`), dedicated `plg_*` MySQL table sandbox (`schema.sql`), custom `.zip` plugin uploader, encrypted secret storage, pages for signed-in users as well as administrators (`user_page`, v1.71+), and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
 - **Auto Dialer & AMD Campaigns (`auto-dialer`)** — automated outbound calling campaigns with Asterisk Answering Machine Detection (`AMD()`), global & per-campaign AMD tuning, queue free-agent pacing, voicemail drop (`WaitForSilence`), and CSV call outcome export
 
 ### 🛡️ Global Privacy & Telecom Compliance (`/privacy`)
@@ -355,7 +358,7 @@ AiPBX/
 | ☎️ **PBX** | Asterisk 22 (PJSIP, res_fax, AMD, AMI, ODBC) |
 | 🌐 **Web** | PHP 8, MVC, Composer; vanilla JS + CSS |
 | 🗄️ **Database** | MariaDB (Phinx migrations + `plg_*` plugin sandbox) |
-| 🛡️ **Edge** | nginx stream on 443 (ALPN + PROXY protocol) → Apache |
+| 🛡️ **Edge** | nginx stream on 443 (ALPN, SNI + PROXY protocol) → Apache, coturn (TURNS) or Asterisk (SIP-TLS of phone regions) |
 | 💬 **Chat** | Go + gorilla/websocket |
 | 🎧 **WebRTC** | coturn TURN/STUN, DTLS-SRTP, Opus |
 | 🤖 **Android** | Kotlin, WebRTC, FCM ([AiPBX-Android](https://github.com/mahirgul/AiPBX-Android)) |
