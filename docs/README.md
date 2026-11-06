@@ -5,6 +5,8 @@
 Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian 13+, Raspberry Pi OS 64-bit, and Armbian on x86_64 & ARM64). Start with the
 [installation guide](../INSTALL.md), then use the pages below while configuring the system.
 
+> 🖥️ **Live demo:** [aipbx.bid/demo](https://aipbx.bid/demo/) shows every page of the portal with made-up data, without installing anything.
+
 > 💡 **Quick Diagnosis:** When something does not work, start with the 🗺️ [system map](system-map.md) (where everything is) and 🛠️ [troubleshooting](troubleshooting.md) (symptom → fix).
 
 ## 🚀 Getting started

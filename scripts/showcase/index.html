@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>AiPBX live demo</title>
+<script>
+// The demo in the visitor's language: Turkish, German, else English.
+(function () {
+    var l = (navigator.language || 'en').slice(0, 2).toLowerCase();
+    var m = location.search.match(/lang=(en|tr|de)/);
+    location.replace('/demo/' + (m ? m[1] : (l === 'tr' || l === 'de' ? l : 'en')) + '/dashboard/');
+})();
+</script>
+</head>
+<body><a href="/demo/en/dashboard/">AiPBX demo</a></body>
+</html>
