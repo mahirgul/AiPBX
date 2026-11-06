@@ -6,7 +6,7 @@ Recordings are written by Asterisk (MixMonitor) to `/var/spool/asterisk/monitor/
 
 | Prefix | Recorded when |
 |--------|---------------|
-| `outbound_…` | an outbound route is used |
+| `outbound_…` | always, for every call that leaves through a trunk (a fax excepted); there is no switch |
 | `inbound_…` | the inbound route has *record call* enabled |
 | `rg_…` | a ring group records |
 | queue recordings | the queue records |
