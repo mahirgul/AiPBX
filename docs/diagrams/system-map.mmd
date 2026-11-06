@@ -8,9 +8,11 @@ flowchart TB
 %% @classes
   browser["`**Browser, mobile app**`"]:::client
   phones["`**Desk phones**`"]:::client
+  providers["`**SMS providers**
+  webhooks`"]:::client
 
   nginx["`**nginx** :443
-  picks by ALPN`"]:::edge
+  picks by ALPN, SNI`"]:::edge
   coturn["`**coturn**
   TURNS media relay`"]:::edge
 
@@ -23,6 +25,8 @@ flowchart TB
     chat`"]:::svc
     prov["`**/provision/**
     also HTTP :80`"]:::svc
+    plug["`**/apps/**, **/api/plugins/**
+    plugins`"]:::svc
   end
 
   chat["`**Chat service**
@@ -36,9 +40,12 @@ flowchart TB
   db[("`**MariaDB**`")]:::db
 
   browser -->|443| nginx
+  providers -->|443| nginx
   nginx -->|"http/1.1, h2"| apache
   nginx -->|no ALPN| coturn
+  nginx -->|"region name or address"| ast
   phones -->|SIP| ast
+  phones -.->|"TLS on 443, regions"| nginx
   phones -.->|config| prov
   ws --> ast
   chatp --> chat
@@ -46,4 +53,5 @@ flowchart TB
   portal -->|sudo| priv
   ast -->|AudioSocket| ai
   portal --> db
+  plug --> db
   ast -->|"CDR, queue log"| db

@@ -93,3 +93,5 @@ rapor/
 # MemPalace per-project files (issue #185)
 mempalace.yaml
 entities.json
+scripts/showcase/out/
+scripts/showcase/assets.tgz

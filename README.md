@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  📖 <a href="docs/README.md"><strong>Documentation</strong></a> · 🌐 <a href="https://aipbx.bid"><strong>Website: aipbx.bid</strong></a> · 📺 <a href="https://www.youtube.com/@aipbx"><strong>YouTube</strong></a>
+  📖 <a href="docs/README.md"><strong>Documentation</strong></a> · 🌐 <a href="https://aipbx.bid"><strong>Website: aipbx.bid</strong></a> · 🖥️ <a href="https://aipbx.bid/demo/"><strong>Live demo</strong></a> · 📺 <a href="https://www.youtube.com/@aipbx"><strong>YouTube</strong></a>
 </p>
 
 <p align="center">
@@ -46,6 +46,8 @@
 ---
 
 ## 🚀 Quick Install
+
+> 🖥️ **Look around first:** [aipbx.bid/demo](https://aipbx.bid/demo/) is the portal itself with a made-up company (English, Türkçe, Deutsch): every page, live call figures, nothing to install. Changes are not saved there.
 
 ```bash
 # Recommended one-liner installation (installs the latest release)
