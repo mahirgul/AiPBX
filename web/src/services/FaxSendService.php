@@ -295,6 +295,7 @@ class FaxSendService {
         // here. When it is empty (cid_external not set) we fall back to the
         // extension itself (better than sending no CID at all).
         $sender_cid = preg_replace('/[^0-9]/', '', trim($sender_row['cid_external'] ?? ''));
+        $has_own_cid = $sender_cid !== '';
         if ($sender_cid === '') $sender_cid = $senderExt;
         $caller_id_line = "<$sender_cid>";
 
@@ -321,6 +322,9 @@ class FaxSendService {
                              "Extension: s\n" .
                              "Priority: 1\n" .
                              ($perm_grp > 0 ? "SetVar: __PERMISSION_GROUP_ID=$perm_grp\n" : '') .
+                             // The fax account's own outside number beats the trunk's, as on a phone call
+                             // (the route reads CID_EXTERNAL; a Local channel has none of its own) (#157).
+                             ($has_own_cid ? "SetVar: __CID_EXTERNAL=$sender_cid\n" : '') .
                              "SetVar: FAX_TIF_PATH=$tifPath\n" .
                              "SetVar: FAX_DEST=$safe_fax_dest\n" .
                              "SetVar: FAX_SENDER=$safe_fax_sender\n" .

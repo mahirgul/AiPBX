@@ -228,6 +228,11 @@ class UserService {
         return PBXHelper::handleAction($csrf_token, function() use ($user_id) {
             $user_id = intval($user_id);
             if ($user_id <= 0) throw new \Exception(t('srv_invite.err_invalid_id'));
+            // The installer's "admin" can go like any other administrator, but nobody deletes the
+            // account they are signed in with.
+            if ($user_id === (int) ($_SESSION['user_id'] ?? 0)) {
+                throw new \Exception(t('srv_user.err_delete_self'));
+            }
 
             // roles.php/system_users.php are open only to users with
             // role==='admin' (auth.php circuit breaker) — if the LAST active

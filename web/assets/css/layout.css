@@ -341,7 +341,8 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 32px;
+    /* The menu button sits close to the menu's edge. */
+    padding: 0 32px 0 12px;
 }
 
 .top-bar-left {

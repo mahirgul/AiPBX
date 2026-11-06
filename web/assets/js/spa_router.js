@@ -366,7 +366,7 @@
 
         // Open active group only if sidebar is expanded, close all other groups for clean accordion state
         const sidebar = document.getElementById('app-sidebar');
-        const isCollapsed = (sidebar && sidebar.classList.contains('collapsed')) || localStorage.getItem('sidebar_collapsed') === 'true';
+        const isCollapsed = (sidebar && sidebar.classList.contains('collapsed')) || sessionStorage.getItem('sidebar_collapsed') === 'true';
 
         document.querySelectorAll('.nav-group').forEach(group => {
             if (!isCollapsed && activeGroup && group === activeGroup) {

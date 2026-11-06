@@ -84,12 +84,9 @@ if (!$is_cc_agent && !empty($user['extension'])) {
     <!-- 100% Offline Local Assets & WebRTC Engine -->
     <script>
         (function() {
-            var isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-            if (isCollapsed) {
-                document.cookie = "sidebar_collapsed=true; path=/; max-age=31536000";
-            } else if (localStorage.getItem('sidebar_collapsed') === 'false') {
-                document.cookie = "sidebar_collapsed=false; path=/; max-age=31536000";
-            }
+            // A closed menu is remembered for this browser session only (assets/js/nav.js).
+            var collapsed = sessionStorage.getItem('sidebar_collapsed');
+            document.cookie = "sidebar_collapsed=" + (collapsed === 'true' ? 'true' : 'false') + "; path=/; SameSite=Lax";
             var savedFont = localStorage.getItem('font_size_pref') || 'normal';
             document.documentElement.setAttribute('data-font-size', savedFont);
         })();
