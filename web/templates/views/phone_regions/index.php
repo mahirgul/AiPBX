@@ -144,6 +144,15 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
                     </div>
                 </div>
                 <div class="form-group">
+                    <label class="u-fs-12"><input type="checkbox" name="sip443" id="region_sip443" value="1"> <?php echo t('phones.region_sip443'); ?></label>
+                    <small class="u-hint"><?php echo t('phones.region_sip443_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('phones.region_sip443_sources'); ?></label>
+                    <input type="text" name="sip443_sources" id="region_sip443_sources" class="form-control" maxlength="1000" placeholder="203.0.113.7, 198.51.100.0/24">
+                    <small class="u-hint"><?php echo t('phones.region_sip443_sources_help'); ?></small>
+                </div>
+                <div class="form-group">
                     <label class="form-label"><?php echo t('phones.region_codecs'); ?></label>
                     <div class="u-flex-gap">
                         <?php foreach ($codecs as $codec): ?><label class="u-fs-12"><input type="checkbox" name="codecs[]" class="region-codec" value="<?php echo htmlspecialchars((string) $codec); ?>"> <?php echo htmlspecialchars((string) $codec); ?></label><?php endforeach; ?>

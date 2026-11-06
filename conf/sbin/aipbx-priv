@@ -530,6 +530,37 @@ case "$cmd" in
         esac
         ;;
 
+    sip443)
+        # sip443 set < lines — "name HOST" or "addr ADDRESS[/PREFIX]" per line (none: SIP on 443
+        # off). nginx on 443 sends a TLS connection naming HOST, or one without ALPN from ADDRESS,
+        # to Asterisk's TLS transport instead of Apache or coturn (aipbx-stream.conf includes both
+        # files). Phone regions in the portal give the lines.
+        [ "${1:-}" = set ] && [ $# -eq 1 ] || die "usage: sip443 set < lines"
+        names=/etc/nginx/aipbx-sip443-names.conf addrs=/etc/nginx/aipbx-sip443.conf
+        tn="$(mktemp)" ta="$(mktemp)"
+        trap 'rm -f "$tn" "$ta"' EXIT
+        echo "# Host names of phone regions with SIP on 443 (Provisioning → Regions; written by aipbx-priv)" > "$tn"
+        echo "# Addresses of phone regions with SIP on 443 and no own name (Provisioning → Regions; written by aipbx-priv)" > "$ta"
+        n=0
+        while read -r kind value rest; do
+            [ -n "$kind" ] || continue
+            [ -z "$rest" ] && [ $((n += 1)) -le 1000 ] || die "invalid line or too many lines"
+            case "$kind" in
+                name) [[ "$value" =~ ^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$ ]] || die "invalid name: $value"
+                      echo "$value 1;" >> "$tn" ;;
+                addr) match "$value" "$RE_IP"; echo "$value 1;" >> "$ta" ;;
+                *) die "invalid line: $kind" ;;
+            esac
+        done
+        for f in "$names" "$addrs"; do [ -f "$f" ] && cp -p "$f" "$f.prev"; done
+        install -m 0644 "$tn" "$names"; install -m 0644 "$ta" "$addrs"
+        if ! nginx -t -q 2>/dev/null; then
+            for f in "$names" "$addrs"; do [ -f "$f.prev" ] && mv "$f.prev" "$f"; done
+            die "nginx refused the lists; the previous ones stay"
+        fi
+        systemctl reload nginx
+        ;;
+
     asterisk-lang)
         # asterisk-lang LANG — [options] defaultlanguage in asterisk.conf (the
         # file is asterisk:asterisk 0640, the portal cannot write it). Takes

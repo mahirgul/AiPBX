@@ -27,7 +27,7 @@ require_once __DIR__ . '/../sip_helper.php';
  *
  * The list can be OVERRIDDEN by the `pjsip_identify_hosts` setting (comma
  * separated). Automatic sources: pjsip_external_ip, the server's local IPv4
- * addresses, the Apache ServerName and localhost. If the list ends up empty
+ * addresses, the Apache ServerName, the phone regions' SIP servers and localhost. If the list ends up empty
  * the OLD WIDE pattern is used — falling back to the old behaviour beats a
  * wrong narrowing that unregisters the phones.
  *
@@ -63,6 +63,15 @@ function pjsipIdentifyHosts(): array
         if ($icerik !== false && preg_match_all('/^\s*ServerName\s+(\S+)/mi', $icerik, $m)) {
             foreach ($m[1] as $sn) { $hosts[] = trim($sn); }
         }
+    }
+
+    // The SIP server a phone region gives its phones (Provisioning → Regions), e.g. sip1.example.com.
+    try {
+        foreach (getDB()->query("SELECT sip_server FROM pbx_phone_regions WHERE sip_server NOT IN ('', 'none')")->fetchAll(PDO::FETCH_COLUMN) as $h) {
+            $hosts[] = strtolower((string) $h);
+        }
+    } catch (\Throwable $e) {
+        // Before the regions migration: no regions yet.
     }
 
     return array_values(array_unique(array_filter($hosts)));

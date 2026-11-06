@@ -266,6 +266,15 @@ Some limits:
 - **Allowed networks stay general.** To give a region its own SIP port, add a transport for it first (*Admin → Transports*).
 - **TCP is written for Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly.** NEC and Cisco CallManager phones stay on UDP when TCP is chosen, as their values for it are not confirmed.
 
+### SIP over TLS on port 443
+
+Some networks let TLS out only on 443. Tick **SIP over TLS on port 443** on the region of those phones: they get TLS and port 443, and nginx on 443 hands their connections to Asterisk's TLS transport instead of the portal or the TURN server. nginx cannot read inside TLS, so it tells a phone from a browser in one of two ways:
+
+- **By the region's own name (best).** Give the region a SIP server name of its own, for example `sip1.example.com` for one region and `sip2.example.com` for another, with the portal on `sip.example.com`. Each name must point to this server in DNS. A connection that names it goes to Asterisk; everything else on 443 stays as it was, so browsers and the apps keep TURN on 443 from those networks too. The phones are known by that name, so save the region and press Apply. With Let's Encrypt, request the certificate again on the Certificates page: one certificate then carries all the names, for phones that check it.
+- **By address, when the region has no name of its own** (empty, an IP address or the portal's name): list the addresses or networks of those phones, separated by commas. A TLS connection from them that asks for no web protocol goes to Asterisk. Browsers ask for none when they use TURN either, so from these addresses TURN on 443 does not work.
+
+Either way the phones' calls still need their audio (RTP over UDP) to get through, and Asterisk sees them as 127.0.0.1: fail2ban does not block them and address checks do not apply.
+
 ## Model settings
 
 **Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here, whatever its case, and the file holds only that value. On Snom, `name.2` means idx 2 of a setting and `fkey.0` sets a function key. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
