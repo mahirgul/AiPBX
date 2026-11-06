@@ -53,9 +53,10 @@ function toggleSidebar(e) {
     }
 
     // On desktop screens open/close as a fully sliding menu (Linear / Slack style)
+    // Remembered for this browser session only: the portal opens with the menu open.
     const isCollapsed = sidebar.classList.toggle('collapsed');
-    localStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
-    document.cookie = "sidebar_collapsed=" + (isCollapsed ? "true" : "false") + "; path=/; max-age=31536000";
+    sessionStorage.setItem('sidebar_collapsed', isCollapsed ? 'true' : 'false');
+    document.cookie = "sidebar_collapsed=" + (isCollapsed ? "true" : "false") + "; path=/; SameSite=Lax";
     updateSidebarToggleIcon(!isCollapsed);
 }
 
@@ -96,12 +97,10 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         // Restore saved sidebar state on desktop
-        const isCollapsed = localStorage.getItem('sidebar_collapsed') === 'true';
-        if (isCollapsed) {
-            sidebar.classList.add('collapsed');
-            updateSidebarToggleIcon(false);
-        } else {
-            updateSidebarToggleIcon(true);
-        }
+        localStorage.removeItem('sidebar_collapsed'); // older versions kept it for a year
+        const isCollapsed = sessionStorage.getItem('sidebar_collapsed') === 'true';
+        // The page may have been drawn closed from an old year-long cookie: follow the session.
+        sidebar.classList.toggle('collapsed', isCollapsed);
+        updateSidebarToggleIcon(!isCollapsed);
     }
 });

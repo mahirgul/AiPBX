@@ -42,7 +42,6 @@ function openEditUserModal(u) {
     document.getElementById('modal_user_id').value = u.id;
     document.getElementById('modal_username').value = u.username || '';
     // Enable editing username for normal accounts; keep read-only for master admin account
-    document.getElementById('modal_username').readOnly = (u.username === 'admin');
     document.getElementById('modal_password_group').style.display = 'none';
     document.getElementById('modal_password').required = false;
     document.getElementById('modal_extension').required = false;

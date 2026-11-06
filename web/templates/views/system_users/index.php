@@ -241,7 +241,7 @@
                                         <i class="fas fa-key"></i>
                                     </button>
                                     <?php echo uiEditButton($u, 'openEditUserModal'); ?>
-                                    <?php if ($u['username'] !== 'admin'): ?>
+                                    <?php if ((int) $u['id'] !== (int) ($_SESSION['user_id'] ?? 0)): ?>
                                         <?php echo uiDeleteForm($u['id'], 'user_id', 'delete_user', sprintf(t('system_users.delete_confirm'), $u['username'])); ?>
                                     <?php endif; ?>
                                 </div>

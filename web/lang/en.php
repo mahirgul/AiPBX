@@ -3671,6 +3671,7 @@ return [
     'srv_user.created' => 'New system user \'%s\' created!',
     'srv_user.invite_sent' => 'The activation and password e-mail (%s) was sent.',
     'srv_user.invite_failed' => 'Warning: the activation e-mail could not be sent: %s',
+    'srv_user.err_delete_self' => 'You cannot delete the account you are signed in with. Sign in as another administrator to delete it.',
     'srv_user.err_last_admin_delete' => 'The last active admin account cannot be deleted! Make another user admin first.',
     'srv_user.deleted_apply' => 'User account deleted! Send it from the Apply page to take effect.',
     'srv_user.deleted' => 'User account deleted!',

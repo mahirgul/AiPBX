@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.1
+
+- **The installer's admin account can be renamed and deleted** (#156), like any other administrator: the user name is no longer locked, and Delete shows on every account but your own. The last active administrator still cannot be deleted.
+- **A fax goes out with the fax account's own number** (#157). The External Call CID of a fax extension was ignored when the trunk had its own outbound number, as a fax sent from the portal did not carry it to the route; it now beats the trunk's number as on a phone call.
+- **The menu button sits by the menu and the portal opens with the menu open.** A closed menu is remembered for the browser session only (it was kept for a year, so every page opened closed with the arrow pointing right), and the button moved from 32 to 12 pixels off the menu's edge.
+
 ## 1.72.0
 
 - **Community plugins from the catalog, without a .zip** (#152). A switch on Integrations → Plugins lists the community plugins of github.com/mahirgul/aipbx-plugins there; Install and, when a newer version is out, Update fetch the plugin, check it against the catalog's SHA-256 and install it like an upload. Off by default, as it installs code from the internet.
