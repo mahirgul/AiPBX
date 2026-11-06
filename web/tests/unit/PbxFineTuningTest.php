@@ -151,7 +151,7 @@ final class PbxFineTuningTest extends TestCase
     {
         setSystemSetting('failed_reg_threshold', '50');
         [$status, $msg] = HealthChecks::failedRegistrations();
-        $this->assertContains($status, ['ok', 'off'], 'no alarm (off when the log cannot be read)');
+        $this->assertContains($status, ['ok', 'warn', 'off'], 'reads the real log of this machine, which may hold real attacks');
         $line = 'SecurityEvent="ChallengeResponseFailed",EventTV="' . date('Y-m-d\\TH:i:s.000O') . '"';
         $old = 'SecurityEvent="InvalidPassword",EventTV="' . date('Y-m-d\\TH:i:s.000O', time() - 3600) . '"';
         $this->assertSame(1, HealthChecks::countRecentFailures($line . "\n" . $old, time() - 900), 'only the last 15 minutes count');

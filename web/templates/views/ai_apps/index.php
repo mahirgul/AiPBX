@@ -8,28 +8,25 @@ $voiceTitles = array_column($voices, 'title', 'id');
 $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' . $l));
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-robot u-primary"></i> <?php echo t('ai_apps.title'); ?></div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('aiAppsHelpBox')" title="<?php echo t('common.module_guide'); ?>"><i class="fas fa-question-circle"></i></button>
+    <?php echo uiPageHeaderOpen('fa-robot', t('ai_apps.title'), 'aiAppsHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <button type="button" class="btn btn-primary btn-sm" onclick="aiAppEdit(null)"><i class="fas fa-plus"></i> <?php echo t('ai_apps.btn_new'); ?></button>
-        </div>
-    </div>
-    <div class="module-help-box" id="aiAppsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('ai_apps.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('aiAppsHelpBox', t('ai_apps.help_title')); ?>
         <?php echo t('ai_apps.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
     <?php if (!$service_ok): ?>
-        <p style="color: var(--warning); padding: 0 20px;"><i class="fas fa-triangle-exclamation"></i> <?php echo t('ai_apps.service_down'); ?> <a href="/ai-models"><?php echo t('sidebar.item_ai_models'); ?></a></p>
+        <p class="u-warning u-p-0-20"><i class="fas fa-triangle-exclamation"></i> <?php echo t('ai_apps.service_down'); ?> <a href="/ai-models"><?php echo t('sidebar.item_ai_models'); ?></a></p>
     <?php endif; ?>
-    <div class="table-responsive" style="padding: 0 20px 20px;">
-        <table class="data-table">
-            <thead><tr>
-                <th><?php echo t('ai_apps.col_title'); ?></th><th><?php echo t('ai_apps.col_number'); ?></th>
-                <th><?php echo t('ai_apps.col_voice'); ?></th><th><?php echo t('ai_apps.col_dest'); ?></th>
-                <th><?php echo t('ai_apps.col_active'); ?></th><th></th>
-            </tr></thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('ai_apps.col_title'),
+        t('ai_apps.col_number'),
+        t('ai_apps.col_voice'),
+        t('ai_apps.col_dest'),
+        t('ai_apps.col_active'),
+        '',
+    ], ['frame' => 'u-card-pad']); ?>
             <?php if (!$apps): ?><tr><td colspan="6" class="u-muted"><?php echo t('ai_apps.none'); ?></td></tr><?php endif; ?>
             <?php foreach ($apps as $a):
                 $voice = str_starts_with($a['model_id'], 'engine:') ? $engineTitle(substr($a['model_id'], 7)) : ($voiceTitles[$a['model_id']] ?? $a['model_id']);
@@ -41,27 +38,25 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                     <td class="u-fs-12"><?php echo $h($voice); ?></td>
                     <td class="u-fs-12"><?php echo $h($dest); ?></td>
                     <td><?php echo (int) $a['is_active'] ? '<span class="badge badge-success">' . t('common.active') . '</span>' : '<span class="badge badge-secondary">' . t('common.passive') . '</span>'; ?></td>
-                    <td style="text-align: right; white-space: nowrap;">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick='aiAppEdit(<?php echo $h(json_encode($a, JSON_UNESCAPED_UNICODE)); ?>)'><i class="fas fa-pen"></i></button>
-                        <form method="POST" style="display: inline;" onsubmit="return confirm(<?php echo $h(json_encode(t('ai_apps.confirm_delete'))); ?>)">
+                    <td class="u-ta-right u-nowrap">
+                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='aiAppEdit(<?php echo $h(json_encode($a, JSON_UNESCAPED_UNICODE)); ?>)'><i class="fas fa-pen"></i></button>
+                        <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo $h(json_encode(t('ai_apps.confirm_delete'))); ?>)">
                             <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
-                            <button type="submit" name="delete_app" value="<?php echo (int) $a['id']; ?>" class="btn btn-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
+                            <button type="submit" name="delete_app" value="<?php echo (int) $a['id']; ?>" class="btn btn-icon btn-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
                         </form>
                     </td>
                 </tr>
             <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card" id="aiAppFormCard" style="display: none;">
     <div class="card-header"><div class="card-title"><i class="fas fa-pen u-primary"></i> <span id="aiAppFormTitle"><?php echo t('ai_apps.btn_new'); ?></span></div></div>
-    <form method="POST" autocomplete="off" style="padding: 0 20px 20px;" id="aiAppForm">
+    <form method="POST" autocomplete="off" class="u-card-pad" id="aiAppForm">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <input type="hidden" name="id" id="ai_id" value="0">
         <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_type'); ?></label>
-            <select name="app_type" id="ai_type" class="form-control" style="max-width: 420px;" onchange="aiAppType()">
+            <select name="app_type" id="ai_type" class="form-control u-maxw-420" onchange="aiAppType()">
                 <option value="announcement"><?php echo t('ai_apps.type_announcement'); ?></option>
                 <option value="speech_routing"><?php echo t('ai_apps.type_speech_routing'); ?></option>
                 <option value="voice_requests"><?php echo t('ai_apps.type_voice_requests'); ?></option>
@@ -150,7 +145,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
             <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_max'); ?></label>
                 <input type="number" name="max_concurrent" id="ai_max" class="form-control" min="1" max="50" value="4">
                 <small class="u-hint u-fs-11"><?php echo t('ai_apps.max_help'); ?></small></div>
-            <div class="form-group"><label class="u-check-label-6" style="margin-top: 28px; display: block;">
+            <div class="form-group"><label class="u-check-label-6 u-mt-32" style="display: block;">
                 <input type="checkbox" name="is_active" id="ai_active" value="1" class="u-accent" checked> <?php echo t('common.active'); ?></label></div>
         </div>
         <div class="u-flex-gap">
@@ -163,25 +158,26 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
 <?php if ($requests): ?>
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('ai_apps.requests_title'); ?></div></div>
-    <div class="table-responsive" style="padding: 0 20px 20px;">
-        <table class="data-table">
-            <thead><tr><th><?php echo t('ai_apps.col_time'); ?></th><th><?php echo t('ai_apps.col_caller'); ?></th><th><?php echo t('ai_apps.col_request'); ?></th>
-                <th><?php echo t('ai_apps.col_said'); ?></th><th></th><th><?php echo t('ai_apps.col_handled'); ?></th></tr></thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('ai_apps.col_time'),
+        t('ai_apps.col_caller'),
+        t('ai_apps.col_request'),
+        t('ai_apps.col_said'),
+        '',
+        t('ai_apps.col_handled'),
+    ], ['frame' => 'u-card-pad']); ?>
             <?php foreach ($requests as $r): ?>
                 <tr>
-                    <td class="u-fs-12" style="white-space: nowrap;"><?php echo $h(date('d.m H:i', strtotime($r['created_at']))); ?></td>
+                    <td class="u-fs-12 u-nowrap"><?php echo $h(date('d.m H:i', strtotime($r['created_at']))); ?></td>
                     <td class="u-fs-12"><strong><?php echo $h($r['caller']); ?></strong> <?php echo $h($r['caller_name']); ?><div class="u-muted u-fs-11"><?php echo $h($r['app_title'] ?? ''); ?></div></td>
                     <td><?php echo $r['intent_id'] === 'none' ? '<span class="badge badge-warning">' . t('ai_apps.not_understood') . '</span>' : '<span class="badge badge-info">' . $h($r['intent_name']) . '</span>'; ?>
                         <?php if ((int) $r['mail_sent']): ?><i class="fas fa-envelope u-success" title="<?php echo $h(t('ai_apps.mail_sent')); ?>"></i><?php endif; ?></td>
                     <td class="u-fs-12"><?php echo $h($r['transcript']); ?></td>
-                    <td><audio controls preload="none" src="/api/ai_apps.php?action=audio&uuid=<?php echo $h($r['call_uuid']); ?>" style="height: 28px; width: 160px;"></audio></td>
+                    <td><audio class="u-h-28 u-w-160" controls preload="none" src="/api/ai_apps.php?action=audio&uuid=<?php echo $h($r['call_uuid']); ?>"></audio></td>
                     <td><input type="checkbox" class="u-accent" data-handled="<?php echo (int) $r['id']; ?>" <?php echo $r['handled_at'] ? 'checked' : ''; ?>></td>
                 </tr>
             <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 <?php endif; ?>
 
@@ -249,7 +245,7 @@ function aiIntentAdd(i) {
     const row = document.createElement('div');
     row.className = 'card';
     row.style.cssText = 'padding: 12px; margin-bottom: 10px;';
-    const field = (k, label, html) => '<div class="form-group" style="margin-bottom: 8px;"><label class="form-label u-fs-12">' + esc(label) + '</label>' + html + '</div>';
+    const field = (k, label, html) => '<div class="form-group u-mb-8"><label class="form-label u-fs-12">' + esc(label) + '</label>' + html + '</div>';
     row.innerHTML = '<input type="hidden" name="intents[' + n + '][id]" value="' + esc(i.id) + '">'
         + '<div class="u-grid-2">'
         + field('name', AI_T.name, '<input type="text" class="form-control" name="intents[' + n + '][name]" maxlength="100" value="' + esc(i.name) + '">')

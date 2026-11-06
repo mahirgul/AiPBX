@@ -11,6 +11,98 @@
 /**
  * UI Component Helpers for Centralized Single-Point UI Management
  */
+/**
+ * The shared styles, in cascade order: a later file may refine an earlier one, so keep this order.
+ */
+function uiStylesheets(): string {
+    $html = '';
+    foreach (['cards', 'tables', 'forms', 'buttons', 'feedback', 'auth', 'topbar', 'widgets', 'responsive', 'helpers', 'utilities'] as $name) {
+        $html .= '<link rel="stylesheet" href="' . asset('/assets/css/ui/' . $name . '.css') . '">' . "\n";
+    }
+    return $html;
+}
+
+/**
+ * The title of a page, the same everywhere: bar, icon tile, title, then status badges on the left and
+ * actions on the right, with the help button first. See /ui-kit.
+ *
+ *     echo uiPageHeader('fa-phone', $title, 'xHelpBox');
+ *
+ * With badges or actions:
+ *
+ *     echo uiPageHeaderOpen('fa-phone', $title, 'xHelpBox');
+ *     ...badges...
+ *     echo uiPageHeaderActions();
+ *     ...buttons...
+ *     echo uiPageHeaderClose();
+ *
+ * @param string $icon  'fa-x', or 'fab fa-x' for a brand icon
+ * @param string $title Ready HTML, like every t() on these pages
+ * @param string $help  Id of the uiHelpBoxOpen() it opens
+ */
+function uiPageHeaderOpen(string $icon, string $title, string $help = ''): string {
+    $GLOBALS['uiPageHeaderHelp'] = $help;
+    $class = str_contains($icon, ' ') ? $icon : 'fas ' . $icon;
+    return '<div class="card-header"><div class="card-title"><i class="' . htmlspecialchars($class) . '"></i> ' . $title;
+}
+
+function uiPageHeaderActions(): string {
+    $help = (string) ($GLOBALS['uiPageHeaderHelp'] ?? '');
+    return '</div><div class="page-actions">' . ($help !== '' ? uiHelpButton($help) : '');
+}
+
+function uiPageHeaderClose(): string {
+    return '</div></div>';
+}
+
+function uiPageHeader(string $icon, string $title, string $help = ''): string {
+    return uiPageHeaderOpen($icon, $title, $help) . uiPageHeaderActions() . uiPageHeaderClose();
+}
+
+/** The round "?" that opens a help box. */
+function uiHelpButton(string $boxId): string {
+    return '<button type="button" class="btn-help" onclick="toggleModuleHelp(\'' . htmlspecialchars($boxId, ENT_QUOTES) . '\')" title="'
+        . htmlspecialchars(t('common.module_guide'), ENT_QUOTES) . '"><i class="fas fa-question-circle"></i></button>';
+}
+
+/** A help box, closed until its button is pressed. The body goes between Open and Close. */
+function uiHelpBoxOpen(string $id, string $title): string {
+    return '<div class="module-help-box" id="' . htmlspecialchars($id, ENT_QUOTES) . '"><h4><i class="fas fa-info-circle"></i> ' . $title . '</h4>';
+}
+
+function uiHelpBoxClose(): string {
+    return '</div>';
+}
+
+/**
+ * A row of tabs, the same on every page. Panes are elements with data-tab-pane="key"; the shared
+ * script shows the chosen one. An item with 'onclick' or 'href' does its own thing instead.
+ *
+ * @param array<string, array{label: string, icon?: string, badge?: string, badge_html?: string, badge_class?: string, onclick?: string, href?: string}> $items
+ */
+function uiTabs(array $items, string $active): string {
+    $html = '<div class="ui-tabs" role="tablist">';
+    foreach ($items as $key => $item) {
+        $on = (string) $key === $active;
+        $icon = !empty($item['icon']) ? '<i class="fas ' . htmlspecialchars($item['icon'], ENT_QUOTES) . '"></i> ' : '';
+        // 'badge' is text; 'badge_html' is trusted markup (an icon), never user data.
+        $badgeInner = ($item['badge_html'] ?? '') !== '' ? $item['badge_html'] : htmlspecialchars($item['badge'] ?? '');
+        $badge = $badgeInner !== ''
+            ? ' <span class="badge ' . htmlspecialchars($item['badge_class'] ?? 'badge-secondary', ENT_QUOTES) . '">' . $badgeInner . '</span>'
+            : '';
+        $inner = $icon . '<span>' . htmlspecialchars($item['label']) . '</span>' . $badge;
+        $class = 'ui-tab' . ($on ? ' active' : '');
+        $data = ' data-tab="' . htmlspecialchars((string) $key, ENT_QUOTES) . '" role="tab" aria-selected="' . ($on ? 'true' : 'false') . '"';
+        if (!empty($item['href'])) {
+            $html .= '<a href="' . htmlspecialchars($item['href'], ENT_QUOTES) . '" class="' . $class . '"' . $data . ' style="text-decoration: none;">' . $inner . '</a>';
+        } else {
+            $click = $item['onclick'] ?? 'UIHelper.selectTab(this)';
+            $html .= '<button type="button" class="' . $class . '"' . $data . ' onclick="' . htmlspecialchars($click, ENT_QUOTES) . '">' . $inner . '</button>';
+        }
+    }
+    return $html . '</div>';
+}
+
 function uiSaveButton($title = null, $extra_attr = '', $icon = 'fa-save') {
     $title = $title ?? t('common.save');
     $module = getModuleKeyForPage();
@@ -135,6 +227,39 @@ function uiStatusBadge($value, array $map, $default = 'info', $label = null, $ic
     $text = $label ?? $value;
     $iconHtml = $icon ? '<i class="fas ' . htmlspecialchars($icon) . '"></i> ' : '';
     return '<span class="badge ' . $cls . '">' . $iconHtml . htmlspecialchars($text) . '</span>';
+}
+
+/**
+ * A table, the same on every page: scroll frame, table, header row. The page writes only its rows:
+ *
+ *     echo uiTableOpen([$name, ['label' => $ext, 'class' => 'col-hide-mobile'], '']);
+ *     foreach ($rows as $r) { ... }   // <tr>...</tr>
+ *     echo uiTableClose();
+ *
+ * A column is its label (ready HTML, like t()) or ['label', 'class', 'title']; null skips it (a column
+ * only some users see: $canEdit ? $actions : null). No columns, no header row.
+ * $opt: id, body_id, search (false: no search, paging or sorting), class (a script's hook),
+ * attrs (trusted data-* for a script), frame (classes on the frame, e.g. a height limit).
+ */
+function uiTableOpen(array $columns, array $opt = []): string {
+    $th = '';
+    foreach ($columns as $c) {
+        if ($c === null) {
+            continue;
+        }
+        $c = is_array($c) ? $c : ['label' => $c];
+        $th .= '<th' . (!empty($c['class']) ? ' class="' . htmlspecialchars($c['class'], ENT_QUOTES) . '"' : '')
+            . (!empty($c['title']) ? ' title="' . htmlspecialchars($c['title'], ENT_QUOTES) . '"' : '') . '>' . ($c['label'] ?? '') . '</th>';
+    }
+    $class = trim('data-table ' . (($opt['search'] ?? true) ? '' : 'no-dt ') . ($opt['class'] ?? ''));
+    $id = static fn(string $k): string => !empty($opt[$k]) ? ' id="' . htmlspecialchars($opt[$k], ENT_QUOTES) . '"' : '';
+    return '<div class="' . trim('table-responsive ' . ($opt['frame'] ?? '')) . '"><table class="' . htmlspecialchars($class, ENT_QUOTES) . '"'
+        . $id('id') . (!empty($opt['attrs']) ? ' ' . $opt['attrs'] : '') . '>' . ($th !== '' ? '<thead><tr>' . $th . '</tr></thead>' : '')
+        . '<tbody' . $id('body_id') . '>';
+}
+
+function uiTableClose(): string {
+    return '</tbody></table></div>';
 }
 
 /**

@@ -85,6 +85,12 @@ jobs:
       - name: Composer install
         run: composer install --no-interaction --no-progress --prefer-dist
 
+      - name: Dependency advisories
+        run: composer audit --locked --no-dev
+
+      - name: JavaScript syntax
+        run: find assets/js -name '*.js' -not -name '*.min.js' -print0 | xargs -0 -n1 node --check
+
       - name: Language files (tr/en keys)
         run: php bin/lint_lang.php
 

@@ -1,13 +1,13 @@
 <?php /* Layout: templates/layouts/auth_header.php — GoogleAuthController::renderMobileCallback() */ ?>
-<div class="auth-card" style="max-width: 400px; text-align: center; padding: 32px 24px; border-radius: 16px; margin: auto;">
+<div class="auth-card u-maxw-400 u-ta-center u-p-32-24 u-r-16 u-m-auto">
     <div style="font-size: 48px; margin-bottom: 16px; color: <?php echo $success ? 'var(--primary)' : 'var(--danger)'; ?>;">
         <i class="fas <?php echo $success ? 'fa-check-circle' : 'fa-exclamation-circle'; ?>"></i>
     </div>
-    <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 10px 0;"><?php echo htmlspecialchars($title); ?></h2>
-    <p style="font-size: 14px; color: var(--text-muted); line-height: 1.5; margin: 0 0 24px 0;">
+    <h2 class="u-fs-20 u-fw-700 u-m-0-0-12-0"><?php echo htmlspecialchars($title); ?></h2>
+    <p class="u-fs-14 u-muted u-lh-1-5 u-m-0-0-24-0">
         <?php echo $success ? t('google.returning') : htmlspecialchars($error_message); ?>
     </p>
-    <a id="btnReturn" href="<?php echo htmlspecialchars($deep_link); ?>" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">
+    <a id="btnReturn" href="<?php echo htmlspecialchars($deep_link); ?>" class="btn btn-primary u-w-100 u-jc-center u-p-12 u-fw-700">
         <?php echo $success ? t('google.open_app') : t('google.back_to_app'); ?>
     </a>
 </div>

@@ -11,19 +11,14 @@ $can_delete = $canDelete ?? false;
 <?php endif; ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-ban text-danger"></i> <?php echo t('blacklist.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('blacklistHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-ban', t('blacklist.title'), 'blacklistHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if ($can_edit): ?>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="openImportModal()" title="<?php echo t('blacklist.import_csv'); ?>">
                     <i class="fas fa-file-csv"></i> <?php echo t('blacklist.import_csv'); ?>
                 </button>
-                <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo jsArg(t('blacklist.confirm_resync')); ?>);">
+                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('blacklist.confirm_resync')); ?>);">
                     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                     <input type="hidden" name="action" value="resync">
                     <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('blacklist.resync_astdb'); ?>">
@@ -34,37 +29,29 @@ $can_delete = $canDelete ?? false;
                     <i class="fas fa-plus-circle"></i> <?php echo t('blacklist.new_entry'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="blacklistHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('blacklist.help_title', 'Kara Liste & Spam Engelleme Rehberi'); ?></h4>
+        <?php echo uiHelpBoxOpen('blacklistHelpBox', t('blacklist.help_title', 'Kara Liste & Spam Engelleme Rehberi')); ?>
         <p><?php echo t('blacklist.help_desc', 'İstenmeyen veya spam arayan numaraları dahili hatlara, kuyruklara veya karşılama anonslarına (IVR) ulaşmadan önce en erken noktada (Trunk Inbound) engeller. Arayan numara doğrudan Asterisk Dahili Veritabanı (AstDB) üzerinde mikro-saniyeler içinde kontrol edilir.'); ?></p>
-        <ul style="margin: 8px 0 0 20px; font-size: 13px;">
+        <ul class="u-m-8-0-0-20 u-fs-13">
             <li><strong><?php echo t('blacklist.action_busy'); ?>:</strong> <?php echo t('blacklist.help_act_busy', 'Arayana meşgul sinyali (ISDN 17 / SIP 486 Busy Here) döner.'); ?></li>
             <li><strong><?php echo t('blacklist.action_congestion'); ?>:</strong> <?php echo t('blacklist.help_act_congestion', 'Şebeke arızası / devre yok (ISDN 34 / SIP 503 Service Unavailable) döner.'); ?></li>
             <li><strong><?php echo t('blacklist.action_drop'); ?>:</strong> <?php echo t('blacklist.help_act_drop', 'Görüşmeyi hiçbir ses veya anons dinletmeden doğrudan sonlandırır (ISDN 16).'); ?></li>
             <li><strong><?php echo t('blacklist.action_announcement'); ?>:</strong> <?php echo t('blacklist.help_act_announcement', 'Çağrıyı yanıtlar ve "Numara kullanılmamaktadır" sistem anonsunu dinleterek kapatır.'); ?></li>
             <li><strong><?php echo t('blacklist.help_patterns', 'Desen Desteği'); ?>:</strong> <?php echo t('blacklist.help_patterns_desc', 'Belirli bir numara öbeğini engellemek için dialplan kalıpları kullanabilirsiniz (Örn: _0850. veya _+1800.).'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table" id="blacklistTable">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('blacklist.col_number'); ?></th>
-                    <th><?php echo t('blacklist.col_title'); ?></th>
-                    <th><?php echo t('blacklist.col_action'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('blacklist.col_hits'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('blacklist.col_last_blocked'); ?></th>
-                    <th><?php echo t('common.status'); ?></th>
-                    <th class="text-right"><?php echo t('common.actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        t('blacklist.col_number'),
+        t('blacklist.col_title'),
+        t('blacklist.col_action'),
+        ['label' => t('blacklist.col_hits'), 'class' => 'col-hide-mobile'],
+        ['label' => t('blacklist.col_last_blocked'), 'class' => 'col-hide-mobile'],
+        t('common.status'),
+        ['label' => t('common.actions'), 'class' => 'text-right'],
+    ], ['id' => 'blacklistTable']); ?>
                 <?php if (empty($entries)): ?>
                     <?php echo uiTableEmptyRow(8, t('blacklist.empty', 'Kayıtlı engellenmiş numara bulunmamaktadır.'), 'fa-shield-alt'); ?>
                 <?php else: ?>
@@ -112,11 +99,11 @@ $can_delete = $canDelete ?? false;
                             </td>
                             <td>
                                 <?php if ($can_edit): ?>
-                                    <form method="POST" style="display:inline;">
+                                    <form method="POST" class="u-d-inline">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="action" value="toggle_active">
                                         <input type="hidden" name="entry_id" value="<?php echo (int)$e['id']; ?>">
-                                        <button type="submit" class="badge <?php echo !empty($e['is_active']) ? 'badge-success' : 'badge-secondary'; ?>" style="border:none; cursor:pointer;" title="<?php echo t('common.toggle_status'); ?>">
+                                        <button type="submit" class="badge <?php echo !empty($e['is_active']) ? 'badge-success' : 'badge-secondary'; ?> u-bd-none u-pointer" title="<?php echo t('common.toggle_status'); ?>">
                                             <?php echo !empty($e['is_active']) ? t('common.active') : t('common.passive'); ?>
                                         </button>
                                     </form>
@@ -128,16 +115,16 @@ $can_delete = $canDelete ?? false;
                             </td>
                             <td class="text-right">
                                 <?php if ($can_edit): ?>
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick='openEditBlacklistModal(<?php echo json_encode($e, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="<?php echo t('common.edit'); ?>">
+                                    <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditBlacklistModal(<?php echo json_encode($e, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="<?php echo t('common.edit'); ?>">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 <?php endif; ?>
                                 <?php if ($can_delete): ?>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo jsArg(sprintf(t('blacklist.confirm_delete'), $e['number'])); ?>);">
+                                    <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(sprintf(t('blacklist.confirm_delete'), $e['number'])); ?>);">
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="action" value="delete_entry">
                                         <input type="hidden" name="entry_id" value="<?php echo (int)$e['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
+                                        <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </form>
@@ -146,17 +133,15 @@ $can_delete = $canDelete ?? false;
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: Create / Edit Blacklist Entry -->
 <div class="modal-overlay" id="blacklistModal">
-    <div class="modal-card" style="max-width: 520px;">
+    <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="blacklistModalTitle"><i class="fas fa-ban text-danger"></i> <?php echo t('blacklist.new_entry'); ?></h3>
-            <button type="button" class="btn btn-secondary u-btn-pad" onclick="closeBlacklistModal()"><i class="fas fa-times"></i></button>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="closeBlacklistModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" id="blacklistForm">
@@ -167,7 +152,7 @@ $can_delete = $canDelete ?? false;
                 <!-- Quick caller picker from extension -->
                 <div class="form-group" style="background: var(--bg-hover, #f8fafc); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
                     <label class="form-label u-fs-12"><i class="fas fa-bolt text-warning"></i> <?php echo t('blacklist.quick_lookup_title', 'Dahili Son Çağrısından Numarayı Al'); ?></label>
-                    <div style="display: flex; gap: 8px;">
+                    <div class="u-d-flex u-gap-8">
                         <input type="text" id="quick_ext_input" class="form-control u-fs-12" placeholder="<?php echo t('blacklist.quick_ext_ph', 'Dahili no (örn: 101)'); ?>">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="fetchLastCallerForExt()">
                             <i class="fas fa-search"></i> <?php echo t('common.search'); ?>
@@ -212,10 +197,10 @@ $can_delete = $canDelete ?? false;
 
 <!-- Modal: CSV Import -->
 <div class="modal-overlay" id="importModal">
-    <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-card u-maxw-480">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-file-csv text-primary"></i> <?php echo t('blacklist.import_csv'); ?></h3>
-            <button type="button" class="btn btn-secondary u-btn-pad" onclick="closeImportModal()"><i class="fas fa-times"></i></button>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="closeImportModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" enctype="multipart/form-data" autocomplete="off">

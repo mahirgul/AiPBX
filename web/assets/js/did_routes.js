@@ -48,7 +48,7 @@ function openEditDidModal(route) {
 
 function fillDidFax(route) {
     document.getElementById('modal_fax_detect').checked = parseInt(route.fax_detect) === 1;
-    document.getElementById('modal_fax_seconds').value = route.fax_detect_seconds || 5;
+    document.getElementById('modal_fax_seconds').value = route.fax_detect_seconds || 10;
     document.getElementById('modal_fax_target').value = route.fax_target || '';
     didFaxDetectChanged();
 }

@@ -9,13 +9,6 @@
     flex-direction: column;
 }
 .chat-page-header {
-    padding: 12px 18px;
-    border-left: 4px solid var(--primary);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
     margin-bottom: 12px;
     flex-shrink: 0;
     border-radius: 12px;
@@ -49,28 +42,6 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-}
-.chat-sidebar-tabs {
-    display: flex;
-    gap: 6px;
-    background: var(--bg-main);
-    padding: 3px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-}
-.chat-sidebar-tab-btn {
-    flex: 1;
-    border: none;
-    border-radius: 6px;
-    padding: 7px 10px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
 }
 .chat-search-wrap {
     position: relative;
@@ -121,6 +92,7 @@
         min-height: 0 !important;
     }
     .chat-page-header {
+        --card-pad: 14px;
         padding: 10px 14px !important;
         margin-bottom: 8px !important;
         border-radius: 8px !important;

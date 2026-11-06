@@ -1,44 +1,31 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-layer-group u-primary"></i> <?php echo t('queues.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('queueHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-layer-group', t('queues.title'), 'queueHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('queues', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateQueueModal()" title="<?php echo t('queues.new_tooltip'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('queues.new_tooltip'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="queueHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('queues.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('queueHelpBox', t('queues.help_title')); ?>
         <?php echo t('queues.help_body'); ?><br>
         - <strong><?php echo t('queues.help_advanced'); ?></strong>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('queues.col_queue'); ?></th>
-                    <th><?php echo t('queues.col_desc'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('internal_number.col'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('queues.col_strategy'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('queues.col_supervisor'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('queues.col_timings'); ?></th>
-                    <th><?php echo t('queues.col_agent'); ?></th>
-                    <th><?php echo t('queues.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('queues.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        t('queues.col_queue'),
+        t('queues.col_desc'),
+        ['label' => t('internal_number.col'), 'class' => 'col-hide-mobile'],
+        ['label' => t('queues.col_strategy'), 'class' => 'col-hide-mobile'],
+        ['label' => t('queues.col_supervisor'), 'class' => 'col-hide-mobile'],
+        ['label' => t('queues.col_timings'), 'class' => 'col-hide-mobile'],
+        t('queues.col_agent'),
+        t('queues.col_status'),
+        ['label' => t('queues.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($queues)): ?>
                     <?php echo uiTableEmptyRow(9, t('queues.empty'), 'fa-layer-group'); ?>
                 <?php else: ?>
@@ -62,7 +49,7 @@
                                     foreach ($sups as $s_ext):
                                         $s_name = QueueRepository::supervisorName($s_ext);
                                 ?>
-                                        <span class="badge badge-warning" style="margin-right: 2px; margin-bottom: 2px;" title="<?php echo t('queues.supervisor_badge_tooltip'); ?>"><i class="fas fa-user-shield"></i> <?php echo htmlspecialchars($s_name); ?> (<?php echo htmlspecialchars($s_ext); ?>)</span>
+                                        <span class="badge badge-warning u-mr-2 u-mb-2" title="<?php echo t('queues.supervisor_badge_tooltip'); ?>"><i class="fas fa-user-shield"></i> <?php echo htmlspecialchars($s_name); ?> (<?php echo htmlspecialchars($s_ext); ?>)</span>
                                 <?php
                                     endforeach;
                                 else:
@@ -90,17 +77,15 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit Queue Modal -->
 <div class="modal-overlay" id="queueModal">
-    <div class="modal-card" style="max-width: 720px;">
+    <div class="modal-card u-maxw-720">
         <div class="modal-header">
             <h3 class="u-title" id="queueModalTitle"><i class="fas fa-layer-group u-primary"></i> <?php echo t('queues.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeQueueModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeQueueModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -177,7 +162,7 @@
                         </select>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_timeout'); ?></label>
                             <input type="number" name="timeout" id="modal_timeout" class="form-control" value="15" min="5" max="60" required>
@@ -344,7 +329,7 @@
 
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_record_enabled'); ?></label>
-                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
+                            <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-mt-8">
                                 <input type="checkbox" name="record_enabled" id="modal_record_enabled" value="1" checked class="u-check">
                                 <span class="u-fw-600 u-fs-13"><?php echo t('queues.record_enabled_label'); ?></span>
                             </label>
@@ -360,7 +345,7 @@
                             <span><i class="fas fa-users-cog"></i> <?php echo t('queues.section_members'); ?></span>
                             <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('queues.member_mode_help'); ?></span></span>
                         </label>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; background: var(--bg-sidebar); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);">
+                        <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-260-1fr u-gap-12 u-maxh-220 u-overflow-y-auto u-bg-bg-sidebar u-p-12 u-r-8 u-bd-1-solid-border-color">
                             <?php if (empty($queue_agents)): ?>
                                 <span class="u-muted u-fs-12"><?php echo t('queues.no_agents'); ?></span>
                             <?php endif; ?>
@@ -368,11 +353,11 @@
                                 $is_legacy = !in_array($agent['role'], QueueRepository::AGENT_ROLES, true);
                             ?>
                                 <div class="<?php echo $is_legacy ? 'modal-legacy-assignee' : ''; ?>" data-ext="<?php echo htmlspecialchars($agent['extension']); ?>" data-kind="member" style="display: <?php echo $is_legacy ? 'none' : 'flex'; ?>; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; padding: 6px 10px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color);">
-                                    <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                    <span class="u-of-hidden u-text-overflow-ellipsis u-nowrap">
                                         <strong><?php echo htmlspecialchars($agent['extension']); ?></strong> - <?php echo htmlspecialchars($agent['full_name']); ?>
-                                        <?php if ($is_legacy): ?><span class="badge badge-danger" style="font-size: 9px; padding: 2px 5px;" title="<?php echo t('queues.legacy_role_tooltip'); ?>"><?php echo htmlspecialchars($agent['role']); ?></span><?php endif; ?>
+                                        <?php if ($is_legacy): ?><span class="badge badge-danger u-fs-10 u-p-2-4" title="<?php echo t('queues.legacy_role_tooltip'); ?>"><?php echo htmlspecialchars($agent['role']); ?></span><?php endif; ?>
                                     </span>
-                                    <select name="member_mode[<?php echo htmlspecialchars($agent['extension']); ?>]" class="form-control modal-agent-mode" data-ext="<?php echo htmlspecialchars($agent['extension']); ?>" style="width: auto; flex-shrink: 0; padding: 2px 6px; height: auto; font-size: 12px;">
+                                    <select name="member_mode[<?php echo htmlspecialchars($agent['extension']); ?>]" class="form-control modal-agent-mode u-w-auto u-flex-shrink-0 u-p-2-8 u-h-auto u-fs-12" data-ext="<?php echo htmlspecialchars($agent['extension']); ?>">
                                         <option value=""><?php echo t('queues.member_mode_none'); ?></option>
                                         <option value="dynamic"><?php echo t('queues.member_mode_dynamic'); ?></option>
                                         <option value="static"><?php echo t('queues.member_mode_static'); ?></option>
@@ -383,11 +368,11 @@
                     </div>
 
                     <!-- Queue managers -->
-                    <div class="form-group" style="background: rgba(245, 158, 11, 0.08); padding: 12px; border-radius: 8px; border: 1px solid rgba(245, 158, 11, 0.3); margin-top: 14px;">
-                        <label class="form-label" style="font-weight: 700; color: var(--warning); display: flex; align-items: center; gap: 6px; margin-bottom: 6px;">
+                    <div class="form-group u-bg-rgba-245-158-11-0-08 u-p-12 u-r-8 u-bd-1-solid-rgba-245-158-11-0-3 u-mt-16">
+                        <label class="form-label u-fw-700 u-warning u-d-flex u-ai-center u-gap-8 u-mb-8">
                             <i class="fas fa-user-shield"></i> <?php echo t('queues.section_supervisors'); ?>
                         </label>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; max-height: 140px; overflow-y: auto; background: var(--bg-sidebar); padding: 10px; border-radius: 6px; border: 1px solid var(--border-color);">
+                        <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-220-1fr u-gap-12 u-maxh-140 u-overflow-y-auto u-bg-bg-sidebar u-p-12 u-r-8 u-bd-1-solid-border-color">
                             <?php if (empty($queue_managers)): ?>
                                 <span class="u-muted u-fs-12"><?php echo t('queues.no_managers'); ?></span>
                             <?php endif; ?>
@@ -397,13 +382,13 @@
                                 <label class="<?php echo $is_legacy ? 'modal-legacy-assignee' : ''; ?>" data-ext="<?php echo htmlspecialchars($manager['extension']); ?>" data-kind="supervisor" style="display: <?php echo $is_legacy ? 'none' : 'flex'; ?>; align-items: center; gap: 8px; font-size: 12px; cursor: pointer; padding: 5px 8px; background: var(--bg-input); border-radius: 6px; border: 1px solid var(--border-color);">
                                     <input type="checkbox" name="supervisors[]" class="modal-supervisor-checkbox" value="<?php echo htmlspecialchars($manager['extension']); ?>">
                                     <span><strong><?php echo htmlspecialchars($manager['extension']); ?></strong> - <?php echo htmlspecialchars($manager['full_name']); ?>
-                                        <?php if ($manager['role'] === 'admin'): ?><span class="badge badge-warning" style="font-size: 9px; padding: 2px 5px;"><?php echo t('queues.role_admin'); ?></span><?php endif; ?>
-                                        <?php if ($is_legacy): ?><span class="badge badge-danger" style="font-size: 9px; padding: 2px 5px;" title="<?php echo t('queues.legacy_role_tooltip'); ?>"><?php echo htmlspecialchars($manager['role']); ?></span><?php endif; ?>
+                                        <?php if ($manager['role'] === 'admin'): ?><span class="badge badge-warning u-fs-10 u-p-2-4"><?php echo t('queues.role_admin'); ?></span><?php endif; ?>
+                                        <?php if ($is_legacy): ?><span class="badge badge-danger u-fs-10 u-p-2-4" title="<?php echo t('queues.legacy_role_tooltip'); ?>"><?php echo htmlspecialchars($manager['role']); ?></span><?php endif; ?>
                                     </span>
                                 </label>
                             <?php endforeach; ?>
                         </div>
-                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 6px; display: block;">
+                        <small class="u-muted u-fs-11 u-mt-8" style="display: block;">
                             <?php echo t('queues.supervisors_help'); ?>
                         </small>
                     </div>

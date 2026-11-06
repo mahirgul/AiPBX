@@ -20,14 +20,12 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
 <form method="POST" class="card mb-3" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCSRFToken()); ?>">
     <input type="hidden" name="save_night_guard" value="1">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-moon u-primary"></i> <?php echo t('night_guard.title'); ?>
-            <span class="badge <?php echo $ng['night_guard_enabled'] === '1' ? 'badge-success' : 'badge-primary'; ?>" style="margin-left: 8px; font-size: 11px;"><?php echo t($ng['night_guard_enabled'] === '1' ? 'night_guard.on' : 'night_guard.off'); ?></span>
-        </div>
-    </div>
-    <p class="u-muted u-fs-12" style="margin: 0 0 12px;"><?php echo t('night_guard.help'); ?></p>
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px;">
+    <?php echo uiPageHeaderOpen('fa-moon', t('night_guard.title'), 'nightGuardHelpBox'); ?>
+<span class="badge <?php echo $ng['night_guard_enabled'] === '1' ? 'badge-success' : 'badge-primary'; ?> u-ml-8 u-fs-11"><?php echo t($ng['night_guard_enabled'] === '1' ? 'night_guard.on' : 'night_guard.off'); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('nightGuardHelpBox', t('common.module_guide')); ?><?php echo t('night_guard.help'); ?><?php echo uiHelpBoxClose(); ?>
+    <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-260-1fr u-gap-16">
         <div class="form-group">
             <label class="form-label"><?php echo t('night_guard.field_enabled'); ?></label>
             <select name="night_guard_enabled" class="form-control" <?php echo $canEdit ? '' : 'disabled'; ?>>
@@ -37,7 +35,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
         </div>
         <div class="form-group">
             <label class="form-label"><?php echo t('night_guard.field_hours'); ?></label>
-            <div style="display: flex; gap: 6px; align-items: center;">
+            <div class="u-d-flex u-gap-6 u-ai-center">
                 <input type="time" name="night_guard_from" class="form-control" value="<?php echo htmlspecialchars($ng['night_guard_from']); ?>">
                 <span>–</span>
                 <input type="time" name="night_guard_to" class="form-control" value="<?php echo htmlspecialchars($ng['night_guard_to']); ?>">
@@ -79,32 +77,28 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
             <i class="fas fa-shield-alt u-primary"></i> <?php echo t('dial_permissions.title'); ?>
         </div>
         <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('permHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+            <?php echo uiHelpButton('permHelpBox'); ?>
             <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
-                <button class="btn btn-primary btn-sm" onclick="openCreateGroupModal()" title="<?php echo t('dial_permissions.new_group_btn'); ?>">
+                <button class="btn btn-icon btn-primary btn-sm" onclick="openCreateGroupModal()" title="<?php echo t('dial_permissions.new_group_btn'); ?>">
                     <i class="fas fa-plus-circle"></i>
                 </button>
             <?php endif; ?>
         </div>
     </div>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="permHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('dial_permissions.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('permHelpBox', t('dial_permissions.help_title')); ?>
         <p><?php echo t('dial_permissions.help_body'); ?></p>
         <ul>
             <li><strong><?php echo t('dial_permissions.help_default'); ?></strong> <?php echo t('dial_permissions.help_default_desc'); ?></li>
             <li><strong><?php echo t('dial_permissions.help_prefix'); ?></strong> <?php echo t('dial_permissions.help_prefix_desc'); ?></li>
             <li><strong><?php echo t('dial_permissions.help_exact'); ?></strong> <?php echo t('dial_permissions.help_exact_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 </div>
 
-<div style="display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start;">
+<div class="u-d-grid u-gtc-340-1fr u-gap-20 u-ai-start">
     <!-- Left column: permission group list -->
-    <div class="card" style="padding: 16px;">
+    <div class="card u-p-16">
         <div class="card-header u-mb-14">
             <div class="card-title">
                 <i class="fas fa-layer-group u-primary"></i> <?php echo t('dial_permissions.groups_list'); ?>
@@ -112,14 +106,14 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
             <span class="badge badge-secondary"><?php echo count($groups); ?></span>
         </div>
 
-        <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="u-d-flex u-col u-gap-8">
             <?php foreach ($groups as $g): ?>
                 <?php 
                 $isSelected = ((int)$g['id'] === (int)$selected_group_id);
                 $isDefault = ((int)$g['id'] === 1);
                 ?>
                 <div style="padding: 12px 14px; border-radius: 10px; border: 1px solid <?php echo $isSelected ? 'var(--primary)' : 'var(--border-color)'; ?>; background: <?php echo $isSelected ? 'rgba(var(--primary-rgb, 2, 132, 199), 0.08)' : 'var(--bg-card)'; ?>; cursor: pointer; transition: all 0.2s;" onclick="location.href='/dial-permissions?group_id=<?php echo $g['id']; ?>'">
-                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                    <div class="u-d-flex u-ai-center u-jc-space-between u-mb-6">
                         <span class="u-fw-700 u-fs-14 u-text-main">
                             <?php echo htmlspecialchars($g['group_name']); ?>
                             <?php if ($isDefault): ?>
@@ -139,8 +133,8 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                         <span><i class="fas fa-list-ol"></i> <?php echo (int)$g['rules_count']; ?> <?php echo t('dial_permissions.rules'); ?></span>
                         <span><i class="fas fa-phone-alt"></i> <?php echo (int)$g['users_count']; ?> <?php echo t('dial_permissions.members'); ?></span>
                         <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
-                            <div style="display: inline-flex; gap: 4px;" onclick="event.stopPropagation();">
-                                <button type="button" class="btn btn-secondary btn-sm" style="padding: 2px 6px; font-size: 10px;" onclick='openEditGroupModal(<?php echo jsArg($g); ?>)' title="<?php echo t('common.edit'); ?>">
+                            <div class="u-d-inline-flex u-gap-4" onclick="event.stopPropagation();">
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditGroupModal(<?php echo jsArg($g); ?>)' title="<?php echo t('common.edit'); ?>">
                                     <i class="fas fa-edit"></i>
                                 </button>
                                 <?php if (!$isDefault): ?>
@@ -148,7 +142,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                         <input type="hidden" name="delete_group" value="1">
                                         <input type="hidden" name="group_id" value="<?php echo $g['id']; ?>">
-                                        <button type="submit" class="btn btn-danger btn-sm" style="padding: 2px 6px; font-size: 10px;" title="<?php echo t('common.delete'); ?>">
+                                        <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>
@@ -168,7 +162,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                 <div class="card-title">
                     <i class="fas fa-sliders-h u-primary"></i> 
                     <span><?php echo htmlspecialchars($selected_group['group_name'] ?? ''); ?></span>
-                    <span style="font-size: 13px; font-weight: normal; color: var(--text-muted); margin-left: 8px;">
+                    <span class="u-fs-13 u-fw-normal u-muted u-ml-8">
                         (<?php echo t('dial_permissions.base_mode'); ?> 
                         <strong><?php echo ($selected_group['default_action'] ?? 'allow') === 'allow' ? t('dial_permissions.mode_blacklist') : t('dial_permissions.mode_whitelist'); ?></strong>)
                     </span>
@@ -185,36 +179,31 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
 
         <?php if (hasModulePermission('dial_permissions', 'edit') && $selected_group): ?>
             <!-- Quick rule buttons -->
-            <div style="background: var(--bg-input); padding: 10px 14px; border-radius: 8px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px;">
+            <div class="u-bg-bg-input u-p-12-16 u-r-8 u-mb-16 u-d-flex u-ai-center u-gap-8 u-wrap u-fs-12">
                 <span class="u-fw-600 u-text-main"><i class="fas fa-bolt text-warning"></i> <?php echo t('dial_permissions.quick_rules'); ?></span>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '0', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_long')), ENT_QUOTES); ?>)" style="padding: 2px 8px; font-size: 11px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '0', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_long')), ENT_QUOTES); ?>)">
                     <i class="fas fa-ban text-danger"></i> <?php echo t('dial_permissions.qb_zero'); ?>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '05', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_mobile')), ENT_QUOTES); ?>)" style="padding: 2px 8px; font-size: 11px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '05', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_mobile')), ENT_QUOTES); ?>)">
                     <i class="fas fa-ban text-danger"></i> <?php echo t('dial_permissions.qb_mobile'); ?>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '00', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_intl')), ENT_QUOTES); ?>)" style="padding: 2px 8px; font-size: 11px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '00', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_intl')), ENT_QUOTES); ?>)">
                     <i class="fas fa-ban text-danger"></i> <?php echo t('dial_permissions.qb_intl'); ?>
                 </button>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '0900', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_premium')), ENT_QUOTES); ?>)" style="padding: 2px 8px; font-size: 11px;">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="quickAddRule(<?php echo $selected_group['id']; ?>, '0900', 'prefix', 'deny', <?php echo htmlspecialchars(json_encode(t('dial_permissions.qr_premium')), ENT_QUOTES); ?>)">
                     <i class="fas fa-ban text-danger"></i> <?php echo t('dial_permissions.qb_premium'); ?>
                 </button>
             </div>
         <?php endif; ?>
 
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th style="width: 70px;"><?php echo t('dial_permissions.col_priority'); ?></th>
-                        <th><?php echo t('dial_permissions.col_pattern'); ?></th>
-                        <th><?php echo t('dial_permissions.col_type'); ?></th>
-                        <th><?php echo t('dial_permissions.col_action'); ?></th>
-                        <th><?php echo t('dial_permissions.col_desc'); ?></th>
-                        <th class="text-right" style="width: 100px;"><?php echo t('dial_permissions.col_actions'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            ['label' => t('dial_permissions.col_priority'), 'class' => 'u-w-70'],
+            t('dial_permissions.col_pattern'),
+            t('dial_permissions.col_type'),
+            t('dial_permissions.col_action'),
+            t('dial_permissions.col_desc'),
+            ['label' => t('dial_permissions.col_actions'), 'class' => 'text-right u-w-100-2'],
+        ]); ?>
                     <?php if (empty($rules)): ?>
                         <?php echo uiTableEmptyRow(6, t('dial_permissions.no_rules'), 'fa-filter'); ?>
                     <?php else: ?>
@@ -222,7 +211,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                             <tr>
                                 <td><span class="badge badge-secondary"><?php echo (int)$r['priority']; ?></span></td>
                                 <td>
-                                    <strong style="font-size: 14px; letter-spacing: 0.5px; font-family: monospace;">
+                                    <strong class="u-fs-14 u-letter-spacing-0-5 u-mono">
                                         <?php echo htmlspecialchars($r['pattern']); ?>
                                         <?php if ($r['pattern_type'] === 'prefix'): ?>*<?php endif; ?>
                                     </strong>
@@ -244,8 +233,8 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                                 <td class="u-muted u-fs-12"><?php echo htmlspecialchars($r['description'] ?? '-'); ?></td>
                                 <td class="text-right">
                                     <?php if (hasModulePermission('dial_permissions', 'edit')): ?>
-                                        <div style="display: inline-flex; gap: 4px;">
-                                            <button type="button" class="btn btn-secondary btn-sm" onclick='openEditRuleModal(<?php echo jsArg($r); ?>)' title="<?php echo t('common.edit'); ?>">
+                                        <div class="u-d-inline-flex u-gap-4">
+                                            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditRuleModal(<?php echo jsArg($r); ?>)' title="<?php echo t('common.edit'); ?>">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                             <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('dial_permissions.confirm_delete_rule')), ENT_QUOTES); ?>);">
@@ -253,7 +242,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                                                 <input type="hidden" name="delete_rule" value="1">
                                                 <input type="hidden" name="rule_id" value="<?php echo $r['id']; ?>">
                                                 <input type="hidden" name="group_id" value="<?php echo (int) $selected_group_id; ?>">
-                                                <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
+                                                <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>
@@ -263,18 +252,16 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                             </tr>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
     </div>
 </div>
 
 <!-- Modal: add / edit permission group -->
 <div class="modal-overlay" id="groupModal">
-    <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-card u-maxw-500">
         <div class="modal-header">
             <h3 class="u-title" id="groupModalTitle"><i class="fas fa-shield-alt u-primary"></i> <?php echo t('dial_permissions.group_modal'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('groupModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('groupModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -318,7 +305,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
     <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="ruleModalTitle"><i class="fas fa-filter u-primary"></i> <?php echo t('dial_permissions.rule'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('ruleModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('ruleModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" id="ruleForm" autocomplete="off">
@@ -327,7 +314,7 @@ $canEdit = hasModulePermission('dial_permissions', 'edit');
                 <input type="hidden" name="id" id="modal_rule_id" value="0">
                 <input type="hidden" name="group_id" id="modal_rule_group_id" value="<?php echo $selected_group_id; ?>">
 
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                <div class="u-d-grid u-gtc-2fr-1fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('dial_permissions.pattern'); ?></label>
                         <input type="text" name="pattern" id="modal_rule_pattern" class="form-control" placeholder="<?php echo t('dial_permissions.pattern_ph'); ?>" required>

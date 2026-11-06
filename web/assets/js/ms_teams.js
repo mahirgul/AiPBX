@@ -15,19 +15,12 @@ function openTeamsTab(tabName) {
     window.history.replaceState({}, '', url);
 }
 
-function toggleTeamsHelp() {
-    const box = document.getElementById('teamsHelpBox');
-    if (box) {
-        box.style.display = (box.style.display === 'none' || box.style.display === '') ? 'block' : 'none';
-    }
-}
-
 function openMappingModal() {
     document.getElementById('mappingForm').reset();
     document.getElementById('mapId').value = '';
     document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-plus"></i> ' + window.MS_TEAMS_I18N.modal_new_title;
     document.getElementById('modalAlert').style.display = 'none';
-    document.getElementById('mappingModal').style.display = 'block';
+    UIHelper.openOverlayModal('mappingModal');
 }
 
 function editMapping(item) {
@@ -39,11 +32,11 @@ function editMapping(item) {
     document.getElementById('mapNotes').value = item.notes || '';
     document.getElementById('mappingModalTitle').innerHTML = '<i class="fas fa-user-edit"></i> ' + window.MS_TEAMS_I18N.modal_edit_title.replace('%s', item.extension);
     document.getElementById('modalAlert').style.display = 'none';
-    document.getElementById('mappingModal').style.display = 'block';
+    UIHelper.openOverlayModal('mappingModal');
 }
 
 function closeMappingModal() {
-    document.getElementById('mappingModal').style.display = 'none';
+    UIHelper.closeOverlayModal('mappingModal');
 }
 
 function setTeamsAlertBox(el, className, iconClass, messageText) {

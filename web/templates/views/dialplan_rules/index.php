@@ -24,55 +24,32 @@ $deviceBadge = static function (string $type): string {
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/dialplan_rules.css'); ?>">
 
 <div class="card mb-3">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-sliders-h u-primary"></i> <?php echo t('dialplan_rules.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('dialplanRulesHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-sliders-h', t('dialplan_rules.title'), 'dialplanRulesHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if ($can_edit): ?>
                 <button type="button" class="btn btn-primary btn-sm" onclick="openCreateRuleModal(document.querySelector('.settings-tab-btn.active')?.dataset.tab || 'all')">
                     <i class="fas fa-plus-circle"></i> <?php echo t('dialplan_rules.btn_add_rule'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <div class="module-help-box" id="dialplanRulesHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('dialplan_rules.help_title'); ?></h4>
+    <?php echo uiHelpBoxOpen('dialplanRulesHelpBox', t('dialplan_rules.help_title')); ?>
         <p><?php echo t('dialplan_rules.help_body'); ?></p>
-        <p style="margin-top: 8px;"><?php echo t('common.help_number_order'); ?></p>
+        <p class="u-mt-8"><?php echo t('common.help_number_order'); ?></p>
         <ul>
             <li><strong><?php echo t('dialplan_rules.help_mobile_title'); ?>:</strong> <?php echo t('dialplan_rules.help_mobile_desc'); ?></li>
             <li><strong><?php echo t('dialplan_rules.help_desktop_title'); ?>:</strong> <?php echo t('dialplan_rules.help_desktop_desc'); ?></li>
             <li><strong><?php echo t('dialplan_rules.help_web_title'); ?>:</strong> <?php echo t('dialplan_rules.help_web_desc'); ?></li>
             <li><strong><?php echo t('dialplan_rules.help_internal_title'); ?>:</strong> <?php echo t('dialplan_rules.help_internal_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Settings: on/off for all rules, country presets -->
     <div class="dpr-settings">
-        <div class="dpr-setting">
-            <div>
-                <div class="dpr-setting-title">
-                    <?php echo t('dialplan_rules.enabled_label'); ?>
-                    <span class="badge <?php echo $rules_enabled ? 'badge-success' : 'badge-danger'; ?>"><?php echo t($rules_enabled ? 'dialplan_rules.state_on' : 'dialplan_rules.state_off'); ?></span>
-                </div>
-                <div class="dpr-setting-desc"><?php echo t('dialplan_rules.enabled_desc'); ?></div>
-            </div>
-            <?php if ($can_edit): ?>
-                <form method="POST" <?php if ($rules_enabled): ?>onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('dialplan_rules.confirm_turn_off')), ENT_QUOTES); ?>);"<?php endif; ?>>
-                    <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
-                    <input type="hidden" name="action" value="set_enabled">
-                    <input type="hidden" name="enabled" value="<?php echo $rules_enabled ? '0' : '1'; ?>">
-                    <button type="submit" class="btn btn-sm <?php echo $rules_enabled ? 'btn-secondary' : 'btn-success'; ?>">
-                        <i class="fas fa-power-off"></i> <?php echo t($rules_enabled ? 'dialplan_rules.btn_turn_off' : 'dialplan_rules.btn_turn_on'); ?>
-                    </button>
-                </form>
-            <?php endif; ?>
-        </div>
+        <?php $onoff = ['label' => t('dialplan_rules.enabled_label'), 'desc' => t('dialplan_rules.enabled_desc'), 'on' => $rules_enabled, 'can_edit' => $can_edit,
+            'csrf' => $csrf, 'confirm_off' => t('dialplan_rules.confirm_turn_off'), 'fields' => ['action' => 'set_enabled']];
+        require __DIR__ . '/../../onoff_setting.php'; ?>
 
         <div class="dpr-setting">
             <div>
@@ -107,7 +84,9 @@ $deviceBadge = static function (string $type): string {
 <?php endif; ?>
 
 <!-- Rules per device -->
-<div class="settings-tabs u-mb-12">
+<!-- The filter tabs and their table in one card. -->
+<div class="card tabbed-page">
+<div class="settings-tabs">
     <?php foreach ($deviceTabs as $typeKey => [$icon, $label]): ?>
         <?php $n = ($typeKey === 'all') ? count($all_rules) : count($rules_by_type[$typeKey] ?? []); ?>
         <button type="button" class="settings-tab-btn <?php echo $active_tab === $typeKey ? 'active' : ''; ?>" data-tab="<?php echo $typeKey; ?>" onclick="switchSettingsTab('<?php echo $typeKey; ?>', this)">
@@ -120,19 +99,14 @@ $deviceBadge = static function (string $type): string {
     <?php $currentRules = ($typeKey === 'all') ? $all_rules : ($rules_by_type[$typeKey] ?? []); ?>
     <div id="tab_<?php echo $typeKey; ?>" class="settings-tab-pane <?php echo $active_tab === $typeKey ? 'active' : ''; ?>" style="display: <?php echo $active_tab === $typeKey ? 'block' : 'none'; ?>;">
         <div class="card mb-3">
-            <div class="table-responsive">
-                <table class="data-table no-dt" id="table-<?php echo $typeKey; ?>">
-                    <thead>
-                        <tr>
-                            <th><?php echo t('dialplan_rules.col_name'); ?></th>
-                            <th><?php echo t('dialplan_rules.col_pattern'); ?></th>
-                            <th class="col-hide-mobile"><?php echo t('dialplan_rules.col_transform'); ?></th>
-                            <?php if ($typeKey === 'all'): ?><th><?php echo t('dialplan_rules.col_client_type'); ?></th><?php endif; ?>
-                            <th><?php echo t('dialplan_rules.col_status'); ?></th>
-                            <?php if ($can_edit): ?><th class="text-right"><?php echo t('dialplan_rules.col_actions'); ?></th><?php endif; ?>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <?php echo uiTableOpen([
+                t('dialplan_rules.col_name'),
+                t('dialplan_rules.col_pattern'),
+                ['label' => t('dialplan_rules.col_transform'), 'class' => 'col-hide-mobile'],
+                $typeKey === 'all' ? t('dialplan_rules.col_client_type') : null,
+                t('dialplan_rules.col_status'),
+                $can_edit ? ['label' => t('dialplan_rules.col_actions'), 'class' => 'text-right'] : null,
+            ], ['id' => 'table-' . $typeKey, 'search' => false]); ?>
                         <?php if (empty($currentRules)): ?>
                             <?php echo uiTableEmptyRow(4 + ($can_edit ? 1 : 0) + ($typeKey === 'all' ? 1 : 0), t(empty($all_rules) ? 'dialplan_rules.empty_hint' : 'dialplan_rules.empty'), 'fa-sliders-h'); ?>
                         <?php else: ?>
@@ -164,7 +138,7 @@ $deviceBadge = static function (string $type): string {
                                                 <button type="button" class="btn btn-sm btn-icon" onclick='openCopyRuleModal(<?php echo json_encode($r, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.copy')); ?>">
                                                     <i class="fas fa-copy"></i>
                                                 </button>
-                                                <form method="POST" style="display:inline;" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(sprintf(t('dialplan_rules.confirm_delete'), $r['rule_name'])), ENT_QUOTES); ?>);">
+                                                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(sprintf(t('dialplan_rules.confirm_delete'), $r['rule_name'])), ENT_QUOTES); ?>);">
                                                     <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                                                     <input type="hidden" name="action" value="delete_rule">
                                                     <input type="hidden" name="rule_id" value="<?php echo (int)$r['id']; ?>">
@@ -178,12 +152,11 @@ $deviceBadge = static function (string $type): string {
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php echo uiTableClose(); ?>
         </div>
     </div>
 <?php endforeach; ?>
+</div>
 <div class="u-fs-11 text-muted u-mb-20"><i class="fas fa-info-circle"></i> <?php echo t('dialplan_rules.order_note'); ?></div>
 
 <!-- Simulator -->
@@ -201,33 +174,22 @@ $deviceBadge = static function (string $type): string {
                 <?php endforeach; ?>
             </div>
         </div>
-        <table class="data-table no-dt dpr-sim-table" id="sim_result_table"
-               data-txt-waiting="<?php echo htmlspecialchars(t('dialplan_rules.sim_waiting')); ?>"
-               data-txt-no-rule="<?php echo htmlspecialchars(t('dialplan_rules.sim_no_rule')); ?>"
-               data-txt-disabled="<?php echo htmlspecialchars(t('dialplan_rules.disabled_banner')); ?>"
-               data-txt-desktop="<?php echo htmlspecialchars(t('dialplan_rules.tab_desktop')); ?>"
-               data-txt-mobile="<?php echo htmlspecialchars(t('dialplan_rules.tab_mobile')); ?>"
-               data-txt-web="<?php echo htmlspecialchars(t('dialplan_rules.tab_web')); ?>">
-            <thead>
-                <tr>
-                    <th><?php echo t('dialplan_rules.col_client_type'); ?></th>
-                    <th><?php echo t('dialplan_rules.sim_col_rule'); ?></th>
-                    <th class="text-right"><?php echo t('dialplan_rules.sim_col_result'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+        <?php echo uiTableOpen([
+            t('dialplan_rules.col_client_type'),
+            t('dialplan_rules.sim_col_rule'),
+            ['label' => t('dialplan_rules.sim_col_result'), 'class' => 'text-right'],
+        ], ['id' => 'sim_result_table', 'search' => false, 'class' => 'dpr-sim-table', 'attrs' => 'data-txt-waiting="' . htmlspecialchars(t('dialplan_rules.sim_waiting')) . '"' . ' ' . 'data-txt-no-rule="' . htmlspecialchars(t('dialplan_rules.sim_no_rule')) . '"' . ' ' . 'data-txt-disabled="' . htmlspecialchars(t('dialplan_rules.disabled_banner')) . '"' . ' ' . 'data-txt-desktop="' . htmlspecialchars(t('dialplan_rules.tab_desktop')) . '"' . ' ' . 'data-txt-mobile="' . htmlspecialchars(t('dialplan_rules.tab_mobile')) . '"' . ' ' . 'data-txt-web="' . htmlspecialchars(t('dialplan_rules.tab_web')) . '"']); ?>
                 <tr><td colspan="3" class="text-muted text-center"><?php echo t('dialplan_rules.sim_waiting'); ?></td></tr>
-            </tbody>
-        </table>
+            <?php echo uiTableClose(); ?>
     </div>
 </div>
 
 <!-- Create / Edit Rule Modal -->
 <div class="modal-overlay" id="ruleModal">
-    <div class="modal-card" style="max-width: 580px;">
+    <div class="modal-card u-maxw-580">
         <div class="modal-header">
-            <h3 class="modal-title" id="ruleModalTitle"><?php echo t('dialplan_rules.modal_title_new'); ?></h3>
-            <button type="button" class="modal-close" onclick="UIHelper.closeOverlayModal('ruleModal')">&times;</button>
+            <h3 class="u-title" id="ruleModalTitle"><?php echo t('dialplan_rules.modal_title_new'); ?></h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('ruleModal')"><i class="fas fa-times"></i></button>
         </div>
         <form method="POST" id="ruleForm">
             <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
@@ -258,7 +220,7 @@ $deviceBadge = static function (string $type): string {
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;" class="mb-3">
+                <div class="mb-3 u-d-grid u-gtc-1fr-1fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('dialplan_rules.strip_front'); ?></label>
                         <input type="number" min="0" max="32" name="strip_front" id="modal_strip_front" class="form-control" value="0">
@@ -271,7 +233,7 @@ $deviceBadge = static function (string $type): string {
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;" class="mb-3">
+                <div class="mb-3 u-d-grid u-gtc-1fr-1fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('dialplan_rules.strip_back'); ?></label>
                         <input type="number" min="0" max="32" name="strip_back" id="modal_strip_back" class="form-control" value="0">
@@ -297,7 +259,7 @@ $deviceBadge = static function (string $type): string {
                 </div>
 
                 <div class="form-check">
-                    <label class="custom-control custom-checkbox">
+                    <label class="custom-control">
                         <input type="checkbox" name="is_active" id="modal_is_active" class="custom-control-input" value="1" checked>
                         <span class="custom-control-label"><?php echo t('dialplan_rules.field_active'); ?></span>
                     </label>

@@ -20,54 +20,49 @@ $backendPort = 80;
 $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-shield-alt u-primary"></i> <?php echo t('reverse_proxy.header_title'); ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('proxyHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
-    <div class="module-help-box" id="proxyHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('reverse_proxy.help_title'); ?></h4>
-        <p><?php echo t('reverse_proxy.help_body'); ?></p>
-        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('reverse_proxy.limit_reencrypt'); ?></li></ul></div>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-shield-alt', t('reverse_proxy.header_title'), 'proxyHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div style="padding: 16px 20px;">
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('proxyHelpBox', t('reverse_proxy.help_title')); ?>
+        <p><?php echo t('reverse_proxy.help_body'); ?></p>
+        <div class="u-mt-10"><strong><?php echo t('common.help_limits'); ?></strong><ul class="u-m-4-0-0-20"><li><?php echo t('reverse_proxy.limit_reencrypt'); ?></li></ul></div>
+<?php echo uiHelpBoxClose(); ?>
+
+    <div class="u-p-16-20">
         <!-- VoIP Bypass Notice -->
         <div style="background: rgba(234, 179, 8, 0.1); border-left: 4px solid var(--warning, #eab308); padding: 14px 18px; border-radius: 4px; margin-bottom: 20px;">
-            <div style="font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <div class="u-fw-700 u-text-main u-d-flex u-ai-center u-gap-8 u-mb-8">
                 <i class="fas fa-triangle-exclamation" style="color: var(--warning, #eab308); font-size: 18px;"></i>
                 <?php echo t('reverse_proxy.voip_boundary_title'); ?>
             </div>
-            <div style="font-size: 13px; color: var(--text-muted); line-height: 1.6;">
+            <div class="u-fs-13 u-muted u-lh-1-6">
                 <?php echo t('reverse_proxy.voip_boundary_desc'); ?>
             </div>
         </div>
 
         <!-- Real-Time Request Diagnostics -->
         <div style="background: var(--bg-surface, #f8fafc); border: 1px solid var(--border-color, #e2e8f0); border-radius: 6px; padding: 14px 18px; margin-bottom: 24px;">
-            <div style="font-weight: 700; font-size: 13px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+            <div class="u-fw-700 u-fs-13 u-mb-10 u-d-flex u-ai-center u-gap-8">
                 <i class="fas fa-stethoscope u-primary"></i> <?php echo t('reverse_proxy.diag_title'); ?>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; font-size: 12px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-12 u-fs-12">
                 <div>
                     <span class="u-muted"><?php echo t('reverse_proxy.diag_remote_addr'); ?>:</span><br>
-                    <code style="font-size: 12px;"><?php echo $h($diagnostics['remote_addr']); ?></code>
+                    <code class="u-fs-12"><?php echo $h($diagnostics['remote_addr']); ?></code>
                     <?php if ($diagnostics['is_trusted']): ?>
-                        <span class="badge badge-success u-fs-11" style="margin-left: 4px;"><?php echo t('reverse_proxy.diag_trusted'); ?></span>
+                        <span class="badge badge-success u-fs-11 u-ml-4"><?php echo t('reverse_proxy.diag_trusted'); ?></span>
                     <?php else: ?>
-                        <span class="badge badge-secondary u-fs-11" style="margin-left: 4px;"><?php echo t('reverse_proxy.diag_untrusted'); ?></span>
+                        <span class="badge badge-secondary u-fs-11 u-ml-4"><?php echo t('reverse_proxy.diag_untrusted'); ?></span>
                     <?php endif; ?>
                 </div>
                 <div>
                     <span class="u-muted"><?php echo t('reverse_proxy.diag_forwarded_for'); ?>:</span><br>
-                    <code style="font-size: 12px;"><?php echo $h($diagnostics['forwarded_for'] ?: '—'); ?></code>
+                    <code class="u-fs-12"><?php echo $h($diagnostics['forwarded_for'] ?: '—'); ?></code>
                 </div>
                 <div>
                     <span class="u-muted"><?php echo t('reverse_proxy.diag_forwarded_proto'); ?>:</span><br>
-                    <code style="font-size: 12px;"><?php echo $h($diagnostics['forwarded_proto'] ?: '—'); ?></code>
+                    <code class="u-fs-12"><?php echo $h($diagnostics['forwarded_proto'] ?: '—'); ?></code>
                 </div>
                 <div>
                     <span class="u-muted"><?php echo t('reverse_proxy.diag_resolved_ip'); ?>:</span><br>
@@ -77,19 +72,19 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
         </div>
 
         <!-- Reverse Proxy Settings Form -->
-        <form method="POST" autocomplete="off" style="margin-bottom: 30px;">
+        <form method="POST" autocomplete="off" class="u-mb-30">
             <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
             <input type="hidden" name="action" value="save_settings">
 
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label class="u-check-label u-fs-14" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" name="proxy_enabled" value="1" class="u-accent" <?php echo $settings['enabled'] ? 'checked' : ''; ?> style="width: 18px; height: 18px;">
+            <div class="form-group u-mb-16">
+                <label class="u-check-label u-fs-14 u-pointer u-d-flex u-ai-center u-gap-8">
+                    <input type="checkbox" name="proxy_enabled" value="1" class="u-accent u-w-18 u-h-18" <?php echo $settings['enabled'] ? 'checked' : ''; ?>>
                     <strong><?php echo t('reverse_proxy.enable_label'); ?></strong>
                 </label>
-                <div class="u-hint" style="margin-left: 26px;"><?php echo t('reverse_proxy.enable_hint'); ?></div>
+                <div class="u-hint u-ml-26"><?php echo t('reverse_proxy.enable_hint'); ?></div>
             </div>
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-280-1fr u-gap-16 u-mb-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('reverse_proxy.field_external_fqdn'); ?></label>
                     <input type="text" name="proxy_external_fqdn" id="proxyFqdnInput" class="form-control" value="<?php echo $h($settings['external_fqdn']); ?>" placeholder="pbx.example.com">
@@ -122,9 +117,9 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 20px;">
+            <div class="form-group u-mb-20">
                 <label class="form-label"><?php echo t('reverse_proxy.field_trusted_proxies'); ?></label>
-                <textarea name="proxy_trusted_proxies" class="form-control" rows="3" style="font-family: monospace; font-size: 13px;" placeholder="127.0.0.1, ::1"><?php echo $h($settings['trusted_proxies']); ?></textarea>
+                <textarea name="proxy_trusted_proxies" class="form-control u-mono u-fs-13" rows="3" placeholder="127.0.0.1, ::1"><?php echo $h($settings['trusted_proxies']); ?></textarea>
                 <div class="u-hint"><?php echo t('reverse_proxy.trusted_proxies_hint'); ?></div>
             </div>
 
@@ -136,19 +131,19 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
 </div>
 
 <!-- Live Reverse Proxy Configuration Generator -->
-<div class="card" style="margin-top: 24px;">
+<div class="card u-mt-24">
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-file-code u-primary"></i> <?php echo t('reverse_proxy.gen_title'); ?>
         </div>
     </div>
-    <div style="padding: 16px 20px;">
+    <div class="u-p-16-20">
         <p class="u-fs-12 u-mt-0 u-muted"><?php echo t('reverse_proxy.gen_desc'); ?></p>
 
         <!-- Proxy Type Tabs -->
-        <div class="tabs-nav" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color, #e2e8f0); margin-bottom: 16px;">
+        <div class="tabs-nav">
             <?php foreach ($proxyTypes as $pKey => $pLabel): ?>
-                <button type="button" class="tab-btn <?php echo $settings['proxy_type'] === $pKey ? 'active' : ''; ?>" onclick="selectProxyTab('<?php echo $pKey; ?>', this)" style="padding: 8px 16px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent;">
+                <button type="button" class="tab-btn <?php echo $settings['proxy_type'] === $pKey ? 'active' : ''; ?>" onclick="selectProxyTab('<?php echo $pKey; ?>', this)">
                     <?php echo $pLabel; ?>
                 </button>
             <?php endforeach; ?>
@@ -156,13 +151,13 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
 
         <?php foreach ($proxyTypes as $pKey => $pLabel): ?>
             <div id="proxyTab_<?php echo $pKey; ?>" class="proxy-tab-content" style="<?php echo $settings['proxy_type'] === $pKey ? '' : 'display: none;'; ?>">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="u-d-flex u-jc-space-between u-ai-center u-mb-8">
                     <span class="u-fs-12 u-strong"><?php echo sprintf(t('reverse_proxy.sample_config_for'), $pLabel); ?></span>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="copyProxySnippet('proxySnippet_<?php echo $pKey; ?>')">
                         <i class="fas fa-copy"></i> <?php echo t('common.copy'); ?>
                     </button>
                 </div>
-                <pre id="proxySnippet_<?php echo $pKey; ?>" style="background: #0f172a; color: #e2e8f0; padding: 14px 18px; border-radius: 6px; font-size: 12px; line-height: 1.5; max-height: 460px; overflow: auto; white-space: pre; margin: 0;"><?php
+                <pre class="u-bg-0f172a u-c-e2e8f0 u-p-16-20 u-r-8 u-fs-12 u-lh-1-5 u-maxh-460 u-of-auto u-white-space-pre u-m-0" id="proxySnippet_<?php echo $pKey; ?>"><?php
                     echo $h(ReverseProxyService::generateProxyConfig($pKey, $fqdn, $backendIp, $backendPort, $settings['tls_termination']));
                 ?></pre>
             </div>
@@ -171,31 +166,26 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
 </div>
 
 <!-- Network Ports & Firewall Rules -->
-<div class="card" style="margin-top: 24px;">
+<div class="card u-mt-24">
     <div class="card-header">
         <div class="card-title">
             <i class="fas fa-network-wired u-primary"></i> <?php echo t('reverse_proxy.ports_title'); ?>
         </div>
     </div>
-    <div style="padding: 16px 20px;">
+    <div class="u-p-16-20">
         <p class="u-fs-12 u-mt-0 u-muted"><?php echo t('reverse_proxy.ports_desc'); ?></p>
 
-        <div class="table-responsive" style="margin-bottom: 24px;">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th><?php echo t('reverse_proxy.th_port'); ?></th>
-                        <th><?php echo t('reverse_proxy.th_proto'); ?></th>
-                        <th><?php echo t('reverse_proxy.th_service'); ?></th>
-                        <th><?php echo t('reverse_proxy.th_scope'); ?></th>
-                        <th><?php echo t('reverse_proxy.th_bypass'); ?></th>
-                        <th><?php echo t('reverse_proxy.th_desc'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            t('reverse_proxy.th_port'),
+            t('reverse_proxy.th_proto'),
+            t('reverse_proxy.th_service'),
+            t('reverse_proxy.th_scope'),
+            t('reverse_proxy.th_bypass'),
+            t('reverse_proxy.th_desc'),
+        ], ['frame' => 'u-mb-24']); ?>
                     <?php foreach ($ports as $port): ?>
                     <tr>
-                        <td style="font-family: monospace; font-weight: 700;"><?php echo $h($port['port']); ?></td>
+                        <td class="u-mono u-fw-700"><?php echo $h($port['port']); ?></td>
                         <td><span class="badge badge-secondary u-fs-11"><?php echo $h($port['proto']); ?></span></td>
                         <td><strong><?php echo $h($port['service']); ?></strong></td>
                         <td><?php echo $h($port['scope']); ?></td>
@@ -213,30 +203,28 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
                         <td class="u-fs-12 u-muted"><?php echo $h($port['description']); ?></td>
                     </tr>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                <?php echo uiTableClose(); ?>
 
         <!-- Firewall Commands Tabs -->
-        <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <div class="u-fw-700 u-fs-14 u-mb-12 u-d-flex u-ai-center u-gap-8">
             <i class="fas fa-fire u-danger"></i> <?php echo t('reverse_proxy.fw_scripts_title'); ?>
         </div>
 
-        <div class="tabs-nav" style="display: flex; gap: 8px; border-bottom: 1px solid var(--border-color, #e2e8f0); margin-bottom: 16px;">
-            <button type="button" class="fw-tab-btn active" onclick="selectFwTab('ufw', this)" style="padding: 6px 14px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent;">UFW (Ubuntu/Debian)</button>
-            <button type="button" class="fw-tab-btn" onclick="selectFwTab('firewalld', this)" style="padding: 6px 14px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent;">firewalld (RHEL/Rocky)</button>
-            <button type="button" class="fw-tab-btn" onclick="selectFwTab('iptables', this)" style="padding: 6px 14px; border: none; background: none; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent;">iptables</button>
+        <div class="tabs-nav">
+            <button type="button" class="tab-btn active" onclick="selectFwTab('ufw', this)">UFW (Ubuntu/Debian)</button>
+            <button type="button" class="tab-btn" onclick="selectFwTab('firewalld', this)">firewalld (RHEL/Rocky)</button>
+            <button type="button" class="tab-btn" onclick="selectFwTab('iptables', this)">iptables</button>
         </div>
 
         <?php foreach (['ufw' => 'UFW', 'firewalld' => 'firewalld', 'iptables' => 'iptables'] as $fwKey => $fwName): ?>
             <div id="fwTab_<?php echo $fwKey; ?>" class="fw-tab-content" style="<?php echo $fwKey === 'ufw' ? '' : 'display: none;'; ?>">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <div class="u-d-flex u-jc-space-between u-ai-center u-mb-8">
                     <span class="u-fs-12 u-strong"><?php echo sprintf(t('reverse_proxy.fw_rules_for'), $fwName); ?></span>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="copyProxySnippet('fwSnippet_<?php echo $fwKey; ?>')">
                         <i class="fas fa-copy"></i> <?php echo t('common.copy'); ?>
                     </button>
                 </div>
-                <pre id="fwSnippet_<?php echo $fwKey; ?>" style="background: #0f172a; color: #e2e8f0; padding: 14px 18px; border-radius: 6px; font-size: 12px; line-height: 1.5; max-height: 380px; overflow: auto; white-space: pre; margin: 0;"><?php
+                <pre class="u-bg-0f172a u-c-e2e8f0 u-p-16-20 u-r-8 u-fs-12 u-lh-1-5 u-maxh-380 u-of-auto u-white-space-pre u-m-0" id="fwSnippet_<?php echo $fwKey; ?>"><?php
                     echo $h(ReverseProxyService::generateFirewallCommands($fwKey));
                 ?></pre>
             </div>
@@ -247,30 +235,22 @@ $fqdn = $settings['external_fqdn'] ?: 'pbx.example.com';
 <script>
 function selectProxyTab(key, btn) {
     document.querySelectorAll('.proxy-tab-content').forEach(function(el) { el.style.display = 'none'; });
-    document.querySelectorAll('.tab-btn').forEach(function(el) {
+    btn.closest('.tabs-nav').querySelectorAll('.tab-btn').forEach(function(el) {
         el.classList.remove('active');
-        el.style.borderBottomColor = 'transparent';
-        el.style.color = 'inherit';
     });
     var target = document.getElementById('proxyTab_' + key);
     if (target) { target.style.display = 'block'; }
     btn.classList.add('active');
-    btn.style.borderBottomColor = 'var(--primary, #0284c7)';
-    btn.style.color = 'var(--primary, #0284c7)';
 }
 
 function selectFwTab(key, btn) {
     document.querySelectorAll('.fw-tab-content').forEach(function(el) { el.style.display = 'none'; });
-    document.querySelectorAll('.fw-tab-btn').forEach(function(el) {
+    btn.closest('.tabs-nav').querySelectorAll('.tab-btn').forEach(function(el) {
         el.classList.remove('active');
-        el.style.borderBottomColor = 'transparent';
-        el.style.color = 'inherit';
     });
     var target = document.getElementById('fwTab_' + key);
     if (target) { target.style.display = 'block'; }
     btn.classList.add('active');
-    btn.style.borderBottomColor = 'var(--primary, #0284c7)';
-    btn.style.color = 'var(--primary, #0284c7)';
 }
 
 function copyProxySnippet(id) {
@@ -286,18 +266,4 @@ function copyProxySnippet(id) {
         alert('Could not copy to clipboard.');
     });
 }
-
-// Initialise active tab styling
-document.addEventListener('DOMContentLoaded', function() {
-    var pActive = document.querySelector('.tab-btn.active');
-    if (pActive) {
-        pActive.style.borderBottomColor = 'var(--primary, #0284c7)';
-        pActive.style.color = 'var(--primary, #0284c7)';
-    }
-    var fwActive = document.querySelector('.fw-tab-btn.active');
-    if (fwActive) {
-        fwActive.style.borderBottomColor = 'var(--primary, #0284c7)';
-        fwActive.style.color = 'var(--primary, #0284c7)';
-    }
-});
 </script>

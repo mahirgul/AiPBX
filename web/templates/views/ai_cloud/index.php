@@ -7,16 +7,15 @@ $jobNames = ['tts' => t('ai_cloud.job_tts'), 'stt' => t('ai_cloud.job_stt'), 'll
 $configured = array_column(array_filter($providers, fn($p) => $p['configured']), null, 'id');
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-cloud u-primary"></i> <?php echo t('ai_cloud.title'); ?></div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('aiCloudHelpBox')" title="<?php echo t('common.module_guide'); ?>"><i class="fas fa-question-circle"></i></button>
-    </div>
-    <div class="module-help-box" id="aiCloudHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('ai_cloud.help_title'); ?></h4>
+    <?php echo uiPageHeaderOpen('fa-cloud', t('ai_cloud.title'), 'aiCloudHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
+<?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('aiCloudHelpBox', t('ai_cloud.help_title')); ?>
         <?php echo t('ai_cloud.help_body'); ?>
-    </div>
-    <div style="padding: 0 20px 20px;">
-        <p style="color: var(--warning); margin: 0;"><i class="fas fa-shield-halved"></i> <?php echo t('ai_cloud.privacy'); ?></p>
+<?php echo uiHelpBoxClose(); ?>
+    <div class="u-card-pad">
+        <p class="u-warning u-m-0"><i class="fas fa-shield-halved"></i> <?php echo t('ai_cloud.privacy'); ?></p>
     </div>
 </div>
 
@@ -24,10 +23,10 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
     <div class="card-header">
         <div class="card-title"><i class="fas fa-route u-primary"></i> <?php echo t('ai_cloud.engines_title'); ?></div>
     </div>
-    <form method="POST" style="padding: 0 20px 20px;">
+    <form method="POST" class="u-card-pad">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_cloud.engines_help'); ?></p>
-        <div class="table-responsive"><table class="table"><tbody>
+        <?php echo uiTableOpen([]); ?>
         <?php foreach ($engines as $e):
             $kind = $e['job'];
             $prefix = $e['lang'];
@@ -36,7 +35,7 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
                 && in_array($m['state'] ?? '', ['ready', 'installed'], true));
             $clouds = array_filter($configured, fn($p) => in_array($kind, $p['caps'], true)); ?>
             <tr>
-                <td style="width: 40%;"><strong><?php echo $h($jobNames[$kind]); ?></strong> · <?php echo $h($langNames[$e['lang']]); ?></td>
+                <td class="u-w-40pc"><strong><?php echo $h($jobNames[$kind]); ?></strong> · <?php echo $h($langNames[$e['lang']]); ?></td>
                 <td>
                     <select name="engine_<?php echo $h($kind . '_' . $e['lang']); ?>" class="form-control">
                         <option value=""><?php echo t('ai_cloud.engine_none'); ?></option>
@@ -52,7 +51,7 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
                 </td>
             </tr>
         <?php endforeach; ?>
-        </tbody></table></div>
+        <?php echo uiTableClose(); ?>
         <button type="submit" name="save_engines" value="1" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
     </form>
 </div>
@@ -61,7 +60,7 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
     <div class="card-header">
         <div class="card-title"><i class="fas fa-voicemail u-primary"></i> <?php echo t('ai_cloud.vm_title'); ?></div>
     </div>
-    <form method="POST" style="padding: 0 20px 20px;">
+    <form method="POST" class="u-card-pad">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_cloud.vm_help'); ?></p>
         <label class="u-check-label u-mb-10" style="display: block;"><input type="checkbox" class="u-accent" name="ai_vm_transcribe" value="1" <?php echo $vm_transcribe ? 'checked' : ''; ?>> <?php echo t('ai_cloud.vm_transcribe'); ?></label>
@@ -70,9 +69,9 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
     </form>
 </div>
 
-<div class="u-grid-2" style="gap: 16px;">
+<div class="u-grid-2 u-gap-16">
 <?php foreach ($providers as $p): ?>
-    <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0" style="padding: 16px;">
+    <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0 u-p-16">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
         <input type="hidden" name="save_provider" value="<?php echo $h($p['id']); ?>">
         <div class="u-flex-between u-mb-10">
@@ -80,9 +79,9 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
             <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.configured' : 'ai_tts.not_configured'); ?></span>
         </div>
         <div class="u-mb-10">
-            <?php foreach ($p['caps'] as $c): ?><span class="badge badge-info u-fs-11" style="margin-right: 4px;"><?php echo $h($capLabel($c)); ?></span><?php endforeach; ?>
+            <?php foreach ($p['caps'] as $c): ?><span class="badge badge-info u-fs-11 u-mr-4"><?php echo $h($capLabel($c)); ?></span><?php endforeach; ?>
             <?php if ($p['free']): ?><span class="badge badge-secondary u-fs-11"><?php echo t('ai_cloud.free_tier'); ?></span><?php endif; ?>
-            <a href="<?php echo $h($p['url']); ?>" target="_blank" rel="noopener" class="u-fs-11" style="margin-left: 6px;"><?php echo t('ai_cloud.get_key'); ?> <i class="fas fa-up-right-from-square"></i></a>
+            <a href="<?php echo $h($p['url']); ?>" target="_blank" rel="noopener" class="u-fs-11 u-ml-6"><?php echo t('ai_cloud.get_key'); ?> <i class="fas fa-up-right-from-square"></i></a>
         </div>
         <?php foreach ($p['fields'] as $f): ?>
             <div class="form-group">
@@ -90,7 +89,7 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
                 <?php if (!empty($f['json'])): ?>
                     <?php if ($f['masked'] !== ''): ?><div class="u-fs-12 u-mb-10"><i class="fas fa-user-shield u-success"></i> <?php echo $h($f['masked']); ?></div><?php endif; ?>
                     <input type="file" name="service_account_file" accept=".json,application/json" class="form-control">
-                    <textarea name="<?php echo $h($f['key']); ?>" class="form-control u-mt-4" rows="2" style="font-family: monospace; font-size: 11px;" placeholder="<?php echo $h(t('ai_tts.json_placeholder')); ?>"></textarea>
+                    <textarea name="<?php echo $h($f['key']); ?>" class="form-control u-mt-4 u-mono u-fs-11" rows="2" placeholder="<?php echo $h(t('ai_tts.json_placeholder')); ?>"></textarea>
                 <?php elseif ($f['secret']): ?>
                     <input type="password" name="<?php echo $h($f['key']); ?>" class="form-control" autocomplete="new-password"
                            placeholder="<?php echo $h($f['masked'] !== '' ? $f['masked'] . ' — ' . t('ai_tts.keep_secret') : ''); ?>">
@@ -106,7 +105,7 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
             <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
             <?php if ($p['configured']): ?>
                 <button type="button" class="btn btn-secondary btn-sm" data-test="<?php echo $h($p['id']); ?>"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
-                <button type="submit" name="clear" value="1" class="btn btn-danger btn-sm" onclick="return confirm(<?php echo $h(json_encode(t('ai_tts.confirm_clear'))); ?>)"><i class="fas fa-trash-alt"></i></button>
+                <button type="submit" name="clear" value="1" class="btn btn-icon btn-danger btn-sm" onclick="return confirm(<?php echo $h(json_encode(t('ai_tts.confirm_clear'))); ?>)"><i class="fas fa-trash-alt"></i></button>
             <?php endif; ?>
         </div>
     </form>

@@ -1,32 +1,22 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-hashtag u-primary"></i> <?php echo t('fc.header_title'); ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('featureCodesHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-hashtag', t('fc.header_title'), 'featureCodesHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div class="module-help-box" id="featureCodesHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('fc.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+    <?php echo uiHelpBoxOpen('featureCodesHelpBox', t('fc.help_title')); ?>
         <?php echo t('fc.help_body'); ?><br>
         <?php echo t('fc.help_body2'); ?><br>
         <?php echo t('fc.help_body3'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('fc.col_title'); ?></th>
-                    <th><?php echo t('fc.col_code'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fc.col_allowed_roles'); ?></th>
-                    <th><?php echo t('fc.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('fc.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('fc.col_title'),
+        t('fc.col_code'),
+        ['label' => t('fc.col_allowed_roles'), 'class' => 'col-hide-mobile'],
+        t('fc.col_status'),
+        ['label' => t('fc.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($codes)): ?>
                     <?php echo uiTableEmptyRow(5, t('fc.empty'), 'fa-hashtag'); ?>
                 <?php else: ?>
@@ -65,9 +55,7 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Edit Feature Code Modal -->
@@ -75,7 +63,7 @@
     <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title" id="featureCodeModalTitle"><i class="fas fa-edit u-primary"></i> <?php echo t('fc.modal_edit_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeFeatureCodeModal()" title="<?php echo t('fc.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeFeatureCodeModal()" title="<?php echo t('fc.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">

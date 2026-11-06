@@ -42,6 +42,7 @@ return [
     '/ivr-data-steps'  => ['controller' => IvrDataStepsController::class, 'action' => 'index', 'module' => 'ivr_data_steps.php'],
     '/extensions'      => ['controller' => ExtensionController::class, 'action' => 'index', 'module' => 'extensions.php'],
     '/phones'          => ['controller' => PhoneController::class, 'action' => 'index', 'module' => 'phones.php'],
+    '/ui-kit'          => ['controller' => UiKitController::class, 'action' => 'index', 'module' => 'ui_kit.php'],
     '/transports'      => ['controller' => TransportController::class, 'action' => 'index', 'module' => 'transports.php'],
     '/phone-keys'      => ['controller' => PhoneKeysController::class, 'action' => 'index', 'module' => 'phone_keys.php'],
     '/phone-regions'   => ['controller' => PhoneRegionsController::class, 'action' => 'index', 'module' => 'phone_regions.php'],

@@ -240,7 +240,40 @@ class FirewallService {
                 $others[$i]['rules'][$j]['warn'] = '';
             }
         }
-        return ['cards' => array_merge($real, $others)];
+
+        // Common rules: the default zone's. A card in it uses them as they are; a card with a zone of
+        // its own has a copy, and shows only what differs: its own rules and the common ones it closed.
+        $common = ($overview['zones'][$overview['default']] ?? ['rules' => []])['rules'];
+        $commonKeys = array_map([self::class, 'ruleKey'], $common);
+        foreach ($real as $i => $card) {
+            $keys = array_map([self::class, 'ruleKey'], $card['rules']);
+            $shares = $card['zone'] === $overview['default'] || $card['open_all'];
+            $real[$i]['extra'] = $shares ? [] : array_values(array_filter($card['rules'], static fn(array $r): bool => !in_array(self::ruleKey($r), $commonKeys, true)));
+            $real[$i]['closed_common'] = $shares ? [] : array_values(array_filter($common, static fn(array $r): bool => !in_array(self::ruleKey($r), $keys, true)));
+        }
+        foreach ($common as $j => $rule) {
+            $closedOn = [];
+            foreach ($real as $card) {
+                if (in_array(self::ruleKey($rule), array_map([self::class, 'ruleKey'], $card['closed_common']), true)) {
+                    $closedOn[] = $card['iface'];
+                }
+            }
+            $common[$j]['closed_on'] = $closedOn;
+            // Removing a common rule takes it off every card.
+            $critical = ($rule['kind'] === 'service' && in_array(strtolower($rule['value']), self::PROTECTED_SERVICES, true))
+                || ($rule['port'] !== '' && self::coversProtectedPort($rule['port']));
+            $common[$j]['warn'] = !$critical ? '' : (in_array($rule['port'], self::ACCESS_PORTS, true) ? 'session' : 'last');
+        }
+        foreach ($others as $i => $card) {
+            $others[$i]['extra'] = $card['rules'];
+            $others[$i]['closed_common'] = [];
+        }
+        return ['cards' => array_merge($real, $others), 'common' => $common];
+    }
+
+    /** One rule, whatever zone it is in. */
+    public static function ruleKey(array $rule): string {
+        return $rule['kind'] . '|' . $rule['value'];
     }
 
     /**
@@ -312,7 +345,7 @@ class FirewallService {
         foreach ($built['cards'] as $i => $card) {
             $built['cards'][$i]['phones'] = $phones[$card['iface']] ?? 0;
         }
-        return $built + ['active' => (bool) firewalld_is_active(), 'default_zone' => $overview['default']];
+        return $built + ['active' => (bool) firewalld_is_active(), 'default_zone' => $overview['default'], 'disabled' => self::disabledRules()];
     }
 
     /**
@@ -358,7 +391,7 @@ class FirewallService {
         }
 
         $state = self::overview();
-        if ($target === 'all') {
+        if ($target === 'all' || $target === 'common') {
             // The default zone too, so a card added later has the rule as well.
             $zones = [$state['default_zone']];
             foreach ($state['cards'] as $card) {
@@ -393,6 +426,14 @@ class FirewallService {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $state = self::overview();
+        if ($iface === 'common') {
+            $res = self::removeEverywhere($state, $kind, $value);
+            if (!$res['success']) {
+                return ['success' => false, 'error' => $res['error']];
+            }
+            writeAuditLog(null, 'firewall', 'common', "Firewall common rule removed: {$value}", 'delete', $_SESSION['user_id'] ?? null);
+            return ['success' => true, 'message' => t('srv_fw.removed')];
+        }
         $found = null;
         foreach ($state['cards'] as $card) {
             if ($card['iface'] !== $iface) {
@@ -424,6 +465,201 @@ class FirewallService {
         return ['success' => true, 'message' => t('srv_fw.removed')];
     }
 
+    /** fw arguments that take $rule out of a zone, or put it in; null for a rule the page cannot rebuild. */
+    private static function ruleArgs(array $rule, bool $add): ?array {
+        if ($rule['kind'] === 'service') {
+            return [$add ? 'add-service' : 'remove-service', $rule['value']];
+        }
+        if ($rule['kind'] === 'port') {
+            return [$add ? 'add-port' : 'remove-port', $rule['port'], $rule['protocol']];
+        }
+        if (!$add) {
+            return ['remove-rich-rule', $rule['value']];
+        }
+        return empty($rule['custom']) && $rule['source'] !== '' ? ['add-source-rule', $rule['source'], $rule['port'], $rule['protocol']] : null;
+    }
+
+    /** Zones that hold common rules: the default one and every network card's own copy. */
+    private static function commonZones(array $state): array {
+        $zones = [$state['default_zone']];
+        foreach ($state['cards'] as $card) {
+            if (!$card['open_all'] && empty($card['virtual'])) {
+                $zones[] = $card['zone'];
+            }
+        }
+        return array_values(array_unique($zones));
+    }
+
+    /** The rule as the page shows it, looked up again on the server. */
+    private static function findRule(array $state, string $scope, string $kind, string $value): ?array {
+        $rules = $scope === 'common' ? $state['common'] : [];
+        foreach ($state['cards'] as $card) {
+            if ($card['iface'] === $scope) {
+                $rules = $card['rules'];
+            }
+        }
+        foreach ($rules as $r) {
+            if ($r['kind'] === $kind && $r['value'] === $value) {
+                return $r;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Takes a common rule off every zone that has it.
+     *
+     * @return array{success: bool, error: string, zones: list<string>}
+     */
+    private static function removeEverywhere(array $state, string $kind, string $value): array {
+        $rule = self::findRule($state, 'common', $kind, $value);
+        if ($rule === null) {
+            return ['success' => false, 'error' => t('srv_fw.err_rule'), 'zones' => []];
+        }
+        $args = self::ruleArgs($rule, false);
+        $zones = [];
+        foreach (self::commonZones($state) as $zone) {
+            $has = $zone === $state['default_zone'];
+            foreach ($state['cards'] as $card) {
+                if ($card['zone'] === $zone && !in_array(self::ruleKey($rule), array_map([self::class, 'ruleKey'], $card['closed_common']), true)) {
+                    $has = true;
+                }
+            }
+            if (!$has) {
+                continue;
+            }
+            $res = self::runLiveAndPermanent(array_merge(['zone', $zone], (array) $args));
+            if (!$res['success']) {
+                return ['success' => false, 'error' => sprintf(t('srv_fw.err_remove'), $res['output']), 'zones' => $zones];
+            }
+            $zones[] = $zone;
+        }
+        return ['success' => true, 'error' => '', 'zones' => $zones];
+    }
+
+    /**
+     * Turns a rule off (out of firewalld, kept in fw_disabled_rules) or back on, as it was. $scope is
+     * 'common' (every card) or an interface.
+     */
+    public static function toggleRule(string $scope, string $kind, string $value, bool $on, string $csrfToken): array {
+        if (!verifyCSRFToken($csrfToken)) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
+        $db = getDB();
+        if ($on) {
+            $st = $db->prepare('SELECT * FROM fw_disabled_rules WHERE scope = ? AND kind = ? AND value = ?');
+            $st->execute([$scope, $kind, $value]);
+            $row = $st->fetch(PDO::FETCH_ASSOC);
+            if (!$row) {
+                return ['success' => false, 'error' => t('srv_fw.err_rule')];
+            }
+            $args = self::ruleArgs($row, true);
+            if ($args === null) {
+                return ['success' => false, 'error' => t('srv_fw.err_rule')];
+            }
+            $state = self::overview();
+            $zones = array_filter(explode(',', (string) $row['zones']));
+            if ($scope !== 'common') {
+                // The card may have gone back to the common rules meanwhile.
+                $zones = [];
+                foreach ($state['cards'] as $card) {
+                    if ($card['iface'] === $scope) {
+                        $zones = [$card['zone']];
+                    }
+                }
+            }
+            foreach ($zones as $zone) {
+                $res = self::runLiveAndPermanent(array_merge(['zone', $zone], $args));
+                if (!$res['success'] && !str_contains($res['output'], 'ALREADY_ENABLED')) {
+                    return ['success' => false, 'error' => sprintf(t('srv_fw.err_add'), $res['output'])];
+                }
+            }
+            $db->prepare('DELETE FROM fw_disabled_rules WHERE id = ?')->execute([$row['id']]);
+            writeAuditLog(null, 'firewall', $scope, "Firewall rule turned on ({$scope}): {$value}", 'update', $_SESSION['user_id'] ?? null);
+            return ['success' => true, 'message' => t('firewall.turned_on')];
+        }
+
+        $state = self::overview();
+        $rule = self::findRule($state, $scope, $kind, $value);
+        if ($rule === null) {
+            return ['success' => false, 'error' => t('srv_fw.err_rule')];
+        }
+        if (self::ruleArgs($rule, true) === null) {
+            return ['success' => false, 'error' => t('firewall.err_custom_toggle')];
+        }
+        if ($scope === 'common') {
+            $res = self::removeEverywhere($state, $kind, $value);
+            if (!$res['success']) {
+                return ['success' => false, 'error' => $res['error']];
+            }
+            $zones = $res['zones'];
+        } else {
+            $zone = self::zoneForChange($state, $scope);
+            if ($zone === null) {
+                return ['success' => false, 'error' => t('srv_fw.err_card')];
+            }
+            $res = self::runLiveAndPermanent(array_merge(['zone', $zone], (array) self::ruleArgs($rule, false)));
+            if (!$res['success']) {
+                return ['success' => false, 'error' => sprintf(t('srv_fw.err_remove'), $res['output'])];
+            }
+            $zones = [$zone];
+        }
+        $db->prepare('INSERT INTO fw_disabled_rules (scope, zones, kind, value, port, protocol, source, disabled_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE zones = VALUES(zones), disabled_by = VALUES(disabled_by), disabled_at = NOW()')
+            ->execute([$scope, implode(',', $zones), $kind, $value, $rule['port'], $rule['protocol'], $rule['source'], $_SESSION['user_id'] ?? null]);
+        writeAuditLog(null, 'firewall', $scope, "Firewall rule turned off ({$scope}): {$value}", 'update', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t('firewall.turned_off')];
+    }
+
+    /** A rule turned off is deleted for good: it is only in the list. */
+    public static function deleteDisabled(string $scope, string $kind, string $value, string $csrfToken): array {
+        if (!verifyCSRFToken($csrfToken)) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
+        getDB()->prepare('DELETE FROM fw_disabled_rules WHERE scope = ? AND kind = ? AND value = ?')->execute([$scope, $kind, $value]);
+        writeAuditLog(null, 'firewall', $scope, "Firewall rule deleted while off ({$scope}): {$value}", 'delete', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t('srv_fw.removed')];
+    }
+
+    /**
+     * A common rule closed on one card only, or opened there again.
+     */
+    public static function commonOnCard(string $iface, string $kind, string $value, bool $on, string $csrfToken): array {
+        if (!verifyCSRFToken($csrfToken)) {
+            return ['success' => false, 'error' => t('common.invalid_csrf')];
+        }
+        $state = self::overview();
+        $rule = self::findRule($state, 'common', $kind, $value);
+        $args = $rule === null ? null : self::ruleArgs($rule, $on);
+        if ($args === null) {
+            return ['success' => false, 'error' => t('srv_fw.err_rule')];
+        }
+        $zone = self::zoneForChange($state, $iface);
+        if ($zone === null || $zone === $state['default_zone']) {
+            return ['success' => false, 'error' => t('srv_fw.err_card')];
+        }
+        $res = self::runLiveAndPermanent(array_merge(['zone', $zone], $args));
+        if (!$res['success']) {
+            return ['success' => false, 'error' => sprintf(t($on ? 'srv_fw.err_add' : 'srv_fw.err_remove'), $res['output'])];
+        }
+        writeAuditLog(null, 'firewall', $iface, "Firewall common rule " . ($on ? 'opened' : 'closed') . " on {$iface}: {$value}", 'update', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => sprintf(t($on ? 'firewall.common_opened' : 'firewall.common_closed'), $iface)];
+    }
+
+    /** @return array<string, list<array<string, mixed>>> scope => rules turned off */
+    public static function disabledRules(): array {
+        $by = [];
+        try {
+            foreach (getDB()->query('SELECT * FROM fw_disabled_rules ORDER BY disabled_at')->fetchAll(PDO::FETCH_ASSOC) as $r) {
+                $r['use'] = self::PORT_USES[$r['port']] ?? ($r['kind'] === 'service' ? $r['value'] : '');
+                $by[$r['scope']][] = $r;
+            }
+        } catch (\PDOException $e) {
+            // Before the migration ran.
+        }
+        return $by;
+    }
+
     /** The card goes back to the general rules; its own rules are dropped. */
     public static function useGeneralRules(string $iface, string $csrfToken): array {
         if (!verifyCSRFToken($csrfToken)) {
@@ -435,6 +671,7 @@ class FirewallService {
                 if (!$res['success']) {
                     return ['success' => false, 'error' => sprintf(t('srv_fw.err_remove'), $res['output'])];
                 }
+                getDB()->prepare('DELETE FROM fw_disabled_rules WHERE scope = ?')->execute([$iface]);
                 writeAuditLog(null, 'firewall', $iface, "Firewall: {$iface} back on the general rules", 'update', $_SESSION['user_id'] ?? null);
                 return ['success' => true, 'message' => sprintf(t('firewall.general_done'), $iface)];
             }

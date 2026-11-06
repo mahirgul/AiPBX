@@ -7,22 +7,22 @@
         .ml-note { font-size: 12px; color: var(--text-muted); text-align: center; margin-top: 8px; }
         .ml-open { width: 100%; justify-content: center; padding: 16px; font-size: 16px; }
     </style>
-    <div class="auth-card" style="max-width: 460px;">
-        <div style="text-align: center; margin-bottom: 22px;">
-            <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
+    <div class="auth-card u-maxw-460">
+        <div class="u-ta-center u-mb-22">
+            <div class="brand-icon u-w-56 u-h-56 u-m-0-auto-16-auto u-fs-24">
                 <i class="fas fa-mobile-alt u-primary"></i>
             </div>
-            <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
+            <h2 class="u-fs-22 u-fw-800"><?php echo htmlspecialchars($brand_title); ?></h2>
             <p class="u-muted u-fs-13 u-mt-6"><?php echo t('mobile_login.page_title'); ?></p>
         </div>
 
         <?php if (!$info['valid']): ?>
-            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); padding: 14px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 18px; text-align: center;">
+            <div class="u-bg-rgba-239-68-68-0-15 u-bd-1-solid-danger u-danger u-p-16-16 u-r-12 u-fs-13 u-mb-20 u-ta-center">
                 <i class="fas fa-exclamation-circle"></i>
                 <?php echo t('mobile_login.error_' . ($info['reason'] ?? 'invalid')); ?>
             </div>
             <p class="u-fs-13 u-muted u-text-center u-mb-18"><?php echo t('mobile_login.error_hint'); ?></p>
-            <a href="/login" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
+            <a href="/login" class="btn btn-primary u-w-100 u-jc-center u-p-14">
                 <i class="fas fa-sign-in-alt"></i> <?php echo t('mobile_login.web_login'); ?>
             </a>
         <?php else: ?>
@@ -74,7 +74,7 @@
             }
             ?>
 
-            <div style="font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6;">
+            <div class="u-fs-12 u-muted u-ta-center u-lh-1-6">
                 <i class="fas fa-lock"></i>
                 <?php echo t('mobile_login.security_note'); ?>
                 <?php echo htmlspecialchars(date('d.m.Y H:i', $expires_at)); ?>

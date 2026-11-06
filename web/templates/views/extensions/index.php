@@ -1,52 +1,39 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-phone-alt u-primary"></i> <?php echo t('extensions.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('extHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-phone-alt', t('extensions.title'), 'extHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('extensions', 'edit')): ?>
                 <form method="POST" autocomplete="off" class="u-inline">
                     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                     <input type="hidden" name="sync_all_extensions" value="1">
-                    <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo t('extensions.sync_all_tooltip'); ?>">
+                    <button type="submit" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('extensions.sync_all_tooltip'); ?>">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </form>
                 <button class="btn btn-primary btn-sm" onclick="openCreateExtensionModal()" title="<?php echo t('extensions.new_tooltip'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('extensions.new_tooltip'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="extHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('extensions.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('extHelpBox', t('extensions.help_title')); ?>
         <?php echo t('extensions.help_body'); ?><br>
         - <strong><?php echo t('extensions.help_wss'); ?></strong><br>
         - <strong><?php echo t('extensions.help_autoconfig'); ?></strong><br>
         - <strong><?php echo t('extensions.help_remove'); ?></strong>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('extensions.col_extension'); ?></th>
-                    <th><?php echo t('extensions.col_fullname'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('extensions.col_username'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('extensions.col_type'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('extensions.col_sip_password'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('extensions.col_live_status'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('extensions.col_perm_role'); ?></th>
-                    <th class="text-right"><?php echo t('extensions.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        t('extensions.col_extension'),
+        t('extensions.col_fullname'),
+        ['label' => t('extensions.col_username'), 'class' => 'col-hide-mobile'],
+        ['label' => t('extensions.col_type'), 'class' => 'col-hide-mobile'],
+        ['label' => t('extensions.col_sip_password'), 'class' => 'col-hide-mobile'],
+        ['label' => t('extensions.col_live_status'), 'class' => 'col-hide-mobile'],
+        ['label' => t('extensions.col_perm_role'), 'class' => 'col-hide-mobile'],
+        ['label' => t('extensions.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($extensions)): ?>
                     <?php echo uiTableEmptyRow(9, t('extensions.empty'), 'fa-phone-alt'); ?>
                 <?php else: ?>
@@ -81,9 +68,9 @@
                                 <?php else: ?>
                                     <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo t('extensions.type_sip'); ?></span>
                                     <?php if (isset($e['sip_auth_digest']) && (int)$e['sip_auth_digest'] === 0): ?>
-                                        <span class="badge badge-warning" title="<?php echo t('extensions.auth_digest_off_tooltip'); ?>" style="margin-left: 4px; font-size: 10px;"><i class="fas fa-unlock"></i> <?php echo t('extensions.auth_digest_badge_off'); ?></span>
+                                        <span class="badge badge-warning u-ml-4 u-fs-10" title="<?php echo t('extensions.auth_digest_off_tooltip'); ?>"><i class="fas fa-unlock"></i> <?php echo t('extensions.auth_digest_badge_off'); ?></span>
                                     <?php else: ?>
-                                        <span class="badge badge-secondary" title="<?php echo t('extensions.auth_digest_on_tooltip'); ?>" style="margin-left: 4px; font-size: 10px;"><i class="fas fa-lock"></i> <?php echo t('extensions.auth_digest_badge_on'); ?></span>
+                                        <span class="badge badge-secondary u-ml-4 u-fs-10" title="<?php echo t('extensions.auth_digest_on_tooltip'); ?>"><i class="fas fa-lock"></i> <?php echo t('extensions.auth_digest_badge_on'); ?></span>
                                     <?php endif; ?>
                                 <?php endif; ?>
                             </td>
@@ -91,11 +78,11 @@
                                 <?php if ($e['extension_type'] === 'fax'): ?>
                                     <span class="text-muted u-fs-12"><?php echo t('extensions.no_sip_registration'); ?></span>
                                 <?php elseif (isset($e['sip_auth_digest']) && (int)$e['sip_auth_digest'] === 0 && empty($e['sip_password'])): ?>
-                                    <span class="text-muted" style="font-size: 12px; font-style: italic;"><i class="fas fa-unlock"></i> <?php echo t('extensions.no_auth_required'); ?></span>
+                                    <span class="text-muted u-fs-12 u-font-style-italic"><i class="fas fa-unlock"></i> <?php echo t('extensions.no_auth_required'); ?></span>
                                 <?php else: ?>
-                                    <div style="display: inline-flex; align-items: center; gap: 6px;">
-                                        <code data-pw="<?php echo htmlspecialchars((string) ($e['sip_password'] ?? '')); ?>" style="letter-spacing: 1px;">••••••</code>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick="toggleRowPassword(this)" title="<?php echo t('extensions.show_hide_password_tooltip'); ?>" style="padding: 2px 6px; font-size: 10px;">
+                                    <div class="u-d-inline-flex u-ai-center u-gap-6">
+                                        <code class="u-letter-spacing-1" data-pw="<?php echo htmlspecialchars((string) ($e['sip_password'] ?? '')); ?>">••••••</code>
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleRowPassword(this)" title="<?php echo t('extensions.show_hide_password_tooltip'); ?>">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </div>
@@ -103,13 +90,13 @@
                             </td>
                             <td class="col-hide-mobile">
                                 <?php if ($e['extension_type'] === 'fax'): ?>
-                                    <span class="badge badge-secondary" style="opacity: 0.6;">-</span>
+                                    <span class="badge badge-secondary u-opacity-0-6">-</span>
                                 <?php else: ?>
                                     <span class="badge <?php echo $status_badge; ?>"><?php echo htmlspecialchars($status_text); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td class="col-hide-mobile">
-                                <div style="display: flex; flex-direction: column; gap: 3px;">
+                                <div class="u-d-flex u-col u-gap-3">
                                     <span class="badge badge-secondary u-fs-10" title="<?php echo t('extensions.dial_group'); ?>">
                                         <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars($e['permission_group_name'] ?? t('extensions.no_restriction')); ?>
                                     </span>
@@ -121,14 +108,14 @@
                                         <?php endif; ?>
                                     <?php endif; ?>
                                     <?php if (($e['extension_type'] ?? 'sip') !== 'fax' && (int)($e['voicemail_enabled'] ?? 1) === 1): ?>
-                                        <span class="badge badge-primary" style="font-size: 9px; opacity: 0.8;" title="<?php echo t('extensions.vm_box'); ?>"><i class="fas fa-voicemail"></i> VM</span>
+                                        <span class="badge badge-primary u-fs-10 u-opacity-0-8" title="<?php echo t('extensions.vm_box'); ?>"><i class="fas fa-voicemail"></i> VM</span>
                                     <?php endif; ?>
                                 </div>
                             </td>
                             <td class="text-right">
                                 <?php // Status toggle in the pinned actions column: as its own column it ended up under that column whenever the table was wider than the screen. ?>
                                 <?php if (($e['extension_type'] ?? 'sip') === 'sip' && hasModulePermission('phones', 'view')): ?>
-                                    <a class="btn btn-secondary btn-sm" href="/phone-keys?user=<?php echo (int) $e['id']; ?>" title="<?php echo t('phones.keys_title'); ?>"><i class="fas fa-th"></i></a>
+                                    <a class="btn btn-icon btn-secondary btn-sm" href="/phone-keys?user=<?php echo (int) $e['id']; ?>" title="<?php echo t('phones.keys_title'); ?>"><i class="fas fa-th"></i></a>
                                 <?php endif; ?>
                                 <?php echo uiStatusToggleForm($e['id'], $e['is_active'], 'user_id'); ?>
                                 <?php echo uiRowActions($e, 'openEditExtensionModal', 'user_id', 'remove_extension', sprintf(t('extensions.remove_confirm'), $e['full_name'], $e['extension']), t('extensions.remove_action_title'), 'fa-phone-slash'); ?>
@@ -136,17 +123,15 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit Extension Modal -->
 <div class="modal-overlay" id="extensionModal">
-    <div class="modal-card" style="max-width: 560px;">
+    <div class="modal-card u-maxw-560">
         <div class="modal-header">
             <h3 class="u-title" id="extensionModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('extensions.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeExtensionModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeExtensionModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -154,7 +139,7 @@
                 <input type="hidden" name="save_extension" value="1">
                 <input type="hidden" name="user_id" id="modal_user_id" value="">
 
-                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 16px;">
+                <div class="u-d-grid u-gtc-2fr-1fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('extensions.field_fullname'); ?></label>
                         <input type="text" name="full_name" id="modal_full_name" class="form-control" placeholder="<?php echo t('extensions.field_fullname_placeholder'); ?>" required>
@@ -168,7 +153,7 @@
 
                 <div class="u-grid-2">
                     <input type="hidden" name="extension_type" id="modal_extension_type" value="sip">
-                    <div class="form-group u-fs-12 text-muted" style="align-self: center;"><i class="fas fa-fax"></i> <?php echo t('extensions.fax_moved'); ?> <a href="/fax-settings"><?php echo t('fax_settings.title'); ?></a></div>
+                    <div class="form-group u-fs-12 text-muted u-align-self-center"><i class="fas fa-fax"></i> <?php echo t('extensions.fax_moved'); ?> <a href="/fax-settings"><?php echo t('fax_settings.title'); ?></a></div>
 
                     <div class="form-group" id="sip_auth_digest_group">
                         <label class="form-label"><?php echo t('extensions.field_auth_digest'); ?></label>
@@ -188,9 +173,9 @@
                         <small class="u-hint u-fs-11" style="display: block;"><?php echo t('extensions.send_pai_help'); ?></small>
                     </div>
 
-                    <details class="form-group" id="sip_options_group" style="grid-column: 1 / -1;">
-                        <summary class="form-label" style="cursor: pointer;"><?php echo t('extensions.sip_options'); ?></summary>
-                        <small class="u-hint u-fs-11" style="display: block; margin-bottom: 8px;"><?php echo t('extensions.sip_options_help'); ?></small>
+                    <details class="form-group u-grid-column-1-1" id="sip_options_group">
+                        <summary class="form-label u-pointer"><?php echo t('extensions.sip_options'); ?></summary>
+                        <small class="u-hint u-fs-11 u-mb-8" style="display: block;"><?php echo t('extensions.sip_options_help'); ?></small>
                         <div class="u-grid-2">
                             <?php
                             $sipSelect = static function (string $name, string $label, array $values, string $help = ''): void {
@@ -242,13 +227,13 @@
                 </div>
 
                 <div id="sip_password_group" class="form-group">
-                    <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label class="form-label u-d-flex u-jc-space-between u-ai-center u-mb-8">
                         <span><?php echo t('extensions.field_sip_password'); ?></span>
-                        <span style="display: inline-flex; gap: 6px;">
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modal_sip_password').value = generateSipPassword(); document.getElementById('modal_sip_password').type = 'text';" title="<?php echo t('extensions.gen_password_tooltip'); ?>" style="padding: 4px 10px; font-size: 11px;">
+                        <span class="u-d-inline-flex u-gap-6">
+                            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="document.getElementById('modal_sip_password').value = generateSipPassword(); document.getElementById('modal_sip_password').type = 'text';" title="<?php echo t('extensions.gen_password_tooltip'); ?>">
                                 <i class="fas fa-magic"></i>
                             </button>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="toggleSipPasswordField()" title="<?php echo t('extensions.toggle_password_tooltip'); ?>" style="padding: 4px 10px; font-size: 11px;">
+                            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleSipPasswordField()" title="<?php echo t('extensions.toggle_password_tooltip'); ?>">
                                 <i class="fas fa-eye"></i>
                             </button>
                         </span>
@@ -266,7 +251,7 @@
                         <input type="text" name="cid_external" id="modal_cid_external" class="form-control" placeholder="<?php echo t('extensions.cid_placeholder'); ?>">
                     </div>
                 </div>
-                <small style="color: var(--text-muted); font-size: 11px; margin-top: -8px; margin-bottom: 10px; display: block;"><?php echo t('extensions.cid_help'); ?></small>
+                <small class="u-muted u-fs-11 u-mt-8-2 u-mb-12" style="display: block;"><?php echo t('extensions.cid_help'); ?></small>
 
                 <div class="u-grid-2">
                     <div class="form-group">
@@ -289,16 +274,16 @@
                     </div>
                 </div>
 
-                <div class="card" id="voicemail_settings_group" style="background: var(--bg-input); padding: 14px; border-radius: 10px; margin-top: 14px; margin-bottom: 14px; border: 1px solid var(--border-color);">
+                <div class="card u-bg-bg-input u-p-16 u-r-12 u-mt-16 u-mb-16 u-bd-1-solid-border-color" id="voicemail_settings_group">
                     <div class="u-flex-between u-mb-10">
                         <span class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.vm_settings_title'); ?></span>
-                        <label style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; margin: 0;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer u-m-0">
                             <input type="hidden" name="voicemail_enabled" value="0">
                             <input type="checkbox" name="voicemail_enabled" id="modal_voicemail_enabled" value="1" checked class="u-accent">
                             <span><?php echo t('extensions.vm_enabled'); ?></span>
                         </label>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
                         <div class="form-group u-mb-8">
                             <label class="form-label u-fs-11"><?php echo t('my_phone.vm_pin'); ?></label>
                             <input type="text" name="voicemail_pin" id="modal_voicemail_pin" class="form-control u-fs-12" placeholder="<?php echo t('extensions.vm_pin_ph'); ?>">
@@ -308,32 +293,32 @@
                             <input type="email" name="voicemail_email" id="modal_voicemail_email" class="form-control u-fs-12" placeholder="name@example.com">
                         </div>
                     </div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
+                    <div class="u-d-flex u-gap-12 u-wrap u-mt-8 u-fs-11-5">
                         <input type="hidden" name="voicemail_email_notify" value="0">
-                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-4 u-pointer">
                             <input type="checkbox" name="voicemail_email_notify" id="modal_voicemail_email_notify" value="1" checked class="u-accent">
                             <span><?php echo t('extensions.vm_email_notify'); ?></span>
                         </label>
                         <input type="hidden" name="voicemail_attach_audio" value="0">
-                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-4 u-pointer">
                             <input type="checkbox" name="voicemail_attach_audio" id="modal_voicemail_attach_audio" value="1" checked class="u-accent">
                             <span><?php echo t('extensions.vm_attach'); ?></span>
                         </label>
                     </div>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; font-size: 11.5px;">
-                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                    <div class="u-d-flex u-gap-12 u-wrap u-mt-8 u-fs-11-5">
+                        <label class="u-d-inline-flex u-ai-center u-gap-4 u-pointer">
                             <input type="checkbox" name="vm_on_noanswer" id="modal_vm_on_noanswer" value="1" class="u-accent">
                             <span><?php echo t('extensions.vm_noanswer'); ?></span>
                         </label>
-                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-4 u-pointer">
                             <input type="checkbox" name="vm_on_busy" id="modal_vm_on_busy" value="1" class="u-accent">
                             <span><?php echo t('extensions.vm_busy'); ?></span>
                         </label>
-                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-4 u-pointer">
                             <input type="checkbox" name="vm_on_unavail" id="modal_vm_on_unavail" value="1" class="u-accent">
                             <span><?php echo t('extensions.vm_unavail'); ?></span>
                         </label>
-                        <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                        <label class="u-d-inline-flex u-ai-center u-gap-4 u-pointer">
                             <input type="checkbox" name="vm_always" id="modal_vm_always" value="1" class="u-accent">
                             <span><?php echo t('extensions.vm_always'); ?></span>
                         </label>

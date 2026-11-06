@@ -1,47 +1,34 @@
 <?php $can_reorder = hasModulePermission('outbound_routes', 'edit'); ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-sign-out-alt u-primary"></i> <?php echo t('outbound.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('outboundHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-sign-out-alt', t('outbound.title'), 'outboundHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('outbound_routes', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateRouteModal()" title="<?php echo t('common.add_new'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('common.add_new'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="outboundHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('outbound.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('outboundHelpBox', t('outbound.help_title')); ?>
         <?php echo t('outbound.help_body'); ?><br>
-        <p style="margin-top: 8px;"><?php echo t('common.help_number_order'); ?></p>
+        <p class="u-mt-8"><?php echo t('common.help_number_order'); ?></p>
         - <strong><?php echo t('outbound.help_pattern'); ?></strong><br>
         - <strong><?php echo t('outbound.help_transform'); ?></strong><br>
         - <strong><?php echo t('outbound.help_trunks'); ?></strong>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table" id="routesTable">
-            <thead>
-                <tr>
-                    <?php if ($can_reorder): ?><th class="row-drag-handle"></th><?php endif; ?>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('outbound.col_route'); ?></th>
-                    <th><?php echo t('outbound.col_pattern'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('outbound.col_transform'); ?></th>
-                    <th><?php echo t('outbound.col_trunks'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('outbound.col_type'); ?></th>
-                    <th><?php echo t('outbound.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('outbound.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        $can_reorder ? ['label' => '', 'class' => 'row-drag-handle'] : null,
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        t('outbound.col_route'),
+        t('outbound.col_pattern'),
+        ['label' => t('outbound.col_transform'), 'class' => 'col-hide-mobile'],
+        t('outbound.col_trunks'),
+        ['label' => t('outbound.col_type'), 'class' => 'col-hide-mobile'],
+        t('outbound.col_status'),
+        ['label' => t('outbound.col_actions'), 'class' => 'text-right'],
+    ], ['id' => 'routesTable']); ?>
                 <?php if (empty($routes)): ?>
                     <?php echo uiTableEmptyRow(8 + ($can_reorder ? 1 : 0), t('outbound.empty'), 'fa-sign-out-alt'); ?>
                 <?php else: ?>
@@ -66,7 +53,7 @@
                             </td>
                             <td>
                                 <?php foreach ($route_trunks as $i => $rt): ?>
-                                    <?php if ($i > 0): ?><i class="fas fa-arrow-right" style="opacity: 0.4; font-size: 10px;" title="<?php echo htmlspecialchars(t('outbound.retry_tooltip')); ?>"></i><?php endif; ?>
+                                    <?php if ($i > 0): ?><i class="fas fa-arrow-right u-opacity-0-4 u-fs-10" title="<?php echo htmlspecialchars(t('outbound.retry_tooltip')); ?>"></i><?php endif; ?>
                                     <span class="badge badge-success" title="<?php echo !empty($rt['callerid_override']) ? htmlspecialchars(t('outbound.callerid_prefix')) . ': ' . htmlspecialchars($rt['callerid_override']) : htmlspecialchars(t('outbound.callerid_default')); ?>">
                                         <i class="fas fa-server"></i> <?php echo htmlspecialchars($rt['trunk_name']); ?><?php echo !empty($rt['callerid_override']) ? ' (' . htmlspecialchars($rt['callerid_override']) . ')' : ''; ?>
                                     </span>
@@ -77,7 +64,7 @@
                                 <?php if (!empty($r['is_internal'])): ?>
                                     <span class="badge badge-info"><i class="fas fa-building"></i> <?php echo t('outbound.type_internal'); ?></span>
                                 <?php else: ?>
-                                    <span class="badge badge-secondary" style="opacity: 0.7;"><?php echo t('outbound.type_external'); ?></span>
+                                    <span class="badge badge-secondary u-opacity-0-7"><?php echo t('outbound.type_external'); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
@@ -96,17 +83,15 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit Route Modal -->
 <div class="modal-overlay" id="routeModal">
-    <div class="modal-card" style="max-width: 560px;">
+    <div class="modal-card u-maxw-560">
         <div class="modal-header">
             <h3 class="u-title" id="routeModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('outbound.new_route'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeRouteModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeRouteModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -126,7 +111,7 @@
                     </div>
                 </div>
 
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;">
+                <div class="u-d-grid u-gtc-repeat-4-1fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('outbound.field_prepend'); ?></label>
                         <input type="text" name="prepend" id="modal_prepend" class="form-control" placeholder="<?php echo t('common.eg'); ?> 0">
@@ -146,9 +131,9 @@
                 </div>
 
                 <div class="form-group u-mt-4">
-                    <label class="form-label"><i class="fas fa-server" style="opacity: 0.5;"></i> <?php echo t('outbound.field_trunks'); ?></label>
-                    <div id="route_trunks_list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="addRouteTrunkRow()" style="margin-top: 8px;">
+                    <label class="form-label"><i class="fas fa-server u-opacity-0-5"></i> <?php echo t('outbound.field_trunks'); ?></label>
+                    <div id="route_trunks_list" class="u-d-flex u-col u-gap-8"></div>
+                    <button type="button" class="btn btn-secondary btn-sm u-mt-8" onclick="addRouteTrunkRow()">
                         <i class="fas fa-plus"></i> <?php echo t('outbound.add_trunk'); ?>
                     </button>
                     <small class="u-hint"><?php echo t('outbound.trunks_help'); ?></small>
@@ -163,7 +148,7 @@
                             <?php endforeach; ?>
                         </select>
                         <input type="text" name="trunk_cid[]" class="form-control route-trunk-cid u-flex-1" placeholder="<?php echo htmlspecialchars(t('outbound.callerid_placeholder')); ?>">
-                        <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.route-trunk-row').remove()" title="<?php echo htmlspecialchars(t('outbound.remove')); ?>">
+                        <button type="button" class="btn btn-icon btn-danger btn-sm" onclick="this.closest('.route-trunk-row').remove()" title="<?php echo htmlspecialchars(t('outbound.remove')); ?>">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -187,19 +172,19 @@
                 </div>
 
                 <div class="form-group u-mt-10" style="border: 1px dashed var(--border-color); border-radius: 6px; padding: 12px; background: rgba(var(--primary-rgb, 46, 125, 246), 0.03);">
-                    <label class="form-label u-check-label" style="margin-bottom: 6px;">
+                    <label class="form-label u-check-label u-mb-6">
                         <input type="checkbox" name="is_emergency" id="modal_is_emergency" value="1" class="u-check" onchange="toggleEmergencyFields(this.checked)">
                         <span class="u-fw-600"><i class="fas fa-ambulance text-danger"></i> <?php echo t('outbound.field_is_emergency'); ?></span>
                     </label>
-                    <small class="u-hint u-fs-11" style="display: block; margin-bottom: 8px;"><?php echo t('outbound.emergency_help'); ?></small>
+                    <small class="u-hint u-fs-11 u-mb-8" style="display: block;"><?php echo t('outbound.emergency_help'); ?></small>
 
-                    <div id="emergency_geo_fields" style="display: none; flex-direction: column; gap: 10px;">
-                        <div class="form-group" style="margin-bottom: 0;">
+                    <div class="u-col u-gap-12" id="emergency_geo_fields" style="display: none;">
+                        <div class="form-group u-mb-0">
                             <label class="form-label u-fs-12"><?php echo t('outbound.field_geolocation_uri'); ?></label>
                             <input type="text" name="geolocation_uri" id="modal_geolocation_uri" class="form-control" placeholder="<?php echo t('outbound.geolocation_uri_ph'); ?>">
                             <small class="u-hint u-fs-11">RFC 6442 Geolocation (SIP INVITE Header: &lt;geo:...&gt;)</small>
                         </div>
-                        <div class="form-group" style="margin-bottom: 0;">
+                        <div class="form-group u-mb-0">
                             <label class="form-label u-fs-12"><?php echo t('outbound.field_geolocation_routing'); ?></label>
                             <select name="geolocation_routing" id="modal_geolocation_routing" class="form-control">
                                 <option value="yes"><?php echo t('outbound.geolocation_routing_yes'); ?></option>

@@ -1,27 +1,27 @@
 <?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
-    <div class="auth-card" style="max-width: 420px;">
+    <div class="auth-card u-maxw-420">
         <div class="u-text-center u-mb-24">
-            <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
+            <div class="brand-icon u-w-56 u-h-56 u-m-0-auto-16-auto u-fs-24">
                 <i class="fas fa-key u-primary"></i>
             </div>
-            <h2 style="font-size: 22px; font-weight: 800;"><?php echo htmlspecialchars($brand_title); ?></h2>
+            <h2 class="u-fs-22 u-fw-800"><?php echo htmlspecialchars($brand_title); ?></h2>
             <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_sub); ?></p>
         </div>
 
         <?php require dirname(__DIR__, 2) . '/auth_error.php'; ?>
 
         <?php if ($success): ?>
-            <div style="background: rgba(34, 197, 94, 0.15); border: 1px solid var(--success); color: var(--success); padding: 14px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; text-align: left;">
+            <div class="u-bg-rgba-34-197-94-0-15 u-bd-1-solid-success u-success u-p-16-16 u-r-12 u-fs-13 u-mb-20 u-ta-left">
                 <i class="fas fa-check-circle"></i> <?php echo t('reset_password.success_message'); ?>
             </div>
-            <a href="/login" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px;">
+            <a href="/login" class="btn btn-primary u-w-100 u-jc-center u-p-14">
                 <i class="fas fa-sign-in-alt"></i> <?php echo t('reset_password.login_button'); ?>
             </a>
         <?php elseif (!$user): ?>
-            <p style="color: var(--text-muted); font-size: 14px; text-align: center; margin: 16px 0 24px;">
+            <p class="u-muted u-fs-14 u-ta-center u-m-16-0-24">
                 <?php echo t('reset_password.invalid_link'); ?>
             </p>
-            <a href="/login" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 12px;">
+            <a href="/login" class="btn btn-secondary u-w-100 u-jc-center u-p-12">
                 <i class="fas fa-arrow-left"></i> <?php echo t('reset_password.back_to_login'); ?>
             </a>
         <?php else: ?>
@@ -39,7 +39,7 @@
                     <input type="password" name="confirm_password" class="form-control" required minlength="8" autocomplete="new-password">
                 </div>
 
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 10px; font-size: 15px;">
+                <button type="submit" class="btn btn-primary u-w-100 u-jc-center u-p-14 u-mt-10 u-fs-15">
                     <i class="fas fa-check"></i> <?php echo t('reset_password.update_button'); ?>
                 </button>
             </form>

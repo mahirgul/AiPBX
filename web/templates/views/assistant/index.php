@@ -18,14 +18,13 @@ foreach ([
   .assistant-log td { vertical-align: top; }
 </style>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-wand-magic-sparkles u-primary"></i> <?php echo t('assistant.title'); ?></div>
-    </div>
-    <p class="u-muted" style="padding: 0 20px;"><?php echo t('assistant.intro'); ?></p>
+    <?php echo uiPageHeader('fa-wand-magic-sparkles', t('assistant.title'), 'assistantHelpBox'); ?>
+<?php echo uiHelpBoxOpen('assistantHelpBox', t('common.module_guide')); ?><?php echo t('assistant.intro'); ?><?php echo uiHelpBoxClose(); ?>
+    
 
-    <div class="assistant-chat" style="padding: 0 20px 20px;">
-        <div class="u-flex-gap" style="display:flex; gap:8px;">
-            <input type="text" id="asst-request" class="form-control" style="flex:1"
+    <div class="assistant-chat u-card-pad">
+        <div class="u-flex-gap u-d-flex u-gap-8">
+            <input type="text" id="asst-request" class="form-control u-flex-1"
                    placeholder="<?php echo t('assistant.placeholder'); ?>"
                    onkeydown="if(event.key==='Enter') assistantPlan();">
             <button type="button" class="btn btn-primary" id="asst-ask-btn" onclick="assistantPlan()">
@@ -41,9 +40,9 @@ foreach ([
     <div class="card-header">
         <div class="card-title"><i class="fas fa-database u-primary"></i> <?php echo t('assistant.echo_title'); ?></div>
     </div>
-    <div class="assistant-chat" style="padding: 0 20px 20px;">
-        <div class="u-flex-gap" style="display:flex; gap:8px;">
-            <input type="text" id="echo-q" class="form-control" style="flex:1"
+    <div class="assistant-chat u-card-pad">
+        <div class="u-flex-gap u-d-flex u-gap-8">
+            <input type="text" id="echo-q" class="form-control u-flex-1"
                    placeholder="<?php echo t('assistant.echo_placeholder'); ?>"
                    onkeydown="if(event.key==='Enter') echoAsk();">
             <button type="button" class="btn btn-secondary" onclick="echoAsk()"><?php echo t('assistant.echo_ask'); ?></button>
@@ -57,17 +56,15 @@ foreach ([
     <div class="card-header">
         <div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('assistant.changes_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
-        <table class="data-table assistant-log" id="asst-changes">
-            <thead><tr>
-                <th><?php echo t('assistant.col_when'); ?></th>
-                <th><?php echo t('assistant.col_request'); ?></th>
-                <th><?php echo t('assistant.col_change'); ?></th>
-                <th><?php echo t('assistant.col_status'); ?></th>
-                <th><?php echo t('assistant.col_source'); ?></th>
-                <th></th>
-            </tr></thead>
-            <tbody>
+    <div class="u-card-pad">
+        <?php echo uiTableOpen([
+            t('assistant.col_when'),
+            t('assistant.col_request'),
+            t('assistant.col_change'),
+            t('assistant.col_status'),
+            t('assistant.col_source'),
+            '',
+        ], ['id' => 'asst-changes', 'class' => 'assistant-log']); ?>
             <?php if (!$changes): ?>
                 <tr><td colspan="6" class="u-muted"><?php echo t('assistant.no_changes'); ?></td></tr>
             <?php endif; ?>
@@ -93,8 +90,7 @@ foreach ([
                     </td>
                 </tr>
             <?php endforeach; ?>
-            </tbody>
-        </table>
+            <?php echo uiTableClose(); ?>
     </div>
 </div>
 
@@ -142,7 +138,7 @@ function assistantShowPreview(r) {
     '<div class="assistant-preview">' +
       '<div class="u-strong">' + asstEsc(window.t ? window.t(p.title_key) : p.title_key) + asstEsc(risk) + '</div>' +
       '<div class="u-fs-12 u-muted u-mt-6">' + asstEsc(args) + '</div>' +
-      '<div class="u-flex-gap u-mt-10" style="display:flex; gap:8px;">' +
+      '<div class="u-flex-gap u-mt-10 u-d-flex u-gap-8">' +
         '<button type="button" class="btn btn-primary" id="asst-apply">' + ASST.preview_apply + '</button>' +
         '<button type="button" class="btn btn-secondary" id="asst-discard">' + ASST.preview_discard + '</button>' +
       '</div>' +
@@ -198,11 +194,11 @@ function echoAsk() {
     if (r.askable) { out.innerHTML = '<div class="assistant-preview">' + asstEsc(r.askable) + '</div>'; return; }
     let html = '<div class="assistant-preview"><div class="u-strong">' + asstEsc(r.title) + '</div>';
     if (r.rows && r.rows.length) {
-      html += '<table class="data-table" style="margin-top:8px;"><tbody>';
+      html += '<?php echo uiTableOpen([]); ?>';
       for (const row of r.rows) {
         html += '<tr>' + Object.values(row).map(v => '<td>' + asstEsc(typeof v === "number" ? (Math.round(v * 10) / 10) : v) + '</td>').join('') + '</tr>';
       }
-      html += '</tbody></table>';
+      html += '<?php echo uiTableClose(); ?>';
     }
     if (r.narration) {
       html += '<p class="u-mt-10">' + asstEsc(r.narration) + '</p>';

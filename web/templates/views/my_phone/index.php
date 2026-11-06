@@ -41,37 +41,22 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/my_phone.css'); ?>">
 
 <!-- 1. Top extension & status bar -->
-    <div class="card mb-3 my-phone-header-card">
-        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(0, 242, 254, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px;">
-                <i class="fas fa-phone-alt"></i>
-            </div>
-            <div>
-                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                    <h2 class="u-fs-16 u-fw-700 u-m-0 u-text-main">
-                        <?php echo htmlspecialchars($details['full_name'] ?? ''); ?>
-                    </h2>
-                    <?php if ($ext !== ''): ?>
-                        <span class="badge" style="font-size: 12px; padding: 2px 8px; background: var(--primary); color: #fff; font-weight: 700; border-radius: 12px;">
+    <div class="card tabbed-page my-phone-header-card">
+        <?php echo uiPageHeaderOpen('fa-phone-alt', htmlspecialchars($details['full_name'] ?? ''), 'myPhoneHelpBox'); ?>
+<?php if ($ext !== ''): ?>
+                        <span class="badge u-fs-12 u-p-2-8 u-bg-primary u-c-fff u-fw-700 u-r-12">
                             #<?php echo htmlspecialchars($ext); ?>
                         </span>
                     <?php endif; ?>
-                </div>
-                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 2px;">
-                    <i class="fas fa-user-tag"></i> <?php echo htmlspecialchars($details['role_name'] ?? ($details['role'] ?? '')); ?>
-                </div>
-            </div>
-        </div>
-
-        <div class="my-phone-badges-wrapper">
-            <!-- WebRTC status badge -->
+<span class="badge badge-secondary"><i class="fas fa-user-tag"></i> <?php echo htmlspecialchars($details['role_name'] ?? ($details['role'] ?? '')); ?></span>
+<!-- WebRTC status badge -->
             <?php $isWebrtcOnline = ($webrtcStatus && stripos($webrtcStatus, 'not in use') !== false); ?>
-            <span id="my-phone-webrtc-pill" class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+            <span id="my-phone-webrtc-pill" class="badge u-bg-bg-input u-bd-1-solid-border-color u-muted u-p-4-12 u-fs-12 u-r-8 u-ai-center u-gap-8" style="display: inline-flex;">
                 <i class="fas fa-globe"></i> WebRTC: <strong id="my-phone-webrtc-text" style="color: <?php echo $isWebrtcOnline ? 'var(--success)' : 'var(--text-muted)'; ?>;"><?php echo $isWebrtcOnline ? t('my_phone.webrtc_status_online') : t('my_phone.webrtc_status_offline'); ?></strong>
             </span>
             <!-- SIP status badge -->
             <?php $isSipOnline = ($sipStatus && stripos($sipStatus, 'not in use') !== false); ?>
-            <span class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+            <span class="badge u-bg-bg-input u-bd-1-solid-border-color u-muted u-p-4-12 u-fs-12 u-r-8 u-d-inline-flex u-ai-center u-gap-8">
                 <i class="fas fa-phone-square-alt"></i> SIP: 
                 <strong style="color: <?php echo $isSipOnline ? 'var(--success)' : 'var(--text-muted)'; ?>;">
                     <?php echo $isSipOnline ? t('my_phone.sip_status_online') : t('my_phone.sip_status_offline'); ?>
@@ -79,7 +64,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </span>
             <!-- Mobile status badge -->
             <?php $isMobileOnline = (!empty($mobileStatus) && stripos($mobileStatus, 'not in use') !== false); ?>
-            <span class="badge" style="background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-muted); padding: 5px 10px; font-size: 11.5px; border-radius: 8px; display: inline-flex; align-items: center; gap: 6px;">
+            <span class="badge u-bg-bg-input u-bd-1-solid-border-color u-muted u-p-4-12 u-fs-12 u-r-8 u-d-inline-flex u-ai-center u-gap-8">
                 <i class="fas fa-mobile-alt"></i> <?php echo t('my_phone.lbl_mobile'); ?>: 
                 <strong style="color: <?php echo $isMobileOnline ? 'var(--success)' : 'var(--text-muted)'; ?>;">
                     <?php echo $isMobileOnline ? t('my_phone.mobile_status_online') : t('my_phone.mobile_status_offline'); ?>
@@ -87,61 +72,52 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </span>
             <!-- DND badge -->
             <?php if ($isDnd): ?>
-                <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); padding: 5px 10px; font-size: 11.5px; border-radius: 8px;">
+                <span class="badge u-bg-rgba-239-68-68-0-15 u-danger u-bd-1-solid-rgba-239-68-68-0-3 u-p-4-12 u-fs-12 u-r-8">
                     <i class="fas fa-minus-circle"></i> <?php echo t('my_phone.dnd_on'); ?>
                 </span>
             <?php endif; ?>
             <!-- Call forwarding badge -->
             <?php if ($cfNum !== ''): ?>
-                <span class="badge" style="background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); padding: 5px 10px; font-size: 11.5px; border-radius: 8px;">
+                <span class="badge u-bg-rgba-245-158-11-0-15 u-warning u-bd-1-solid-rgba-245-158-11-0-3 u-p-4-12 u-fs-12 u-r-8">
                     <i class="fas fa-share"></i> <?php echo htmlspecialchars($cfNum); ?>
                 </span>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderActions(); ?>
+<?php echo uiPageHeaderClose(); ?>
+<?php echo uiHelpBoxOpen('myPhoneHelpBox', t('common.module_guide')); ?><?php echo t('my_phone.help_body'); ?><?php echo uiHelpBoxClose(); ?>
 
     <?php if ($ext === ''): ?>
-        <div class="card mb-4" style="text-align: center; padding: 48px 24px;">
-            <i class="fas fa-phone-slash" style="font-size: 48px; color: var(--text-muted); opacity: 0.5; margin-bottom: 16px;"></i>
-            <h3 style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+        <div class="card mb-4 u-ta-center u-p-48-24">
+            <i class="fas fa-phone-slash u-fs-48 u-muted u-opacity-0-5 u-mb-16"></i>
+            <h3 class="u-fs-18 u-fw-700 u-text-main u-mb-8">
                 <?php echo t('my_phone.no_extension'); ?>
             </h3>
-            <p style="color: var(--text-muted); font-size: 13px; max-width: 480px; margin: 0 auto;">
+            <p class="u-muted u-fs-13 u-maxw-480 u-m-0-auto">
                 <?php echo t('my_phone.no_extension_help'); ?>
             </p>
         </div>
     <?php else: ?>
         <!-- 3. Tab navigation buttons -->
-        <div style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border-color); padding-bottom: 14px;">
-            <button type="button" class="btn btn-sm <?php echo $currentTab === 'history' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-history" onclick="switchMyPhoneTab('history')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
-                <i class="fas fa-history"></i> <?php echo t('my_phone.tab_history'); ?>
-                <span class="badge" style="background: rgba(0,0,0,0.15); font-size: 11px; padding: 2px 7px; border-radius: 10px;"><?php echo count($calls); ?></span>
-            </button>
-            <button type="button" class="btn btn-sm <?php echo $currentTab === 'calls' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-calls" onclick="switchMyPhoneTab('calls')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
-                <i class="fas fa-phone-alt"></i> <?php echo t('my_phone.tab_calls'); ?>
-                <?php if ($isDnd || $hasActiveCf): ?>
-                    <span class="badge badge-warning" style="font-size: 10px; padding: 2px 6px; border-radius: 10px;"><i class="fas fa-check"></i> <?php echo t('common.active'); ?></span>
-                <?php endif; ?>
-            </button>
-            <button type="button" class="btn btn-sm <?php echo $currentTab === 'settings' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-settings" onclick="switchMyPhoneTab('settings')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
-                <i class="fas fa-sliders-h"></i> <?php echo t('my_phone.tab_settings'); ?>
-            </button>
-            <?php if (!$isFaxUser): ?>
-            <button type="button" class="btn btn-sm <?php echo $currentTab === 'voicemail' ? 'btn-primary' : 'btn-secondary'; ?>" id="btn-tab-voicemail" onclick="switchMyPhoneTab('voicemail')" style="border-radius: 8px; font-weight: 700; padding: 8px 16px; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
-                <i class="fas fa-voicemail"></i> <?php echo t('my_phone.tab_voicemail'); ?>
-                <span class="badge <?php echo !empty($vmMessages) ? 'badge-danger' : 'badge-secondary'; ?>" style="font-size: 11px; padding: 2px 7px; border-radius: 10px;"><?php echo count($vmMessages); ?></span>
-            </button>
-            <?php endif; ?>
-        </div>
+        <?php
+        $myPhoneTabs = [
+            'history' => ['label' => t('my_phone.tab_history'), 'icon' => 'fa-history', 'badge' => (string) count($calls)],
+            'calls' => ['label' => t('my_phone.tab_calls'), 'icon' => 'fa-phone-alt'] + (($isDnd || $hasActiveCf) ? ['badge_html' => '<i class="fas fa-check"></i> ' . htmlspecialchars(t('common.active')), 'badge_class' => 'badge-warning'] : []),
+            'settings' => ['label' => t('my_phone.tab_settings'), 'icon' => 'fa-sliders-h'],
+        ];
+        if (!$isFaxUser) {
+            $myPhoneTabs['voicemail'] = ['label' => t('my_phone.tab_voicemail'), 'icon' => 'fa-voicemail', 'badge' => (string) count($vmMessages), 'badge_class' => !empty($vmMessages) ? 'badge-danger' : 'badge-secondary'];
+        }
+        echo uiTabs($myPhoneTabs, $currentTab);
+        ?>
 
         <!-- TAB 1: MY CALL HISTORY (wide & modern data table) -->
-        <div id="tab-pane-history" class="card" style="display: <?php echo $currentTab === 'history' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
-            <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+        <div id="tab-pane-history" class="card" data-tab-pane="history"<?php echo $currentTab === 'history' ? '' : ' hidden'; ?>>
+            <div class="card-header u-pb-16 u-mb-16 u-border-bottom-1-solid-border-color u-d-flex u-wrap u-ai-center u-jc-space-between u-gap-12">
                 <div class="card-title u-flex-center u-title">
                     <i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.recent_calls'); ?>
                 </div>
                 <div class="u-flex-center">
-                    <a href="/my-phone?tab=history" class="btn btn-secondary btn-sm" title="<?php echo t('common.refresh'); ?>"><i class="fas fa-sync-alt"></i></a>
+                    <a href="/my-phone?tab=history" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('common.refresh'); ?>"><i class="fas fa-sync-alt"></i></a>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('calls')" title="<?php echo htmlspecialchars(t('my_phone.tab_calls')); ?>">
                         <i class="fas fa-phone-alt"></i> <?php echo t('my_phone.tab_calls'); ?>
                     </button>
@@ -155,57 +131,52 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
                 <!-- Direction filter buttons -->
                 <div class="my-phone-filter-buttons">
-                    <button type="button" onclick="setMyPhoneFilter('all')" class="btn btn-xs <?php echo $filter === 'all' ? 'btn-primary' : 'btn-ghost'; ?>" style="border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px;">
+                    <button type="button" onclick="setMyPhoneFilter('all')" class="btn btn-xs <?php echo $filter === 'all' ? 'btn-primary' : 'btn-ghost'; ?> u-r-8 u-fw-600">
                         <?php echo t('my_phone.filter_all'); ?>
                     </button>
-                    <button type="button" onclick="setMyPhoneFilter('in')" class="btn btn-xs <?php echo $filter === 'in' ? 'btn-primary' : 'btn-ghost'; ?>" style="border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                    <button type="button" onclick="setMyPhoneFilter('in')" class="btn btn-xs <?php echo $filter === 'in' ? 'btn-primary' : 'btn-ghost'; ?> u-r-8 u-fw-600 u-d-inline-flex u-ai-center u-gap-4">
                         <i class="fas fa-arrow-down u-success"></i> <?php echo t('my_phone.filter_in'); ?>
                     </button>
-                    <button type="button" onclick="setMyPhoneFilter('out')" class="btn btn-xs <?php echo $filter === 'out' ? 'btn-primary' : 'btn-ghost'; ?>" style="border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                    <button type="button" onclick="setMyPhoneFilter('out')" class="btn btn-xs <?php echo $filter === 'out' ? 'btn-primary' : 'btn-ghost'; ?> u-r-8 u-fw-600 u-d-inline-flex u-ai-center u-gap-4">
                         <i class="fas fa-arrow-up u-primary"></i> <?php echo t('my_phone.filter_out'); ?>
                     </button>
-                    <button type="button" onclick="setMyPhoneFilter('missed')" class="btn btn-xs <?php echo $filter === 'missed' ? 'btn-primary' : 'btn-ghost'; ?>" style="border-radius: 6px; padding: 5px 12px; font-weight: 600; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                    <button type="button" onclick="setMyPhoneFilter('missed')" class="btn btn-xs <?php echo $filter === 'missed' ? 'btn-primary' : 'btn-ghost'; ?> u-r-8 u-fw-600 u-d-inline-flex u-ai-center u-gap-4">
                         <i class="fas fa-phone-slash u-danger"></i> <?php echo t('my_phone.filter_missed'); ?>
                     </button>
                 </div>
 
                 <!-- Search box -->
-                <div class="my-phone-search-wrapper" style="position: relative; flex: 1; min-width: 200px; max-width: 380px;">
-                    <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
-                    <input type="text" name="q" value="<?php echo htmlspecialchars($search); ?>" class="form-control form-control-sm" placeholder="<?php echo t('my_phone.search_placeholder'); ?>" style="padding-left: 32px; border-radius: 8px;">
+                <div class="my-phone-search-wrapper u-relative u-flex-1 u-minw-200 u-maxw-380">
+                    <i class="fas fa-search u-pos-absolute u-left-12 u-top-50pc u-transform-translatey-50pc u-muted u-fs-12 u-pointer-events-none"></i>
+                    <input type="text" name="q" value="<?php echo htmlspecialchars($search); ?>" class="form-control form-control-sm u-pl-32 u-r-8" placeholder="<?php echo t('my_phone.search_placeholder'); ?>">
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-sm" title="<?php echo t('common.filter'); ?>" style="border-radius: 8px; padding: 0 14px; height: 34px;">
+                <button type="submit" class="btn btn-icon btn-primary btn-sm u-r-8" title="<?php echo t('common.filter'); ?>">
                     <i class="fas fa-filter"></i>
                 </button>
 
                 <?php if ($search !== '' || $filter !== 'all'): ?>
-                    <a href="/my-phone?tab=history" class="btn btn-secondary btn-sm" title="<?php echo t('common.reset'); ?>" style="border-radius: 8px; padding: 0 12px; height: 34px; display: inline-flex; align-items: center;">
+                    <a href="/my-phone?tab=history" class="btn btn-icon btn-secondary btn-sm u-r-8 u-d-inline-flex u-ai-center" title="<?php echo t('common.reset'); ?>">
                         <i class="fas fa-undo"></i>
                     </a>
                 <?php endif; ?>
             </form>
 
             <!-- Rich data table in the CDR style -->
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th class="col-hide-mobile u-w-45">#</th>
-                            <th><?php echo t('my_phone.col_date'); ?></th>
-                            <th><?php echo t('my_phone.col_direction'); ?></th>
-                            <th><?php echo t('my_phone.col_party'); ?></th>
-                            <th class="col-hide-mobile"><?php echo t('my_phone.col_device'); ?></th>
-                            <th><?php echo t('my_phone.col_duration'); ?></th>
-                            <th><?php echo t('my_phone.col_status'); ?></th>
-                            <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <?php echo uiTableOpen([
+                ['label' => '#', 'class' => 'col-hide-mobile u-w-45'],
+                t('my_phone.col_date'),
+                t('my_phone.col_direction'),
+                t('my_phone.col_party'),
+                ['label' => t('my_phone.col_device'), 'class' => 'col-hide-mobile'],
+                t('my_phone.col_duration'),
+                t('my_phone.col_status'),
+                ['label' => t('my_phone.col_actions'), 'class' => 'text-right'],
+            ]); ?>
                         <?php if (empty($calls)): ?>
                             <tr>
-                                <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 48px 24px;">
-                                    <i class="fas fa-history" style="font-size: 40px; opacity: 0.35; margin-bottom: 12px; display: block;"></i>
+                                <td class="u-ta-center u-muted u-p-48-24" colspan="8">
+                                    <i class="fas fa-history u-fs-40 u-opacity-0-35 u-mb-12" style="display: block;"></i>
                                     <div class="u-fw-600 u-fs-14 u-text-main u-mb-4"><?php echo t('my_phone.no_calls'); ?></div>
                                     <small class="u-fs-12"><?php echo t('my_phone.no_calls_desc'); ?></small>
                                 </td>
@@ -251,15 +222,15 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <!-- Direction badge -->
                                     <td>
                                         <?php if ($dir === 'in'): ?>
-                                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="badge u-bg-rgba-16-185-129-0-15 u-c-059669 u-bd-1-solid-rgba-16-185-129-0-35 u-fs-11 u-fw-600 u-p-4-8 u-r-8 u-d-inline-flex u-ai-center u-gap-4">
                                                 <i class="fas fa-arrow-down"></i> <?php echo t('my_phone.filter_in'); ?>
                                             </span>
                                         <?php elseif ($dir === 'out'): ?>
-                                            <span class="badge" style="background: rgba(59, 130, 246, 0.15); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="badge u-bg-rgba-59-130-246-0-15 u-c-2563eb u-bd-1-solid-rgba-59-130-246-0-35 u-fs-11 u-fw-600 u-p-4-8 u-r-8 u-d-inline-flex u-ai-center u-gap-4">
                                                 <i class="fas fa-arrow-up"></i> <?php echo t('my_phone.filter_out'); ?>
                                             </span>
                                         <?php else: ?>
-                                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="badge u-bg-rgba-239-68-68-0-15 u-c-dc2626 u-bd-1-solid-rgba-239-68-68-0-35 u-fs-11 u-fw-600 u-p-4-8 u-r-8 u-d-inline-flex u-ai-center u-gap-4">
                                                 <i class="fas fa-phone-slash"></i> <?php echo t('my_phone.filter_missed'); ?>
                                             </span>
                                         <?php endif; ?>
@@ -267,13 +238,13 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
                                     <!-- Other party -->
                                     <td>
-                                        <div style="font-weight: 700; color: var(--primary); font-size: 13.5px; display: flex; align-items: center; gap: 6px;">
-                                            <i class="fas fa-phone-alt" style="font-size: 11px; opacity: 0.7;"></i>
+                                        <div class="u-fw-700 u-primary u-fs-13-5 u-d-flex u-ai-center u-gap-6">
+                                            <i class="fas fa-phone-alt u-fs-11 u-opacity-0-7"></i>
                                             <span><?php echo $party; ?></span>
                                         </div>
                                         <?php if (!empty($partyName) && $partyName !== $party): ?>
                                             <div class="u-fs-11 u-muted u-mt-2">
-                                                <i class="fas fa-user" style="font-size: 10px; margin-right: 3px;"></i><?php echo $partyName; ?>
+                                                <i class="fas fa-user u-fs-10 u-mr-3"></i><?php echo $partyName; ?>
                                             </div>
                                         <?php endif; ?>
                                     </td>
@@ -281,15 +252,15 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <!-- Device -->
                                     <td class="col-hide-mobile">
                                         <?php if ($dev === 'mobil'): ?>
-                                            <span class="badge" style="background: rgba(13, 202, 240, 0.15); color: #087990; border: 1px solid rgba(13, 202, 240, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="badge u-bg-rgba-13-202-240-0-15 u-c-087990 u-bd-1-solid-rgba-13-202-240-0-35 u-fs-11 u-fw-600 u-p-4-8 u-r-8 u-d-inline-flex u-ai-center u-gap-4">
                                                 <i class="fas fa-mobile-alt"></i> <?php echo t('my_phone.lbl_mobile'); ?>
                                             </span>
                                         <?php elseif ($dev === 'webrtc'): ?>
-                                            <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #059669; border: 1px solid rgba(16, 185, 129, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="badge u-bg-rgba-16-185-129-0-15 u-c-059669 u-bd-1-solid-rgba-16-185-129-0-35 u-fs-11 u-fw-600 u-p-4-8 u-r-8 u-d-inline-flex u-ai-center u-gap-4">
                                                 <i class="fas fa-desktop"></i> WebRTC
                                             </span>
                                         <?php elseif ($dev === 'sip'): ?>
-                                            <span class="badge" style="background: rgba(100, 116, 139, 0.15); color: #475569; border: 1px solid rgba(100, 116, 139, 0.35); font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px;">
+                                            <span class="badge u-bg-rgba-100-116-139-0-15 u-c-475569 u-bd-1-solid-rgba-100-116-139-0-35 u-fs-11 u-fw-600 u-p-4-8 u-r-8 u-d-inline-flex u-ai-center u-gap-4">
                                                 <i class="fas fa-phone-alt"></i> SIP
                                             </span>
                                         <?php else: ?>
@@ -300,18 +271,18 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <!-- Duration -->
                                     <td>
                                         <?php if ($disp === 'ANSWERED'): ?>
-                                            <div style="font-family: monospace; font-size: 13px; font-weight: 700; color: var(--success);">
+                                            <div class="u-mono u-fs-13 u-fw-700 u-success">
                                                 <i class="fas fa-phone-volume u-fs-11 u-mr-4"></i><?php echo $formatDuration($bill); ?>
                                             </div>
                                             <div class="u-fs-11 u-muted u-mt-2 u-nowrap">
                                                 <?php echo t('my_phone.ring'); ?>: <?php echo $formatDuration($ring); ?> • <?php echo t('my_phone.total'); ?>: <?php echo $formatDuration($dur); ?>
                                             </div>
                                         <?php elseif (in_array($disp, ['NO ANSWER', 'NOANSWER', 'CANCEL', 'BUSY'])): ?>
-                                            <div style="font-family: monospace; font-size: 12px; color: var(--warning); font-weight: 600;">
-                                                <i class="fas fa-bell" style="font-size: 10px; margin-right: 3px;"></i><?php echo t('my_phone.ring'); ?>: <?php echo $formatDuration($ring > 0 ? $ring : $dur); ?>
+                                            <div class="u-mono u-fs-12 u-warning u-fw-600">
+                                                <i class="fas fa-bell u-fs-10 u-mr-3"></i><?php echo t('my_phone.ring'); ?>: <?php echo $formatDuration($ring > 0 ? $ring : $dur); ?>
                                             </div>
                                         <?php else: ?>
-                                            <span style="color: var(--text-muted); font-size: 12px; font-family: monospace;">-</span>
+                                            <span class="u-muted u-fs-12 u-mono">-</span>
                                         <?php endif; ?>
                                     </td>
 
@@ -324,16 +295,16 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
                                     <!-- Aksiyonlar -->
                                     <td class="text-right u-nowrap">
-                                        <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <div class="u-d-inline-flex u-ai-center u-gap-6">
                                             <?php if ($hasRec): ?>
-                                                <button type="button" class="btn btn-secondary btn-sm" onclick="playCdrAudio(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars(addslashes($party), ENT_QUOTES); ?>', '<?php echo date('d.m.Y H:i', strtotime($c['calldate'])); ?>')" title="<?php echo t('my_phone.listen_recording'); ?>" style="padding: 4px 8px;">
+                                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="playCdrAudio(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars(addslashes($party), ENT_QUOTES); ?>', '<?php echo date('d.m.Y H:i', strtotime($c['calldate'])); ?>')" title="<?php echo t('my_phone.listen_recording'); ?>">
                                                     <i class="fas fa-play"></i>
                                                 </button>
-                                                <a href="/api/cc_audio.php?id=<?php echo $c['id']; ?>&download=1" class="btn btn-secondary btn-sm" title="<?php echo t('my_phone.download_recording'); ?>" style="padding: 4px 8px;">
+                                                <a href="/api/cc_audio.php?id=<?php echo $c['id']; ?>&download=1" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('my_phone.download_recording'); ?>">
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             <?php endif; ?>
-                                            <button type="button" class="btn btn-sm btn-outline-success" onclick="callTargetNumber(<?php echo jsArg($party); ?>)" title="<?php echo htmlspecialchars(sprintf(t('my_phone.call_number'), $party)); ?>" style="border-radius: 6px; padding: 4px 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">
+                                            <button type="button" class="btn btn-sm btn-outline-success u-r-8 u-fw-600 u-d-inline-flex u-ai-center u-gap-4" onclick="callTargetNumber(<?php echo jsArg($party); ?>)" title="<?php echo htmlspecialchars(sprintf(t('my_phone.call_number'), $party)); ?>">
                                                 <i class="fas fa-phone"></i> <?php echo t('my_phone.btn_call'); ?>
                                             </button>
                                         </div>
@@ -341,54 +312,52 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php echo uiTableClose(); ?>
         </div>
 
         <!-- TAB: Call settings (general, forwarding, voicemail) -->
-        <div id="tab-pane-calls" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'calls' ? 'grid' : 'none'; ?>;">
+        <div id="tab-pane-calls" class="my-phone-settings-grid" data-tab-pane="calls"<?php echo $currentTab === 'calls' ? '' : ' hidden'; ?>>
             <!-- Settings cards share one form (display: contents) so any Save stores every setting. -->
             <form method="POST" action="/my-phone" class="my-phone-settings-form">
                 <input type="hidden" name="action" value="save_settings">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
 
             <!-- Card: do not disturb -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <div class="card u-p-24 u-r-12">
+                <h3 class="u-fs-16 u-fw-700 u-mb-16 u-text-main u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-minus-circle u-danger"></i> <?php echo t('my_phone.dnd_label'); ?>
                 </h3>
-                <label style="display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer; margin: 0 0 18px;">
-                    <small style="color: var(--text-muted); font-size: 12px; line-height: 1.4;"><?php echo t('my_phone.dnd_desc'); ?></small>
-                    <input type="checkbox" name="dnd_enabled" value="1" <?php echo $isDnd ? 'checked' : ''; ?> style="width: 20px; height: 20px; cursor: pointer; flex-shrink: 0;">
+                <label class="u-d-flex u-ai-center u-jc-space-between u-gap-12 u-pointer u-m-0-0-20">
+                    <small class="u-muted u-fs-12 u-lh-1-4"><?php echo t('my_phone.dnd_desc'); ?></small>
+                    <input class="u-w-20 u-h-20 u-pointer u-flex-shrink-0" type="checkbox" name="dnd_enabled" value="1" <?php echo $isDnd ? 'checked' : ''; ?>>
                 </label>
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                        <div class="form-actions"><button type="submit" class="btn btn-primary">
                             <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
-                        </button>
+                        </button></div>
                     <?php else: ?>
-                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                        <button type="button" class="btn btn-secondary u-w-100 u-r-8 u-fw-700" disabled title="<?php echo t('roles.read_only_badge'); ?>">
                             <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
                         </button>
                     <?php endif; ?>
             </div>
 
             <!-- Card: phone modes -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 14px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-                    <span style="display: flex; align-items: center; gap: 8px;"><i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?></span>
+            <div class="card u-p-24 u-r-12">
+                <h3 class="u-fs-16 u-fw-700 u-mb-16 u-text-main u-d-flex u-ai-center u-jc-space-between u-gap-8">
+                    <span class="u-d-flex u-ai-center u-gap-8"><i class="fas fa-phone-volume u-primary"></i> <?php echo t('my_phone.active_phone_modes'); ?></span>
                     <span class="badge badge-info u-fw-600 u-fs-10"><?php echo count($activeModes); ?> / 4 <?php echo t('my_phone.modes_active'); ?></span>
                 </h3>
-                        <small style="color: var(--text-muted); font-size: 11px; display: block; margin-bottom: 12px; line-height: 1.4;">
+                        <small class="u-muted u-fs-11 u-mb-12 u-lh-1-4" style="display: block;">
                             <?php echo t('my_phone.phone_modes_desc'); ?>
                         </small>
 
                         <div class="my-phone-modes-grid">
                             <!-- Web (browser) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="web" <?php echo in_array('web', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--primary);">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                            <label class="u-d-flex u-ai-center u-gap-12 u-p-12-12 u-bg-bg-card u-bd-1-solid-border-color u-r-8 u-pointer u-m-0 u-user-select-none">
+                                <input class="u-w-17 u-h-17 u-pointer u-accent" type="checkbox" name="phone_modes[]" value="web" <?php echo in_array('web', $activeModes, true) ? 'checked' : ''; ?>>
+                                <div class="u-d-flex u-col">
+                                    <span class="u-fw-600 u-fs-13 u-text-main u-d-flex u-ai-center u-gap-4">
                                         <i class="fas fa-laptop u-primary u-fs-12"></i> <?php echo t('my_phone.mode_web'); ?>
                                     </span>
                                     <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_web_sub'); ?></small>
@@ -396,10 +365,10 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </label>
 
                             <!-- Mobil (Uygulama) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="mobil" <?php echo in_array('mobil', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--success);">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
+                            <label class="u-d-flex u-ai-center u-gap-12 u-p-12-12 u-bg-bg-card u-bd-1-solid-border-color u-r-8 u-pointer u-m-0 u-user-select-none">
+                                <input class="u-w-17 u-h-17 u-pointer u-accent-color-success" type="checkbox" name="phone_modes[]" value="mobil" <?php echo in_array('mobil', $activeModes, true) ? 'checked' : ''; ?>>
+                                <div class="u-d-flex u-col">
+                                    <span class="u-fw-600 u-fs-13 u-text-main u-d-flex u-ai-center u-gap-4">
                                         <i class="fas fa-mobile-alt u-success u-fs-12"></i> <?php echo t('my_phone.mode_mobil'); ?>
                                     </span>
                                     <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_mobil_sub'); ?></small>
@@ -407,51 +376,51 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                             </label>
 
                             <!-- SIP (desk phone) -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="sip" <?php echo in_array('sip', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: var(--secondary);">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-phone-alt" style="color: var(--secondary); font-size: 12px;"></i> <?php echo t('my_phone.mode_sip_desk'); ?>
+                            <label class="u-d-flex u-ai-center u-gap-12 u-p-12-12 u-bg-bg-card u-bd-1-solid-border-color u-r-8 u-pointer u-m-0 u-user-select-none">
+                                <input class="u-w-17 u-h-17 u-pointer u-accent-color-secondary" type="checkbox" name="phone_modes[]" value="sip" <?php echo in_array('sip', $activeModes, true) ? 'checked' : ''; ?>>
+                                <div class="u-d-flex u-col">
+                                    <span class="u-fw-600 u-fs-13 u-text-main u-d-flex u-ai-center u-gap-4">
+                                        <i class="fas fa-phone-alt u-c-secondary u-fs-12"></i> <?php echo t('my_phone.mode_sip_desk'); ?>
                                     </span>
                                     <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_sip_sub'); ?></small>
                                 </div>
                             </label>
 
                             <!-- Video -->
-                            <label style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; margin: 0; user-select: none;">
-                                <input type="checkbox" name="phone_modes[]" value="video" <?php echo in_array('video', $activeModes, true) ? 'checked' : ''; ?> style="width: 17px; height: 17px; cursor: pointer; accent-color: #8b5cf6;">
-                                <div style="display: flex; flex-direction: column;">
-                                    <span style="font-weight: 600; font-size: 12.5px; color: var(--text-main); display: flex; align-items: center; gap: 5px;">
-                                        <i class="fas fa-video" style="color: #8b5cf6; font-size: 12px;"></i> <?php echo t('my_phone.mode_video'); ?>
+                            <label class="u-d-flex u-ai-center u-gap-12 u-p-12-12 u-bg-bg-card u-bd-1-solid-border-color u-r-8 u-pointer u-m-0 u-user-select-none">
+                                <input class="u-w-17 u-h-17 u-pointer u-accent-color-8b5cf6" type="checkbox" name="phone_modes[]" value="video" <?php echo in_array('video', $activeModes, true) ? 'checked' : ''; ?>>
+                                <div class="u-d-flex u-col">
+                                    <span class="u-fw-600 u-fs-13 u-text-main u-d-flex u-ai-center u-gap-4">
+                                        <i class="fas fa-video u-c-8b5cf6 u-fs-12"></i> <?php echo t('my_phone.mode_video'); ?>
                                     </span>
                                     <small class="u-muted u-fs-10"><?php echo t('my_phone.mode_video_sub'); ?></small>
                                 </div>
                             </label>
                         </div>
-                <div style="margin-top: 18px;"></div>
+                <div class="u-mt-18"></div>
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                        <div class="form-actions"><button type="submit" class="btn btn-primary">
                             <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
-                        </button>
+                        </button></div>
                     <?php else: ?>
-                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                        <button type="button" class="btn btn-secondary u-w-100 u-r-8 u-fw-700" disabled title="<?php echo t('roles.read_only_badge'); ?>">
                             <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
                         </button>
                     <?php endif; ?>
             </div>
 
             <!-- Card: forwarding -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
+            <div class="card u-p-24 u-r-12">
                     <!-- Call forwarding options (always, when busy, on no answer) -->
                     <div class="u-mb-20">
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
-                            <div style="font-weight: 700; font-size: 15px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+                        <div class="u-d-flex u-ai-center u-jc-space-between u-mb-14">
+                            <div class="u-fw-700 u-fs-16 u-text-main u-d-flex u-ai-center u-gap-8">
                                 <i class="fas fa-share u-warning"></i> <?php echo t('my_phone.cf_card_title'); ?>
                             </div>
                             <?php
                                 $hasActiveCf = !empty($cfNum) || !empty($cfBusyNum) || !empty($cfNoAnsNum);
                             ?>
-                            <span class="badge <?php echo $hasActiveCf ? 'badge-warning' : 'badge-secondary'; ?>" style="font-size: 10.5px; font-weight: 600;">
+                            <span class="badge <?php echo $hasActiveCf ? 'badge-warning' : 'badge-secondary'; ?> u-fs-10-5 u-fw-600">
                                 <i class="fas <?php echo $hasActiveCf ? 'fa-check-circle' : 'fa-ban'; ?>"></i>
                                 <?php echo $hasActiveCf ? t('my_phone.cf_status_active') : t('my_phone.cf_status_disabled'); ?>
                             </span>
@@ -459,43 +428,43 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
                         <!-- 1. Always forward (unconditional) -->
                         <div class="form-group u-mb-14">
-                            <label class="form-label" style="font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <label class="form-label u-fs-11-5 u-fw-600 u-d-flex u-ai-center u-jc-space-between u-mb-4">
                                 <span><i class="fas fa-forward u-warning u-mr-4"></i> <?php echo t('my_phone.cf_always_label'); ?></span>
                                 <?php if (!empty($cfNum)): ?>
-                                    <span class="badge badge-warning" style="font-size: 9.5px; padding: 2px 6px;"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
+                                    <span class="badge badge-warning u-fs-10 u-p-2-8"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
                                 <?php endif; ?>
                             </label>
-                            <input type="text" name="call_forward_number" value="<?php echo htmlspecialchars($cfNum); ?>" class="form-control form-control-sm" placeholder="<?php echo t('my_phone.cf_placeholder_internal_external'); ?>" style="font-size: 12.5px;">
-                            <small style="color: var(--text-muted); font-size: 10.5px; display: block; margin-top: 2px;">
+                            <input type="text" name="call_forward_number" value="<?php echo htmlspecialchars($cfNum); ?>" class="form-control form-control-sm u-fs-12-5" placeholder="<?php echo t('my_phone.cf_placeholder_internal_external'); ?>">
+                            <small class="u-muted u-fs-11 u-mt-2" style="display: block;">
                                 <?php echo t('my_phone.cf_always_help'); ?>
                             </small>
                         </div>
 
                         <!-- 2. Forward when busy -->
                         <div class="form-group u-mb-14">
-                            <label class="form-label" style="font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+                            <label class="form-label u-fs-11-5 u-fw-600 u-d-flex u-ai-center u-jc-space-between u-mb-4">
                                 <span><i class="fas fa-phone-slash u-danger u-mr-4"></i> <?php echo t('my_phone.cf_busy_label'); ?></span>
                                 <?php if (!empty($cfBusyNum)): ?>
-                                    <span class="badge badge-info" style="font-size: 9.5px; padding: 2px 6px;"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
+                                    <span class="badge badge-info u-fs-10 u-p-2-8"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
                                 <?php endif; ?>
                             </label>
-                            <input type="text" name="cf_busy_number" value="<?php echo htmlspecialchars($cfBusyNum); ?>" class="form-control form-control-sm" placeholder="<?php echo t('my_phone.cf_placeholder_internal_external'); ?>" style="font-size: 12.5px;">
-                            <small style="color: var(--text-muted); font-size: 10.5px; display: block; margin-top: 2px;">
+                            <input type="text" name="cf_busy_number" value="<?php echo htmlspecialchars($cfBusyNum); ?>" class="form-control form-control-sm u-fs-12-5" placeholder="<?php echo t('my_phone.cf_placeholder_internal_external'); ?>">
+                            <small class="u-muted u-fs-11 u-mt-2" style="display: block;">
                                 <?php echo t('my_phone.cf_busy_help'); ?>
                             </small>
                         </div>
 
                         <!-- 3. Forward on no answer -->
                         <div class="form-group u-mb-0">
-                            <label class="form-label" style="font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
-                                <span><i class="fas fa-phone-volume" style="color: var(--info); margin-right: 4px;"></i> <?php echo t('my_phone.cf_noanswer_label'); ?></span>
+                            <label class="form-label u-fs-11-5 u-fw-600 u-d-flex u-ai-center u-jc-space-between u-mb-4">
+                                <span><i class="fas fa-phone-volume u-c-info u-mr-4"></i> <?php echo t('my_phone.cf_noanswer_label'); ?></span>
                                 <?php if (!empty($cfNoAnsNum)): ?>
-                                    <span class="badge badge-info" style="font-size: 9.5px; padding: 2px 6px;"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
+                                    <span class="badge badge-info u-fs-10 u-p-2-8"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
                                 <?php endif; ?>
                             </label>
                             <div class="u-flex-gap">
-                                <input type="text" name="cf_noanswer_number" value="<?php echo htmlspecialchars($cfNoAnsNum); ?>" class="form-control form-control-sm" placeholder="<?php echo t('my_phone.cf_placeholder_internal_external'); ?>" style="font-size: 12.5px; flex: 1;">
-                                <select name="cf_noanswer_timeout" class="form-control form-control-sm" style="width: 90px; font-size: 12px;" title="<?php echo t('my_phone.cf_timeout_title'); ?>">
+                                <input type="text" name="cf_noanswer_number" value="<?php echo htmlspecialchars($cfNoAnsNum); ?>" class="form-control form-control-sm u-fs-12-5 u-flex-1" placeholder="<?php echo t('my_phone.cf_placeholder_internal_external'); ?>">
+                                <select name="cf_noanswer_timeout" class="form-control form-control-sm u-w-90 u-fs-12" title="<?php echo t('my_phone.cf_timeout_title'); ?>">
                                     <option value="10" <?php echo $cfTimeout === 10 ? 'selected' : ''; ?>>10 <?php echo t('my_phone.sec'); ?></option>
                                     <option value="15" <?php echo $cfTimeout === 15 ? 'selected' : ''; ?>>15 <?php echo t('my_phone.sec'); ?></option>
                                     <option value="20" <?php echo $cfTimeout === 20 ? 'selected' : ''; ?>>20 <?php echo t('my_phone.sec'); ?></option>
@@ -504,18 +473,18 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <option value="45" <?php echo $cfTimeout === 45 ? 'selected' : ''; ?>>45 <?php echo t('my_phone.sec'); ?></option>
                                 </select>
                             </div>
-                            <small style="color: var(--text-muted); font-size: 10.5px; display: block; margin-top: 2px;">
+                            <small class="u-muted u-fs-11 u-mt-2" style="display: block;">
                                 <?php echo t('my_phone.cf_noanswer_help'); ?>
                             </small>
                         </div>
                     </div>
 
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
-                        <button type="submit" class="btn btn-primary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;">
+                        <div class="form-actions"><button type="submit" class="btn btn-primary">
                             <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
-                        </button>
+                        </button></div>
                     <?php else: ?>
-                        <button type="button" class="btn btn-secondary" style="width: 100%; border-radius: 8px; font-weight: 700; font-size: 13px; height: 38px;" disabled title="<?php echo t('roles.read_only_badge'); ?>">
+                        <button type="button" class="btn btn-secondary u-w-100 u-r-8 u-fw-700" disabled title="<?php echo t('roles.read_only_badge'); ?>">
                             <i class="fas fa-lock"></i> <?php echo t('roles.read_only_badge'); ?>
                         </button>
                     <?php endif; ?>
@@ -526,11 +495,11 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         </div>
 
         <!-- TAB 2: PHONE & DEVICE SETTINGS (wide 3-column grid) -->
-        <div id="tab-pane-settings" class="my-phone-settings-grid" style="display: <?php echo $currentTab === 'settings' ? 'grid' : 'none'; ?>;">
+        <div id="tab-pane-settings" class="my-phone-settings-grid" data-tab-pane="settings"<?php echo $currentTab === 'settings' ? '' : ' hidden'; ?>>
             
             <!-- Card 2: WebRTC device & ring tone settings -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <div class="card u-p-24 u-r-12">
+                <h3 class="u-fs-16 u-fw-700 u-mb-20 u-text-main u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-headphones u-primary"></i> <?php echo t('my_phone.device_settings'); ?>
                 </h3>
 
@@ -539,7 +508,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <label class="form-label u-fw-600 u-fs-12">
                         <i class="fas fa-microphone"></i> <?php echo t('phone_settings.field_mic'); ?>
                     </label>
-                    <select id="my_phone_mic_select" class="form-control" onchange="savePhoneMicDevice(this.value)" style="font-size: 12.5px;">
+                    <select id="my_phone_mic_select" class="form-control u-fs-12-5" onchange="savePhoneMicDevice(this.value)">
                         <option value="default"><?php echo t('my_phone.system_default'); ?></option>
                     </select>
                 </div>
@@ -550,10 +519,10 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                         <i class="fas fa-volume-up"></i> <?php echo t('phone_settings.field_speaker'); ?>
                     </label>
                     <div class="u-flex-gap">
-                        <select id="my_phone_speaker_select" class="form-control" onchange="savePhoneSpeakerDevice(this.value)" style="flex: 1; font-size: 12.5px;">
+                        <select id="my_phone_speaker_select" class="form-control u-flex-1 u-fs-12-5" onchange="savePhoneSpeakerDevice(this.value)">
                             <option value="default"><?php echo t('my_phone.system_default'); ?></option>
                         </select>
-                        <button type="button" class="btn btn-secondary" onclick="testPhoneSpeaker()" title="<?php echo t('phone_settings.test_sound_tooltip'); ?>" style="padding: 0 14px;">
+                        <button type="button" class="btn btn-icon btn-secondary" onclick="testPhoneSpeaker()" title="<?php echo t('phone_settings.test_sound_tooltip'); ?>">
                             <i class="fas fa-play"></i>
                         </button>
                     </div>
@@ -561,40 +530,40 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
                 <!-- Ringtone volume -->
                 <div class="form-group u-mb-0">
-                    <label class="form-label" style="font-size: 12px; font-weight: 600; display: flex; justify-content: space-between;">
+                    <label class="form-label u-fs-12 u-fw-600 u-d-flex u-jc-space-between">
                         <span><i class="fas fa-bell"></i> <?php echo t('phone_settings.field_ring_volume'); ?></span>
-                        <span id="my-phone-vol-label" style="color: var(--primary); font-weight: 700;">100%</span>
+                        <span id="my-phone-vol-label" class="u-primary u-fw-700">100%</span>
                     </label>
-                    <input type="range" id="my_phone_ring_slider" min="0" max="100" value="100" style="width: 100%; cursor: pointer;" oninput="updateVolSlider(this.value)">
+                    <input type="range" id="my_phone_ring_slider" min="0" max="100" value="100" class="u-w-100 u-pointer" oninput="updateVolSlider(this.value)">
                 </div>
             </div>
 
             <!-- Card 3: desk IP phone registration details (credentials) -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; gap: 8px;">
+            <div class="card u-p-24 u-r-12">
+                <h3 class="u-fs-16 u-fw-700 u-mb-20 u-text-main u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-key u-primary"></i> <?php echo t('my_phone.sip_credentials_title'); ?>
                 </h3>
-                <div style="font-size: 12.5px; background: var(--bg-input); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 12px;">
-                    <div style="display: flex; justify-content: space-between;">
+                <div class="u-fs-13 u-bg-bg-input u-p-16 u-r-12 u-bd-1-solid-border-color u-d-flex u-col u-gap-12">
+                    <div class="u-d-flex u-jc-space-between">
                         <span class="u-muted"><?php echo t('my_phone.sip_server'); ?>:</span>
-                        <strong style="font-family: monospace;"><?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? '127.0.0.1'); ?></strong>
+                        <strong class="u-mono"><?php echo htmlspecialchars($_SERVER['HTTP_HOST'] ?? '127.0.0.1'); ?></strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div class="u-d-flex u-jc-space-between">
                         <span class="u-muted"><?php echo t('my_phone.sip_port'); ?>:</span>
-                        <strong style="font-family: monospace;">5060 (UDP/TCP)</strong>
+                        <strong class="u-mono">5060 (UDP/TCP)</strong>
                     </div>
-                    <div style="display: flex; justify-content: space-between;">
+                    <div class="u-d-flex u-jc-space-between">
                         <span class="u-muted"><?php echo t('my_phone.sip_username'); ?>:</span>
-                        <strong style="font-family: monospace; color: var(--primary);"><?php echo htmlspecialchars($ext); ?></strong>
+                        <strong class="u-mono u-primary"><?php echo htmlspecialchars($ext); ?></strong>
                     </div>
                     <div class="u-flex-between">
                         <span class="u-muted"><?php echo t('my_phone.sip_password'); ?>:</span>
-                        <div style="display: flex; align-items: center; gap: 6px;">
-                            <input type="password" id="my_phone_sip_pass_val" value="<?php echo htmlspecialchars($details['sip_password'] ?? ''); ?>" readonly style="background: transparent; border: none; font-family: monospace; width: 110px; text-align: right; color: var(--text-main);" />
-                            <button type="button" class="btn btn-xs btn-ghost" onclick="toggleSipPassVisibility()" style="padding: 2px 6px;" title="<?php echo t('my_phone.show_hide'); ?>">
+                        <div class="u-d-flex u-ai-center u-gap-6">
+                            <input class="u-bg-transparent u-bd-none u-mono u-w-110 u-ta-right u-text-main" type="password" id="my_phone_sip_pass_val" value="<?php echo htmlspecialchars($details['sip_password'] ?? ''); ?>" readonly />
+                            <button type="button" class="btn btn-icon btn-xs btn-ghost" onclick="toggleSipPassVisibility()" title="<?php echo t('my_phone.show_hide'); ?>">
                                 <i class="fas fa-eye" id="my_phone_pass_eye"></i>
                             </button>
-                            <button type="button" class="btn btn-xs btn-ghost" onclick="copySipPassword()" style="padding: 2px 6px;" title="<?php echo t('common.copy'); ?>">
+                            <button type="button" class="btn btn-icon btn-xs btn-ghost" onclick="copySipPassword()" title="<?php echo t('common.copy'); ?>">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
@@ -603,61 +572,58 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
             </div>
 
             <!-- Card 4: mobile app & device information -->
-            <div class="card" style="padding: 24px; border-radius: 14px;">
-                <h3 style="font-size: 15px; font-weight: 700; margin-bottom: 18px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <div class="card u-p-24 u-r-12">
+                <h3 class="u-fs-16 u-fw-700 u-mb-20 u-text-main u-d-flex u-ai-center u-jc-space-between u-wrap u-gap-8">
                     <span class="u-flex-center">
-                        <i class="fab fa-android" style="color: #3DDC84;"></i> <?php echo t('my_phone.mobile_app_info'); ?>
+                        <i class="fab fa-android u-c-3ddc84"></i> <?php echo t('my_phone.mobile_app_info'); ?>
                     </span>
                     <div class="u-flex-center">
-                        <button type="button" class="btn btn-xs btn-success" onclick="openQrLoginModal()" style="font-size: 11px; padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px;">
-                            <i class="fas fa-qrcode"></i> <?php echo t('my_phone.mobile_qr'); ?>
-                        </button>
-                        <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-xs btn-primary" style="font-size: 11px; padding: 4px 10px;">
+                        <a href="<?php echo htmlspecialchars(ANDROID_PLAY_URL); ?>" target="_blank" rel="noopener" class="btn btn-xs btn-primary">
                             <i class="fab fa-google-play"></i> <?php echo t('common.get_on_google_play'); ?>
                         </a>
                     </div>
                 </h3>
 
                 <!-- QR code quick mobile sign-in intro box -->
-                <div style="background: linear-gradient(135deg, rgba(37,99,235,0.06), rgba(16,185,129,0.06)); border: 1px dashed rgba(37,99,235,0.28); border-radius: 10px; padding: 14px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 38px; height: 38px; border-radius: 8px; background: rgba(37,99,235,0.12); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 18px;">
+                <div class="u-bg-linear-gradient-135deg-rgba-37-99-235-0-06-rgba-16-185-129-0-06 u-bd-1-dashed-rgba-37-99-235-0-28 u-r-12 u-p-16-16 u-mb-16 u-d-flex u-ai-center u-jc-space-between u-gap-12 u-wrap">
+                    <div class="u-d-flex u-ai-center u-gap-12">
+                        <div class="u-w-38 u-h-38 u-r-8 u-bg-rgba-37-99-235-0-12 u-d-flex u-ai-center u-jc-center u-primary u-fs-18">
                             <i class="fas fa-qrcode"></i>
                         </div>
                         <div>
                             <div class="u-fw-700 u-fs-13 u-text-main"><?php echo t('my_phone.quick_mobile_login'); ?></div>
-                            <div style="font-size: 11.5px; color: var(--text-muted);"><?php echo t('my_phone.quick_mobile_login_desc'); ?></div>
+                            <div class="u-fs-11-5 u-muted"><?php echo t('my_phone.quick_mobile_login_desc'); ?></div>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-sm btn-primary" onclick="openQrLoginModal()" style="font-size: 11.5px; padding: 6px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-primary u-fw-600 u-d-inline-flex u-ai-center u-gap-8" onclick="openQrLoginModal()">
                         <i class="fas fa-qrcode"></i> <?php echo t('my_phone.show_qr'); ?>
                     </button>
                 </div>
 
                 <?php if (empty($mobileDevices)): ?>
-                    <div style="font-size: 12.5px; background: var(--bg-input); padding: 16px; border-radius: 10px; border: 1px solid var(--border-color); color: var(--text-muted); text-align: center;">
-                        <i class="fas fa-mobile-alt" style="font-size: 24px; margin-bottom: 8px; opacity: 0.5; display: block;"></i>
+                    <div class="u-fs-13 u-bg-bg-input u-p-16 u-r-12 u-bd-1-solid-border-color u-muted u-ta-center">
+                        <i class="fas fa-mobile-alt u-fs-24 u-mb-8 u-opacity-0-5" style="display: block;"></i>
                         <?php echo t('my_phone.no_device'); ?><br>
                         <?php echo t('my_phone.no_device_desc'); ?>
                     </div>
                 <?php else: ?>
-                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="u-d-flex u-col u-gap-12">
                         <?php foreach ($mobileDevices as $md): ?>
-                            <div style="font-size: 12.5px; background: var(--bg-input); padding: 14px 16px; border-radius: 10px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 8px;">
+                            <div class="u-fs-13 u-bg-bg-input u-p-16-16 u-r-12 u-bd-1-solid-border-color u-d-flex u-col u-gap-8">
                                 <div class="u-flex-between">
                                     <strong class="u-fs-13 u-text-main">
                                         <i class="fas fa-mobile-alt u-mr-6 u-primary"></i>
                                         <?php echo htmlspecialchars($md['device_name'] ?: 'Android'); ?>
                                     </strong>
-                                    <span class="badge badge-success" style="font-size: 10px; padding: 3px 8px;">
+                                    <span class="badge badge-success u-fs-10 u-p-4-8">
                                         v<?php echo htmlspecialchars($md['app_version'] ?: '1.0'); ?>
                                     </span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11.5px;">
+                                <div class="u-d-flex u-jc-space-between u-muted u-fs-11-5">
                                     <span><?php echo t('my_phone.platform'); ?>:</span>
                                     <span><?php echo htmlspecialchars(ucfirst($md['platform'])); ?></span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 11.5px;">
+                                <div class="u-d-flex u-jc-space-between u-muted u-fs-11-5">
                                     <span><?php echo t('my_phone.last_sync'); ?>:</span>
                                     <span><?php echo htmlspecialchars($md['updated_at']); ?></span>
                                 </div>
@@ -671,25 +637,25 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
 
         <?php if (!$isFaxUser): ?>
         <!-- TAB 3: MY VOICEMAIL (voicemail messages) -->
-        <div id="tab-pane-voicemail" class="card" style="display: <?php echo $currentTab === 'voicemail' ? 'block' : 'none'; ?>; padding: 24px; border-radius: 14px;">
-            <div class="card-header" style="padding: 0 0 16px 14px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;">
+        <div id="tab-pane-voicemail" class="card" data-tab-pane="voicemail"<?php echo $currentTab === 'voicemail' ? '' : ' hidden'; ?>>
+            <div class="card-header u-pb-16 u-mb-16 u-border-bottom-1-solid-border-color u-d-flex u-wrap u-ai-center u-jc-space-between u-gap-12">
                 <div class="card-title u-flex-center u-title">
                     <i class="fas fa-voicemail u-primary"></i> <?php echo t('my_phone.voicemail_inbox'); ?>
                 </div>
-                <div style="display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-muted);">
+                <div class="u-d-flex u-ai-center u-gap-10 u-fs-12 u-muted">
                     <span><i class="fas fa-phone-alt text-info"></i> <?php echo t('my_phone.vm_internal'); ?>: <strong class="badge badge-info u-fs-11">*97</strong></span>
                     <span><i class="fas fa-hashtag text-warning"></i> <?php echo t('my_phone.vm_remote'); ?>: <strong class="badge badge-secondary u-fs-11">*98</strong></span>
-                    <a href="/my-phone?tab=voicemail" class="btn btn-secondary btn-sm" title="<?php echo t('common.refresh'); ?>"><i class="fas fa-sync-alt"></i></a>
+                    <a href="/my-phone?tab=voicemail" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('common.refresh'); ?>"><i class="fas fa-sync-alt"></i></a>
                 </div>
             </div>
 
             <!-- Voicemail settings: own form, so saving it never touches the call settings (and back) -->
-            <form method="POST" action="/my-phone" class="card" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+            <form method="POST" action="/my-phone" class="card u-bg-bg-input u-bd-1-solid-border-color u-r-12 u-p-16 u-mb-16">
                 <input type="hidden" name="action" value="save_voicemail">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? ''); ?>">
-                <div class="u-flex-between u-mb-10" style="flex-wrap: wrap; gap: 8px;">
+                <div class="u-flex-between u-mb-10 u-wrap u-gap-8">
                     <div class="u-fw-700 u-fs-13 u-text-main"><i class="fas fa-sliders-h u-primary"></i> <?php echo t('my_phone.vm_settings_title'); ?></div>
-                    <label class="u-flex-center u-fs-12" style="gap: 6px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-fs-12 u-gap-6 u-pointer u-m-0">
                         <input type="checkbox" name="voicemail_enabled" value="1" <?php echo $vmEnabled ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.enabled'); ?></span>
                     </label>
@@ -702,70 +668,65 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                     <div class="form-group u-mb-0">
                         <label class="form-label u-fs-11 u-mb-4"><?php echo t('my_phone.vm_email'); ?></label>
                         <input type="email" name="voicemail_email" value="<?php echo htmlspecialchars($vmEmail); ?>" class="form-control form-control-sm u-fs-12" placeholder="<?php echo htmlspecialchars($vmAccountEmail !== '' ? $vmAccountEmail : t('my_phone.email_placeholder')); ?>">
-                        <small class="u-fs-11" style="color: var(--text-muted);"><?php echo t('my_phone.vm_email_help'); ?></small>
+                        <small class="u-fs-11 u-muted"><?php echo t('my_phone.vm_email_help'); ?></small>
                     </div>
                 </div>
-                <div class="my-phone-vm-grid u-fs-12" style="margin-top: 12px;">
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div class="my-phone-vm-grid u-fs-12 u-mt-12">
+                    <div class="u-d-flex u-col u-gap-6">
                         <div class="u-fw-700 u-fs-11"><?php echo t('my_phone.vm_notify_title'); ?></div>
-                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-gap-8 u-pointer u-m-0">
                         <input type="checkbox" name="voicemail_email_notify" value="1" <?php echo $vmNotify ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.vm_email_notify'); ?></span>
                     </label>
-                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-gap-8 u-pointer u-m-0">
                         <input type="checkbox" name="voicemail_attach_audio" value="1" <?php echo $vmAttach ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.vm_attach'); ?></span>
                     </label>
                     </div>
-                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div class="u-d-flex u-col u-gap-6">
                         <div class="u-fw-700 u-fs-11"><?php echo t('my_phone.vm_forward_title'); ?></div>
-                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-gap-8 u-pointer u-m-0">
                         <input type="checkbox" name="vm_on_noanswer" value="1" <?php echo $vmNa ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.vm_on_noanswer'); ?></span>
                     </label>
-                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-gap-8 u-pointer u-m-0">
                         <input type="checkbox" name="vm_on_busy" value="1" <?php echo $vmBusy ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.vm_on_busy'); ?></span>
                     </label>
-                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-gap-8 u-pointer u-m-0">
                         <input type="checkbox" name="vm_on_unavail" value="1" <?php echo $vmUnavail ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.vm_on_unavail'); ?></span>
                     </label>
-                    <label class="u-flex-center" style="gap: 8px; cursor: pointer; margin: 0;">
+                    <label class="u-flex-center u-gap-8 u-pointer u-m-0">
                         <input type="checkbox" name="vm_always" value="1" <?php echo $vmAlways ? 'checked' : ''; ?> class="u-accent">
                         <span><?php echo t('my_phone.vm_always'); ?></span>
                     </label>
                     </div>
                 </div>
                 <?php if (hasModulePermission('my_phone', 'edit')): ?>
-                    <button type="submit" class="btn btn-primary btn-sm" style="margin-top: 14px; border-radius: 8px; font-weight: 700;">
+                    <button type="submit" class="btn btn-primary btn-sm u-mt-16 u-r-8 u-fw-700">
                         <i class="fas fa-check"></i> <?php echo t('my_phone.btn_save_settings'); ?>
                     </button>
                 <?php endif; ?>
             </form>
 
             <!-- Info card -->
-            <div style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; font-size: 12px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-info-circle text-primary" style="font-size: 18px;"></i>
+            <div class="u-bg-bg-input u-bd-1-solid-border-color u-r-12 u-p-12-16 u-mb-16 u-d-flex u-ai-center u-jc-space-between u-wrap u-gap-12 u-fs-12">
+                <div class="u-d-flex u-ai-center u-gap-10">
+                    <i class="fas fa-info-circle text-primary u-fs-18"></i>
                     <span><?php echo t('my_phone.vm_desc'); ?></span>
                 </div>
             </div>
 
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th class="u-w-50">#</th>
-                            <th><?php echo t('my_phone.col_datetime'); ?></th>
-                            <th><?php echo t('my_phone.col_caller'); ?></th>
-                            <th><?php echo t('my_phone.col_folder'); ?></th>
-                            <th><?php echo t('my_phone.col_duration'); ?></th>
-                            <th><?php echo t('my_phone.col_audio'); ?></th>
-                            <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody id="voicemailMessagesList">
+            <?php echo uiTableOpen([
+                ['label' => '#', 'class' => 'u-w-50'],
+                t('my_phone.col_datetime'),
+                t('my_phone.col_caller'),
+                t('my_phone.col_folder'),
+                t('my_phone.col_duration'),
+                t('my_phone.col_audio'),
+                ['label' => t('my_phone.col_actions'), 'class' => 'text-right'],
+            ], ['body_id' => 'voicemailMessagesList']); ?>
                         <?php if (empty($vmMessages)): ?>
                             <?php echo uiTableEmptyRow(7, t('my_phone.vm_empty'), 'fa-inbox'); ?>
                         <?php else: ?>
@@ -777,7 +738,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                         <span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($vm['callerid'] ?: t('mail_templates.unknown_caller')); ?></span>
                                         <?php $vmText = ($vm['summary'] ?? '') !== '' ? $vm['summary'] : ($vm['transcript'] ?? ''); ?>
                                         <?php if ($vmText !== ''): ?>
-                                            <div class="u-muted u-fs-12 u-mt-4" style="max-width: 420px; white-space: normal;" title="<?php echo htmlspecialchars((string) ($vm['transcript'] ?? '')); ?>"><i class="fas fa-quote-left"></i> <?php echo htmlspecialchars(mb_strimwidth($vmText, 0, 160, '…')); ?></div>
+                                            <div class="u-muted u-fs-12 u-mt-4 u-maxw-420 u-white-space-normal" title="<?php echo htmlspecialchars((string) ($vm['transcript'] ?? '')); ?>"><i class="fas fa-quote-left"></i> <?php echo htmlspecialchars(mb_strimwidth($vmText, 0, 160, '…')); ?></div>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -788,7 +749,7 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                     <td><span class="badge badge-secondary"><?php echo htmlspecialchars($vm['duration_formatted']); ?></span></td>
                                     <td>
                                         <?php if ($vm['has_audio']): ?>
-                                            <audio controls preload="none" style="height: 30px; max-width: 220px;">
+                                            <audio class="u-h-30 u-maxw-220" controls preload="none">
                                                 <source src="/api/voicemail.php?action=play&ext=<?php echo urlencode($ext); ?>&folder=<?php echo urlencode($vm['folder']); ?>&msg=<?php echo urlencode($vm['number']); ?>" type="audio/wav">
                                             </audio>
                                         <?php else: ?>
@@ -796,13 +757,13 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-right">
-                                        <div style="display: inline-flex; gap: 4px;">
+                                        <div class="u-d-inline-flex u-gap-4">
                                             <?php if ($vm['has_audio']): ?>
-                                                <a href="/api/voicemail.php?action=play&ext=<?php echo urlencode($ext); ?>&folder=<?php echo urlencode($vm['folder']); ?>&msg=<?php echo urlencode($vm['number']); ?>&download=1" class="btn btn-secondary btn-sm" title="<?php echo t('common.download'); ?>">
+                                                <a href="/api/voicemail.php?action=play&ext=<?php echo urlencode($ext); ?>&folder=<?php echo urlencode($vm['folder']); ?>&msg=<?php echo urlencode($vm['number']); ?>&download=1" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('common.download'); ?>">
                                                     <i class="fas fa-download"></i>
                                                 </a>
                                             <?php endif; ?>
-                                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteVoicemailMessage(<?php echo jsArg($vm['id']); ?>)" title="<?php echo t('common.delete'); ?>">
+                                            <button type="button" class="btn btn-icon btn-danger btn-sm" onclick="deleteVoicemailMessage(<?php echo jsArg($vm['id']); ?>)" title="<?php echo t('common.delete'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </div>
@@ -810,56 +771,54 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php echo uiTableClose(); ?>
         </div>
         <?php endif; ?>
     <?php endif; ?>
-</div>
+    </div><!-- /tabbed-page: title, tabs and panes in one card (like Time Plan) -->
 
 <!-- Modal: quick mobile sign-in with a QR code -->
 <div class="modal-overlay" id="qrLoginModal" style="display: none;">
-    <div class="modal-card" style="max-width: 440px; text-align: center;">
+    <div class="modal-card u-maxw-440 u-ta-center">
         <div class="modal-header">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="width: 36px; height: 36px; border-radius: 10px; background: rgba(37, 99, 235, 0.12); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            <div class="u-d-flex u-ai-center u-gap-10">
+                <div class="u-w-36 u-h-36 u-r-12 u-bg-rgba-37-99-235-0-12-2 u-primary u-d-flex u-ai-center u-jc-center u-fs-18">
                     <i class="fas fa-qrcode"></i>
                 </div>
                 <div>
-                    <h3 style="font-size: 16px; font-weight: 700; margin: 0; text-align: left;"><?php echo t('my_phone.mobile_qr'); ?></h3>
-                    <small style="color: var(--text-muted); font-size: 11px; display: block; text-align: left;"><?php echo t('my_phone.lbl_extension'); ?>: <?php echo htmlspecialchars($ext); ?> (<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>)</small>
+                    <h3 class="u-fs-16 u-fw-700 u-m-0 u-ta-left"><?php echo t('my_phone.mobile_qr'); ?></h3>
+                    <small class="u-muted u-fs-11 u-ta-left" style="display: block;"><?php echo t('my_phone.lbl_extension'); ?>: <?php echo htmlspecialchars($ext); ?> (<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>)</small>
                 </div>
             </div>
-            <button class="btn btn-secondary btn-sm" onclick="closeQrLoginModal()" style="padding: 4px 10px;" title="<?php echo t('common.close'); ?>">
+            <button class="btn btn-icon btn-secondary btn-sm" onclick="closeQrLoginModal()" title="<?php echo t('common.close'); ?>">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div class="modal-body" style="padding: 24px 20px;">
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5;">
+        <div class="modal-body u-p-24-20">
+            <p class="u-fs-13 u-muted u-mb-20 u-lh-1-5">
                 <?php echo t('my_phone.qr_howto'); ?>
             </p>
 
-            <div id="qrCodeContainer" style="display: flex; justify-content: center; align-items: center; min-height: 240px; background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin: 0 auto; max-width: 250px;">
+            <div class="u-jc-center u-ai-center u-minh-240 u-bg-ffffff u-p-16 u-r-12 u-bd-1-solid-border-color u-box-shadow-0-4-12-rgba-0-0-0-0-06 u-m-0-auto u-maxw-250" id="qrCodeContainer" style="display: flex;">
                 <div id="qrLoadingSpinner" class="u-muted u-text-center">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 28px; color: var(--primary); margin-bottom: 8px; display: block;"></i>
+                    <i class="fas fa-spinner fa-spin u-fs-28 u-primary u-mb-8" style="display: block;"></i>
                     <?php echo t('my_phone.qr_generating'); ?>
                 </div>
-                <div id="qrSvgWrapper" style="display: none; width: 100%;"></div>
+                <div class="u-w-100" id="qrSvgWrapper" style="display: none;"></div>
             </div>
 
-            <div id="qrSuccessAlert" style="display: none; margin-top: 16px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 12px; color: #059669; font-weight: 600; font-size: 13px;">
+            <div class="u-mt-16 u-bg-rgba-16-185-129-0-15 u-bd-1-solid-rgba-16-185-129-0-4 u-r-8 u-p-12 u-c-059669 u-fw-600 u-fs-13" id="qrSuccessAlert" style="display: none;">
                 <i class="fas fa-check-circle u-mr-6"></i> <?php echo t('my_phone.qr_paired'); ?>: <span id="qrPairedDevice"></span>
             </div>
 
-            <div id="qrCountdownContainer" style="margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <div id="qrCountdownContainer" class="u-mt-16 u-fs-12 u-muted u-d-flex u-ai-center u-jc-center u-gap-8">
                 <i class="fas fa-clock"></i> <?php echo t('my_phone.qr_remaining'); ?>: <strong id="qrCountdown" class="u-primary">10:00</strong>
-                <button type="button" class="btn btn-ghost btn-xs" onclick="generateNewQrCode()" title="<?php echo t('my_phone.qr_new'); ?>" style="padding: 2px 8px; font-size: 11px;">
+                <button type="button" class="btn btn-ghost btn-xs" onclick="generateNewQrCode()" title="<?php echo t('my_phone.qr_new'); ?>">
                     <i class="fas fa-sync-alt"></i> <?php echo t('common.refresh'); ?>
                 </button>
             </div>
 
-            <div style="margin-top: 20px; font-size: 11.5px; color: var(--text-muted); background: var(--bg-input); padding: 12px 14px; border-radius: 8px; text-align: left; line-height: 1.5; border: 1px solid var(--border-color);">
+            <div class="u-mt-20 u-fs-12 u-muted u-bg-bg-input u-p-12-16 u-r-8 u-ta-left u-lh-1-5 u-bd-1-solid-border-color">
                 <i class="fas fa-shield-alt u-primary u-mr-4"></i>
                 <?php echo t('my_phone.qr_secure'); ?>
             </div>

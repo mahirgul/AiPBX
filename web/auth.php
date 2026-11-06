@@ -192,6 +192,7 @@ function getModuleKeyForPage($page = null) {
         'roles.php'             => 'roles',
         'asterisk_settings.php' => 'asterisk_settings',
         'transports.php'        => 'asterisk_settings',
+        'ui_kit.php'            => 'asterisk_settings',
         'brand_settings.php'    => 'brand_settings',
         'fax_mail_settings.php' => 'fax_mail_settings',
         'fax_settings.php'      => 'fax_settings',
@@ -441,7 +442,7 @@ function requireModulePermission($module_key, $action = 'access') {
 
     if (!$allowed) {
         http_response_code(403);
-        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>403 - ' . t('auth.forbidden') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>403 - ' . t('auth.forbidden') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
         echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
         echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
         echo '<p style="margin:20px 0; color:var(--text-muted);">' . sprintf(t('auth.no_module_access'), htmlspecialchars($module_key)) . '</p>';
@@ -486,7 +487,7 @@ function requireRole($allowed_roles) {
         foreach ($cc_modules as $cm) {
             if (isset($role_perm_map[$cm])) {
                 http_response_code(403);
-                echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+                echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
                 echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
                 echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
                 echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
@@ -527,7 +528,7 @@ function requireRole($allowed_roles) {
     $role_perm_map = getRolePermissionsMap($user_role);
     if (isset($role_perm_map[$module_key])) {
         http_response_code(403);
-        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
         echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
         echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
         echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
@@ -538,7 +539,7 @@ function requireRole($allowed_roles) {
 
     if (!in_array($user_role, $allowed_roles)) {
         http_response_code(403);
-        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css"><link rel="stylesheet" href="/assets/css/components.css"><link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
         echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
         echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
         echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';

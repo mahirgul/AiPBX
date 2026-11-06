@@ -15,6 +15,17 @@ class PendingSyncController extends BaseController
 
         $applied_results = null;
 
+        // The server's address changed outside the portal: the move waits here, to apply or discard.
+        require_once __DIR__ . '/../services/NetworkSettingsService.php';
+        if (static::isPost() && isset($_POST['discard_readdress']) && hasModulePermission('pending_sync', 'edit')) {
+            if (static::verifyCsrf()) {
+                NetworkSettingsService::discardReaddress((string) $_POST['discard_readdress']);
+                static::notifySuccess(t('netset.readdress_discarded'));
+            }
+        } else {
+            NetworkSettingsService::queueReaddress();
+        }
+
         if (static::isPost() && isset($_POST['apply'])) {
             if (!static::verifyCsrf()) {
                 static::notifyError(t('pending_sync.msg_csrf_error'));

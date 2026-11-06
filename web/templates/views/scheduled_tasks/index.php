@@ -10,27 +10,24 @@
 $csrf = getCSRFToken();
 ?>
 <div class="card u-mb-20">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-calendar-check u-primary"></i> <?php echo htmlspecialchars(t('scheduled_tasks.page_title', 'Scheduled Tasks')); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($tasks); ?></span>
-        </div>
-        <div class="u-flex-center" style="gap: 8px;">
+    <?php echo uiPageHeaderOpen('fa-calendar-check', htmlspecialchars(t('scheduled_tasks.page_title', 'Scheduled Tasks')), 'scheduledTasksHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($tasks); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+<div class="u-flex-center u-gap-8">
             <button type="button" class="btn btn-primary btn-sm" onclick="showNewTaskForm()">
                 <i class="fas fa-plus-circle"></i> <?php echo htmlspecialchars(t('scheduled_tasks.btn_new', 'New Task')); ?>
             </button>
         </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <div class="module-help-box" style="display: block; margin: 16px 20px 20px;">
-        <h4><i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars(t('scheduled_tasks.help_title', 'Sandboxed Scheduled Scripts')); ?></h4>
-        <p style="margin: 4px 0 0;"><?php echo htmlspecialchars(t('scheduled_tasks.help_body', 'Run shell, PHP, or Python scripts on a cron schedule inside an isolated systemd sandbox. Execution runs as an unprivileged user with read-only system access, strict memory and CPU limits, and no network access by default.')); ?></p>
-    </div>
+    <?php echo uiHelpBoxOpen('scheduledTasksHelpBox', htmlspecialchars(t('scheduled_tasks.help_title', 'Sandboxed Scheduled Scripts'))); ?>
+        <p class="u-m-4-0-0"><?php echo htmlspecialchars(t('scheduled_tasks.help_body', 'Run shell, PHP, or Python scripts on a cron schedule inside an isolated systemd sandbox. Execution runs as an unprivileged user with read-only system access, strict memory and CPU limits, and no network access by default.')); ?></p>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Master Switch Card -->
     <div style="margin: 0 20px 20px; padding: 14px 18px; background: var(--bg-subtle, rgba(2,132,199,0.04)); border: 1px solid var(--border-color); border-radius: var(--radius-sm, 6px); display: flex; align-items: center; justify-content: space-between;">
         <div>
-            <div style="font-weight: 700; font-size: 14px;">
+            <div class="u-fw-700 u-fs-14">
                 <?php echo htmlspecialchars(t('scheduled_tasks.feature_status', 'Feature Status')); ?>:
                 <?php if ($isEnabled): ?>
                     <span class="badge badge-success"><?php echo htmlspecialchars(t('scheduled_tasks.feature_enabled', 'Enabled (Active)')); ?></span>
@@ -38,7 +35,7 @@ $csrf = getCSRFToken();
                     <span class="badge badge-secondary"><?php echo htmlspecialchars(t('scheduled_tasks.feature_disabled', 'Disabled (Inactive)')); ?></span>
                 <?php endif; ?>
             </div>
-            <div class="u-muted u-fs-12" style="margin-top: 2px;">
+            <div class="u-muted u-fs-12 u-mt-2">
                 <?php echo htmlspecialchars(t('scheduled_tasks.status_desc', 'When disabled, scheduled runs are suppressed; tasks can still be executed manually with "Run Now".')); ?>
             </div>
         </div>
@@ -60,7 +57,7 @@ $csrf = getCSRFToken();
 
     <!-- Task Form Box (Create / Edit) -->
     <div id="taskFormBox" style="display: none; padding: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--card-bg, #fff);">
-        <h4 id="taskFormTitle" style="margin-top: 0; margin-bottom: 16px;">
+        <h4 id="taskFormTitle" class="u-mt-0 u-mb-16">
             <i class="fas fa-plus"></i> <?php echo htmlspecialchars(t('scheduled_tasks.btn_new', 'New Task')); ?>
         </h4>
         <form method="POST" id="taskForm">
@@ -68,7 +65,7 @@ $csrf = getCSRFToken();
             <input type="hidden" name="action" value="save_task">
             <input type="hidden" name="id" id="task_id" value="">
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="task_name"><strong><?php echo htmlspecialchars(t('scheduled_tasks.task_name', 'Task Name')); ?> *</strong></label>
                     <input type="text" name="name" id="task_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_name')); ?>">
@@ -83,17 +80,17 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div class="u-mb-16">
                 <label class="form-label" for="task_description"><?php echo htmlspecialchars(t('scheduled_tasks.description', 'Description')); ?></label>
                 <input type="text" name="description" id="task_description" class="form-control" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_description')); ?>">
             </div>
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="task_cron"><strong><?php echo htmlspecialchars(t('scheduled_tasks.cron_expression', 'Cron Schedule')); ?> *</strong></label>
-                    <div style="display: flex; gap: 8px;">
-                        <input type="text" name="cron_expression" id="task_cron" class="form-control" required value="0 3 * * *" style="font-family: monospace;">
-                        <select class="form-control" style="max-width: 160px;" onchange="if(this.value){ document.getElementById('task_cron').value = this.value; }">
+                    <div class="u-d-flex u-gap-8">
+                        <input type="text" name="cron_expression" id="task_cron" class="form-control u-mono" required value="0 3 * * *">
+                        <select class="form-control u-maxw-160" onchange="if(this.value){ document.getElementById('task_cron').value = this.value; }">
                             <option value=""><?php echo htmlspecialchars(t('scheduled_tasks.preset')); ?></option>
                             <option value="*/5 * * * *"><?php echo htmlspecialchars(t('scheduled_tasks.preset_5min')); ?></option>
                             <option value="*/15 * * * *"><?php echo htmlspecialchars(t('scheduled_tasks.preset_15min')); ?></option>
@@ -105,7 +102,7 @@ $csrf = getCSRFToken();
                 </div>
                 <div>
                     <label class="form-label"><strong><?php echo htmlspecialchars(t('scheduled_tasks.resource_limits', 'Resource Limits')); ?></strong></label>
-                    <div style="display: flex; gap: 8px;">
+                    <div class="u-d-flex u-gap-8">
                         <input type="number" name="timeout_sec" id="task_timeout" class="form-control" value="300" min="5" max="3600" title="<?php echo htmlspecialchars(t('scheduled_tasks.ph_timeout')); ?>" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_timeout')); ?>">
                         <input type="number" name="memory_limit_mb" id="task_memory" class="form-control" value="256" min="32" max="4096" title="<?php echo htmlspecialchars(t('scheduled_tasks.ph_memory')); ?>" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_memory')); ?>">
                         <input type="number" name="cpu_limit_pct" id="task_cpu" class="form-control" value="50" min="5" max="100" title="<?php echo htmlspecialchars(t('scheduled_tasks.ph_cpu')); ?>" placeholder="<?php echo htmlspecialchars(t('scheduled_tasks.ph_cpu')); ?>">
@@ -113,7 +110,7 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div class="u-mb-16">
                 <label class="u-check-label u-fs-13">
                     <input type="checkbox" name="network_access" id="task_network" value="1" class="u-accent">
                     <strong><?php echo htmlspecialchars(t('scheduled_tasks.network_access', 'Network Access')); ?>:</strong>
@@ -121,19 +118,19 @@ $csrf = getCSRFToken();
                 </label>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div class="u-mb-16">
                 <label class="form-label" for="task_script_content"><strong><?php echo htmlspecialchars(t('scheduled_tasks.script_content', 'Script Code')); ?> *</strong></label>
-                <textarea name="script_content" id="task_script_content" class="form-control" rows="10" required style="font-family: monospace; font-size: 13px; tab-size: 4;" placeholder="#!/bin/bash&#10;echo &quot;Running task...&quot;"></textarea>
+                <textarea name="script_content" id="task_script_content" class="form-control u-mono u-fs-13 u-tab-size-4" rows="10" required placeholder="#!/bin/bash&#10;echo &quot;Running task...&quot;"></textarea>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div class="u-mb-16">
                 <label class="u-check-label u-fs-13">
                     <input type="checkbox" name="is_active" id="task_active" value="1" checked class="u-accent">
                     <?php echo htmlspecialchars(t('common.active', 'Active (Schedule enabled)')); ?>
                 </label>
             </div>
 
-            <div class="u-flex-gap" style="justify-content: flex-end;">
+            <div class="u-flex-gap u-jc-flex-end">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('taskFormBox').style.display='none';">
                     <?php echo htmlspecialchars(t('common.cancel', 'Cancel')); ?>
                 </button>
@@ -145,23 +142,18 @@ $csrf = getCSRFToken();
     </div>
 
     <!-- Task List Table -->
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th><?php echo htmlspecialchars(t('scheduled_tasks.task_name', 'Task')); ?></th>
-                    <th><?php echo htmlspecialchars(t('scheduled_tasks.cron_expression', 'Schedule')); ?></th>
-                    <th><?php echo htmlspecialchars(t('scheduled_tasks.script_type', 'Type')); ?></th>
-                    <th><?php echo htmlspecialchars(t('scheduled_tasks.last_run', 'Last Run')); ?></th>
-                    <th><?php echo htmlspecialchars(t('common.status', 'Status')); ?></th>
-                    <th class="text-right"><?php echo htmlspecialchars(t('common.actions', 'Actions')); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        htmlspecialchars(t('scheduled_tasks.task_name', 'Task')),
+        htmlspecialchars(t('scheduled_tasks.cron_expression', 'Schedule')),
+        htmlspecialchars(t('scheduled_tasks.script_type', 'Type')),
+        htmlspecialchars(t('scheduled_tasks.last_run', 'Last Run')),
+        htmlspecialchars(t('common.status', 'Status')),
+        ['label' => htmlspecialchars(t('common.actions', 'Actions')), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($tasks)): ?>
                     <tr>
-                        <td colspan="6" class="text-center u-muted" style="padding: 30px;">
-                            <i class="fas fa-calendar-xmark fa-2x u-mb-8" style="display: block; opacity: 0.5;"></i>
+                        <td colspan="6" class="text-center u-muted u-p-30">
+                            <i class="fas fa-calendar-xmark fa-2x u-mb-8 u-opacity-0-5" style="display: block;"></i>
                             <?php echo htmlspecialchars(t('scheduled_tasks.empty', 'No scheduled tasks configured yet.')); ?>
                         </td>
                     </tr>
@@ -210,20 +202,20 @@ $csrf = getCSRFToken();
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
-                                <button type="button" class="btn btn-primary btn-sm" onclick="runTaskNow(<?php echo (int)$t['id']; ?>)" title="<?php echo htmlspecialchars(t('scheduled_tasks.btn_run_now', 'Run Now')); ?>">
+                                <button type="button" class="btn btn-icon btn-primary btn-sm" onclick="runTaskNow(<?php echo (int)$t['id']; ?>)" title="<?php echo htmlspecialchars(t('scheduled_tasks.btn_run_now', 'Run Now')); ?>">
                                     <i class="fas fa-play"></i>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="showHistory(<?php echo (int)$t['id']; ?>)" title="<?php echo htmlspecialchars(t('scheduled_tasks.btn_history', 'History & Logs')); ?>">
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="showHistory(<?php echo (int)$t['id']; ?>)" title="<?php echo htmlspecialchars(t('scheduled_tasks.btn_history', 'History & Logs')); ?>">
                                     <i class="fas fa-history"></i>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick='editTask(<?php echo json_encode($t, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='editTask(<?php echo json_encode($t, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm(<?php echo jsArg(t('scheduled_tasks.confirm_delete', 'Are you sure you want to delete this scheduled task?')); ?>);">
+                                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('scheduled_tasks.confirm_delete', 'Are you sure you want to delete this scheduled task?')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                                     <input type="hidden" name="action" value="delete_task">
                                     <input type="hidden" name="id" value="<?php echo (int)$t['id']; ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
+                                    <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
@@ -231,27 +223,25 @@ $csrf = getCSRFToken();
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: Run Output -->
-<div id="outputModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+<div class="u-pos-fixed u-inset-0 u-bg-rgba-0-0-0-0-6 u-z-index-9999 u-ai-center u-jc-center u-p-20" id="outputModal" style="display: none;">
     <div style="background: var(--card-bg, #fff); border-radius: var(--radius-md, 8px); max-width: 800px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);">
-        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-weight: 700; font-size: 16px;" id="outputModalTitle">
+        <div class="u-p-16-20 u-border-bottom-1-solid-border-color u-d-flex u-jc-space-between u-ai-center">
+            <div class="u-fw-700 u-fs-16" id="outputModalTitle">
                 <i class="fas fa-terminal"></i> <?php echo htmlspecialchars(t('scheduled_tasks.run_output', 'Task Execution Output')); ?>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('outputModal').style.display='none';">
+            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="document.getElementById('outputModal').style.display='none';">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div style="padding: 20px; overflow-y: auto; flex: 1;">
-            <div id="outputModalStatus" style="margin-bottom: 12px; font-weight: 600;"></div>
-            <pre id="outputModalText" style="background: #1e1e1e; color: #d4d4d4; padding: 14px; border-radius: 6px; font-family: monospace; font-size: 12px; max-height: 400px; overflow: auto; white-space: pre-wrap; word-break: break-all; margin: 0;"></pre>
+        <div class="u-p-20 u-overflow-y-auto u-flex-1">
+            <div id="outputModalStatus" class="u-mb-12 u-fw-600"></div>
+            <pre class="u-bg-1e1e1e u-c-d4d4d4 u-p-16 u-r-8 u-mono u-fs-12 u-maxh-400 u-of-auto u-white-space-pre-wrap u-word-break-break-all u-m-0" id="outputModalText"></pre>
         </div>
-        <div style="padding: 12px 20px; border-top: 1px solid var(--border-color); text-align: right;">
+        <div class="u-p-12-20 u-border-top-1-solid-border-color u-ta-right">
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('outputModal').style.display='none';">
                 <?php echo htmlspecialchars(t('common.close', 'Close')); ?>
             </button>
@@ -260,48 +250,34 @@ $csrf = getCSRFToken();
 </div>
 
 <!-- Modal: History & Versions -->
-<div id="historyModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 9999; align-items: center; justify-content: center; padding: 20px;">
+<div class="u-pos-fixed u-inset-0 u-bg-rgba-0-0-0-0-6 u-z-index-9999 u-ai-center u-jc-center u-p-20" id="historyModal" style="display: none;">
     <div style="background: var(--card-bg, #fff); border-radius: var(--radius-md, 8px); max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);">
-        <div style="padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-weight: 700; font-size: 16px;" id="historyModalTitle">
+        <div class="u-p-16-20 u-border-bottom-1-solid-border-color u-d-flex u-jc-space-between u-ai-center">
+            <div class="u-fw-700 u-fs-16" id="historyModalTitle">
                 <i class="fas fa-history"></i> <?php echo htmlspecialchars(t('scheduled_tasks.btn_history', 'Run History & Versions')); ?>
             </div>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('historyModal').style.display='none';">
+            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="document.getElementById('historyModal').style.display='none';">
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        <div style="padding: 20px; overflow-y: auto; flex: 1;">
+        <div class="u-p-20 u-overflow-y-auto u-flex-1">
             <h5><?php echo htmlspecialchars(t('scheduled_tasks.recent_runs', 'Recent Runs')); ?></h5>
-            <div class="table-responsive" style="margin-bottom: 24px;">
-                <table class="table" style="font-size: 12px;">
-                    <thead>
-                        <tr>
-                            <th>Started</th>
-                            <th>Trigger</th>
-                            <th>Duration</th>
-                            <th>Exit Code</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyRunsBody"></tbody>
-                </table>
-            </div>
+            <?php echo uiTableOpen([
+                'Started',
+                'Trigger',
+                'Duration',
+                'Exit Code',
+                'Status',
+            ], ['body_id' => 'historyRunsBody', 'frame' => 'u-mb-24']); ?><?php echo uiTableClose(); ?>
 
             <h5><?php echo htmlspecialchars(t('scheduled_tasks.version_history', 'Script Versions')); ?></h5>
-            <div class="table-responsive">
-                <table class="table" style="font-size: 12px;">
-                    <thead>
-                        <tr>
-                            <th>Version</th>
-                            <th>Date</th>
-                            <th>Preview</th>
-                        </tr>
-                    </thead>
-                    <tbody id="historyVersionsBody"></tbody>
-                </table>
-            </div>
+            <?php echo uiTableOpen([
+                'Version',
+                'Date',
+                'Preview',
+            ], ['body_id' => 'historyVersionsBody']); ?><?php echo uiTableClose(); ?>
         </div>
-        <div style="padding: 12px 20px; border-top: 1px solid var(--border-color); text-align: right;">
+        <div class="u-p-12-20 u-border-top-1-solid-border-color u-ta-right">
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('historyModal').style.display='none';">
                 <?php echo htmlspecialchars(t('common.close', 'Close')); ?>
             </button>

@@ -2,42 +2,29 @@
 $group_slugs = RoleRepository::groupSlugs();
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-user-shield u-warning"></i> <?php echo t('roles.header_title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('roleHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
-            <button class="btn btn-primary btn-sm" onclick="openCreateRoleModal()" title="<?php echo t('roles.new_tooltip'); ?>">
-                <i class="fas fa-plus-circle"></i>
-            </button>
-        </div>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-user-shield', t('roles.header_title'), 'roleHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="roleHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('roles.help_title'); ?></h4>
+            <button class="btn btn-primary btn-sm" onclick="openCreateRoleModal()" title="<?php echo t('roles.new_tooltip'); ?>">
+                <i class="fas fa-plus-circle"></i> <?php echo t('roles.new_tooltip'); ?>
+            </button>
+<?php echo uiPageHeaderClose(); ?>
+
+        <?php echo uiHelpBoxOpen('roleHelpBox', t('roles.help_title')); ?>
         <?php echo t('roles.help_body'); ?><br>
         - <strong><?php echo t('roles.help_system'); ?></strong><br>
         - <strong><?php echo t('roles.help_custom'); ?></strong>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th class="col-hide-mobile"><?php echo t('roles.col_role_id'); ?></th>
-                    <th><?php echo t('roles.col_role'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('roles.col_description'); ?></th>
-                    <th><?php echo t('roles.col_users'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('roles.col_type'); ?></th>
-                    <th class="text-right"><?php echo t('roles.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        ['label' => t('roles.col_role_id'), 'class' => 'col-hide-mobile'],
+        t('roles.col_role'),
+        ['label' => t('roles.col_description'), 'class' => 'col-hide-mobile'],
+        t('roles.col_users'),
+        ['label' => t('roles.col_type'), 'class' => 'col-hide-mobile'],
+        ['label' => t('roles.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($roles)): ?>
                     <?php echo uiTableEmptyRow(7, t('roles.empty'), 'fa-user-shield'); ?>
                 <?php else: ?>
@@ -50,7 +37,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                     <?php echo htmlspecialchars($r['role_name']); ?>
                                 </strong>
                             </td>
-                            <td class="col-hide-mobile"><span class="cell-truncate" style="color: var(--text-muted); font-size: 13px;" title="<?php echo htmlspecialchars($r['description']); ?>"><?php echo htmlspecialchars($r['description']); ?></span></td>
+                            <td class="col-hide-mobile"><span class="cell-truncate u-muted u-fs-13" title="<?php echo htmlspecialchars($r['description']); ?>"><?php echo htmlspecialchars($r['description']); ?></span></td>
                             <td>
                                 <span class="badge badge-info"><i class="fas fa-users"></i> <?php echo $r['user_count']; ?> <?php echo t('roles.user_count_suffix'); ?></span>
                             </td>
@@ -67,21 +54,19 @@ $group_slugs = RoleRepository::groupSlugs();
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: Create / Edit Role Permissions Matrix -->
 <div class="modal-overlay" id="roleModal" style="display: none;">
-    <div class="modal-card" style="max-width: 920px; width: 95%;">
+    <div class="modal-card u-maxw-920 u-w-95pc">
         <div class="modal-header">
             <h3 class="u-title" id="roleModalTitle">
                 <i class="fas fa-user-shield u-warning"></i> <?php echo t('roles.modal_title'); ?>
             </h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeRoleModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeRoleModal()"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-body" style="max-height: 80vh; overflow-y: auto;">
+        <div class="modal-body u-maxh-80vh u-overflow-y-auto">
             <form method="POST" autocomplete="off" id="roleForm">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="save_role" value="1">
@@ -109,7 +94,7 @@ $group_slugs = RoleRepository::groupSlugs();
                     <input type="text" name="description" id="modal_description" class="form-control" placeholder="<?php echo t('roles.description_placeholder'); ?>">
                 </div>
 
-                <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-body); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px; border: 1px solid var(--border-color);">
+                <div class="u-d-flex u-jc-space-between u-ai-center u-bg-bg-body u-p-12-16 u-r-12 u-mb-16 u-bd-1-solid-border-color">
                     <h4 class="u-m-0 u-fs-14 u-fw-700 u-text-main">
                         <i class="fas fa-list-check u-primary"></i> <?php echo t('roles.matrix_title'); ?>
                     </h4>
@@ -124,18 +109,13 @@ $group_slugs = RoleRepository::groupSlugs();
                 </div>
 
                 <!-- Module Permission Table -->
-                <div class="table-responsive">
-                    <table class="data-table perm-matrix-table u-fs-13" data-no-dt="true">
-                        <thead>
-                            <tr>
-                                <th><?php echo t('roles.col_module'); ?></th>
-                                <th class="u-text-center"><?php echo t('roles.col_perm_view'); ?></th>
-                                <th class="u-text-center"><?php echo t('roles.col_perm_access'); ?></th>
-                                <th class="u-text-center"><?php echo t('roles.col_perm_edit'); ?></th>
-                                <th class="u-text-center"><?php echo t('roles.col_perm_delete'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                <?php echo uiTableOpen([
+                    t('roles.col_module'),
+                    ['label' => t('roles.col_perm_view'), 'class' => 'u-text-center'],
+                    ['label' => t('roles.col_perm_access'), 'class' => 'u-text-center'],
+                    ['label' => t('roles.col_perm_edit'), 'class' => 'u-text-center'],
+                    ['label' => t('roles.col_perm_delete'), 'class' => 'u-text-center'],
+                ], ['search' => false, 'class' => 'perm-matrix-table']); ?>
                             <?php 
                             $last_group = null;
                             $group_icons = [
@@ -175,7 +155,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                 <tr class="perm-group-header-row" style="<?php echo $is_new_group ? 'border-top: 3px solid var(--border-color);' : ''; ?>">
                                     <td colspan="5" style="background: var(--bg-body); padding: <?php echo $is_new_group ? '14px 16px 8px 16px' : '10px 16px 8px 16px'; ?>; border-bottom: 1px solid var(--border-color); user-select: none;">
                                         <div class="u-flex-between">
-                                            <span style="font-size: 12.5px; font-weight: 700; color: var(--text-main); display: inline-flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            <span class="u-fs-13 u-fw-700 u-text-main u-d-inline-flex u-ai-center u-gap-8 u-uppercase u-letter-spacing-0-5">
                                                 <i class="<?php echo $icon; ?>" style="color: <?php echo $color; ?>; font-size: 13px;"></i>
                                                 <span><?php echo htmlspecialchars(t('roles.group_' . $group_slug, $group_name)); ?></span>
                                             </span>
@@ -184,7 +164,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                 </tr>
                             <?php endif; ?>
                                 <tr class="perm-module-row">
-                                    <td style="padding-left: 24px;">
+                                    <td class="u-pl-24">
                                         <strong class="u-text-main"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
                                         <?php if (!empty($m_info['plugin'])): ?>
                                             <?php
@@ -195,7 +175,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                                 <i class="fas fa-plug"></i> <?php echo htmlspecialchars((string)$m_info['plugin']); ?>
                                             </span>
                                         <?php endif; ?>
-                                        <div style="font-size: 11px; color: var(--text-muted); font-family: monospace;"><?php echo $m_key; ?></div>
+                                        <div class="u-fs-11 u-muted u-mono"><?php echo $m_key; ?></div>
                                     </td>
                                     <?php if (!empty($m_info['admin_only'])): ?>
                                         <td colspan="4" class="u-text-center u-muted u-fs-12" title="<?php echo htmlspecialchars(t('roles.admin_only_hint')); ?>">
@@ -212,9 +192,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                     <?php endforeach; endif; ?>
                                 </tr>
                             <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                        <?php echo uiTableClose(); ?>
 
                 <?php echo uiModalFooter('closeRoleModal()', t('roles.save_permissions')); ?>
             </form>

@@ -67,7 +67,7 @@ function __syncAllTrunksBody() {
         $t38_maxdatagram = !empty($sip_map['t38_udptl_maxdatagram']) ? intval($sip_map['t38_udptl_maxdatagram']) : intval($t['t38_udptl_maxdatagram'] ?? 400 ?: 400);
 
         $fax_detect = (!empty($sip_map['fax_detect']) && $sip_map['fax_detect'] === 'yes') || (!empty($t['fax_detect']) && (int)$t['fax_detect'] === 1);
-        $fax_detect_timeout = !empty($sip_map['fax_detect_timeout']) ? intval($sip_map['fax_detect_timeout']) : intval($t['fax_detect_timeout'] ?? 30 ?: 30);
+        $fax_detect_timeout = !empty($sip_map['fax_detect_timeout']) ? intval($sip_map['fax_detect_timeout']) : intval($t['fax_detect_timeout'] ?? 10 ?: 10);
 
         $auth_user = toCleanAscii(!empty($sip_map['auth_username']) ? $sip_map['auth_username'] : (!empty($t['auth_username']) ? $t['auth_username'] : ''));
         $auth_pass = toCleanAscii(!empty($sip_map['auth_password']) ? $sip_map['auth_password'] : (!empty($t['auth_password']) ? $t['auth_password'] : ''));

@@ -1,21 +1,13 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-users u-primary"></i> <?php echo t('fc_status.header_title'); ?>
-        </div>
-    </div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('fc_status.col_extension'); ?></th>
-                    <th><?php echo t('fc_status.col_fullname'); ?></th>
-                    <th><?php echo t('fc_status.col_pickup_group'); ?></th>
-                    <th><?php echo t('fc_status.col_dnd'); ?></th>
-                    <th><?php echo t('fc_status.col_forward'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiPageHeader('fa-users', t('fc_status.header_title'), 'featureCodesStatusHelpBox'); ?>
+<?php echo uiHelpBoxOpen('featureCodesStatusHelpBox', t('common.module_guide')); ?><?php echo t('feature_codes_status.help_body'); ?><?php echo uiHelpBoxClose(); ?>
+    <?php echo uiTableOpen([
+        t('fc_status.col_extension'),
+        t('fc_status.col_fullname'),
+        t('fc_status.col_pickup_group'),
+        t('fc_status.col_dnd'),
+        t('fc_status.col_forward'),
+    ]); ?>
                 <?php if (empty($users)): ?>
                     <?php echo uiTableEmptyRow(5, t('fc_status.empty'), 'fa-users'); ?>
                 <?php else: ?>
@@ -60,7 +52,5 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>

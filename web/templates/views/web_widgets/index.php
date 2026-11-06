@@ -22,26 +22,21 @@ $resultBadges = [
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/web_widgets.css'); ?>">
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-headset u-primary"></i> <?php echo t('web_widgets.title'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($widgets); ?></span>
-        </div>
-        <div class="u-flex-center" style="gap: 8px;">
+    <?php echo uiPageHeaderOpen('fa-headset', t('web_widgets.title'), 'webWidgetsHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($widgets); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+<div class="u-flex-center u-gap-8">
             <a href="/web-widgets?download=wordpress" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('web_widgets.help_wordpress', 'WordPress')); ?>">
                 <i class="fab fa-wordpress"></i> WordPress (.zip)
             </a>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('webWidgetsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+            
             <?php if ($canEdit): ?>
-                <button type="button" class="btn btn-primary btn-sm" onclick="openCreateWidgetModal()" title="<?php echo t('web_widgets.add'); ?>"><i class="fas fa-plus-circle"></i></button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="openCreateWidgetModal()" title="<?php echo t('web_widgets.add'); ?>"><i class="fas fa-plus-circle"></i> <?php echo t('web_widgets.add'); ?></button>
             <?php endif; ?>
         </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <div class="module-help-box" id="webWidgetsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('web_widgets.help_title'); ?></h4>
+    <?php echo uiHelpBoxOpen('webWidgetsHelpBox', t('web_widgets.help_title')); ?>
         <p><?php echo t('web_widgets.help_body'); ?></p>
         <ul>
             <li><strong><?php echo t('web_widgets.help_number'); ?></strong> <?php echo t('web_widgets.help_number_desc'); ?></li>
@@ -49,21 +44,16 @@ $resultBadges = [
             <li><strong><?php echo t('web_widgets.help_callback'); ?></strong> <?php echo t('web_widgets.help_callback_desc'); ?></li>
             <li><strong><?php echo t('web_widgets.help_wordpress'); ?></strong> <?php echo t('web_widgets.help_wordpress_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('web_widgets.col_name'); ?></th>
-                    <th><?php echo t('web_widgets.col_destination'); ?></th>
-                    <th><?php echo t('web_widgets.col_features'); ?></th>
-                    <th><?php echo t('web_widgets.col_today'); ?></th>
-                    <th><?php echo t('web_widgets.col_embed'); ?></th>
-                    <th class="text-right"><?php echo t('web_widgets.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('web_widgets.col_name'),
+        t('web_widgets.col_destination'),
+        t('web_widgets.col_features'),
+        t('web_widgets.col_today'),
+        t('web_widgets.col_embed'),
+        ['label' => t('web_widgets.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($widgets)): ?>
                     <?php echo uiTableEmptyRow(6, t('web_widgets.empty'), 'fa-headset'); ?>
                 <?php else: ?>
@@ -99,20 +89,20 @@ $resultBadges = [
                             </td>
                             <td class="text-right">
                                 <div class="table-actions-cell">
-                                    <a class="btn btn-secondary btn-sm" href="/web-widgets?try=<?php echo (int) $w['id']; ?>" target="_blank" rel="noopener" title="<?php echo t('web_widgets.try'); ?>"><i class="fas fa-play"></i></a>
+                                    <a class="btn btn-icon btn-secondary btn-sm" href="/web-widgets?try=<?php echo (int) $w['id']; ?>" target="_blank" rel="noopener" title="<?php echo t('web_widgets.try'); ?>"><i class="fas fa-play"></i></a>
                                     <?php if ($canEdit): ?>
                                         <form method="POST" class="u-inline">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                                             <input type="hidden" name="widget_id" value="<?php echo (int) $w['id']; ?>">
-                                            <button type="submit" name="toggle_widget" value="1" class="btn btn-<?php echo (int) $w['is_active'] === 1 ? 'warning' : 'success'; ?> btn-sm" title="<?php echo t((int) $w['is_active'] === 1 ? 'web_widgets.disable' : 'web_widgets.enable'); ?>"><i class="fas fa-power-off"></i></button>
+                                            <button type="submit" name="toggle_widget" value="1" class="btn btn-icon btn-<?php echo (int) $w['is_active'] === 1 ? 'warning' : 'success'; ?> btn-sm" title="<?php echo t((int) $w['is_active'] === 1 ? 'web_widgets.disable' : 'web_widgets.enable'); ?>"><i class="fas fa-power-off"></i></button>
                                         </form>
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditWidgetModal(<?php echo json_encode($editData, JSON_HEX_APOS | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)' title="<?php echo t('common.edit'); ?>"><i class="fas fa-edit"></i></button>
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditWidgetModal(<?php echo json_encode($editData, JSON_HEX_APOS | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_QUOT); ?>)' title="<?php echo t('common.edit'); ?>"><i class="fas fa-edit"></i></button>
                                     <?php endif; ?>
                                     <?php if (hasModulePermission('web_widgets', 'delete')): ?>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('web_widgets.delete_confirm')), ENT_QUOTES); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
                                             <input type="hidden" name="widget_id" value="<?php echo (int) $w['id']; ?>">
-                                            <button type="submit" name="delete_widget" value="1" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>"><i class="fas fa-trash"></i></button>
+                                            <button type="submit" name="delete_widget" value="1" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>"><i class="fas fa-trash"></i></button>
                                         </form>
                                     <?php endif; ?>
                                 </div>
@@ -120,9 +110,7 @@ $resultBadges = [
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card">
@@ -130,20 +118,15 @@ $resultBadges = [
         <div class="card-title"><i class="fas fa-list u-primary"></i> <?php echo t('web_widgets.log_title'); ?></div>
     </div>
     <p class="text-muted u-fs-12"><?php echo t('web_widgets.log_desc'); ?></p>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('web_widgets.col_time'); ?></th>
-                    <th><?php echo t('web_widgets.col_name'); ?></th>
-                    <th><?php echo t('web_widgets.col_kind'); ?></th>
-                    <th><?php echo t('web_widgets.col_result'); ?></th>
-                    <th><?php echo t('web_widgets.col_visitor'); ?></th>
-                    <th><?php echo t('web_widgets.col_origin'); ?></th>
-                    <th><?php echo t('web_widgets.col_ip'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('web_widgets.col_time'),
+        t('web_widgets.col_name'),
+        t('web_widgets.col_kind'),
+        t('web_widgets.col_result'),
+        t('web_widgets.col_visitor'),
+        t('web_widgets.col_origin'),
+        t('web_widgets.col_ip'),
+    ]); ?>
                 <?php if (empty($log)): ?>
                     <?php echo uiTableEmptyRow(7, t('web_widgets.log_empty'), 'fa-list'); ?>
                 <?php else: ?>
@@ -159,18 +142,16 @@ $resultBadges = [
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <?php if ($canEdit): ?>
 <!-- Modal: add / edit widget -->
 <div class="modal-overlay" id="widgetModal">
-    <div class="modal-card" style="max-width: 720px;">
+    <div class="modal-card u-maxw-720">
         <div class="modal-header">
             <h3 class="u-title" id="widgetModalTitle"><i class="fas fa-headset u-primary"></i> <?php echo t('web_widgets.add'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('widgetModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('widgetModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off" id="widgetForm">

@@ -79,7 +79,7 @@ function openCreateTrunkModal() {
     document.getElementById('modal_t38_udptl_nat').value = 'yes';
     document.getElementById('modal_t38_udptl_maxdatagram').value = 400;
     document.getElementById('modal_fax_detect').value = 1;
-    document.getElementById('modal_fax_detect_timeout').value = 30;
+    document.getElementById('modal_fax_detect_timeout').value = 10;
     document.getElementById('modal_qualify_frequency').value = 60;
     document.getElementById('modal_direct_media').value = 'no';
     document.getElementById('modal_rtp_symmetric').value = 'yes';
@@ -165,7 +165,7 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_t38_udptl_nat').value = item.t38_udptl_nat || 'yes';
     document.getElementById('modal_t38_udptl_maxdatagram').value = item.t38_udptl_maxdatagram || 400;
     document.getElementById('modal_fax_detect').value = item.fax_detect !== undefined ? item.fax_detect : 1;
-    document.getElementById('modal_fax_detect_timeout').value = item.fax_detect_timeout || 30;
+    document.getElementById('modal_fax_detect_timeout').value = item.fax_detect_timeout || 10;
     document.getElementById('modal_qualify_frequency').value = item.qualify_frequency || 60;
     document.getElementById('modal_direct_media').value = item.direct_media || 'no';
     document.getElementById('modal_rtp_symmetric').value = item.rtp_symmetric || 'yes';

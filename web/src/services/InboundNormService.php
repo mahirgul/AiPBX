@@ -175,6 +175,23 @@ final class InboundNormService
         return ['result' => $number, 'rule' => null];
     }
 
+    /** Inbound normalization as a whole; on unless switched off. Off: numbers stay as the carrier sends them. */
+    public static function isEnabled(): bool
+    {
+        return (string) getSystemSetting('inbound_norm_enabled', '1') !== '0';
+    }
+
+    public static function setEnabled(array $data): array
+    {
+        return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
+            $on = !empty($data['enabled']);
+            getDB()->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('inbound_norm_enabled', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)")
+                ->execute([$on ? '1' : '0']);
+            self::markChanged('Inbound normalization ' . ($on ? 'on' : 'off'), 'update');
+            return t($on ? 'inbound_norm.msg_enabled' : 'inbound_norm.msg_disabled');
+        });
+    }
+
     private static function markChanged(string $label, string $action): void
     {
         markPendingSync('inbound_dialplan', 'inbound_norm', 0, $label, $action, $_SESSION['user_id'] ?? null);

@@ -434,30 +434,12 @@ function renderContactsList() {
 // 5. Tab switch (Chats / Directory)
 function switchChatTab(tab) {
     currentTab = tab;
-    const btnConvs = document.getElementById('tab-btn-convs');
-    const btnContacts = document.getElementById('tab-btn-contacts');
-    const listConvs = document.getElementById('chat-convs-list');
-    const listContacts = document.getElementById('chat-contacts-list');
-
-    if (tab === 'convs') {
-        btnConvs.style.background = 'var(--bg-card)';
-        btnConvs.style.color = 'var(--text-main)';
-        btnConvs.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-        btnContacts.style.background = 'transparent';
-        btnContacts.style.color = 'var(--text-muted)';
-        btnContacts.style.boxShadow = 'none';
-        listConvs.style.display = 'flex';
-        listContacts.style.display = 'none';
-    } else {
-        btnContacts.style.background = 'var(--bg-card)';
-        btnContacts.style.color = 'var(--text-main)';
-        btnContacts.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
-        btnConvs.style.background = 'transparent';
-        btnConvs.style.color = 'var(--text-muted)';
-        btnConvs.style.boxShadow = 'none';
-        listContacts.style.display = 'flex';
-        listConvs.style.display = 'none';
-    }
+    document.querySelectorAll('#chat-sidebar .ui-tab').forEach((b) => {
+        b.classList.toggle('active', b.dataset.tab === tab);
+        b.setAttribute('aria-selected', b.dataset.tab === tab ? 'true' : 'false');
+    });
+    document.getElementById('chat-convs-list').style.display = tab === 'convs' ? 'flex' : 'none';
+    document.getElementById('chat-contacts-list').style.display = tab === 'convs' ? 'none' : 'flex';
 }
 
 // 6. Start a direct chat

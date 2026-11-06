@@ -1,29 +1,23 @@
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-inbox u-primary"></i> <?php echo t('fax_inbox.header_title'); ?>
-        </div>
-        <div style="display: flex; align-items: center; gap: 12px;">
+    <?php echo uiPageHeaderOpen('fa-inbox', t('fax_inbox.header_title'), 'faxInboxHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+<div class="u-d-flex u-ai-center u-gap-12">
             <div class="u-fs-13 u-muted">
                 <?php echo t('fax_inbox.total_prefix'); ?> <?php echo $total_count; ?> <?php echo t('fax_inbox.total_suffix'); ?> <?php if ($total_pages > 1): ?>(<?php echo sprintf(t('fax_inbox.page_of'), $page, $total_pages); ?>)<?php endif; ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('faxInboxHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+            
         </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="faxInboxHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_inbox.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('faxInboxHelpBox', t('fax_inbox.help_title')); ?>
         <?php echo t('fax_inbox.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Filter Bar -->
-    <form method="GET" autocomplete="off" style="display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; margin-bottom: 24px; align-items: center;">
+    <form class="u-d-grid u-gtc-2fr-1fr-1fr-auto u-gap-12 u-mb-24 u-ai-center" method="GET" autocomplete="off">
         <div class="u-relative">
-            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none;"></i>
-            <input type="text" name="search" class="form-control form-control-sm" style="padding-left: 32px;" placeholder="<?php echo t('fax_inbox.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search); ?>">
+            <i class="fas fa-search u-pos-absolute u-left-12 u-top-50pc u-transform-translatey-50pc u-muted u-fs-12 u-pointer-events-none"></i>
+            <input type="text" name="search" class="form-control form-control-sm u-pl-32" placeholder="<?php echo t('fax_inbox.search_placeholder'); ?>" value="<?php echo htmlspecialchars($search); ?>">
         </div>
         <input type="date" name="date_from" class="form-control form-control-sm" value="<?php echo htmlspecialchars($date_from); ?>">
         <input type="date" name="date_to" class="form-control form-control-sm" value="<?php echo htmlspecialchars($date_to); ?>">
@@ -33,20 +27,16 @@
     <!-- Fax Data Table -->
     <div class="table-responsive">
         <?php require dirname(__DIR__, 2) . '/pagination_controls.php'; ?>
-        <table class="data-table" data-no-dt="true">
-            <thead>
-                <tr>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th><?php echo t('fax_inbox.col_did'); ?></th>
-                    <th><?php echo t('fax_inbox.col_caller'); ?></th>
-                    <th><?php echo t('fax_inbox.col_date'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_inbox.col_pages'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_inbox.col_size'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_inbox.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('fax_inbox.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+        <?php echo uiTableOpen([
+            ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+            t('fax_inbox.col_did'),
+            t('fax_inbox.col_caller'),
+            t('fax_inbox.col_date'),
+            ['label' => t('fax_inbox.col_pages'), 'class' => 'col-hide-mobile'],
+            ['label' => t('fax_inbox.col_size'), 'class' => 'col-hide-mobile'],
+            ['label' => t('fax_inbox.col_status'), 'class' => 'col-hide-mobile'],
+            ['label' => t('fax_inbox.col_actions'), 'class' => 'text-right'],
+        ], ['search' => false]); ?>
                 <?php if (empty($faxes)): ?>
                     <?php echo uiTableEmptyRow(8, t('fax_inbox.empty'), 'fa-inbox'); ?>
                 <?php else: ?>
@@ -54,8 +44,8 @@
                         <tr style="<?php echo empty($fax['is_read']) ? 'font-weight: 700;' : ''; ?>">
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $fax['id']; ?></td>
                             <td><span class="badge badge-info"><?php echo htmlspecialchars($fax['did_extension']); ?></span></td>
-                            <td style="font-weight: inherit; color: var(--text-main);">
-                                <?php if (empty($fax['is_read'])): ?><i class="fas fa-circle" style="font-size: 6px; color: var(--primary); margin-right: 6px;" title="<?php echo t('fax_inbox.unread_tooltip'); ?>"></i><?php endif; ?>
+                            <td class="u-fw-inherit u-text-main">
+                                <?php if (empty($fax['is_read'])): ?><i class="fas fa-circle u-fs-6 u-primary u-mr-6" title="<?php echo t('fax_inbox.unread_tooltip'); ?>"></i><?php endif; ?>
                                 <?php echo htmlspecialchars($fax['caller_id']); ?>
                             </td>
                             <td><?php echo date('d.m.Y H:i', strtotime($fax['received_at'])); ?></td>
@@ -81,10 +71,10 @@
                             <td class="text-right">
                                 <div class="table-actions-cell">
                                     <?php if (($fax['pdf_path'] ?? '') !== ''): // a fax that failed before its first page has no file ?>
-                                    <button class="btn btn-secondary btn-sm" onclick="viewPdf('/api/fax_download.php?id=<?php echo $fax['id']; ?>&view=1')" title="<?php echo t('fax_inbox.view_tooltip'); ?>">
+                                    <button class="btn btn-icon btn-secondary btn-sm" onclick="viewPdf('/api/fax_download.php?id=<?php echo $fax['id']; ?>&view=1')" title="<?php echo t('fax_inbox.view_tooltip'); ?>">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <a href="/api/fax_download.php?id=<?php echo $fax['id']; ?>" class="btn btn-primary btn-sm" target="_blank" title="<?php echo t('fax_inbox.download_tooltip'); ?>">
+                                    <a href="/api/fax_download.php?id=<?php echo $fax['id']; ?>" class="btn btn-icon btn-primary btn-sm" target="_blank" title="<?php echo t('fax_inbox.download_tooltip'); ?>">
                                         <i class="fas fa-download"></i>
                                     </a>
                                     <?php endif; ?>
@@ -94,8 +84,7 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
+            <?php echo uiTableClose(); ?>
     </div>
 
     <?php if ($total_pages > 1): ?>
@@ -110,8 +99,8 @@
             <h3 class="u-title"><i class="fas fa-file-pdf u-danger"></i> <?php echo t('fax_inbox.preview_title'); ?></h3>
             <button class="btn btn-secondary u-btn-pad" onclick="closePdfModal()"><i class="fas fa-times"></i> <?php echo t('fax_inbox.close'); ?></button>
         </div>
-        <div class="modal-body" style="padding: 0; min-height: 500px;">
-            <iframe id="pdfFrame" src="" style="width: 100%; height: 550px; border: none;"></iframe>
+        <div class="modal-body u-p-0 u-minh-500">
+            <iframe class="u-w-100 u-h-550 u-bd-none" id="pdfFrame" src=""></iframe>
         </div>
     </div>
 </div>

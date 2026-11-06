@@ -20,18 +20,9 @@ if ($subjectQuery !== '' || isset($_POST['erase_subject'])) {
 $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GDPR / KVKK';
 ?>
 
-<div class="page-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:18px;">
-    <div>
-        <h2 style="margin:0; display:flex; align-items:center; gap:10px;">
-            <i class="fas fa-user-lock u-primary"></i>
-            <?php echo htmlspecialchars(t('privacy.header_title')); ?>
-        </h2>
-        <p class="u-muted u-fs-13" style="margin:4px 0 0 0;">
-            <?php echo htmlspecialchars(t('privacy.subtitle')); ?>
-        </p>
-    </div>
-    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <span class="badge badge-primary">
+<div class="card tabbed-page">
+    <?php echo uiPageHeaderOpen('fa-user-lock', htmlspecialchars(t('privacy.header_title')), 'privacyHelpBox'); ?>
+<span class="badge badge-primary">
             <i class="fas fa-scale-balanced"></i>
             <?php echo htmlspecialchars($activeProfileCode); ?>
         </span>
@@ -47,23 +38,24 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
             <i class="fas fa-shield-alt"></i>
             <?php echo htmlspecialchars(t('privacy.badge_cloud_lock') . ': ' . (!empty($settings['block_cloud_ai']) ? t('common.active') : t('common.inactive'))); ?>
         </span>
-    </div>
-</div>
+<?php echo uiPageHeaderActions(); ?>
+<?php echo uiPageHeaderClose(); ?>
+<?php echo uiHelpBoxOpen('privacyHelpBox', t('common.module_guide')); ?><?php echo htmlspecialchars(t('privacy.subtitle')); ?><?php echo uiHelpBoxClose(); ?>
 
 <!-- Global Regulatory Jurisdiction Preset Bar -->
-<div class="card" style="margin-bottom:18px; padding:14px 18px;">
-    <form method="post" action="/privacy" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:0;">
+<div class="card u-mb-20 u-p-16-20">
+    <form method="post" action="/privacy" class="u-d-flex u-ai-center u-jc-space-between u-wrap u-gap-12 u-m-0">
         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
         <input type="hidden" name="apply_profile" value="1">
-        <div style="flex:1; min-width:260px;">
-            <div style="font-weight:700; font-size:14px; display:flex; align-items:center; gap:8px;">
+        <div class="u-flex-1 u-minw-260">
+            <div class="u-fw-700 u-fs-14 u-d-flex u-ai-center u-gap-8">
                 <i class="fas fa-earth-americas u-primary"></i>
                 <?php echo htmlspecialchars(t('privacy.profile_bar_title')); ?>
             </div>
             <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.profile_bar_help')); ?></div>
         </div>
-        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <select name="jurisdiction_profile" class="form-control" style="min-width:280px;">
+        <div class="u-d-flex u-gap-10 u-ai-center u-wrap">
+            <select name="jurisdiction_profile" class="form-control u-minw-280">
                 <?php foreach ($profiles as $pKey => $pMeta): ?>
                     <option value="<?php echo htmlspecialchars($pKey); ?>"<?php echo $settings['jurisdiction_profile'] === $pKey ? ' selected' : ''; ?>>
                         <?php echo htmlspecialchars(t('privacy.profile_' . $pKey)); ?>
@@ -78,33 +70,33 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
 </div>
 
 <!-- Navigation Tabs -->
-<div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; border-bottom:1px solid var(--border-color); padding-bottom:10px;">
-    <button type="button" class="btn <?php echo $activeTab === 'notice' ? 'btn-primary' : 'btn-secondary'; ?> btn-sm" data-privacy-tab="notice" onclick="switchPrivacyTab('notice')">
+<div class="sub-tab-nav">
+    <button type="button" class="sub-tab-btn<?php echo $activeTab === 'notice' ? ' active' : ''; ?>" data-privacy-tab="notice" onclick="switchPrivacyTab('notice')">
         <i class="fas fa-phone-volume"></i> <?php echo htmlspecialchars(t('privacy.tab_notice')); ?>
     </button>
-    <button type="button" class="btn <?php echo $activeTab === 'retention' ? 'btn-primary' : 'btn-secondary'; ?> btn-sm" data-privacy-tab="retention" onclick="switchPrivacyTab('retention')">
+    <button type="button" class="sub-tab-btn<?php echo $activeTab === 'retention' ? ' active' : ''; ?>" data-privacy-tab="retention" onclick="switchPrivacyTab('retention')">
         <i class="fas fa-clock-rotate-left"></i> <?php echo htmlspecialchars(t('privacy.tab_retention')); ?>
     </button>
-    <button type="button" class="btn <?php echo $activeTab === 'subject' ? 'btn-primary' : 'btn-secondary'; ?> btn-sm" data-privacy-tab="subject" onclick="switchPrivacyTab('subject')">
+    <button type="button" class="sub-tab-btn<?php echo $activeTab === 'subject' ? ' active' : ''; ?>" data-privacy-tab="subject" onclick="switchPrivacyTab('subject')">
         <i class="fas fa-user-eraser"></i> <?php echo htmlspecialchars(t('privacy.tab_subject')); ?>
     </button>
-    <button type="button" class="btn <?php echo $activeTab === 'compliance' ? 'btn-primary' : 'btn-secondary'; ?> btn-sm" data-privacy-tab="compliance" onclick="switchPrivacyTab('compliance')">
+    <button type="button" class="sub-tab-btn<?php echo $activeTab === 'compliance' ? ' active' : ''; ?>" data-privacy-tab="compliance" onclick="switchPrivacyTab('compliance')">
         <i class="fas fa-clipboard-check"></i> <?php echo htmlspecialchars(t('privacy.tab_compliance')); ?>
     </button>
 </div>
 
 <!-- TAB 1: Pre-Call Disclosure, Opt-In/Opt-Out, FCC Beep & PCI-DSS -->
-<div id="privacy-panel-notice" style="display:<?php echo $activeTab === 'notice' ? 'block' : 'none'; ?>;">
-    <div class="grid-2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:18px;">
+<div id="privacy-panel-notice" class="u-pt-16" style="display:<?php echo $activeTab === 'notice' ? 'block' : 'none'; ?>;">
+    <div class="grid-2 u-d-grid u-gtc-repeat-auto-fit-minmax-340-1fr u-gap-20">
         <div class="card">
-            <h3 style="margin-top:0;"><i class="fas fa-bullhorn u-primary"></i> <?php echo htmlspecialchars(t('privacy.notice_card_title')); ?></h3>
+            <h3 class="u-mt-0"><i class="fas fa-bullhorn u-primary"></i> <?php echo htmlspecialchars(t('privacy.notice_card_title')); ?></h3>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.notice_card_help')); ?></p>
 
             <form method="post" action="/privacy">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                 <input type="hidden" name="save_notice" value="1">
 
-                <div class="form-group" style="margin-bottom:14px;">
+                <div class="form-group u-mb-14">
                     <label><?php echo htmlspecialchars(t('privacy.field_notice_mode')); ?></label>
                     <select name="notice_mode" class="form-control">
                         <option value="off"<?php echo $settings['notice_mode'] === 'off' ? ' selected' : ''; ?>><?php echo htmlspecialchars(t('privacy.mode_off')); ?></option>
@@ -114,7 +106,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                     </select>
                 </div>
 
-                <div class="form-group" style="margin-bottom:14px;">
+                <div class="form-group u-mb-14">
                     <label><?php echo htmlspecialchars(t('privacy.field_notice_sound')); ?></label>
                     <select name="notice_sound_id" class="form-control">
                         <option value="0">— <?php echo htmlspecialchars(t('privacy.select_sound')); ?> —</option>
@@ -126,7 +118,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                     </select>
                 </div>
 
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;">
+                <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-12 u-mb-16">
                     <div class="form-group">
                         <label><?php echo htmlspecialchars(t('privacy.field_optout_digit')); ?></label>
                         <select name="optout_digit" class="form-control">
@@ -151,8 +143,8 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom:16px;">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                <div class="form-group u-mb-16">
+                    <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fw-600">
                         <input type="checkbox" name="pci_pause_enabled" value="1"<?php echo !empty($settings['pci_pause_enabled']) ? ' checked' : ''; ?>>
                         <span><?php echo htmlspecialchars(t('privacy.field_pci_pause')); ?></span>
                     </label>
@@ -165,25 +157,25 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0;"><i class="fas fa-file-audio u-primary"></i> <?php echo htmlspecialchars(t('privacy.sample_scripts_title')); ?></h3>
+            <h3 class="u-mt-0"><i class="fas fa-file-audio u-primary"></i> <?php echo htmlspecialchars(t('privacy.sample_scripts_title')); ?></h3>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.sample_scripts_help')); ?></p>
 
-            <div style="margin-bottom:12px;">
+            <div class="u-mb-12">
                 <label class="u-fs-12 u-strong">TR — KVKK Aydınlatma ve Kayıtsız Görüşme (Opt-Out — Tuş 9):</label>
                 <textarea class="form-control u-fs-12" rows="3" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_tr')); ?></textarea>
             </div>
 
-            <div style="margin-bottom:12px;">
+            <div class="u-mb-12">
                 <label class="u-fs-12 u-strong">EN — GDPR / CCPA Opt-Out Notice (Press 9 for Unrecorded Call):</label>
                 <textarea class="form-control u-fs-12" rows="3" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_en')); ?></textarea>
             </div>
 
-            <div style="margin-bottom:14px;">
+            <div class="u-mb-14">
                 <label class="u-fs-12 u-strong">EN — Strict GDPR / US Two-Party Consent Opt-In (Press 1 to Allow Recording):</label>
                 <textarea class="form-control u-fs-12" rows="3" readonly onclick="this.select()"><?php echo htmlspecialchars(t('privacy.sample_script_optin_en')); ?></textarea>
             </div>
 
-            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+            <div class="u-d-flex u-gap-8 u-wrap">
                 <a href="/sounds" class="btn btn-secondary btn-sm"><i class="fas fa-music"></i> <?php echo htmlspecialchars(t('sidebar.item_sounds')); ?></a>
                 <a href="/ai-tts" class="btn btn-secondary btn-sm"><i class="fas fa-comment-dots"></i> <?php echo htmlspecialchars(t('sidebar.item_ai_tts')); ?></a>
             </div>
@@ -192,12 +184,12 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
 </div>
 
 <!-- TAB 2: Data Retention & Auto-Purge -->
-<div id="privacy-panel-retention" style="display:<?php echo $activeTab === 'retention' ? 'block' : 'none'; ?>;">
+<div id="privacy-panel-retention" class="u-pt-16" style="display:<?php echo $activeTab === 'retention' ? 'block' : 'none'; ?>;">
     <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+        <div class="u-d-flex u-jc-space-between u-ai-flex-start u-wrap u-gap-12 u-mb-14">
             <div>
-                <h3 style="margin:0;"><i class="fas fa-clock-rotate-left u-primary"></i> <?php echo htmlspecialchars(t('privacy.retention_card_title')); ?></h3>
-                <p class="u-muted u-fs-13" style="margin:4px 0 0 0;"><?php echo htmlspecialchars(t('privacy.retention_card_help')); ?></p>
+                <h3 class="u-m-0"><i class="fas fa-clock-rotate-left u-primary"></i> <?php echo htmlspecialchars(t('privacy.retention_card_title')); ?></h3>
+                <p class="u-muted u-fs-13 u-m-4-0-0-0"><?php echo htmlspecialchars(t('privacy.retention_card_help')); ?></p>
             </div>
             <form method="post" action="/privacy" onsubmit="return confirm(<?php echo json_encode(t('privacy.confirm_purge_now')); ?>);">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
@@ -209,7 +201,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
         </div>
 
         <?php if ($settings['last_purge_at'] !== ''): ?>
-            <div class="alert alert-info u-fs-12" style="margin-bottom:16px;">
+            <div class="alert alert-info u-fs-12 u-mb-16">
                 <i class="fas fa-check-circle"></i>
                 <strong><?php echo htmlspecialchars(t('privacy.last_purge_label')); ?>:</strong>
                 <?php echo htmlspecialchars($settings['last_purge_at'] . ' — ' . $settings['last_purge_summary']); ?>
@@ -220,14 +212,14 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
             <input type="hidden" name="save_retention" value="1">
 
-            <div class="form-group" style="margin-bottom:16px;">
-                <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+            <div class="form-group u-mb-16">
+                <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fw-600">
                     <input type="checkbox" name="retention_enabled" value="1"<?php echo !empty($settings['retention_enabled']) ? ' checked' : ''; ?>>
                     <span><?php echo htmlspecialchars(t('privacy.field_retention_enabled')); ?></span>
                 </label>
             </div>
 
-            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16 u-mb-16">
                 <div class="form-group">
                     <label><?php echo htmlspecialchars(t('privacy.field_ret_recordings')); ?></label>
                     <input type="number" name="ret_recordings_days" min="0" max="3650" class="form-control" value="<?php echo (int)$settings['ret_recordings_days']; ?>">
@@ -265,12 +257,12 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
 </div>
 
 <!-- TAB 3: Subject Lookup (SAR) & Right to Erasure -->
-<div id="privacy-panel-subject" style="display:<?php echo $activeTab === 'subject' ? 'block' : 'none'; ?>;">
-    <div class="card" style="margin-bottom:18px;">
-        <h3 style="margin-top:0;"><i class="fas fa-user-eraser u-primary"></i> <?php echo htmlspecialchars(t('privacy.subject_card_title')); ?></h3>
+<div id="privacy-panel-subject" class="u-pt-16" style="display:<?php echo $activeTab === 'subject' ? 'block' : 'none'; ?>;">
+    <div class="card u-mb-18">
+        <h3 class="u-mt-0"><i class="fas fa-user-eraser u-primary"></i> <?php echo htmlspecialchars(t('privacy.subject_card_title')); ?></h3>
         <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.subject_card_help')); ?></p>
 
-        <form method="get" action="/privacy" style="display:flex; gap:10px; max-width:520px; align-items:center;">
+        <form method="get" action="/privacy" class="u-d-flex u-gap-10 u-maxw-520 u-ai-center">
             <input type="text" name="subject" class="form-control" placeholder="<?php echo htmlspecialchars(t('privacy.subject_placeholder')); ?>" value="<?php echo htmlspecialchars($subjectQuery); ?>" required>
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-search"></i> <?php echo htmlspecialchars(t('common.search')); ?>
@@ -283,11 +275,11 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
             <div class="alert alert-warning"><?php echo htmlspecialchars(t('privacy.err_subject_short')); ?></div>
         <?php else: ?>
             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
-                    <h3 style="margin:0;">
+                <div class="u-d-flex u-jc-space-between u-ai-center u-wrap u-gap-12 u-mb-16">
+                    <h3 class="u-m-0">
                         <?php echo htmlspecialchars(t('privacy.subject_results_for') . ': ' . $subjectResult['query']); ?>
                     </h3>
-                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <div class="u-d-flex u-gap-10 u-wrap">
                         <form method="post" action="/privacy" data-no-spa="true">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                             <input type="hidden" name="subject_number" value="<?php echo htmlspecialchars($subjectResult['query']); ?>">
@@ -307,42 +299,37 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                     </div>
                 </div>
 
-                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-bottom:16px;">
-                    <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px;">
+                <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-150-1fr u-gap-12 u-mb-16">
+                    <div class="u-p-12 u-bd-1-solid-border-color u-r-8">
                         <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.stat_cdrs')); ?></div>
-                        <div style="font-size:20px; font-weight:700;"><?php echo (int)$subjectResult['cdr_count']; ?></div>
+                        <div class="u-fs-20 u-fw-700"><?php echo (int)$subjectResult['cdr_count']; ?></div>
                     </div>
-                    <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px;">
+                    <div class="u-p-12 u-bd-1-solid-border-color u-r-8">
                         <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.stat_recordings')); ?></div>
-                        <div style="font-size:20px; font-weight:700;"><?php echo (int)$subjectResult['recording_count']; ?></div>
+                        <div class="u-fs-20 u-fw-700"><?php echo (int)$subjectResult['recording_count']; ?></div>
                     </div>
-                    <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px;">
+                    <div class="u-p-12 u-bd-1-solid-border-color u-r-8">
                         <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.stat_voicemails')); ?></div>
-                        <div style="font-size:20px; font-weight:700;"><?php echo (int)$subjectResult['voicemail_count']; ?></div>
+                        <div class="u-fs-20 u-fw-700"><?php echo (int)$subjectResult['voicemail_count']; ?></div>
                     </div>
-                    <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px;">
+                    <div class="u-p-12 u-bd-1-solid-border-color u-r-8">
                         <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.stat_faxes')); ?></div>
-                        <div style="font-size:20px; font-weight:700;"><?php echo (int)$subjectResult['fax_count']; ?></div>
+                        <div class="u-fs-20 u-fw-700"><?php echo (int)$subjectResult['fax_count']; ?></div>
                     </div>
-                    <div style="padding:12px; border:1px solid var(--border-color); border-radius:8px;">
+                    <div class="u-p-12 u-bd-1-solid-border-color u-r-8">
                         <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('privacy.stat_signaling')); ?></div>
-                        <div style="font-size:20px; font-weight:700;"><?php echo (int)$subjectResult['signaling_count']; ?></div>
+                        <div class="u-fs-20 u-fw-700"><?php echo (int)$subjectResult['signaling_count']; ?></div>
                     </div>
                 </div>
 
                 <?php if (!empty($subjectResult['cdrs'])): ?>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th><?php echo htmlspecialchars(t('common.date')); ?></th>
-                                    <th><?php echo htmlspecialchars(t('cdr_reports.col_src')); ?></th>
-                                    <th><?php echo htmlspecialchars(t('cdr_reports.col_dst')); ?></th>
-                                    <th><?php echo htmlspecialchars(t('common.status')); ?></th>
-                                    <th><?php echo htmlspecialchars(t('cdr_reports.col_duration')); ?></th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <?php echo uiTableOpen([
+                        htmlspecialchars(t('common.date')),
+                        htmlspecialchars(t('cdr_reports.col_src')),
+                        htmlspecialchars(t('cdr_reports.col_dst')),
+                        htmlspecialchars(t('common.status')),
+                        htmlspecialchars(t('cdr_reports.col_duration')),
+                    ]); ?>
                                 <?php foreach ($subjectResult['cdrs'] as $row): ?>
                                     <tr>
                                         <td><?php echo htmlspecialchars((string)($row['calldate'] ?? '')); ?></td>
@@ -352,9 +339,7 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                                         <td><?php echo (int)($row['billsec'] ?? 0); ?>s</td>
                                     </tr>
                                 <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
+                            <?php echo uiTableClose(); ?>
                 <?php endif; ?>
             </div>
         <?php endif; ?>
@@ -362,18 +347,18 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
 </div>
 
 <!-- TAB 4: Technical Safeguards & Cross-Border Cloud AI Lock -->
-<div id="privacy-panel-compliance" style="display:<?php echo $activeTab === 'compliance' ? 'block' : 'none'; ?>;">
-    <div class="grid-2" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(340px, 1fr)); gap:18px; margin-bottom:18px;">
+<div id="privacy-panel-compliance" class="u-pt-16" style="display:<?php echo $activeTab === 'compliance' ? 'block' : 'none'; ?>;">
+    <div class="grid-2 u-d-grid u-gtc-repeat-auto-fit-minmax-340-1fr u-gap-20 u-mb-20">
         <div class="card">
-            <h3 style="margin-top:0;"><i class="fas fa-globe u-primary"></i> <?php echo htmlspecialchars(t('privacy.cloud_lock_title')); ?></h3>
+            <h3 class="u-mt-0"><i class="fas fa-globe u-primary"></i> <?php echo htmlspecialchars(t('privacy.cloud_lock_title')); ?></h3>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.cloud_lock_help')); ?></p>
 
             <form method="post" action="/privacy">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                 <input type="hidden" name="save_compliance" value="1">
 
-                <div class="form-group" style="margin-bottom:16px;">
-                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600;">
+                <div class="form-group u-mb-16">
+                    <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fw-600">
                         <input type="checkbox" name="block_cloud_ai" value="1"<?php echo !empty($settings['block_cloud_ai']) ? ' checked' : ''; ?>>
                         <span><?php echo htmlspecialchars(t('privacy.field_block_cloud_ai')); ?></span>
                     </label>
@@ -386,18 +371,13 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
         </div>
 
         <div class="card">
-            <h3 style="margin-top:0;"><i class="fas fa-headphones u-primary"></i> <?php echo htmlspecialchars(t('privacy.listeners_title')); ?></h3>
+            <h3 class="u-mt-0"><i class="fas fa-headphones u-primary"></i> <?php echo htmlspecialchars(t('privacy.listeners_title')); ?></h3>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.listeners_help')); ?></p>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th><?php echo htmlspecialchars(t('common.username')); ?></th>
-                            <th><?php echo htmlspecialchars(t('common.name')); ?></th>
-                            <th><?php echo htmlspecialchars(t('common.role')); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <?php echo uiTableOpen([
+                htmlspecialchars(t('common.username')),
+                htmlspecialchars(t('common.name')),
+                htmlspecialchars(t('common.role')),
+            ]); ?>
                         <?php foreach ($overview['recording_listeners'] as $u): ?>
                             <tr>
                                 <td><code><?php echo htmlspecialchars((string)$u['username']); ?></code></td>
@@ -405,28 +385,21 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                                 <td><span class="badge badge-secondary"><?php echo htmlspecialchars((string)$u['role']); ?></span></td>
                             </tr>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php echo uiTableClose(); ?>
         </div>
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0;"><i class="fas fa-shield-alt u-primary"></i> <?php echo htmlspecialchars(t('privacy.audit_trail_title')); ?></h3>
+        <h3 class="u-mt-0"><i class="fas fa-shield-alt u-primary"></i> <?php echo htmlspecialchars(t('privacy.audit_trail_title')); ?></h3>
         <?php if (empty($overview['recent_audits'])): ?>
             <p class="u-muted u-fs-13"><?php echo htmlspecialchars(t('privacy.audit_empty')); ?></p>
         <?php else: ?>
-            <div class="table-responsive">
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th><?php echo htmlspecialchars(t('common.date')); ?></th>
-                            <th><?php echo htmlspecialchars(t('common.action')); ?></th>
-                            <th><?php echo htmlspecialchars(t('common.username')); ?></th>
-                            <th><?php echo htmlspecialchars(t('common.details')); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <?php echo uiTableOpen([
+                htmlspecialchars(t('common.date')),
+                htmlspecialchars(t('common.action')),
+                htmlspecialchars(t('common.username')),
+                htmlspecialchars(t('common.details')),
+            ]); ?>
                         <?php foreach ($overview['recent_audits'] as $a): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars((string)($a['created_at'] ?? '')); ?></td>
@@ -435,12 +408,12 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                                 <td class="u-fs-12"><?php echo htmlspecialchars((string)($a['details'] ?? '')); ?></td>
                             </tr>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+                    <?php echo uiTableClose(); ?>
         <?php endif; ?>
     </div>
 </div>
+
+</div><!-- /tabbed-page -->
 
 <script>
 function switchPrivacyTab(tab) {
@@ -452,8 +425,7 @@ function switchPrivacyTab(tab) {
     var btns = document.querySelectorAll('[data-privacy-tab]');
     for (var j = 0; j < btns.length; j++) {
         var active = btns[j].getAttribute('data-privacy-tab') === tab;
-        btns[j].classList.toggle('btn-primary', active);
-        btns[j].classList.toggle('btn-secondary', !active);
+        btns[j].classList.toggle('active', active);
     }
 }
 </script>

@@ -124,7 +124,7 @@ class TrunkService {
 
             $t38_udptl_maxdatagram = max(100, min(2000, intval($data['t38_udptl_maxdatagram'] ?? 400 ?: 400)));
             $fax_detect = isset($data['fax_detect']) ? intval($data['fax_detect']) : 1;
-            $fax_detect_timeout = max(5, min(120, intval($data['fax_detect_timeout'] ?? 30 ?: 30)));
+            $fax_detect_timeout = max(5, min(120, intval($data['fax_detect_timeout'] ?? 10 ?: 10)));
 
             $rtp_symmetric = in_array(strtolower(trim($data['rtp_symmetric'] ?? '')), ['yes', 'no'], true)
                 ? strtolower(trim($data['rtp_symmetric']))

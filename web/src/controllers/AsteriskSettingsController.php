@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/AsteriskSettingsService.php';
 require_once __DIR__ . '/../services/VoicemailPolicy.php';
 require_once __DIR__ . '/../services/RegionSettingsService.php';
+require_once __DIR__ . '/../services/NetworkSettingsService.php';
 
 /**
  * PBX Settings page (/asterisk-settings).
@@ -20,6 +21,7 @@ class AsteriskSettingsController extends BaseController
         $notices = static::handlePost([
             'save_asterisk_settings' => fn() => AsteriskSettingsService::saveSettings($_POST),
             'save_region' => fn() => RegionSettingsService::save($_POST),
+            'save_server' => fn() => NetworkSettingsService::saveServer($_POST),
             'enable_sip_debug' => fn() => !verifyCSRFToken($csrf)
                 ? ['success' => false, 'error' => t('common.invalid_csrf')]
                 : AsteriskSettingsService::enableSipDebug(600),
@@ -52,6 +54,10 @@ class AsteriskSettingsController extends BaseController
             'system_timezone' => RegionSettingsService::systemTimezone(),
             'portal_timezone' => RegionSettingsService::portalTimezone(),
             'tone_country' => RegionSettingsService::toneCountry(),
+            // The addresses Asterisk uses (NetworkSettingsService keeps them; Network settings moves them).
+            'netset' => NetworkSettingsService::settings(),
+            'netPrimary' => NetworkSettingsService::system()['primary'],
+            'localIps' => NetworkSettingsService::localIps(),
         ], ['title' => $page_title] + $notices);
     }
 }

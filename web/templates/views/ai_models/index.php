@@ -16,22 +16,17 @@ foreach ([
 }
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-microchip u-primary"></i> <?php echo t('ai_models.title'); ?>
-        </div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('aiModelsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-            <i class="fas fa-question-circle"></i>
-        </button>
-    </div>
+    <?php echo uiPageHeaderOpen('fa-microchip', t('ai_models.title'), 'aiModelsHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
 
-    <div class="module-help-box" id="aiModelsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('ai_models.help_title'); ?></h4>
+<?php echo uiPageHeaderClose(); ?>
+
+    <?php echo uiHelpBoxOpen('aiModelsHelpBox', t('ai_models.help_title')); ?>
         <?php echo t('ai_models.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div style="padding: 0 20px 20px;">
-        <div class="u-flex-between" style="flex-wrap: wrap; gap: 10px; align-items: center;">
+    <div class="u-card-pad">
+        <div class="u-flex-between u-wrap u-gap-10 u-ai-center">
             <div>
                 <div class="u-strong"><?php echo t('ai_models.runtime'); ?></div>
                 <div class="u-muted u-fs-12"><?php echo t('ai_models.runtime_desc'); ?></div>
@@ -51,7 +46,7 @@ foreach ([
         <div class="card-title"><i class="fas fa-cubes u-primary"></i> <?php echo t('ai_models.models'); ?></div>
         <div class="u-muted u-fs-12" id="aim-disk"></div>
     </div>
-    <div style="padding: 0 20px 20px;" id="aim-models"></div>
+    <div class="u-card-pad" id="aim-models"></div>
 </div>
 
 <div class="card" id="aim-add-card" style="display: none;">
@@ -59,12 +54,12 @@ foreach ([
         <div class="card-title"><i class="fas fa-magnifying-glass u-primary"></i> <?php echo t('ai_models.add_title'); ?></div>
         <button type="button" class="btn btn-secondary btn-sm" id="aim-add-open"><i class="fas fa-list"></i> <?php echo t('ai_models.add_open'); ?></button>
     </div>
-    <div style="padding: 0 20px 20px;">
+    <div class="u-card-pad">
         <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_models.add_help'); ?></p>
         <div id="aim-add-body" style="display: none;">
-            <div class="u-flex-gap" style="flex-wrap: wrap;">
-                <select id="aim-add-lang" class="form-control" style="max-width: 260px;"></select>
-                <select id="aim-add-quality" class="form-control" style="max-width: 180px;">
+            <div class="u-flex-gap u-wrap">
+                <select id="aim-add-lang" class="form-control u-maxw-260"></select>
+                <select id="aim-add-quality" class="form-control u-maxw-180">
                     <option value=""><?php echo t('ai_models.add_all_qualities'); ?></option>
                     <option value="x_low">x_low</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option>
                 </select>
@@ -78,12 +73,12 @@ foreach ([
     <div class="card-header">
         <div class="card-title"><i class="fas fa-headphones u-primary"></i> <?php echo t('ai_models.try_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
+    <div class="u-card-pad">
         <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_models.try_help'); ?></p>
         <textarea id="aim-try-text" class="form-control" rows="2" maxlength="1000"><?php echo htmlspecialchars(t('ai_models.try_default_text')); ?></textarea>
-        <div class="u-flex-gap u-mt-10" style="flex-wrap: wrap; align-items: center;">
-            <select id="aim-try-model" class="form-control" style="max-width: 320px;"></select>
-            <label class="u-fs-12"><?php echo t('ai_models.try_speed'); ?> <input type="number" id="aim-try-speed" class="form-control" value="1" min="0.5" max="2" step="0.1" style="width: 80px; display: inline-block;"></label>
+        <div class="u-flex-gap u-mt-10 u-wrap u-ai-center">
+            <select id="aim-try-model" class="form-control u-maxw-320"></select>
+            <label class="u-fs-12"><?php echo t('ai_models.try_speed'); ?> <input type="number" id="aim-try-speed" class="form-control u-w-80" value="1" min="0.5" max="2" step="0.1" style="display: inline-block;"></label>
             <button type="button" class="btn btn-primary" id="aim-try-go"><i class="fas fa-play"></i> <?php echo t('ai_models.try_play'); ?></button>
         </div>
         <div id="aim-try-results" class="u-mt-10"></div>
@@ -94,15 +89,15 @@ foreach ([
     <div class="card-header">
         <div class="card-title"><i class="fas fa-microphone u-primary"></i> <?php echo t('ai_models.stt_title'); ?></div>
     </div>
-    <div style="padding: 0 20px 20px;">
+    <div class="u-card-pad">
         <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_models.stt_help'); ?></p>
-        <div class="u-flex-gap" style="flex-wrap: wrap; align-items: center;">
-            <select id="aim-stt-model" class="form-control" style="max-width: 320px;"></select>
-            <select id="aim-stt-lang" class="form-control" style="max-width: 130px;" title="<?php echo htmlspecialchars(t('ai_models.stt_lang')); ?>">
+        <div class="u-flex-gap u-wrap u-ai-center">
+            <select id="aim-stt-model" class="form-control u-maxw-320"></select>
+            <select id="aim-stt-lang" class="form-control u-maxw-130" title="<?php echo htmlspecialchars(t('ai_models.stt_lang')); ?>">
                 <option value="tr">Türkçe</option><option value="de">Deutsch</option><option value="en">English</option>
             </select>
             <button type="button" class="btn btn-primary" id="aim-stt-rec"><i class="fas fa-microphone"></i> <span><?php echo t('ai_models.stt_record'); ?></span></button>
-            <label class="btn btn-secondary" style="margin: 0;"><i class="fas fa-file-audio"></i> <?php echo t('ai_models.stt_file'); ?>
+            <label class="btn btn-secondary u-m-0"><i class="fas fa-file-audio"></i> <?php echo t('ai_models.stt_file'); ?>
                 <input type="file" id="aim-stt-file" accept=".wav,audio/wav" style="display: none;"></label>
         </div>
         <div id="aim-stt-results" class="u-mt-10"></div>

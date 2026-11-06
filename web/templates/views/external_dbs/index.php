@@ -9,29 +9,26 @@
 $csrf = getCSRFToken();
 ?>
 <div class="card u-mb-20">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-database u-primary"></i> <?php echo htmlspecialchars(t('external_dbs.page_title', 'External Databases')); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($connections); ?></span>
-        </div>
-        <div class="u-flex-center" style="gap: 8px;">
+    <?php echo uiPageHeaderOpen('fa-database', htmlspecialchars(t('external_dbs.page_title', 'External Databases')), 'externalDbsHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($connections); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+<div class="u-flex-center u-gap-8">
             <button type="button" class="btn btn-primary btn-sm" onclick="showNewDbForm()">
                 <i class="fas fa-plus-circle"></i> <?php echo htmlspecialchars(t('external_dbs.btn_new', 'New Connection')); ?>
             </button>
         </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <div class="module-help-box" style="display: block; margin: 16px 20px 20px;">
-        <h4><i class="fas fa-info-circle"></i> <?php echo htmlspecialchars(t('external_dbs.help_title', 'External Database Connections')); ?></h4>
-        <p style="margin: 4px 0 0;"><?php echo htmlspecialchars(t('external_dbs.help_body', 'Securely store encrypted credentials for external MySQL/MariaDB and PostgreSQL databases. Used by IVR Data Steps for caller lookups and routing, as well as by custom plugins.')); ?></p>
+    <?php echo uiHelpBoxOpen('externalDbsHelpBox', htmlspecialchars(t('external_dbs.help_title', 'External Database Connections'))); ?>
+        <p class="u-m-4-0-0"><?php echo htmlspecialchars(t('external_dbs.help_body', 'Securely store encrypted credentials for external MySQL/MariaDB and PostgreSQL databases. Used by IVR Data Steps for caller lookups and routing, as well as by custom plugins.')); ?></p>
         <div style="margin-top: 8px; font-weight: 600; color: var(--warning, #d97706);">
             <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars(t('external_dbs.read_only_advice', 'Security Recommendation: Always configure dedicated read-only user accounts on your external database servers.')); ?>
         </div>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Create / Edit Form Box -->
     <div id="dbFormBox" style="display: none; padding: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--card-bg, #fff);">
-        <h4 id="dbFormTitle" style="margin-top: 0; margin-bottom: 16px;">
+        <h4 id="dbFormTitle" class="u-mt-0 u-mb-16">
             <i class="fas fa-plus"></i> <?php echo htmlspecialchars(t('external_dbs.btn_new', 'New Connection')); ?>
         </h4>
         <form method="POST" id="dbForm">
@@ -39,7 +36,7 @@ $csrf = getCSRFToken();
             <input type="hidden" name="action" value="save_connection">
             <input type="hidden" name="id" id="db_id" value="">
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="db_name"><strong><?php echo htmlspecialchars(t('external_dbs.name', 'Connection Name')); ?> *</strong></label>
                     <input type="text" name="name" id="db_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('external_dbs.ph_name')); ?>">
@@ -54,7 +51,7 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="db_host"><strong><?php echo htmlspecialchars(t('external_dbs.host', 'Host / IP Address')); ?> *</strong></label>
                     <input type="text" name="host" id="db_host" class="form-control" required value="" placeholder="db.example.com">
@@ -65,7 +62,7 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="db_database_name"><strong><?php echo htmlspecialchars(t('external_dbs.database_name', 'Database Name')); ?> *</strong></label>
                     <input type="text" name="database_name" id="db_database_name" class="form-control" required placeholder="crm_db">
@@ -76,7 +73,7 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="db_password"><strong><?php echo htmlspecialchars(t('external_dbs.password', 'Password')); ?></strong></label>
                     <input type="password" name="password" id="db_password" class="form-control" autocomplete="new-password" placeholder="<?php echo htmlspecialchars(t('external_dbs.password_keep')); ?>">
@@ -87,14 +84,14 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div class="u-mb-16">
                 <label class="u-check-label u-fs-13">
                     <input type="checkbox" name="is_active" id="db_active" value="1" checked class="u-accent">
                     <?php echo htmlspecialchars(t('common.active', 'Active')); ?>
                 </label>
             </div>
 
-            <div class="u-flex-gap" style="justify-content: space-between; align-items: center;">
+            <div class="u-flex-gap u-jc-space-between u-ai-center">
                 <div>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="testFormConnection()">
                         <i class="fas fa-plug"></i> <?php echo htmlspecialchars(t('external_dbs.btn_test', 'Test Connection')); ?>
@@ -114,23 +111,18 @@ $csrf = getCSRFToken();
     </div>
 
     <!-- Connection List Table -->
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th><?php echo htmlspecialchars(t('external_dbs.name', 'Connection')); ?></th>
-                    <th><?php echo htmlspecialchars(t('external_dbs.driver', 'Driver')); ?></th>
-                    <th><?php echo htmlspecialchars(t('external_dbs.target', 'Target')); ?></th>
-                    <th><?php echo htmlspecialchars(t('external_dbs.status', 'Test Status')); ?></th>
-                    <th><?php echo htmlspecialchars(t('common.status', 'Status')); ?></th>
-                    <th class="text-right"><?php echo htmlspecialchars(t('common.actions', 'Actions')); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        htmlspecialchars(t('external_dbs.name', 'Connection')),
+        htmlspecialchars(t('external_dbs.driver', 'Driver')),
+        htmlspecialchars(t('external_dbs.target', 'Target')),
+        htmlspecialchars(t('external_dbs.status', 'Test Status')),
+        htmlspecialchars(t('common.status', 'Status')),
+        ['label' => htmlspecialchars(t('common.actions', 'Actions')), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($connections)): ?>
                     <tr>
-                        <td colspan="6" class="text-center u-muted" style="padding: 30px;">
-                            <i class="fas fa-database fa-2x u-mb-8" style="display: block; opacity: 0.5;"></i>
+                        <td colspan="6" class="text-center u-muted u-p-30">
+                            <i class="fas fa-database fa-2x u-mb-8 u-opacity-0-5" style="display: block;"></i>
                             <?php echo htmlspecialchars(t('external_dbs.empty', 'No external database connections configured yet.')); ?>
                         </td>
                     </tr>
@@ -168,17 +160,17 @@ $csrf = getCSRFToken();
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="testSavedConnection(<?php echo (int)$c['id']; ?>)" title="<?php echo htmlspecialchars(t('external_dbs.btn_test', 'Test Connection')); ?>">
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="testSavedConnection(<?php echo (int)$c['id']; ?>)" title="<?php echo htmlspecialchars(t('external_dbs.btn_test', 'Test Connection')); ?>">
                                     <i class="fas fa-plug"></i>
                                 </button>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick='editDb(<?php echo json_encode($c, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='editDb(<?php echo json_encode($c, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm(<?php echo jsArg(t('external_dbs.confirm_delete', 'Are you sure you want to delete this database connection?')); ?>);">
+                                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('external_dbs.confirm_delete', 'Are you sure you want to delete this database connection?')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                                     <input type="hidden" name="action" value="delete_connection">
                                     <input type="hidden" name="id" value="<?php echo (int)$c['id']; ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
+                                    <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
@@ -186,9 +178,7 @@ $csrf = getCSRFToken();
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <script>

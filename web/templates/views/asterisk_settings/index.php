@@ -3,6 +3,8 @@
     <input type="hidden" name="save_asterisk_settings" value="1">
 
     <!-- Settings Single-Line Fixed Tabs -->
+    <div class="card tabbed-page">
+        <?php echo uiPageHeader('fa-sliders-h', t('asterisk_settings.title')); ?>
     <div class="settings-tabs">
         <button type="button" class="settings-tab-btn active" data-tab="pjsip" onclick="switchSettingsTab('pjsip', this)">
             <i class="fas fa-network-wired"></i> <?php echo t('asterisk_settings.tab_pjsip'); ?>
@@ -43,16 +45,12 @@
             <div class="card-title">
                 <i class="fas fa-network-wired u-primary"></i> <?php echo t('asterisk_settings.section1_title'); ?>
             </div>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('astHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+            <?php echo uiHelpButton('astHelpBox'); ?>
         </div>
 
-        <!-- Collapsible Help Box -->
-        <div class="module-help-box" id="astHelpBox">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.help_title'); ?></h4>
+                <?php echo uiHelpBoxOpen('astHelpBox', t('asterisk_settings.help_title')); ?>
             <?php echo t('asterisk_settings.help_body'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
         <p class="u-muted u-fs-12"><i class="fas fa-route"></i> <?php echo t('asterisk_settings.ports_moved'); ?> <a href="/transports"><?php echo t('transports.title'); ?></a></p>
 
@@ -75,13 +73,10 @@
             <small class="u-hint"><?php echo t('asterisk_settings.tls_domain_help'); ?></small>
         </div>
 
-        <!-- The public address and the local networks are on Network -> Network settings. -->
-        <div class="alert alert-info u-fs-12 u-mt-12"><i class="fas fa-network-wired"></i> <?php echo t('netset.moved_asterisk'); ?>
-            <a href="/network-settings"><?php echo t('sidebar.item_network_settings'); ?></a></div>
 
         <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_codecs'); ?></label>
-            <div style="display: flex; gap: 16px; margin-top: 6px;">
+            <div class="u-d-flex u-gap-16 u-mt-6">
                 <label class="u-check-label-6">
                     <input type="checkbox" name="codecs[]" value="opus" <?php echo in_array('opus', $active_codecs) ? 'checked' : ''; ?>> Opus
                 </label>
@@ -101,7 +96,7 @@
 
         <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_wired_codecs'); ?></label>
-            <div style="display: flex; gap: 16px; margin-top: 6px;">
+            <div class="u-d-flex u-gap-16 u-mt-6">
                 <label class="u-check-label-6">
                     <input type="checkbox" name="wired_codecs[]" value="opus" <?php echo in_array('opus', $active_wired_codecs) ? 'checked' : ''; ?>> Opus
                 </label>
@@ -145,7 +140,7 @@
             </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-top: 12px;">
+        <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16 u-mt-12">
             <div class="form-group">
                 <label class="form-label form-label-help">
                     <span><?php echo t('asterisk_settings.field_qualify'); ?></span>
@@ -174,6 +169,43 @@
             </div>
         </div>
     </div>
+    <!-- The addresses Asterisk uses; their own form (server-address-form) below the page form. -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-network-wired u-primary"></i> <?php echo t('netcfg.pbx_addresses_title'); ?></div>
+        </div>
+        <div class="u-card-pad">
+            <div class="u-grid-2">
+                <?php if ($netset['server_ip'] !== ''): ?>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('netset.server_ip'); ?></label>
+                    <input form="server-address-form" type="text" name="server_ip" class="form-control" list="pbxLocalIps" maxlength="15" value="<?php echo htmlspecialchars((string) $netset['server_ip']); ?>" placeholder="<?php echo htmlspecialchars((string) $netPrimary); ?>">
+                    <small class="u-hint"><?php echo t('netset.server_ip_help'); ?></small>
+                </div>
+                <?php else: ?><input form="server-address-form" type="hidden" name="server_ip" value=""><?php endif; ?>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('asterisk_settings.field_external_ip'); ?></label>
+                    <input form="server-address-form" type="text" name="pjsip_external_ip" class="form-control" maxlength="253" value="<?php echo htmlspecialchars((string) $netset['pjsip_external_ip']); ?>" placeholder="203.0.113.10">
+                    <small class="u-hint"><?php echo t('netset.public_help'); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('netset.field_media_ip'); ?></label>
+                    <input form="server-address-form" type="text" name="pjsip_external_media_ip" class="form-control" maxlength="253" value="<?php echo htmlspecialchars((string) $netset['pjsip_external_media_ip']); ?>">
+                    <small class="u-hint"><?php echo t('netset.media_ip_help'); ?></small>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_local_net'); ?></label>
+                <input form="server-address-form" type="text" name="pjsip_local_net" class="form-control" maxlength="600" value="<?php echo htmlspecialchars((string) $netset['pjsip_local_net']); ?>" placeholder="192.168.1.0/24,10.0.0.0/24">
+                <small class="u-hint"><?php echo t('asterisk_settings.local_net_help'); ?></small>
+            </div>
+            <div class="form-actions u-ai-center">
+                <span class="u-muted u-fs-12"> · <?php echo t('netset.apply_note'); ?></span>
+                <button type="submit" form="server-address-form" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+            </div>
+        </div>
+    </div>
+
     </div>
 
     <!-- SECTION: RTP (media) settings -->
@@ -185,12 +217,11 @@
             </div>
         </div>
 
-        <div class="module-help-box" style="display: block;">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <?php echo t('asterisk_settings.rtp_help_body'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16">
             <div class="form-group">
                 <label class="form-label form-label-help">
                     <span><?php echo t('asterisk_settings.field_rtp_start'); ?></span>
@@ -234,12 +265,11 @@
             </div>
         </div>
 
-        <div class="module-help-box" style="display: block;">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <?php echo t('asterisk_settings.udptl_help_body'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16">
             <div class="form-group">
                 <label class="form-label form-label-help">
                     <span><?php echo t('asterisk_settings.field_udptl_start'); ?></span>
@@ -285,11 +315,10 @@
         <div class="card-header">
             <div class="card-title"><i class="fas fa-comment-dots u-primary"></i> <?php echo t('asterisk_settings.status_prompt_title'); ?></div>
         </div>
-        <div class="module-help-box" style="display: block;">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <p><?php echo t('asterisk_settings.status_prompt_help'); ?></p>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+<?php echo uiHelpBoxClose(); ?>
+        <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16">
             <?php foreach (['busy', 'noanswer', 'unavail'] as $spCase): ?>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('asterisk_settings.status_prompt_' . $spCase); ?></label>
@@ -309,10 +338,9 @@
             </div>
         </div>
 
-        <div class="module-help-box">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <?php echo t('asterisk_settings.ring_help'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
         <div class="u-grid-2">
             <div class="form-group">
@@ -336,7 +364,7 @@
             </div>
         </div>
         <?php if (empty($ring_sound_options)): ?>
-            <small style="color: var(--text-muted); display: block; margin-top: 8px;"><?php echo t('asterisk_settings.no_sounds_uploaded'); ?> <a href="/sounds"><?php echo t('asterisk_settings.sounds_page_link'); ?></a> <?php echo t('asterisk_settings.sounds_page_link_suffix'); ?></small>
+            <small class="u-muted u-mt-8" style="display: block;"><?php echo t('asterisk_settings.no_sounds_uploaded'); ?> <a href="/sounds"><?php echo t('asterisk_settings.sounds_page_link'); ?></a> <?php echo t('asterisk_settings.sounds_page_link_suffix'); ?></small>
         <?php endif; ?>
     </div>
     </div>
@@ -350,12 +378,11 @@
             </div>
         </div>
 
-        <div class="module-help-box">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <?php echo t('asterisk_settings.video_calls_help'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;">
+        <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_video_enabled'); ?></label>
                 <select name="video_calls_enabled" class="form-control">
@@ -403,12 +430,11 @@
             </div>
         </div>
 
-        <div class="module-help-box">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <?php echo t('asterisk_settings.lang_help'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div class="form-group" style="max-width: 320px;">
+        <div class="form-group u-maxw-320">
             <label class="form-label"><?php echo t('asterisk_settings.field_default_lang'); ?></label>
             <select name="system_default_language" class="form-control">
                 <?php foreach (getAvailableLanguages() as $lang_code): ?>
@@ -425,14 +451,13 @@
         <div class="card-header">
             <div class="card-title"><i class="fas fa-globe u-primary"></i> <?php echo t('region.title'); ?></div>
         </div>
-        <div class="module-help-box">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <?php echo t('region.help'); ?>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
         <?php if ($system_timezone !== $portal_timezone): ?>
             <div class="alert alert-warning"><i class="fas fa-exclamation-triangle"></i> <?php echo sprintf(t('region.mismatch'), htmlspecialchars($system_timezone), htmlspecialchars($portal_timezone)); ?></div>
         <?php endif; ?>
-        <div class="form-group" style="max-width: 320px;">
+        <div class="form-group u-maxw-320">
             <label class="form-label"><?php echo t('region.timezone'); ?></label>
             <select name="system_timezone" form="region-form" class="form-control">
                 <?php foreach (DateTimeZone::listIdentifiers() as $zone): ?>
@@ -440,7 +465,7 @@
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="form-group" style="max-width: 320px;">
+        <div class="form-group u-maxw-320">
             <label class="form-label"><?php echo t('region.tones'); ?></label>
             <select name="tone_country" form="region-form" class="form-control">
                 <?php foreach (RegionSettingsService::TONES as $code => $name): ?>
@@ -450,7 +475,7 @@
             <small class="u-hint"><?php echo t('region.tones_help'); ?></small>
         </div>
         <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>
-            <label class="u-check-label u-fs-12" style="display: block; margin-bottom: 12px;">
+            <label class="u-check-label u-fs-12 u-mb-12" style="display: block;">
                 <input type="checkbox" name="end_calls" value="1" form="region-form" class="u-accent"> <?php echo t('region.end_calls'); ?>
             </label>
             <button type="submit" form="region-form" class="btn btn-primary" onclick="return confirm(<?php echo jsArg(t('region.confirm')); ?>);">
@@ -469,12 +494,11 @@
             </div>
         </div>
 
-        <div class="module-help-box" style="display: block;">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <p><?php echo t('asterisk_settings.amd_help_body', 'Global timing and word-detection parameters used by Asterisk\'s <code>AMD()</code> application during automated outbound campaigns (Auto Dialer). Times are in milliseconds (ms).'); ?></p>
-        </div>
+<?php echo uiHelpBoxClose(); ?>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+        <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_amd_initial_silence', 'Initial Silence (ms)'); ?></label>
                 <input type="number" name="amd_initial_silence" class="form-control" value="<?php echo htmlspecialchars($s['amd_initial_silence'] ?? '2500'); ?>" min="250" max="15000" required>
@@ -532,14 +556,13 @@
         <div class="card-header">
             <div class="card-title"><i class="fas fa-voicemail u-primary"></i> <?php echo t('asterisk_settings.vm_title'); ?></div>
         </div>
-        <div class="module-help-box" style="display: block;">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <p><?php echo t('asterisk_settings.vm_help'); ?></p>
             <?php if (($vm_weak_pins ?? 0) > 0): ?>
                 <p class="u-warning"><strong><?php echo htmlspecialchars(sprintf(t('asterisk_settings.vm_weak_pins'), (int) $vm_weak_pins)); ?></strong></p>
             <?php endif; ?>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+<?php echo uiHelpBoxClose(); ?>
+        <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16">
             <?php foreach (VoicemailPolicy::LIMITS as $vmKey => [$vmDef, $vmMin, $vmMax]): ?>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('asterisk_settings.field_' . $vmKey); ?></label>
@@ -566,11 +589,10 @@
                 <i class="fas fa-satellite-dish u-primary"></i> <?php echo t('asterisk_settings.signaling_title'); ?>
             </div>
         </div>
-        <div class="module-help-box" style="display: block;">
-            <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.info_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
             <p><?php echo t('asterisk_settings.signaling_help'); ?></p>
-        </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+<?php echo uiHelpBoxClose(); ?>
+        <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16">
             <div class="form-group">
                 <label class="form-label"><?php echo t('asterisk_settings.field_signaling_capture'); ?></label>
                 <select name="signaling_capture" class="form-control">
@@ -596,16 +618,15 @@
                     <i class="fas fa-sliders-h u-primary"></i> <?php echo t('asterisk_settings.tuning_title'); ?>
                 </div>
             </div>
-            <div class="module-help-box" style="display: block;">
-                <h4><i class="fas fa-info-circle"></i> <?php echo t('asterisk_settings.tuning_help_title'); ?></h4>
+            <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.tuning_help_title')); ?>
                 <p><?php echo t('asterisk_settings.tuning_help_body'); ?></p>
-            </div>
+<?php echo uiHelpBoxClose(); ?>
 
             <!-- SIP Timers & Limits -->
-            <h4 style="font-size: 14px; font-weight: 700; margin: 16px 0 12px; color: var(--text-main);">
+            <h4 class="u-fs-14 u-fw-700 u-m-16-0-12 u-text-main">
                 <i class="fas fa-stopwatch u-primary"></i> <?php echo t('asterisk_settings.sec_sip_timers'); ?>
             </h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-200-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('asterisk_settings.field_max_forwards'); ?></label>
                     <input type="number" name="pjsip_max_forwards" class="form-control" value="<?php echo htmlspecialchars($s['pjsip_max_forwards'] ?? '70'); ?>" min="1" max="255" required>
@@ -624,10 +645,10 @@
             </div>
 
             <!-- Jitter Buffer -->
-            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+            <h4 class="u-fs-14 u-fw-700 u-m-24-0-12 u-text-main">
                 <i class="fas fa-wave-square u-primary"></i> <?php echo t('asterisk_settings.sec_jitter_buffer'); ?>
             </h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-200-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('asterisk_settings.field_jitterbuffer_enabled'); ?></label>
                     <select name="jitterbuffer_enabled" class="form-control">
@@ -649,10 +670,10 @@
             </div>
 
             <!-- Night Restart Window -->
-            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+            <h4 class="u-fs-14 u-fw-700 u-m-24-0-12 u-text-main">
                 <i class="fas fa-moon u-primary"></i> <?php echo t('asterisk_settings.sec_night_restart'); ?>
             </h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-200-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('asterisk_settings.field_night_restart_enabled'); ?></label>
                     <select name="night_restart_enabled" class="form-control">
@@ -674,10 +695,10 @@
             </div>
 
             <!-- Security & ACL Threshold -->
-            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+            <h4 class="u-fs-14 u-fw-700 u-m-24-0-12 u-text-main">
                 <i class="fas fa-shield-alt u-primary"></i> <?php echo t('asterisk_settings.sec_acl_security'); ?>
             </h4>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-240-1fr u-gap-16">
                 <div class="form-group">
                     <label class="form-label"><?php echo t('asterisk_settings.field_failed_reg_threshold'); ?></label>
                     <input type="number" name="failed_reg_threshold" class="form-control" value="<?php echo htmlspecialchars($s['failed_reg_threshold'] ?? '10'); ?>" min="1" max="1000" required>
@@ -686,10 +707,10 @@
             </div>
 
             <!-- Diagnostics & Operations (Buttons) -->
-            <h4 style="font-size: 14px; font-weight: 700; margin: 24px 0 12px; color: var(--text-main);">
+            <h4 class="u-fs-14 u-fw-700 u-m-24-0-12 u-text-main">
                 <i class="fas fa-tools u-primary"></i> <?php echo t('asterisk_settings.sec_diagnostics'); ?>
             </h4>
-            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: center; background: var(--bg-card); padding: 16px; border: 1px solid var(--border-color); border-radius: 6px;">
+            <div class="u-d-flex u-wrap u-gap-16 u-ai-center u-bg-bg-card u-p-16 u-bd-1-solid-border-color u-r-8">
                 <div>
                     <?php
                     $sipDebugUntil = (int)($s['sip_debug_until'] ?? 0);
@@ -697,7 +718,7 @@
                     $remainingSec = $isDebugActive ? ($sipDebugUntil - time()) : 0;
                     ?>
                     <?php if ($isDebugActive): ?>
-                        <span class="badge badge-success u-mr-8" style="padding: 8px 12px;">
+                        <span class="badge badge-success u-mr-8 u-p-8-12">
                             <i class="fas fa-check-circle"></i> <?php echo sprintf(t('asterisk_settings.sip_debug_active'), ceil($remainingSec / 60)); ?>
                         </span>
                         <button type="submit" name="disable_sip_debug" value="1" class="btn btn-warning btn-sm">
@@ -708,25 +729,34 @@
                             <i class="fas fa-bug"></i> <?php echo t('asterisk_settings.btn_start_sip_debug'); ?>
                         </button>
                     <?php endif; ?>
-                    <small class="u-hint" style="display: block; margin-top: 4px;"><?php echo t('asterisk_settings.sip_debug_desc'); ?></small>
+                    <small class="u-hint u-mt-4" style="display: block;"><?php echo t('asterisk_settings.sip_debug_desc'); ?></small>
                 </div>
 
-                <div style="border-left: 1px solid var(--border-color); padding-left: 16px;">
+                <div class="u-border-left-1-solid-border-color u-pl-16">
                     <button type="submit" name="rotate_logs" value="1" class="btn btn-secondary btn-sm">
                         <i class="fas fa-sync-alt"></i> <?php echo t('asterisk_settings.btn_rotate_logs'); ?>
                     </button>
-                    <small class="u-hint" style="display: block; margin-top: 4px;"><?php echo t('asterisk_settings.rotate_logs_desc'); ?></small>
+                    <small class="u-hint u-mt-4" style="display: block;"><?php echo t('asterisk_settings.rotate_logs_desc'); ?></small>
                 </div>
             </div>
         </div>
     </div>
 
     <?php if (hasModulePermission('asterisk_settings', 'edit')): ?>
-        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; font-size: 15px; font-weight: 700;" title="<?php echo t('asterisk_settings.save_all_tooltip'); ?>">
+        <div class="form-actions"><button type="submit" class="btn btn-primary" title="<?php echo t('asterisk_settings.save_all_tooltip'); ?>">
             <i class="fas fa-save"></i> <?php echo t('common.save'); ?>
-        </button>
+        </button></div>
     <?php endif; ?>
+    </div>
 </form>
+
+<form id="server-address-form" method="POST" autocomplete="off">
+    <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+    <input type="hidden" name="save_server" value="1">
+</form>
+<datalist id="pbxLocalIps">
+    <?php foreach ($localIps as $ip): ?><option value="<?php echo htmlspecialchars((string) $ip); ?>"><?php endforeach; ?>
+</datalist>
 
 <form id="region-form" method="POST" autocomplete="off">
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">

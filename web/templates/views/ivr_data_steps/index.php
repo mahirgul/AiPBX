@@ -9,29 +9,24 @@
 $csrf = getCSRFToken();
 ?>
 <div class="card u-mb-20">
-    <div class="card-header">
-        <div class="card-title">
-            <a href="/ivrs" class="btn btn-secondary btn-sm u-mr-8" title="<?php echo htmlspecialchars(t('common.back', 'Back to IVRs')); ?>">
+    <?php echo uiPageHeaderOpen('fa-database', htmlspecialchars(t('ivr_data.page_title', 'IVR Data Steps')), 'ivrDataStepsHelpBox'); ?>
+<span class="badge badge-secondary"><?php echo count($steps); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+<a href="/ivrs" class="btn btn-icon btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('common.back', 'Back to IVRs')); ?>">
                 <i class="fas fa-arrow-left"></i>
             </a>
-            <i class="fas fa-database u-primary"></i> <?php echo htmlspecialchars(t('ivr_data.page_title', 'IVR Data Steps')); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($steps); ?></span>
-        </div>
-        <div class="u-flex-center" style="gap: 8px;">
-            <button type="button" class="btn btn-primary btn-sm" onclick="showNewStepForm()">
+<button type="button" class="btn btn-primary btn-sm" onclick="showNewStepForm()">
                 <i class="fas fa-plus-circle"></i> <?php echo htmlspecialchars(t('ivr_data.btn_new', 'New Data Step')); ?>
             </button>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <div class="module-help-box" style="display: block; margin: 16px 20px 20px;">
-        <h4><i class="fas fa-info-circle"></i> <?php echo htmlspecialchars(t('ivr_data.help_title', 'Interactive Data Steps in IVRs')); ?></h4>
-        <p style="margin: 4px 0 0;"><?php echo htmlspecialchars(t('ivr_data.help_body', 'Run a fast database query or HTTP request during an incoming call to look up caller data. Results are stored in Asterisk channel variables, and calls branch seamlessly to Found, Not Found, or Timeout destinations.')); ?></p>
-    </div>
+    <?php echo uiHelpBoxOpen('ivrDataStepsHelpBox', htmlspecialchars(t('ivr_data.help_title', 'Interactive Data Steps in IVRs'))); ?>
+        <p class="u-m-4-0-0"><?php echo htmlspecialchars(t('ivr_data.help_body', 'Run a fast database query or HTTP request during an incoming call to look up caller data. Results are stored in Asterisk channel variables, and calls branch seamlessly to Found, Not Found, or Timeout destinations.')); ?></p>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Create / Edit Form Box -->
     <div id="stepFormBox" style="display: none; padding: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--card-bg, #fff);">
-        <h4 id="stepFormTitle" style="margin-top: 0; margin-bottom: 16px;">
+        <h4 id="stepFormTitle" class="u-mt-0 u-mb-16">
             <i class="fas fa-plus"></i> <?php echo htmlspecialchars(t('ivr_data.btn_new', 'New Data Step')); ?>
         </h4>
         <form method="POST" id="stepForm">
@@ -39,7 +34,7 @@ $csrf = getCSRFToken();
             <input type="hidden" name="action" value="save_step">
             <input type="hidden" name="id" id="step_id" value="">
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="step_name"><strong><?php echo htmlspecialchars(t('ivr_data.name', 'Step Name')); ?> *</strong></label>
                     <input type="text" name="name" id="step_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_name')); ?>">
@@ -50,7 +45,7 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="step_input_source"><strong><?php echo htmlspecialchars(t('ivr_data.input_source', 'Input Source')); ?></strong></label>
                     <select name="input_source" id="step_input_source" class="form-control" onchange="toggleInputFields(this.value)">
@@ -68,14 +63,14 @@ $csrf = getCSRFToken();
             </div>
 
             <!-- DTMF Specific Inputs -->
-            <div id="dtmfBox" class="u-grid-2" style="gap: 16px; margin-bottom: 16px;">
+            <div id="dtmfBox" class="u-grid-2 u-gap-16 u-mb-16">
                 <div>
                     <label class="form-label" for="step_prompt"><strong><?php echo htmlspecialchars(t('ivr_data.prompt_audio', 'Audio Prompt (Optional)')); ?></strong></label>
                     <input type="text" name="prompt_file" id="step_prompt" class="form-control" placeholder="custom/enter_customer_num">
                 </div>
                 <div>
                     <label class="form-label"><strong><?php echo htmlspecialchars(t('ivr_data.dtmf_limits', 'Input Limits')); ?></strong></label>
-                    <div style="display: flex; gap: 8px;">
+                    <div class="u-d-flex u-gap-8">
                         <input type="number" name="max_digits" id="step_max_digits" class="form-control" value="10" min="1" max="30" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_max_digits')); ?>">
                         <input type="number" name="input_timeout_sec" id="step_input_timeout" class="form-control" value="5" min="1" max="30" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_timeout')); ?>">
                     </div>
@@ -83,8 +78,8 @@ $csrf = getCSRFToken();
             </div>
 
             <!-- Database Specific Inputs -->
-            <div id="dbSourceBox" style="margin-bottom: 16px;">
-                <div style="margin-bottom: 12px;">
+            <div id="dbSourceBox" class="u-mb-16">
+                <div class="u-mb-12">
                     <label class="form-label" for="step_db_id"><strong><?php echo htmlspecialchars(t('ivr_data.external_db', 'Database Connection')); ?> *</strong></label>
                     <select name="external_db_id" id="step_db_id" class="form-control">
                         <option value="">— Select Database Connection —</option>
@@ -97,18 +92,18 @@ $csrf = getCSRFToken();
                 </div>
                 <div>
                     <label class="form-label" for="step_query_sql"><strong><?php echo htmlspecialchars(t('ivr_data.query_sql', 'SQL Query (Read-Only SELECT)')); ?> *</strong></label>
-                    <textarea name="query_sql" id="step_query_sql" class="form-control" rows="3" style="font-family: monospace;" placeholder="SELECT is_vip FROM customers WHERE phone = :input OR phone = :caller_id LIMIT 1"></textarea>
-                    <div class="u-muted u-fs-11" style="margin-top: 4px;"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>:input</code>, <code>:caller_id</code></div>
+                    <textarea name="query_sql" id="step_query_sql" class="form-control u-mono" rows="3" placeholder="SELECT is_vip FROM customers WHERE phone = :input OR phone = :caller_id LIMIT 1"></textarea>
+                    <div class="u-muted u-fs-11 u-mt-4"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>:input</code>, <code>:caller_id</code></div>
                 </div>
             </div>
 
             <!-- HTTP Specific Inputs -->
-            <div id="httpSourceBox" style="display: none; margin-bottom: 16px;">
-                <div class="u-grid-2" style="gap: 16px;">
+            <div class="u-mb-16" id="httpSourceBox" style="display: none;">
+                <div class="u-grid-2 u-gap-16">
                     <div>
                         <label class="form-label" for="step_http_url"><strong><?php echo htmlspecialchars(t('ivr_data.http_url', 'HTTP API URL')); ?> *</strong></label>
                         <input type="url" name="http_url" id="step_http_url" class="form-control" placeholder="https://api.example.com/customers/lookup?phone={input}">
-                        <div class="u-muted u-fs-11" style="margin-top: 4px;"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>{input}</code>, <code>{caller_id}</code></div>
+                        <div class="u-muted u-fs-11 u-mt-4"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>{input}</code>, <code>{caller_id}</code></div>
                     </div>
                     <div>
                         <label class="form-label" for="step_http_method"><strong><?php echo htmlspecialchars(t('ivr_data.http_method', 'HTTP Method')); ?></strong></label>
@@ -122,8 +117,8 @@ $csrf = getCSRFToken();
 
             <!-- Branches -->
             <div style="margin-bottom: 16px; padding: 14px; background: var(--bg-subtle, rgba(2,132,199,0.04)); border: 1px solid var(--border-color); border-radius: var(--radius-sm, 6px);">
-                <div style="font-weight: 700; margin-bottom: 12px;"><i class="fas fa-code-branch u-primary"></i> <?php echo htmlspecialchars(t('ivr_data.branches', 'Call Routing Branches')); ?></div>
-                <div class="u-grid-3" style="gap: 16px;">
+                <div class="u-fw-700 u-mb-12"><i class="fas fa-code-branch u-primary"></i> <?php echo htmlspecialchars(t('ivr_data.branches', 'Call Routing Branches')); ?></div>
+                <div class="u-grid-3 u-gap-16">
                     <div>
                         <label class="form-label"><strong><i class="fas fa-check text-success"></i> <?php echo htmlspecialchars(t('ivr_data.branch_found', 'Found (Match)')); ?></strong></label>
                         <input type="text" name="found_dest_type" id="step_found_dest_type" class="form-control form-control-sm u-mb-4" placeholder="dest_type (e.g. queue)">
@@ -142,14 +137,14 @@ $csrf = getCSRFToken();
                 </div>
             </div>
 
-            <div style="margin-bottom: 16px;">
+            <div class="u-mb-16">
                 <label class="u-check-label u-fs-13">
                     <input type="checkbox" name="is_active" id="step_active" value="1" checked class="u-accent">
                     <?php echo htmlspecialchars(t('common.active', 'Active')); ?>
                 </label>
             </div>
 
-            <div class="u-flex-gap" style="justify-content: flex-end;">
+            <div class="u-flex-gap u-jc-flex-end">
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('stepFormBox').style.display='none';">
                     <?php echo htmlspecialchars(t('common.cancel', 'Cancel')); ?>
                 </button>
@@ -161,23 +156,18 @@ $csrf = getCSRFToken();
     </div>
 
     <!-- Steps Table -->
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th><?php echo htmlspecialchars(t('ivr_data.name', 'Step')); ?></th>
-                    <th><?php echo htmlspecialchars(t('ivr_data.input_source', 'Input')); ?></th>
-                    <th><?php echo htmlspecialchars(t('ivr_data.data_source', 'Source')); ?></th>
-                    <th><?php echo htmlspecialchars(t('ivr_data.channel_var', 'Variable')); ?></th>
-                    <th><?php echo htmlspecialchars(t('common.status', 'Status')); ?></th>
-                    <th class="text-right"><?php echo htmlspecialchars(t('common.actions', 'Actions')); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        htmlspecialchars(t('ivr_data.name', 'Step')),
+        htmlspecialchars(t('ivr_data.input_source', 'Input')),
+        htmlspecialchars(t('ivr_data.data_source', 'Source')),
+        htmlspecialchars(t('ivr_data.channel_var', 'Variable')),
+        htmlspecialchars(t('common.status', 'Status')),
+        ['label' => htmlspecialchars(t('common.actions', 'Actions')), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($steps)): ?>
                     <tr>
-                        <td colspan="6" class="text-center u-muted" style="padding: 30px;">
-                            <i class="fas fa-database fa-2x u-mb-8" style="display: block; opacity: 0.5;"></i>
+                        <td colspan="6" class="text-center u-muted u-p-30">
+                            <i class="fas fa-database fa-2x u-mb-8 u-opacity-0-5" style="display: block;"></i>
                             <?php echo htmlspecialchars(t('ivr_data.empty', 'No IVR data steps configured yet.')); ?>
                         </td>
                     </tr>
@@ -207,14 +197,14 @@ $csrf = getCSRFToken();
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
-                                <button type="button" class="btn btn-secondary btn-sm" onclick='editStep(<?php echo json_encode($s, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='editStep(<?php echo json_encode($s, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
                                     <i class="fas fa-pencil-alt"></i>
                                 </button>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm(<?php echo jsArg(t('ivr_data.confirm_delete', 'Are you sure you want to delete this data step?')); ?>);">
+                                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('ivr_data.confirm_delete', 'Are you sure you want to delete this data step?')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
                                     <input type="hidden" name="action" value="delete_step">
                                     <input type="hidden" name="id" value="<?php echo (int)$s['id']; ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
+                                    <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
@@ -222,9 +212,7 @@ $csrf = getCSRFToken();
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <script>

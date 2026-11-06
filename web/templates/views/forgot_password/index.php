@@ -1,22 +1,22 @@
 <?php /* Layout: templates/layouts/auth_header.php — BaseController::renderAuthPage() */ ?>
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/login.css'); ?>">
-    <div class="auth-card" style="max-width: 420px;">
+    <div class="auth-card u-maxw-420">
         <div class="u-text-center u-mb-24">
-            <div class="brand-icon" style="width: 56px; height: 56px; margin: 0 auto 16px auto; font-size: 24px;">
+            <div class="brand-icon u-w-56 u-h-56 u-m-0-auto-16-auto u-fs-24">
                 <i class="fas fa-key u-primary"></i>
             </div>
-            <h2 style="font-size: 22px; font-weight: 800;"><?php echo t('forgot.title'); ?></h2>
+            <h2 class="u-fs-22 u-fw-800"><?php echo t('forgot.title'); ?></h2>
             <p class="u-muted u-fs-13 u-mt-6"><?php echo htmlspecialchars($brand_title); ?> — <?php echo htmlspecialchars($brand_sub); ?></p>
         </div>
 
         <?php require dirname(__DIR__, 2) . '/auth_error.php'; ?>
 
         <?php if ($sent): ?>
-            <div style="background: rgba(34, 197, 94, 0.15); border: 1px solid var(--success); color: var(--success); padding: 14px 16px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; line-height: 1.6;">
+            <div class="u-bg-rgba-34-197-94-0-15 u-bd-1-solid-success u-success u-p-16-16 u-r-12 u-fs-13 u-mb-20 u-lh-1-6">
                 <i class="fas fa-check-circle"></i> <?php echo t('forgot.sent'); ?>
             </div>
         <?php else: ?>
-            <p style="color: var(--text-muted); font-size: 13.5px; line-height: 1.6; margin: 0 0 18px;"><?php echo t('forgot.intro'); ?></p>
+            <p class="u-muted u-fs-14 u-lh-1-6 u-m-0-0-20"><?php echo t('forgot.intro'); ?></p>
             <form method="POST" autocomplete="off" action="/forgot-password">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                 <div class="form-group">
@@ -38,13 +38,13 @@
                     </div>
                 </div>
                 <?php endif; ?>
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 14px; margin-top: 6px; font-size: 15px;">
+                <button type="submit" class="btn btn-primary u-w-100 u-jc-center u-p-14 u-mt-6 u-fs-15">
                     <i class="fas fa-paper-plane"></i> <?php echo t('forgot.submit'); ?>
                 </button>
             </form>
-            <p class="u-hint" style="margin-top: 14px; font-size: 12px; line-height: 1.5;"><?php echo t('forgot.no_email_hint'); ?></p>
+            <p class="u-hint u-mt-16 u-fs-12 u-lh-1-5"><?php echo t('forgot.no_email_hint'); ?></p>
         <?php endif; ?>
-        <a href="/login" class="btn btn-secondary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 12px;">
+        <a href="/login" class="btn btn-secondary u-w-100 u-jc-center u-p-12 u-mt-12">
             <i class="fas fa-arrow-left"></i> <?php echo t('reset_password.back_to_login'); ?>
         </a>
         <?php require dirname(__DIR__, 2) . '/auth_support_contact.php'; ?>

@@ -1,39 +1,28 @@
 <!-- Department & Email Routing Table Card -->
 <div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-fax u-primary"></i> <?php echo t('fax_settings.title'); ?></div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('faxSettingsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-fax', t('fax_settings.title'), 'faxSettingsHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('fax_settings', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateFaxDidModal()" title="<?php echo t('fax_settings.new_tooltip'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('fax_settings.new_tooltip'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="faxSettingsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_settings.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('faxSettingsHelpBox', t('fax_settings.help_title')); ?>
         <?php echo t('fax_settings.help_body'); ?><br>
         <?php echo t('fax_settings.help_body2'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo t('fax_settings.col_dept'); ?></th>
-                    <th><?php echo t('fax_settings.col_numbers'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('fax_settings.col_login'); ?></th>
-                    <th><?php echo t('fax_settings.col_email'); ?></th>
-                    <th><?php echo t('fax_settings.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('fax_settings.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        t('fax_settings.col_dept'),
+        t('fax_settings.col_numbers'),
+        ['label' => t('fax_settings.col_login'), 'class' => 'col-hide-mobile'],
+        t('fax_settings.col_email'),
+        t('fax_settings.col_status'),
+        ['label' => t('fax_settings.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($accounts)): ?>
                     <?php echo uiTableEmptyRow(6, t('fax_settings.empty'), 'fa-building'); ?>
                 <?php else: ?>
@@ -50,17 +39,15 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Department Create / Edit Modal -->
 <div class="modal-overlay" id="didModal">
-    <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-card u-maxw-500">
         <div class="modal-header">
             <h3 class="u-title" id="didModalTitle"><i class="fas fa-fax u-primary"></i> <?php echo t('fax_settings.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeFaxDidModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeFaxDidModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -87,9 +74,9 @@
                         <?php foreach ($linkableUsers as $lu): ?><option value="<?php echo (int) $lu['id']; ?>"><?php echo htmlspecialchars(trim($lu['full_name'] . ' (' . $lu['username'] . ')')); ?></option><?php endforeach; ?>
                     </select>
                     <small class="u-hint"><?php echo t('fax_settings.field_linked_help'); ?></small>
-                    <label class="u-check-label" style="display: block; margin-top: 6px;"><input type="checkbox" name="linked_mail" id="modal_linked_mail" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_linked_mail'); ?></label>
+                    <label class="u-check-label u-mt-8" style="display: block;"><input type="checkbox" name="linked_mail" id="modal_linked_mail" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_linked_mail'); ?></label>
                 </div>
-                <label class="u-check-label" id="modal_create_login_group" style="display: block; margin-bottom: 12px;"><input type="checkbox" name="create_login" id="modal_create_login" value="1" class="u-accent" onchange="faxLoginChanged()"> <?php echo t('fax_settings.field_create_login'); ?></label>
+                <label class="u-check-label u-mb-12" id="modal_create_login_group" style="display: block;"><input type="checkbox" name="create_login" id="modal_create_login" value="1" class="u-accent" onchange="faxLoginChanged()"> <?php echo t('fax_settings.field_create_login'); ?></label>
                 <div id="fax_login_fields">
                 <div class="u-grid-2">
                     <div class="form-group">
@@ -110,7 +97,7 @@
                         <input type="text" name="cid_external" id="modal_cid_external" class="form-control" maxlength="32">
                     </div>
                 </div>
-                <label class="u-check-label" style="margin-bottom: 12px; display: block;"><input type="checkbox" name="fax_mail" id="modal_fax_mail" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_fax_mail'); ?></label>
+                <label class="u-check-label u-mb-12" style="display: block;"><input type="checkbox" name="fax_mail" id="modal_fax_mail" value="1" checked class="u-accent"> <?php echo t('fax_settings.field_fax_mail'); ?></label>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('fax_settings.field_role'); ?></label>
                     <select name="role" id="modal_role" class="form-control">
@@ -140,13 +127,12 @@
 <div class="card" id="fax-cover">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-file-alt u-primary"></i> <?php echo t('fax_cover.title'); ?></div>
-        <button type="button" class="btn-help" onclick="toggleModuleHelp('faxCoverHelpBox')"><i class="fas fa-question-circle"></i></button>
+        <?php echo uiHelpButton('faxCoverHelpBox'); ?>
     </div>
-    <div class="module-help-box" id="faxCoverHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('fax_cover.title'); ?></h4>
-        <div style="margin-top: 10px;"><strong><?php echo t('common.help_limits'); ?></strong><ul style="margin: 4px 0 0 20px;"><li><?php echo t('fax_cover.limit_colour'); ?></li></ul></div>
-    </div>
-    <form method="POST" autocomplete="off" style="padding: 0 20px 20px;">
+    <?php echo uiHelpBoxOpen('faxCoverHelpBox', t('fax_cover.title')); ?>
+        <div class="u-mt-10"><strong><?php echo t('common.help_limits'); ?></strong><ul class="u-m-4-0-0-20"><li><?php echo t('fax_cover.limit_colour'); ?></li></ul></div>
+<?php echo uiHelpBoxClose(); ?>
+    <form method="POST" autocomplete="off" class="u-card-pad">
         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
         <input type="hidden" name="save_fax_cover" value="1">
         <div class="form-group">
@@ -165,11 +151,13 @@
             <label class="form-label"><?php echo t('fax_cover.field_notice'); ?></label>
             <textarea name="fax_cover_notice" class="form-control" rows="3" maxlength="1000"><?php echo htmlspecialchars($cover['notice'], ENT_QUOTES); ?></textarea>
         </div>
-        <label style="display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 13px;">
+        <label class="u-d-flex u-ai-center u-gap-6 u-mb-6 u-fs-13">
             <input type="checkbox" name="fax_cover_logo" value="1" <?php echo $cover['logo'] ? 'checked' : ''; ?>> <?php echo t('fax_cover.field_logo'); ?>
         </label>
-        <small class="u-hint u-fs-11" style="display: block; margin-bottom: 12px;"><?php echo t($coverLogoFound ? 'fax_cover.logo_help' : 'fax_cover.logo_missing'); ?></small>
-        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
-        <button type="submit" class="btn btn-secondary" name="cover_preview" value="1" formaction="/fax-send" formtarget="_blank" data-no-spa="true"><i class="fas fa-eye"></i> <?php echo t('fax_cover.preview'); ?></button>
+        <small class="u-hint u-fs-11 u-mb-12" style="display: block;"><?php echo t($coverLogoFound ? 'fax_cover.logo_help' : 'fax_cover.logo_missing'); ?></small>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-secondary" name="cover_preview" value="1" formaction="/fax-send" formtarget="_blank" data-no-spa="true"><i class="fas fa-eye"></i> <?php echo t('fax_cover.preview'); ?></button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+        </div>
     </form>
 </div>

@@ -356,5 +356,5 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
 }
 
 /* The .content-area definition moved to style.css (this file loads before
-   components.css, so the rule here never took effect — see the note in
+   ui/*.css, so the rule here never took effect — see the note in
    style.css). Removed so it does not linger here as dead code. */

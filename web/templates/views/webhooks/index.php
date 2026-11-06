@@ -10,13 +10,11 @@
 ?>
 
 <div class="card u-mb-20">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-bolt u-primary"></i> <?php echo htmlspecialchars(t('webhooks.title', 'Outbound Webhooks')); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($webhooks); ?></span>
-        </div>
-        <div class="u-flex-center" style="gap: 8px;">
-            <form method="POST" style="display: inline;">
+    <?php echo uiPageHeaderOpen('fa-bolt', htmlspecialchars(t('webhooks.title', 'Outbound Webhooks')), 'webhooksHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($webhooks); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+<div class="u-flex-center u-gap-8">
+            <form method="POST" class="u-d-inline">
                 <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                 <input type="hidden" name="process_queue_now" value="1">
                 <button type="submit" class="btn btn-secondary btn-sm">
@@ -27,39 +25,40 @@
                 <i class="fas fa-plus-circle"></i> <?php echo htmlspecialchars(t('webhooks.btn_new', 'Add Webhook')); ?>
             </button>
         </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
+<?php echo uiHelpBoxOpen('webhooksHelpBox', t('common.module_guide')); ?><?php echo t('webhooks.help_body'); ?><?php echo uiHelpBoxClose(); ?>
 
     <div id="createWebhookBox" style="display: none; padding: 20px; border-bottom: 1px solid var(--border-color); background: var(--bg-subtle, rgba(2,132,199,0.04));">
         <form method="POST">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
             <input type="hidden" name="save_webhook" value="1">
 
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px;">
+            <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16 u-mb-16">
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;"><?php echo htmlspecialchars(t('webhooks.field_name', 'Webhook Name')); ?></label>
+                    <label class="form-label u-fw-600"><?php echo htmlspecialchars(t('webhooks.field_name', 'Webhook Name')); ?></label>
                     <input type="text" name="name" class="form-control" placeholder="e.g. CRM Call Ended Hook" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;"><?php echo htmlspecialchars(t('webhooks.field_url', 'Target URL (HTTPS/HTTP)')); ?></label>
+                    <label class="form-label u-fw-600"><?php echo htmlspecialchars(t('webhooks.field_url', 'Target URL (HTTPS/HTTP)')); ?></label>
                     <input type="url" name="target_url" class="form-control" placeholder="https://crm.example.com/webhooks/aipbx" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;"><?php echo htmlspecialchars(t('webhooks.field_secret', 'Signing Secret (HMAC-SHA256)')); ?></label>
+                    <label class="form-label u-fw-600"><?php echo htmlspecialchars(t('webhooks.field_secret', 'Signing Secret (HMAC-SHA256)')); ?></label>
                     <input type="text" name="secret" class="form-control" placeholder="Leave blank to auto-generate whsec_...">
                 </div>
                 <div class="form-group">
-                    <label class="form-label" style="font-weight: 600;"><?php echo htmlspecialchars(t('webhooks.field_retries', 'Max Retries')); ?></label>
+                    <label class="form-label u-fw-600"><?php echo htmlspecialchars(t('webhooks.field_retries', 'Max Retries')); ?></label>
                     <input type="number" name="max_retries" class="form-control" value="5" min="1" max="10">
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 16px;">
-                <label class="form-label" style="font-weight: 600; display: block; margin-bottom: 8px;">
+            <div class="form-group u-mb-16">
+                <label class="form-label u-fw-600 u-mb-8" style="display: block;">
                     <?php echo htmlspecialchars(t('webhooks.field_events', 'Subscribed Events')); ?>
                 </label>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 8px;">
+                <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-260-1fr u-gap-8">
                     <?php foreach ($supported_events as $evKey => $evDesc): ?>
-                        <label style="display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--border-color); border-radius: 6px; cursor: pointer; font-size: 12px;">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-p-8-12 u-bd-1-solid-border-color u-r-8 u-pointer u-fs-12">
                             <input type="checkbox" name="events[]" value="<?php echo htmlspecialchars($evKey); ?>">
                             <span><code><?php echo htmlspecialchars($evKey); ?></code> — <?php echo htmlspecialchars($evDesc); ?></span>
                         </label>
@@ -67,7 +66,7 @@
                 </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end;">
+            <div class="u-d-flex u-jc-flex-end">
                 <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save"></i> <?php echo htmlspecialchars(t('webhooks.btn_save', 'Save Webhook')); ?>
                 </button>
@@ -75,18 +74,13 @@
         </form>
     </div>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_name', 'Webhook & Target URL')); ?></th>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_events', 'Subscribed Events')); ?></th>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_secret', 'HMAC Secret')); ?></th>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_last_delivery', 'Last Delivery')); ?></th>
-                    <th class="text-right"><?php echo htmlspecialchars(t('common.actions', 'Actions')); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        htmlspecialchars(t('webhooks.col_name', 'Webhook & Target URL')),
+        htmlspecialchars(t('webhooks.col_events', 'Subscribed Events')),
+        htmlspecialchars(t('webhooks.col_secret', 'HMAC Secret')),
+        htmlspecialchars(t('webhooks.col_last_delivery', 'Last Delivery')),
+        ['label' => htmlspecialchars(t('common.actions', 'Actions')), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($webhooks)): ?>
                     <?php echo uiTableEmptyRow(5, t('webhooks.empty', 'No outbound webhooks configured yet.'), 'fa-bolt'); ?>
                 <?php else: ?>
@@ -97,7 +91,7 @@
                                 <div class="text-muted u-fs-11"><code><?php echo htmlspecialchars((string)$wh['target_url']); ?></code></div>
                             </td>
                             <td>
-                                <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+                                <div class="u-d-flex u-wrap u-gap-4">
                                     <?php foreach ($wh['events'] as $ev): ?>
                                         <span class="badge badge-info u-fs-11"><?php echo htmlspecialchars((string)$ev); ?></span>
                                     <?php endforeach; ?>
@@ -121,17 +115,17 @@
                                 <?php endif; ?>
                             </td>
                             <td class="text-right">
-                                <form method="POST" style="display: inline;">
+                                <form method="POST" class="u-d-inline">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                     <input type="hidden" name="test_webhook_id" value="<?php echo (int)$wh['id']; ?>">
                                     <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('webhooks.btn_test', 'Send Test Ping')); ?>">
                                         <i class="fas fa-paper-plane"></i> <?php echo htmlspecialchars(t('webhooks.btn_test', 'Test')); ?>
                                     </button>
                                 </form>
-                                <form method="POST" style="display: inline;" onsubmit="return confirm(<?php echo jsArg(t('webhooks.confirm_delete', 'Delete this webhook?')); ?>);">
+                                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('webhooks.confirm_delete', 'Delete this webhook?')); ?>);">
                                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                                     <input type="hidden" name="delete_webhook_id" value="<?php echo (int)$wh['id']; ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm">
+                                    <button type="submit" class="btn btn-icon btn-danger btn-sm">
                                         <i class="fas fa-trash-alt"></i>
                                     </button>
                                 </form>
@@ -139,9 +133,7 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <div class="card">
@@ -150,18 +142,13 @@
             <i class="fas fa-stream u-info"></i> <?php echo htmlspecialchars(t('webhooks.queue_title', 'Recent Event Delivery Queue')); ?>
         </div>
     </div>
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_event', 'Event')); ?></th>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_target', 'Target')); ?></th>
-                    <th><?php echo htmlspecialchars(t('common.status', 'Status')); ?></th>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_attempts', 'Attempts')); ?></th>
-                    <th><?php echo htmlspecialchars(t('webhooks.col_created', 'Queued At')); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        htmlspecialchars(t('webhooks.col_event', 'Event')),
+        htmlspecialchars(t('webhooks.col_target', 'Target')),
+        htmlspecialchars(t('common.status', 'Status')),
+        htmlspecialchars(t('webhooks.col_attempts', 'Attempts')),
+        htmlspecialchars(t('webhooks.col_created', 'Queued At')),
+    ]); ?>
                 <?php if (empty($recent_deliveries)): ?>
                     <?php echo uiTableEmptyRow(5, t('webhooks.queue_empty', 'No recent event deliveries.'), 'fa-stream'); ?>
                 <?php else: ?>
@@ -197,7 +184,5 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>

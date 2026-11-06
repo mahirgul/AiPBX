@@ -1,18 +1,8 @@
-<div class="content-wrapper">
+<div>
     <!-- Header & info card -->
     <div class="card page-header-card">
-        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
-            <div>
-                <h2 style="font-size: 20px; font-weight: 800; margin: 0 0 6px 0; display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-shield-alt u-primary"></i>
-                    <?php echo t('security.page_title'); ?>
-                </h2>
-                <p class="u-muted u-fs-13 u-m-0">
-                    <?php echo t('security.page_subtitle'); ?>
-                </p>
-            </div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <span class="badge" style="padding: 8px 14px; font-size: 12.5px; border-radius: 20px; font-weight: 700; background: <?php echo $twoFactorEnabled ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)'; ?>; color: <?php echo $twoFactorEnabled ? 'var(--success)' : 'var(--danger)'; ?>; border: 1px solid <?php echo $twoFactorEnabled ? 'var(--success)' : 'var(--danger)'; ?>;">
+        <?php echo uiPageHeaderOpen('fa-shield-alt', t('security.page_title'), 'securityHelpBox'); ?>
+<span class="badge" style="padding: 8px 14px; font-size: 12.5px; border-radius: 20px; font-weight: 700; background: <?php echo $twoFactorEnabled ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)'; ?>; color: <?php echo $twoFactorEnabled ? 'var(--success)' : 'var(--danger)'; ?>; border: 1px solid <?php echo $twoFactorEnabled ? 'var(--success)' : 'var(--danger)'; ?>;">
                     <i class="fas <?php echo $twoFactorEnabled ? 'fa-lock' : 'fa-unlock-alt'; ?>"></i>
                     2FA: <?php echo $twoFactorEnabled ? t('security.status_enabled') : t('security.status_disabled'); ?>
                 </span>
@@ -20,32 +10,33 @@
                     <i class="fas fa-fingerprint"></i>
                     Passkey: <?php echo count($passkeys); ?> <?php echo t('security.unit_registered'); ?>
                 </span>
-            </div>
-        </div>
+<?php echo uiPageHeaderActions(); ?>
+<?php echo uiPageHeaderClose(); ?>
+<?php echo uiHelpBoxOpen('securityHelpBox', t('common.module_guide')); ?><?php echo t('security.page_subtitle'); ?><?php echo uiHelpBoxClose(); ?>
     </div>
 
     <?php if (!empty($newRecoveryCodes)): ?>
         <!-- Recovery codes display (printed only when newly generated) -->
-        <div class="card mb-4" style="background: rgba(34, 197, 94, 0.08); border: 2px solid var(--success); border-radius: 12px; padding: 22px;">
-            <div style="display: flex; align-items: flex-start; gap: 14px;">
+        <div class="card mb-4 u-bg-rgba-34-197-94-0-08 u-bd-2-solid-success u-r-12 u-p-24">
+            <div class="u-d-flex u-ai-flex-start u-gap-14">
                 <div class="u-fs-28 u-success"><i class="fas fa-key"></i></div>
                 <div class="u-flex-1">
-                    <h3 style="font-size: 16px; font-weight: 800; color: var(--success); margin: 0 0 6px 0;">
+                    <h3 class="u-fs-16 u-fw-700 u-success u-m-0-0-8-0">
                         <?php echo t('security.recovery_codes_title'); ?>
                     </h3>
-                    <p style="font-size: 13px; color: var(--text-color); margin: 0 0 14px 0; line-height: 1.5;">
+                    <p class="u-fs-13 u-c-text-color u-m-0-0-16-0 u-lh-1-5">
                         <?php echo t('security.recovery_codes_desc'); ?>
                     </p>
 
-                    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
+                    <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-140-1fr u-gap-12 u-mb-16">
                         <?php foreach ($newRecoveryCodes as $idx => $code): ?>
-                            <div style="background: var(--bg-card); border: 1px dashed var(--success); padding: 8px 12px; border-radius: 8px; text-align: center; font-family: monospace; font-size: 15px; font-weight: 700; letter-spacing: 1px;">
+                            <div class="u-bg-bg-card u-bd-1-dashed-success u-p-8-12 u-r-8 u-ta-center u-mono u-fs-16 u-fw-700 u-letter-spacing-1">
                                 <?php echo htmlspecialchars($code); ?>
                             </div>
                         <?php endforeach; ?>
                     </div>
 
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div class="u-d-flex u-gap-10 u-wrap">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="copyRecoveryCodes()">
                             <i class="fas fa-copy"></i> <?php echo t('security.btn_copy_codes'); ?>
                         </button>
@@ -58,20 +49,20 @@
         </div>
     <?php endif; ?>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <div class="u-d-grid u-gtc-1fr-1fr u-gap-20">
         <!-- LEFT COLUMN: 2FA TOTP AUTHENTICATOR -->
         <div class="card u-p-24">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-                <h3 style="font-size: 16px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <div class="u-d-flex u-ai-center u-jc-space-between u-mb-16 u-border-bottom-1-solid-border-color u-pb-12">
+                <h3 class="u-fs-16 u-fw-800 u-m-0 u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-mobile-alt u-primary"></i>
                     <?php echo t('security.2fa_card_title'); ?>
                 </h3>
                 <?php if ($twoFactorEnabled): ?>
-                    <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--success); font-weight: 700;">
+                    <span class="badge u-bg-rgba-34-197-94-0-15 u-success u-fw-700">
                         <i class="fas fa-check-circle"></i> <?php echo t('security.status_active'); ?>
                     </span>
                 <?php else: ?>
-                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted); font-weight: 700;">
+                    <span class="badge u-bg-rgba-148-163-184-0-15 u-muted u-fw-700">
                         <?php echo t('security.status_inactive'); ?>
                     </span>
                 <?php endif; ?>
@@ -79,16 +70,16 @@
 
             <?php if ($twoFactorEnabled): ?>
                 <!-- 2FA enabled status -->
-                <div style="text-align: center; padding: 20px 0;">
-                    <div style="width: 64px; height: 64px; border-radius: 50%; background: rgba(34, 197, 94, 0.15); color: var(--success); display: inline-flex; align-items: center; justify-content: center; font-size: 32px; margin-bottom: 14px;">
+                <div class="u-ta-center u-p-20-0">
+                    <div class="u-w-64 u-h-64 u-r-50pc u-bg-rgba-34-197-94-0-15 u-success u-d-inline-flex u-ai-center u-jc-center u-fs-32 u-mb-16">
                         <i class="fas fa-shield-check"></i>
                     </div>
-                    <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 6px 0;"><?php echo t('security.2fa_active_heading'); ?></h4>
-                    <p style="color: var(--text-muted); font-size: 13px; max-width: 380px; margin: 0 auto 20px auto; line-height: 1.5;">
+                    <h4 class="u-fs-16 u-fw-700 u-m-0-0-8-0"><?php echo t('security.2fa_active_heading'); ?></h4>
+                    <p class="u-muted u-fs-13 u-maxw-380 u-m-0-auto-20-auto u-lh-1-5">
                         <?php echo t('security.2fa_active_info'); ?>
                     </p>
 
-                    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <div class="u-d-flex u-gap-10 u-jc-center u-wrap">
                         <button type="button" class="btn btn-secondary btn-sm" onclick="openRegenCodesModal()">
                             <i class="fas fa-sync-alt"></i> <?php echo t('security.btn_regen_codes'); ?>
                         </button>
@@ -101,22 +92,22 @@
             <?php else: ?>
                 <!-- 2FA setup area -->
                 <div>
-                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5;">
+                    <p class="u-fs-13 u-muted u-mb-20 u-lh-1-5">
                         <?php echo t('security.2fa_setup_intro'); ?>
                     </p>
 
-                    <div style="text-align: center; margin-bottom: 18px; background: #ffffff; padding: 16px; border-radius: 12px; border: 1px solid var(--border-color); display: inline-block; width: 100%;">
-                        <img src="<?php echo $qrCodeDataUri; ?>" alt="2FA QR Code" style="width: 180px; height: 180px; display: block; margin: 0 auto;">
+                    <div class="u-ta-center u-mb-20 u-bg-ffffff u-p-16 u-r-12 u-bd-1-solid-border-color u-d-inline-block u-w-100">
+                        <img class="u-w-180 u-h-180 u-m-0-auto" src="<?php echo $qrCodeDataUri; ?>" alt="2FA QR Code" style="display: block;">
                         <div class="u-mt-10">
-                            <span style="font-size: 11px; color: var(--text-muted); display: block; margin-bottom: 4px;"><?php echo t('security.manual_key_label'); ?></span>
-                            <code id="manual_secret_key" style="background: var(--bg-card); padding: 4px 10px; border-radius: 6px; font-size: 13px; font-weight: 700; letter-spacing: 1px; color: var(--primary); word-break: break-all;"><?php echo htmlspecialchars($setupSecret); ?></code>
-                            <button type="button" class="btn btn-secondary btn-xs" onclick="copySecretKey()" style="margin-left: 6px;" title="<?php echo t('common.copy'); ?>">
+                            <span class="u-fs-11 u-muted u-mb-4" style="display: block;"><?php echo t('security.manual_key_label'); ?></span>
+                            <code class="u-bg-bg-card u-p-4-12 u-r-8 u-fs-13 u-fw-700 u-letter-spacing-1 u-primary u-word-break-break-all" id="manual_secret_key"><?php echo htmlspecialchars($setupSecret); ?></code>
+                            <button type="button" class="btn btn-icon btn-secondary btn-xs u-ml-6" onclick="copySecretKey()" title="<?php echo t('common.copy'); ?>">
                                 <i class="fas fa-copy"></i>
                             </button>
                         </div>
                     </div>
 
-                    <form method="POST" action="/security" style="margin-top: 14px;">
+                    <form method="POST" action="/security" class="u-mt-14">
                         <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">
                         <input type="hidden" name="action" value="enable_2fa">
                         <input type="hidden" name="secret" value="<?php echo htmlspecialchars($setupSecret); ?>">
@@ -125,12 +116,12 @@
                             <label class="form-label u-fw-700 u-fs-13">
                                 <?php echo t('security.verify_code_label'); ?>
                             </label>
-                            <input type="text" name="verify_code" class="form-control" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="<?php echo t('common.eg'); ?> 123456" required style="font-size: 18px; font-weight: 800; letter-spacing: 6px; text-align: center;">
+                            <input type="text" name="verify_code" class="form-control u-fs-18 u-fw-700 u-letter-spacing-6 u-ta-center" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="<?php echo t('common.eg'); ?> 123456" required>
                         </div>
 
-                        <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-weight: 700;">
+                        <div class="form-actions"><button type="submit" class="btn btn-primary">
                             <i class="fas fa-check-circle"></i> <?php echo t('security.btn_activate_2fa'); ?>
-                        </button>
+                        </button></div>
                     </form>
                 </div>
             <?php endif; ?>
@@ -138,8 +129,8 @@
 
         <!-- RIGHT COLUMN: PASSKEY (FIDO2 / WEBAUTHN) -->
         <div class="card u-p-24">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">
-                <h3 style="font-size: 16px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
+            <div class="u-d-flex u-ai-center u-jc-space-between u-mb-16 u-border-bottom-1-solid-border-color u-pb-12">
+                <h3 class="u-fs-16 u-fw-800 u-m-0 u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-fingerprint u-primary"></i>
                     <?php echo t('security.passkey_card_title'); ?>
                 </h3>
@@ -148,16 +139,16 @@
                 </button>
             </div>
 
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5;">
+            <p class="u-fs-13 u-muted u-mb-20 u-lh-1-5">
                 <?php echo t('security.passkey_intro'); ?>
             </p>
 
             <?php if (empty($passkeys)): ?>
-                <div style="text-align: center; padding: 30px 20px; background: var(--bg-card); border: 1px dashed var(--border-color); border-radius: 12px;">
-                    <div style="font-size: 32px; color: var(--text-muted); margin-bottom: 10px;">
+                <div class="u-ta-center u-p-32-20 u-bg-bg-card u-bd-1-dashed-border-color u-r-12">
+                    <div class="u-fs-32 u-muted u-mb-10">
                         <i class="fas fa-key"></i>
                     </div>
-                    <div style="font-size: 14px; font-weight: 700; color: var(--text-color); margin-bottom: 4px;">
+                    <div class="u-fs-14 u-fw-700 u-c-text-color u-mb-4">
                         <?php echo t('security.no_passkeys_title'); ?>
                     </div>
                     <div class="u-fs-12 u-muted u-mb-16">
@@ -168,17 +159,12 @@
                     </button>
                 </div>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="data-table u-m-0">
-                        <thead>
-                            <tr>
-                                <th><?php echo t('security.col_device'); ?></th>
-                                <th><?php echo t('security.col_created'); ?></th>
-                                <th><?php echo t('security.col_last_used'); ?></th>
-                                <th class="u-text-right"><?php echo t('common.action'); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
+                <?php echo uiTableOpen([
+                    t('security.col_device'),
+                    t('security.col_created'),
+                    t('security.col_last_used'),
+                    ['label' => t('common.action'), 'class' => 'u-text-right'],
+                ]); ?>
                             <?php foreach ($passkeys as $pk): ?>
                                 <tr>
                                     <td>
@@ -187,30 +173,28 @@
                                             <strong><?php echo htmlspecialchars($pk['device_name']); ?></strong>
                                         </div>
                                     </td>
-                                    <td style="font-size: 12.5px; color: var(--text-muted);">
+                                    <td class="u-fs-12-5 u-muted">
                                         <?php echo date('d.m.Y H:i', strtotime($pk['created_at'])); ?>
                                     </td>
-                                    <td style="font-size: 12.5px; color: var(--text-muted);">
+                                    <td class="u-fs-12-5 u-muted">
                                         <?php echo !empty($pk['last_used_at']) ? date('d.m.Y H:i', strtotime($pk['last_used_at'])) : '—'; ?>
                                     </td>
                                     <td class="u-text-right">
-                                        <button type="button" class="btn btn-outline-danger btn-xs" onclick="deletePasskey(<?php echo (int)$pk['id']; ?>, '<?php echo htmlspecialchars(addslashes($pk['device_name'])); ?>')" title="<?php echo t('common.delete'); ?>">
+                                        <button type="button" class="btn btn-icon btn-outline-danger btn-xs" onclick="deletePasskey(<?php echo (int)$pk['id']; ?>, '<?php echo htmlspecialchars(addslashes($pk['device_name'])); ?>')" title="<?php echo t('common.delete'); ?>">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
+                        <?php echo uiTableClose(); ?>
             <?php endif; ?>
 
             <?php if (($user['role'] ?? '') === 'admin'): ?>
             <!-- Google OAuth 2.0 sign-in settings (system administrator) -->
-            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                    <h4 style="font-size: 15px; font-weight: 800; margin: 0; display: flex; align-items: center; gap: 8px;">
-                        <i class="fab fa-google" style="color: #EA4335;"></i>
+            <div class="u-mt-24 u-pt-20 u-border-top-1-solid-border-color">
+                <div class="u-d-flex u-ai-center u-jc-space-between u-mb-12">
+                    <h4 class="u-fs-15 u-fw-800 u-m-0 u-d-flex u-ai-center u-gap-8">
+                        <i class="fab fa-google u-c-ea4335"></i>
                         <?php echo t('security.google_oauth_title'); ?>
                     </h4>
                     <span class="badge <?php echo (!empty($googleSettings['enabled'])) ? 'badge-success' : 'badge-secondary'; ?> u-fs-11">
@@ -218,10 +202,10 @@
                     </span>
                 </div>
                 <div style="background: var(--bg-hover, rgba(0,0,0,0.02)); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px 16px; margin-bottom: 14px;">
-                    <p style="font-size: 12.5px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5;">
+                    <p class="u-fs-13 u-muted u-mb-12 u-lh-1-5">
                         <?php echo t('security.google_moved_notice'); ?>
                     </p>
-                    <a href="/google-integration" class="btn btn-primary btn-sm" style="font-weight: 700; display: inline-flex; align-items: center; gap: 6px;">
+                    <a href="/google-integration" class="btn btn-primary btn-sm u-fw-700 u-d-inline-flex u-ai-center u-gap-6">
                         <i class="fab fa-google"></i> <?php echo t('security.go_to_google_integration'); ?> <i class="fas fa-arrow-right u-fs-11"></i>
                     </a>
                 </div>
@@ -229,8 +213,8 @@
             <?php endif; ?>
 
             <!-- Password change card (bottom right) -->
-            <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border-color);">
-                <h4 style="font-size: 15px; font-weight: 800; margin: 0 0 12px 0; display: flex; align-items: center; gap: 8px;">
+            <div class="u-mt-24 u-pt-20 u-border-top-1-solid-border-color">
+                <h4 class="u-fs-16 u-fw-700 u-m-0-0-12-0 u-d-flex u-ai-center u-gap-8">
                     <i class="fas fa-lock u-muted"></i>
                     <?php echo t('security.change_password_title'); ?>
                 </h4>
@@ -241,16 +225,16 @@
 
                     <div class="form-group u-mb-10">
                         <label class="form-label u-fs-12"><?php echo t('security.field_current_password'); ?></label>
-                        <input type="password" name="current_password" class="form-control" required style="height: 38px;">
+                        <input type="password" name="current_password" class="form-control u-h-38" required>
                     </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12 u-mb-12">
                         <div class="form-group u-m-0">
                             <label class="form-label u-fs-12"><?php echo t('security.field_new_password'); ?></label>
-                            <input type="password" name="new_password" class="form-control" minlength="8" required style="height: 38px;">
+                            <input type="password" name="new_password" class="form-control u-h-38" minlength="8" required>
                         </div>
                         <div class="form-group u-m-0">
                             <label class="form-label u-fs-12"><?php echo t('security.field_confirm_password'); ?></label>
-                            <input type="password" name="confirm_password" class="form-control" minlength="8" required style="height: 38px;">
+                            <input type="password" name="confirm_password" class="form-control u-h-38" minlength="8" required>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-secondary btn-sm u-fw-700">
@@ -263,11 +247,11 @@
 </div>
 
 <!-- Disable 2FA modal -->
-<div class="modal-backdrop" id="modalDisable2fa" style="display: none;">
-    <div class="modal-card" style="max-width: 400px;">
+<div class="modal-overlay" id="modalDisable2fa">
+    <div class="modal-card u-maxw-400">
         <div class="modal-header">
-            <h3><i class="fas fa-exclamation-triangle u-danger"></i> <?php echo t('security.modal_disable_2fa_title'); ?></h3>
-            <button type="button" class="btn-close" onclick="closeDisable2faModal()">&times;</button>
+            <h3 class="u-title"><i class="fas fa-exclamation-triangle u-danger"></i> <?php echo t('security.modal_disable_2fa_title'); ?></h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="closeDisable2faModal()"><i class="fas fa-times"></i></button>
         </div>
         <form method="POST" action="/security">
             <div class="modal-body">
@@ -290,11 +274,11 @@
 </div>
 
 <!-- Regenerate recovery codes modal -->
-<div class="modal-backdrop" id="modalRegenCodes" style="display: none;">
-    <div class="modal-card" style="max-width: 400px;">
+<div class="modal-overlay" id="modalRegenCodes">
+    <div class="modal-card u-maxw-400">
         <div class="modal-header">
-            <h3><i class="fas fa-sync-alt u-primary"></i> <?php echo t('security.modal_regen_codes_title'); ?></h3>
-            <button type="button" class="btn-close" onclick="closeRegenCodesModal()">&times;</button>
+            <h3 class="u-title"><i class="fas fa-sync-alt u-primary"></i> <?php echo t('security.modal_regen_codes_title'); ?></h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="closeRegenCodesModal()"><i class="fas fa-times"></i></button>
         </div>
         <form method="POST" action="/security">
             <div class="modal-body">

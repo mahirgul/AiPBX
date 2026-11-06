@@ -5,6 +5,31 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.70.0
+
+- **One look across the portal.** Tabs join the page below them on every screen, and My Phone's are real tabs now. Row buttons are one size, and Save sits at the end of a form on the right, as in a window.
+- **Things that had no style now have one.** Message boxes, muted text, spacing and form columns were used on many pages with no rule behind them. Custom Dialplan, Security and Teams windows use the same window as the rest.
+- **Dark theme.** Pages that used undefined colours fell back to light boxes; they follow the theme now.
+- **Every page title looks the same.** A blue bar on the card's edge, a soft icon tile and the same size, on all pages. On pages with tabs, one card now holds the title, the tabs and the content.
+- **Help works one way.** Every page opens its explanation with the "?" button; none stays open, and intro text moved into it.
+- **Buttons have one size per place:** titles 32, forms and windows 36, table rows 28. In a title only help, refresh, back and full screen are icons; all others have text.
+- **Inside the pages:** about 830 inline styles became shared classes on one scale of sizes, so small differences in spacing and text are gone. Columns stack on a phone.
+- **For developers:** `uiPageHeader()` and `uiHelpBoxOpen()` draw titles and help, the page test refuses own versions, and `components.css` is split into `assets/css/ui/`.
+- **`/ui-kit`** shows the shared parts on one page for administrators, and the page test refuses the old markup.
+- **Phone addresses with the regions.** The general addresses desk phones are given (SIP server, proxy, files, syslog, NTP) and the allowed networks moved from Network settings to Provisioning → Regions, above the regions that start from them; a region's own value still wins. Network settings keeps only the server's own addresses.
+- **Fixes found in review.** The 403, blocked and database-down pages asked for a stylesheet that no longer exists; they load the shared ones now. My Phone closed one block too many, which pushed its QR window and the footer out of the page. IVR data steps show their three branches side by side again. Status badges on My Phone, Security, Privacy and Chat stand by the title, and the help button sits with the actions.
+- **Safer underneath.** symfony/config and symfony/filesystem 8.1.11 (two advisories; Phinx uses them during updates). The page test now checks that every view closes its blocks, that every u-* class exists, that badges stay by the title and that every /assets/ file named exists; CI also checks dependency advisories and JavaScript syntax.
+- **PBX addresses on PBX Settings → PJSIP.** The server's address, the public and media addresses and the local networks moved there from Network settings, next to the other PJSIP settings; Save puts them on Apply as before.
+- **A changed server address waits on Apply.** When the server's IP changed outside the portal (a new DHCP lease, a cloned VM), the move of everything that still holds the old address is put on the Apply page by itself, naming what it changes; Apply does it, or Discard keeps the old address. The "Apply the new address" form is gone. The move also failed on a database error after a network card's address was confirmed; it works again.
+- **Firewall: common rules and an off switch.** A Common tab holds the rules every network card uses (virtual interfaces with rules of their own, such as a VPN, keep only those); adding, removing or turning one off there applies to all cards, and a card button closes a common rule on that card only. A card's own tab shows only what differs on it: its own rules and the common ones closed there. Every rule can be turned off and on again without deleting it (a custom rule can only be removed). The add form sits in the tab it applies to.
+- **Sounds, My Phone and Privacy like the other tabbed pages.** One card holds the page title, the tabs and their content, as on Time Plan; Sounds had its tabs above the title, and My Phone and Privacy had them outside the title card. On Inbound and Outbound Normalization the filter tabs and their table share one card, and Inbound keeps its country presets in the title card like Outbound.
+- **One table for every page.** The 101 tables of the portal come from one helper (uiTableOpen/uiTableClose): the same frame, font and borders everywhere, and a column only some users see is one line. The page writes only its rows; the page test refuses a hand-written table.
+- **Inbound normalization can be turned off.** Like Outbound, a switch on the Inbound Normalization page stops every rule at once and keeps them; Apply puts it into the dialplan. Both pages draw the switch from one shared row.
+- **My Phone and Chat use the shared tabs.** My Phone's tabs switch through the shared tab code (it remembers the tab in the address and for the next visit as before); Chat's Chats / Directory selector is the shared tab row. Their own tab code and styles are gone.
+- **Fax detection listens 10 seconds by default** on a voice route that also takes faxes (was 5): some fax machines start their tone late and the call went on to the voice destination first (#153). Routes keep the time already set on them.
+- **Trunks listen for a fax tone 10 seconds (was 30)** (#153). Later the call is in a ring group, queue or IVR, where Asterisk has nowhere to send a fax and the caller's fax machine rang people's phones. Trunks on the old default move to 10 with the update and wait on Apply.
+- **Send Fax tells who has no fax number** (#154). A user with no fax number saw their phone extension as the sender and got "Sender extension is required" on Send; the page now says an administrator can give them one under Fax Units, and Send is off.
+
 ## 1.61.2
 
 - **A phone keeps its region when you edit it.** The form always showed the default region, and saving it without a change moved the phone there.

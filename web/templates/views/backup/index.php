@@ -13,43 +13,33 @@ foreach (['creating', 'btn_create', 'upload_choose', 'upload_progress', 'upload_
 }
 ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-box-archive u-primary"></i> <?php echo t('backup.page_title'); ?>
-        </div>
-    </div>
+    <?php echo uiPageHeader('fa-box-archive', t('backup.page_title'), 'backupHelpBox'); ?>
 
-    <div class="module-help-box" style="display: block; margin-bottom: 20px;">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('backup.help_title'); ?></h4>
+    <?php echo uiHelpBoxOpen('backupHelpBox', t('backup.help_title')); ?>
         <?php echo t('backup.help_body'); ?>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="u-flex-gap" style="flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px;">
+    <div class="u-flex-gap u-wrap u-ai-flex-end u-mb-20">
         <button type="button" class="btn btn-primary" id="bk-create" onclick="bkCreate()" <?php echo $creating ? 'disabled' : ''; ?>>
             <i class="fas fa-box-archive"></i> <span id="bk-create-label"><?php echo $creating ? t('backup.creating') : t('backup.btn_create'); ?></span>
         </button>
         <div class="form-group u-m-0">
             <label class="form-label u-fs-12" for="bk-keep"><?php echo t('backup.keep_days'); ?></label>
             <div class="u-flex-gap">
-                <input type="number" id="bk-keep" class="form-control" style="width: 100px;" min="1" max="999" value="<?php echo (int) $keep_days; ?>">
-                <button type="button" class="btn btn-secondary" onclick="bkSaveKeep()"><i class="fas fa-save"></i></button>
+                <input type="number" id="bk-keep" class="form-control u-w-100-2" min="1" max="999" value="<?php echo (int) $keep_days; ?>">
+                <button type="button" class="btn btn-icon btn-secondary" onclick="bkSaveKeep()"><i class="fas fa-save"></i></button>
             </div>
         </div>
     </div>
 
-    <h4 class="u-fw-700" style="margin: 0 0 10px;"><?php echo t('backup.list_title'); ?></h4>
-    <div class="table-responsive" style="margin-bottom: 24px;">
-        <table class="data-table" data-no-dt="true">
-            <thead>
-                <tr>
-                    <th><?php echo t('backup.col_name'); ?></th>
-                    <th><?php echo t('backup.col_date'); ?></th>
-                    <th><?php echo t('backup.col_size'); ?></th>
-                    <th><?php echo t('backup.col_version'); ?></th>
-                    <th><?php echo t('backup.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody id="bk-rows">
+    <h4 class="u-fw-700 u-m-0-0-12"><?php echo t('backup.list_title'); ?></h4>
+    <?php echo uiTableOpen([
+        t('backup.col_name'),
+        t('backup.col_date'),
+        t('backup.col_size'),
+        t('backup.col_version'),
+        t('backup.col_actions'),
+    ], ['body_id' => 'bk-rows', 'search' => false, 'frame' => 'u-mb-24']); ?>
                 <?php foreach ($backups as $b): ?>
                     <tr data-name="<?php echo htmlspecialchars($b['name']); ?>">
                         <td>
@@ -60,7 +50,7 @@ foreach (['creating', 'btn_create', 'upload_choose', 'upload_progress', 'upload_
                         <td><?php echo htmlspecialchars(date('d.m.Y H:i', $b['time'])); ?></td>
                         <td><?php echo htmlspecialchars(BackupService::humanSize($b['bytes'])); ?></td>
                         <td><?php echo htmlspecialchars($b['version'] !== '' ? 'v' . $b['version'] : '—'); ?></td>
-                        <td class="u-flex-gap" style="flex-wrap: wrap;">
+                        <td class="u-flex-gap u-wrap">
                             <button type="button" class="btn btn-secondary btn-sm" data-act="download"><i class="fas fa-download"></i> <?php echo t('backup.btn_download'); ?></button>
                             <button type="button" class="btn btn-warning btn-sm" data-act="restore"><i class="fas fa-rotate-left"></i> <?php echo t('backup.btn_restore'); ?></button>
                             <button type="button" class="btn btn-danger btn-sm" data-act="delete"><i class="fas fa-trash"></i> <?php echo t('backup.btn_delete'); ?></button>
@@ -70,13 +60,11 @@ foreach (['creating', 'btn_create', 'upload_choose', 'upload_progress', 'upload_
                 <?php if (empty($backups)): ?>
                     <tr><td colspan="5" class="u-muted"><?php echo t('backup.empty'); ?></td></tr>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 
-    <div id="bk-restore" class="card" style="display: none; padding: 16px; margin-bottom: 24px; border: 1px solid var(--danger);">
-        <h4 class="u-fw-700" style="margin: 0 0 8px;" id="bk-restore-title"></h4>
-        <p class="u-fs-13" style="color: var(--danger);"><i class="fas fa-triangle-exclamation"></i> <?php echo t('backup.restore_warning'); ?></p>
+    <div id="bk-restore" class="card u-p-16 u-mb-24 u-bd-1-solid-danger" style="display: none;">
+        <h4 class="u-fw-700 u-m-0-0-8" id="bk-restore-title"></h4>
+        <p class="u-fs-13 u-danger"><i class="fas fa-triangle-exclamation"></i> <?php echo t('backup.restore_warning'); ?></p>
         <div class="form-group">
             <label class="form-label u-fs-12"><?php echo t('backup.restore_scope'); ?></label>
             <label class="u-check-label u-fs-13"><input type="radio" name="bk-scope" value="all" class="u-accent" checked> <?php echo t('backup.restore_all'); ?></label>
@@ -101,23 +89,23 @@ foreach (['creating', 'btn_create', 'upload_choose', 'upload_progress', 'upload_
         </div>
     </div>
 
-    <h4 class="u-fw-700" style="margin: 0 0 6px;"><?php echo t('backup.upload_title'); ?></h4>
-    <p class="u-muted u-fs-12" style="margin: 0 0 10px;"><?php echo t('backup.upload_help'); ?></p>
-    <div class="u-flex-gap" style="flex-wrap: wrap; align-items: center; margin-bottom: 24px;">
+    <h4 class="u-fw-700 u-m-0-0-8"><?php echo t('backup.upload_title'); ?></h4>
+    <p class="u-muted u-fs-12 u-m-0-0-12"><?php echo t('backup.upload_help'); ?></p>
+    <div class="u-flex-gap u-wrap u-ai-center u-mb-24">
         <input type="file" id="bk-file" accept=".gz,.tgz,application/gzip">
         <button type="button" class="btn btn-secondary" id="bk-upload" onclick="bkUpload()"><i class="fas fa-upload"></i> <?php echo t('backup.btn_upload'); ?></button>
         <span class="u-fs-12 u-muted" id="bk-upload-state"></span>
     </div>
 
-    <h4 class="u-fw-700" style="margin: 0 0 6px;"><?php echo t('backup.state_title'); ?></h4>
-    <div class="u-fs-13" id="bk-state" style="margin-bottom: 10px;">
+    <h4 class="u-fw-700 u-m-0-0-8"><?php echo t('backup.state_title'); ?></h4>
+    <div class="u-fs-13 u-mb-10" id="bk-state">
         <?php if ($state !== ''): ?>
             <strong><?php echo htmlspecialchars($state_labels[$state] ?? $state); ?></strong> — <?php echo htmlspecialchars((string) ($status['step'] ?? '')); ?>
         <?php else: ?>—<?php endif; ?>
     </div>
     <details>
         <summary class="u-fs-12 u-muted"><?php echo t('backup.log_title'); ?></summary>
-        <pre id="bk-log" style="max-height: 280px; overflow: auto; font-size: 12px;"><?php echo htmlspecialchars($log_tail); ?></pre>
+        <pre class="u-maxh-280 u-of-auto u-fs-12" id="bk-log"><?php echo htmlspecialchars($log_tail); ?></pre>
     </details>
 </div>
 

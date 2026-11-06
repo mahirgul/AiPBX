@@ -34,17 +34,17 @@ function downloadRecoveryCodes() {
 }
 
 function openDisable2faModal() {
-    document.getElementById('modalDisable2fa').style.display = 'flex';
+    UIHelper.openOverlayModal('modalDisable2fa');
 }
 function closeDisable2faModal() {
-    document.getElementById('modalDisable2fa').style.display = 'none';
+    UIHelper.closeOverlayModal('modalDisable2fa');
 }
 
 function openRegenCodesModal() {
-    document.getElementById('modalRegenCodes').style.display = 'flex';
+    UIHelper.openOverlayModal('modalRegenCodes');
 }
 function closeRegenCodesModal() {
-    document.getElementById('modalRegenCodes').style.display = 'none';
+    UIHelper.closeOverlayModal('modalRegenCodes');
 }
 
 // --- WEBAUTHN PASSKEY KAYDI ---

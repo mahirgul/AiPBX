@@ -436,7 +436,7 @@ final class NetworkSettingsService
                 $stmt->execute([$c['where'], $c['to']]);
             }
         }
-        self::storeServer(['server_ip' => $server['server_ip'], 'pjsip_external_ip' => $server['pjsip_external_ip'], 'pjsip_local_net' => $server['pjsip_local_net']]);
+        self::storeServer(['server_ip' => $server['server_ip'], 'pjsip_external_ip' => $server['pjsip_external_ip'], 'pjsip_external_media_ip' => $server['pjsip_external_media_ip'], 'pjsip_local_net' => $server['pjsip_local_net']]);
         $files = PrivHelper::run(['net', 'readdress', 'old=' . $old, 'new=' . $new]);
         // Calls keep running through a PJSIP / RTP reload.
         $synced = true;
@@ -453,17 +453,54 @@ final class NetworkSettingsService
         return ['changes' => $changes, 'files' => trim((string) $files['output']), 'files_ok' => (bool) $files['success'], 'synced' => $synced];
     }
 
-    /** Portal action: preview (step 1) or apply (step 2, with confirm=1). */
-    public static function readdressAction(array $data): array
+    /** Where an address means "this server" itself; an old one found only elsewhere (syslog) is not moved by itself. */
+    private const SELF_KEYS = ['server_ip', 'provision_sip_server', 'provision_base_url', 'coturn_relay', 'mdns'];
+
+    /**
+     * The address changed outside the portal: the move to the new one waits on Apply (pending), its
+     * row naming what it changes, so the admin sees it before it happens. Not queued again once
+     * queued or discarded.
+     */
+    public static function queueReaddress(?array $stale = null): void
     {
-        return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
-            $old = trim((string) ($data['old_ip'] ?? ''));
-            $new = trim((string) ($data['new_ip'] ?? ''));
-            $r = self::readdress($old, $new, $_SESSION['user_id'] ?? null);
-            return sprintf(t('netset.readdress_done'), $old, $new, count($r['changes']))
-                . ($r['synced'] ? '' : ' ' . t('netset.readdress_sync_failed'))
-                . ($r['files_ok'] ? '' : ' ' . t('netset.readdress_files_failed') . ' ' . $r['files']);
-        });
+        $stale = $stale ?? self::staleAddresses();
+        $new = self::system()['primary'];
+        if ($stale === [] || !preg_match(self::IPV4, $new)) {
+            return;
+        }
+        $db = getDB();
+        $dismissed = (string) getSystemSetting('readdress_dismissed', '');
+        $olds = array_unique(array_column(array_filter($stale, static fn(array $s): bool => in_array($s['where'], self::SELF_KEYS, true)), 'value'));
+        foreach ($olds as $old) {
+            $id = $old . '>' . $new;
+            if ($old === $new || $id === $dismissed) {
+                continue;
+            }
+            $has = $db->prepare("SELECT 1 FROM sys_pending_sync WHERE domain = 'readdress' AND entity_id = ?");
+            $has->execute([$id]);
+            if ($has->fetchColumn()) {
+                continue;
+            }
+            try {
+                $changes = self::readdressPreview($old, $new);
+            } catch (\Exception $e) {
+                continue;
+            }
+            if ($changes === []) {
+                continue;
+            }
+            $where = implode(', ', array_map(static fn(array $c): string => t('netset.where_' . $c['where'], $c['where']), $changes));
+            markPendingSync('readdress', 'server_address', $id, mb_substr(sprintf(t('netset.readdress_pending'), $old, $new, $where), 0, 255), 'update', $_SESSION['user_id'] ?? null);
+        }
+    }
+
+    /** Pending page: the admin does not want this move; it is not queued again for the same addresses. */
+    public static function discardReaddress(string $id): void
+    {
+        getDB()->prepare("DELETE FROM sys_pending_sync WHERE domain = 'readdress' AND entity_id = ?")->execute([$id]);
+        getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+            ->execute(['readdress_dismissed', $id]);
+        writeAuditLog('readdress', 'server_address', $id, "Address move {$id} discarded", 'delete', $_SESSION['user_id'] ?? null);
     }
 
     /** $value with the host $old replaced by $new (exact host only, never part of another address). */

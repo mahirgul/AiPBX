@@ -1,12 +1,12 @@
 <?php if (!empty($generated_password)): ?>
-<div class="card" style="border: 2px solid var(--warning); margin-bottom: 16px;">
-    <div style="padding: 16px 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px;">
-        <i class="fas fa-key" style="font-size: 22px; color: var(--warning);"></i>
-        <div style="flex: 1; min-width: 220px;">
+<div class="card u-bd-2-solid-warning u-mb-16">
+    <div class="u-p-16-20 u-d-flex u-wrap u-ai-center u-gap-16">
+        <i class="fas fa-key u-fs-24 u-warning"></i>
+        <div class="u-flex-1 u-minw-220">
             <div class="u-fw-700 u-mb-4"><?php echo t('system_users.generated_password_title'); ?> — <?php echo htmlspecialchars($generated_for); ?></div>
-            <div style="font-size: 12.5px; color: var(--text-muted);"><?php echo t('system_users.generated_password_hint'); ?></div>
+            <div class="u-fs-12-5 u-muted"><?php echo t('system_users.generated_password_hint'); ?></div>
         </div>
-        <code style="font-size: 18px; font-weight: 700; letter-spacing: 1px; padding: 8px 14px; border-radius: 8px; background: var(--bg-main); user-select: all;"><?php echo htmlspecialchars($generated_password); ?></code>
+        <code class="u-fs-18 u-fw-700 u-letter-spacing-1 u-p-8-16 u-r-8 u-bg-bg-main u-user-select-all"><?php echo htmlspecialchars($generated_password); ?></code>
         <button type="button" class="btn btn-secondary btn-sm" data-pw="<?php echo htmlspecialchars($generated_password); ?>"
                 onclick="navigator.clipboard.writeText(this.dataset.pw).then(() => { this.innerHTML = '<i class=&quot;fas fa-check&quot;></i> <?php echo htmlspecialchars(t('system_users.generated_password_copied'), ENT_QUOTES); ?>'; });">
             <i class="fas fa-copy"></i> <?php echo t('system_users.generated_password_copy'); ?>
@@ -15,27 +15,29 @@
 </div>
 <?php endif; ?>
 <?php if (!empty($import_preview)): ?>
-<div class="card" style="margin-bottom: 16px; border: 1px solid var(--primary);">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-file-csv u-primary"></i> <?php echo t('system_users.import_preview_title'); ?> — <?php echo htmlspecialchars($import_preview['file_name']); ?></div>
-    </div>
-    <div style="padding: 0 16px 16px 16px;">
+<div class="card u-mb-16 u-bd-1-solid-primary">
+    <?php echo uiPageHeaderOpen('fa-file-csv', t('system_users.import_preview_title')); ?>
+— <?php echo htmlspecialchars($import_preview['file_name']); ?>
+<?php echo uiPageHeaderActions(); ?>
+<?php echo uiPageHeaderClose(); ?>
+    <div class="u-p-0-16-16-16">
         <?php
         $total = count($import_preview['items']);
         $bad = $total - $import_preview['valid_count'];
         ?>
-        <p style="font-size: 13px; margin: 0 0 12px 0;">
+        <p class="u-fs-13 u-m-0-0-12-0">
             <?php echo sprintf(t('system_users.import_preview_summary'), $total, $import_preview['valid_count'], $bad); ?>
             <?php if ($import_preview['send_invitations']): ?><br><i class="fas fa-envelope"></i> <?php echo t('system_users.import_will_invite'); ?><?php endif; ?>
         </p>
-        <div class="table-responsive" style="max-height: 420px; overflow: auto;">
-            <table class="data-table">
-                <thead><tr>
-                    <th>#</th><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th>
-                    <th><?php echo t('system_users.field_email'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th>
-                    <th><?php echo t('system_users.field_role'); ?></th><th><?php echo t('system_users.import_col_status'); ?></th>
-                </tr></thead>
-                <tbody>
+        <?php echo uiTableOpen([
+            '#',
+            t('system_users.field_username'),
+            t('system_users.field_fullname'),
+            t('system_users.field_email'),
+            t('system_users.import_col_extension'),
+            t('system_users.field_role'),
+            t('system_users.import_col_status'),
+        ], ['frame' => 'u-maxh-420 u-of-auto']); ?>
                 <?php foreach ($import_preview['items'] as $line => $item): $r = $item['row']; ?>
                     <tr style="<?php echo $item['errors'] ? 'background: rgba(239,68,68,0.08);' : ''; ?>">
                         <td><?php echo (int) $line; ?></td>
@@ -53,10 +55,8 @@
                         </td>
                     </tr>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-        <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
+                <?php echo uiTableClose(); ?>
+        <div class="u-d-flex u-gap-8 u-jc-flex-end u-mt-14">
             <a href="/system-users" class="btn btn-secondary btn-sm"><i class="fas fa-times"></i> <?php echo t('system_users.import_cancel'); ?></a>
             <?php if ($import_preview['valid_count'] > 0): ?>
             <form method="POST" class="u-m-0" onsubmit="this.querySelector('button').disabled = true;">
@@ -71,35 +71,37 @@
 </div>
 <?php endif; ?>
 <?php if (!empty($import_result)): ?>
-<div class="card" style="margin-bottom: 16px; border: 1px solid var(--success);">
+<div class="card u-mb-16 u-bd-1-solid-success">
     <div class="card-header">
         <div class="card-title"><i class="fas fa-check-circle u-success"></i> <?php echo t('system_users.import_result_title'); ?></div>
     </div>
-    <div style="padding: 0 16px 16px 16px; font-size: 13px;">
-        <p style="margin: 0 0 10px 0;"><?php echo sprintf(t('system_users.import_result_summary'), $import_result['created'], count($import_result['failed']), $import_result['invited']); ?></p>
+    <div class="u-p-0-16-16-16 u-fs-13">
+        <p class="u-m-0-0-12-0"><?php echo sprintf(t('system_users.import_result_summary'), $import_result['created'], count($import_result['failed']), $import_result['invited']); ?></p>
         <?php if ($import_result['failed']): ?>
-            <div style="color: var(--danger); margin-bottom: 12px;">
+            <div class="u-danger u-mb-12">
                 <?php foreach ($import_result['failed'] as $line => $f): ?>
                     <div><i class="fas fa-times-circle"></i> #<?php echo (int) $line; ?> <?php echo htmlspecialchars($f['username']); ?>: <?php echo htmlspecialchars($f['error']); ?></div>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
         <?php if ($import_result['generated']): ?>
-            <div style="border: 2px solid var(--warning); border-radius: 10px; padding: 12px 14px;">
+            <div class="u-bd-2-solid-warning u-r-12 u-p-12-16">
                 <div class="u-fw-700 u-mb-4"><i class="fas fa-key u-warning"></i> <?php echo t('system_users.import_generated_title'); ?></div>
                 <div class="u-muted u-mb-10"><?php echo t('system_users.generated_password_hint'); ?></div>
-                <table class="table u-mb-10">
-                    <thead><tr><th><?php echo t('system_users.field_username'); ?></th><th><?php echo t('system_users.field_fullname'); ?></th><th><?php echo t('system_users.import_col_extension'); ?></th><th><?php echo t('system_users.field_password'); ?></th></tr></thead>
-                    <tbody>
+                <?php echo uiTableOpen([
+                    t('system_users.field_username'),
+                    t('system_users.field_fullname'),
+                    t('system_users.import_col_extension'),
+                    t('system_users.field_password'),
+                ]); ?>
                     <?php
                     $csvOut = "\xEF\xBB\xBFkullanici_adi;ad_soyad;dahili;sifre\r\n";
                     foreach ($import_result['generated'] as $g):
                         $csvOut .= implode(';', array_map(fn($v) => str_replace([';', "\r", "\n"], ' ', (string) $v), [$g['username'], $g['full_name'], $g['extension'], $g['password']])) . "\r\n";
                     ?>
-                        <tr><td><?php echo htmlspecialchars($g['username']); ?></td><td><?php echo htmlspecialchars($g['full_name']); ?></td><td><?php echo htmlspecialchars($g['extension']); ?></td><td><code style="user-select: all;"><?php echo htmlspecialchars($g['password']); ?></code></td></tr>
+                        <tr><td><?php echo htmlspecialchars($g['username']); ?></td><td><?php echo htmlspecialchars($g['full_name']); ?></td><td><?php echo htmlspecialchars($g['extension']); ?></td><td><code class="u-user-select-all"><?php echo htmlspecialchars($g['password']); ?></code></td></tr>
                     <?php endforeach; ?>
-                    </tbody>
-                </table>
+                    <?php echo uiTableClose(); ?>
                 <a class="btn btn-secondary btn-sm" download="olusturulan_sifreler.csv" href="data:text/csv;charset=utf-8;base64,<?php echo base64_encode($csvOut); ?>">
                     <i class="fas fa-download"></i> <?php echo t('system_users.import_download_passwords'); ?>
                 </a>
@@ -109,38 +111,29 @@
 </div>
 <?php endif; ?>
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-users-cog u-primary"></i> <?php echo t('system_users.title'); ?>
-        </div>
-        <div class="u-flex-gap">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('userHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
-            <button type="button" class="btn btn-secondary btn-sm" onclick="openRolesModal()" title="<?php echo t('system_users.roles_tooltip'); ?>">
+    <?php echo uiPageHeaderOpen('fa-users-cog', t('system_users.title'), 'userHelpBox'); ?>
+<?php echo uiPageHeaderActions(); ?>
+<button type="button" class="btn btn-secondary btn-sm" onclick="openRolesModal()" title="<?php echo t('system_users.roles_tooltip'); ?>">
                 <i class="fas fa-user-tag"></i> <?php echo t('system_users.roles_tooltip'); ?>
             </button>
             <button type="button" class="btn btn-secondary btn-sm" onclick="openUserImportModal()" title="<?php echo t('system_users.import_title'); ?>">
                 <i class="fas fa-file-csv"></i> <?php echo t('system_users.import_button'); ?>
             </button>
             <button class="btn btn-primary btn-sm" onclick="openCreateUserModal()" title="<?php echo t('system_users.new_tooltip'); ?>">
-                <i class="fas fa-user-plus"></i>
+                <i class="fas fa-user-plus"></i> <?php echo t('system_users.new_tooltip'); ?>
             </button>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="userHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('system_users.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('userHelpBox', t('system_users.help_title')); ?>
         <?php echo t('system_users.help_body'); ?><br>
         - <strong><?php echo t('system_users.help_admin'); ?></strong><br>
         - <strong><?php echo t('system_users.help_cc_agent'); ?></strong><br>
         - <strong><?php echo t('system_users.help_fax_user'); ?></strong>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
     <!-- Bulk Actions Toolbar -->
-    <div id="bulkActionBar" style="display: none; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); border-radius: 8px; padding: 10px 16px; margin: 12px 16px; align-items: center; justify-content: space-between;">
-        <div style="font-size: 13px; font-weight: 600; color: var(--primary); display: flex; align-items: center; gap: 8px;">
+    <div class="u-bg-rgba-37-99-235-0-08 u-bd-1-solid-rgba-37-99-235-0-25 u-r-8 u-p-12-16 u-m-12-16 u-ai-center u-jc-space-between" id="bulkActionBar" style="display: none;">
+        <div class="u-fs-13 u-fw-600 u-primary u-d-flex u-ai-center u-gap-8">
             <i class="fas fa-check-square"></i>
             <span id="bulkSelectedCount">0</span> <?php echo t('system_users.users_selected'); ?>
         </div>
@@ -154,26 +147,19 @@
         </form>
     </div>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width: 36px; text-align: center;">
-                        <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)" style="cursor: pointer; accent-color: var(--primary);" title="<?php echo t('system_users.select_all'); ?>">
-                    </th>
-                    <th class="col-hide-mobile u-w-50">#</th>
-                    <th class="col-hide-mobile"><?php echo t('system_users.col_user'); ?></th>
-                    <th><?php echo t('system_users.col_fullname'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('system_users.col_email'); ?></th>
-                    <th><?php echo t('system_users.col_role'); ?></th>
-                    <th><?php echo t('system_users.col_extension'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('system_users.col_permissions'); ?></th>
-                    <th>2FA</th>
-                    <th><?php echo t('system_users.col_status'); ?></th>
-                    <th class="text-right"><?php echo t('system_users.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => '<input class="u-pointer u-accent" type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this)" title="' . t('system_users.select_all') . '">', 'class' => 'u-w-36 u-ta-center'],
+        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
+        ['label' => t('system_users.col_user'), 'class' => 'col-hide-mobile'],
+        t('system_users.col_fullname'),
+        ['label' => t('system_users.col_email'), 'class' => 'col-hide-mobile'],
+        t('system_users.col_role'),
+        t('system_users.col_extension'),
+        ['label' => t('system_users.col_permissions'), 'class' => 'col-hide-mobile'],
+        '2FA',
+        t('system_users.col_status'),
+        ['label' => t('system_users.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($users)): ?>
                     <?php echo uiTableEmptyRow(11, t('system_users.empty'), 'fa-users-cog'); ?>
                 <?php else: ?>
@@ -183,7 +169,7 @@
                     ?>
                         <tr>
                             <td class="u-text-center">
-                                <input type="checkbox" class="user-select-cb" value="<?php echo $u['id']; ?>" data-has-email="<?php echo !empty($u['email']) ? '1' : '0'; ?>" onchange="updateBulkActionState()" style="cursor: pointer; accent-color: var(--primary);">
+                                <input type="checkbox" class="user-select-cb u-pointer u-accent" value="<?php echo $u['id']; ?>" data-has-email="<?php echo !empty($u['email']) ? '1' : '0'; ?>" onchange="updateBulkActionState()">
                             </td>
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $u['id']; ?></td>
                             <td class="col-hide-mobile u-strong">
@@ -213,11 +199,11 @@
                             </td>
                             <td>
                                 <?php if (!empty($u['two_factor_enabled'])): ?>
-                                    <span class="badge" style="background: rgba(34, 197, 94, 0.15); color: var(--success); font-weight: 700; font-size: 11px;" title="<?php echo t('system_users.2fa_active_tooltip'); ?>">
+                                    <span class="badge u-bg-rgba-34-197-94-0-15 u-success u-fw-700 u-fs-11" title="<?php echo t('system_users.2fa_active_tooltip'); ?>">
                                         <i class="fas fa-lock"></i> <?php echo t('common.active'); ?>
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge" style="background: rgba(148, 163, 184, 0.15); color: var(--text-muted); font-size: 11px;" title="<?php echo t('system_users.2fa_inactive_tooltip'); ?>">
+                                    <span class="badge u-bg-rgba-148-163-184-0-15 u-muted u-fs-11" title="<?php echo t('system_users.2fa_inactive_tooltip'); ?>">
                                         <i class="fas fa-unlock-alt"></i> <?php echo t('system_users.twofa_off'); ?>
                                     </span>
                                 <?php endif; ?>
@@ -232,12 +218,12 @@
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="send_activation_mail" value="1">
                                             <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
-                                            <button type="submit" class="btn btn-secondary btn-sm u-primary" title="<?php echo t('system_users.send_mail_tooltip'); ?>">
+                                            <button type="submit" class="btn btn-icon btn-secondary btn-sm u-primary" title="<?php echo t('system_users.send_mail_tooltip'); ?>">
                                                 <i class="fas fa-envelope"></i>
                                             </button>
                                         </form>
                                     <?php else: ?>
-                                        <button type="button" class="btn btn-secondary btn-sm" disabled title="<?php echo t('system_users.no_email_tooltip'); ?>" style="opacity: 0.35; cursor: not-allowed;">
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm u-opacity-0-35 u-cur-not-allowed" disabled title="<?php echo t('system_users.no_email_tooltip'); ?>">
                                             <i class="fas fa-envelope"></i>
                                         </button>
                                     <?php endif; ?>
@@ -246,12 +232,12 @@
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="reset_2fa" value="1">
                                             <input type="hidden" name="user_id" value="<?php echo $u['id']; ?>">
-                                            <button type="submit" class="btn btn-secondary btn-sm u-warning" title="<?php echo t('system_users.reset_2fa_tooltip'); ?>">
+                                            <button type="submit" class="btn btn-icon btn-secondary btn-sm u-warning" title="<?php echo t('system_users.reset_2fa_tooltip'); ?>">
                                                 <i class="fas fa-shield-alt"></i>
                                             </button>
                                         </form>
                                     <?php endif; ?>
-                                    <button class="btn btn-secondary btn-sm" onclick='openResetUserModal(<?php echo $u['id']; ?>, "<?php echo htmlspecialchars($u['username'], ENT_QUOTES); ?>")' title="<?php echo t('system_users.reset_password_tooltip'); ?>">
+                                    <button class="btn btn-icon btn-secondary btn-sm" onclick='openResetUserModal(<?php echo $u['id']; ?>, "<?php echo htmlspecialchars($u['username'], ENT_QUOTES); ?>")' title="<?php echo t('system_users.reset_password_tooltip'); ?>">
                                         <i class="fas fa-key"></i>
                                     </button>
                                     <?php echo uiEditButton($u, 'openEditUserModal'); ?>
@@ -263,17 +249,15 @@
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Create / Edit User Modal -->
 <div class="modal-overlay" id="userModal">
-    <div class="modal-card" style="max-width: 540px;">
+    <div class="modal-card u-maxw-540">
         <div class="modal-header">
             <h3 class="u-title" id="userModalTitle"><i class="fas fa-user-plus u-primary"></i> <?php echo t('system_users.modal_new_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeUserModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -295,7 +279,7 @@
                     <div class="form-group" id="modal_password_group">
                         <label class="form-label"><?php echo t('system_users.field_password'); ?></label>
                         <input type="password" name="password" id="modal_password" class="form-control" placeholder="******" autocomplete="new-password">
-                        <small style="display: block; margin-top: 4px; font-size: 11.5px; color: var(--text-muted);"><?php echo t('system_users.password_auto_hint'); ?></small>
+                        <small class="u-mt-4 u-fs-12 u-muted" style="display: block;"><?php echo t('system_users.password_auto_hint'); ?></small>
                     </div>
                     <div class="form-group">
                         <label class="form-label"><?php echo t('system_users.field_fullname'); ?></label>
@@ -321,7 +305,7 @@
                 <div class="form-group">
                         <label class="form-label u-flex-between">
                             <span><?php echo t('system_users.field_sip_password'); ?></span>
-                            <button type="button" class="btn btn-secondary btn-sm" onclick="if(typeof generateSipPassword === 'function'){ document.getElementById('modal_sip_password').value = generateSipPassword(); }" title="<?php echo t('system_users.gen_password_tooltip'); ?>" style="padding: 2px 8px; font-size: 10px;">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="if(typeof generateSipPassword === 'function'){ document.getElementById('modal_sip_password').value = generateSipPassword(); }" title="<?php echo t('system_users.gen_password_tooltip'); ?>">
                                 <i class="fas fa-magic"></i> <?php echo t('system_users.auto_password'); ?>
                             </button>
                         </label>
@@ -348,41 +332,41 @@
                     <input type="text" name="pickup_group" id="modal_pickup_group" class="form-control" placeholder="<?php echo t('system_users.pickup_group_placeholder'); ?>">
                 </div>
 
-                <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px;">
+                <div class="form-group u-bg-rgba-255-255-255-0-03 u-p-12 u-r-8 u-bd-1-solid-border-color u-mt-12">
                     <label class="form-label form-label-help u-fw-700">
                         <span><?php echo t('system_users.field_phone_mode'); ?></span>
                         <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('system_users.phone_mode_help'); ?></span></span>
                     </label>
-                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 6px;">
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
+                    <div class="u-d-grid u-gtc-repeat-4-1fr u-gap-8 u-mt-8">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13 u-m-0 u-user-select-none">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_web" value="web">
                             <span><i class="fas fa-laptop u-primary"></i> Web</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13 u-m-0 u-user-select-none">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_mobil" value="mobil">
                             <span><i class="fas fa-mobile-alt u-success"></i> <?php echo t('my_phone.lbl_mobile'); ?></span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13 u-m-0 u-user-select-none">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_sip" value="sip">
-                            <span><i class="fas fa-phone-alt" style="color: var(--secondary);"></i> SIP</span>
+                            <span><i class="fas fa-phone-alt u-c-secondary"></i> SIP</span>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12.5px; margin: 0; user-select: none;">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13 u-m-0 u-user-select-none">
                             <input type="checkbox" name="allowed_phone_modes[]" id="modal_mode_video" value="video">
-                            <span><i class="fas fa-video" style="color: #8b5cf6;"></i> <?php echo t('system_users.video'); ?></span>
+                            <span><i class="fas fa-video u-c-8b5cf6"></i> <?php echo t('system_users.video'); ?></span>
                         </label>
                     </div>
                 </div>
 
-                <div class="form-group" style="background: rgba(255, 255, 255, 0.03); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 10px;">
+                <div class="form-group u-bg-rgba-255-255-255-0-03 u-p-12 u-r-8 u-bd-1-solid-border-color u-mt-12">
                     <label class="form-label u-fw-700"><?php echo t('system_users.extra_perms'); ?></label>
-                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; align-items: center; margin-top: 6px;">
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                    <div class="u-d-grid u-gtc-repeat-2-1fr u-gap-12 u-ai-center u-mt-8">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13">
                             <input type="checkbox" name="can_listen_recordings" id="modal_listen_recordings" value="1"> <?php echo t('system_users.perm_listen_label'); ?>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13">
                             <input type="checkbox" name="can_view_all_cdrs" id="modal_view_all_cdrs" value="1"> <?php echo t('system_users.perm_view_cdr_label'); ?>
                         </label>
-                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: var(--primary); font-weight: 600;">
+                        <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fs-13 u-primary u-fw-600">
                             <input type="checkbox" name="can_view_queue_monitor" id="modal_view_queue_monitor" value="1"> <?php echo t('system_users.perm_queue_monitor_label'); ?>
                         </label>
                     </div>
@@ -403,10 +387,10 @@
 
 <!-- Reset Password Modal -->
 <div class="modal-overlay" id="resetPasswordModal">
-    <div class="modal-card" style="max-width: 440px;">
+    <div class="modal-card u-maxw-440">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-key u-primary"></i> <?php echo t('system_users.reset_modal_title'); ?> <span id="reset_username_label"></span></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeResetUserModal()" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeResetUserModal()" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -432,52 +416,47 @@
 
 <!-- System Roles Management Modal -->
 <div class="modal-overlay" id="rolesModal">
-    <div class="modal-card" style="max-width: 680px;">
+    <div class="modal-card u-maxw-680">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-user-tag u-primary"></i> <?php echo t('system_users.roles_modal_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeRolesModal()" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeRolesModal()" title="<?php echo t('system_users.close_tooltip'); ?>"><i class="fas fa-times"></i></button>
         </div>
-        <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="modal-body u-d-flex u-col u-gap-16">
             <!-- Roles Table -->
-            <div style="max-height: 220px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px;">
-                <table class="data-table u-fs-12" data-no-dt="true">
-                    <thead>
-                        <tr>
-                            <th><?php echo t('system_users.col_role_key'); ?></th>
-                            <th><?php echo t('system_users.col_role_name'); ?></th>
-                            <th><?php echo t('system_users.col_description'); ?></th>
-                            <th class="text-right"><?php echo t('system_users.col_action'); ?></th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <div class="u-maxh-220 u-overflow-y-auto u-bd-1-solid-border-color u-r-8">
+                <?php echo uiTableOpen([
+                    t('system_users.col_role_key'),
+                    t('system_users.col_role_name'),
+                    t('system_users.col_description'),
+                    ['label' => t('system_users.col_action'), 'class' => 'text-right'],
+                ], ['search' => false]); ?>
                         <?php foreach ($sys_roles_full as $r_item): ?>
                             <tr>
                                 <td><code><?php echo htmlspecialchars($r_item['role_key']); ?></code></td>
                                 <td class="u-strong"><?php echo htmlspecialchars($r_item['role_name']); ?></td>
                                 <td class="text-muted"><?php echo htmlspecialchars($r_item['description'] ?: '-'); ?></td>
                                 <td class="text-right">
-                                    <button type="button" class="btn btn-secondary btn-sm" onclick='editSystemRole(<?php echo jsArg($r_item); ?>)' title="<?php echo t('system_users.edit_tooltip'); ?>">
+                                    <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='editSystemRole(<?php echo jsArg($r_item); ?>)' title="<?php echo t('system_users.edit_tooltip'); ?>">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
-                    </tbody>
-                </table>
+                    <?php echo uiTableClose(); ?>
             </div>
 
             <!-- Role Edit / Create Form -->
-            <form method="POST" autocomplete="off" style="background: var(--bg-sidebar); padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+            <form class="u-bg-bg-sidebar u-p-16 u-r-8 u-bd-1-solid-border-color" method="POST" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="save_system_role" value="1">
                 <input type="hidden" name="role_id" id="role_modal_id" value="0">
 
-                <h4 style="font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; justify-content: space-between;">
+                <h4 class="u-fs-13 u-fw-700 u-mb-12 u-text-main u-d-flex u-ai-center u-jc-space-between">
                     <span><i class="fas fa-edit"></i> <?php echo t('system_users.role_form_title'); ?></span>
                     <button type="button" class="btn btn-secondary btn-sm u-fs-11" onclick="resetRoleForm()"><?php echo t('system_users.clear'); ?></button>
                 </h4>
 
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="u-d-grid u-gtc-1fr-1fr u-gap-12 u-mb-12">
                     <div class="form-group u-mb-0">
                         <label class="form-label"><?php echo t('system_users.field_role_key'); ?></label>
                         <input type="text" name="role_key" id="role_modal_key" class="form-control" placeholder="<?php echo t('system_users.field_role_key_placeholder'); ?>" required>
@@ -488,12 +467,12 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-bottom: 12px;">
+                <div class="form-group u-mb-12">
                     <label class="form-label"><?php echo t('system_users.field_role_desc'); ?></label>
                     <input type="text" name="description" id="role_modal_desc" class="form-control" placeholder="<?php echo t('system_users.role_desc_placeholder'); ?>">
                 </div>
 
-                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <div class="u-d-flex u-jc-flex-end u-gap-8">
                     <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('system_users.save_role'); ?></button>
                 </div>
             </form>
@@ -506,7 +485,7 @@
     <div class="modal-card u-maxw-520">
         <div class="modal-header">
             <h3 class="u-title"><i class="fas fa-file-csv u-primary"></i> <?php echo t('system_users.import_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="closeUserImportModal()"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeUserImportModal()"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" enctype="multipart/form-data" autocomplete="off">
@@ -526,10 +505,10 @@
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <label style="display: flex; gap: 8px; align-items: center; font-size: 13px; margin-bottom: 16px;">
+                <label class="u-d-flex u-gap-8 u-ai-center u-fs-13 u-mb-16">
                     <input type="checkbox" name="send_invitations" value="1" checked> <?php echo t('system_users.import_send_invitations'); ?>
                 </label>
-                <div style="display: flex; justify-content: flex-end;">
+                <div class="u-d-flex u-jc-flex-end">
                     <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-search"></i> <?php echo t('system_users.import_check'); ?></button>
                 </div>
             </form>

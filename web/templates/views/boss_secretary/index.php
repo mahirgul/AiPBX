@@ -6,49 +6,36 @@ use PBX\Destinations\DestinationRegistry;
 ?>
 
 <div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-user-tie u-primary"></i> <?php echo t('boss_secretary.title'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($groups); ?></span>
-        </div>
-        <div class="u-flex-center">
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('bsHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
+    <?php echo uiPageHeaderOpen('fa-user-tie', t('boss_secretary.title'), 'bsHelpBox'); ?>
+<span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($groups); ?></span>
+<?php echo uiPageHeaderActions(); ?>
+
             <?php if (hasModulePermission('boss_secretary', 'edit')): ?>
                 <button class="btn btn-primary btn-sm" onclick="openCreateBsModal()" title="<?php echo t('boss_secretary.new_group_btn'); ?>">
-                    <i class="fas fa-plus-circle"></i>
+                    <i class="fas fa-plus-circle"></i> <?php echo t('boss_secretary.new_group_btn'); ?>
                 </button>
             <?php endif; ?>
-        </div>
-    </div>
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="bsHelpBox">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('boss_secretary.help_title'); ?></h4>
+        <?php echo uiHelpBoxOpen('bsHelpBox', t('boss_secretary.help_title')); ?>
         <p><?php echo t('boss_secretary.help_body'); ?></p>
         <ul>
             <li><strong><?php echo t('boss_secretary.help_intercept'); ?></strong> <?php echo t('boss_secretary.help_intercept_desc'); ?></li>
             <li><strong><?php echo t('boss_secretary.help_direct'); ?></strong> <?php echo t('boss_secretary.help_direct_desc'); ?></li>
             <li><strong><?php echo t('boss_secretary.help_strategy'); ?></strong> <?php echo t('boss_secretary.help_strategy_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 
-    <div class="table-responsive">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th style="width: 70px;"><?php echo t('boss_secretary.col_group'); ?></th>
-                    <th><?php echo t('common.group_name'); ?></th>
-                    <th><?php echo t('boss_secretary.col_boss'); ?></th>
-                    <th><?php echo t('boss_secretary.col_secretaries'); ?></th>
-                    <th><?php echo t('common.ring_strategy'); ?></th>
-                    <th><?php echo t('boss_secretary.col_timeout'); ?></th>
-                    <th><?php echo t('common.status'); ?></th>
-                    <th class="text-right"><?php echo t('my_phone.col_actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
+    <?php echo uiTableOpen([
+        ['label' => t('boss_secretary.col_group'), 'class' => 'u-w-70'],
+        t('common.group_name'),
+        t('boss_secretary.col_boss'),
+        t('boss_secretary.col_secretaries'),
+        t('common.ring_strategy'),
+        t('boss_secretary.col_timeout'),
+        t('common.status'),
+        ['label' => t('my_phone.col_actions'), 'class' => 'text-right'],
+    ]); ?>
                 <?php if (empty($groups)): ?>
                     <?php echo uiTableEmptyRow(8, t('boss_secretary.empty'), 'fa-user-tie'); ?>
                 <?php else: ?>
@@ -64,11 +51,11 @@ use PBX\Destinations\DestinationRegistry;
                                     <i class="fas fa-crown"></i> <?php echo htmlspecialchars($g['boss_extension']); ?>
                                 </span>
                                 <?php if (!empty($g['boss_name'])): ?>
-                                    <span style="font-size: 12px; color: var(--text-muted); margin-left: 4px;"><?php echo htmlspecialchars($g['boss_name']); ?></span>
+                                    <span class="u-fs-12 u-muted u-ml-4"><?php echo htmlspecialchars($g['boss_name']); ?></span>
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                                <div class="u-d-flex u-gap-4 u-wrap">
                                     <?php if (empty($secs)): ?>
                                         <span class="text-muted u-fs-12"><?php echo t('boss_secretary.not_set'); ?></span>
                                     <?php else: ?>
@@ -95,15 +82,15 @@ use PBX\Destinations\DestinationRegistry;
                             </td>
                             <td class="text-right">
                                 <?php if (hasModulePermission('boss_secretary', 'edit')): ?>
-                                    <div style="display: inline-flex; gap: 4px;">
-                                        <button type="button" class="btn btn-secondary btn-sm" onclick='openEditBsModal(<?php echo jsArg($g); ?>)' title="<?php echo t('common.edit'); ?>">
+                                    <div class="u-d-inline-flex u-gap-4">
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='openEditBsModal(<?php echo jsArg($g); ?>)' title="<?php echo t('common.edit'); ?>">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <form method="POST" class="u-inline" onsubmit="return confirm(<?php echo htmlspecialchars(json_encode(t('boss_secretary.confirm_delete')), ENT_QUOTES); ?>);">
                                             <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                                             <input type="hidden" name="delete_group" value="1">
                                             <input type="hidden" name="group_id" value="<?php echo $g['id']; ?>">
-                                            <button type="submit" class="btn btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
+                                            <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('common.delete'); ?>">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </form>
@@ -113,17 +100,15 @@ use PBX\Destinations\DestinationRegistry;
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
-            </tbody>
-        </table>
-    </div>
+            <?php echo uiTableClose(); ?>
 </div>
 
 <!-- Modal: add / edit boss group -->
 <div class="modal-overlay" id="bsModal">
-    <div class="modal-card" style="max-width: 600px;">
+    <div class="modal-card u-maxw-600">
         <div class="modal-header">
             <h3 class="u-title" id="bsModalTitle"><i class="fas fa-user-tie u-primary"></i> <?php echo t('boss_secretary.modal_title'); ?></h3>
-            <button class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('bsModal')"><i class="fas fa-times"></i></button>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('bsModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -131,7 +116,7 @@ use PBX\Destinations\DestinationRegistry;
                 <input type="hidden" name="save_group" value="1">
                 <input type="hidden" name="id" id="modal_bs_id" value="0">
 
-                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px;">
+                <div class="u-d-grid u-gtc-1fr-2fr u-gap-16">
                     <div class="form-group">
                         <label class="form-label"><?php echo t('boss_secretary.group_number'); ?></label>
                         <input type="number" name="group_number" id="modal_bs_group_number" class="form-control" value="1" min="1" max="99" required>
@@ -158,7 +143,7 @@ use PBX\Destinations\DestinationRegistry;
 
                 <div class="form-group">
                     <label class="form-label"><i class="fas fa-user-friends text-info"></i> <?php echo t('boss_secretary.secretary_exts'); ?></label>
-                    <div style="max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background: var(--bg-card); display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                    <div class="u-maxh-150 u-overflow-y-auto u-bd-1-solid-border-color u-r-8 u-p-12 u-bg-bg-card u-d-grid u-gtc-1fr-1fr u-gap-8">
                         <?php foreach ($extensions as $ext): ?>
                             <label class="u-check-label-6 u-fs-12">
                                 <input type="checkbox" name="secretaries[]" value="<?php echo htmlspecialchars($ext['extension']); ?>" class="bs-secretary-chk u-accent">
@@ -179,7 +164,7 @@ use PBX\Destinations\DestinationRegistry;
 
                     <div class="form-group">
                         <label class="form-label"><?php echo t('common.ring_timeout'); ?></label>
-                        <div style="display: flex; align-items: center; gap: 6px;">
+                        <div class="u-d-flex u-ai-center u-gap-6">
                             <input type="number" name="ring_timeout" id="modal_bs_timeout" class="form-control" value="20" min="5" max="120" required>
                             <span class="u-muted u-fs-12"><?php echo t('common.seconds'); ?></span>
                         </div>

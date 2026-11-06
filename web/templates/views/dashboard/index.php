@@ -1,82 +1,69 @@
 <!-- System Status Summary Banner -->
-<div class="card page-header-card" style="padding: 12px 18px; margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; width: 100%;">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div style="width: 36px; height: 36px; background: rgba(0, 242, 254, 0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 16px;">
-                <i class="fas fa-server"></i>
-            </div>
-            <div style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-                <span><?php echo t('dashboard.system_status'); ?></span>
-                <?php if ($is_asterisk_running): ?>
+<div class="card page-header-card">
+    <?php echo uiPageHeaderOpen('fa-server', t('dashboard.system_status'), 'dashHelpBox'); ?>
+<?php if ($is_asterisk_running): ?>
                     <span class="badge badge-success u-fs-11"><i class="fas fa-check-circle"></i> <?php echo t('dashboard.status_active'); ?></span>
                 <?php else: ?>
                     <span class="badge badge-danger u-fs-11"><i class="fas fa-exclamation-triangle"></i> <?php echo t('dashboard.status_down'); ?></span>
                 <?php endif; ?>
-            </div>
-        </div>
-        <div class="u-flex-center">
-            <form method="POST" autocomplete="off" class="u-m-0 u-inline">
+<?php echo uiPageHeaderActions(); ?>
+<form method="POST" autocomplete="off" class="u-m-0 u-inline">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="system_action" value="reload_asterisk">
-                <button type="submit" class="btn btn-outline-primary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.reload_tooltip')); ?>" style="display: inline-flex; align-items: center; gap: 6px;">
+                <button type="submit" class="btn btn-outline-primary btn-sm u-d-inline-flex u-ai-center u-gap-6" title="<?php echo htmlspecialchars(t('dashboard.reload_tooltip')); ?>">
                     <i class="fas fa-sync-alt"></i> <span class="btn-label"><?php echo t('dashboard.reload_button'); ?></span>
                 </button>
             </form>
-            <button type="button" class="btn-help" onclick="toggleModuleHelp('dashHelpBox')" title="<?php echo t('common.module_guide'); ?>">
-                <i class="fas fa-question-circle"></i>
-            </button>
-        </div>
-    </div>
+            
+<?php echo uiPageHeaderClose(); ?>
 
-    <!-- Collapsible Help Box -->
-    <div class="module-help-box" id="dashHelpBox" style="width: 100%; margin-top: 14px; margin-bottom: 0;">
-        <h4><i class="fas fa-info-circle"></i> <?php echo t('dashboard.help_title'); ?></h4>
-        <p style="margin: 0 0 8px 0; font-size: 13px;"><?php echo t('dashboard.help_intro'); ?></p>
-        <ul style="margin: 0; padding-left: 20px; font-size: 12px; line-height: 1.6;">
+        <?php echo uiHelpBoxOpen('dashHelpBox', t('dashboard.help_title')); ?>
+        <p class="u-m-0-0-8-0 u-fs-13"><?php echo t('dashboard.help_intro'); ?></p>
+        <ul class="u-m-0 u-pl-20 u-fs-12 u-lh-1-6">
             <li><strong><?php echo t('dashboard.help_reload'); ?></strong>: <?php echo t('dashboard.help_reload_desc'); ?></li>
             <li><strong><?php echo t('dashboard.help_services'); ?></strong>: <?php echo t('dashboard.help_services_desc'); ?></li>
         </ul>
-    </div>
+<?php echo uiHelpBoxClose(); ?>
 </div>
 
 <!-- Live call status (refreshed from /api/dashboard_live.php) -->
 <div class="u-flex-between u-mb-10">
-    <div style="font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px;"><span class="live-dot"></span> <?php echo t('dashboard.live_title'); ?></div>
+    <div class="u-fs-14 u-fw-700 u-d-flex u-ai-center u-gap-8"><span class="live-dot"></span> <?php echo t('dashboard.live_title'); ?></div>
     <small class="u-muted u-fs-11"><?php echo t('dashboard.live_auto_refresh'); ?></small>
 </div>
-<div id="dashLive" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px;">
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+<div class="u-gtc-repeat-auto-fit-minmax-200-1fr u-gap-16 u-mb-16" id="dashLive" style="display: grid;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.live_active_calls'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-16-185-129-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-success u-fs-14">
                 <i class="fas fa-phone-volume"></i>
             </div>
         </div>
         <div class="u-fs-26 u-fw-800 u-mt-6 u-success" data-live="active_calls"><?php echo (int)$live['active_calls']; ?></div>
     </div>
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.live_active_channels'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(0, 242, 254, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-0-242-254-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-primary u-fs-14">
                 <i class="fas fa-stream"></i>
             </div>
         </div>
         <div class="u-fs-26 u-fw-800 u-mt-6 u-primary" data-live="active_channels"><?php echo (int)$live['active_channels']; ?></div>
         <div class="u-fs-12 u-muted u-mt-2"><?php echo t('dashboard.live_processed'); ?>: <strong data-live="calls_processed"><?php echo (int)$live['calls_processed']; ?></strong></div>
     </div>
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.live_queue_waiting'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-245-158-11-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-warning u-fs-14">
                 <i class="fas fa-user-clock"></i>
             </div>
         </div>
         <div class="u-fs-26 u-fw-800 u-mt-6 u-warning" data-live="queue_waiting"><?php echo (int)$live['queue_waiting']; ?></div>
     </div>
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.live_today'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--text-main); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-59-130-246-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-text-main u-fs-14">
                 <i class="fas fa-calendar-day"></i>
             </div>
         </div>
@@ -88,7 +75,7 @@
     </div>
 </div>
 
-<div class="card" style="margin-bottom: 24px; padding: 16px 20px;">
+<div class="card u-mb-24 u-p-16-20">
     <div class="u-muted u-fs-12 u-fw-700 u-uppercase u-mb-10"><i class="fas fa-network-wired"></i> <?php echo t('dashboard.live_trunk_usage'); ?></div>
     <div id="dashTrunkUsage" class="dash-trunk-usage"></div>
 </div>
@@ -101,12 +88,12 @@ window.DASHBOARD_PAGE = {
 <script src="<?php echo asset('/assets/js/dashboard.js'); ?>"></script>
 
 <!-- 1. Total count summary cards -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+<div class="u-d-grid u-gtc-repeat-auto-fit-minmax-200-1fr u-gap-16 u-mb-24">
     <!-- Users -->
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.card_users'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--secondary); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-59-130-246-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-c-secondary u-fs-14">
                 <i class="fas fa-users-cog"></i>
             </div>
         </div>
@@ -114,10 +101,10 @@ window.DASHBOARD_PAGE = {
     </div>
 
     <!-- Extensions -->
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.card_extensions'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(0, 242, 254, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-0-242-254-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-primary u-fs-14">
                 <i class="fas fa-phone-square-alt"></i>
             </div>
         </div>
@@ -125,10 +112,10 @@ window.DASHBOARD_PAGE = {
     </div>
 
     <!-- Trunks -->
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.card_trunks'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(16, 185, 129, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--success); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-16-185-129-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-success u-fs-14">
                 <i class="fas fa-network-wired"></i>
             </div>
         </div>
@@ -136,10 +123,10 @@ window.DASHBOARD_PAGE = {
     </div>
 
     <!-- Incoming faxes -->
-    <div class="card" style="margin-bottom: 0; padding: 16px 20px;">
+    <div class="card u-mb-0 u-p-16-20">
         <div class="u-flex-between">
             <div class="u-muted u-fs-12 u-fw-700 u-uppercase"><?php echo t('dashboard.card_fax_in'); ?></div>
-            <div style="width: 32px; height: 32px; background: rgba(245, 158, 11, 0.1); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--warning); font-size: 14px;">
+            <div class="u-w-32 u-h-32 u-bg-rgba-245-158-11-0-1 u-r-8 u-d-flex u-ai-center u-jc-center u-warning u-fs-14">
                 <i class="fas fa-inbox"></i>
             </div>
         </div>
@@ -148,28 +135,28 @@ window.DASHBOARD_PAGE = {
 </div>
 
 <!-- 3. Server info and service management grid -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 24px;">
+<div class="u-d-grid u-gtc-repeat-auto-fit-minmax-300-1fr u-gap-20 u-mb-24">
     <!-- Server metrics -->
-    <div class="card u-mb-0" style="grid-column: 1 / -1;">
-        <div class="card-header" style="padding-bottom: 12px;">
+    <div class="card u-mb-0 u-grid-column-1-1">
+        <div class="card-header u-pb-12">
             <div class="card-title">
                 <i class="fas fa-microchip u-primary"></i> <?php echo t('dashboard.server_metrics'); ?>
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
+        <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
+            <div class="u-bg-bg-input u-bd-1-solid-border-color u-p-12-16 u-r-12">
                 <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_version'); ?></div>
                 <div class="u-fs-14 u-fw-700 u-primary u-mt-2"><?php echo htmlspecialchars($asterisk_version); ?></div>
             </div>
-            <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
+            <div class="u-bg-bg-input u-bd-1-solid-border-color u-p-12-16 u-r-12">
                 <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_ram'); ?></div>
                 <div class="u-fs-14 u-fw-700 u-success u-mt-2"><?php echo htmlspecialchars($ram_info); ?></div>
             </div>
-            <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
+            <div class="u-bg-bg-input u-bd-1-solid-border-color u-p-12-16 u-r-12">
                 <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_disk'); ?></div>
                 <div class="u-fs-14 u-fw-700 u-warning u-mt-2"><?php echo htmlspecialchars($disk_info); ?></div>
             </div>
-            <div style="background: var(--bg-input); border: 1px solid var(--border-color); padding: 12px 14px; border-radius: 10px;">
+            <div class="u-bg-bg-input u-bd-1-solid-border-color u-p-12-16 u-r-12">
                 <div class="u-muted u-fw-600 u-fs-11"><?php echo t('dashboard.metric_uptime'); ?></div>
                 <div class="u-fs-14 u-fw-700 u-text-main u-mt-2"><?php echo htmlspecialchars($uptime_info); ?></div>
             </div>
@@ -177,17 +164,17 @@ window.DASHBOARD_PAGE = {
     </div>
 
     <!-- All services, each with its state and a restart button -->
-    <div class="card u-mb-0" style="grid-column: 1 / -1;">
-        <div class="card-header" style="padding-bottom: 12px;">
+    <div class="card u-mb-0 u-grid-column-1-1">
+        <div class="card-header u-pb-12">
             <div class="card-title">
                 <i class="fas fa-cogs u-primary"></i> <?php echo t('dashboard.service_control'); ?>
             </div>
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 8px 16px;">
+        <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-260-1fr u-gap-8-16">
             <?php foreach ($services as $svc): $color = ['on' => 'var(--success)', 'failed' => 'var(--danger)'][$svc['state']] ?? 'var(--text-muted)'; ?>
-                <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                <div class="u-d-flex u-ai-center u-gap-8 u-minw-0">
                     <i class="fas fa-circle" style="font-size: 9px; color: <?php echo $color; ?>;" title="<?php echo htmlspecialchars(t('dashboard.svc_state_' . $svc['state'])); ?>"></i>
-                    <div style="flex: 1; min-width: 0;">
+                    <div class="u-flex-1 u-minw-0">
                         <div class="u-fs-12 u-fw-700"><?php echo htmlspecialchars($svc['label']); ?></div>
                         <div class="u-muted u-fs-11"><?php echo htmlspecialchars($svc['unit']); ?> · <?php echo t('dashboard.svc_state_' . $svc['state']); ?></div>
                     </div>
@@ -195,7 +182,7 @@ window.DASHBOARD_PAGE = {
                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                         <input type="hidden" name="system_action" value="restart_service">
                         <input type="hidden" name="service_name" value="<?php echo htmlspecialchars($svc['unit']); ?>">
-                        <button type="submit" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.restart')); ?>"><i class="fas fa-rotate"></i></button>
+                        <button type="submit" class="btn btn-icon btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.restart')); ?>"><i class="fas fa-rotate"></i></button>
                     </form>
                 </div>
             <?php endforeach; ?>

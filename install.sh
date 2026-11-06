@@ -46,11 +46,7 @@ step()  { echo -e "\n${CYAN}${BOLD}══ $* ══${NC}"; }
 # --- Architecture check: 64-bit (x86_64, aarch64/arm64) only ---
 ARCH="$(uname -m)"
 case "$ARCH" in
-    x86_64|amd64)
-        TARGET_ARCH="amd64"
-        ;;
-    aarch64|arm64)
-        TARGET_ARCH="arm64"
+    x86_64|amd64|aarch64|arm64)
         ;;
     *)
         error "AiPBX requires a 64-bit architecture (x86_64 or aarch64/arm64); detected: ${ARCH}. 32-bit systems (such as 32-bit Raspbian/armv7l or i686) are not supported. Please install a 64-bit operating system."
