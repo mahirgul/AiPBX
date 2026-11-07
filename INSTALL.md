@@ -117,7 +117,7 @@ or from the portal: **System → System Update** (admin only). The update:
    Otherwise Asterisk is only reloaded and calls stay up. `--check` and the portal page say which applies;
 2. backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/` (last 5 kept);
 3. checks out the release and runs `install.sh --upgrade` — database migrations, new packages and system settings are applied, **passwords, certificate, admin password and firewall choices are kept**;
-4. verifies services, the portal and every page; on any failure it restores the previous code, database and settings automatically.
+4. verifies the services and the portal; on a failure it restores the previous code, database and settings automatically. Then it tests every page in the background (minutes on a small server): a problem found there does not undo the update, and the System Update page reports it.
 
 **Installations older than 1.50.0** are updated in two steps: `aipbx-update` first installs 1.50.0
 (the bridge release, which carries the old-to-new migrations), then the latest release. It does both

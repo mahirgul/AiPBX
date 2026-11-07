@@ -53,13 +53,20 @@ Router and firewall SIP ALG implementations frequently corrupt SIP packet header
 Ensure your edge firewall or NAT gateway forwards the entire UDP port range `10000:20000` to the AiPBX host. Asymmetrical or missing UDP forwarding causes "one-way audio" or dropped calls after 30 seconds.
 
 ### 3. External IP & Local Networks
-On the PBX portal at **Network → Network Settings**:
-- Set **External IP** to your public WAN IP or dynamic DNS hostname.
-- Set **Local Networks** to your internal subnets (e.g., `192.168.1.0/24, 10.0.0.0/8`). This ensures Asterisk rewrites SDP addresses correctly for public versus internal callers.
+On the PBX portal at **PBX Settings → PJSIP & Net**:
+- Set **External IP Address** to your public WAN IP or dynamic DNS hostname.
+- Set **Local Network & VPN Subnets** to your internal subnets (e.g., `192.168.1.0/24, 10.0.0.0/8`). This ensures Asterisk rewrites SDP addresses correctly for public versus internal callers.
 
 ---
 
-## 4. Production Firewall Recipes
+## 4. The Firewall page
+
+**Security → Firewall** holds these rules in the portal, common to every card or per card; see
+[Security → Firewall](security.md#firewall). The recipes below are for servers without it.
+
+---
+
+## 5. Production Firewall Recipes
 
 ### A. UFW (Ubuntu / Debian)
 ```bash

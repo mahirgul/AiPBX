@@ -10,7 +10,7 @@ documents how: it publishes the Asterisk patch that adds what Cisco's firmware e
 and DND synchronisation, pickup, parking), a sample `tftpboot` folder with the shared files these phones ask
 for, and a full reference for every element of `SEP<MAC>.cnf.xml`.
 
-AiPBX writes the per-phone file for you (**Phones → +**, model `Cisco 79xx/88xx`), from the same extension,
+AiPBX writes the per-phone file for you (**Provisioning → Phones → Add phone**, model `Cisco 79xx/88xx`), from the same extension,
 password, codec and key data it uses for every other vendor. Everything around it — the firmware, the
 Asterisk patch and the shared files — is a one-time setup on your own server, described below.
 
@@ -29,14 +29,14 @@ Asterisk patch and the shared files — is a one-time setup on your own server, 
 
 ## 1. Put the shared files where the phones look for them
 
-**Phones → settings → *Also write the phones' files into the TFTP/FTP folder*** does two things: it keeps
+**Provisioning → Phones → Provisioning settings → *Also write the phones' files into the TFTP/FTP folder*** does two things: it keeps
 every assigned phone's `SEP<MAC>.cnf.xml` current in the TFTP/FTP folder, and it makes AiPBX reference the
 shared files below by name (it only references files that are actually there).
 
 Copy the sample folder's contents into the same directory:
 
 ```sh
-# The folder on PBX → Network services → TFTP/FTP (default /var/lib/aipbx/tftp)
+# The folder on Network → Network Services → TFTP/FTP (default /var/lib/aipbx/tftp)
 sudo cp -a /path/to/tftpboot/. /var/lib/aipbx/tftp/
 sudo chown -R www-data:www-data /var/lib/aipbx/tftp
 ```
@@ -47,7 +47,7 @@ from the same folder; the firmware files go here too.
 
 > **The folder is a secret.** `SEP<MAC>.cnf.xml` contains the extension's SIP password, and TFTP has no
 > authentication at all. AiPBX's TFTP/FTP services answer only the *allowed networks* you set in
-> **Network settings** — keep that list to your phone network, and never point a public interface at it.
+> **Provisioning → Regions** — keep that list to your phone network, and never point a public interface at it.
 
 ## 2. Tell the phones where the server is
 
@@ -55,17 +55,17 @@ Cisco phones take their configuration server from DHCP — **option 150** (the C
 
 | Your DHCP server | What to set |
 |------------------|-------------|
-| AiPBX itself (**Network services → DHCP**) | Add the extra option `150,<this server's IP>` on the page. Option 150 is already on the hint list for the company's own DHCP server. |
+| AiPBX itself (**Network → Network Services → DHCP**) | Add the extra option `150,<this server's IP>` on the page. Option 150 is already on the hint list for the company's own DHCP server. |
 | Your own DHCP server | Option 150 = the PBX's IP address; option 66 (`tftp-server-name`) as the fallback, which is what these phones use when 150 has no value. |
 
-Then pick the model per phone: **Phones → +**, MAC address and model (`Cisco 7942G`, `Cisco 8861`, …). If
+Then pick the model per phone: **Provisioning → Phones → Add phone**, MAC address and model (`Cisco 7942G`, `Cisco 8861`, …). If
 the phone already asked for its file, it is on the same page under **Waiting phones** or **Discovered on
 the network** — one click either way. The file a phone asks for is `SEP<MAC>.cnf.xml`; every other file name
 is refused, so one phone can never collect another's configuration.
 
-Firmware loads are set in **Phones → settings**:
+Firmware loads are set in **Provisioning → Phones → Provisioning settings**:
 
-- ***Firmware load per model*** — one `model=load` line per model, e.g.
+- ***SIP firmware load per model (automatic switch)*** — one `model=load` line per model, e.g.
   `cisco-cm-7962g=SIP42.9-4-2SR3-1S`. This is the list the **automatic switch** uses (section 3).
 - ***Firmware load for Cisco 7900/8800 series*** — a single fallback written to every Cisco
   CallManager-series phone that has no line of its own in the list above. **Leave it empty** and the element
@@ -80,7 +80,7 @@ A 7900-series phone that came from a CallManager (or from a box) is usually runn
 left the factory with, and it is useless to AiPBX until it runs Cisco's **SIP** load. AiPBX does that switch
 as part of provisioning:
 
-1. Fill in **Phones → settings → *Firmware load per model*** with the SIP load for each 7900 model you own
+1. Fill in **Provisioning → Phones → Provisioning settings → *SIP firmware load per model (automatic switch)*** with the SIP load for each 7900 model you own
    (`cisco-cm-7941g`, `cisco-cm-7942g`, `cisco-cm-7945g`, `cisco-cm-7961g`, `cisco-cm-7962g`, `cisco-cm-7965g`,
    `cisco-cm-7975g`).
 2. Copy that release's **whole** firmware package into the TFTP/FTP folder — the `.loads` file and every
@@ -122,7 +122,7 @@ from somewhere else. A manifest that cannot be read is reported as `unreadable` 
 
 ## 4. Keys, BLF and the rest
 
-The key layout on **Phones → Phone keys** (or ⊞ on *Extensions*) is written as Cisco line keys:
+The key layout on **Provisioning → Phones → Phone keys** (or ⊞ on *Extensions*) is written as Cisco line keys:
 
 | Key type | Written as |
 |----------|------------|
@@ -166,7 +166,7 @@ untested here: UDP is the path that works out of the box.
 |---------|-------|
 | The phone reboots and never registers | Is it running a **SIP** load and not SCCP? Its own status screen says which. A 7900 still on SCCP needs the switch in section 3 (and the restart that comes with it); AiPBX does not run chan-sccp, so a phone left on SCCP never registers. |
 | A 7900 sits at *Upgrading* | It is asking for a firmware file the server does not have (a load from the single field is not checked): `aipbx_cisco_firmware.php` lists what the per-model list needs. Copy the rest of that release's package into the TFTP folder — do not rename the files, and do not use another model's package (the loads are signed per model). |
-| It has a name but no extension | The file was not fetched: DHCP option 150, or the TFTP folder's owner and the allowed networks. `PBX → Phone logs → TFTP/FTP` shows every fetch the PBX answered. |
+| It has a name but no extension | The file was not fetched: DHCP option 150, or the TFTP folder's owner and the allowed networks. `Provisioning → Phone logs → TFTP/FTP` shows every fetch the PBX answered. |
 | It fetched the file and stayed on the old settings | The `loadInformation` you set may be a load you do not have. Clear it and re-provision (↻). |
 | The lamp of a BLF key never changes | A hint in the dialplan and the usecallmanager Asterisk patch — both are outside AiPBX's file. |
 | It asks for `Softkeys.xml` / `DialTemplate.xml` and logs a 404 | Harmless (the phone uses its defaults), but copy the shared files in and re-provision to get the intended soft keys. |

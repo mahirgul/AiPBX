@@ -6,7 +6,7 @@ AiPBX provides a stateless JSON REST API under `/api/v1/*` with OpenAPI 3.1 disc
 
 ## Authentication & API Keys
 
-1. In the web portal, open **Integrations → API Keys** (`/api-keys`).
+1. In the web portal, open **Integration → REST API Keys** (`/api-keys`).
 2. Create an API key, choose its **Scopes**, optional **Allowed IPs (CIDR)**, and **Rate Limit (requests/min)**.
 3. Copy the generated `apbx_...` token (shown only once; stored as SHA-256 hash in `sys_api_tokens`).
 4. Pass the token in the `Authorization` header on every request:
@@ -86,7 +86,7 @@ Every `/api/v1/*` response uses a uniform envelope:
 
 ## Outbound Webhooks (`X-AiPBX-Signature-256`)
 
-Configure outbound webhooks in **Integrations → Webhooks** (`/webhooks`). Events are queued non-blockingly in `sys_webhook_queue` and dispatched by `aipbx-webhook-worker.service` (`bin/webhook_worker.php`) with exponential backoff and SSRF protection.
+Configure outbound webhooks in **Integration → Webhooks** (`/webhooks`). Events are queued non-blockingly in `sys_webhook_queue` and dispatched by `aipbx-webhook-worker.service` (`bin/webhook_worker.php`) with exponential backoff and SSRF protection.
 
 ### Supported Events
 

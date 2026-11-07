@@ -30,15 +30,17 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📤 [Outbound routes](outbound-routes.md) | Dial patterns, number manipulation, trunk failover, route groups, RFC 6442 / RFC 6443 Geolocation emergency headers |
 | 🎛️ [Outbound and inbound call normalization](call-normalization.md) | Rules for dialled numbers per device (mobile, desk, web), rules for incoming numbers per trunk, ready-made rules per country, E.164, SIP headers |
 | 📥 [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
+| ⚙️ [PBX Settings](pbx-settings.md) | Every tab of System → PBX Settings and where each is explained |
+| 📟 [Extensions](extensions.md) | The extension form, copying a SIP password, per-extension SIP settings (transport, DTMF, SRTP, NAT, codecs) |
 | 🛣️ [Transports](transports.md) | Where Asterisk listens for SIP: ports, TCP and TLS, your own transports |
 | 🎛️ [Advanced Configuration](advanced-config.md) | Your own Asterisk options, objects and file text that survive regeneration and updates, versions, generated files changed by hand |
-| 📠 [Fax users and numbers](fax-users.md) | One place for fax users, several numbers per user, shared numbers, who can delete |
+| 📠 [Fax users and numbers](fax-users.md) | Fax Units, the number a fax goes out with, several and shared numbers, Fax Mail settings, who can delete |
 | 📠 [Fax cover page](fax-cover-page.md) | One cover template for the organisation, logo, preview as a fax |
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |
 | ☎️ [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, phones found on the network, key layouts (BLF, speed dial, park), re-provision, regions, SIP over TLS on port 443 |
 | 🔵 [Cisco 7900 / 8800 series](cisco-callmanager.md) | Cisco's enterprise phones (CallManager firmware): the `SEP<MAC>.cnf.xml` AiPBX writes, the firmware, the usecallmanager.nz Asterisk patch and the shared files you provide |
-| 🖧 [Network settings](network-settings.md) | The server's addresses, the addresses desk phones get, and moving everything after an IP change in one step |
+| 🖧 [Network settings](network-settings.md) | The server's network cards, and moving every address after an IP change in one step |
 | 🔐 [VPN server and client](vpn.md) | WireGuard or OpenVPN: let phones and laptops reach the PBX through a tunnel, and connect the PBX to another network by uploading a profile |
 | 🛡️ [Reverse proxy setup](reverse-proxy.md) | Deploying behind Nginx, Caddy, Traefik, HAProxy, Apache; WebRTC WebSocket proxying, trusted proxies, and SIP/RTP bypass |
 | 📡 [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server, an NTP server and phone logs (syslog) by IP or MAC |
@@ -57,8 +59,8 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 
 | Page | What it covers |
 |------|----------------|
-| 👥 [Users & roles](users-and-roles.md) | Built-in roles, landing pages, permissions, *My Phone* |
-| 🛡️ [Security](security.md) | Firewall, fail2ban, the `aipbx-priv` root helper, Apache sandbox |
+| 👥 [Users & roles](users-and-roles.md) | Adding users and invitations, the `admin` account, built-in roles, permissions, *My Phone* |
+| 🛡️ [Security](security.md) | Firewall (common and per-card rules), fail2ban, the `aipbx-priv` root helper, Apache sandbox |
 | 🖧 [Network ports & firewall](network-ports.md) | Complete matrix of all TCP/UDP ports, public vs LAN scopes, NAT guidelines, UFW/firewalld/iptables recipes |
 | 🛡️ [Threat model & attack surface](threat-model.md) | Security architecture, SIP exposure boundaries, WebRTC/TURNS credentials, recording retention, mobile push tokens, and AI least privilege guardrails |
 | ⚖️ [GDPR, KVKK & data privacy](privacy.md) | Optional regulatory presets (KVKK, GDPR, CCPA/FCC, HIPAA, PCI-DSS, LGPD), pre-call opt-in/opt-out, periodic beep, retention purge, SAR export, Right to Erasure, and Cloud AI lock |
@@ -72,7 +74,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 
 ## 🔌 Plugins
 
-Optional applications and integrations bundled with AiPBX (`plugins/`: official plugins and community plugins), enabled on demand under **Integrations → Plugins** (`/plugins`):
+Optional applications and integrations bundled with AiPBX (`plugins/`: official plugins and community plugins), enabled on demand under **Integration → Plugin Catalog** (`/plugins`):
 
 | Page | Plugin slug | What it covers |
 |------|-------------|----------------|

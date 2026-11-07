@@ -170,6 +170,15 @@ use it.
 The "nefes-0.5" voice (Hugging Face) as a remote engine for announcements; it needs an NVIDIA GPU with
 16 GB, so it runs on a separate machine and AiPBX calls it like a cloud TTS.
 
+#### 3.5 The PBX as a mail server (idea)
+
+Today Postfix only sends (fax, voicemail and alert mails, through a relay if set on *System → E-Mail*).
+The idea: an optional full mail server that receives for a domain (Postfix + Dovecot IMAP, a spam
+filter, DKIM/SPF/DMARC records shown to copy, the PBX's certificate), with mailboxes for portal users,
+and mail-to-fax without an outside mailbox. To weigh first: port 25 is blocked on many clouds and home
+lines, a new server needs a reverse DNS name and a clean IP reputation, and a mail server is a large
+area to secure and keep up to date, so it may suit a community plugin better than the core.
+
 Also waiting: per-domain apply of pending changes (#120).
 
 ## Earlier plans

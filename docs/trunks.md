@@ -41,8 +41,9 @@ Configured per trunk under **Media & Fax** and **Network & NAT**:
   - **Error correction:** `Redundancy` (recommended), `FEC` (Forward Error Correction), or `None`.
   - **T.38 NAT:** `Yes` (behind NAT) or `No` (direct IP).
   - **Max Datagram:** 100–2000 bytes (default 400).
-  - **Fax detection:** on or off; when on, a fax tone during the first seconds of a call (default 30 s)
-    sends the call to fax reception.
+  - **Fax detection:** on or off; when on, a fax tone during the first seconds of a call (default 10 s, was 30)
+    sends the call to fax reception. Keep it short: later the call is in a ring group, queue or IVR,
+    where a fax cannot be taken and the fax machine rings people's phones.
 
 ## Inbound DID normalization
 

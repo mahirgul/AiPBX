@@ -6,11 +6,11 @@ instead, and your change stays:
 
 | You want to change | Use |
 | --- | --- |
-| An option of a transport, endpoint, AOR, auth, identify or registration | **PBX Management → Advanced Configuration** |
+| An option of a transport, endpoint, AOR, auth, identify or registration | **PBX → Advanced Configuration** |
 | A line in rtp, features, queues, voicemail, musiconhold, cdr, logger, manager, udptl, indications or confbridge | The same page |
 | A PJSIP object AiPBX does not generate, such as a hand-written trunk | The same page |
 | An option of a trunk's endpoint | The trunk's **Custom parameters**, or the page above |
-| The dialplan | **PBX Management → Custom Dialplan** |
+| The dialplan | **PBX → Custom Dialplan** |
 
 ## Adding options
 

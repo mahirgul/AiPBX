@@ -77,6 +77,8 @@ An outbound route's **Prepend** field also accepts a leading `+`, for example `+
 
 **Ready-made rules for a country** replaces all the rules on the page with the usual rules for the caller's number, after asking, as on the outbound page. Or write your own: to show `+43...` callers as `0...`, use pattern `_+43.`, remove 3 digits, prepend `0`. **Test a number** shows the result before you press Apply. As on the outbound page, Asterisk picks the most specific pattern, not the first row, and a trunk's own rule comes before a rule for all trunks. Without rules, numbers stay as the carrier sends them.
 
+**The switch at the top** turns every inbound rule off at once and keeps them, as on the outbound page; Apply puts it into the dialplan.
+
 ## Extra SIP Headers
 
 A trunk's **Advanced** tab can add SIP headers to its outgoing calls on outbound routes, one `Name: value` per line, for carriers that ask for one. Standard headers such as `From` and `Contact` cannot be set this way.

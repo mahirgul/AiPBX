@@ -132,6 +132,13 @@ Please adhere to the [Conventional Commits](https://www.conventionalcommits.org/
   layout as notices — views do not print `$message` / `$error` themselves.
 - **Page scripts and styles** live in `web/assets/js/<page>.js` and `web/assets/css/pages/<page>.css`;
   PHP values reach them through a small data block (`window.X = {...}`), not PHP inside the script.
+- **Shared page parts** come from `web/src/ui_helpers.php`: `uiPageHeader()` (title bar),
+  `uiHelpButton()` / `uiHelpBoxOpen()` (the "?" help), `uiTabs()`, `uiTableOpen()` /
+  `uiTableClose()` (every table), `uiRowActions()`, `uiSaveButton()`, `uiModalFooter()`. Styles are
+  the shared classes in `web/assets/css/ui/` (`u-*` utilities on one size scale), with no inline
+  styles or page-made colours, so the dark theme follows. `/ui-kit` shows every part on one page
+  (administrators). The page test (`web/bin/smoke.php`) refuses hand-made titles, tables and unknown
+  `u-*` classes.
 - **Sidebar** entries are data in `web/templates/sidebar_menu.php`.
 - **Asterisk restarts on update:** `aipbx-update` restarts Asterisk only when the update needs it
   (`scripts/asterisk-restart-needed.sh`): when a file in `conf/asterisk/` (outside `pbx/`) changed,

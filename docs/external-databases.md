@@ -3,7 +3,7 @@
 AiPBX can connect to external SQL databases and HTTP endpoints to look up caller information in real
 time during an incoming call and branch the call flow accordingly.
 
-- Database connections: **Integrations → Database connections** (administrators only).
+- Database connections: **Integration → Database Connections** (administrators only).
 - IVR data steps: **IVR page → Data steps** button (administrators only).
 
 ## Database connections
@@ -109,7 +109,7 @@ group cannot be deleted.
 Look up incoming callers in a CRM database and route VIP customers directly to a priority queue:
 
 1. **Create the database connection:**
-   - Under **Integrations → Database connections**, click **New Connection**.
+   - Under **Integration → Database Connections**, click **New Connection**.
    - Set Name to `CRM Read Replica`, choose `MySQL / MariaDB`, enter the replica server host, database
      name `crm`, and read-only credentials.
    - Click **Test Connection** to confirm connectivity, then save.
