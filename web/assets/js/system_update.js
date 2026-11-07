@@ -1,7 +1,7 @@
 /* Page script of templates/views/system_update/index.php */
 
-const SU_TEXT = window.SYSTEM_UPDATE_PAGE.text;
-let suPollTimer = null;
+var SU_TEXT = window.SYSTEM_UPDATE_PAGE.text;
+var suPollTimer = null;
 
 function suToast(msg, type) { if (window.showFooterToast) window.showFooterToast(msg, type); }
 

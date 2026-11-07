@@ -640,7 +640,8 @@ final class PluginManager
             }
         }
         $out = [];
-        foreach ((array) (json_decode((string) @file_get_contents($cache), true)['plugins'] ?? []) as $p) {
+        $rawCache = is_file($cache) ? (string) @file_get_contents($cache) : '';
+        foreach ((array) (json_decode($rawCache, true)['plugins'] ?? []) as $p) {
             if (is_array($p) && preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', (string) ($p['slug'] ?? '')) && preg_match('/^[a-f0-9]{64}$/', (string) ($p['sha256'] ?? ''))
                 && preg_match('/^\d+\.\d+(\.\d+)?$/', (string) ($p['version'] ?? ''))) {
                 $out[(string) $p['slug']] = $p;

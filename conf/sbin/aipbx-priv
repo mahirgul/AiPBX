@@ -578,7 +578,12 @@ case "$cmd" in
                 exec sed -i "0,/$re/s//defaultlanguage = $1/" "$conf"
             fi
         done
-        exec sed -i "/^\[options\]/a defaultlanguage = $1" "$conf"
+        if grep -q '^\[options\]' "$conf"; then
+            exec sed -i "/^\[options\]/a defaultlanguage = $1" "$conf"
+        else
+            printf "\n[options]\ndefaultlanguage = %s\n" "$1" >> "$conf"
+            exit 0
+        fi
         ;;
 
     netsvc)

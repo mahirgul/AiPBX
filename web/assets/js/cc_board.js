@@ -1,6 +1,6 @@
 /* Page script of templates/views/cc_board/index.php */
 
-const CAN_SPY = window.CC_BOARD_CAN_SPY;
+var CAN_SPY = window.CC_BOARD_CAN_SPY;
 var boardUnifiedTimer = null;
 var boardUnifiedClockTimer = null;
 

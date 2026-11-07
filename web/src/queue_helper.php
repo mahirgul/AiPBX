@@ -189,7 +189,18 @@ class QueueHelper {
 
         if ($join) {
             @exec("asterisk -rx " . escapeshellarg("queue add member Local/$ext@from-internal-pbx/n to $queue_name penalty 0 as \"Agent $ext\" state_interface hint:$ext@from-internal-pbx"));
-            @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $queue_name"));
+            $is_paused = false;
+            try {
+                $chk = getDB()->prepare("SELECT 1 FROM cc_pause_logs WHERE agent_extension = ? AND status = 'PAUSED' LIMIT 1");
+                $chk->execute([$ext]);
+                $is_paused = (bool)$chk->fetchColumn();
+            } catch (\Throwable $e) {
+            }
+            if ($is_paused) {
+                @exec("asterisk -rx " . escapeshellarg("queue pause member Local/$ext@from-internal-pbx/n queue $queue_name"));
+            } else {
+                @exec("asterisk -rx " . escapeshellarg("queue unpause member Local/$ext@from-internal-pbx/n queue $queue_name"));
+            }
         } else {
             @exec("asterisk -rx " . escapeshellarg("queue remove member Local/$ext@from-internal-pbx/n from $queue_name"));
             @exec("asterisk -rx " . escapeshellarg("queue remove member PJSIP/$ext from $queue_name"));

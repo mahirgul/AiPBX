@@ -488,7 +488,6 @@ final class ApiV1Controller
             $widgets = WebWidgetService::listWidgets();
             foreach ($widgets as &$w) {
                 $w['token']  = (string)($w['public_id'] ?? '');
-                $w['number'] = (string)($w['dest_value'] ?? '');
                 $w['embed']  = WebWidgetService::embedCode($w);
                 unset($w['sip_secret']);
             }
@@ -502,7 +501,6 @@ final class ApiV1Controller
                 ApiResponse::error('NOT_FOUND', 'Widget not found.', 404);
             }
             $w['token']  = (string)($w['public_id'] ?? '');
-            $w['number'] = (string)($w['dest_value'] ?? '');
             $w['embed']  = WebWidgetService::embedCode($w);
             unset($w['sip_secret']);
             ApiResponse::success($w);

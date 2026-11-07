@@ -320,8 +320,19 @@ class AiAppService
             // (kept 0600 by the service, never returned by its API).
             $provider = substr($stt, 6);
             $pc = CloudAiService::config($provider);
-            $extra['stt_cloud'] = ['provider' => $provider, 'api_key' => (string) ($pc['api_key'] ?? ''),
-                                   'region' => (string) ($pc['region'] ?? ''), 'lang' => (string) ($c['stt_lang'] ?? 'tr')];
+            $sttPayload = [
+                'provider' => $provider,
+                'api_key' => (string) ($pc['api_key'] ?? ''),
+                'region' => (string) ($pc['region'] ?? ''),
+                'lang' => (string) ($c['stt_lang'] ?? 'tr'),
+            ];
+            if (!empty($pc['base_url'])) {
+                $sttPayload['base_url'] = (string) $pc['base_url'];
+            }
+            if (!empty($pc['stt_model']) || !empty($pc['model'])) {
+                $sttPayload['model'] = (string) ($pc['stt_model'] ?? $pc['model']);
+            }
+            $extra['stt_cloud'] = $sttPayload;
         }
         $understand = (string) ($c['understand'] ?? 'auto');
         if (str_starts_with($understand, 'cloud:')) {

@@ -61,9 +61,14 @@ if ($action === 'get_supervisor_agents') {
 
     // Parse member lines from Asterisk queue show
     $member_statuses = [];
+    $cur_queue = '';
     if (is_array($q_output)) {
         foreach ($q_output as $line) {
-            if (!preg_match('/^\s*\d+\.\s/', $line) && preg_match('/(?:PJSIP|Local)\/([0-9]+)/i', $line, $matches)) {
+            if (preg_match('/^([a-zA-Z0-9_-]+)\s+has\s+\d+\s+calls/i', $line, $qm)) {
+                $cur_queue = $qm[1];
+                continue;
+            }
+            if ($cur_queue !== '' && !preg_match('/^\s*\d+\.\s/', $line) && preg_match('/(?:PJSIP|Local)\/([0-9]+)/i', $line, $matches)) {
                 $ext_found = $matches[1];
 
                 // Asterisk 22: "(paused was 12 secs ago)" / "(paused:Lunch was 12 secs ago)"
@@ -94,8 +99,8 @@ if ($action === 'get_supervisor_agents') {
                 }
 
                 // Do not overwrite an already active status (READY/BUSY/PAUSED) with OFFLINE
-                if (!isset($member_statuses[$ext_found]) || $status_key !== 'OFFLINE') {
-                    $member_statuses[$ext_found] = [
+                if (!isset($member_statuses[$cur_queue][$ext_found]) || $status_key !== 'OFFLINE') {
+                    $member_statuses[$cur_queue][$ext_found] = [
                         'status_key' => $status_key,
                         'in_queue' => $in_q,
                         'is_paused' => $is_paused
@@ -130,7 +135,7 @@ if ($action === 'get_supervisor_agents') {
             }
 
             $full_name = $users_map[$ext_str]['full_name'];
-            $st_info = $member_statuses[$ext_str] ?? ['status_key' => 'OFFLINE', 'in_queue' => false, 'is_paused' => false];
+            $st_info = $member_statuses[$q_name][$ext_str] ?? ['status_key' => 'OFFLINE', 'in_queue' => false, 'is_paused' => false];
 
             $call_details = ($st_info['status_key'] === 'BUSY')
                 ? findAgentCallDetails($ext_str, $concise_lines)

@@ -253,8 +253,8 @@ class CloudAiService
                 return sprintf(t('ai_cloud.test_projects'), count($d['projects'] ?? []));
             default:
                 // Speech providers: listing the voices proves the key.
-                $voices = AiTtsService::voices($id, true);
-                return sprintf(t('ai_tts.test_ok'), count($voices));
+                $count = AiTtsService::testConfig($id, $post);
+                return sprintf(t('ai_tts.test_ok'), $count);
         }
     }
 

@@ -171,7 +171,9 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             // Sent straight to the chosen route (its trunks, number manipulation
             // and caller ID) with the DID as the dialled number; the route's
             // pattern is not checked. Inactive/missing route: normal group-1 routing.
-            $target = !empty($orig_did) ? $orig_did : '${EXTEN}';
+            $target = !empty($orig_did)
+                ? $orig_did
+                : '${IF($["${CDR(did)}" != "" & "${CDR(did)}" != "s"]?${CDR(did)}:${EXTEN})}';
             $route_active = false;
             if (is_numeric($dest_id)) {
                 $st = $db->prepare("SELECT 1 FROM pbx_outbound_routes WHERE id = ? AND is_active = 1");
@@ -215,7 +217,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                 }
             }
 
-            if ($next_type !== '' && $next_type !== 'hangup' && $depth < 3) {
+            if ($next_type !== '' && $depth < 3) {
                 $lines[] = buildDestinationLines($next_type, $next_id, $orig_did, $depth + 1);
             } else {
                 if ($depth >= 3) {

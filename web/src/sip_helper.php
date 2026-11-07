@@ -219,7 +219,7 @@ class SIPHelper {
         // TOO — otherwise that field also becomes "can be set but not undone".
         $conditional_fields = [
             'match_hosts', 'outbound_proxy',
-            't38_udptl_maxdatagram', 'fax_detect', 'fax_detect_timeout',
+            't38_udptl_ec', 't38_udptl_nat', 't38_udptl_maxdatagram', 'fax_detect', 'fax_detect_timeout',
             'from_user', 'from_domain', 'outbound_caller_id',
             'send_pai', 'send_rpid',
             'auth_username', 'auth_password',

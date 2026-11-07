@@ -18,7 +18,7 @@ class TwoFactorLoginController extends BaseController
 
         $userId = (int)$_SESSION['pending_2fa_user_id'];
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, full_name, role, extension, theme_preference, language_preference, two_factor_enabled, two_factor_secret FROM sys_users WHERE id = ? AND is_active = 1');
+        $stmt = $db->prepare('SELECT id, username, full_name, role, extension, theme_preference, language_preference, two_factor_enabled, two_factor_secret, must_reset_password FROM sys_users WHERE id = ? AND is_active = 1');
         $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -83,6 +83,17 @@ class TwoFactorLoginController extends BaseController
                     unset($_SESSION['pending_2fa_failures']);
                     // Regenerate the session ID
                     session_regenerate_id(true);
+
+                    if (!empty($user['must_reset_password'])) {
+                        unset($_SESSION['pending_2fa_user_id'], $_SESSION['pending_2fa_username'], $_SESSION['pending_2fa_full_name']);
+                        $_SESSION['pending_reset_user_id'] = $user['id'];
+                        $_SESSION['pending_reset_username'] = $user['username'];
+                        if (function_exists('logLoginAttempt')) {
+                            logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
+                        }
+                        static::redirect('/force-reset');
+                        return;
+                    }
 
                     $_SESSION['user_id'] = $user['id'];
                     $_SESSION['username'] = $user['username'];

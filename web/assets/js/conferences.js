@@ -1,6 +1,6 @@
 /* Page script of templates/views/conferences/index.php */
 
-let currentActiveRoomNumber = '';
+var currentActiveRoomNumber = '';
 
 function updateConfDialPreview(val) {
     const el = document.getElementById('modal_conf_number_preview');

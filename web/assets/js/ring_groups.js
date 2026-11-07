@@ -1,6 +1,6 @@
 /* Page script of templates/views/ring_groups/index.php */
 
-let currentRgDestId = '';
+var currentRgDestId = '';
 
 function loadRgDestOptions(callback) {
     const type = document.getElementById('modal_rg_dest_type').value;

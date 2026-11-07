@@ -1,6 +1,6 @@
 /* Page script of templates/views/boss_secretary/index.php */
 
-let currentBsDestId = '';
+var currentBsDestId = '';
 
 function loadBsDestOptions(callback) {
     const type = document.getElementById('modal_bs_dest_type').value;

@@ -19,7 +19,6 @@
 
 require_once __DIR__ . '/AssistantPlanner.php';
 require_once __DIR__ . '/CloudAiService.php';
-require_once __DIR__ . '/../LocalAiService.php';
 
 class AssistantModel
 {
@@ -44,10 +43,6 @@ class AssistantModel
     private static function layers(): array
     {
         $out = [];
-        $local = self::localChat();
-        if ($local !== null) {
-            $out[] = $local;
-        }
         $plugin = self::pluginChat();
         if ($plugin !== null) {
             $out[] = $plugin;
@@ -94,36 +89,6 @@ class AssistantModel
         }
     }
 
-    /**
-     * The local runtime (aipbx_ai), when it is up and carries a chat model.
-     * Endpoint: POST http://127.0.0.1:8790/v1/chat — the same bearer token
-     * file the Apps service uses.
-     */
-    private static function localChat(): ?callable
-    {
-        try {
-            if (!class_exists(LocalAiService::class)) {
-                return null;
-            }
-            $status = LocalAiService::status();
-            $running = !empty($status['running']);
-            if (!$running || empty($status['models'])) {
-                return null;
-            }
-            $token = self::localToken();
-            if ($token === null) {
-                return null;
-            }
-            return function (string $prompt) use ($token): ?string {
-                $body = json_encode(['messages' => [['role' => 'user', 'content' => $prompt]], 'max_tokens' => 300]);
-                $reply = self::http('http://127.0.0.1:8790/v1/chat', $body, ['Authorization: Bearer ' . $token]);
-                return $reply;
-            };
-        } catch (\Throwable $e) {
-            return null;
-        }
-    }
-
     /** First configured CloudAiService LLM account, or null. */
     private static function cloudChat(): ?callable
     {
@@ -143,19 +108,6 @@ class AssistantModel
                     return null;
                 }
             };
-        }
-        return null;
-    }
-
-    private static function localToken(): ?string
-    {
-        foreach (['/etc/aipbx/ai.token'] as $path) {
-            if (is_readable($path)) {
-                $token = trim((string) file_get_contents($path));
-                if ($token !== '') {
-                    return $token;
-                }
-            }
         }
         return null;
     }

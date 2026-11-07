@@ -103,7 +103,7 @@ function buildInternalNumbersConf(array $entries): string
             $conf .= " same => n,Answer()\n";
             $conf .= " same => n,Wait(1)\n";
         }
-        $conf .= buildDestinationLines($e['dest_type'], $e['dest_id']) . "\n";
+        $conf .= buildDestinationLines($e['dest_type'], $e['dest_id'], $num) . "\n";
     }
 
     return $conf;

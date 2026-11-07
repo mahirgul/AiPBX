@@ -15,7 +15,7 @@ import re
 import secrets
 import urllib.request
 
-PROVIDERS = ("openai", "groq", "deepgram", "azure", "elevenlabs", "google_ai")
+PROVIDERS = ("openai", "groq", "deepgram", "azure", "elevenlabs", "google_ai", "openai_compat")
 LANGS = {"tr": ("tr-TR", "Turkish"), "de": ("de-DE", "German"), "en": ("en-US", "English")}
 TIMEOUT = 15
 _REGION = re.compile(r"^[a-z0-9]{3,30}$")
@@ -41,7 +41,14 @@ def validate(cfg):
     region = cfg.get("region") or "westeurope"
     if provider == "azure" and not (isinstance(region, str) and _REGION.match(region)):
         raise ValueError("stt_cloud.region is not valid")
-    return {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region}
+    base_url = cfg.get("base_url") or ""
+    model = cfg.get("model") or "whisper-1"
+    if provider == "openai_compat":
+        if not (isinstance(base_url, str) and base_url.startswith("https://") and len(base_url) <= 200):
+            raise ValueError("stt_cloud.base_url is not valid")
+        if not (isinstance(model, str) and 1 <= len(model) <= 100):
+            raise ValueError("stt_cloud.model is not valid")
+    return {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region, "base_url": base_url, "model": model}
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -78,12 +85,21 @@ def _multipart(fields, wav):
 def transcribe(cfg, wav, request=_request):
     """Text of a WAV (16-bit, any of the usual rates) with the configured provider."""
     p, key, lang = cfg["provider"], cfg["api_key"], cfg["lang"]
-    if p in ("openai", "groq"):
-        url = ("https://api.openai.com/v1/audio/transcriptions" if p == "openai"
-               else "https://api.groq.com/openai/v1/audio/transcriptions")
-        model = "gpt-4o-mini-transcribe" if p == "openai" else "whisper-large-v3-turbo"
+    if p in ("openai", "groq", "openai_compat"):
+        if p == "openai":
+            url = "https://api.openai.com/v1/audio/transcriptions"
+            model = "gpt-4o-mini-transcribe"
+        elif p == "groq":
+            url = "https://api.groq.com/openai/v1/audio/transcriptions"
+            model = "whisper-large-v3-turbo"
+        else:
+            url = f"{cfg.get('base_url', '').rstrip('/')}/audio/transcriptions"
+            model = cfg.get("model") or "whisper-1"
         body, ctype = _multipart({"model": model, "language": lang, "response_format": "json"}, wav)
-        d = request(url, {"Authorization": "Bearer " + key, "Content-Type": ctype}, body)
+        headers = {"Content-Type": ctype}
+        if key:
+            headers["Authorization"] = "Bearer " + key
+        d = request(url, headers, body)
         return str(d.get("text") or "").strip()
     if p == "deepgram":
         d = request(f"https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&language={lang}",

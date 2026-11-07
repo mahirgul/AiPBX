@@ -31,6 +31,7 @@ function buildIvrDataStepDialplanBlock(array $step): string
         } else {
             $conf .= " same => n,Read(IVR_INPUT,,{$maxDigits},,,{$timeout})\n";
         }
+        $conf .= " same => n,GotoIf(\$[\"\${IVR_INPUT}\" = \"\"]?timeout)\n";
     }
 
     $conf .= " same => n,Set(CURLOPT(httptimeout)=3)\n";

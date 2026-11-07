@@ -58,14 +58,31 @@ class AiTtsService
         return $cfg;
     }
 
-    public static function client(string $id): TtsProvider
+    public static function client(string $id, ?array $overrideCfg = null): TtsProvider
     {
         $cls = self::providerClass($id);
-        $client = new $cls(self::config($id));
+        $client = new $cls($overrideCfg ?? self::config($id));
         if (!$client->configured()) {
             throw new TtsException(sprintf(t('ai_tts.err_not_configured'), $cls::title()));
         }
         return $client;
+    }
+
+    /**
+     * Lists voices using typed form inputs if supplied (without updating DB/cache).
+     */
+    public static function testConfig(string $id, array $post = []): int
+    {
+        $cfg = self::config($id);
+        $cls = self::providerClass($id);
+        foreach ($cls::fields() as $f) {
+            $k = $f['key'];
+            if (isset($post[$k]) && trim((string) $post[$k]) !== '') {
+                $cfg[$k] = trim((string) $post[$k]);
+            }
+        }
+        $client = self::client($id, $cfg);
+        return count($client->voices());
     }
 
     /**

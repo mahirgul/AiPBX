@@ -52,8 +52,18 @@ if ($action === 'logout') {
             QueueHelper::setMembership($user_ext, $qn, false);
         }
 
-        // Still a member (and maybe paused) in the queues where the agent is static — the pause record must stay open.
-        if (empty($static_q)) {
+        // Still a member (and maybe paused) in the queues where the agent is static or still in another dynamic queue — the pause record must stay open.
+        $still_logged_in = !empty($static_q);
+        if (!$still_logged_in && !empty($target_q)) {
+            @exec("asterisk -rx " . escapeshellarg("queue show"), $remaining_q_output);
+            foreach ($remaining_q_output ?: [] as $line) {
+                if (preg_match('/(?:PJSIP|Local)\/' . preg_quote($user_ext, '/') . '\b/i', $line)) {
+                    $still_logged_in = true;
+                    break;
+                }
+            }
+        }
+        if (!$still_logged_in) {
             $stmt = $db->prepare("UPDATE cc_pause_logs SET end_time = NOW(), duration = TIMESTAMPDIFF(SECOND, start_time, NOW()), status = 'COMPLETED' WHERE agent_extension = ? AND status = 'PAUSED'");
             $stmt->execute([$user_ext]);
         }

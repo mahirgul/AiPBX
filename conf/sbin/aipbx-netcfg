@@ -342,27 +342,46 @@ def live_routes(iface):
     return [r for r in ip_json('-4', 'route', 'show', 'dev', iface) if r.get('gateway')]
 
 
+def cur_rules(iface):
+    t = str(table_of(iface))
+    rules = []
+    p = run(['ip', 'rule', 'show'])
+    for line in p.stdout.splitlines():
+        if f'lookup {t}' in line or f'table {t}' in line:
+            m = re.search(r'from\s+([0-9a-fA-F.:/]+)', line)
+            if m:
+                rules.append(m.group(1))
+    return rules
+
+
 def live_restore(b):
     iface = b['iface']
+    t = str(table_of(iface))
     run(['ip', '-4', 'addr', 'flush', 'dev', iface])
-    if b.get('rule'):
-        run(['ip', 'rule', 'del', 'from', b['rule'], 'table', str(table_of(iface))])
-    run(['ip', 'route', 'flush', 'table', str(table_of(iface))])
+    for r in cur_rules(iface):
+        run(['ip', 'rule', 'del', 'from', r, 'table', t])
+    run(['ip', 'route', 'flush', 'table', t])
     for cidr in b['addresses']:
         run(['ip', 'addr', 'add', cidr, 'dev', iface])
     for r in b['routes']:
         run(['ip', 'route', 'replace', r['dst'], 'via', r['gateway'], 'dev', iface])
+    for old_r in b.get('rules', []):
+        run(['ip', 'rule', 'add', 'from', old_r, 'table', t])
 
 
 def do_apply_live(a, iface, mode, is_default, old_ip):
     before = [f"{x['local']}/{x['prefixlen']}" for link in ip_json('-4', 'addr', 'show', iface) for x in link.get('addr_info', [])]
     cidr, gateway = a.get('address', ''), a.get('gateway', '')
     ip = cidr.split('/')[0]
-    rule = ip if mode == 'static' and gateway and not is_default else ''
-    backup = {'iface': iface, 'addresses': before, 'routes': live_routes(iface), 'rule': rule}
+    t = str(table_of(iface))
+    old_rules = cur_rules(iface)
+    backup = {'iface': iface, 'addresses': before, 'routes': live_routes(iface), 'rules': old_rules}
     save_state({'state': 'pending', 'iface': iface, 'mode': mode, 'address': cidr, 'live_backup': backup,
                 'old_ip': old_ip, 'new_ip': ip, 'deadline': time.time() + CONFIRM_SECONDS})
     unit(REVERT_UNIT, 'do-revert', delay=CONFIRM_SECONDS)
+    for r in old_rules:
+        run(['ip', 'rule', 'del', 'from', r, 'table', t])
+    run(['ip', 'route', 'flush', 'table', t])
     if mode == 'dhcp':
         if not shutil.which('dhclient'):
             stop_timer()

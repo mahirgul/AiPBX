@@ -38,8 +38,13 @@ if [ "$RETENTION_DAYS" -gt 0 ]; then
         # (the target never answered, the h extension never fired) are not
         # deleted silently — fax_pending_sweep.sh first turns them into
         # FAILED, then they fall under the normal retention period.
-        OLD_FILES=$($MYSQL_CMD -e "SELECT pdf_path FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND pdf_path != '' AND status != 'PENDING';" 2>/dev/null)
-        OLD_TIFS=$($MYSQL_CMD -e "SELECT tif_path FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND tif_path != '' AND status != 'PENDING';" 2>/dev/null)
+        if [ "$TABLE" = "fax_sent" ]; then
+            OLD_FILES=$($MYSQL_CMD -e "SELECT old_f.pdf_path FROM fax_sent old_f WHERE old_f.created_at < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND old_f.pdf_path != '' AND old_f.status != 'PENDING' AND NOT EXISTS (SELECT 1 FROM fax_sent new_f WHERE new_f.id != old_f.id AND new_f.pdf_path = old_f.pdf_path AND (new_f.created_at >= DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) OR new_f.status = 'PENDING'));" 2>/dev/null)
+            OLD_TIFS=$($MYSQL_CMD -e "SELECT old_f.tif_path FROM fax_sent old_f WHERE old_f.created_at < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND old_f.tif_path != '' AND old_f.status != 'PENDING' AND NOT EXISTS (SELECT 1 FROM fax_sent new_f WHERE new_f.id != old_f.id AND new_f.tif_path = old_f.tif_path AND (new_f.created_at >= DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) OR new_f.status = 'PENDING'));" 2>/dev/null)
+        else
+            OLD_FILES=$($MYSQL_CMD -e "SELECT pdf_path FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND pdf_path != '' AND status != 'PENDING';" 2>/dev/null)
+            OLD_TIFS=$($MYSQL_CMD -e "SELECT tif_path FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND tif_path != '' AND status != 'PENDING';" 2>/dev/null)
+        fi
         COUNT=$($MYSQL_CMD -e "SELECT COUNT(*) FROM $TABLE WHERE $COL < DATE_SUB(NOW(), INTERVAL $RETENTION_DAYS DAY) AND status != 'PENDING';" 2>/dev/null)
 
         # Local files are removed here; files in the S3 bucket ("s3:faxes/…", #69) by fax_to_bucket.php.

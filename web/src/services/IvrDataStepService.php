@@ -246,6 +246,9 @@ class IvrDataStepService
         }
 
         $varName = (string)($step['channel_var_name'] ?? 'IVR_DATA_VAL');
+        if (($step['input_source'] ?? 'dtmf') === 'dtmf' && $input === '') {
+            return ['status' => 'timeout', 'var' => $varName, 'val' => ''];
+        }
         $dataSource = (string)($step['data_source'] ?? 'database');
 
         try {

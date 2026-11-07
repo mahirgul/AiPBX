@@ -94,7 +94,7 @@ class ScheduledTaskRunner
         @unlink($scriptFile);
 
         $errorMessage = ($exitCode !== 0) ? ('Process exited with code ' . $exitCode) : null;
-        if ($exitCode === 124 || $exitCode === 137) {
+        if ($exitCode === 124 || $exitCode === 137 || $exitCode === 143) {
             $errorMessage = 'Task timed out after ' . $timeoutSec . ' seconds';
         }
         ScheduledTaskRepository::recordRunFinish($runId, $exitCode, $output, $errorMessage);

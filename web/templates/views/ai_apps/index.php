@@ -217,12 +217,12 @@ function aiAppEdit(a) {
 }
 bindDestinationSelector('ai_dest_type', 'ai_dest_id');
 
-const AI_DEST_MODULES = <?php echo json_encode(array_map(fn($m) => ['key' => $m['key'], 'name' => $m['name']], $modules), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
-const AI_T = <?php echo json_encode(['name' => t('ai_apps.intent_name'), 'keywords' => t('ai_apps.intent_keywords'), 'examples' => t('ai_apps.intent_examples'),
+var AI_DEST_MODULES = <?php echo json_encode(array_map(fn($m) => ['key' => $m['key'], 'name' => $m['name']], $modules), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
+var AI_T = <?php echo json_encode(['name' => t('ai_apps.intent_name'), 'keywords' => t('ai_apps.intent_keywords'), 'examples' => t('ai_apps.intent_examples'),
     'reply' => t('ai_apps.intent_reply'), 'email' => t('ai_apps.intent_email'), 'dest' => t('ai_apps.intent_dest'), 'none' => t('ai_apps.intent_dest_none'),
     'remove' => t('common.delete'), 'routing_greeting' => t('ai_apps.routing_greeting_placeholder'),
     'requests_greeting' => t('ai_apps.greeting_placeholder')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
-let aiIntentSeq = 0;
+var aiIntentSeq = 0;
 function aiAppType() {
     const t = document.getElementById('ai_type').value;
     const listens = t === 'voice_requests' || t === 'speech_routing';
@@ -267,9 +267,12 @@ function aiIntentAdd(i) {
     bindDestinationSelector('ai_idt_' + n, 'ai_idi_' + n);
     if (i.dest_type) loadDestinationOptions('ai_idt_' + n, 'ai_idi_' + n, i.dest_id || '');
 }
-document.addEventListener('change', e => {
-    const cb = e.target.closest('input[data-handled]');
-    if (!cb) return;
-    fetch('/api/ai_apps.php', { method: 'POST', body: new URLSearchParams({ action: 'handled', id: cb.dataset.handled, handled: cb.checked ? 1 : 0, csrf_token: window.CSRF_TOKEN || '' }) });
-});
+if (!window._aiAppsChangeBound) {
+    window._aiAppsChangeBound = true;
+    document.addEventListener('change', e => {
+        const cb = e.target.closest('input[data-handled]');
+        if (!cb) return;
+        fetch('/api/ai_apps.php', { method: 'POST', body: new URLSearchParams({ action: 'handled', id: cb.dataset.handled, handled: cb.checked ? 1 : 0, csrf_token: window.CSRF_TOKEN || '' }) });
+    });
+}
 </script>

@@ -191,6 +191,7 @@ class VoicemailService {
             }
         }
         self::deleteAiTranscript($ext, $origtime);
+        self::syncInboxCount($ext);
         return t('srv_vm.deleted');
     }
 
@@ -264,7 +265,24 @@ class VoicemailService {
                 throw new \Exception(t('srv_vm.err_delete'));
             }
         }
+        self::syncInboxCount($ext, $spool);
         return "Old:{$target}";
+    }
+
+    /** Updates sys_settings vm_notify_new_<mailbox> with current INBOX message count. */
+    public static function syncInboxCount(string $ext, ?string $spool = null): void
+    {
+        $ext = preg_replace('/[^0-9]/', '', $ext);
+        if ($ext === '') {
+            return;
+        }
+        $box = ($spool ?? '/var/spool/asterisk/voicemail/default') . '/' . $ext;
+        $inboxCount = count(glob("{$box}/INBOX/msg*.txt") ?: []);
+        try {
+            getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+                ->execute(['vm_notify_new_' . $ext, (string) $inboxCount]);
+        } catch (\Throwable $e) {
+        }
     }
 
     /** Messages of a mailbox archived to the bucket, newest first. */

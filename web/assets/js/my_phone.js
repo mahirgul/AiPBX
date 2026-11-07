@@ -106,10 +106,10 @@ function loadMyPhoneAudioDevices() {
 /**
  * QR Code Quick Mobile Login Functions
  */
-let _qrToken = null;
-let _qrTimer = null;
-let _qrPollInterval = null;
-let _qrSecondsLeft = 600;
+var _qrToken = null;
+var _qrTimer = null;
+var _qrPollInterval = null;
+var _qrSecondsLeft = 600;
 
 function openQrLoginModal() {
     const modal = document.getElementById("qrLoginModal");

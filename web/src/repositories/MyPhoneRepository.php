@@ -327,7 +327,7 @@ class MyPhoneRepository extends BaseRepository
             }
 
             $recPath = $row['userfield'] ?? '';
-            $hasRec = !empty($recPath) && file_exists($recPath);
+            $hasRec = !empty($recPath) && (str_starts_with($recPath, 's3:') || file_exists($recPath));
             $dur = (int)$row['duration'];
             $bill = (int)$row['billsec'];
             $totalDur = max($dur, $bill);

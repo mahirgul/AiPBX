@@ -1,6 +1,10 @@
 <?php
 declare(strict_types=1);
 
+require_once dirname(__DIR__) . '/FaxStorage.php';
+require_once dirname(__DIR__) . '/RecordingStorage.php';
+require_once dirname(__DIR__) . '/BucketFiles.php';
+
 /**
  * Data Retention Auto-Purge & Subject Access Request (SAR) / Right-to-Erasure
  * helper for PrivacyService across dual CDR and media tables.
@@ -41,11 +45,27 @@ final class PrivacyDataSubjectHelper
                 }
             }
             try {
+                $stS3 = $db->prepare("SELECT DISTINCT userfield FROM asteriskcdr WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY) AND userfield LIKE 's3:%'");
+                $stS3->execute([$recDays]);
+                foreach ($stS3->fetchAll(PDO::FETCH_COLUMN) as $s3f) {
+                    if (!empty($s3f)) {
+                        RecordingStorage::delete(BucketFiles::key($s3f));
+                        $counts['recordings']++;
+                    }
+                }
                 $stmt = $db->prepare("UPDATE asteriskcdr SET userfield = '' WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY) AND userfield != ''");
                 $stmt->execute([$recDays]);
             } catch (\Throwable $e) {
             }
             try {
+                $stCdrsS3 = $db->prepare("SELECT DISTINCT recording_path FROM cdrs WHERE start_time < DATE_SUB(NOW(), INTERVAL ? DAY) AND recording_path LIKE 's3:%'");
+                $stCdrsS3->execute([$recDays]);
+                foreach ($stCdrsS3->fetchAll(PDO::FETCH_COLUMN) as $s3f) {
+                    if (!empty($s3f)) {
+                        RecordingStorage::delete(BucketFiles::key($s3f));
+                        $counts['recordings']++;
+                    }
+                }
                 $stmt = $db->prepare("UPDATE cdrs SET recording_path = '' WHERE start_time < DATE_SUB(NOW(), INTERVAL ? DAY) AND recording_path IS NOT NULL AND recording_path != ''");
                 $stmt->execute([$recDays]);
             } catch (\Throwable $e) {
@@ -57,6 +77,15 @@ final class PrivacyDataSubjectHelper
         if ($vmDays > 0) {
             foreach (['voicemail_archive', 'pbx_voicemail_archive'] as $vmTable) {
                 try {
+                    if ($vmTable === 'voicemail_archive') {
+                        $stKeys = $db->prepare("SELECT object_key FROM voicemail_archive WHERE origtime < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? DAY)) AND object_key IS NOT NULL AND object_key != ''");
+                        $stKeys->execute([$vmDays]);
+                        foreach ($stKeys->fetchAll(PDO::FETCH_COLUMN) as $objKey) {
+                            if (!empty($objKey)) {
+                                BucketFiles::delete($objKey);
+                            }
+                        }
+                    }
                     $stmt = $db->prepare("DELETE FROM {$vmTable} WHERE origtime < UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL ? DAY))");
                     $stmt->execute([$vmDays]);
                     $counts['voicemail'] += $stmt->rowCount();
@@ -88,8 +117,8 @@ final class PrivacyDataSubjectHelper
                     foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                         foreach ($ft['cols'] as $col) {
                             $p = (string)($row[$col] ?? '');
-                            if ($p !== '' && str_starts_with($p, '/var/spool/asterisk/fax/') && is_file($p)) {
-                                @unlink($p);
+                            if ($p !== '') {
+                                FaxStorage::remove($p);
                             }
                         }
                     }
@@ -218,7 +247,7 @@ final class PrivacyDataSubjectHelper
             $cdrs = $stmt->fetchAll(PDO::FETCH_ASSOC);
             foreach ($cdrs as $c) {
                 $uf = trim((string)($c['userfield'] ?? ''));
-                if ($uf !== '' && str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)) {
+                if ($uf !== '' && (str_starts_with($uf, 's3:') || (str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)))) {
                     $recordingFiles[$uf] = $uf;
                 }
             }
@@ -239,7 +268,7 @@ final class PrivacyDataSubjectHelper
             $stmt->execute([$clean, $digitsOnly, $like]);
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $cRow) {
                 $uf = trim((string)($cRow['userfield'] ?? ''));
-                if ($uf !== '' && str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)) {
+                if ($uf !== '' && (str_starts_with($uf, 's3:') || (str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)))) {
                     $recordingFiles[$uf] = $uf;
                 }
                 if (count($cdrs) < 200) {
@@ -371,9 +400,14 @@ final class PrivacyDataSubjectHelper
 
         $deletedRecs = 0;
         foreach ($info['recording_files'] as $file) {
-            if (is_string($file) && str_starts_with($file, '/var/spool/asterisk/monitor/') && is_file($file)) {
-                if (@unlink($file)) {
+            if (is_string($file) && $file !== '') {
+                if (str_starts_with($file, 's3:')) {
+                    RecordingStorage::delete(BucketFiles::key($file));
                     $deletedRecs++;
+                } elseif (str_starts_with($file, '/var/spool/asterisk/monitor/') && is_file($file)) {
+                    if (@unlink($file)) {
+                        $deletedRecs++;
+                    }
                 }
             }
         }
@@ -420,6 +454,13 @@ final class PrivacyDataSubjectHelper
         } catch (\Throwable $e) {
         }
         try {
+            $stmtArchive = $db->prepare("SELECT object_key FROM voicemail_archive WHERE (mailbox = ? OR callerid LIKE ?) AND object_key IS NOT NULL AND object_key != ''");
+            $stmtArchive->execute([$digits, $like]);
+            foreach ($stmtArchive->fetchAll(PDO::FETCH_COLUMN) as $objKey) {
+                if (!empty($objKey)) {
+                    BucketFiles::delete($objKey);
+                }
+            }
             $stmt = $db->prepare("DELETE FROM voicemail_archive WHERE mailbox = ? OR callerid LIKE ?");
             $stmt->execute([$digits, $like]);
             $delVm += $stmt->rowCount();
@@ -439,10 +480,10 @@ final class PrivacyDataSubjectHelper
 
         $delFax = 0;
         foreach ($info['faxes'] as $fax) {
-            foreach (['file_path', 'pdf_path'] as $col) {
+            foreach (['file_path', 'pdf_path', 'tif_path'] as $col) {
                 $p = (string)($fax[$col] ?? '');
-                if ($p !== '' && str_starts_with($p, '/var/spool/asterisk/fax/') && is_file($p)) {
-                    @unlink($p);
+                if ($p !== '') {
+                    FaxStorage::remove($p);
                 }
             }
         }

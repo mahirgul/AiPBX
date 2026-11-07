@@ -389,7 +389,7 @@ $filter_url = function (array $override) {
                                         <div class="u-relative u-pl-24 u-ml-8 u-border-left-2-dashed-border-color">
                                             <?php foreach ($c['legs'] as $leg):
                                                 $info = $leg['leg_info'];
-                                                $legHasRec = (!empty($leg['userfield']) && file_exists($leg['userfield']));
+                                                $legHasRec = (!empty($leg['userfield']) && (str_starts_with($leg['userfield'], 's3:') || file_exists($leg['userfield'])));
                                                 $legTime = date('H:i:s', strtotime($leg['calldate']));
                                                 $isAnsweredLeg = ($leg['disposition'] === 'ANSWERED');
                                                 $nodeColor = $isAnsweredLeg ? 'var(--success)' : ($leg['disposition'] === 'BUSY' ? 'var(--info)' : 'var(--warning)');

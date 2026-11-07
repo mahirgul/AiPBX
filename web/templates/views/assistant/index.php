@@ -95,8 +95,8 @@ foreach ([
 </div>
 
 <script>
-const ASST = <?php echo json_encode($texts, JSON_UNESCAPED_UNICODE); ?>;
-const CSRF = <?php echo json_encode($csrf); ?>;
+var ASST = <?php echo json_encode($texts, JSON_UNESCAPED_UNICODE); ?>;
+var CSRF = <?php echo json_encode($csrf); ?>;
 
 function asstPost(action, data, onDone) {
   data.append('action', action);

@@ -193,7 +193,7 @@ function __syncAllTrunksBody() {
             'id', 'trunk_name', 'title', 'ip_address', 'port', 'context', 'transport', 'disallow', 'allow',
             'direct_media', 'rtp_symmetric', 'force_rport', 'rewrite_contact', 'qualify_frequency',
             'max_contacts', 't38_udptl', 't38_udptl_ec', 't38_udptl_nat', 't38_udptl_maxdatagram',
-            'fax_detect', 'fax_detect_timeout', 'dtmf_mode', 'timers',
+            'fax_detect', 'fax_detect_timeout', 'dtmf_mode', 'timers', '100rel', 'prack_100rel',
             'from_user', 'from_domain', 'send_pai', 'send_rpid', 'auth_username', 'auth_password',
             'registration_enabled', 'registration_expiration', 'registration_retry_interval',
             'outbound_auth', 'outbound_proxy', 'match_hosts',
