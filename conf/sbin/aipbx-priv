@@ -556,7 +556,8 @@ case "$cmd" in
         for f in "$names" "$addrs"; do [ -f "$f" ] && { cp -p "$f" "$f.prev" || die "cannot write $(dirname "$f")"; }; done
         install -m 0644 "$tn" "$names" && install -m 0644 "$ta" "$addrs" || die "cannot write the lists in $(dirname "$names")"
         if ! nginx -t -q 2>/dev/null; then
-            for f in "$names" "$addrs"; do [ -f "$f.prev" ] && mv "$f.prev" "$f"; done
+            # The lists before, or none at all on a first write: nginx must start again either way.
+            for f in "$names" "$addrs"; do if [ -f "$f.prev" ]; then mv "$f.prev" "$f"; else : > "$f"; fi; done
             die "nginx refused the lists; the previous ones stay"
         fi
         systemctl reload nginx || die "nginx did not reload"

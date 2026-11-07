@@ -33,6 +33,22 @@ fail=0
 pass() { printf 'PASS  %s\n' "$*"; }
 bad()  { printf 'FAIL  %s\n' "$*"; fail=1; }
 
+echo '--- 00. install.sh starts when piped (curl ... | sudo bash)'
+# Read from stdin, a script has no file: BASH_SOURCE is unset, and under set -u touching it ends
+# the run before the banner. 1.72.4's step counter did exactly that to the one-line install.
+head_out=$(sed -n '1,/^START_SECONDS=/p' "$INSTALL_SH" | bash 2>&1)
+head_status=$?
+if [ "$head_status" -ne 0 ] || grep -q 'unbound variable' <<<"$head_out"; then
+    bad "the start of install.sh fails when piped: $head_out"
+else
+    pass 'the start of install.sh runs when piped'
+fi
+if grep -n 'BASH_SOURCE\[0\]' "$INSTALL_SH" | grep -v '^[0-9]*:[[:space:]]*#' | grep -v 'BASH_SOURCE\[0\]:-' | grep -q .; then
+    bad 'install.sh reads BASH_SOURCE[0] without :- (fails when piped under set -u)'
+else
+    pass 'every BASH_SOURCE[0] in install.sh has a default'
+fi
+
 echo '--- 0. the SSH advisory cannot fail a finished install'
 # `sshd -T` is how the end of install.sh finds out whether the host still takes
 # passwords over SSH. On a host with no SSH server (a container, a minimal cloud

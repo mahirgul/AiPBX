@@ -50,10 +50,14 @@ final class PluginManager
         return is_dir('/var/lib/aipbx') ? '/var/lib/aipbx/plugins' : sys_get_temp_dir() . '/aipbx_plugins';
     }
 
+    /** @var array<string, ?string> userPageDir() answers of this request */
+    private static array $userPageCache = [];
+
     public static function resetCache(): void
     {
         self::$dbCache = null;
         self::$manifestCache = null;
+        self::$userPageCache = [];
     }
 
     /**
@@ -392,7 +396,7 @@ final class PluginManager
      * folder and enables it: the one way in for an upload and for the community catalog.
      * $how ("uploaded", "installed from the catalog") goes into the audit log.
      */
-    private static function installArchive(string $zipPath, string $how, string $expectSlug = ''): string
+    private static function installArchive(string $zipPath, string $how, string $expectSlug = '', string $expectVersion = ''): string
     {
         if (!class_exists('ZipArchive')) {
             throw new \Exception('PHP ZipArchive extension is required to extract plugin packages.');
@@ -401,6 +405,11 @@ final class PluginManager
         $zip = new \ZipArchive();
         if ($zip->open($zipPath) !== true) {
             throw new \Exception(t('plugins.err_invalid_zip', 'Could not open the uploaded .zip archive.'));
+        }
+        // Before walking the entries: millions of tiny ones in a small zip would keep this busy.
+        if ($zip->numFiles > self::MAX_ZIP_ENTRIES) {
+            $zip->close();
+            throw new \Exception(t('plugins.err_zip_unpacked'));
         }
 
         // Security inspection: block path traversal (Zip-Slip), absolute paths, and locate plugin.json
@@ -436,7 +445,8 @@ final class PluginManager
         $slug = trim((string)($manifest['slug'] ?? ''));
         $name = trim((string)($manifest['name'] ?? ''));
         $version = trim((string)($manifest['version'] ?? '1.0.0'));
-        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', $slug) || $name === '' || ($expectSlug !== '' && $slug !== $expectSlug)) {
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', $slug) || $name === '' || ($expectSlug !== '' && $slug !== $expectSlug)
+            || ($expectVersion !== '' && $version !== $expectVersion)) {
             $zip->close();
             throw new \Exception(t('plugins.err_manifest_fields', 'plugin.json must define a valid "slug" (lowercase alphanumeric + hyphens) and "name".'));
         }
@@ -459,7 +469,7 @@ final class PluginManager
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $unpacked += (int) ($zip->statIndex($i)['size'] ?? 0);
         }
-        if ($zip->numFiles > self::MAX_ZIP_ENTRIES || $unpacked > self::MAX_UNPACKED_BYTES) {
+        if ($unpacked > self::MAX_UNPACKED_BYTES) { // the number of entries was checked on opening
             $zip->close();
             throw new \Exception(t('plugins.err_zip_unpacked'));
         }
@@ -480,10 +490,12 @@ final class PluginManager
             $written = 0;
             for ($i = 0; $i < $zip->numFiles; $i++) {
                 $entryName = (string)$zip->getNameIndex($i);
-                if ($prefixDir !== '' && str_starts_with($entryName, $prefixDir)) {
+                if ($prefixDir === '') {
+                    $relPath = $entryName;
+                } elseif (str_starts_with($entryName, $prefixDir)) {
                     $relPath = substr($entryName, strlen($prefixDir));
                 } else {
-                    $relPath = $entryName;
+                    continue; // beside the plugin's folder: not part of the plugin
                 }
                 if ($relPath === '' || str_ends_with($relPath, '/')) {
                     continue;
@@ -518,12 +530,21 @@ final class PluginManager
             }
             $zip->close();
 
+            // An update moves the installed version aside first and puts it back if the new one
+            // cannot take its place, so a failed move never leaves the plugin missing.
             $targetDir = $targetBase . '/' . $slug;
-            if (is_dir($targetDir)) {
-                self::removeDirectoryRecursive($targetDir);
+            $oldDir = is_dir($targetDir) ? $targetBase . '/.old-' . bin2hex(random_bytes(8)) : '';
+            if ($oldDir !== '' && !@rename($targetDir, $oldDir)) {
+                throw new \Exception('Failed to move extracted plugin into plugins directory.');
             }
             if (!@rename($stageDir, $targetDir)) {
+                if ($oldDir !== '') {
+                    @rename($oldDir, $targetDir);
+                }
                 throw new \Exception('Failed to move extracted plugin into plugins directory.');
+            }
+            if ($oldDir !== '') {
+                self::removeDirectoryRecursive($oldDir);
             }
         } catch (\Throwable $e) {
             self::removeDirectoryRecursive($stageDir);
@@ -604,7 +625,11 @@ final class PluginManager
             // The Plugins page waits for this, so a slow or unreachable GitHub may cost it 8 s once an hour.
             $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024, 8);
             if ($json !== null && is_array(json_decode($json, true))) {
-                @file_put_contents($cache, $json);
+                @mkdir(dirname($cache), 0750, true);
+                $tmp = $cache . '.' . bin2hex(random_bytes(4));
+                if (@file_put_contents($tmp, $json) !== false) {
+                    @rename($tmp, $cache); // whole or not at all: a half-written list is never read
+                }
             } elseif (is_file($cache)) {
                 @touch($cache); // keep the last good list, ask again in an hour
             } else {
@@ -647,7 +672,7 @@ final class PluginManager
             $zipPath = self::customDir() . '/.download-' . bin2hex(random_bytes(8)) . '.zip';
             file_put_contents($zipPath, $data);
             try {
-                return self::installArchive($zipPath, 'installed from the catalog', $slug);
+                return self::installArchive($zipPath, 'installed from the catalog', $slug, (string) $entry['version']);
             } finally {
                 @unlink($zipPath);
             }
@@ -681,22 +706,33 @@ final class PluginManager
         return $plugins;
     }
 
-    /** An HTTPS download of at most $max bytes (GitHub's release links redirect once or twice). */
     /** Tests only: answers in place of the network, fn(string $url): ?string. */
     public static ?\Closure $fetch = null;
 
+    /** An HTTPS download of at most $max bytes (GitHub's release links redirect once or twice). */
     private static function download(string $url, int $max, int $timeout = 30): ?string
     {
         if (self::$fetch !== null) {
             return (self::$fetch)($url);
         }
         $ch = curl_init($url);
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 5,
+        // The limit holds while the body arrives too: CURLOPT_MAXFILESIZE alone trusts Content-Length.
+        $body = '';
+        $tooBig = false;
+        curl_setopt($ch, CURLOPT_WRITEFUNCTION, static function ($ch, string $chunk) use (&$body, &$tooBig, $max): int {
+            if (strlen($body) + strlen($chunk) > $max) {
+                $tooBig = true;
+                return 0; // stops the transfer
+            }
+            $body .= $chunk;
+            return strlen($chunk);
+        });
+        curl_setopt_array($ch, [CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 5,
             CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_MAXFILESIZE => $max, CURLOPT_USERAGENT => 'AiPBX/' . (defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev')]);
-        $data = curl_exec($ch);
+        $ok = curl_exec($ch) === true;
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
-        return is_string($data) && $code === 200 && strlen($data) <= $max ? $data : null;
+        return $ok && !$tooBig && $code === 200 ? $body : null;
     }
 
     /**
@@ -1075,12 +1111,11 @@ final class PluginManager
     public static function userPageDir(string $slug, array $user): ?string
     {
         // The page and the sidebar both ask during one request: the plugin's visible.php runs once.
-        static $seen = [];
         $key = $slug . "\0" . (string) ($user['id'] ?? '');
-        if (!array_key_exists($key, $seen)) {
-            $seen[$key] = self::userPageDirUncached($slug, $user);
+        if (!array_key_exists($key, self::$userPageCache)) {
+            self::$userPageCache[$key] = self::userPageDirUncached($slug, $user);
         }
-        return $seen[$key];
+        return self::$userPageCache[$key];
     }
 
     private static function userPageDirUncached(string $slug, array $user): ?string

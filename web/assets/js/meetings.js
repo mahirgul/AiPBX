@@ -66,7 +66,8 @@ function openInviteModal(meeting) {
 
 function copyGuestLink(url) {
     if (!navigator.clipboard) {
-        prompt(__('js.meetings.copy_prompt', 'Copy meeting link:'), url);
+        // Plain HTTP: no clipboard API. The shared helper copies the old way or says to copy by hand.
+        UIHelper.copyToClipboard(url, __('js.meetings.link_copied', 'Meeting link copied to clipboard!'));
         return;
     }
     navigator.clipboard.writeText(url).then(() => {

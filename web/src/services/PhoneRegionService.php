@@ -243,7 +243,7 @@ final class PhoneRegionService
     {
         $note = '';
         if (!empty($before['sip443']) || !empty($after['sip443'])) {
-            $old = self::sip443Name($before);
+            $old = !empty($before['sip443']) ? self::sip443Name($before) : '';
             $names = self::syncSip443();
             $new = self::sip443Name($after);
             if ($new !== '' && $new !== $old && in_array($new, $names, true) && @file_get_contents(CertificateService::MODE_FILE) === "letsencrypt\n") {

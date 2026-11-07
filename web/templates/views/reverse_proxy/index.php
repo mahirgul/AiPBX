@@ -256,14 +256,6 @@ function selectFwTab(key, btn) {
 function copyProxySnippet(id) {
     var el = document.getElementById(id);
     if (!el) return;
-    navigator.clipboard.writeText(el.innerText).then(function() {
-        if (typeof showToast === 'function') {
-            showToast('<?php echo t('common.copied_to_clipboard'); ?>', 'success');
-        } else {
-            alert('<?php echo t('common.copied_to_clipboard'); ?>');
-        }
-    }).catch(function() {
-        alert('Could not copy to clipboard.');
-    });
+    UIHelper.copyToClipboard(el.innerText, <?php echo json_encode(t('common.copied_to_clipboard')); ?>);
 }
 </script>

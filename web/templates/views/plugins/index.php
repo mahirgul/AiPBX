@@ -161,7 +161,7 @@ foreach ($plugins as $p) {
                                         </form>
                                     <?php endif; ?>
 
-                                    <?php if (!empty($p['from_catalog'])): ?>
+                                    <?php if (!empty($p['from_catalog'])): /* not installed yet: its Install button is above */ ?>
                                     <?php elseif (!$p['enabled']): ?>
                                         <form method="POST" class="u-d-inline">
                                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf_token); ?>">

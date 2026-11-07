@@ -9,9 +9,16 @@ AiPBX uses **one TLS certificate** for everything that speaks TLS:
 | Asterisk | SIP-TLS (5061) and its WSS transport, also reached on 443 by phone regions with SIP over TLS on port 443 |
 
 A phone region with its own SIP server name for SIP on 443 (`sip1.example.com`, even in another
-domain) adds that name to the Let's Encrypt request: one certificate carries every name. Each name must
+domain) adds that name to the Let's Encrypt certificate: one certificate carries every name. Each name must
 point to this server in DNS, and port 80 must reach it (or, with Cloudflare DNS validation, the token
-must cover that domain too). After adding a name, request the certificate again on this page.
+must cover that domain too). After adding a name, press **Renew now** on this page: a renewal that finds
+a region name the certificate lacks makes the certificate again with it, the same way it was made
+(Apache, webroot or Cloudflare DNS). The automatic renewal keeps the names the certificate has.
+
+A name joins only once it points to the same address as the portal's name (loopback lines in
+`/etc/hosts` do not count); until then it is left out, so one wrong DNS record cannot fail the request
+for the portal's own name. The command line says which names were left out:
+`sudo aipbx-cert renew --dry-run`. At most 98 region names fit in one certificate.
 
 The active certificate lives in `/etc/ssl/aipbx/active.{crt,key}`. coturn and Asterisk run as their
 own users, so they get copies (`/etc/coturn/aipbx.*`, `/etc/asterisk/keys/`); `/etc/ssl/aipbx/mode`

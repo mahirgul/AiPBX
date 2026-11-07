@@ -138,7 +138,7 @@ const UIHelper = {
             let ok = false;
             try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
             ta.remove();
-            if (ok) say(successMsg, 'success'); else say(__('js.common.copy_manual'), 'warning');
+            if (ok) say(successMsg, 'success'); else say(typeof __ === 'function' ? __('js.common.copy_manual') : '', 'warning');
         };
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(() => say(successMsg, 'success')).catch(oldWay);

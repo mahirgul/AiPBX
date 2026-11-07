@@ -372,6 +372,8 @@ final class NetworkSettingsService
         $uid = $_SESSION['user_id'] ?? null;
         markPendingSync('transports', 'system_setting', 'network', 'Network settings: server addresses', 'update', $uid);
         markPendingSync('rtp', 'system_setting', 'network', 'Network settings: server addresses', 'update', $uid);
+        // Desk phones are known by these addresses too (SyncExtensions::pjsipIdentifyHosts()).
+        markPendingSync('extensions', 'system_setting', 'network', 'Network settings: server addresses', 'update', $uid);
     }
 
     // ------------------------------------------------------------ readdress
@@ -443,7 +445,8 @@ final class NetworkSettingsService
         try {
             syncTransports();
             syncRtpSettings();
-            // Both were just generated from the database: nothing of theirs waits for Apply.
+            // Both were just generated from the database: nothing of theirs waits for Apply. The
+            // extensions (their identify lists name the server's addresses) wait on Apply.
             $db->exec("DELETE FROM sys_pending_sync WHERE domain IN ('transports', 'rtp')");
         } catch (\Throwable $e) {
             $synced = false;

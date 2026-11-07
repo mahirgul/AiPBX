@@ -134,6 +134,45 @@ read_staged() {
 # certbot prints the useful part of a failure on these lines.
 certbot_errors() { grep -E 'Detail:|Type:|Domain:|Hint:|Error|error:|Challenge failed|unauthorized|Timeout|too many' | head -12; }
 
+# Phone regions with SIP on 443 by their own name (Provisioning → Regions), one per line: the portal's
+# certificate carries them too, for phones that check it. A name that does not point where the
+# portal's name points would fail the whole request, so it waits until its DNS record is there.
+# Loopback answers (an /etc/hosts line such as "127.0.1.1 pbx.example.com") say nothing about DNS.
+region_names() {
+    local d="$1" here extra n=0
+    here=$(getent ahosts "$d" 2>/dev/null | awk '$1 !~ /^(127\.|::1$)/ {print $1}' | sort -u)
+    for extra in $(sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443/names.conf 2>/dev/null); do
+        [ "$extra" = "$d" ] && continue
+        if [ -n "$here" ] && ! getent ahosts "$extra" 2>/dev/null | awk '{print $1}' | grep -qxF -f <(printf '%s\n' "$here"); then
+            echo "aipbx-cert: $extra does not point to the same address as $d yet, left out" >&2
+            continue
+        fi
+        # Let's Encrypt takes 100 names a certificate; the portal's own name(s) come first.
+        [ "$n" -lt 98 ] || { echo "aipbx-cert: more than 98 region names, $extra and later are left out" >&2; break; }
+        echo "$extra"; n=$((n + 1))
+    done
+}
+
+# certbot arguments that add the region names the certificate of $d lacks, made the way that
+# certificate was made (its renewal file); nothing when none is missing. A renewal keeps a
+# certificate's names, so a name added to a region later arrives only this way.
+expand_args() {
+    local d="$1" conf="/etc/letsencrypt/renewal/$1.conf" have missing=() extra auth
+    have=$(openssl x509 -in "$(le_live "$d")/cert.pem" -noout -ext subjectAltName 2>/dev/null | tr ',' '\n' | sed -n 's/^ *DNS://p')
+    for extra in $(region_names "$d"); do grep -qxF "$extra" <<<"$have" || missing+=("$extra"); done
+    [ ${#missing[@]} -gt 0 ] || return 0
+    local args=(certonly --non-interactive --agree-tos --expand --cert-name "$d")
+    auth=$(sed -n 's/^authenticator = //p' "$conf")
+    case "$auth" in
+        apache) args+=(--apache) ;;
+        webroot) args+=(--webroot -w "$(sed -n 's/^webroot_path = \([^,]*\).*/\1/p' "$conf")") ;;
+        dns-cloudflare) args+=(--dns-cloudflare --dns-cloudflare-credentials "$(sed -n 's/^dns_cloudflare_credentials = //p' "$conf")") ;;
+        *) echo "aipbx-cert: ${missing[*]} cannot be added, the certificate was made with '$auth'" >&2; return 0 ;;
+    esac
+    for extra in $have "${missing[@]}"; do args+=(-d "$extra"); done
+    printf '%s\n' "${args[@]}"
+}
+
 do_letsencrypt() {
     local dry=0 email="" dns_cf=0 wildcard=0
     while [ $# -gt 0 ]; do
@@ -149,7 +188,7 @@ do_letsencrypt() {
     done
     local d; d="$(domain)" || exit 1
     [[ "$d" == *.local ]] && die "Let's Encrypt cannot issue certificates for .local names ($d)"
-    [[ "$d" =~ ^[0-9.]+$ ]] && die "Let's Encrypt needs a domain name, not an IP address ($d)"
+    [[ "$d" =~ ^[0-9.]+$ || "$d" == *:* ]] && die "Let's Encrypt needs a domain name, not an IP address ($d)"
     command -v certbot >/dev/null || die "certbot is not installed"
 
     local args=(certonly --non-interactive --agree-tos)
@@ -187,22 +226,8 @@ do_letsencrypt() {
     else
         args+=(-d "$d" --cert-name "$d")
     fi
-    # Phone regions with SIP on 443 by their own name (Provisioning → Regions): the same
-    # certificate carries those names too, for phones that check it.
-    # A name that does not point where the portal's name points would fail the whole request and
-    # cost the portal its certificate, so it waits until its DNS record is there.
-    local extra extras=0 here
-    here=$(getent ahosts "$d" 2>/dev/null | awk '{print $1}' | sort -u)
-    for extra in $(sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443/names.conf 2>/dev/null); do
-        [ "$extra" = "$d" ] && continue
-        if [ -z "$here" ] || ! getent ahosts "$extra" 2>/dev/null | awk '{print $1}' | grep -qxF -f <(printf '%s\n' "$here"); then
-            echo "aipbx-cert: $extra does not point to the same address as $d yet, left out" >&2
-            continue
-        fi
-        # Let's Encrypt takes 100 names a certificate; the portal's own name(s) come first.
-        [ "$extras" -lt 98 ] || { echo "aipbx-cert: more than 98 region names, $extra and later are left out" >&2; break; }
-        args+=(-d "$extra"); extras=$((extras + 1))
-    done
+    local extra
+    for extra in $(region_names "$d"); do args+=(-d "$extra"); done
 
     if [ -n "$email" ]; then args+=(--email "$email"); else args+=(--register-unsafely-without-email); fi
 
@@ -239,7 +264,23 @@ do_renew() {
     [ -f "/etc/letsencrypt/renewal/$d.conf" ] || die "no Let's Encrypt certificate for $d"
     # Without a terminal certbot sleeps up to 8 minutes before renewing (meant
     # for its timer); someone is waiting on the page here.
-    local out
+    local out expand=()
+    mapfile -t expand < <(expand_args "$d")
+    if [ ${#expand[@]} -gt 0 ]; then
+        # New region names: the certificate is made again with them (staging first, as on a request).
+        out="$(certbot "${expand[@]}" --dry-run 2>&1)" \
+            || { echo "$out" | tail -25; die "adding the region names failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"; }
+        if [ "$dry" = 1 ]; then
+            record true "renewal test passed (adds region names)"
+            echo "OK: renewal test passed; renewing adds the region names"
+            return 0
+        fi
+        out="$(certbot "${expand[@]}" 2>&1)" \
+            || { echo "$out" | tail -25; die "adding the region names failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"; }
+        do_deploy letsencrypt "$(le_live "$d")/fullchain.pem" "$(le_live "$d")/privkey.pem" || exit 1
+        record true "certificate renewed with the region names"
+        return 0
+    fi
     if [ "$dry" = 1 ]; then
         out="$(certbot renew --cert-name "$d" --dry-run --non-interactive --no-random-sleep-on-renew 2>&1)" \
             || { echo "$out" | tail -25; die "renewal test failed: $(echo "$out" | certbot_errors | tr '\n' ' ')"; }

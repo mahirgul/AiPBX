@@ -5,6 +5,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.5
+
+- **The one-line install works again** (`curl ... | sudo bash`). 1.72.4's step counter read the script's own file name, which a piped script does not have, and the installer stopped on its first lines. The installer test now runs the start of install.sh from a pipe.
+- **Renew now adds new region names to the certificate.** A renewal kept the names the certificate already had, so a SIP name given to a phone region later never arrived; Renew now on the Certificates page makes the certificate again with it, the way it was made (Apache, webroot or Cloudflare DNS). A region name is compared with the portal's name in DNS, not with a loopback line in /etc/hosts.
+- **A changed server address also reaches the phones' identify lists** on Apply, and turning on SIP on 443 for a region that already had a name now says to renew the certificate.
+- **The last copy buttons work over plain HTTP:** a new user's password, a new API key, the reverse proxy snippets and the meeting link.
+- **Safer plugin packages:** files beside the plugin's folder in a zip are left out, a zip with too many entries is refused before it is read, a download stops at its size limit while it arrives, an update puts the old version back if the new one cannot take its place, and a catalog download must hold the version the catalog lists. The catalog list is written whole or not at all.
+- **Smaller fixes:** a first nginx list that nginx refuses is emptied instead of left in place, the region form tells an IP address from a name as the server does, and `aipbx-cert` refuses an IPv6 address as the portal's name for Let's Encrypt.
+
 ## 1.72.4
 
 - **Turning off SIP over TLS on 443 no longer strands a region's phones.** Their port stayed 443, which only reaches Asterisk while the option is on; it is cleared now and the phones take their transport's port.

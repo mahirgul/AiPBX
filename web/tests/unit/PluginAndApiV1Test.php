@@ -428,13 +428,16 @@ final class PluginAndApiV1Test extends TestCase
         };
         $good = $zipOf('catalog-test');
         $other = $zipOf('catalog-other');
-        $zips = ['catalog-test' => $good, 'catalog-swap' => $other, 'catalog-bad' => $good];
+        $zips = ['catalog-test' => $good, 'catalog-swap' => $other, 'catalog-bad' => $good, 'catalog-old' => $zipOf('catalog-old')];
         $entry = static fn(string $slug, string $data): array => ['slug' => $slug, 'name' => 'Catalog Test', 'version' => '1.0.0', 'sha256' => hash('sha256', $data)];
         $catalog = ['plugins' => [
             $entry('catalog-test', $good),
             $entry('catalog-swap', $other),            // the right checksum, but another plugin inside
             $entry('catalog-bad', 'something else'),   // the download does not match the catalog
             ['slug' => 'catalog-nover', 'sha256' => hash('sha256', $good)], // no version: not listed
+        ]];
+        $catalog['plugins'][] = ['version' => '2.0.0'] + $entry('catalog-old', $zips['catalog-old']); // the zip holds 1.0.0
+        $catalog = ['plugins' => [...$catalog['plugins'],
         ]];
 
         $prev = getenv('AIPBX_CUSTOM_PLUGINS_DIR');
@@ -447,7 +450,9 @@ final class PluginAndApiV1Test extends TestCase
         };
         PluginManager::resetCache();
         try {
-            $this->assertSame(['catalog-test', 'catalog-swap', 'catalog-bad'], array_keys(PluginManager::communityCatalog()));
+            $this->assertSame(['catalog-test', 'catalog-swap', 'catalog-bad', 'catalog-old'], array_keys(PluginManager::communityCatalog()));
+            $this->assertFalse(PluginManager::installFromCatalog('catalog-old', 'test-csrf-token')['success'],
+                'a zip of another version than the catalog lists is refused');
 
             $res = PluginManager::installFromCatalog('catalog-bad', 'test-csrf-token');
             $this->assertFalse($res['success'], 'a download that does not match the catalog is refused');

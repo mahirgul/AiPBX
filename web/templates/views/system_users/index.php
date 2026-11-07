@@ -8,7 +8,7 @@
         </div>
         <code class="u-fs-18 u-fw-700 u-letter-spacing-1 u-p-8-16 u-r-8 u-bg-bg-main u-user-select-all"><?php echo htmlspecialchars($generated_password); ?></code>
         <button type="button" class="btn btn-secondary btn-sm" data-pw="<?php echo htmlspecialchars($generated_password); ?>"
-                onclick="navigator.clipboard.writeText(this.dataset.pw).then(() => { this.innerHTML = '<i class=&quot;fas fa-check&quot;></i> <?php echo htmlspecialchars(t('system_users.generated_password_copied'), ENT_QUOTES); ?>'; });">
+                onclick="UIHelper.copyToClipboard(this.dataset.pw, <?php echo htmlspecialchars(json_encode(t('system_users.generated_password_copied')), ENT_QUOTES); ?>);">
             <i class="fas fa-copy"></i> <?php echo t('system_users.generated_password_copy'); ?>
         </button>
     </div>

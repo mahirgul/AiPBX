@@ -22,7 +22,7 @@
             </p>
             <div class="u-d-flex u-ai-center u-gap-10">
                 <input type="text" id="newApiTokenInput" class="form-control u-mono u-fw-700 u-fs-14" value="<?php echo htmlspecialchars($created_raw_token); ?>" readonly>
-                <button type="button" class="btn btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('newApiTokenInput').value);">
+                <button type="button" class="btn btn-primary" onclick="UIHelper.copyToClipboard(document.getElementById('newApiTokenInput').value, <?php echo htmlspecialchars(json_encode(t('common.copied_to_clipboard')), ENT_QUOTES); ?>);">
                     <i class="fas fa-copy"></i> <?php echo htmlspecialchars(t('common.copy', 'Copy')); ?>
                 </button>
             </div>
