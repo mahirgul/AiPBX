@@ -41,7 +41,7 @@ echo '--- 0. the SSH advisory cannot fail a finished install'
 # a finished install reported failure and aipbx-update rolled the box back over
 # an advisory. The block is extracted from install.sh rather than copied, so a
 # revert to the bare `sshd -T` fails here.
-advisory="$(awk '/^ssh_cfg=/{p=1} p&&/All credentials saved to:/{exit} p{print}' "$INSTALL_SH")"
+advisory="$(awk '/^ssh_cfg=/{p=1} p&&/All credentials saved to/{exit} p{print}' "$INSTALL_SH")"
 if [ -z "$advisory" ]; then
     bad 'the SSH advisory is gone from install.sh (deleting it is not a fix)'
 else
@@ -53,10 +53,15 @@ else
         if path=$(command -v "$tool"); then ln -s "$path" "$no_sshd/bin/$tool"; fi
     done
 
-    # The advisory's echo lines use install.sh's colour variables.
+    # The advisory prints through install.sh's output helpers and colour variables.
     run_advisory() {  # run_advisory PATH -> prints what the block prints
         # shellcheck disable=SC2034 # Variables mocked for the subshell eval of the advisory
-        ( set -euo pipefail; YELLOW=; BOLD=; NC=; PATH="$1"; eval "$advisory" )
+        ( set -euo pipefail; YELLOW=; BOLD=; NC=; PATH="$1"
+          # shellcheck disable=SC2329 # called by the eval below
+          warn() { echo "$*"; }
+          # shellcheck disable=SC2329 # called by the eval below
+          info() { echo "$*"; }
+          eval "$advisory" )
     }
 
     if PATH="$no_sshd/bin" command -v sshd >/dev/null 2>&1; then
