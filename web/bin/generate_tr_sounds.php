@@ -53,7 +53,7 @@ $tmp = tempnam(sys_get_temp_dir(), 'trtts') . '.wav';
 $failed = 0;
 foreach ($prompts as $name => $text) {
     $wav = "$out/$name.wav";
-    @mkdir(dirname($wav), 0755, true);
+    is_dir(dirname($wav)) || @mkdir(dirname($wav), 0755, true);
     try {
         file_put_contents($tmp, $client->synthesizeWav($text, $voice, 'tr-TR', 1.0, 16000));
     } catch (\Throwable $e) {

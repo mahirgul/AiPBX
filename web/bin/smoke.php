@@ -469,9 +469,23 @@ function check_conventions(): void
     $code = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(SMOKE_ROOT, FilesystemIterator::SKIP_DOTS));
     foreach ($code as $f) {
         $p = (string) $f;
-        if (str_ends_with($p, '.php') && !str_contains($p, '/vendor/') && !str_contains($p, '/tests/') && !str_ends_with($p, 'bin/smoke.php')
-            && preg_match('/\b(curl_close|curl_share_close)\s*\(/', (string) file_get_contents($p), $m) === 1) {
+        if (!str_ends_with($p, '.php') || str_contains($p, '/vendor/') || str_contains($p, '/tests/') || str_ends_with($p, 'bin/smoke.php')) {
+            continue;
+        }
+        $src = (string) file_get_contents($p);
+        if (preg_match('/\b(curl_close|curl_share_close)\s*\(/', $src, $m) === 1) {
             fail('conventions', $rel($p), "{$m[1]}() is deprecated in PHP 8.5 and does nothing: remove it");
+        }
+        // @ does not hide a warning from this test: mkdir() on a folder that exists warned on the
+        // Plugins page of every update with the catalog on (1.72.6). Ask is_dir() first.
+        $prev = '';
+        foreach (explode("\n", $src) as $i => $line) {
+            if (str_contains($line, '@mkdir(') && !str_contains($line, 'is_dir') && !str_contains($line, 'if (!@mkdir') && !str_contains($prev, 'is_dir')) {
+                fail('conventions', $rel($p) . ':' . ($i + 1), '@mkdir() without is_dir(): it warns when the folder exists');
+            }
+            if (trim($line) !== '') {
+                $prev = $line;
+            }
         }
     }
 

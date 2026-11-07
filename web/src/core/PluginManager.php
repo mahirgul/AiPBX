@@ -484,7 +484,7 @@ final class PluginManager
             @mkdir($targetBase, 0750, true);
         }
         $stageDir = $targetBase . '/.stage-' . bin2hex(random_bytes(8));
-        @mkdir($stageDir, 0700, true);
+        is_dir($stageDir) || @mkdir($stageDir, 0700, true);
 
         try {
             $written = 0;
@@ -624,7 +624,8 @@ final class PluginManager
         if (!is_file($cache) || time() - (int) filemtime($cache) > 3600) {
             // The Plugins page waits for this, so a slow or unreachable GitHub may cost it 8 s once an hour.
             $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024, 8);
-            @mkdir(dirname($cache), 0750, true);
+            // Only when missing: the page test counts a warning even behind @.
+            is_dir(dirname($cache)) || @mkdir(dirname($cache), 0750, true);
             if ($json !== null && is_array(json_decode($json, true))) {
                 $tmp = $cache . '.' . bin2hex(random_bytes(4));
                 if (@file_put_contents($tmp, $json) !== false) {
@@ -671,7 +672,7 @@ final class PluginManager
             if ($data === null || !hash_equals((string) $entry['sha256'], hash('sha256', $data))) {
                 throw new \Exception(t('plugins.err_catalog_download'));
             }
-            @mkdir(self::customDir(), 0750, true);
+            is_dir(self::customDir()) || @mkdir(self::customDir(), 0750, true);
             $zipPath = self::customDir() . '/.download-' . bin2hex(random_bytes(8)) . '.zip';
             file_put_contents($zipPath, $data);
             try {

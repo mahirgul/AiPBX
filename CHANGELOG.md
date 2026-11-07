@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.7
+
+- **The update's page test no longer fails on /plugins with the community catalog on.** Creating the catalog's folder warned when it already existed (1.72.5, 1.72.6); the folder is now made only when missing. The page test refuses `@mkdir()` without an `is_dir()` check, as `@` does not hide the warning from it.
+
 ## 1.72.6
 
 - **Administrators and queue managers can be queue agents too** (#160). An administrator or a queue manager with an extension now appears on the Agents list of a queue like an agent or a normal user, and gets the Agent Screen once added to one.
