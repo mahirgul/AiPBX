@@ -410,4 +410,62 @@ final class PluginAndApiV1Test extends TestCase
             exec('rm -rf ' . escapeshellarg($dir));
         }
     }
+
+    public function testCatalogInstallChecksTheChecksumAndThePluginAskedFor(): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx_custom_plugins_' . bin2hex(random_bytes(4));
+        mkdir($dir, 0700, true);
+        $zipOf = static function (string $slug) use ($dir): string {
+            $file = $dir . '-' . $slug . '.zip';
+            $zip = new ZipArchive();
+            $zip->open($file, ZipArchive::CREATE);
+            $zip->addFromString('plugin.json', json_encode(['slug' => $slug, 'name' => 'Catalog Test', 'version' => '1.0.0']));
+            $zip->addFromString('admin/page.php', "<?php echo 'ok';\n");
+            $zip->close();
+            $data = (string) file_get_contents($file);
+            unlink($file);
+            return $data;
+        };
+        $good = $zipOf('catalog-test');
+        $other = $zipOf('catalog-other');
+        $zips = ['catalog-test' => $good, 'catalog-swap' => $other, 'catalog-bad' => $good];
+        $entry = static fn(string $slug, string $data): array => ['slug' => $slug, 'name' => 'Catalog Test', 'version' => '1.0.0', 'sha256' => hash('sha256', $data)];
+        $catalog = ['plugins' => [
+            $entry('catalog-test', $good),
+            $entry('catalog-swap', $other),            // the right checksum, but another plugin inside
+            $entry('catalog-bad', 'something else'),   // the download does not match the catalog
+            ['slug' => 'catalog-nover', 'sha256' => hash('sha256', $good)], // no version: not listed
+        ]];
+
+        $prev = getenv('AIPBX_CUSTOM_PLUGINS_DIR');
+        putenv('AIPBX_CUSTOM_PLUGINS_DIR=' . $dir);
+        $wasOn = getSystemSetting('plugins_community_catalog', '0');
+        setSystemSetting('plugins_community_catalog', '1');
+        file_put_contents($dir . '/.catalog.json', json_encode($catalog));
+        PluginManager::$fetch = static function (string $url) use ($zips): ?string {
+            return preg_match('#/([a-z-]+)\.zip$#', $url, $m) ? ($zips[$m[1]] ?? null) : null;
+        };
+        PluginManager::resetCache();
+        try {
+            $this->assertSame(['catalog-test', 'catalog-swap', 'catalog-bad'], array_keys(PluginManager::communityCatalog()));
+
+            $res = PluginManager::installFromCatalog('catalog-bad', 'test-csrf-token');
+            $this->assertFalse($res['success'], 'a download that does not match the catalog is refused');
+            $res = PluginManager::installFromCatalog('catalog-swap', 'test-csrf-token');
+            $this->assertFalse($res['success'], 'a zip holding another plugin is refused');
+            $this->assertDirectoryDoesNotExist($dir . '/catalog-other');
+
+            $res = PluginManager::installFromCatalog('catalog-test', 'test-csrf-token');
+            $this->assertTrue($res['success'], (string) ($res['error'] ?? ''));
+            $this->assertFileExists($dir . '/catalog-test/admin/page.php');
+            $this->assertSame([], glob($dir . '/.download-*'), 'no download is left behind');
+        } finally {
+            PluginManager::$fetch = null;
+            PluginManager::uninstall('catalog-test', 'test-csrf-token');
+            setSystemSetting('plugins_community_catalog', (string) $wasOn);
+            putenv($prev === false ? 'AIPBX_CUSTOM_PLUGINS_DIR' : 'AIPBX_CUSTOM_PLUGINS_DIR=' . $prev);
+            PluginManager::resetCache();
+            exec('rm -rf ' . escapeshellarg($dir));
+        }
+    }
 }

@@ -8,6 +8,7 @@ import { mkdirSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
+// The showcase container has a self-signed certificate; this tool talks only to it.
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 const [base, password, out, langArg = 'en,tr,de'] = process.argv.slice(2);
 const langs = langArg.split(',');

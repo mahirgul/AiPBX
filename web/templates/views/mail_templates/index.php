@@ -41,7 +41,7 @@ $e = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         <?php endforeach; ?>
     </div>
 
-    <div class="card mail-tpl-editor" id="mailTplEditor"
+    <div class="card" id="mailTplEditor"
          data-template="<?php echo $e($templateKey); ?>" data-csrf="<?php echo $e(getCSRFToken()); ?>">
         <div class="u-flex-between u-mb-10 u-wrap u-gap-8">
             <div class="card-title u-m-0">

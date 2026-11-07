@@ -41,6 +41,8 @@ $rows = array_merge($cards, array_values(array_filter($system['interfaces'], fn(
 ?>
 <div class="card" id="netcfg">
     <?php echo uiPageHeader('fa-ethernet', t('netcfg.cards_title')); ?>
+    <div class="alert alert-info u-fs-12 u-m-8-20"><i class="fas fa-circle-info"></i> <?php echo sprintf(t('netset.addresses_elsewhere'),
+        '<a href="/asterisk-settings">' . $h(t('sidebar.item_asterisk_settings')) . '</a>', '<a href="/phone-regions">' . $h(t('sidebar.item_phone_regions')) . '</a>'); ?></div>
     <?php $waiting = NetworkSettingsService::networksWaitingForRestart(); if ($waiting !== []): ?>
         <div class="alert alert-warning u-m-8-20">
             <?php echo sprintf(t('netset.restart_needed'), '<code>' . $h(implode(', ', $waiting)) . '</code>'); ?>

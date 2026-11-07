@@ -78,7 +78,7 @@
                                     <?php echo uiStatusToggleForm($anc['id'], $anc['is_active'] ?? 1, 'anc_id'); ?>
                                 </td>
                                 <td class="u-text-right u-nowrap">
-                                    <button class="btn btn-icon btn-secondary btn-sm btn-play-sound" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)" title="<?php echo t('sounds.listen_tooltip'); ?>">
+                                    <button class="btn btn-icon btn-secondary btn-sm" data-sound="<?php echo htmlspecialchars($file_name); ?>" onclick="playAnnouncement(<?php echo jsArg($file_name); ?>, <?php echo jsArg($anc['title']); ?>)" title="<?php echo t('sounds.listen_tooltip'); ?>">
                                         <i class="fas fa-play"></i>
                                     </button>
                                     <a href="/api/sound_play.php?file=<?php echo htmlspecialchars($file_name); ?>&download=1" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('sounds.download_tooltip'); ?>">

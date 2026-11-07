@@ -5,6 +5,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.4
+
+- **Turning off SIP over TLS on 443 no longer strands a region's phones.** Their port stayed 443, which only reaches Asterisk while the option is on; it is cleared now and the phones take their transport's port.
+- **HTTPS on a region's SIP name reaches the portal.** A browser or a phone fetching its file over HTTPS from the same name was handed to Asterisk; only SIP connections go there now.
+- **A region name without DNS no longer costs the portal its certificate.** A region's SIP name joins the Let's Encrypt certificate only once it points where the portal's name points (and at most 98 of them); until then it is left out with a note in the log.
+- **Moving to a new server address also moves the public media address.** The preview listed it, but it was not saved.
+- **The general SIP server name of desk phones is accepted by Asterisk** like each region's name; changing it waits on Apply.
+- **Copy buttons work on a portal opened over plain HTTP** (by IP address on the local network), where the browser has no clipboard access: the text is copied the old way, or you are told to copy it by hand.
+- **The Plugins page waits at most 8 seconds for the catalog** once an hour, and no longer on every visit when GitHub cannot be reached. Catalog entries without a version are left out, and a download must hold the plugin asked for.
+- **`scripts/check_plugins.py` knows `user_page` and `requires_aipbx`,** so plugins that use them pass.
+- **Network settings says where the addresses went:** the PBX's addresses are on PBX Settings → PJSIP & Net and the desk phones' on Provisioning → Regions, with links.
+- **Renaming your own account shows at once,** not after the next sign-in. A plugin's user page has its title in your language, and a script posting to it gets JSON back on an error too.
+- **Discarding a second address move no longer brings back the first.**
+- **Tidier underneath:** 192 texts no code used are gone from all 23 languages; every copy button goes through one helper; pages use only defined styles; the page test also checks the layout's header and footer; the installer counts its own steps; GitHub Actions are pinned to commits; PHPStan 2.3 and PHPUnit 13.4.
+
 ## 1.72.3
 
 - **The guides match the portal again.** Addresses that moved to PBX Settings → PJSIP & Net and Provisioning → Regions, the firewall's common and per-card rules, Fax Mail settings, the number a fax goes out with, the fax tone times and how an update checks itself and rolls back are described as they are now, and menu paths that changed are corrected. New guides: Extensions (with each extension's SIP settings) and PBX Settings (every tab); adding users and the `admin` account are explained.

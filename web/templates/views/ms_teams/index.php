@@ -461,7 +461,6 @@ window.MS_TEAMS_I18N = {
     delete_confirm: <?php echo json_encode(t('ms_teams.js_delete_confirm'), JSON_UNESCAPED_UNICODE); ?>,
     enter_webhook_url: <?php echo json_encode(t('ms_teams.js_enter_webhook_url'), JSON_UNESCAPED_UNICODE); ?>,
     copied: <?php echo json_encode(t('ms_teams.js_copied'), JSON_UNESCAPED_UNICODE); ?>,
-    copy_failed: <?php echo json_encode(t('ms_teams.js_copy_failed'), JSON_UNESCAPED_UNICODE); ?>,
     delete_failed: <?php echo json_encode(t('ms_teams.js_delete_failed'), JSON_UNESCAPED_UNICODE); ?>,
     conn_error: <?php echo json_encode(t('ms_teams.js_conn_error'), JSON_UNESCAPED_UNICODE); ?>,
     test_failed: <?php echo json_encode(t('ms_teams.js_test_failed'), JSON_UNESCAPED_UNICODE); ?>

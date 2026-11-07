@@ -236,7 +236,8 @@ function uiStatusBadge($value, array $map, $default = 'info', $label = null, $ic
  *     foreach ($rows as $r) { ... }   // <tr>...</tr>
  *     echo uiTableClose();
  *
- * A column is its label (ready HTML, like t()) or ['label', 'class', 'title']; null skips it (a column
+ * A column is its label (ready HTML, like t(): escape anything a user typed before passing it) or
+ * ['label', 'class', 'title']; null skips it (a column
  * only some users see: $canEdit ? $actions : null). No columns, no header row.
  * $opt: id, body_id, search (false: no search, paging or sorting), class (a script's hook),
  * attrs (trusted data-* for a script), frame (classes on the frame, e.g. a height limit).
@@ -253,7 +254,7 @@ function uiTableOpen(array $columns, array $opt = []): string {
     }
     $class = trim('data-table ' . (($opt['search'] ?? true) ? '' : 'no-dt ') . ($opt['class'] ?? ''));
     $id = static fn(string $k): string => !empty($opt[$k]) ? ' id="' . htmlspecialchars($opt[$k], ENT_QUOTES) . '"' : '';
-    return '<div class="' . trim('table-responsive ' . ($opt['frame'] ?? '')) . '"><table class="' . htmlspecialchars($class, ENT_QUOTES) . '"'
+    return '<div class="' . htmlspecialchars(trim('table-responsive ' . ($opt['frame'] ?? '')), ENT_QUOTES) . '"><table class="' . htmlspecialchars($class, ENT_QUOTES) . '"'
         . $id('id') . (!empty($opt['attrs']) ? ' ' . $opt['attrs'] : '') . '>' . ($th !== '' ? '<thead><tr>' . $th . '</tr></thead>' : '')
         . '<tbody' . $id('body_id') . '>';
 }

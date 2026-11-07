@@ -12,6 +12,9 @@
 class PrivHelper {
     const BIN = '/usr/local/sbin/aipbx-priv';
 
+    /** Tests only: answers in place of aipbx-priv, fn(array $args, ?string $input): array{success, output}. */
+    public static ?\Closure $fake = null;
+
     /**
      * @param string[] $args aipbx-priv subcommand and its arguments (e.g. ['fw', 'list-all'])
      * @param ?string $input what the command reads from stdin: a secret goes this way, as a
@@ -19,6 +22,9 @@ class PrivHelper {
      * @return array{success: bool, output: string}
      */
     public static function run(array $args, ?string $input = null): array {
+        if (self::$fake !== null) {
+            return (self::$fake)($args, $input);
+        }
         $cmd = 'sudo -n ' . self::BIN . ' ' . implode(' ', array_map('escapeshellarg', $args)) . ' 2>&1';
         if ($input !== null) {
             $proc = proc_open($cmd, [0 => ['pipe', 'r'], 1 => ['pipe', 'w']], $pipes);

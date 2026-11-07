@@ -143,6 +143,11 @@ class UserService {
                     getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
                     refreshOwnSessionEpoch((int) $user_id);
                 }
+                if ((int) $user_id === (int) ($_SESSION['user_id'] ?? 0)) {
+                    // Renaming yourself shows at once, not after the next sign-in.
+                    $_SESSION['username'] = $username;
+                    $_SESSION['full_name'] = $full_name;
+                }
                 $msg = sprintf(t('srv_user.updated'), $username);
                 writeAuditLog(null, 'user_account', $user_id, "User: {$username} ({$full_name}, role: {$role})", 'update', $_SESSION['user_id'] ?? null);
             } else {
@@ -238,8 +243,7 @@ class UserService {
             // role==='admin' (auth.php circuit breaker) — if the LAST active
             // admin account in the system is deleted, nobody can reach these
             // two pages anymore and the system is locked for good. This check
-            // used to exist only in the interface (the delete button was
-            // hidden for username==='admin'), not on the server at all.
+            // used to exist only in the interface, not on the server at all.
             $target_role = DBHelper::fetchColumn("SELECT role FROM sys_users WHERE id = ?", [$user_id]);
             if ($target_role === 'admin') {
                 $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$user_id]);

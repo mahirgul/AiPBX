@@ -124,15 +124,26 @@ const UIHelper = {
     /**
      * Universal Clipboard Copying with Toast Notification
      */
-    copyToClipboard(text, successMsg = 'Metin panoya kopyalandi!') {
+    copyToClipboard(text, successMsg) {
+        const say = (msg, kind) => { if (window.showFooterToast && msg) showFooterToast(msg, kind); };
+        // The clipboard API exists only on HTTPS; a portal opened as http://<address> copies the old way.
+        const oldWay = () => {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.setAttribute('readonly', '');
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+            ta.remove();
+            if (ok) say(successMsg, 'success'); else say(__('js.common.copy_manual'), 'warning');
+        };
         if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(text).then(() => {
-                if (window.showFooterToast) {
-                    showFooterToast(successMsg, 'success');
-                }
-            }).catch(err => {
-                console.error('Clipboard copy error:', err);
-            });
+            navigator.clipboard.writeText(text).then(() => say(successMsg, 'success')).catch(oldWay);
+        } else {
+            oldWay();
         }
     },
 

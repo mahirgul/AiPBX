@@ -30,6 +30,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 KNOWN_HOOKS = {
     "admin_page",
+    "user_page",
     "auth_provider",
     "ai_provider",
     "tts_provider",
@@ -159,6 +160,11 @@ class PluginValidator:
         if p_type not in ("official", "community"):
             self.add_error(f"Invalid 'type': must be 'official' or 'community', got '{p_type}'")
 
+        # The AiPBX a plugin needs (optional, AiPBX 1.72+)
+        requires = data.get("requires_aipbx")
+        if requires is not None and (not isinstance(requires, str) or not re.match(r"^\d+\.\d+(\.\d+)?$", requires)):
+            self.add_error("'requires_aipbx' must be a version such as \"1.71.0\"")
+
         # Scopes check (optional)
         if "scopes" in data:
             if not isinstance(data["scopes"], list) or not all(isinstance(s, str) for s in data["scopes"]):
@@ -221,6 +227,12 @@ class PluginValidator:
                     events_handler = os.path.join(self.plugin_dir, "events", "handler.php")
                     if not os.path.isfile(events_handler) and not is_official:
                         self.add_error("hooks.events declared, but events/handler.php was not found")
+
+            elif hook_name == "user_page":
+                if not isinstance(hook_val, dict) or not isinstance(hook_val.get("label", ""), str):
+                    self.add_error("hooks.user_page must be an object (e.g. {'label': 'Messages', 'icon': 'fas fa-comment-sms'})")
+                elif not os.path.isfile(os.path.join(self.plugin_dir, "user", "page.php")):
+                    self.add_error("hooks.user_page specified, but user/page.php was not found")
 
             elif hook_name == "sync_domain":
                 if not isinstance(hook_val, str) or not hook_val.strip():

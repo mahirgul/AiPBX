@@ -560,6 +560,7 @@ case "$cmd" in
             die "nginx refused the lists; the previous ones stay"
         fi
         systemctl reload nginx || die "nginx did not reload"
+        rm -f "$names.prev" "$addrs.prev"
         ;;
 
     asterisk-lang)

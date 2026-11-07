@@ -187,6 +187,10 @@
 }
 
 @media (max-width: 768px) {
+    /* A button bar whose buttons take the whole width on a phone (e.g. Apply on Pending Changes). */
+    .u-mobile-wide:not(#u):not(#u) { justify-content: stretch; }
+    .u-mobile-wide > .btn:not(#u):not(#u) { width: 100%; justify-content: center; padding: 12px; font-size: 14px; }
+
     .d-mobile-none { display: none !important; }
     .d-mobile-block { display: block !important; }
     .d-mobile-inline { display: inline !important; }

@@ -150,9 +150,5 @@ function testTeamsWebhook() {
 
 function copyPowerShellScript() {
     const code = document.getElementById('powerShellCodeBlock').innerText;
-    navigator.clipboard.writeText(code).then(() => {
-        alert(window.MS_TEAMS_I18N.copied);
-    }).catch(err => {
-        alert(window.MS_TEAMS_I18N.copy_failed + err);
-    });
+    UIHelper.copyToClipboard(code, window.MS_TEAMS_I18N.copied);
 }

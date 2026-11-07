@@ -17,7 +17,7 @@ $deviceBadge = static function (string $type): string {
         'mobile'  => '<span class="badge badge-primary"><i class="fas fa-mobile-alt"></i> ' . t('dialplan_rules.tab_mobile') . '</span>',
         'desktop' => '<span class="badge badge-info"><i class="fas fa-desktop"></i> ' . t('dialplan_rules.tab_desktop') . '</span>',
         'web'     => '<span class="badge badge-secondary"><i class="fas fa-globe"></i> ' . t('dialplan_rules.tab_web') . '</span>',
-        default   => '<span class="badge badge-dark"><i class="fas fa-asterisk"></i> ' . t('dialplan_rules.type_all') . '</span>',
+        default   => '<span class="badge badge-secondary"><i class="fas fa-asterisk"></i> ' . t('dialplan_rules.type_all') . '</span>',
     };
 };
 ?>

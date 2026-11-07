@@ -122,7 +122,8 @@ abstract class BaseController
         requireLogin();
         $module = getModuleKeyForPage();
         if ($module === 'plugin_apps') {
-            // PluginsController::userPage() asked the plugin (PluginManager::userPageDir()).
+            // A plugin's user page: not in the RBAC matrix on purpose. Every signed-in user may reach
+            // /apps/<slug>; PluginsController::userPage() asks the plugin (user/visible.php) who sees it.
         } elseif ($module === 'cdr_reports') {
             if (!hasModulePermission('cdr_reports', 'view') && !hasModulePermission('cc_reports', 'view')) {
                 requireModulePermission('cdr_reports', 'view');

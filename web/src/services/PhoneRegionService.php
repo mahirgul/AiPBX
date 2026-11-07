@@ -115,7 +115,7 @@ final class PhoneRegionService
     {
         $host = static function (string $field, string $err, bool $none = false) use ($data): string {
             $v = trim((string) ($data[$field] ?? ''));
-            if ($v !== '' && !($none && $v === self::NONE) && !preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,253}[A-Za-z0-9])?$/D', $v)) {
+            if ($v !== '' && !($none && $v === self::NONE) && !preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$/D', $v)) {
                 throw new \Exception(t($err));
             }
             return $v;
@@ -144,12 +144,20 @@ final class PhoneRegionService
         $out['sip_port'] = $port;
         $out['sip443'] = empty($data['sip443']) ? '0' : '1';
         $out['sip443_sources'] = implode(', ', self::sources((string) ($data['sip443_sources'] ?? '')));
+        if (self::sip443Name($out) !== '') {
+            // A region with a name of its own is found by that name: addresses would be kept and never used.
+            $out['sip443_sources'] = '';
+        }
         if ($out['sip443'] === '1') {
             // nginx hands on TLS only: these phones talk TLS to 443.
             [$out['transport'], $out['sip_port']] = ['tls', '443'];
             if (self::sip443Name($out) === '' && $out['sip443_sources'] === '') {
                 throw new \Exception(t('phones.region_err_sip443_none'));
             }
+        } elseif ($out['sip_port'] === '443') {
+            // nginx owns 443 and hands only SIP-on-443 regions to Asterisk: left after turning that
+            // off, 443 would keep these phones away from the PBX. They take the transport's port.
+            $out['sip_port'] = '';
         }
         $srtp = (string) ($data['srtp'] ?? '');
         $out['srtp'] = in_array($srtp, ['0', '1', '2'], true) ? $srtp : '';

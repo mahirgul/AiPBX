@@ -430,7 +430,7 @@ final class NetworkSettingsService
         $stmt = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
         $server = self::settings();
         foreach ($changes as $c) {
-            if (in_array($c['where'], ['server_ip', 'pjsip_external_ip', 'pjsip_local_net'], true)) {
+            if (in_array($c['where'], self::SERVER_KEYS, true)) {
                 $server[$c['where']] = $c['to'];
             } elseif (str_starts_with($c['where'], 'provision_') && $c['where'] !== 'provision_allowed_networks') {
                 $stmt->execute([$c['where'], $c['to']]);
@@ -469,11 +469,11 @@ final class NetworkSettingsService
             return;
         }
         $db = getDB();
-        $dismissed = (string) getSystemSetting('readdress_dismissed', '');
+        $dismissed = array_filter(explode(',', (string) getSystemSetting('readdress_dismissed', '')));
         $olds = array_unique(array_column(array_filter($stale, static fn(array $s): bool => in_array($s['where'], self::SELF_KEYS, true)), 'value'));
         foreach ($olds as $old) {
             $id = $old . '>' . $new;
-            if ($old === $new || $id === $dismissed) {
+            if ($old === $new || in_array($id, $dismissed, true)) {
                 continue;
             }
             $has = $db->prepare("SELECT 1 FROM sys_pending_sync WHERE domain = 'readdress' AND entity_id = ?");
@@ -499,7 +499,9 @@ final class NetworkSettingsService
     {
         getDB()->prepare("DELETE FROM sys_pending_sync WHERE domain = 'readdress' AND entity_id = ?")->execute([$id]);
         getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
-            ->execute(['readdress_dismissed', $id]);
+            // A list, so discarding a second move does not bring the first one back (the last 10 are kept).
+            ->execute(['readdress_dismissed', implode(',', array_slice(array_values(array_unique(array_merge(
+                array_filter(explode(',', (string) getSystemSetting('readdress_dismissed', ''))), [$id]))), -10))]);
         writeAuditLog('readdress', 'server_address', $id, "Address move {$id} discarded", 'delete', $_SESSION['user_id'] ?? null);
     }
 

@@ -11,9 +11,19 @@ marker() { db "SELECT setting_value FROM sys_settings WHERE setting_key = 'e2e_b
 cleanup() { db "DELETE FROM sys_settings WHERE setting_key = 'e2e_backup_marker'"; rm -rf "$WORK"; }
 trap cleanup EXIT
 
+# The newest backup whose name ends in $1.
+newest() {
+    local f best=""
+    for f in "$DEST"/*"$1"; do
+        [[ -e "$f" ]] || continue
+        [[ -z "$best" || "$f" -nt "$best" ]] && best="$f"
+    done
+    [[ -n "$best" ]] && basename "$best"
+}
+
 db "INSERT INTO sys_settings (setting_key, setting_value) VALUES ('e2e_backup_marker', 'before') ON DUPLICATE KEY UPDATE setting_value = 'before'"
 aipbx-backup --label test-run >/dev/null || fail "backup"
-NAME="$(ls -1t "$DEST" | grep -m1 -- '-test-run$')"
+NAME="$(newest -test-run)"
 if [[ -f "$DEST/$NAME/db.sql.gz" && -f "$DEST/$NAME/config.tgz" && -f "$DEST/$NAME/version" ]]; then pass "backup made: $NAME"; else fail "backup made"; fi
 db "UPDATE sys_settings SET setting_value = 'after' WHERE setting_key = 'e2e_backup_marker'"
 
@@ -39,7 +49,7 @@ aipbx-restore "$UP" >/dev/null 2>&1
 code=$?
 if [[ $code -eq 0 ]]; then pass "the restore finishes"; else fail "the restore finishes" "exit $code: $(cat /var/lib/aipbx/restore-status.json)"; fi
 if [[ "$(marker)" == before ]]; then pass "the data is back"; else fail "the data is back" "$(marker)"; fi
-SAFETY="$(ls -1t "$DEST" | grep -m1 -- '-before-restore$')"
+SAFETY="$(newest -before-restore)"
 if zcat "$DEST/$SAFETY/db.sql.gz" | grep -q "e2e_backup_marker','after'"; then pass "the safety backup holds the data from before"; else fail "the safety backup holds the data from before"; fi
 for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
     if systemctl is-active --quiet "$svc"; then pass "$svc runs"; else fail "$svc runs"; fi

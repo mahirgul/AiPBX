@@ -534,13 +534,21 @@ function check_conventions(): void
     // 0d) Every <div> a view opens it closes. My Phone closed one too many, which closed the page's
     //     .app-container early and pushed its window and the footer out of it (2026-11-06).
     $n++;
+    $divs = static function (string $file): array {
+        $html = (string) preg_replace(['/<script\b.*?<\/script>/si', '/<\?(php|=).*?\?>/s'], ['', ''], (string) file_get_contents($file));
+        return [preg_match_all('/<div\b/i', $html), preg_match_all('/<\/div\s*>/i', $html)];
+    };
     foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
-        $html = (string) preg_replace(['/<script\b.*?<\/script>/si', '/<\?(php|=).*?\?>/s'], ['', ''], (string) file_get_contents($f));
-        $open = preg_match_all('/<div\b/i', $html);
-        $close = preg_match_all('/<\/div\s*>/i', $html);
+        [$open, $close] = $divs($f);
         if ($open !== $close) {
             fail('conventions', $rel($f), "opens {$open} <div> but closes {$close}");
         }
+    }
+    // The layout opens the page's frame in app_header.php and closes it in app_footer.php: together even.
+    [$ho, $hc] = $divs(SMOKE_ROOT . '/templates/layouts/app_header.php');
+    [$fo, $fc] = $divs(SMOKE_ROOT . '/templates/layouts/app_footer.php');
+    if ($ho + $fo !== $hc + $fc) {
+        fail('conventions', 'templates/layouts/app_header.php + app_footer.php', 'open ' . ($ho + $fo) . ' <div> but close ' . ($hc + $fc));
     }
 
     // 0e) Every u-* class a template uses exists in a stylesheet: u-grid-3 was used and never defined,

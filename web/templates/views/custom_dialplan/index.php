@@ -72,7 +72,7 @@ $can_delete = $canDelete ?? false;
                                         <i class="fas fa-check"></i> <?php echo t('custom_dialplan.badge_internal', 'Dahil'); ?>
                                     </span>
                                 <?php else: ?>
-                                    <span class="badge badge-light text-muted" title="<?php echo t('custom_dialplan.standalone_tooltip', 'Yalnızca doğrudan yönlendirilen çağrılar erişebilir'); ?>">
+                                    <span class="badge badge-secondary" title="<?php echo t('custom_dialplan.standalone_tooltip', 'Yalnızca doğrudan yönlendirilen çağrılar erişebilir'); ?>">
                                         <i class="fas fa-lock"></i> <?php echo t('custom_dialplan.badge_standalone', 'Bağımsız'); ?>
                                     </span>
                                 <?php endif; ?>
@@ -189,7 +189,7 @@ $can_delete = $canDelete ?? false;
                         <div class="col-md-2">
                             <div class="form-group mb-3">
                                 <label><?php echo t('common.status'); ?></label>
-                                <div class="custom-control custom-switch mt-2">
+                                <div class="custom-control u-mt-8">
                                     <input type="checkbox" class="custom-control-input" name="is_active" id="cdIsActive" value="1" checked>
                                     <label class="custom-control-label" for="cdIsActive"><?php echo t('common.active'); ?></label>
                                 </div>
@@ -210,7 +210,7 @@ $can_delete = $canDelete ?? false;
                     </div>
 
                     <div class="form-group mb-2">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div class="u-d-flex u-jc-space-between u-ai-center u-mb-4">
                             <label for="cdDialplanContent" class="font-weight-bold mb-0">
                                 <i class="fas fa-terminal text-secondary"></i> <?php echo t('custom_dialplan.lbl_content', 'Asterisk Arama Planı Kodu'); ?> <span class="text-danger">*</span>
                             </label>
