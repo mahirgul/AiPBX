@@ -118,14 +118,15 @@ release notes and an **Update** button with live progress. A new release is also
 
 Every update:
 - 📞 restarts Asterisk only when the release needs it (new Asterisk configuration or package); otherwise
-  Asterisk is reloaded and calls stay up. The update page says which beforehand, and an update that
-  restarts Asterisk waits for an idle PBX;
-- 🛡️ refuses to run over hand-edited code;
+  Asterisk is reloaded and calls stay up. The update page says which beforehand; when a restart is
+  needed you choose to wait for the calls to end or to end them;
+- 🛡️ keeps files edited by hand (they go into the backup), unless the release changes the same file;
 - 💾 backs up the database, `/etc/ai-pbx.env` and `/etc/asterisk` to `/var/backups/aipbx/`;
 - 🔄 applies database migrations, new packages and system settings **without touching passwords,
   certificates, the admin password or your firewall choices**;
-- ✅ verifies services, the portal and every page — and **rolls back automatically** (code, database
-  and settings) if anything fails.
+- ✅ verifies the services and the portal — and **rolls back automatically** (code, database
+  and settings) if anything fails; then tests every page in the background and reports a problem on
+  the System Update page.
 
 Keep customisations out of `/opt/aipbx` (use the portal, `/etc/ai-pbx.env` and `*_custom.conf`
 files) so they survive updates. Installations older than 1.50.0 go through the 1.50.0 bridge

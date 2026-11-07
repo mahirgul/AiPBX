@@ -1,7 +1,7 @@
 # Network settings and a new server address
 
-*Network → Network settings* (admin only) collects the server's addresses in one place
-and moves all of them in one step when the server's IP address changes.
+*Network → Network settings* (admin only) sets the server's network cards and moves every
+stored address in one step when the server's IP address changes.
 
 ## What the page shows
 
@@ -15,22 +15,24 @@ and moves all of them in one step when the server's IP address changes.
     A card that is not the default keeps its own router: what arrives on its address is answered
     through that router.
   - *Networks behind this router*: routes through the card's router, written as `10.12.0.0/16`.
-    If phones are on those networks, add them to Local networks too.
-- **Addresses the PBX uses**:
-  - *Public address* (`pjsip_external_ip`): the address in front of NAT, for callers outside.
-  - *Local networks* (`pjsip_local_net`): networks behind a router that Asterisk treats as inside
-    NAT, written as `192.168.1.0/24`, comma separated. The networks of the server's own cards count
-    as local without being listed. Asterisk takes a new list at its next restart: the page says so
-    when a card's network is waiting, with a button that restarts Asterisk once no call is up.
-  - *This server's address on the local network* (`server_ip`): shown only while it is set, so an
-    old value can be cleared. Every service answers on every card.
-  Saving marks the transports and RTP for *Apply*. These fields were on *PBX settings* before.
-- **Addresses for desk phones**: SIP server, outbound proxy, provisioning address, syslog server,
-  NTP server and the allowed networks. Saving rewrites the phone files at once. These fields were
-  in *Phones → Provisioning settings* before; see [Desk phones](phones.md).
+    If phones are on those networks, add them to *Local Network & VPN Subnets* (PBX Settings) too.
+- **Run the check**: the NAT check for no audio or one-way audio ([WebRTC and NAT](webrtc-nat.md)).
 
-An address changed with **Edit** moves everything below by itself when you confirm it. The
-*Apply the new address* section appears only when the address changed outside this page.
+The addresses the PBX and the phones use moved off this page in 1.70.0:
+
+- **PBX Settings → PJSIP & Net**: *External IP Address* (`pjsip_external_ip`), *Public media address*, *Local
+  Network & VPN Subnets* (`pjsip_local_net`, e.g. `192.168.1.0/24`, comma separated; the server's own card
+  networks count as local without being listed) and, while it is set, *This server's address on the
+  local network* (`server_ip`). Saving marks the transports and RTP for *Apply*. Asterisk takes a new
+  local network at its next restart: this page says so, with a button that restarts Asterisk once no
+  call is up.
+- **Provisioning → Regions**: the addresses desk phones are given (SIP server, outbound proxy,
+  provisioning address, syslog, NTP) and the allowed networks, above the regions that start from
+  them; see [Desk phones](phones.md).
+
+An address changed with **Edit** moves every stored address by itself when you confirm it. When the
+address changed outside the portal (a new DHCP lease, a cloned VM), the move waits on the **Apply**
+page by itself, naming what it changes.
 
 ## When the server's IP address changed
 

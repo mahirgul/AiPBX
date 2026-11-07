@@ -1,6 +1,6 @@
 # Transports
 
-**Admin → Transports** shows where Asterisk listens for SIP: the built-in UDP, TCP, TLS, WS and WSS, and any you add.
+**System → Transports** shows where Asterisk listens for SIP: the built-in UDP, TCP, TLS, WS and WSS, and any you add.
 
 A phone can use any transport that is on. A call to it goes back over the transport it registered on. Before 1.60.28 every extension was tied to UDP, so a phone on TCP or TLS registered fine and never got a call.
 
@@ -16,7 +16,7 @@ After saving, press **Apply**, then restart Asterisk. Asterisk keeps a port it h
 
 ## Adding a transport
 
-Add one for a group of phones, for example phones outside your network on their own port. Give it a name, protocol, address and port, and a public address if it differs from the one in Network settings. It answers phones from the port they registered on.
+Add one for a group of phones, for example phones outside your network on their own port. Give it a name, protocol, address and port, and a public address if it differs from the one under *PBX Settings → PJSIP & Net*. It answers phones from the port they registered on.
 
 To point phones at it, set the protocol and SIP port on their region under *Provisioning → Regions*. To use it for a trunk or for one object, use Advanced Configuration.
 

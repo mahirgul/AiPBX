@@ -10,6 +10,8 @@ Anyone with an account can be chosen, such as an extension user. They sign in as
 
 For someone with no account, tick **Create a fax-only login** and fill in the username and password. Such logins appear here, not under Extensions or System Users.
 
+**The number a fax goes out with** is the unit's own **Outgoing caller ID** on this form, whoever sends through the unit (in the portal or by e-mail). It comes before the trunk's outbound number, as for a phone. Without one, the trunk's default caller ID is used. A fax machine on an ATA is an ordinary extension and uses its own External Call CID.
+
 ## Several numbers, shared numbers
 
 - **Several numbers:** separate them with commas. A person sees the faxes of all their numbers and chooses which to send from. A person sends from fax numbers only, not from their phone extension.
@@ -20,6 +22,18 @@ A received fax is **one copy**, seen by everyone on that number. Anyone with the
 **E-mail** goes to the unit's address, and to the people on the number if *E-mail incoming faxes to them too* is ticked, each in their own language and once per address. The address can be one that is already on someone's account.
 
 A number with a fax login stays on while one of those logins is active, and goes when the last one is deleted. Received and sent faxes stay.
+
+## Fax Mail settings
+
+**System → Fax Mail** holds what applies to every unit:
+
+- **Sender** address and name of the fax mails, and whether mails go out for incoming faxes (with or
+  without the PDF) and for the result of a sent fax.
+- **Retention:** received and sent faxes older than 30, 60, 90 or 365 days are deleted, or never.
+- **Fax header text** at the top of sent pages (the sender's name and extension are added), and the
+  **station ID** (TSID) the receiving machine shows.
+- **Retries:** how many, the wait between them and how long the first attempt rings.
+- **Faxes per user per hour** (30 by default; 0 turns it off). Deleting faxes does not free the limit; administrators are not limited.
 
 ## Deleting received faxes
 

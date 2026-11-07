@@ -3,7 +3,23 @@
 ## Firewall
 
 The installer configures **firewalld** (ufw is disabled) and opens the ports listed in
-[INSTALL.md](../INSTALL.md#34-firewall-firewalld). Manage them on **Firewall** or with `firewall-cmd`.
+[INSTALL.md](../INSTALL.md#34-firewall-firewalld). Manage them on **Security → Firewall** or with `firewall-cmd`.
+
+- **Common tab:** the rules every network card uses. Adding, removing or turning off a rule there
+  applies to all cards. A card button closes or reopens a common rule on that one card.
+- **One tab per card:** only what differs on it: rules for that card alone and the common rules closed
+  on it, so you can close the web page on the internet card and keep it on the office card. **Use
+  general rules** takes a card back to the common rules.
+- **Virtual interfaces** with rules of their own (a VPN, for example) do not take the common rules:
+  their tab lists everything they open.
+- **Turn off / Turn on:** try a change without deleting the rule; it comes back as it was. A custom
+  rule can only be removed.
+- **Source:** with an address or network, only that source may use the port.
+- **Nothing is locked.** Before a rule goes, the page says when removing it can cut your own
+  connection, drop phones registered through that card, or leave a service unreachable from outside.
+  A firewall change does not come back by itself.
+- **Opened by other pages:** a new transport port ([Transports](transports.md)) and the TFTP/FTP,
+  NTP and syslog services ([Network services](network-services.md)) open what they need.
 
 **Recommended:** SIP (5060/udp+tcp, 5061/tcp) is scanned constantly on the internet. If only your
 carrier and local phones use SIP, remove the open ports and allow the sources instead:
@@ -19,7 +35,7 @@ firewall-cmd --reload
 ```
 
 The web softphone and the mobile apps connect over 443 and are not affected. RTP (10000–20000/udp) must
-stay open for carrier audio, and UDPTL (4100–4999/udp) for T.38 fax. The **Firewall** page shows and removes these rules.
+stay open for carrier audio, and UDPTL (4100–4999/udp) for T.38 fax. The **Firewall** page shows these rules and can remove them.
 
 **Sign-in alerts.** The lockouts and Fail2ban react to wrong passwords, so they cannot see a stolen
 password that works. For that, a user gets a mail when their account signs in from an internet network
@@ -69,7 +85,7 @@ Three brakes, all off until switched on:
   alarm *Trunk limits* (see [Trunks](trunks.md#limits)).
 - **Dial permission groups**: which numbers a group of users may dial at all.
 
-One brake is on from the start: a user can send 30 faxes an hour (*Fax settings*; 0 turns it off,
+One brake is on from the start: a user can send 30 faxes an hour (*System → Fax Mail*; 0 turns it off,
 administrators are not limited). Deleting faxes does not free the limit, so a stolen account cannot
 hide what it sends and carry on.
 

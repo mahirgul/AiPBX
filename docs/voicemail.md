@@ -1,7 +1,7 @@
 # Voicemail
 
 Every SIP extension has a mailbox. Callers reach it when the extension does not answer, is busy or
-unreachable, or always — chosen per extension (*Extensions → Call settings*, or *My phone*).
+unreachable, or always — chosen per extension (the Voicemail part of the form on *PBX → Extensions*, or *My Phone → Call Settings*).
 
 ## Listening
 

@@ -56,7 +56,7 @@ and about 30 seconds per run; the rest of a network is left for the next run.
 | **Provisioned** | a phone exists for that MAC. It is shown as a phone that is on the network. |
 | **Was a phone, now deleted** | the phone was deleted. Nothing re-creates it on its own; ✓ provisions it again if you mean it. |
 
-**Automatic provisioning** happens only when you ask for it, in *Phones → Discovery*:
+**Automatic provisioning** happens only when you ask for it, in *Provisioning → Phones → Discovery*:
 
 - **Extension pool** (e.g. `5000-5099`): a discovered phone takes the next extension in the pool that is an
   active SIP user without a phone yet. Empty: every phone is only recorded, and you press ✓ yourself.
@@ -87,7 +87,7 @@ server in the phone's web interface:
 | NEC | The phone's file (configuration) server setting, or DHCP option 66: the copied URL |
 | Cisco 79xx/88xx (CallManager) | Not a URL: these phones ask their server for `SEP<MAC>.cnf.xml` by name, so they are pointed at the PBX by DHCP **option 150** and read the file from the TFTP folder. See [Cisco 7900 / 8800 series](cisco-callmanager.md). |
 
-Files are served over both HTTP and HTTPS. **Copy URL** gives the address from the provisioning settings; when that is plain HTTP, an **HTTPS** button gives the one under the portal's name. HTTP on an internal address needs nothing from the phone, but the file, with its SIP password, travels unencrypted. HTTPS needs the phone to reach that name and trust its certificate.
+Files are served over both HTTP and HTTPS. **Copy URL** gives the provisioning address of the phone's region (*Provisioning → Regions*); when that is plain HTTP, an **HTTPS** button gives the one under the portal's name. HTTP on an internal address needs nothing from the phone, but the file, with its SIP password, travels unencrypted. HTTPS needs the phone to reach that name and trust its certificate.
 
 The phone then asks for its own file under that URL; AiPBX checks that the MAC in the file name
 is the phone's:
@@ -106,7 +106,7 @@ is the phone's:
 Cisco SPA phones only ask for a MAC-based name when their Profile Rule says so, so zero touch
 (below) needs the Profile Rule set once.
 
-**Zero touch (DHCP option 66).** Fill **Allowed networks** in *Network settings* with your
+**Zero touch (DHCP option 66).** Fill **Allowed networks** in *Provisioning → Regions* with your
 phone networks (e.g. `192.168.10.0/24`) and hand out `https://<portal>/provision/` (or the
 *provisioning address*, below) as option 66.
 Phones inside these networks then ask for their MAC-based file directly; a known MAC gets its
@@ -117,7 +117,7 @@ DHCP server: see [Network services](network-services.md).
 ## Server addresses (networks without DNS)
 
 Phone networks often have no DNS or no internet access, so a phone cannot resolve the PBX's name.
-*Network → Network settings → Addresses for desk phones* takes IP addresses instead (empty: the domain):
+*Provisioning → Regions* (the general addresses above the regions) takes IP addresses instead (empty: the domain):
 
 | Field | Written to / used for |
 |-------|-----------------------|
@@ -139,13 +139,21 @@ after a change on this page and every 5 minutes (`bin/provision_tftp.php`, so a 
 changed elsewhere follows). Files of removed phones are deleted, and all of them when the option
 is switched off. The files contain the SIP password; TFTP and FTP answer only the allowed networks.
 
+## Provisioning settings
+
+**Provisioning settings** on *Provisioning → Phones* holds what every phone gets unless its region
+sets its own (see [Regions](#regions)): SIP transport, SRTP, codecs and their order, time zone, phone
+language, the request limit per IP, *Also write the phones' files into the TFTP/FTP folder* and the
+Cisco firmware loads ([Cisco 7900 / 8800](cisco-callmanager.md)). The addresses phones are given and
+the allowed networks are on *Provisioning → Regions* since 1.70.0.
+
 ## What is written to the phone
 
 | Setting | Value |
 |---------|-------|
-| SIP server | the *SIP server* address of the provisioning settings, else the installation's domain (the same setting as the links in e-mails: `PORTAL_DOMAIN`, else the external domain on *PBX Settings*), never the address the phone used |
-| Outbound proxy | the *Outbound proxy* of the provisioning settings (empty: none) |
-| Transport | UDP (port 5060) or TLS (5061), from *PBX Settings* ports |
+| SIP server | the *SIP server* of the phone's region or the general one (*Provisioning → Regions*), else the installation's domain (the same setting as the links in e-mails: `PORTAL_DOMAIN`, else the external domain on *PBX Settings*), never the address the phone used |
+| Outbound proxy | the *Outbound proxy* of the region or the general one (empty: none) |
+| Transport | UDP, TCP or TLS, from the region or *Provisioning settings*; the port is the region's *SIP port*, else the PBX's port for that protocol (*PBX Settings*, default 5060 / 5061). A region with SIP over TLS on port 443 gets TLS on 443 |
 | Account | the extension number as user and authentication name, its SIP password, the user's name as display name |
 | SRTP | off, optional or required |
 | Codecs | the selected ones, in the order Opus, G.722, PCMA, PCMU, G.729. A phone without Opus uses the next one it has |
@@ -230,7 +238,7 @@ Limits in this first version:
 
 ## Logging and protection
 
-- Every request is logged (time, MAC, file, result, IP, User-Agent); the last 50 are on the page,
+- Every request is logged (time, MAC, file, result, IP, User-Agent) on *Provisioning → Phone logs*;
   rows are kept 90 days. Passwords and tokens are never logged.
 - **Rate limit:** requests per minute per IP address (default 60); more get HTTP 429.
 - **Allowed networks:** when set, phones outside them get nothing, not even with a valid URL.
@@ -263,7 +271,7 @@ Some limits:
 
 - **A phone has to reach the server once.** It learns its first address from DHCP, plug and play or a URL you enter; the region's settings arrive with its file.
 - **Outside phones need more than this.** The server's NAT settings, firewall and certificate have to be right too.
-- **Allowed networks stay general.** To give a region its own SIP port, add a transport for it first (*Admin → Transports*).
+- **Allowed networks stay general.** To give a region its own SIP port, add a transport for it first (*System → Transports*).
 - **TCP is written for Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly.** NEC and Cisco CallManager phones stay on UDP when TCP is chosen, as their values for it are not confirmed.
 
 ### SIP over TLS on port 443
@@ -285,7 +293,7 @@ Tried on a live installation (v1.71.1): a Snom desk phone registers over 443 wit
 
 ## Model settings
 
-**Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here, whatever its case, and the file holds only that value. On Snom, `name.2` means idx 2 of a setting and `fkey.0` sets a function key. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
+**Provisioning → Phones → Model settings** adds settings to the files of every phone of one model, one `name = value` per line; `#` starts a comment. A setting AiPBX also writes takes the value given here, whatever its case, and the file holds only that value. On Snom, `name.2` means idx 2 of a setting and `fkey.0` sets a function key. They are kept in the database, so updates keep them. Available for NEC, Yealink, Grandstream and Poly.
 
 Snom models also take Snom's own XML, single lines or a whole file, so you can paste from Snom's documentation. Attributes such as `perm` and a key's `label` reach the phone:
 

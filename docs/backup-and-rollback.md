@@ -56,51 +56,51 @@ AiPBX's internal [health monitoring engine](health.md#checks) monitors backup fr
 
 ---
 
-## 2. Automated Atomic Upgrade Rollback (`aipbx-update`)
+## 2. Updates and automatic rollback (`aipbx-update`)
 
-Upgrading production communications software can introduce risks (database migration errors, syntax changes, upstream package conflicts). To eliminate upgrade failure risk, `aipbx-update` executes an **atomic rollback safeguard**:
+Update from **System → System Update** or on the server:
 
 ```
-[ aipbx-update STARTED ]
-       │
-       ▼
-1. Pre-Upgrade Snapshot ──► Creates full database dump + /etc/asterisk archive in /var/backups/aipbx/
-       │
-       ▼
-2. Checkout & Apply     ──► git checkout $TARGET && bash install.sh --upgrade
-       │
-       ▼
-3. Multi-Stage Health Verification:
-   ├─ Check systemd services: mariadb, apache2, nginx, asterisk, aipbx-webhook-worker
-   ├─ Portal HTTP verification: curl -k https://127.0.0.1/login == HTTP 200
-   └─ Page integration tests: php bin/smoke.php (all routes, views, database queries)
-       │
-       ├─────────────────────────────────┐
- [ ALL CHECKS PASS ]             [ ANY CHECK FAILS ]
-       │                                 │
-       ▼                                 ▼
-Upgrade Marked Success           AUTOMATIC ROLLBACK TRIGGERED:
-                                 ├─ git checkout --force $CURRENT_COMMIT
-                                 ├─ Restores previous database from SQL dump
-                                 ├─ Restores /etc/asterisk and .env configurations
-                                 ├─ Re-runs previous release install.sh --upgrade
-                                 └─ Restarts services; calls remain uninterrupted!
+sudo aipbx-update                 # the latest release (asks first)
+sudo aipbx-update --to v1.72.2    # a given release
+sudo aipbx-update --check         # is a newer release out?
+sudo aipbx-update --yes           # no question (automation); add one of the two below
+sudo aipbx-update --wait-calls    # if Asterisk must restart: wait until the calls end
+sudo aipbx-update --allow-calls   # if Asterisk must restart: end the calls
 ```
 
-### 2.1. Verification Checks
+**Calls.** Asterisk restarts only when the release needs it (the release notes say so); otherwise it
+is reloaded and calls stay up. When a restart is needed, you choose: wait for the calls to end or end
+them. While it waits, the System Update page offers *End the calls now* and *Cancel the update*.
+At a terminal `aipbx-update` asks; with `--yes` and neither option it stops instead.
 
-Before an upgrade is declared successful, three distinct layers must pass:
-1. **Core Daemons:** `mariadb`, `apache2`, `nginx`, `asterisk`, and `aipbx-webhook-worker` must all be reported `active (running)` by systemd.
-2. **Web Portal Health:** The web ingress must return an HTTP 200 OK on `/login` via local loopback.
-3. **End-to-End Smoke Tests:** The test runner (`web/bin/smoke.php`) executes end-to-end rendering checks across administrative controllers and database tables.
+**The steps:**
 
-If **any** stage fails, the script immediately logs the failure to `/var/log/aipbx/update.log`, reverts the code and database, and leaves the previous working version active.
+1. **Backup**: the database, `/etc/ai-pbx.env` and `/etc/asterisk` into `/var/backups/aipbx/`
+   (the last few are kept). If the database backup fails, nothing is changed.
+2. **Check out** the release tag and run `install.sh --upgrade` (migrations, permissions, services;
+   secrets are never made again).
+3. **Check**: `mariadb`, `apache2`, `nginx`, `asterisk` and `aipbx-webhook-worker` must be running
+   (checked twice, so a service that keeps crashing is caught), and the portal must answer `/login`
+   with HTTP 200.
+4. **Page test afterwards**: `web/bin/smoke.php` tests every page in the background (minutes on a
+   one-CPU server). It decides nothing: if it finds a problem, the update stays and the System Update
+   page says so; the details are in `/var/log/aipbx/update.log`.
+
+**If step 2 or 3 fails**, the update rolls back by itself: the previous code, database and Asterisk
+configuration come back, and the previous version keeps running.
+
+**Files changed by hand** do not stop an update. They go into the backup and stay in place, unless
+the new release changes the same file: then the new version is used and the log names the file.
+
+Questions to Asterisk and restarts have a time limit, so a stuck service cannot hang the update, and
+an update that died (in a reboot, for example) does not block the next one.
 
 ---
 
 ## 3. The Backup & Restore Page
 
-**Administration → Backup & Restore** is for administrators only. It lists the backups, and from there you can:
+**System → Backup & Restore** is for administrators only. It lists the backups, and from there you can:
 
 - **Back up now.** The nightly backup runs as well.
 - **Download** a backup as a `.tar.gz` file. It holds every password and secret key of the system, so keep it safe. The download is written to the audit log.

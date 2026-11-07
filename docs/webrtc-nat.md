@@ -114,13 +114,13 @@ selected pair of type `relay` means the call goes through coturn.
 
 ## Addresses behind NAT, and the NAT check
 
-Set these under **Network → Network settings**:
+Set these under **PBX Settings → PJSIP & Net**:
 
-- **Public address:** what phones and carriers outside see. It can be a host name, such as a dynamic DNS name. Asterisk looks up a name again every 5 minutes for SIP. The address in the browser's ICE candidates is looked up at Apply, so press Apply after the address changes.
-- **Public media address:** only if audio and video leave from a different address than signaling.
-- **Local networks:** every network phones are on without NAT, separated by commas.
+- **External IP Address:** what phones and carriers outside see. It can be a host name, such as a dynamic DNS name. Asterisk looks up a name again every 5 minutes for SIP. The address in the browser's ICE candidates is looked up at Apply, so press Apply after the address changes.
+- **Public media address (optional):** only if audio and video leave from a different address than signaling.
+- **Local Network & VPN Subnets:** every network phones are on without NAT, separated by commas.
 
-**Run the check** on the same page looks for the usual causes of no audio or one-way audio: a public address that is
+**Run the check** on *Network → Network settings* looks for the usual causes of no audio or one-way audio: a public address that is
 missing, private or different from the one this server appears from, a server address outside the local networks, saved
 addresses that were not applied, audio ports closed in the firewall, and calls in progress that receive nothing. It asks
 Google's public STUN server which address this server appears from, and only when you press the button. It does not see

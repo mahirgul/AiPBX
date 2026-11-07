@@ -2,9 +2,9 @@
 
 AiPBX includes a modular **Plugin Catalog & Custom `.zip` Plugin Engine** (`PluginManager`) integrated with `/api/v1/*` and Outbound Webhooks.
 
-- 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `oidc-auth`, `saml-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`. Community plugin bundled with AiPBX: `ai-assistant` by Gregory Merriweather ([@shido6](https://github.com/shido6)) (his signaling capture is part of AiPBX itself since 1.50.8). Fresh installations start lean; administrators enable only the plugins they need under **Integrations → Plugins** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
+- 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `oidc-auth`, `saml-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`. Community plugin bundled with AiPBX: `ai-assistant` by Gregory Merriweather ([@shido6](https://github.com/shido6)) (his signaling capture is part of AiPBX itself since 1.50.8). Fresh installations start lean; administrators enable only the plugins they need under **Integration → Plugin Catalog** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
 - 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`) and installed as an uploaded `.zip`. The plugins above are maintained only here, in this repository.
-- 📤 **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integrations → Plugins → Upload Custom Plugin (`.zip`)**.
+- 📤 **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integration → Plugin Catalog → Upload Custom Plugin (`.zip`)**.
 
 **A working example of every hook:** [`examples/sample-plugin`](https://github.com/mahirgul/AiPBX-plugins/tree/main/examples/sample-plugin)
 in AiPBX-plugins. It changes nothing on the PBX; copy it to start a new plugin.
@@ -200,7 +200,7 @@ version it needs, instead of the plugin failing at its first missing hook.
    ```bash
    zip -r my-crm-bridge.zip my-crm-bridge/
    ```
-2. In the AiPBX portal, go to **Integrations → Plugins** (`/plugins`).
+2. In the AiPBX portal, go to **Integration → Plugin Catalog** (`/plugins`).
 3. Click **Upload Custom Plugin (`.zip`)** and select `my-crm-bridge.zip`.
 4. AiPBX validates the archive (blocks path traversal, checks `plugin.json`, and runs `php -l` syntax checks on every `.php` file), extracts it to `/var/lib/aipbx/plugins/my-crm-bridge/`, enables it, and adds it to the sidebar menu (`Integrations` or `AI`).
 
@@ -209,7 +209,7 @@ version it needs, instead of the plugin failing at its first missing hook.
 ### From the community catalog (AiPBX 1.72+)
 Community plugins live in [mahirgul/aipbx-plugins](https://github.com/mahirgul/aipbx-plugins) under
 `plugins/community/<slug>/`. Its CI builds each one as `<slug>.zip` (the `tests/` folder left out) with
-`catalog.json` (slug, name, version, SHA-256) on the release `catalog`. On **Integrations → Plugins**,
+`catalog.json` (slug, name, version, SHA-256) on the release `catalog`. On **Integration → Plugin Catalog**,
 **Show community plugins from the catalog** (off by default) lists them with **Install & Enable**, and
 **Update to vX** when the catalog has a newer version of an installed one. The download is checked
 against the catalog's SHA-256 and then installed exactly like an uploaded `.zip`.

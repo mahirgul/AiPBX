@@ -1,5 +1,21 @@
 # Portal basics
 
+## Finding your way
+
+- **The menu** opens on the left; the button beside it closes it, and a closed menu is remembered for
+  this browser session only.
+- **Help:** every page explains itself behind the **?** button in its title bar.
+- **Light or dark:** the theme button at the bottom of the menu. **System → Appearance** sets the
+  default theme (sign-in page and users who have not chosen) and can use one theme for everyone.
+- **Try it first:** [aipbx.bid/demo](https://aipbx.bid/demo/) shows every page with made-up data.
+
+## The dashboard
+
+**Panel → Overview** shows the live state (calls, channels, queue callers, today's calls, trunk use,
+refreshed every 5 seconds), the server's metrics and **Services**: every service of the server with
+its state and a **Restart** button. **PBX Reload** reloads the dialplan and PJSIP without dropping
+calls; restarting Asterisk ends every call, and the page asks first.
+
 ## Saving and applying changes
 
 Telephony pages (extensions, trunks, routes, queues, IVRs, …) save to the database first. The change
@@ -11,6 +27,10 @@ is listed on **Pending Changes** and reaches Asterisk only when you press **Appl
 
 A change stays in the pending list until it has really been written and loaded, so a failed Apply can
 simply be retried. Reloads do not drop calls.
+
+When the server's IP address changed outside the portal (a new DHCP lease, a cloned VM), moving
+everything that still holds the old address also waits on **Pending Changes**, naming what it
+changes ([Network settings](network-settings.md)).
 
 ## Edit dialogs
 

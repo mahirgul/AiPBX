@@ -213,7 +213,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 | `aipbx-backup` | Database and configuration backup to `/var/backups/aipbx-daily` |
 | `aipbx-cert` | Certificate handling (self-signed, Let's Encrypt, uploaded) |
 | `aipbx-priv` | The portal's only way to root: fixed subcommands with validated arguments (`service`, `postfix`, `fw`, `f2b`, `cert`, `update`, `sounds`, `asterisk-lang`, `netsvc`, `net`, `ai`). Read it to see exactly what a page may do as root |
-| `aipbx-readdress <old> <new> [--yes]` | Moves every setting and file from the old server address to the new one (preview first); same as *Network settings → Apply new address* |
+| `aipbx-readdress <old> <new> [--yes]` | Moves every setting and file from the old server address to the new one (preview first); same as *Network → Network Settings → Apply new address* |
 | `aipbx-sounds` | Downloads and installs sound packs |
 | `aipbx-ai-setup` | Installs or removes the local AI runtime |
 | `aipbx-dhcp-probe <iface>` | Lists DHCP servers answering on a network |
@@ -249,7 +249,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 4. App push and background: [Troubleshooting → notifications](troubleshooting.md).
 
 ### Desk phone does not get its configuration
-1. *Provisioning → Phones*: *Show the phone's file* shows exactly what it gets; *Network settings*
+1. *Provisioning → Phones*: *Show the phone's file* shows exactly what it gets; *Provisioning → Regions*
    shows the addresses the phones are told.
 2. *Provisioning → Phone logs*: one tab each for the phone's own log (syslog), HTTPS, FTP, TFTP and DHCP,
    by IP or MAC.
@@ -257,7 +257,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
    `/var/lib/aipbx/tftp`.
 
 ### Mail is not sent
-`mailq` (queue), `journalctl -u postfix -n 50`; settings: *System → Mail settings*.
+`mailq` (queue), `journalctl -u postfix -n 50`; settings: *System → E-Mail*.
 
 ### Fax
 `/var/log/fax_incoming.log`, `/var/log/fax_outgoing.log`, `asterisk -rx "fax show sessions"`.

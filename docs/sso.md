@@ -1,6 +1,6 @@
 # Corporate Single Sign-On: OpenID Connect (OIDC) & SAML 2.0 (Plugins)
 
-> **Plugins (`oidc-auth` & `saml-auth`)**: Built-in official plugins for enterprise identity integration. Enable them on demand under **Integrations → Plugins** (`/plugins`). See [Plugin system & developer guide](plugin-development.md).
+> **Plugins (`oidc-auth` & `saml-auth`)**: Built-in official plugins for enterprise identity integration. Enable them on demand under **Integration → Plugin Catalog** (`/plugins`). See [Plugin system & developer guide](plugin-development.md).
 
 AiPBX includes native enterprise Single Sign-On (SSO) support through two official plugins:
 1. **OpenID Connect (`oidc-auth`)**: Standard OAuth 2.0 / OIDC Core 1.0 authentication profile.
