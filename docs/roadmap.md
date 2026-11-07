@@ -179,6 +179,29 @@ and mail-to-fax without an outside mailbox. To weigh first: port 25 is blocked o
 lines, a new server needs a reverse DNS name and a clean IP reputation, and a mail server is a large
 area to secure and keep up to date, so it may suit a community plugin better than the core.
 
+#### 3.6 What other PBX panels have and AiPBX does not (ideas)
+
+A comparison with Issabel's menu (2026-11-07). Not planned yet; each is checked against the code
+before it is built.
+
+- **Calls:** call parking, paging and intercom, Follow Me (ring a list of numbers one after the
+  other), a day/night switch with a phone key (manual override of time conditions), queue priorities,
+  wake-up calls, callback.
+- **Destinations:** change the call's language, add a prefix to the caller's name, send the call into
+  a Custom Dialplan context, a plain number as a destination.
+- **Voicemail:** one message to a group of mailboxes (voicemail blasting).
+- **Limits:** PIN codes for outbound routes (only the night guard has a PIN today), monthly minutes or
+  cost per trunk (today: concurrent calls and calls per minute).
+- **Operations:** Asterisk's log in the portal with its log level, writing a line into the queue log.
+- **Contacts:** a shared phonebook for phones (see the LDAP phonebook plan) and caller name lookup
+  (CNAM, #159).
+- **Mail:** see 3.5.
+
+Already in AiPBX under other names: Class of Service (Calling Permissions), Dynamic Routes (IVR data
+steps), Dialplan Injection and Custom Extensions (Custom Dialplan), System Recordings and Music on
+Hold (Sounds), Route Congestion Messages (spoken status). Not planned: DAHDI and IAX, pages for the
+manager interface and log files, a DISA page (Custom Dialplan has a recipe).
+
 Also waiting: per-domain apply of pending changes (#120).
 
 ## Earlier plans

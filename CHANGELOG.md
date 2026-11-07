@@ -5,6 +5,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.3
+
+- **The guides match the portal again.** Addresses that moved to PBX Settings → PJSIP & Net and Provisioning → Regions, the firewall's common and per-card rules, Fax Mail settings, the number a fax goes out with, the fax tone times and how an update checks itself and rolls back are described as they are now, and menu paths that changed are corrected. New guides: Extensions (with each extension's SIP settings) and PBX Settings (every tab); adding users and the `admin` account are explained.
+- **Help texts point to the right page.** Five texts (TFTP, phone logs, transports) still sent you to the provisioning or network settings for the allowed networks and the public address; they name Provisioning → Regions and PBX Settings now.
+- **Every language is complete again.** The texts added since 1.71.0 (SIP over TLS on 443, the plugin catalog, copying a SIP password, deleting the admin account) were English in the other 22 languages.
+
 ## 1.72.2
 
 - **The update's page test no longer fails on /plugins.** With the community catalog on, PHP 8.5 warned that `curl_close()` is deprecated, and the test after the update reported it as an error (the update itself had gone through). The call did nothing since PHP 8.0 and is gone everywhere (webhooks, captcha, AI services, the IVR data step); the page test now refuses it in the code.
