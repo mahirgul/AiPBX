@@ -50,7 +50,8 @@ case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
         I_OK='+'; I_WARN='!'; I_INFO='i'; I_ERR='x'; BAR_ON='#'; BAR_OFF='.'; SEP='-'
         B_TL='+'; B_TR='+'; B_BL='+'; B_BR='+'; B_H='-'; B_V='|' ;;
 esac
-TOTAL_STEPS=13
+# The number of `step "N. ..."` lines below, counted so a new step keeps the bar right.
+TOTAL_STEPS=$(grep -c '^step "[0-9]*\. ' "${BASH_SOURCE[0]}" 2>/dev/null || echo 13)
 START_SECONDS=$SECONDS
 
 info()  { echo -e "   ${BLUE}${I_INFO}${NC} $*"; }
@@ -78,6 +79,7 @@ box() {
         plain="$(echo -e "$line" | sed 's/\x1b\[[0-9;]*m//g')"
         ((${#plain} + 4 > w)) && w=$((${#plain} + 4))
     done
+    ((${#title} + 4 > w)) && w=$((${#title} + 4))
     printf ' %s%s %s %s%s\n' "$B_TL" "$B_H" "$(echo -e "${BOLD}${title}${NC}")" "$(printf "%*s" $((w - ${#title} - 3)) '' | sed "s/ /$B_H/g")" "$B_TR"
     for line in "$@"; do
         plain="$(echo -e "$line" | sed 's/\x1b\[[0-9;]*m//g')"
@@ -1495,6 +1497,8 @@ stream {
         # Browsers send no ALPN for TURNS; RFC 7443 clients send stun.turn.
         "0:0:"      127.0.0.1:15349;
         ~stun\.turn 127.0.0.1:15349;
+        # A browser or an HTTPS download on a region's name stays with the portal.
+        ~^1:.*(h2|http/1\.1) 127.0.0.1:8443;
         # A phone region's own name, or no ALPN from its addresses: SIP over TLS.
         ~^1:        unix:/run/aipbx-sip443.sock;
         "0:1:"      unix:/run/aipbx-sip443.sock;

@@ -77,7 +77,7 @@ $can_delete = $canDelete ?? false;
                                         echo '<span class="badge badge-warning"><i class="fas fa-exclamation-circle"></i> ' . t('blacklist.action_congestion') . '</span>';
                                         break;
                                     case 'drop':
-                                        echo '<span class="badge badge-dark"><i class="fas fa-phone-slash"></i> ' . t('blacklist.action_drop') . '</span>';
+                                        echo '<span class="badge badge-secondary"><i class="fas fa-phone-slash"></i> ' . t('blacklist.action_drop') . '</span>';
                                         break;
                                     case 'announcement':
                                         echo '<span class="badge badge-info"><i class="fas fa-volume-up"></i> ' . t('blacklist.action_announcement') . '</span>';
@@ -90,7 +90,7 @@ $can_delete = $canDelete ?? false;
                                 ?>
                             </td>
                             <td class="col-hide-mobile">
-                                <span class="badge <?php echo (int)$e['hit_count'] > 0 ? 'badge-primary' : 'badge-light'; ?>">
+                                <span class="badge <?php echo (int)$e['hit_count'] > 0 ? 'badge-primary' : 'badge-secondary'; ?>">
                                     <?php echo (int)$e['hit_count']; ?>
                                 </span>
                             </td>

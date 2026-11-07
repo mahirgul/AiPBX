@@ -101,11 +101,16 @@ class PhoneProvisionService
     public static function saveAddressSettings(array $data): void
     {
         $v = self::validateAddresses($data);
+        $sipServerBefore = (string) getSystemSetting('provision_sip_server', '');
         $stmt = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
         foreach ($v as $k => $val) {
             $stmt->execute([$k, $val]);
         }
         writeAuditLog('phones', 'settings', 0, 'Addresses for desk phones', 'update', $_SESSION['user_id'] ?? null);
+        if (strtolower($v['provision_sip_server']) !== strtolower($sipServerBefore)) {
+            // Phones send it in From:, and Asterisk knows an extension by the names in its identify list.
+            markPendingSync('extensions', 'phone_provision', 0, 'SIP server: ' . $v['provision_sip_server'], 'update', $_SESSION['user_id'] ?? null);
+        }
         self::exportTftpQuietly();
     }
 

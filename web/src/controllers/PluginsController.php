@@ -163,6 +163,10 @@ class PluginsController extends BaseController
             if (array_key_exists('json', $res)) {
                 static::json((array) $res['json']);
             }
+            if (str_contains((string) ($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')) {
+                // A script asked and the action gave no JSON (a refused token, an error): answer in JSON too.
+                static::json(['success' => !isset($res['error']), 'error' => $res['error'] ?? null, 'message' => $res['message'] ?? null]);
+            }
             $message = (string) ($res['message'] ?? '');
             $error = (string) ($res['error'] ?? '');
         }
@@ -174,7 +178,7 @@ class PluginsController extends BaseController
             'user'       => $user,
             'csrf_token' => getCSRFToken(),
         ], [
-            'title'   => (string) ($plugin['hooks']['user_page']['label'] ?? $plugin['name'] ?? $slug),
+            'title'   => (string) ($plugin['hooks']['user_page']['label_i18n'][getUserLanguage()] ?? $plugin['hooks']['user_page']['label'] ?? $plugin['name'] ?? $slug),
             'message' => $message,
             'error'   => $error,
         ]);

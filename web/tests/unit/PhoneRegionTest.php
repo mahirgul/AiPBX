@@ -15,7 +15,7 @@ final class PhoneRegionTest extends TestCase
         $db = getDB();
         $db->exec("DELETE FROM pbx_phones WHERE mac = '" . self::MAC . "'");
         $db->exec("DELETE FROM pbx_phone_regions WHERE name LIKE 'zz%'");
-        $db->exec("UPDATE pbx_phone_regions SET sip_server = '', sip_proxy = '', syslog = '', transport = '', codecs = '', base_url = ''");
+        $db->exec("UPDATE pbx_phone_regions SET sip_server = '', sip_proxy = '', syslog = '', transport = '', codecs = '', base_url = '', sip443 = 0, sip443_sources = ''");
         PhoneRegionService::resetCache();
     }
 
@@ -89,9 +89,55 @@ final class PhoneRegionTest extends TestCase
         $out = PhoneRegionService::validate(['sip443' => '1', 'sip_server' => 'sip1.example.org', 'transport' => 'udp', 'sip_port' => '5060']);
         $this->assertSame(['1', 'tls', '443'], [$out['sip443'], $out['transport'], $out['sip_port']], 'these phones talk TLS to 443');
         $this->assertSame('sip1.example.org', PhoneRegionService::sip443Name($out));
+        $this->assertSame('', PhoneRegionService::validate(['sip443' => '1', 'sip_server' => 'sip1.example.org', 'sip443_sources' => '10.0.0.1'])['sip443_sources'], 'a named region keeps no addresses it would never use');
         $this->assertSame('', PhoneRegionService::sip443Name(['sip_server' => '10.0.0.5']), 'an IP address names nothing');
         $this->assertSame('1', PhoneRegionService::validate(['sip443' => '1', 'sip443_sources' => '91.113.163.218'])['sip443']);
         $this->assertSame('0', PhoneRegionService::validate([])['sip443']);
+        $off = PhoneRegionService::validate(['sip443' => '0', 'transport' => 'tls', 'sip_port' => '443']);
+        $this->assertSame(['tls', ''], [$off['transport'], $off['sip_port']], 'turned off, 443 goes: nginx would not hand it on');
+    }
+
+    public function testNginxListsTakeNamesAndAddressesOfSip443RegionsOnly(): void
+    {
+        $add = getDB()->prepare('INSERT INTO pbx_phone_regions (name, sip_server, sip443, sip443_sources) VALUES (?, ?, ?, ?)');
+        $add->execute(['zz named', 'SIP1.example.org', 1, '10.9.9.9']);   // a name wins; its addresses are not needed
+        $add->execute(['zz named again', 'sip1.example.org', 1, '']);     // the same name once
+        $add->execute(['zz by address', '10.0.0.5', 1, '91.113.163.218, 10.1.0.0/16']);
+        $add->execute(['zz off', 'sip9.example.org', 0, '10.7.7.7']);     // not on 443: in no list
+        PhoneRegionService::resetCache();
+        $this->assertSame(['name sip1.example.org', 'addr 91.113.163.218', 'addr 10.1.0.0/16'], PhoneRegionService::sip443Lines());
+    }
+
+    public function testSavingAndDeletingA443RegionRewritesNginxsListsAndWaitsOnApply(): void
+    {
+        $_SESSION['csrf_token'] = 'test';
+        $written = [];
+        PrivHelper::$fake = static function (array $args, ?string $input) use (&$written): array {
+            if ($args === ['sip443', 'set']) {
+                $written[] = (string) $input;
+            }
+            return ['success' => true, 'output' => ''];
+        };
+        $db = getDB();
+        $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'phone_region'");
+        try {
+            $res = PhoneRegionService::save(['csrf_token' => 'test', 'name' => 'zz 443', 'sip443' => '1', 'sip_server' => 'sip7.example.org']);
+            $this->assertTrue($res['success'], (string) ($res['error'] ?? ''));
+            $this->assertSame(["name sip7.example.org\n"], $written, 'nginx hands this name to Asterisk');
+            $pending = $db->query("SELECT COUNT(*) FROM sys_pending_sync WHERE domain = 'extensions' AND entity_type = 'phone_region'")->fetchColumn();
+            $this->assertSame(1, (int) $pending, 'a new SIP server name reaches Asterisk on Apply');
+
+            $id = (int) $this->region('zz 443')['id'];
+            $this->assertTrue(PhoneRegionService::delete(['csrf_token' => 'test', 'region_id' => $id])['success']);
+            $this->assertSame("\n", end($written), 'deleted, the name leaves the list');
+
+            PrivHelper::$fake = static fn(): array => ['success' => false, 'output' => 'nginx -t failed'];
+            $res = PhoneRegionService::save(['csrf_token' => 'test', 'name' => 'zz 443 again', 'sip443' => '1', 'sip_server' => 'sip8.example.org']);
+            $this->assertFalse($res['success'], 'a list nginx refused is reported, not hidden');
+        } finally {
+            PrivHelper::$fake = null;
+            $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'phone_region'");
+        }
     }
 
     public function testAPhoneGetsItsRegionsAddresses(): void

@@ -86,11 +86,7 @@ function toggleSipPassVisibility() {
 function copySipPassword() {
     const passInput = document.getElementById("my_phone_sip_pass_val");
     if (!passInput || !passInput.value) return;
-    navigator.clipboard.writeText(passInput.value).then(function() {
-        if (window.showFooterToast) {
-            showFooterToast(__('js.my_phone.sip_copied'), "success");
-        }
-    });
+    UIHelper.copyToClipboard(passInput.value, __('js.my_phone.sip_copied'));
 }
 
 function updateVolSlider(val) {

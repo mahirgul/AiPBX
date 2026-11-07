@@ -152,7 +152,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                     $icon = $group_icons[$group_name] ?? 'fas fa-folder';
                                     $color = $group_colors[$group_name] ?? 'var(--primary)';
                             ?>
-                                <tr class="perm-group-header-row" style="<?php echo $is_new_group ? 'border-top: 3px solid var(--border-color);' : ''; ?>">
+                                <tr style="<?php echo $is_new_group ? 'border-top: 3px solid var(--border-color);' : ''; ?>">
                                     <td colspan="5" style="background: var(--bg-body); padding: <?php echo $is_new_group ? '14px 16px 8px 16px' : '10px 16px 8px 16px'; ?>; border-bottom: 1px solid var(--border-color); user-select: none;">
                                         <div class="u-flex-between">
                                             <span class="u-fs-13 u-fw-700 u-text-main u-d-inline-flex u-ai-center u-gap-8 u-uppercase u-letter-spacing-0-5">
@@ -163,7 +163,7 @@ $group_slugs = RoleRepository::groupSlugs();
                                     </td>
                                 </tr>
                             <?php endif; ?>
-                                <tr class="perm-module-row">
+                                <tr>
                                     <td class="u-pl-24">
                                         <strong class="u-text-main"><?php echo htmlspecialchars(t('roles.module_' . $m_key, $m_info['title'])); ?></strong>
                                         <?php if (!empty($m_info['plugin'])): ?>

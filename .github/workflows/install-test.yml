@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Make room for MariaDB
         # The runner image ships MySQL; the installer brings MariaDB.
@@ -76,7 +76,7 @@ jobs:
 
       # The only test that makes a WebRTC call. Everything else passed while v1.60.4 dropped every
       # meeting guest after 30 seconds. Needs a browser and Node 22, which the runner may not have.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: '22'
 
@@ -123,7 +123,7 @@ jobs:
 
       - name: Upload the install log
         if: cancelled() || failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: install-log
           # /tmp is outside the workspace, so the step above copies it in; the

@@ -149,7 +149,7 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
                 </div>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('phones.region_sip443_sources'); ?></label>
-                    <input type="text" name="sip443_sources" id="region_sip443_sources" class="form-control" maxlength="1000" placeholder="203.0.113.7, 198.51.100.0/24">
+                    <input type="text" name="sip443_sources" id="region_sip443_sources" class="form-control" maxlength="1000" placeholder="203.0.113.7, 198.51.100.0/24" data-portal="<?php echo $h(strtolower(CertificateService::domain())); ?>">
                     <small class="u-hint"><?php echo t('phones.region_sip443_sources_help'); ?></small>
                 </div>
                 <div class="form-group">

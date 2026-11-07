@@ -21,7 +21,7 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
 
         <!-- Header Break Selection Dropdown (STRICTLY FOR CALL CENTER AGENTS) -->
         <?php if (!empty($is_cc_agent)): ?>
-            <div class="header-break-wrapper" style="flex-shrink: 0;">
+            <div style="flex-shrink: 0;">
                 <select id="header-break-select" onchange="handleHeaderBreakChange(this.value)" class="form-control" style="padding: 2px 8px; font-size: 11px; font-weight: 600; height: 26px; border-radius: 13px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer;" title="<?php echo t('topbar.break_selector_tooltip'); ?>">
                     <option value="" class="u-success u-fw-700"><?php echo t('topbar.break_working'); ?></option>
                     <?php foreach (array_filter(array_map('trim', explode(',', getSystemSetting('cc_break_reasons', t('api_cc.default_break_reasons'))))) as $reason): ?>

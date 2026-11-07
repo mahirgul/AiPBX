@@ -392,7 +392,7 @@ final class PluginManager
      * folder and enables it: the one way in for an upload and for the community catalog.
      * $how ("uploaded", "installed from the catalog") goes into the audit log.
      */
-    private static function installArchive(string $zipPath, string $how): string
+    private static function installArchive(string $zipPath, string $how, string $expectSlug = ''): string
     {
         if (!class_exists('ZipArchive')) {
             throw new \Exception('PHP ZipArchive extension is required to extract plugin packages.');
@@ -436,7 +436,7 @@ final class PluginManager
         $slug = trim((string)($manifest['slug'] ?? ''));
         $name = trim((string)($manifest['name'] ?? ''));
         $version = trim((string)($manifest['version'] ?? '1.0.0'));
-        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', $slug) || $name === '') {
+        if (!preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', $slug) || $name === '' || ($expectSlug !== '' && $slug !== $expectSlug)) {
             $zip->close();
             throw new \Exception(t('plugins.err_manifest_fields', 'plugin.json must define a valid "slug" (lowercase alphanumeric + hyphens) and "name".'));
         }
@@ -601,16 +601,20 @@ final class PluginManager
         }
         $cache = self::customDir() . '/.catalog.json';
         if (!is_file($cache) || time() - (int) filemtime($cache) > 3600) {
-            $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024);
+            // The Plugins page waits for this, so a slow or unreachable GitHub may cost it 8 s once an hour.
+            $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024, 8);
             if ($json !== null && is_array(json_decode($json, true))) {
                 @file_put_contents($cache, $json);
             } elseif (is_file($cache)) {
                 @touch($cache); // keep the last good list, ask again in an hour
+            } else {
+                @file_put_contents($cache, '{"plugins":[]}'); // nothing yet: ask again in an hour, not on every visit
             }
         }
         $out = [];
         foreach ((array) (json_decode((string) @file_get_contents($cache), true)['plugins'] ?? []) as $p) {
-            if (is_array($p) && preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', (string) ($p['slug'] ?? '')) && preg_match('/^[a-f0-9]{64}$/', (string) ($p['sha256'] ?? ''))) {
+            if (is_array($p) && preg_match('/^[a-z0-9][a-z0-9-]{1,48}$/', (string) ($p['slug'] ?? '')) && preg_match('/^[a-f0-9]{64}$/', (string) ($p['sha256'] ?? ''))
+                && preg_match('/^\d+\.\d+(\.\d+)?$/', (string) ($p['version'] ?? ''))) {
                 $out[(string) $p['slug']] = $p;
             }
         }
@@ -643,7 +647,7 @@ final class PluginManager
             $zipPath = self::customDir() . '/.download-' . bin2hex(random_bytes(8)) . '.zip';
             file_put_contents($zipPath, $data);
             try {
-                return self::installArchive($zipPath, 'installed from the catalog');
+                return self::installArchive($zipPath, 'installed from the catalog', $slug);
             } finally {
                 @unlink($zipPath);
             }
@@ -678,11 +682,17 @@ final class PluginManager
     }
 
     /** An HTTPS download of at most $max bytes (GitHub's release links redirect once or twice). */
-    private static function download(string $url, int $max): ?string
+    /** Tests only: answers in place of the network, fn(string $url): ?string. */
+    public static ?\Closure $fetch = null;
+
+    private static function download(string $url, int $max, int $timeout = 30): ?string
     {
+        if (self::$fetch !== null) {
+            return (self::$fetch)($url);
+        }
         $ch = curl_init($url);
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 5,
-            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_TIMEOUT => 30,
+            CURLOPT_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS, CURLOPT_TIMEOUT => $timeout,
             CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_MAXFILESIZE => $max, CURLOPT_USERAGENT => 'AiPBX/' . (defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev')]);
         $data = curl_exec($ch);
         $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
@@ -1063,6 +1073,17 @@ final class PluginManager
      * or null when the plugin is off, has no such page or does not show it to this user.
      */
     public static function userPageDir(string $slug, array $user): ?string
+    {
+        // The page and the sidebar both ask during one request: the plugin's visible.php runs once.
+        static $seen = [];
+        $key = $slug . "\0" . (string) ($user['id'] ?? '');
+        if (!array_key_exists($key, $seen)) {
+            $seen[$key] = self::userPageDirUncached($slug, $user);
+        }
+        return $seen[$key];
+    }
+
+    private static function userPageDirUncached(string $slug, array $user): ?string
     {
         $p = self::getPlugin($slug);
         $dir = (string) (self::discoverManifests()[$slug]['dir'] ?? '');

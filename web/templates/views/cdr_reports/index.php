@@ -206,7 +206,7 @@ $filter_url = function (array $override) {
                             <td class="col-hide-mobile u-muted u-fs-12 u-nowrap">
                                 <?php $show_journey = (!empty($c['legs']) && count($c['legs']) > 1) || count($c['flow']['path'] ?? []) > 2; ?>
                                 <?php if ($show_journey): ?>
-                                    <button type="button" class="btn btn-outline-primary btn-sm journey-toggle-btn u-mr-4 u-r-8 u-fw-700" id="journey-btn-<?php echo $c['id']; ?>" onclick="toggleCallJourney('<?php echo $c['id']; ?>')" title="<?php echo t('cdr_reports.journey_title'); ?>">
+                                    <button type="button" class="btn btn-outline-primary btn-sm u-mr-4 u-r-8 u-fw-700" id="journey-btn-<?php echo $c['id']; ?>" onclick="toggleCallJourney('<?php echo $c['id']; ?>')" title="<?php echo t('cdr_reports.journey_title'); ?>">
                                         <i class="fas fa-route"></i> <?php echo count($c['legs']); ?> <i class="fas fa-chevron-down journey-icon u-fs-10 u-transition-transform-0-2s"></i>
                                     </button>
                                 <?php endif; ?>
@@ -347,7 +347,7 @@ $filter_url = function (array $override) {
                             </td>
                         </tr>
                         <?php if ($show_journey): ?>
-                            <tr id="journey-row-<?php echo $c['id']; ?>" class="cdr-journey-row" style="display: none;">
+                            <tr id="journey-row-<?php echo $c['id']; ?>" style="display: none;">
                                 <td class="u-p-16-20 u-bg-rgba-0-242-254-0-02 u-border-bottom-2-solid-border-color" colspan="10">
                                     <div class="u-bg-bg-card u-bd-1-solid-border-color u-r-12 u-p-16-20 u-box-shadow-0-2-8-rgba-0-0-0-0-03">
                                         <div class="u-d-flex u-jc-space-between u-ai-center u-mb-12 u-pb-8 u-border-bottom-1-solid-border-color u-wrap u-gap-8">

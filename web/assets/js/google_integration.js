@@ -13,15 +13,5 @@ function toggleSecretVisibility() {
 }
 
 function copyRedirectUri() {
-    var copyText = document.getElementById('redirectUriInput');
-    copyText.select();
-    copyText.setSelectionRange(0, 99999);
-    navigator.clipboard.writeText(copyText.value).then(function() {
-        var btnText = document.getElementById('copyBtnText');
-        var orig = btnText.innerText;
-        btnText.innerText = window.GOOGLE_INTEGRATION_COPIED;
-        setTimeout(function() {
-            btnText.innerText = orig;
-        }, 2000);
-    });
+    UIHelper.copyToClipboard(document.getElementById('redirectUriInput').value, window.GOOGLE_INTEGRATION_COPIED);
 }

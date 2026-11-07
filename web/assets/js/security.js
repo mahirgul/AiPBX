@@ -5,17 +5,13 @@ var RECOVERY_CODES = window.SECURITY_PAGE.recoveryCodes;
 
 function copySecretKey() {
     const text = document.getElementById('manual_secret_key').innerText.trim();
-    navigator.clipboard.writeText(text).then(() => {
-        if (window.notify) window.notify.success(window.SECURITY_PAGE.i18n.secret_copied);
-    });
+    UIHelper.copyToClipboard(text, window.SECURITY_PAGE.i18n.secret_copied);
 }
 
 function copyRecoveryCodes() {
     if (!RECOVERY_CODES || !RECOVERY_CODES.length) return;
     const text = __('js.sec.codes_title') + ":\n" + RECOVERY_CODES.join("\n");
-    navigator.clipboard.writeText(text).then(() => {
-        if (window.notify) window.notify.success(window.SECURITY_PAGE.i18n.codes_copied);
-    });
+    UIHelper.copyToClipboard(text, window.SECURITY_PAGE.i18n.codes_copied);
 }
 
 function downloadRecoveryCodes() {

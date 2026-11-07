@@ -91,7 +91,7 @@ foreach ($trunks as $trunk) {
                         <td><div class="u-strong"><?php echo $h($r['rule_name']); ?></div></td>
                         <td><code class="dpr-pattern"><?php echo $h($r['match_pattern']); ?></code></td>
                         <td class="col-hide-mobile u-fs-12"><?php echo $steps ? implode(' · ', $steps) : '<span class="text-muted">—</span>'; ?></td>
-                        <td><?php echo $r['trunk_name'] !== null ? '<span class="badge badge-secondary">' . $h($r['trunk_name']) . '</span>' : '<span class="badge badge-dark">' . t('inbound_norm.all_trunks') . '</span>'; ?></td>
+                        <td><?php echo $r['trunk_name'] !== null ? '<span class="badge badge-secondary">' . $h($r['trunk_name']) . '</span>' : '<span class="badge badge-secondary">' . t('inbound_norm.all_trunks') . '</span>'; ?></td>
                         <?php if ($key === 'all'): ?><td><?php echo t('inbound_norm.target_' . $r['target']); ?></td><?php endif; ?>
                         <td><?php echo uiStatusToggleForm($r['id'], $r['is_active'], 'rule_id'); ?></td>
                         <?php if ($canEdit): ?>

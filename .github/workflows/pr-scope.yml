@@ -24,7 +24,7 @@ jobs:
     # The maintainer's own PRs and bots are not checked.
     if: github.event.pull_request.user.login != github.repository_owner && github.event.pull_request.user.type != 'Bot'
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
         with:
           script: |
             const MAX_AREAS = 2;      // more distinct components than this → split

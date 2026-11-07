@@ -141,6 +141,27 @@ class PluginValidatorTests(unittest.TestCase):
             v = PluginValidator(path, slug=slug, check_php_syntax=False)
             self.assertTrue(v.validate(), v.errors)
 
+    def test_user_page_needs_user_page_php(self):
+        slug = "sample-plugin"
+        manifest = valid_manifest(slug, hooks={"user_page": {"label": "Messages"}})
+        with TempPluginTree(slug, {"plugin.json": manifest}) as path:
+            v = PluginValidator(path, slug=slug, check_php_syntax=False)
+            self.assertFalse(v.validate())
+            self.assertTrue(any("user/page.php was not found" in e for e in v.errors))
+        files = {"plugin.json": manifest, "user/page.php": "<?php echo 'Hello'; ?>"}
+        with TempPluginTree(slug, files) as path:
+            v = PluginValidator(path, slug=slug, check_php_syntax=False)
+            self.assertTrue(v.validate(), v.errors)
+
+    def test_requires_aipbx_must_be_a_version(self):
+        slug = "sample-plugin"
+        for value, ok in (("1.71.0", True), ("1.72", True), ("latest", False), (171, False)):
+            manifest = valid_manifest(slug)
+            manifest["requires_aipbx"] = value
+            with TempPluginTree(slug, {"plugin.json": manifest}) as path:
+                v = PluginValidator(path, slug=slug, check_php_syntax=False)
+                self.assertEqual(v.validate(), ok, (value, v.errors))
+
     def test_worker_hook_requires_tick_php(self):
         slug = "sample-plugin"
         manifest = valid_manifest(slug, hooks={"worker": True})

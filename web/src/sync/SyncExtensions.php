@@ -65,7 +65,10 @@ function pjsipIdentifyHosts(): array
         }
     }
 
-    // The SIP server a phone region gives its phones (Provisioning → Regions), e.g. sip1.example.com.
+    // The SIP server phones are given (Provisioning → Regions: the general one and each region's),
+    // e.g. sip1.example.com.
+    $general = trim((string) getSystemSetting('provision_sip_server', ''));
+    if ($general !== '') { $hosts[] = strtolower($general); }
     try {
         foreach (getDB()->query("SELECT sip_server FROM pbx_phone_regions WHERE sip_server NOT IN ('', 'none')")->fetchAll(PDO::FETCH_COLUMN) as $h) {
             $hosts[] = strtolower((string) $h);

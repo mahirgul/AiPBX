@@ -115,7 +115,7 @@
          content area, not the screen width (992px). The old 1fr/1.1fr columns
          could not get narrower than the table content, so the right panel
          overflowed the screen. -->
-    <div class="cc-board-ops-grid u-d-grid u-gtc-repeat-auto-fit-minmax-min-100pc-640-1fr u-gap-16">
+    <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-min-100pc-640-1fr u-gap-16">
         <!-- Left panel: live waiting calls (interactive pickup) -->
         <div class="card u-d-flex u-col u-minw-0">
             <div class="card-header u-d-flex u-ai-center u-jc-space-between u-border-bottom-1-solid-border-color u-p-16-16">
