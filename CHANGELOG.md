@@ -5,6 +5,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.8
+
+- **Queue supervisor and agent pause consistency:** Agent statuses are now tracked per queue in `/cc-supervisor`, preventing status contamination across queues. Dynamically joining a queue preserves an agent's active pause, and logging out of a single queue does not clear pause state while the agent remains logged into other queues.
+- **2FA and forced password reset flow:** Signing in with two-factor authentication now enforces the required password change when `must_reset_password` is set, redirecting directly to the reset screen.
+- **Web widgets and external numbers:** Fixed an issue where the destination number of a widget was overwritten by an absent field in the V1 API.
+- **Cloud STT and OpenAI-compatible endpoint:** Added `openai_compat` provider support with custom `base_url` and `model` configuration for cloud speech-to-text.
+- **Cloud TTS test with unsaved credentials:** The Test button on AI TTS settings now validates against the credentials entered in the form before saving.
+- **S3 recordings and voicemails:** Playback on the MyPhone portal and CDR reports now correctly detects recordings stored in S3 buckets.
+- **Privacy (KVKK / GDPR) media cleanup:** Data erasure and retention policies now purge faxes (via FaxStorage), call recordings in S3, and archived voicemails.
+- **Voicemail inbox count synchronization:** Deleting or marking messages as heard immediately updates the inbox unread counter.
+- **Network policy routing rules:** `aipbx-netcfg` now flushes interface-specific ip rules before re-applying, and preserves them during configuration backup and restore.
+- **Resent fax files preservation:** `fax_cleanup.sh` avoids removing documents that are still referenced by pending or active resent faxes.
+- **PJSIP trunk configuration cleanup:** Prevented duplicate `100rel` entries on endpoints and orphaned T.38 fields.
+- **IVR data step DTMF timeout handling:** Dialplan routes empty inputs to the timeout destination, and the service records a timeout status.
+- **SPA navigation stability:** Script declarations on MyPhone, Call Center board, conferences, and AI apps now prevent re-declaration errors during dynamic page transitions.
+
 ## 1.72.7
 
 - **The update's page test no longer fails on /plugins with the community catalog on.** Creating the catalog's folder warned when it already existed (1.72.5, 1.72.6); the folder is now made only when missing. The page test refuses `@mkdir()` without an `is_dir()` check, as `@` does not hide the warning from it.
