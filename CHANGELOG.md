@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.6
+
+- **Administrators and queue managers can be queue agents too** (#160). An administrator or a queue manager with an extension now appears on the Agents list of a queue like an agent or a normal user, and gets the Agent Screen once added to one.
+- **Certificate region names are checked in DNS and removed when their region is gone.** When the portal's name was in `/etc/hosts` as `127.0.1.1`, `getent` stopped there and the DNS check for region names did not run; DNS is queried directly now, and a region name that was removed is no longer kept when a new one is added.
+- **Applying a moved server address on Pending Changes finishes in one click.** Moving the address left the extensions' identify lists waiting for a second Apply; they are written in the same Apply now.
+- **The plugin catalog remembers an unreachable GitHub on a fresh server too.** Its folder is made before the empty cache file is written, so `/plugins` does not wait 8 seconds on every visit before the first plugin is installed.
+
 ## 1.72.5
 
 - **The one-line install works again** (`curl ... | sudo bash`). 1.72.4's step counter read the script's own file name, which a piped script does not have, and the installer stopped on its first lines. The installer test now runs the start of install.sh from a pipe.

@@ -36,15 +36,15 @@ final class QueueMembershipTest extends TestCase
         $db->exec("DELETE FROM sys_users WHERE extension IN ('2001', '2002', '2003', '2004', '2005', '2006')");
     }
 
-    public function testQueueAgentsFiltersOutAdminsFaxAndInactive(): void
+    public function testQueueAgentsIncludesAdminsManagersAndFiltersOutFaxAndInactive(): void
     {
         $agents = QueueRepository::queueAgents();
         $agentExts = array_column($agents, 'extension');
 
         $this->assertContains('2001', $agentExts, 'cc_agent must be included in queue agents');
         $this->assertContains('2002', $agentExts, 'user must be included in queue agents');
-        $this->assertNotContains('2003', $agentExts, 'admin must NOT be included in queue agents');
-        $this->assertNotContains('2004', $agentExts, 'cc_manager must NOT be included in queue agents');
+        $this->assertContains('2003', $agentExts, 'admin with extension must be included in queue agents');
+        $this->assertContains('2004', $agentExts, 'cc_manager with extension must be included in queue agents');
         $this->assertNotContains('2005', $agentExts, 'fax_user must NOT be included in queue agents');
         $this->assertNotContains('2006', $agentExts, 'inactive agent must NOT be included in queue agents');
     }

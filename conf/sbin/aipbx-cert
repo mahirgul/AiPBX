@@ -140,10 +140,10 @@ certbot_errors() { grep -E 'Detail:|Type:|Domain:|Hint:|Error|error:|Challenge f
 # Loopback answers (an /etc/hosts line such as "127.0.1.1 pbx.example.com") say nothing about DNS.
 region_names() {
     local d="$1" here extra n=0
-    here=$(getent ahosts "$d" 2>/dev/null | awk '$1 !~ /^(127\.|::1$)/ {print $1}' | sort -u)
+    here=$(getent -s dns ahosts "$d" 2>/dev/null | awk '$1 !~ /^(127\.|::1$)/ {print $1}' | sort -u)
     for extra in $(sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443/names.conf 2>/dev/null); do
         [ "$extra" = "$d" ] && continue
-        if [ -n "$here" ] && ! getent ahosts "$extra" 2>/dev/null | awk '{print $1}' | grep -qxF -f <(printf '%s\n' "$here"); then
+        if [ -z "$here" ] || ! getent -s dns ahosts "$extra" 2>/dev/null | awk '{print $1}' | grep -qxF -f <(printf '%s\n' "$here"); then
             echo "aipbx-cert: $extra does not point to the same address as $d yet, left out" >&2
             continue
         fi
@@ -157,11 +157,12 @@ region_names() {
 # certificate was made (its renewal file); nothing when none is missing. A renewal keeps a
 # certificate's names, so a name added to a region later arrives only this way.
 expand_args() {
-    local d="$1" conf="/etc/letsencrypt/renewal/$1.conf" have missing=() extra auth
+    local d="$1" conf="/etc/letsencrypt/renewal/$1.conf" have regions=() missing=() extra auth
     have=$(openssl x509 -in "$(le_live "$d")/cert.pem" -noout -ext subjectAltName 2>/dev/null | tr ',' '\n' | sed -n 's/^ *DNS://p')
-    for extra in $(region_names "$d"); do grep -qxF "$extra" <<<"$have" || missing+=("$extra"); done
+    mapfile -t regions < <(region_names "$d")
+    for extra in "${regions[@]}"; do grep -qxF "$extra" <<<"$have" || missing+=("$extra"); done
     [ ${#missing[@]} -gt 0 ] || return 0
-    local args=(certonly --non-interactive --agree-tos --expand --cert-name "$d")
+    local args=(certonly --non-interactive --agree-tos --renew-with-new-domains --cert-name "$d")
     auth=$(sed -n 's/^authenticator = //p' "$conf")
     case "$auth" in
         apache) args+=(--apache) ;;
@@ -169,7 +170,9 @@ expand_args() {
         dns-cloudflare) args+=(--dns-cloudflare --dns-cloudflare-credentials "$(sed -n 's/^dns_cloudflare_credentials = //p' "$conf")") ;;
         *) echo "aipbx-cert: ${missing[*]} cannot be added, the certificate was made with '$auth'" >&2; return 0 ;;
     esac
-    for extra in $have "${missing[@]}"; do args+=(-d "$extra"); done
+    args+=(-d "$d")
+    grep -qxF "*.$d" <<<"$have" && args+=(-d "*.$d")
+    for extra in "${regions[@]}"; do args+=(-d "$extra"); done
     printf '%s\n' "${args[@]}"
 }
 

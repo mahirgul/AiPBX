@@ -624,11 +624,13 @@ final class PluginManager
         if (!is_file($cache) || time() - (int) filemtime($cache) > 3600) {
             // The Plugins page waits for this, so a slow or unreachable GitHub may cost it 8 s once an hour.
             $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024, 8);
+            @mkdir(dirname($cache), 0750, true);
             if ($json !== null && is_array(json_decode($json, true))) {
-                @mkdir(dirname($cache), 0750, true);
                 $tmp = $cache . '.' . bin2hex(random_bytes(4));
                 if (@file_put_contents($tmp, $json) !== false) {
-                    @rename($tmp, $cache); // whole or not at all: a half-written list is never read
+                    if (!@rename($tmp, $cache)) {
+                        @unlink($tmp);
+                    } // whole or not at all: a half-written list is never read
                 }
             } elseif (is_file($cache)) {
                 @touch($cache); // keep the last good list, ask again in an hour
@@ -669,6 +671,7 @@ final class PluginManager
             if ($data === null || !hash_equals((string) $entry['sha256'], hash('sha256', $data))) {
                 throw new \Exception(t('plugins.err_catalog_download'));
             }
+            @mkdir(self::customDir(), 0750, true);
             $zipPath = self::customDir() . '/.download-' . bin2hex(random_bytes(8)) . '.zip';
             file_put_contents($zipPath, $data);
             try {

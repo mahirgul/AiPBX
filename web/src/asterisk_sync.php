@@ -277,7 +277,7 @@ function getPendingSyncList() {
  */
 function applyPendingSync($user_id = null) {
     $db = getDB();
-    $domains = $db->query("SELECT DISTINCT domain FROM sys_pending_sync")->fetchAll(PDO::FETCH_COLUMN);
+    $domains = $db->query("SELECT DISTINCT domain FROM sys_pending_sync ORDER BY domain = 'readdress' DESC, domain ASC")->fetchAll(PDO::FETCH_COLUMN);
 
     if (is_file(__DIR__ . '/services/WebhookService.php')) {
         require_once __DIR__ . '/services/WebhookService.php';

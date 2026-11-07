@@ -24,11 +24,11 @@ class QueueRepository extends BaseRepository
     /**
      * Roles shown in the "Agents" list of the queue form.
      */
-    public const AGENT_ROLES = ['cc_agent', 'user'];
+    public const AGENT_ROLES = ['cc_agent', 'user', 'cc_manager', 'admin'];
 
     /**
-     * The "Agents" list of the queue form: only the agent (cc_agent) and user roles —
-     * fax lines, admin and viewer accounts cannot be made queue members.
+     * The "Agents" list of the queue form: extensions whose role may take queue calls —
+     * fax lines, viewer/read-only accounts and inactive users cannot be made queue members.
      */
     public static function queueAgents(): array
     {

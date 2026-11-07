@@ -18,4 +18,8 @@ function syncReaddress(): void
             throw new \RuntimeException(t('netset.readdress_files_failed') . ' ' . $r['files']);
         }
     }
+    if (!empty($ids)) {
+        syncAllExtensions();
+        getDB()->exec("DELETE FROM sys_pending_sync WHERE domain = 'extensions'");
+    }
 }
