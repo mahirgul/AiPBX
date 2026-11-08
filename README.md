@@ -14,16 +14,20 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?style=for-the-badge&logo=github&label=Release&color=2563EB&logoColor=white" alt="Latest release"></a>
-  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX"><img src="https://img.shields.io/badge/Google_Play-Download-01875F?style=for-the-badge&logo=googleplay&logoColor=white" alt="Google Play"></a>
-  <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4%20GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
-  <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250"><img src="https://img.shields.io/badge/UpCloud-%24250_Credit-7B1FA2?style=for-the-badge&logo=upcloud&logoColor=white" alt="Deploy on UpCloud"></a>
+  <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?style=for-the-badge&logo=github&label=Release&color=2563EB&logoColor=white" alt="Latest release" height="32"></a>
+  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX"><img src="https://img.shields.io/badge/Google_Play-Download-01875F?style=for-the-badge&logo=googleplay&logoColor=white" alt="Get it on Google Play" height="32"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
-  <img src="https://img.shields.io/badge/Linux-Ubuntu_%7C_Debian-E95420?logo=linux&logoColor=white" alt="Ubuntu & Debian">
+  <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-on_GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub" height="32"></a>
+  <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250"><img src="https://img.shields.io/badge/UpCloud-%24250_credit-7B1FA2?style=for-the-badge&logo=upcloud&logoColor=white" alt="UpCloud: $250 credit" height="32"></a>
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-2563EB?style=flat-square" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/Asterisk-22-F68F1E?style=flat-square&logo=asterisk&logoColor=white" alt="Asterisk 22">
+  <img src="https://img.shields.io/badge/PHP-8.4%2B-777BB4?style=flat-square&logo=php&logoColor=white" alt="PHP 8.4+">
+  <img src="https://img.shields.io/badge/Ubuntu_%7C_Debian-amd64_%7C_arm64-E95420?style=flat-square&logo=linux&logoColor=white" alt="Ubuntu and Debian, amd64 and arm64">
 </p>
 
 <p align="center">

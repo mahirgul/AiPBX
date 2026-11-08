@@ -623,3 +623,13 @@ pages. Proposed groups:
 Old addresses keep working (the routes do not change, only the menu). The role matrix and the
 module keys stay as they are.
 
+## 15. Comprehensive Troubleshooting & Diagnostics Handbook
+
+**Planned.** Expand [Troubleshooting](docs/troubleshooting.md) into a structured field guide for administrators and network engineers diagnosing live telecom and VoIP issues:
+
+- **Audio issues:** One-way audio and silence on remote/mobile endpoints, NAT traversal, SIP ALG interference, early media / progress tone problems, codec mismatches and transcoding stalls.
+- **NAT, Firewalls & Cloud:** Datacenter 1:1 NAT mapping, cloud security groups, public media address verification, STUN/TURN routing, keeping pinholes open (`strictrtp`, `rtpkeepalive`).
+- **Registration & Provisioning:** Desk phones losing registration, fail2ban IP blocks, DHCP Option 66/150 and TFTP/HTTP configuration delivery issues, BLF state synchronization.
+- **Call routing & Carrier interop:** Inbound DID mismatch / transit prefixes, outbound rate denials (403/503), T.38 fax negotiation fallbacks, SIP packet capture recipes.
+
+

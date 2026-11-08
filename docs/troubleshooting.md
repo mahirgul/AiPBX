@@ -34,6 +34,44 @@ silent: check the external IP under **PBX Settings**, the certificate (**Securit
 TURNS fails silently with a self-signed one) and `relay-ip` in `/etc/turnserver.conf`. Full checklist:
 [WebRTC, NAT and TURN](webrtc-nat.md#troubleshooting).
 
+## One-way audio on remote SIP / desk phones (behind NAT)
+
+When a remote desk phone has audio in only one direction (e.g., calling out to a cell phone is one-way, but an incoming call from a cell works, or vice versa):
+
+1. **Disable SIP ALG on the remote router (most common cause):**
+   Almost every home/office router has a "SIP ALG" (Application Layer Gateway) feature enabled by default. While intended to help SIP through NAT, SIP ALG frequently mangles the SDP media IP (`c=IN IP4`) or RTP ports with invalid values on outbound `INVITE` requests, causing one-way audio on outbound calls.
+   - Access the router settings where the desk phone is located.
+   - Look for **SIP ALG**, **SIP Passthrough**, or **SIP Transformation** in the router's Firewall / NAT settings and **turn it off**.
+   - Reboot the router and restart the desk phone.
+
+2. **Verify `direct_media=no` on both Extensions and Trunks:**
+   If `direct_media` is enabled, Asterisk attempts to send a re-INVITE so the two endpoints stream RTP directly to each other without passing through Asterisk. Because the remote phone is behind NAT, it cannot stream RTP directly to an external carrier gateway.
+   - **Extensions:** AiPBX templates default to `direct_media=no`. Verify under **Extensions → edit → Advanced SIP Options** that Direct Media is set to `No`.
+   - **Trunks:** Go to **Trunks → edit trunk → Direct Media: No**, then click **Apply Changes**.
+
+3. **Check PBX External IP & Media Address:**
+   If the PBX runs in a datacenter or cloud (UpCloud, AWS, GCP, Hetzner, etc.):
+   - Go to **PBX Settings → PJSIP & Net**.
+   - Ensure **External IP / Hostname** and **External Media Address** are configured with the public IPv4 address of the PBX.
+   - Ensure local subnets are listed in **Local Networks** so Asterisk knows which addresses are private.
+   - Run the **NAT Diagnostics** panel on that page to verify what Asterisk advertises to outside endpoints.
+
+4. **Verify Datacenter Firewall & RTP Port Range:**
+   Asterisk carries audio over UDP ports defined in `/etc/asterisk/rtp.conf` (default: `10000–12999/udp` or `10000–20000/udp`).
+   - Ensure the datacenter firewall, cloud security group, and local firewall (`ufw` or `nftables`) allow incoming UDP traffic on the entire RTP port range.
+   - Ensure Asterisk has `strictrtp=yes` and `rtpkeepalive=5` (default in AiPBX) to keep NAT pinholes open.
+
+5. **Capture and Inspect SIP/RTP Traffic:**
+   ```bash
+   asterisk -r
+   pjsip set logger on
+   ```
+   Or capture a trace with `tcpdump` during a test call:
+   ```bash
+   sudo tcpdump -ni any -s0 -w /tmp/call_audio.pcap "port 5060 or portrange 10000-20000"
+   ```
+   Inspect in Wireshark: verify whether the SDP `c=IN IP4 <ip>` sent to the phone carries the public IP of the PBX, and whether RTP packets arrive from the phone's public IP and port.
+
 ## Incoming faxes fail (0 pages)
 
 **Fax Inbox** shows the call as *FAILED* with no file (installations before 1.50.2 do not show it at
