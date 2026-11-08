@@ -14,19 +14,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?label=release" alt="Latest release"></a>
-  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX"><img src="https://img.shields.io/badge/Google_Play-Download-4285F4?logo=googleplay&logoColor=white" alt="Google Play"></a>
+  <a href="https://github.com/mahirgul/AiPBX/releases/latest"><img src="https://img.shields.io/github/v/release/mahirgul/AiPBX?style=for-the-badge&logo=github&label=Release&color=2563EB&logoColor=white" alt="Latest release"></a>
+  <a href="https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX"><img src="https://img.shields.io/badge/Google_Play-Download-01875F?style=for-the-badge&logo=googleplay&logoColor=white" alt="Google Play"></a>
+  <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4%20GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
+  <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250"><img src="https://img.shields.io/badge/UpCloud-%24250_Credit-7B1FA2?style=for-the-badge&logo=upcloud&logoColor=white" alt="Deploy on UpCloud"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/mahirgul/AiPBX/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT License"></a>
-  <a href="https://github.com/sponsors/mahirgul"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white" alt="Sponsor on GitHub"></a>
-  <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250"><img src="https://img.shields.io/badge/UpCloud-$250_Free_Credit-7b1fa2?logo=cloud&amp;logoColor=white" alt="Deploy on UpCloud"></a>
-  <img src="https://img.shields.io/badge/Ubuntu-26.04%20LTS-E95420?logo=ubuntu&logoColor=white" alt="Ubuntu 26.04 LTS">
-  <img src="https://img.shields.io/badge/Debian-13%2B-A81D33?logo=debian&logoColor=white" alt="Debian 13+">
-  <img src="https://img.shields.io/badge/Raspberry%20Pi-OS%2064--bit-C51A4A?logo=raspberrypi&logoColor=white" alt="Raspberry Pi OS">
-  <img src="https://img.shields.io/badge/Architecture-x86__64%20%7C%20arm64-blue" alt="x86_64 and arm64">
   <img src="https://img.shields.io/badge/Asterisk-22-green" alt="Asterisk 22">
-  <img src="https://img.shields.io/badge/PHP-8.x-blue?logo=php" alt="PHP 8">
-  <img src="https://img.shields.io/badge/MariaDB-11-blue?logo=mariadb" alt="MariaDB">
-  <a href="docs/README.md"><img src="https://img.shields.io/badge/docs-GitHub-success?logo=readthedocs&logoColor=white" alt="Docs"></a>
+  <img src="https://img.shields.io/badge/Linux-Ubuntu_%7C_Debian-E95420?logo=linux&logoColor=white" alt="Ubuntu & Debian">
 </p>
 
 <p align="center">
@@ -437,6 +434,12 @@ If you find AiPBX useful for your organization or projects, consider sponsoring 
 ### ☁️ Recommended Cloud Infrastructure — UpCloud
 
 AiPBX runs great on [UpCloud](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250) high-performance European and global cloud servers with ultra-fast MaxIOPS block storage.
+
+<p align="center">
+  <a href="https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250">
+    <img src="https://img.shields.io/badge/UpCloud-%24250_Free_Credit-7B1FA2?style=for-the-badge&logo=upcloud&logoColor=white" alt="Claim $250 UpCloud Free Credit">
+  </a>
+</p>
 
 Sign up via our affiliate link to claim **$250 in free cloud credits**:
 - **Affiliate Link:** [signup.upcloud.com (with $250 credit)](https://signup.upcloud.com/?promo=affiliate-aipbx250&amp;utm_source=aipbx&amp;utm_medium=affiliate&amp;utm_campaign=affiliate-aipbx250)
