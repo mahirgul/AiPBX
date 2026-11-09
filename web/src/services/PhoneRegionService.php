@@ -144,10 +144,6 @@ final class PhoneRegionService
         $out['sip_port'] = $port;
         $out['sip443'] = empty($data['sip443']) ? '0' : '1';
         $out['sip443_sources'] = implode(', ', self::sources((string) ($data['sip443_sources'] ?? '')));
-        if (self::sip443Name($out) !== '') {
-            // A region with a name of its own is found by that name: addresses would be kept and never used.
-            $out['sip443_sources'] = '';
-        }
         if ($out['sip443'] === '1') {
             // nginx hands on TLS only: these phones talk TLS to 443.
             [$out['transport'], $out['sip_port']] = ['tls', '443'];
@@ -217,7 +213,12 @@ final class PhoneRegionService
         foreach (self::all() as $r) {
             if (!empty($r['sip443'])) {
                 $name = self::sip443Name($r);
-                $name !== '' ? $names[] = $name : array_push($addrs, ...self::sources((string) $r['sip443_sources']));
+                if ($name !== '') {
+                    $names[] = $name;
+                }
+                if (!empty($r['sip443_sources'])) {
+                    array_push($addrs, ...self::sources((string) $r['sip443_sources']));
+                }
             }
         }
         return [...array_map(static fn(string $n): string => "name {$n}", array_unique($names)), ...array_map(static fn(string $a): string => "addr {$a}", array_unique($addrs))];
