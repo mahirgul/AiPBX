@@ -41,14 +41,17 @@ def validate(cfg):
     region = cfg.get("region") or "westeurope"
     if provider == "azure" and not (isinstance(region, str) and _REGION.match(region)):
         raise ValueError("stt_cloud.region is not valid")
-    base_url = cfg.get("base_url") or ""
-    model = cfg.get("model") or "whisper-1"
+    out = {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region}
     if provider == "openai_compat":
+        base_url = cfg.get("base_url") or ""
+        model = cfg.get("model") or "whisper-1"
         if not (isinstance(base_url, str) and base_url.startswith("https://") and len(base_url) <= 200):
             raise ValueError("stt_cloud.base_url is not valid")
         if not (isinstance(model, str) and 1 <= len(model) <= 100):
             raise ValueError("stt_cloud.model is not valid")
-    return {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region, "base_url": base_url, "model": model}
+        out["base_url"] = base_url
+        out["model"] = model
+    return out
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):

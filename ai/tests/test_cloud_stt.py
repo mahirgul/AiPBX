@@ -27,9 +27,16 @@ class CloudSttTest(unittest.TestCase):
     def test_validate(self):
         self.assertEqual(cloud_stt.validate({"provider": "groq", "api_key": KEY + " ", "lang": "de"}),
                          {"provider": "groq", "api_key": KEY, "lang": "de", "region": "westeurope"})
+        self.assertEqual(cloud_stt.validate({"provider": "openai_compat", "api_key": KEY, "lang": "en",
+                                             "base_url": "https://api.example.com/v1", "model": "whisper-custom"}),
+                         {"provider": "openai_compat", "api_key": KEY, "lang": "en", "region": "westeurope",
+                          "base_url": "https://api.example.com/v1", "model": "whisper-custom"})
         for bad in (None, {"provider": "x", "api_key": KEY}, {"provider": "groq", "api_key": "short"},
                     {"provider": "groq", "api_key": KEY, "lang": "fr"}, {"provider": "groq", "api_key": KEY + "\nX"},
-                    {"provider": "azure", "api_key": KEY, "region": "../x"}):
+                    {"provider": "azure", "api_key": KEY, "region": "../x"},
+                    {"provider": "openai_compat", "api_key": KEY, "base_url": "http://insecure.com"},
+                    {"provider": "openai_compat", "api_key": KEY, "base_url": "not-a-url"},
+                    {"provider": "openai_compat", "api_key": KEY, "base_url": "https://example.com", "model": "x" * 105}):
             with self.assertRaises(ValueError):
                 cloud_stt.validate(bad)
 
@@ -57,6 +64,11 @@ class CloudSttTest(unittest.TestCase):
                                    fake({"candidates": [{"content": {"parts": [{"text": "klima çalışmıyor"}]}}]}))
         self.assertEqual(out, "klima çalışmıyor")
         self.assertIn("Turkish", json.loads(calls[-1][2])["contents"][0]["parts"][0]["text"])
+        self.assertEqual(cloud_stt.transcribe(
+            {"provider": "openai_compat", "api_key": KEY, "lang": "en", "base_url": "https://api.example.com/v1", "model": "whisper-custom"},
+            wav, fake({"text": "custom speech"})), "custom speech")
+        self.assertIn("https://api.example.com/v1/audio/transcriptions", calls[-1][0])
+        self.assertIn(b"whisper-custom", calls[-1][2])
         self.assertEqual(cloud_stt.transcribe({"provider": "deepgram", "api_key": KEY, "lang": "tr"}, wav, fake({})), "")
 
     def test_config_with_cloud_stt_and_key_hidden(self):
