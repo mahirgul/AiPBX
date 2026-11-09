@@ -45,8 +45,10 @@ function __syncAllQueuesBody() {
         $conf .= "musicclass={$musicclass}\n";
 
         // Output all key-value directives stored in `queues_details`
+        // Note: monitor-format is omitted to avoid duplicate MixMonitor collisions
+        // with the dialplan MixMonitor managed in DialplanDestinationBuilder.
         foreach ($q_map as $k => $v) {
-            if ($v === '' || $v === null) continue;
+            if ($v === '' || $v === null || $k === 'monitor-format') continue;
             $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
         }
 

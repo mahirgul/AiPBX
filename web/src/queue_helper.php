@@ -95,7 +95,6 @@ class QueueHelper {
             // youarenext+thankyou prompts, which exist in Turkish, makes them
             // repeat in turn periodically (2026-08-31, user request).
             'periodic-announce' => $periodic_file !== '' ? $periodic_file : 'queue-youarenext,queue-thankyou',
-            'monitor-format' => 'wav',
             'joinempty' => $joinempty,
             'leavewhenempty' => $leavewhenempty,
             'maxlen' => (string)$maxlen,
