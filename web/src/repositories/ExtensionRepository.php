@@ -17,6 +17,7 @@ class ExtensionRepository extends BaseRepository
                     u.permission_group_id, u.boss_secretary_group_id, u.boss_secretary_role,
                     u.voicemail_enabled, u.voicemail_pin, u.voicemail_email, u.voicemail_email_notify, u.voicemail_attach_audio,
                     u.vm_on_noanswer, u.vm_on_busy, u.vm_on_unavail, u.vm_always,
+                    u.pickup_group, u.dnd_enabled, u.call_forward_number, u.cf_busy_number, u.cf_noanswer_number, u.cf_noanswer_timeout,
                     pg.group_name AS permission_group_name,
                     bsg.group_name AS boss_secretary_group_name
              FROM sys_users u

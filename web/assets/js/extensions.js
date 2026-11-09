@@ -14,6 +14,28 @@ function closeExtensionModal() {
     UIHelper.closeOverlayModal('extensionModal');
 }
 
+function switchExtensionTab(tabKey, btn) {
+    const panes = document.querySelectorAll('.ext-tab-pane');
+    panes.forEach(pane => {
+        pane.style.display = 'none';
+        pane.classList.remove('active');
+    });
+
+    const target = document.getElementById('ext_tab_' + tabKey);
+    if (target) {
+        target.style.display = 'block';
+        target.classList.add('active');
+    }
+
+    const buttons = document.querySelectorAll('.ext-tab-btn, .extension-tab-btn');
+    buttons.forEach(b => {
+        b.classList.remove('active');
+    });
+    if (btn) {
+        btn.classList.add('active');
+    }
+}
+
 function toggleExtensionTypeFields() {
     const typeEl = document.getElementById('modal_extension_type');
     const authGroup = document.getElementById('sip_auth_digest_group');
@@ -57,6 +79,9 @@ function openCreateExtensionModal() {
     const title = document.getElementById('extensionModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.ext.new_title') + '';
 
+    const firstTabBtn = document.querySelector('.ext-tab-btn[data-tab="basic"], .extension-tab-btn[data-tab="basic"]');
+    if (firstTabBtn) switchExtensionTab('basic', firstTabBtn);
+
     document.getElementById('modal_user_id').value = '';
     document.getElementById('modal_full_name').value = '';
     document.getElementById('modal_extension').value = '';
@@ -71,6 +96,19 @@ function openCreateExtensionModal() {
     document.getElementById('modal_cid_external').value = '';
     const actEl = document.getElementById('modal_is_active');
     if (actEl) actEl.checked = true;
+
+    const dndEl = document.getElementById('modal_dnd_enabled');
+    if (dndEl) dndEl.checked = false;
+    const cfAlways = document.getElementById('modal_call_forward_number');
+    if (cfAlways) cfAlways.value = '';
+    const cfBusy = document.getElementById('modal_cf_busy_number');
+    if (cfBusy) cfBusy.value = '';
+    const cfNoans = document.getElementById('modal_cf_noanswer_number');
+    if (cfNoans) cfNoans.value = '';
+    const cfTimeout = document.getElementById('modal_cf_noanswer_timeout');
+    if (cfTimeout) cfTimeout.value = '20';
+    const pickupEl = document.getElementById('modal_pickup_group');
+    if (pickupEl) pickupEl.value = '';
 
     const permEl = document.getElementById('modal_permission_group_id');
     if (permEl) permEl.value = '1';
@@ -110,6 +148,9 @@ function openEditExtensionModal(item) {
     const title = document.getElementById('extensionModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.ext.edit_title') + '' + escapeHtml(item.extension || '');
 
+    const firstTabBtn = document.querySelector('.ext-tab-btn[data-tab="basic"], .extension-tab-btn[data-tab="basic"]');
+    if (firstTabBtn) switchExtensionTab('basic', firstTabBtn);
+
     document.getElementById('modal_user_id').value = item.id || '';
     document.getElementById('modal_full_name').value = item.full_name || '';
     document.getElementById('modal_extension').value = item.extension || '';
@@ -127,6 +168,19 @@ function openEditExtensionModal(item) {
     document.getElementById('modal_cid_external').value = item.cid_external || '';
     const actEl = document.getElementById('modal_is_active');
     if (actEl) actEl.checked = (item.is_active == 1);
+
+    const dndEl = document.getElementById('modal_dnd_enabled');
+    if (dndEl) dndEl.checked = (item.dnd_enabled == 1);
+    const cfAlways = document.getElementById('modal_call_forward_number');
+    if (cfAlways) cfAlways.value = item.call_forward_number || '';
+    const cfBusy = document.getElementById('modal_cf_busy_number');
+    if (cfBusy) cfBusy.value = item.cf_busy_number || '';
+    const cfNoans = document.getElementById('modal_cf_noanswer_number');
+    if (cfNoans) cfNoans.value = item.cf_noanswer_number || '';
+    const cfTimeout = document.getElementById('modal_cf_noanswer_timeout');
+    if (cfTimeout) cfTimeout.value = item.cf_noanswer_timeout || '20';
+    const pickupEl = document.getElementById('modal_pickup_group');
+    if (pickupEl) pickupEl.value = item.pickup_group || '';
 
     const permEl = document.getElementById('modal_permission_group_id');
     if (permEl) permEl.value = item.permission_group_id || '1';

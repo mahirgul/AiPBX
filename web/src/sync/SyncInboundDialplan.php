@@ -180,10 +180,12 @@ function __syncInboundDialplanBody() {
                 $same
             ) . "\n";
 
-            // For calls arriving without a DID (s)
+            // For calls arriving without a DID (s), attempt to recover dialed DID from SIP To header
             $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
+            $conf .= " same => n,Set(AIPBX_TO_USER=\${PJSIP_PARSE_URI(\${PJSIP_HEADER(read,To)},user)})\n";
+            $conf .= " same => n,GotoIf(\$[\"\${AIPBX_TO_USER}\" != \"\" & \"\${AIPBX_TO_USER}\" != \"s\"]?from-trunk-{$t_name},\${AIPBX_TO_USER},1)\n";
             $conf .= inboundNormLines($normRules, $t_name, 'caller');
             $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
             if ($is_busy_tone_wrapper) {

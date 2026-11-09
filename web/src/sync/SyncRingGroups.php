@@ -82,6 +82,7 @@ function __syncRingGroupsBody() {
             }
         }
         $channels = array_values(array_unique($channels));
+        $conf .= " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Ringing())\n";
 
         if (empty($channels)) {
             $conf .= " same => n,NoOp(Ring group {$id} has no numbers to ring)\n";

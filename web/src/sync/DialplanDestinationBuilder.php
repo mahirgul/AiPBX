@@ -88,6 +88,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                 $lines[] = " same => n,Set(CHANNEL(language)={$q_lang})";
             }
             $queue_timeout = intval($q['max_wait_seconds'] ?? 300) ?: 300;
+            $lines[] = " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Ringing())";
             $lines[] = " same => n,Queue({$q_name},tT,,,{$queue_timeout})";
             $lines = array_merge($lines, buildCallCenterFallbackLines($q['fallback_action'] ?? 'hangup', $q['fallback_target'] ?? ''));
             break;

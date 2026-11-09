@@ -247,12 +247,16 @@ function __syncAllTrunksBody() {
         if ($reg_enabled && $has_auth) {
             $server_host = ($from_domain !== '') ? $from_domain : ($ip . ':' . $port);
             $client_user = ($from_user !== '') ? $from_user : $auth_user;
+            $reg_contact_user = toCleanAscii(!empty($sip_map['contact_user']) ? $sip_map['contact_user'] : '');
             $conf .= "[{$t_name}-reg]\n";
             $conf .= "type=registration\n";
             $conf .= "transport={$transport}\n";
             $conf .= "outbound_auth={$t_name}-auth\n";
             $conf .= "server_uri=sip:{$server_host}\n";
             $conf .= "client_uri=sip:{$client_user}@{$server_host}\n";
+            if ($reg_contact_user !== '') {
+                $conf .= "contact_user={$reg_contact_user}\n";
+            }
             $conf .= "expiration={$reg_expire}\n";
             $conf .= "retry_interval={$reg_retry}\n";
             if ($outbound_proxy !== '') {

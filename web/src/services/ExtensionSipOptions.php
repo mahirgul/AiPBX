@@ -15,17 +15,19 @@ final class ExtensionSipOptions
     public const TRANSPORTS = ['udp', 'tcp', 'tls'];
     public const CODECS = ['opus', 'g722', 'alaw', 'ulaw', 'g729'];
     public const DTMF = ['rfc4733', 'inband', 'info', 'auto'];
-    public const SRTP = ['no', 'sdes'];
+    public const SRTP = ['no', 'sdes', 'dtls'];
     public const YES_NO = ['yes', 'no'];
 
     private const CHOICES = [
         'transport' => self::TRANSPORTS,
         'dtmf_mode' => self::DTMF,
         'media_encryption' => self::SRTP,
+        'media_encryption_optimistic' => self::YES_NO,
         'force_rport' => self::YES_NO,
         'rewrite_contact' => self::YES_NO,
         'rtp_symmetric' => self::YES_NO,
         'direct_media' => self::YES_NO,
+        'ice_support' => self::YES_NO,
     ];
 
     /**
@@ -48,6 +50,12 @@ final class ExtensionSipOptions
         $out['language'] = preg_match('/^[a-z]{2}(_[A-Z]{2})?$/D', $language) === 1 ? $language : '';
         $qualify = trim((string) ($post[self::PREFIX . 'qualify_frequency'] ?? ''));
         $out['qualify_frequency'] = ctype_digit($qualify) && (int) $qualify <= 3600 ? (string) (int) $qualify : '';
+        $mediaAddr = trim((string) ($post[self::PREFIX . 'media_address'] ?? ''));
+        $out['media_address'] = (filter_var($mediaAddr, FILTER_VALIDATE_IP) !== false || preg_match('/^[A-Za-z0-9]([A-Za-z0-9.-]{0,251}[A-Za-z0-9])?$/D', $mediaAddr) === 1) ? $mediaAddr : '';
+        $rtpTimeout = trim((string) ($post[self::PREFIX . 'rtp_timeout'] ?? ''));
+        $out['rtp_timeout'] = ctype_digit($rtpTimeout) && (int) $rtpTimeout <= 3600 ? (string) (int) $rtpTimeout : '';
+        $rtpKeepalive = trim((string) ($post[self::PREFIX . 'rtp_keepalive'] ?? ''));
+        $out['rtp_keepalive'] = ctype_digit($rtpKeepalive) && (int) $rtpKeepalive <= 3600 ? (string) (int) $rtpKeepalive : '';
         return $out;
     }
 
@@ -110,7 +118,7 @@ final class ExtensionSipOptions
             // allow= adds to what the template gave, so the list starts again.
             $conf .= "disallow=all\nallow={$v['allow']}\n";
         }
-        foreach (['dtmf_mode', 'media_encryption', 'force_rport', 'rewrite_contact', 'rtp_symmetric', 'direct_media', 'language'] as $name) {
+        foreach (['dtmf_mode', 'media_encryption', 'media_encryption_optimistic', 'force_rport', 'rewrite_contact', 'rtp_symmetric', 'direct_media', 'ice_support', 'language', 'media_address', 'rtp_timeout', 'rtp_keepalive'] as $name) {
             if ($v[$name] !== '') {
                 $conf .= "{$name}={$v[$name]}\n";
             }

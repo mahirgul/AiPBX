@@ -48,21 +48,49 @@ final class TransportAndSipOptionsTest extends TestCase
 
     public function testExtensionOptionsAreAFixedList(): void
     {
-        $v = ExtensionSipOptions::fromPost(['adv_transport' => 'tcp', 'adv_dtmf_mode' => 'evil', 'adv_force_rport' => 'no', 'adv_allow' => 'ulaw, opus,evil,ulaw', 'adv_language' => 'tr', 'adv_qualify_frequency' => '30', 'adv_media_encryption' => "sdes\nx=1"]);
+        $v = ExtensionSipOptions::fromPost([
+            'adv_transport' => 'tcp',
+            'adv_dtmf_mode' => 'evil',
+            'adv_force_rport' => 'no',
+            'adv_allow' => 'ulaw, opus,evil,ulaw',
+            'adv_language' => 'tr',
+            'adv_qualify_frequency' => '30',
+            'adv_media_encryption' => 'dtls',
+            'adv_ice_support' => 'yes',
+            'adv_media_encryption_optimistic' => 'yes',
+            'adv_media_address' => '192.168.1.50',
+            'adv_rtp_timeout' => '60',
+            'adv_rtp_keepalive' => '15',
+        ]);
         $this->assertSame('tcp', $v['transport']);
         $this->assertSame('', $v['dtmf_mode']);
         $this->assertSame('no', $v['force_rport']);
         $this->assertSame('ulaw,opus', $v['allow'], 'the order given stays');
-        $this->assertSame('', $v['media_encryption']);
+        $this->assertSame('dtls', $v['media_encryption']);
+        $this->assertSame('yes', $v['ice_support']);
+        $this->assertSame('yes', $v['media_encryption_optimistic']);
+        $this->assertSame('192.168.1.50', $v['media_address']);
+        $this->assertSame('60', $v['rtp_timeout']);
+        $this->assertSame('15', $v['rtp_keepalive']);
         $this->assertSame('', ExtensionSipOptions::fromPost(['adv_qualify_frequency' => '99999'])['qualify_frequency']);
         $this->assertSame('', ExtensionSipOptions::fromPost(['adv_language' => "tr\nx=1"])['language']);
+        $this->assertSame('', ExtensionSipOptions::fromPost(['adv_media_address' => "1.1.1.1\nx=1"])['media_address']);
+        $this->assertSame('', ExtensionSipOptions::fromPost(['adv_rtp_timeout' => '99999'])['rtp_timeout']);
     }
 
     public function testEndpointLinesComeOnlyFromOwnKeys(): void
     {
         $this->assertSame('', ExtensionSipOptions::endpointLines(['transport' => 'transport-udp', 'direct_media' => 'yes', 'secret' => 'x']), 'old rows do not reach the phone');
-        $lines = ExtensionSipOptions::endpointLines(['adv_transport' => 'tls', 'adv_allow' => 'opus,ulaw', 'adv_direct_media' => 'yes', 'adv_transport_evil' => 'x']);
-        $this->assertSame("transport=transport-tls\ndisallow=all\nallow=opus,ulaw\ndirect_media=yes\n", $lines);
+        $lines = ExtensionSipOptions::endpointLines([
+            'adv_transport' => 'tls',
+            'adv_allow' => 'opus,ulaw',
+            'adv_direct_media' => 'yes',
+            'adv_ice_support' => 'yes',
+            'adv_media_address' => '10.0.0.1',
+            'adv_rtp_timeout' => '30',
+            'adv_transport_evil' => 'x',
+        ]);
+        $this->assertSame("transport=transport-tls\ndisallow=all\nallow=opus,ulaw\ndirect_media=yes\nice_support=yes\nmedia_address=10.0.0.1\nrtp_timeout=30\n", $lines);
         $this->assertSame('', ExtensionSipOptions::endpointLines(['adv_transport' => 'evil']), 'a stored value is checked again');
         $this->assertSame('30', ExtensionSipOptions::qualifyFrequency(['adv_qualify_frequency' => '30']));
         $this->assertTrue(ExtensionSipOptions::isOwnKey('adv_allow'));

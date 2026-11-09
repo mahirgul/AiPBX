@@ -30,6 +30,12 @@ class ExtensionService {
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');
             $is_active = PBXHelper::boolFlag($data, 'is_active', 0);
+            $pickup_group = preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) ($data['pickup_group'] ?? '')));
+            $dnd_enabled = PBXHelper::boolFlag($data, 'dnd_enabled', 0);
+            $call_forward_number = preg_replace('/[^0-9+*#]/', '', trim((string) ($data['call_forward_number'] ?? '')));
+            $cf_busy_number = preg_replace('/[^0-9+*#]/', '', trim((string) ($data['cf_busy_number'] ?? '')));
+            $cf_noanswer_number = preg_replace('/[^0-9+*#]/', '', trim((string) ($data['cf_noanswer_number'] ?? '')));
+            $cf_noanswer_timeout = max(5, min(120, intval($data['cf_noanswer_timeout'] ?? 20)));
 
             if (!preg_match('/^\d{3,6}$/', $extension)) {
                 throw new \Exception(t('srv_ext.err_number'));
@@ -135,6 +141,12 @@ class ExtensionService {
                     'vm_always' => $vm_always,
                     'cid_internal' => $cid_internal,
                     'cid_external' => $cid_external,
+                    'pickup_group' => $pickup_group !== '' ? $pickup_group : null,
+                    'dnd_enabled' => $dnd_enabled,
+                    'call_forward_number' => $call_forward_number !== '' ? $call_forward_number : null,
+                    'cf_busy_number' => $cf_busy_number !== '' ? $cf_busy_number : null,
+                    'cf_noanswer_number' => $cf_noanswer_number !== '' ? $cf_noanswer_number : null,
+                    'cf_noanswer_timeout' => $cf_noanswer_timeout,
                     'is_active' => $is_active
                 ], 'id', $user_id);
                 // The SIP secret must follow the panel password: SyncExtensions
@@ -197,6 +209,12 @@ class ExtensionService {
                     'vm_always' => $vm_always,
                     'cid_internal' => $cid_internal,
                     'cid_external' => $cid_external,
+                    'pickup_group' => $pickup_group !== '' ? $pickup_group : null,
+                    'dnd_enabled' => $dnd_enabled,
+                    'call_forward_number' => $call_forward_number !== '' ? $call_forward_number : null,
+                    'cf_busy_number' => $cf_busy_number !== '' ? $cf_busy_number : null,
+                    'cf_noanswer_number' => $cf_noanswer_number !== '' ? $cf_noanswer_number : null,
+                    'cf_noanswer_timeout' => $cf_noanswer_timeout,
                     'is_active' => $is_active,
                     'created_at' => date('Y-m-d H:i:s')
                 ]);
