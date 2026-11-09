@@ -19,6 +19,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📺 [Video: Menu tour](https://www.youtube.com/@aipbx) | Every screen of the portal on YouTube: [English](https://www.youtube.com/watch?v=xU0BYN6AKE4) · [Türkçe](https://www.youtube.com/watch?v=Teol14NgXbY) · [Deutsch](https://www.youtube.com/watch?v=8whV_DY3ZqQ) |
 | 🖥️ [Portal basics](portal.md) | The *Apply* workflow, edit dialogs, ordering lists, copying records |
 | 💾 [Backups, recovery & rollback](backup-and-rollback.md) | Reproducible daily backups (`aipbx-backup`), disaster recovery restore commands, and zero-downtime automated upgrade rollback (`aipbx-update`) |
+| 🛠️ [CLI & Server commands](cli.md) | Terminal utilities (`aipbx-update`, `aipbx-backup`, `aipbx-restore`, `aipbx-selftest`, `aipbx-cert`, SSO recovery) |
 | 🏗️ [Architecture](../ARCHITECTURE.md) | Components, traffic flow, security model |
 
 ## 📞 Telephony
