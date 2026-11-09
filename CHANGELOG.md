@@ -5,6 +5,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.10
+
+- **Cloud STT validation scoping:** Restricted `base_url` and `model` configuration payload attributes strictly to the `openai_compat` provider in Cloud Speech-to-Text services, preserving clean payload schemas for standard providers and ensuring complete test suite compliance.
+
 ## 1.72.9
 
 - **Unified tabbed extension modal:** Reorganized the extension edit and create dialog into a modern 5-tab interface (`Basic Settings`, `Call Routing & Forwarding`, `Groups & Pickup`, `Voicemail`, and `Advanced SIP & Media`), adopting the standard portal modal tabs pattern matching trunks and queues.
