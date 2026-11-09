@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.11
+
+- **Security hardening across authentication and credential boundaries:** Fixed a chat authentication token expiry bug where expired tokens were accepted while cached in memory, enforced persistent-only encryption keys in SecretBox to prevent credential loss across service restarts, and closed an outbound dialplan leakage loophole when all configured outbound routes are disabled.
+- **Security regression test suites:** Added comprehensive automated regression tests covering token revocation, non-canonical user identifier reuse, secret box key permissions (0600), dialplan isolation, and partial upload cleanup on connection drops.
+- **Server CLI and administration guide:** Added dedicated documentation (`docs/cli.md`) covering all native command-line utilities (`aipbx-update`, `aipbx-backup`, `aipbx-restore`, `aipbx-selftest`, `aipbx-cert`, and SSO recovery).
+- **BulkVS SMS/MMS provider support:** Added BulkVS to the official community SMS/MMS plugin (v1.2.0) in the plugin catalog with support for outbound messaging and inbound JSON webhooks.
+
 ## 1.72.10
 
 - **Cloud STT validation scoping:** Restricted `base_url` and `model` configuration payload attributes strictly to the `openai_compat` provider in Cloud Speech-to-Text services, preserving clean payload schemas for standard providers and ensuring complete test suite compliance.
