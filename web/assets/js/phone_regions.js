@@ -14,9 +14,13 @@ function phonesEditRegion(id) {
     UIHelper.openOverlayModal('phoneRegionModal');
 }
 
-/** Keep sources input accessible for IP entry even when a domain is specified. */
+/** Addresses for SIP on 443 count only for a region without a name of its own (PhoneRegionService::sip443Name). */
 function regionSourcesFollowName() {
     const sources = document.getElementById('region_sip443_sources');
-    if (sources) sources.disabled = false;
+    const host = document.getElementById('region_sip_server').value.trim().toLowerCase();
+    // As the server's filter_var(FILTER_VALIDATE_IP): four numbers up to 255, or an IPv6 address.
+    const v4 = host.split('.');
+    const isIp = (v4.length === 4 && v4.every((n) => /^\d{1,3}$/.test(n) && Number(n) <= 255)) || host.includes(':');
+    sources.disabled = host !== '' && !isIp && host !== (sources.dataset.portal || '');
 }
 document.addEventListener('input', (e) => { if (e.target && e.target.id === 'region_sip_server') regionSourcesFollowName(); });

@@ -89,7 +89,7 @@ final class PhoneRegionTest extends TestCase
         $out = PhoneRegionService::validate(['sip443' => '1', 'sip_server' => 'sip1.example.org', 'transport' => 'udp', 'sip_port' => '5060']);
         $this->assertSame(['1', 'tls', '443'], [$out['sip443'], $out['transport'], $out['sip_port']], 'these phones talk TLS to 443');
         $this->assertSame('sip1.example.org', PhoneRegionService::sip443Name($out));
-        $this->assertSame('10.0.0.1', PhoneRegionService::validate(['sip443' => '1', 'sip_server' => 'sip1.example.org', 'sip443_sources' => '10.0.0.1'])['sip443_sources'], 'a named region preserves addresses entered');
+        $this->assertSame('', PhoneRegionService::validate(['sip443' => '1', 'sip_server' => 'sip1.example.org', 'sip443_sources' => '10.0.0.1'])['sip443_sources'], 'a named region keeps no addresses it would never use');
         $this->assertSame('', PhoneRegionService::sip443Name(['sip_server' => '10.0.0.5']), 'an IP address names nothing');
         $this->assertSame('1', PhoneRegionService::validate(['sip443' => '1', 'sip443_sources' => '91.113.163.218'])['sip443']);
         $this->assertSame('0', PhoneRegionService::validate([])['sip443']);
@@ -100,12 +100,12 @@ final class PhoneRegionTest extends TestCase
     public function testNginxListsTakeNamesAndAddressesOfSip443RegionsOnly(): void
     {
         $add = getDB()->prepare('INSERT INTO pbx_phone_regions (name, sip_server, sip443, sip443_sources) VALUES (?, ?, ?, ?)');
-        $add->execute(['zz named', 'SIP1.example.org', 1, '10.9.9.9']);   // both name and addresses are included
+        $add->execute(['zz named', 'SIP1.example.org', 1, '10.9.9.9']);   // a name wins; its addresses are not needed
         $add->execute(['zz named again', 'sip1.example.org', 1, '']);     // the same name once
         $add->execute(['zz by address', '10.0.0.5', 1, '91.113.163.218, 10.1.0.0/16']);
         $add->execute(['zz off', 'sip9.example.org', 0, '10.7.7.7']);     // not on 443: in no list
         PhoneRegionService::resetCache();
-        $this->assertSame(['name sip1.example.org', 'addr 91.113.163.218', 'addr 10.1.0.0/16', 'addr 10.9.9.9'], PhoneRegionService::sip443Lines());
+        $this->assertSame(['name sip1.example.org', 'addr 91.113.163.218', 'addr 10.1.0.0/16'], PhoneRegionService::sip443Lines());
     }
 
     public function testSavingAndDeletingA443RegionRewritesNginxsListsAndWaitsOnApply(): void
