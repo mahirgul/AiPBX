@@ -3,7 +3,7 @@
 # container, on an installed system).
 #
 # Publishes a fake release v99.0.0 to a local bare repository: it adds a migration that
-# creates a table and has page tests that fail. aipbx-update must apply it, fail the
+# creates a table and then fails its migration. aipbx-update must attempt it, fail the
 # verification, and leave the old code and the old database: no probe table, and a row
 # written just before the update still there.
 #
@@ -20,6 +20,7 @@ git_in() { git -C "$INSTALL_DIR" "$@"; }
 BEFORE_COMMIT="$(git_in rev-parse HEAD)"
 BEFORE_VERSION="$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION")"
 ORIGIN="$(git_in remote get-url origin)"
+KEY_BEFORE="$(sha256sum /var/lib/aipbx/settings.key 2>/dev/null || true)"
 cleanup() {
     git_in remote set-url origin "$ORIGIN"
     git_in tag -d v99.0.0 >/dev/null 2>&1
@@ -34,13 +35,15 @@ git clone -q "$WORK/origin.git" "$WORK/bad"
     cd "$WORK/bad" || exit 1
     git checkout -q -B main "$BEFORE_COMMIT"
     echo 99.0.0 > VERSION
-    printf '%s\n' '<?php' 'exit(1);' > web/bin/smoke.php
     cat > web/db/migrations/29990101000000_e2e_rollback_probe.php <<'PHP'
 <?php
 use Phinx\Migration\AbstractMigration;
 final class E2eRollbackProbe extends AbstractMigration
 {
-    public function up(): void { $this->execute('CREATE TABLE e2e_rollback_probe (id INT PRIMARY KEY)'); }
+    public function up(): void {
+        $this->execute('CREATE TABLE e2e_rollback_probe (id INT PRIMARY KEY)');
+        throw new RuntimeException('E2E deliberate migration failure after DDL');
+    }
     public function down(): void { $this->execute('DROP TABLE e2e_rollback_probe'); }
 }
 PHP
@@ -63,6 +66,14 @@ now_version="$(tr -d '[:space:]' < "$INSTALL_DIR/VERSION")"
 if [[ "$now_version" == "$BEFORE_VERSION" ]]; then pass "VERSION is $BEFORE_VERSION"; else fail "VERSION is $BEFORE_VERSION" "it is $now_version"; fi
 if [[ "$(db "SHOW TABLES LIKE 'e2e_rollback_probe'")" == "" ]]; then pass "the new release's table is gone"; else fail "the new release's table is gone"; fi
 if [[ "$(db "SELECT setting_value FROM sys_settings WHERE setting_key = 'e2e_rollback_marker'")" == "kept" ]]; then pass "the database has its data"; else fail "the database has its data"; fi
+if [[ -z "$(git_in status --porcelain --untracked-files=no)" ]]; then pass "rollback leaves managed code clean"; else fail "rollback leaves managed code clean"; fi
+if [[ -n "$KEY_BEFORE" ]]; then
+    if [[ "$(sha256sum /var/lib/aipbx/settings.key 2>/dev/null || true)" == "$KEY_BEFORE" ]]; then
+        pass "rollback preserves the settings encryption key"
+    else
+        fail "rollback preserves the settings encryption key"
+    fi
+fi
 for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
     if systemctl is-active --quiet "$svc"; then pass "$svc runs"; else fail "$svc runs"; fi
 done

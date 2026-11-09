@@ -16,6 +16,9 @@ on:
   pull_request:
     paths:
       - 'install.sh'
+      - 'scripts/e2e/**'
+      - 'web/src/secret_box.php'
+      - 'chat/auth.go'
       - 'conf/**'
       - 'web/bin/**'
       - 'web/db/**'
@@ -29,6 +32,9 @@ on:
     tags: [ 'v*' ]
     paths:
       - 'install.sh'
+      - 'scripts/e2e/**'
+      - 'web/src/secret_box.php'
+      - 'chat/auth.go'
       - 'conf/**'
       - 'web/bin/**'
       - 'web/db/**'
@@ -106,6 +112,19 @@ jobs:
           TOKEN="$(sudo php scripts/e2e/meeting_setup.php create | tail -1)"
           CHROME_BIN="$CHROME" node scripts/e2e/meeting_call.mjs https://127.0.0.1 "$TOKEN"
           sudo php scripts/e2e/meeting_setup.php clean
+
+      - name: Chat access and attachment security
+        run: sudo env AIPBX_E2E=1 php scripts/e2e/chat_security.php
+
+      - name: Real outbound call isolation
+        timeout-minutes: 10
+        run: sudo bash scripts/e2e/call_flows.sh
+
+      - name: Failed release restores code and database
+        timeout-minutes: 15
+        run: |
+          sudo git config --global --add safe.directory /opt/aipbx
+          sudo bash scripts/e2e/rollback.sh
 
       - name: Logs on failure or cancellation
         # `cancelled()` as well as `failure()`: the job timeout cancels rather

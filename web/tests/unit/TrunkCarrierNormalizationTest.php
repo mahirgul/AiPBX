@@ -180,7 +180,7 @@ final class TrunkCarrierNormalizationTest extends TestCase
         $db = getDB();
         $db->beginTransaction();
         try {
-            $db->exec('UPDATE pbx_outbound_routes SET is_active = 0');
+            $db->exec('DELETE FROM pbx_outbound_routes');
             $db->exec('UPDATE pbx_trunks SET is_active = 0');
             $db->exec("INSERT INTO pbx_trunks (trunk_name, title, ip_address, is_active, max_channels, max_calls_per_minute, sort_order)
                        VALUES ('fbtest', 'FB test', '203.0.113.9', 1, 2, 5, -100)");

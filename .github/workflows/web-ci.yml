@@ -149,7 +149,7 @@ jobs:
       - name: go vet
         run: go vet ./...
       - name: go test
-        run: go test ./...
+        run: go test -race ./...
       - name: Static build (CGO off — also runs on older glibc, e.g. Rocky 8)
         run: CGO_ENABLED=0 go build -o /dev/null .
 
@@ -161,9 +161,9 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: '3.12'
-      # The text rules (textnorm) need num2words; it is small and pure Python.
-      - name: Install num2words
-        run: python -m pip install 'num2words>=0.5.14,<0.6'
+      # Text rules need num2words; numpy enables fake audio/model tests without downloading models.
+      - name: Install Python test dependencies
+        run: python -m pip install 'num2words>=0.5.14,<0.6' 'numpy>=2,<3'
       # Fake model backend: no torch or model download needed.
       - name: Unit tests
         run: python -m unittest discover -v ai/tests

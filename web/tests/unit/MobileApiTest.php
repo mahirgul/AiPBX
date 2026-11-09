@@ -82,6 +82,38 @@ final class MobileApiTest extends TestCase
         }
     }
 
+    public function testDisablingUserImmediatelyRejectsAnIssuedToken(): void
+    {
+        $token = generateMobileToken(self::$testUserId, 3600);
+        $this->assertNotNull(validateMobileToken($token));
+        $db = getDB();
+        try {
+            $db->prepare('UPDATE sys_users SET is_active = 0 WHERE id = ?')->execute([self::$testUserId]);
+            $this->assertNull(validateMobileToken($token));
+        } finally {
+            $db->prepare('UPDATE sys_users SET is_active = 1 WHERE id = ?')->execute([self::$testUserId]);
+        }
+    }
+
+    public function testChangingSignedExpiryCannotExtendTokenLifetime(): void
+    {
+        $token = generateMobileToken(self::$testUserId, 3600);
+        [$id, $expiry, $signature] = explode(':', base64_decode($token));
+        $forged = base64_encode($id . ':' . ((int)$expiry + 86400) . ':' . $signature);
+        $this->assertNull(validateMobileToken($forged));
+        $this->assertNotNull(validateMobileToken($token));
+    }
+
+    public function testNonCanonicalUserIdsCannotReuseAValidSignature(): void
+    {
+        $token = generateMobileToken(self::$testUserId, 3600);
+        [$id, $expiry, $signature] = explode(':', base64_decode($token));
+        foreach (['0' . $id, '+' . $id, ' ' . $id, $id . '.0', $id . 'junk'] as $alias) {
+            $this->assertNull(validateMobileToken(base64_encode($alias . ':' . $expiry . ':' . $signature)), $alias);
+        }
+        $this->assertNotNull(validateMobileToken($token));
+    }
+
     public function testUsernameMatchBeatsExtensionMatch(): void
     {
         $db = getDB();

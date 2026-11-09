@@ -41,12 +41,18 @@ final class DialplanReviewFixesTest extends TestCase
 
     public function testCallForwardCodeTakesElevenDigitNumbers(): void
     {
-        syncFeatureCodes();
-        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_featurecodes.conf');
-        if (!str_contains($conf, 'CFTARGET')) {
-            $this->markTestSkipped('call forward code not active in this database');
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("DELETE FROM pbx_feature_codes WHERE feature_key = 'cf_set' OR code = '*9199'");
+            $db->exec("INSERT INTO pbx_feature_codes (feature_key, title, code, is_active) VALUES ('cf_set', 'Test call forwarding', '*9199', 1)");
+            syncFeatureCodes();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_featurecodes.conf');
+            $this->assertStringContainsString('Read(CFTARGET,,20,', $conf);
+            $this->assertStringNotContainsString('Read(CFTARGET,,10,', $conf);
+        } finally {
+            $db->rollBack();
+            syncFeatureCodes();
         }
-        $this->assertStringContainsString('Read(CFTARGET,,20,', $conf);
-        $this->assertStringNotContainsString('Read(CFTARGET,,10,', $conf);
     }
 }

@@ -32,6 +32,7 @@ prepare() {
     lxc restore "$C" "$snap" || return 1
     lxc start "$C" 2>/dev/null || true
     for _ in $(seq 1 60); do in_c 'getent hosts archive.ubuntu.com >/dev/null' 2>/dev/null && break; sleep 2; done
+    in_c 'git config --global --add safe.directory /opt/aipbx' || return 1
     lxc file push "$BUNDLE" "$C/root/aipbx.bundle" || return 1
     lxc file push "$REPO/scripts/e2e/checks.sh" "$C/root/e2e-checks.sh" || return 1
     lxc file push "$REPO/scripts/e2e/call_flows.sh" "$C/root/e2e-call-flows.sh" || return 1

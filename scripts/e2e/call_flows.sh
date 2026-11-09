@@ -65,8 +65,8 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 python3 "$WORK/sink.py" "$SINK_LOG" & SINK_PID=$!
-for _ in $(seq 1 20); do ss -lun | grep -q '127.0.0.1:5099 ' && break; sleep 0.2; done
-ss -lun | grep -q '127.0.0.1:5099 ' || { echo "FAIL  SIP sink could not listen on 127.0.0.1:5099"; exit 1; }
+for _ in $(seq 1 20); do ss -lun | grep '127.0.0.1:5099 ' >/dev/null && break; sleep 0.2; done
+ss -lun | grep '127.0.0.1:5099 ' >/dev/null || { echo "FAIL  SIP sink could not listen on 127.0.0.1:5099"; exit 1; }
 
 db "UPDATE pbx_outbound_routes SET is_active = 0"   # only the test route may match
 db "INSERT INTO pbx_trunks (trunk_name, title, ip_address, port, transport, connection_mode, codecs, is_active)
@@ -190,6 +190,17 @@ apply
 dial mobile 8123457 >/dev/null
 got="$(tail -n 1 "$SINK_LOG.from")"
 if [[ "$got" == "905550000001" ]]; then pass "no override: the trunk number goes out"; else fail "no override: the trunk number goes out" "carrier saw $got"; fi
+
+# 10. Disabled routes and a different outbound group must never reach the carrier.
+db "UPDATE pbx_outbound_routes SET is_active = 0 WHERE route_name LIKE 'E2E call flows%'"
+apply
+got="$(dial mobile 8123458)"
+if [[ "$got" == "(nothing)" ]]; then pass "disabled routes cannot place outbound calls"; else fail "disabled routes cannot place outbound calls" "carrier got $got"; fi
+
+db "UPDATE pbx_outbound_routes SET is_active = 1, route_group = 2 WHERE route_name LIKE 'E2E call flows%'"
+apply
+got="$(dial mobile 8123459)"
+if [[ "$got" == "(nothing)" ]]; then pass "group 1 cannot use group 2 routes"; else fail "group 1 cannot use group 2 routes" "carrier got $got"; fi
 
 echo "== $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

@@ -29,41 +29,48 @@ final class SecretBox
         if ($env !== '') {
             return self::$key = hash_hkdf('sha256', $env, SODIUM_CRYPTO_SECRETBOX_KEYBYTES, 'aipbx-settings');
         }
-        $file = self::KEY_FILE;
-        $raw = is_readable($file) ? (string) @file_get_contents($file) : '';
-        if (strlen($raw) !== SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
-            $dir = dirname($file);
-            $canWrite = file_exists($file) ? is_writable($file) : (is_dir($dir) && is_writable($dir));
-            if ($canWrite) {
-                $old = umask(0077);
-                $fp = @fopen($file, 'c+');
-                if ($fp !== false && flock($fp, LOCK_EX)) {
-                    $existing = stream_get_contents($fp);
-                    if (is_string($existing) && strlen($existing) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
-                        $raw = $existing;
-                    } else {
-                        $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-                        ftruncate($fp, 0);
-                        rewind($fp);
-                        fwrite($fp, $raw);
-                        fflush($fp);
-                    }
-                    flock($fp, LOCK_UN);
-                    fclose($fp);
-                } else {
-                    if ($fp !== false) {
-                        fclose($fp);
-                    }
-                    $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-                    error_log('[SecretBox] WARNING: could not lock and persist key to ' . $file . '; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
-                }
-                umask($old);
-            } else {
-                $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
-                error_log('[SecretBox] WARNING: ' . $file . ' is not writable; using temporary in-memory key (encrypted cloud settings will not persist across service restarts).');
-            }
+        return self::$key = self::persistentKey(self::KEY_FILE);
+    }
+
+    /** Never encrypt with an ephemeral key: stored credentials would be lost. */
+    private static function persistentKey(string $file): string
+    {
+        $existing = @file_get_contents($file);
+        if (is_string($existing) && strlen($existing) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+            return $existing;
         }
-        return self::$key = $raw;
+        $old = umask(0077);
+        try {
+            $fp = @fopen($file, 'c+');
+            if ($fp === false) {
+                throw new RuntimeException('Cannot open the settings encryption key.');
+            }
+            try {
+                if (!flock($fp, LOCK_EX)) {
+                    throw new RuntimeException('Cannot lock the settings encryption key.');
+                }
+                $raw = stream_get_contents($fp);
+                if ($raw === false) {
+                    throw new RuntimeException('Cannot read the settings encryption key.');
+                }
+                if (strlen($raw) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+                    return $raw;
+                }
+                if ($raw !== '') {
+                    throw new RuntimeException('The settings encryption key is damaged.');
+                }
+                $raw = random_bytes(SODIUM_CRYPTO_SECRETBOX_KEYBYTES);
+                if (fwrite($fp, $raw) !== strlen($raw) || !fflush($fp) || !fsync($fp)) {
+                    throw new RuntimeException('Cannot persist the settings encryption key.');
+                }
+                return $raw;
+            } finally {
+                flock($fp, LOCK_UN);
+                fclose($fp);
+            }
+        } finally {
+            umask($old);
+        }
     }
 
     public static function encrypt(string $plain): string

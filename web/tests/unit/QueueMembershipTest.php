@@ -138,6 +138,30 @@ final class QueueMembershipTest extends TestCase
         $this->assertStringNotContainsString('member => Local/2002@from-internal-pbx/n', $confContent);
     }
 
+    public function testDisablingQueueRemovesItsGeneratedConfiguration(): void
+    {
+        $_SESSION['csrf_token'] = 'test-token';
+        $_SESSION['user_id'] = 1;
+        $name = 'zz_disabled_queue_test';
+        try {
+            $result = QueueService::saveQueue([
+                'csrf_token' => 'test-token', 'queue_name' => $name,
+                'title' => 'Disabled queue test', 'strategy' => 'ringall',
+                'member_mode' => ['2001' => 'static'], 'is_active' => 1,
+            ]);
+            $this->assertTrue($result['success']);
+            syncAllQueues();
+            $file = ASTERISK_PBX_DIR . '/queues_pbx.conf';
+            $this->assertStringContainsString('[' . $name . ']', file_get_contents($file));
+            getDB()->prepare('UPDATE pbx_queues SET is_active = 0 WHERE queue_name = ?')->execute([$name]);
+            syncAllQueues();
+            $this->assertStringNotContainsString('[' . $name . ']', file_get_contents($file));
+        } finally {
+            getDB()->prepare('DELETE FROM pbx_queues WHERE queue_name = ?')->execute([$name]);
+            syncAllQueues();
+        }
+    }
+
     public function testQueuePauseAndUnpauseHelper(): void
     {
         $db = getDB();

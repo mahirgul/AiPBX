@@ -94,11 +94,6 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 
 	authCacheSweep.Do(func() { go sweepAuthCache() })
 
-	// Check cache
-	if user, ok := loadAuthCache(tokenStr); ok {
-		return user, nil
-	}
-
 	decodedBytes, err := base64.StdEncoding.DecodeString(tokenStr)
 	if err != nil {
 		return nil, fmt.Errorf("invalid base64 encoding")
@@ -124,6 +119,11 @@ func ValidateBearerToken(tokenStr string, secretKey string) (*User, error) {
 
 	if time.Now().Unix() > expiresAt {
 		return nil, fmt.Errorf("token expired")
+	}
+
+	// Check cache
+	if user, ok := loadAuthCache(tokenStr); ok {
+		return user, nil
 	}
 
 	userID, err := strconv.Atoi(userIDStr)

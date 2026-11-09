@@ -41,6 +41,8 @@ function __syncOutboundDialplanBody() {
 
     $db = getDB();
     $routes = $db->query("SELECT * FROM pbx_outbound_routes WHERE is_active = 1 ORDER BY sort_order ASC, id ASC")->fetchAll();
+    // A configured but disabled route is an explicit restriction, not a fresh install.
+    $hasConfiguredRoutes = (int)$db->query('SELECT COUNT(*) FROM pbx_outbound_routes')->fetchColumn() > 0;
     $external_dial_timeout = intval(getSystemSetting('pjsip_external_dial_timeout', '60'));
 
 
@@ -249,10 +251,10 @@ function __syncOutboundDialplanBody() {
             $route_blocks[(int)$r['id']] = [$pattern, substr($conf, $block_start)];
         }
     } else {
-        $fallback_trunk = AsteriskHelper::getPrimaryTrunkName();
+        $fallback_trunk = $hasConfiguredRoutes ? null : AsteriskHelper::getPrimaryTrunkName();
         $conf .= "; Fallback Outbound Route\n";
         if ($fallback_trunk === null) {
-            $conf .= "; No trunk defined yet - outbound calling is disabled.\n";
+            $conf .= "; No eligible route or trunk - outbound calling is disabled.\n";
             $conf .= "exten => _NXXXXXX,1,NoOp(No trunk configured)\n";
             $conf .= " same => n,Congestion(10)\n";
             $conf .= " same => n,Hangup(34)\n\n";
