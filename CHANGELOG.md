@@ -5,6 +5,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.9
+
+- **Unified tabbed extension modal:** Reorganized the extension edit and create dialog into a modern 5-tab interface (`Basic Settings`, `Call Routing & Forwarding`, `Groups & Pickup`, `Voicemail`, and `Advanced SIP & Media`), adopting the standard portal modal tabs pattern matching trunks and queues.
+- **Advanced SIP and RTP media controls for extensions:** Extensions can now configure individual RTP and media parameters directly from the portal, including `direct_media`, `ice_support` (WebRTC / NAT traversal), `media_address` (custom RTP endpoint IP), `media_encryption` (None, SRTP, DTLS), `media_encryption_optimistic`, custom RTP timeout / keepalive intervals, and customized codec priority lists.
+- **Queue recording one-way audio stream fix:** Resolved an audio collision in queue recordings where the agent voice stream was silenced while MixMonitor was active, caused by redundant `monitor-format` definitions in Asterisk queue configurations.
+- **Registration trunk DID recovery from SIP To header:** Inbound calls arriving on registration trunks via default `s` extension (common with providers like VoIP.ms and Twilio) now parse the original dialed DID from the SIP `To:` header URI, accurately routing calls to configured DID destinations instead of fallback catch-all rules.
+- **Early 180 Ringing for queues and ring groups:** Added early `Ringing()` signalling before entering Queues and Ring Groups so external SIP carriers receive timely 180 Ringing indications, avoiding carrier premature dropouts before agents answer.
+- **Configurable registration contact user on trunks:** Outbound SIP trunk registrations can now specify an explicit `contact_user` parameter for carriers that require a fixed contact user in REGISTER headers.
+- **NAT and audio troubleshooting handbook:** Added comprehensive NAT troubleshooting documentation covering one-way audio diagnostics, RTP symmetric media requirements, and STUN/ICE recommendations.
+
 ## 1.72.8
 
 - **Queue supervisor and agent pause consistency:** Agent statuses are now tracked per queue in `/cc-supervisor`, preventing status contamination across queues. Dynamically joining a queue preserves an agent's active pause, and logging out of a single queue does not clear pause state while the agent remains logged into other queues.
