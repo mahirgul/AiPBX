@@ -23,6 +23,30 @@ final class MsTeamsTest extends TestCase
         $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'teams_%'");
     }
 
+    public function testAutomaticEventNotificationsRespectSettingsAndDestinationPolicy(): void
+    {
+        $sent=[];
+        MsTeamsService::$webhookHttp=static function($url,$payload,$resolve) use (&$sent): array {
+            $sent[]=$payload; return ['success'=>true];
+        };
+        $handler=require dirname(__DIR__,3).'/plugins/ms-teams/events/handler.php';
+        try {
+            MsTeamsRepository::saveSettings(['teams_webhook_enabled'=>'1','teams_webhook_url'=>'https://8.8.8.8/test']);
+            foreach (['call.missed','fax.received','voicemail.created'] as $event) {
+                $handler($event,['data'=>['caller'=>'<script>test</script>','extension'=>'101']],[]);
+            }
+            $this->assertCount(3,$sent);
+            $this->assertSame('&lt;script&gt;test&lt;/script&gt;', $sent[0]['sections'][0]['facts'][0]['value']);
+            MsTeamsRepository::saveSettings(['teams_notify_missed_calls'=>'0']);
+            $handler('call.missed',[],[]); $this->assertCount(3,$sent);
+            MsTeamsRepository::saveSettings(['teams_webhook_enabled'=>'0']);
+            $handler('fax.received',[],[]); $this->assertCount(3,$sent);
+            MsTeamsRepository::saveSettings(['teams_webhook_enabled'=>'1','teams_webhook_url'=>'https://127.0.0.1/private']);
+            try { $handler('fax.received',[],[]); $this->fail('Internal webhook accepted'); }
+            catch (RuntimeException $e) { $this->assertCount(3,$sent); }
+        } finally { MsTeamsService::$webhookHttp=null; }
+    }
+
     public function testDefaultSettingsContainExpectedKeys(): void
     {
         $settings = MsTeamsRepository::currentSettings();

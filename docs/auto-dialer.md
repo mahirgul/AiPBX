@@ -1,6 +1,6 @@
 # Auto dialer & AMD campaigns (Plugin)
 
-> 🔌 **Plugin (`auto-dialer`)**: Optional plugin from the official catalog. Enable it under **Integration → Plugin Catalog** (see [Plugin system & developer guide](plugin-development.md)).
+> 🔌 **Plugin (`auto-dialer`)**: Community plugin (AiPBX 1.72.12+) from the community catalog. Install and enable it under **Integration → Plugin Catalog** (see [Plugin system & developer guide](plugin-development.md)).
 
 **Integration → Auto Dialer & AMD Campaigns** (`/plugins/auto-dialer`) runs automated outbound calling campaigns with Asterisk **Answering Machine Detection (`AMD()`)**, queue free-agent pacing, optional voicemail audio drop, and real-time call result tracking.
 
@@ -8,7 +8,7 @@
 
 ## 🗄️ Database Tables (`plg_` Sandbox)
 
-When the `auto-dialer` plugin is enabled, `PluginManager` automatically applies [`plugins/auto-dialer/schema.sql`](../plugins/auto-dialer/schema.sql) and creates two isolated `plg_*` tables:
+When the `auto-dialer` plugin is enabled, `PluginManager` automatically applies [`plugins/auto-dialer/schema.sql`](https://github.com/mahirgul/aipbx-plugins/blob/main/plugins/community/auto-dialer/schema.sql) and creates two isolated `plg_*` tables:
 
 | Table | Purpose |
 |---|---|
@@ -38,3 +38,28 @@ When a campaign's target destination is a **Call Queue (`queue`)** and **Queue F
 - 🔍 Before originating new calls, the worker inspects `queue show <queue_name>` in Asterisk.
 - 🧮 It counts logged-in, unpaused, idle (`Not in use`) agents and subtracts any callers already waiting in that queue.
 - 🛡️ Concurrency is automatically capped to the number of free agents so customers are never called when no agent is available to talk to them.
+
+
+## Active calls and callback correlation
+
+Answered calls retain their concurrency slot until hangup; they use the `answered` status while the
+conversation is active. The generated outbound leg installs a hangup handler so routing into another
+context does not lose the completion callback. Callbacks carry the attempt number from the generated
+Local channel and are ignored when it differs from the current attempt. Failure updates also check
+the current status and attempt before rescheduling a number.
+
+After updating, apply the PBX configuration before starting campaigns so the dialplan supplies the new
+callback parameter. Older callbacks without an attempt number are ignored. Recovery checks live Local
+channels before releasing a stale slot and retains slots when the Asterisk CLI cannot be queried.
+
+
+## Moving from the bundled version
+
+Existing bundled installations move to `/var/lib/aipbx/plugins/auto-dialer` during the next core
+upgrade, using an offline package. The migration preserves campaign and number tables, settings,
+API tokens and enabled/worker flags. It does not reset campaigns or place calls itself. The installer
+stops the event/campaign worker before migration and restarts it after configuration generation.
+New installations install the plugin from the community catalog. Disabling preserves campaign data;
+uninstalling drops the plugin tables. Later updates come from the plugin catalog.
+
+Callback authentication requires exact loopback origin and per-installation HTTP Basic credentials. Apply configuration before starting campaigns after upgrading. The installer performs file migration as `www-data`, avoiding privileged writes into plugin-controlled directories.

@@ -1413,6 +1413,12 @@ info "Applying database migrations..."
     || error "Database migrations failed (see output above)"
 # seed.sql uses INSERT IGNORE: safe on a migrated or already-seeded database.
 mysql asterisk < "$INSTALL_DIR/db/seed.sql" || error "Loading seed data failed"
+# Stop campaign/event work until the moved plugins and their dialplan are ready.
+systemctl stop aipbx-webhook-worker.service 2>/dev/null || true
+# Move formerly bundled plugins before discovering hooks; no network required.
+install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/plugins
+runuser -u www-data -- php "$INSTALL_DIR/web/bin/migrate-bundled-plugins.php" || error "Bundled plugin transition failed"
+
 # Ensure plg_* tables exist for all enabled plugins (schema.sql) on install/upgrade
 php -r "require '$INSTALL_DIR/web/config.php'; if (is_file('$INSTALL_DIR/web/src/core/PluginManager.php')) { require_once '$INSTALL_DIR/web/src/core/PluginManager.php'; PluginManager::syncAllEnabledPluginSchemas(); }" || warn "One or more plugin schema syncs reported an issue"
 
@@ -1674,7 +1680,6 @@ WantedBy=multi-user.target
 WEBHOOKUNIT
 systemctl daemon-reload
 systemctl enable aipbx-webhook-worker.service >/dev/null 2>&1 || true
-systemctl restart aipbx-webhook-worker.service 2>/dev/null || true
 # Network -> VPN Server and VPN Client: one unit per server or connection. All of it is
 # under /var/lib/aipbx-vpn, root only. An OpenVPN or WireGuard of the server's own
 # (openvpn-client@..., wg-quick@...) is a different unit and is not touched.
@@ -2116,6 +2121,8 @@ info "Syncing database endpoints and dialplan to Asterisk..."
 # if this fails they cannot call until the configuration is applied from the portal.
 php /var/www/html/src/asterisk_sync.php \
     || warn "Asterisk configuration sync reported an error — open the portal and apply the pending changes"
+
+systemctl restart aipbx-webhook-worker.service 2>/dev/null || true
 
 ok "Asterisk configured"
 

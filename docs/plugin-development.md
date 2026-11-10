@@ -2,8 +2,8 @@
 
 AiPBX includes a modular **Plugin Catalog & Custom `.zip` Plugin Engine** (`PluginManager`) integrated with `/api/v1/*` and Outbound Webhooks.
 
-- 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `oidc-auth`, `saml-auth`, `ms-teams`, `web-widgets`, `auto-dialer`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`, `ai-voicemail`. Community plugin bundled with AiPBX: `ai-assistant` by Gregory Merriweather ([@shido6](https://github.com/shido6)) (his signaling capture is part of AiPBX itself since 1.50.8). Fresh installations start lean; administrators enable only the plugins they need under **Integration → Plugin Catalog** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
-- 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`) and installed as an uploaded `.zip`. The plugins above are maintained only here, in this repository.
+- 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `oidc-auth`, `saml-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`. Fresh installations start lean; administrators enable only the plugins they need under **Integration → Plugin Catalog** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
+- 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`) and installed as an uploaded `.zip`. Bundled plugins are maintained in the main repository; community plugins are maintained in the separate plugin repository.
 - 📤 **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integration → Plugin Catalog → Upload Custom Plugin (`.zip`)**.
 
 **A working example of every hook:** [`examples/sample-plugin`](https://github.com/mahirgul/AiPBX-plugins/tree/main/examples/sample-plugin)
@@ -233,8 +233,10 @@ errors, but it is not a security boundary for PHP code, network access, or datab
   input types, lengths and required fields before any database write, notification or paid API request.
 - For Asterisk-only callbacks, require an exact loopback `REMOTE_ADDR` (`127.0.0.1` or `::1`) and a
   per-installation random secret. Do not accept `X-Forwarded-For` as proof of loopback access. Send the
-  secret in a header, compare it with `hash_equals`, and reject missing/empty secrets. Clear any Asterisk
-  CURL header option after the request so later requests cannot inherit it.
+  secret through authenticated loopback requests, compare it with `hash_equals`, and reject missing/empty
+  secrets. With Asterisk, use scalar `CURLOPT(userpwd)` credentials and clear them after the request.
+  Avoid adding secret `httpheader` values: repeated calls accumulate headers, and setting an empty
+  header does not reliably remove previous values.
 - For provider webhooks, verify the provider's documented signature against the original body/URL,
   including timestamp/replay checks where supported. If signatures are unavailable, require a strong
   random webhook secret. Keep secret URLs out of logs. Authentication does not make media URLs safe.

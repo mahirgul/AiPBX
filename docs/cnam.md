@@ -32,22 +32,13 @@
 
 ### ⚡ Dialplan Hook (`sub-cnam-lookup`)
 
-AiPBX core automatically includes a dialplan sub-routine hook in `extensions_inbound.conf`:
+AiPBX core calls the hook when it exists; the enabled plugin generates the subroutine in
+`extensions_plugin_cnam.conf`. Its lookup uses `?num=`, HTTP Basic credentials (`cnam` and a per-installation token), and
+`CURLOPT(conntimeout)` / `CURLOPT(httptimeout)` set to two seconds. The `CURLOPT(userpwd)` credentials are cleared after
+lookup. Save settings and apply the PBX configuration to generate it.
 
-```asterisk
-[sub-cnam-lookup]
-exten => s,1,NoOp(CNAM lookup for ${CALLERID(num)})
- same => n,Set(CURLOPT(conntimeout)=1)
- same => n,Set(CURLOPT(timeout)=2)
- same => n,Set(CURLOPT(httpheader)=X-CNAM-Token: <pbx_internal_secret>)
- same => n,Set(CNAM_RESULT=${CURL(http://127.0.0.1/api/plugins/cnam/lookup?number=${URIENCODE(${CALLERID(num)})})})
- same => n,GotoIf($["${CNAM_RESULT}" = ""]?skip)
- same => n,Set(CALLERID(name)=${CNAM_RESULT})
- same => n(skip),Return()
-```
-
-- **🛡️ Fail-Open Design**: The HTTP request uses a strict **2-second timeout**. If the provider API is down, rate-limited, or slow, Asterisk immediately proceeds with call routing. Inbound calls are **never dropped or blocked** due to a CNAM lookup failure.
-- **🔒 Security Token (`X-CNAM-Token`)**: Asterisk communicates with the local AiPBX web server over loopback (`127.0.0.1`). All requests must present a matching PBX internal authentication token, preventing unauthorized local or network queries.
+The external provider timeout is one second. The synchronous local request can delay routing up to
+its two-second HTTP timeout. An empty result preserves the caller name and continues routing.
 
 ---
 
@@ -57,33 +48,28 @@ To minimize paid provider API costs and optimize lookup latency, results are cac
 
 | Column | Type | Description |
 |---|---|---|
-| `phone_number` | `VARCHAR(32)` | E.164 normalized phone number (Primary Key) |
+| `caller_number` | `VARCHAR(32)` | Lookup number as supplied (Primary Key) |
 | `caller_name` | `VARCHAR(80)` | Cleaned caller name |
-| `provider` | `VARCHAR(32)` | Provider used (`bulkvs`, `telnyx`, `cache`, etc.) |
+| `source` | `VARCHAR(32)` | Provider used (`bulkvs`, `telnyx`, `cache`, etc.) |
+| `lookups_count` | `INT UNSIGNED` | Lookup counter |
 | `created_at` | `DATETIME` | Timestamp of initial resolution |
 | `expires_at` | `DATETIME` | Cache expiration timestamp based on configured retention |
 
 - **Default TTL**: 30 days (configurable from `0` to `365` days). Setting to `0` disables caching.
-- **Cache Hit Latency**: < 5 ms directly from the local database.
+- Expired entries are ignored during lookup. Use **Purge expired** or **Clear cache** on the plugin page to remove them; expiry alone does not delete stored rows.
 
 ---
 
 ## 🌐 Supported Providers
 
-The CNAM plugin supports 10 resolution methods:
+The plugin offers BulkVS, Telnyx, Twilio, Vonage, OpenCNAM and SignalWire caller-name lookups.
+Coverage and billing depend on the provider and account. SignalWire uses the `cnam.caller_id` field
+of its lookup response.
 
-| Provider | Method | Required Credentials | Typical Latency | Notes |
-|---|---|---|---|---|
-| **BulkVS** | REST GET | API Key / ID | ~120 ms | Cost-effective North American CNAM database |
-| **Telnyx** | REST GET | API Key (Bearer Token) | ~90 ms | Global coverage via Number Lookup API |
-| **Twilio** | REST Basic Auth | Account SID & Auth Token | ~110 ms | Twilio Lookup v2 Caller Name addon |
-| **Vonage** | REST GET | API Key & API Secret | ~150 ms | Vonage Number Insight Advanced |
-| **OpenCNAM** | REST Basic Auth | Account SID & Auth Token | ~140 ms | Hobbyist and professional US/CA pools |
-| **SignalWire** | REST Basic Auth | Space URL, Project ID, API Token | ~100 ms | High-throughput telecom API |
-| **NumVerify** | REST GET | API Key | ~180 ms | Global APILayer carrier and caller lookup |
-| **AbstractAPI** | REST GET | API Key | ~160 ms | Phone validation & caller reputation API |
-| **Custom URL** | REST GET/JSON | Endpoint URL (with `{number}`) | Variable | Query your proprietary CRM, ERP, or internal directory |
-| **Phonebook Only** | Local DB | None (Free) | < 2 ms | Matches internal extensions and SMS contact names |
+NumVerify and AbstractAPI provide carrier/location labels, rather than the subscriber's name.
+Custom URL accepts a configured endpoint with a `{number}` placeholder; Phonebook Only uses active
+extensions/external caller IDs and SMS contacts without a paid lookup. Provider timings vary; the
+plugin does not guarantee the latency or coverage of an external service.
 
 ---
 
@@ -111,12 +97,20 @@ The plugin settings page includes an interactive **Test Lookup** diagnostic pane
    - The resolved caller name.
    - Source indicator (`Local Phonebook`, `Cache Hit`, or `Live Provider Query`).
    - Round-trip execution latency in milliseconds.
-   - Raw JSON response payload for debugging.
+   The test displays the resolved name, source and measured latency; it does not expose the raw provider response.
 
 ---
 
-## 🛡️ Security & SSRF Protection
+## Security and retention
 
-- **Loopback Validation**: The dialplan lookup endpoint only accepts connections from `127.0.0.1` and `::1`.
-- **SSRF Shielding on Custom URLs**: When using a **Custom URL** provider, URLs targeting local hostnames (`localhost`, `127.*`, `10.*`, `192.168.*`, `172.16-31.*`, cloud metadata `169.254.169.254`) are strictly rejected.
-- **Privacy Compliance**: When call privacy regulations (KVKK / GDPR) are active, caller names stored in cache respect automated data retention purges ([Privacy & Compliance](privacy.md)).
+The dialplan endpoint accepts only exact loopback addresses (`127.0.0.1` and `::1`) with the correct
+per-installation credentials. Administrator test requests also require a valid CSRF token.
+
+Custom URL is an administrator-controlled integration setting. It does not reject private/internal
+addresses, and its HTTP transport does not enforce HTTPS. Configure only trusted endpoints; internal
+CRM services are supported. The SMS plugin's public-address download policy does not apply to CNAM.
+
+Cached caller names are not connected to the core privacy retention purge. Cache expiry prevents
+reuse but leaves the row stored until manually purged or cleared. Disabling caching does not erase
+previous entries. External providers receive the lookup number, so select a provider and retention
+period appropriate to your privacy policy.

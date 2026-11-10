@@ -210,6 +210,43 @@ class MsTeamsService
             ],
         ];
 
+        return self::sendCard($webhookUrl, $payload);
+    }
+
+    /** @var null|callable(string, array, array): array Test transport after destination validation. */
+    public static $webhookHttp = null;
+
+    public static function notifyEvent(string $event, array $envelope): void
+    {
+        $flags = ['call.missed' => 'teams_notify_missed_calls', 'fax.received' => 'teams_notify_fax',
+            'voicemail.created' => 'teams_notify_voicemail'];
+        if (!isset($flags[$event])) { return; }
+        $cfg = MsTeamsRepository::currentSettings();
+        if ($cfg['teams_webhook_enabled'] !== '1' || $cfg[$flags[$event]] !== '1') { return; }
+        $data = is_array($envelope['data'] ?? null) ? $envelope['data'] : [];
+        $facts = [];
+        foreach (['src', 'dst', 'caller', 'caller_id', 'extension', 'did_number', 'pages', 'duration'] as $key) {
+            if (isset($data[$key]) && is_scalar($data[$key])) {
+                $facts[] = ['name' => $key, 'value' => htmlspecialchars(mb_substr((string)$data[$key], 0, 200), ENT_QUOTES, 'UTF-8')];
+            }
+        }
+        $result = self::sendCard($cfg['teams_webhook_url'], [
+            '@type' => 'MessageCard', '@context' => 'https://schema.org/extensions',
+            'summary' => $event, 'title' => $event, 'themeColor' => '6264A7',
+            'sections' => [['facts' => $facts]],
+        ]);
+        if (!$result['success']) { throw new RuntimeException('Teams event delivery failed'); }
+    }
+
+    private static function sendCard(string $webhookUrl, array $payload): array
+    {
+        $curlResolve = [];
+        if (!self::validatePublicWebhookUrl($webhookUrl, $curlResolve)) {
+            return ['success' => false, 'error' => t('ms_teams.msg_err_invalid_webhook_url')];
+        }
+        if (self::$webhookHttp !== null) {
+            return (self::$webhookHttp)($webhookUrl, $payload, $curlResolve);
+        }
         $jsonPayload = (string) json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         $ch = curl_init($webhookUrl);
@@ -237,7 +274,7 @@ class MsTeamsService
             return ['success' => false, 'error' => rtrim(t('ms_teams.msg_err_curl'), ': ')];
         }
 
-        if ($httpCode === 200 || trim((string)$response) === '1') {
+        if ($httpCode >= 200 && $httpCode < 300) {
             return ['success' => true, 'message' => t('ms_teams.msg_webhook_test_success')];
         }
 

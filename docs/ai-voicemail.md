@@ -1,94 +1,56 @@
-# AI Voicemail Transcription & Executive Summary (Plugin)
+# AI Voicemail Summaries & Transcripts
 
-> 🔌 **Plugin (`ai-voicemail`)**: Official bundled plugin. Enable it under **Integration → Plugin Catalog** (requires AiPBX 1.70.0 or newer). See [Plugin system & developer guide](plugin-development.md).
+The community `ai-voicemail` plugin displays completed voicemail transcripts and summaries at
+`/plugins/ai-voicemail`. AiPBX 1.72.12 includes the corrected event subscription and full transcript
+payload. See the [plugin developer guide](plugin-development.md).
 
-**Integration → AI Voicemail Transcription & Executive Summary** (`/plugins/ai-voicemail`) automatically transcribes voicemail recordings into text using high-accuracy speech-to-text (STT) models, then utilizes Large Language Models (LLMs) to generate structured executive summaries, action items, and urgency ratings.
+## Enable transcription
 
----
+1. Enable voicemail transcription under **AI → Cloud services → Voicemail**, and configure a speech
+   engine through [Cloud AI](cloud-ai.md) or [Local AI Models](local-ai.md).
+2. Install **AI Voicemail Transcription & Executive Summary** from the community catalog under **Integration → Plugin Catalog**.
+3. Open `/plugins/ai-voicemail` to view completed results.
 
-## 🏗️ Architecture & Event Flow
+The plugin consumes the core's `voicemail.transcribed` event. It does not transcribe audio itself.
+Without a completed transcript or summary, it creates no summary entry and makes no LLM request.
 
-```
-  Caller Leaves Voicemail
-        │
-        ▼
-  Asterisk `VoiceMail()` Application
-        │ (Audio File Saved: `.wav`)
-        ▼
-  AiPBX Speech-to-Text Pipeline (Whisper / Deepgram / Groq)
-        │
-        ▼
-  Core Dispatches Event: `voicemail.transcribed`
-        │
-        ▼
-  Plugin Event Handler (`plugins/ai-voicemail/events/handler.php`)
-        │
-        ├── 1. PCI-DSS & PII Redaction Filter (Card numbers, CVV, National IDs)
-        │
-        ├── 2. OpenAI-Compatible LLM Prompting (OpenAI / Groq / Ollama / vLLM)
-        │         ├── Executive Summary (1-2 sentences)
-        │         ├── Urgency Assessment (Normal, Urgent, Callback Needed)
-        │         └── Action Items & Contact Information
-        │
-        ▼
-  Store Structured Summary in `mailbox_messages` Database
-        │
-        ├──► Portal Voicemail Player (`/voicemail`)
-        ├──► Email Notification with Audio & Text Summary ([Mail Settings](mail.md))
-        └──► Mobile Push Notification (Android / iOS)
-```
+## Event flow and storage
 
----
+The core's `VoicemailAiService` transcribes the recording and optionally summarizes it, storing its
+result in `voicemail_ai`. The detached voicemail notification script emits `voicemail.transcribed`
+with the extension, caller, duration, summary preview and full transcript when available.
 
-## 🚀 Key Features
+The plugin optionally sends that transcript to its configured LLM, then stores the transcript and
+summary in the `summaries` collection of `sys_plugin_kv`. These entries appear in the plugin admin
+page. The same completed event is skipped on redelivery. The core caps each KV collection at 500
+items; this is not a configurable time-based retention policy.
 
-- **🎙️ Automatic Transcription**: Supports speech recognition engines configured under **AI → Cloud Services** ([Cloud AI](cloud-ai.md)) or local offline models ([Local AI Models](local-ai.md)).
-- **📝 Executive Briefing**: Instead of reading long rambling audio transcripts, staff members receive an immediate 1–2 sentence summary of why the caller reached out.
-- **⚡ Action Item Extraction**: Automatically extracts caller contact numbers, callback windows, account references, and core requests.
-- **🌐 Multilingual Output**: Produces summaries in **Turkish**, **English**, or **Auto-Detect** (matches the caller's spoken language).
-- **🔒 Automated PII & PCI-DSS Masking**: All transcripts pass through AiPBX's redaction engine prior to LLM dispatch:
-  - Payment card numbers (13–19 digits validated with the Luhn algorithm) are replaced with `[REDACTED-CARD]`.
-  - Sensitive personal IDs are replaced with `[REDACTED-ID]`.
+The result is plain summary text. There are no structured urgency fields, synchronized transcript
+timestamps or separate action-item records. If the LLM fails or returns nothing, the plugin preserves
+the core summary, or uses the first 200 transcript characters when no summary is available.
 
----
+## Optional LLM settings
 
-## ⚙️ Configuration
+| Setting | Behavior |
+|---|---|
+| API Base URL | OpenAI-compatible base URL, for example `https://api.openai.com/v1`. The plugin appends `/chat/completions`. Administrator-configured HTTP endpoints are also accepted for internal services. |
+| API Key | A non-empty value enables the LLM request and is sent as a Bearer token. Empty means reuse the core result without an LLM call. For a local server without authentication, use a non-empty placeholder only if that server accepts it. |
+| Summarization LLM Model | Model available on the configured server, for example `gpt-4o-mini`. |
+| Summary Output Language | Turkish, English or the language of the message. Applies to the optional LLM request. |
 
-1. Navigate to **Integration → Plugin Catalog** (`/plugins`) and enable **AI Voicemail Transcription & Executive Summary**.
-2. Go to **Settings → Plugins → AI Voicemail** (`/plugins/ai-voicemail`).
-3. Configure the OpenAI-compatible LLM parameters:
+The LLM request has a 12-second total timeout and a 5-second connection timeout; redirects are disabled.
 
-| Field | Description | Example Values |
-|---|---|---|
-| **API Base URL** | Endpoint URL of any OpenAI-compatible provider | `https://api.openai.com/v1`<br>`https://api.groq.com/openai/v1`<br>`http://127.0.0.1:11434/v1` (Local Ollama) |
-| **API Key (Bearer Token)** | Authentication secret for the provider | `sk-proj-...` or `gsk_...` (Leave blank for local Ollama) |
-| **Summarization LLM Model** | Model slug to execute prompt | `gpt-4o-mini`, `gpt-4o`, `llama-3.3-70b-versatile`, `mistral-small` |
-| **Summary Output Language** | Language of the resulting summary | `tr` (Turkish), `en` (English), or `auto` (Caller Language) |
+## Notifications and privacy
 
-4. Click **Save Settings**.
+The voicemail player, email and mobile notification integrations use the core voicemail AI result.
+The plugin's optional custom summary is stored for its admin page; it does not replace the core result
+or send a second email/push notification. See [voicemail](voicemail.md) and [mail settings](mail.md).
 
----
+Core transcript redaction runs when enabled by the privacy settings. The plugin does not apply a
+separate redaction filter or check a cloud AI lock before its optional HTTP request. Configure its
+endpoint and credentials according to your data policy. Choosing a local LLM alone does not ensure
+all processing is local: the core's speech and summary engines must also be configured accordingly.
 
-## 📬 User Experience & Notification Channels
+## Moving from the bundled version
 
-### 1. Web Portal (`/voicemail`)
-When an extension owner logs into the web portal:
-- Voicemail cards display the audio playback waveform.
-- A purple badge indicates **AI Summary Ready**.
-- The full transcript is displayed beneath the player with synchronized timestamp anchors.
-- Executive summary points and action items are highlighted at the top.
-
-### 2. Email Notifications
-If **Email Voicemail** is enabled on the mailbox ([Voicemail Configuration](voicemail.md)):
-- The outgoing email includes the `.wav` audio attachment.
-- The email body contains the formatted executive summary card followed by the full transcript.
-
-### 3. Mobile Apps (iOS & Android)
-The AiPBX mobile app delivers push notifications for new voicemails containing the caller's name, caller ID, and a short snippet of the AI executive summary.
-
----
-
-## 🛡️ Privacy & Offline Operation
-
-- **Cross-Border Cloud AI Lock**: If your organization enforces strict data sovereignty under GDPR or KVKK ([Privacy & Compliance](privacy.md)), enabling the Cloud AI Lock blocks external AI APIs.
-- **Local Private LLM**: You can point the **API Base URL** to a private on-premise Ollama or vLLM container (`http://192.168.1.50:11434/v1` running `llama3:8b`). Transcripts and audio never leave your local infrastructure.
+The next core upgrade moves an installed bundled copy to `/var/lib/aipbx/plugins/ai-voicemail` using an offline transition package. It preserves its enabled/disabled state, encrypted settings and stored summaries. Existing uploaded copies are preserved. New installations do not install it automatically. Later plugin updates come from the community catalog. The core transcription service remains in AiPBX.

@@ -16,7 +16,10 @@ final class VoicemailPluginEventTest extends TestCase
         };
         try {
             $write($root . '/bin/voicemail_notify.php', file_get_contents(dirname(__DIR__, 2) . '/bin/voicemail_notify.php'));
-            $write($root . '/handler.php', file_get_contents(dirname(__DIR__, 3) . '/plugins/ai-voicemail/events/handler.php'));
+            $zip = new ZipArchive();
+            $zip->open(dirname(__DIR__, 3) . '/conf/plugin-transitions/ai-voicemail-1.1.0.zip');
+            $write($root . '/handler.php', $zip->getFromName('events/handler.php'));
+            $zip->close();
             $write($root . '/config.php', <<<'FIXTURE'
 <?php
 // No access to real spool files, providers, database, chat or push services.

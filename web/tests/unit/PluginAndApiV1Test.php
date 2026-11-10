@@ -12,6 +12,23 @@ require_once dirname(__DIR__, 2) . '/src/services/WebhookService.php';
 
 final class PluginAndApiV1Test extends TestCase
 {
+    private function installMovedPluginFixture(string $slug): void
+    {
+        $dir = sys_get_temp_dir() . '/aipbx-test-community-plugins';
+        if (!is_dir($dir)) { mkdir($dir, 0700, true); }
+        putenv('AIPBX_CUSTOM_PLUGINS_DIR=' . $dir);
+        $zip = new ZipArchive();
+        $zip->open(dirname(__DIR__, 3) . '/conf/plugin-transitions/' . $slug . '-1.1.0.zip');
+        $zip->extractTo($dir . '/' . $slug); $zip->close();
+        PluginManager::resetCache();
+    }
+
+    protected function tearDown(): void
+    {
+        putenv('AIPBX_CUSTOM_PLUGINS_DIR');
+        PluginManager::resetCache();
+    }
+
     protected function setUp(): void
     {
         $_SESSION['user_id'] = 1;
@@ -139,6 +156,9 @@ final class PluginAndApiV1Test extends TestCase
 
     public function testPluginCatalogSettingsKvAndSignalingCaptureSync(): void
     {
+        $this->installMovedPluginFixture('ai-voicemail');
+        $this->installMovedPluginFixture('ai-assistant');
+        $this->installMovedPluginFixture('auto-dialer');
         PluginManager::resetCache();
         $manifests = PluginManager::discoverManifests();
         $this->assertArrayHasKey('auto-dialer', $manifests);
@@ -196,6 +216,9 @@ final class PluginAndApiV1Test extends TestCase
 
     public function testVoicemailPluginUsesCompletedContentAndIgnoresMetadata(): void
     {
+        $this->installMovedPluginFixture('ai-voicemail');
+        $this->installMovedPluginFixture('ai-assistant');
+        $this->installMovedPluginFixture('auto-dialer');
         $this->assertTrue(PluginManager::enable('ai-voicemail', 'test-csrf-token')['success']);
         PluginManager::savePluginSettings('ai-voicemail', ['api_key' => ''], 'test-csrf-token');
         $this->assertContains('ai-voicemail', PluginManager::pluginsSubscribedToEvent('voicemail.transcribed'));
@@ -223,8 +246,38 @@ final class PluginAndApiV1Test extends TestCase
         }
     }
 
+    public function testAutoDialerRetainsAnsweredSlotAndRejectsOldAttempts(): void
+    {
+        $this->installMovedPluginFixture('auto-dialer');
+        PluginManager::enable('auto-dialer', 'test-csrf-token');
+        require_once PluginManager::customDir() . '/auto-dialer/AutoDialerService.php';
+        $id = AutoDialerService::createCampaign(['name'=>'slot regression','dest_type'=>'extension','dest_id'=>'101','max_concurrent'=>1,'numbers_bulk'=>"15550001111\n15550002222"]);
+        try {
+            AutoDialerService::setCampaignStatus($id, 'running');
+            $this->assertSame(1, AutoDialerService::tickCampaigns());
+            $q=getDB()->prepare("SELECT id FROM plg_autodial_numbers WHERE campaign_id=? AND status='dialing'");
+            $q->execute([$id]); $num=(int)$q->fetchColumn();
+            getDB()->prepare('UPDATE plg_autodial_numbers SET attempts=2 WHERE id=?')->execute([$num]);
+            AutoDialerService::handleCallback(['num_id'=>$num,'attempt'=>2,'event'=>'answered','amd_status'=>'HUMAN']);
+            $this->assertSame(0, AutoDialerService::tickCampaigns());
+            foreach (['answered','hangup','dial_failed'] as $event) {
+                $r=AutoDialerService::handleCallback(['num_id'=>$num,'attempt'=>1,'event'=>$event]);
+                $this->assertSame('stale_attempt',$r['state']);
+            }
+            $q=getDB()->prepare('SELECT status FROM plg_autodial_numbers WHERE id=?'); $q->execute([$num]);
+            $this->assertSame('answered',$q->fetchColumn());
+            AutoDialerService::handleCallback(['num_id'=>$num,'attempt'=>2,'event'=>'hangup','duration'=>30]);
+            $q->execute([$num]); $this->assertSame('completed',$q->fetchColumn());
+            $this->assertSame(1, AutoDialerService::tickCampaigns());
+        } finally {
+            AutoDialerService::deleteCampaign($id);
+            PluginManager::disable('auto-dialer', 'test-csrf-token');
+        }
+    }
+
     public function testPluginSchemaSandboxAndAutoDialerLifecycle(): void
     {
+        $this->installMovedPluginFixture('auto-dialer');
         // 1. Security check: non-plg_ table names and destructive DDL are rejected
         $threwNonPlg = false;
         try {
@@ -251,7 +304,7 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertTrue($en['success']);
         $this->assertTrue(PluginManager::isEnabled('auto-dialer'));
 
-        require_once dirname(__DIR__, 3) . '/plugins/auto-dialer/AutoDialerService.php';
+        require_once PluginManager::customDir() . '/auto-dialer/AutoDialerService.php';
 
         $campId = AutoDialerService::createCampaign([
             'name' => 'Unit Test AMD Campaign',
@@ -291,7 +344,7 @@ final class PluginAndApiV1Test extends TestCase
 
         // Simulate Asterisk callback: num1 -> HUMAN, num2 -> MACHINE
         $cb1 = AutoDialerService::handleCallback([
-            'num_id' => $num1,
+            'num_id' => $num1, 'attempt' => 1,
             'event' => 'answered',
             'amd_status' => 'HUMAN',
             'amd_cause' => 'HUMAN-800-800',
@@ -300,7 +353,7 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertTrue($cb1['success']);
 
         $cb2 = AutoDialerService::handleCallback([
-            'num_id' => $num2,
+            'num_id' => $num2, 'attempt' => 1,
             'event' => 'answered',
             'amd_status' => 'MACHINE',
             'amd_cause' => 'TOOLONG-1500',
@@ -320,6 +373,7 @@ final class PluginAndApiV1Test extends TestCase
 
     public function testPluginManagerTypeAndAuthorUrlSanitization(): void
     {
+        $this->installMovedPluginFixture('ai-assistant');
         $plugins = PluginManager::allPlugins();
         $this->assertNotEmpty($plugins);
 
@@ -333,8 +387,8 @@ final class PluginAndApiV1Test extends TestCase
         }
 
         // Official plugins
-        $this->assertArrayHasKey('auto-dialer', $bySlug);
-        $this->assertSame('official', $bySlug['auto-dialer']['type']);
+        $this->assertArrayHasKey('ms-teams', $bySlug);
+        $this->assertSame('official', $bySlug['ms-teams']['type']);
         $this->assertArrayHasKey('google-auth', $bySlug);
         $this->assertSame('official', $bySlug['google-auth']['type']);
         $this->assertArrayHasKey('oidc-auth', $bySlug);
@@ -364,7 +418,7 @@ final class PluginAndApiV1Test extends TestCase
             $bySlug = array_column(PluginManager::allPlugins(), null, 'slug');
             $this->assertArrayHasKey('fake-official', $bySlug);
             $this->assertSame('community', $bySlug['fake-official']['type']);
-            $this->assertSame('official', $bySlug['auto-dialer']['type']);
+            $this->assertSame('official', $bySlug['ms-teams']['type']);
         } finally {
             putenv($prev === false ? 'AIPBX_CUSTOM_PLUGINS_DIR' : 'AIPBX_CUSTOM_PLUGINS_DIR=' . $prev);
             PluginManager::resetCache();
