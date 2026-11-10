@@ -6194,4 +6194,5 @@ Telefonunuz çaldırılacak.',
     'feature_codes_status.help_body' => 'Her dahili için: çağrı çekme grubu ile rahatsız etmeyin ve çağrı yönlendirmenin açık olup olmadığı.',
     'phone_keys.help_body' => 'Bir telefonun programlanabilir tuşlarının ne işe yarayacağını seçin. Telefon bunları ayarlarını bir sonraki yükleyişinde alır.',
     'webhooks.help_body' => 'PBX olaylarını girdiğiniz adreslere gönderir, böylece diğer sistemler bunlara göre işlem yapabilir. Gönderilmeyi bekleyen olaylar aşağıdaki kuyrukta listelenir.',
+    'plugins.voicemail_transcription_help' => 'Sesli mesaj transkripsiyonunu Yapay Zeka → Bulut servisleri → Sesli mesaj altından etkinleştirin. Bu sayfa tamamlanan transkriptleri kullanır; özetlerini özelleştirmek için yukarıdaki isteğe bağlı LLM\'yi yapılandırın.',
 ];
