@@ -1283,6 +1283,26 @@ final class PluginManager
         }
 
         $statements = self::parseAndValidatePluginSchemaSql($rawSql);
+
+        // When running under web server or unprivileged process where migrator credentials
+        // are inaccessible, delegate DDL execution to the root privilege broker.
+        $migFile = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
+        $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
+        $isTest = (getenv('DB_NAME') === 'asterisk_test');
+        if (!is_readable($migFile) && !$isRoot && !$isTest) {
+            $privBin = '/usr/local/sbin/aipbx-priv';
+            if (is_executable($privBin) && preg_match('/^[a-z0-9_-]{2,64}$/', $slug)) {
+                $cmd = 'sudo ' . escapeshellarg($privBin) . ' plugin-schema apply ' . escapeshellarg($slug);
+                $out = [];
+                $code = 0;
+                exec($cmd . ' 2>&1', $out, $code);
+                if ($code !== 0) {
+                    throw new \Exception('Failed to apply plugin schema via privilege broker: ' . implode(' ', $out));
+                }
+                return array_column($statements, 'table');
+            }
+        }
+
         $db = self::getSchemaDB();
         $tables = [];
         foreach ($statements as $item) {
@@ -1394,6 +1414,20 @@ final class PluginManager
 
         if (empty($tables)) {
             return;
+        }
+
+        // When running under web server or unprivileged process where migrator credentials
+        // are inaccessible, delegate DDL drop to the root privilege broker.
+        $migFile = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
+        $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
+        $isTest = (getenv('DB_NAME') === 'asterisk_test');
+        if (!is_readable($migFile) && !$isRoot && !$isTest) {
+            $privBin = '/usr/local/sbin/aipbx-priv';
+            if (is_executable($privBin) && preg_match('/^[a-z0-9_-]{2,64}$/', $slug)) {
+                $cmd = 'sudo ' . escapeshellarg($privBin) . ' plugin-schema drop ' . escapeshellarg($slug);
+                exec($cmd . ' 2>&1');
+                return;
+            }
         }
 
         $db = self::getSchemaDB();
