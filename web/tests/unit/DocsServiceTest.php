@@ -106,6 +106,9 @@ final class DocsServiceTest extends TestCase
         $this->assertNotNull(DocsService::source('INSTALL'));
         $this->assertNotNull(DocsService::source('ARCHITECTURE'));
         $this->assertNotNull(DocsService::source('CHANGELOG'));
+        $this->assertNotNull(DocsService::source('CHANGELOG-1.6'));
+        $this->assertNotNull(DocsService::source('CHANGELOG-1.5'));
+        $this->assertNotNull(DocsService::source('CHANGELOG-archive'));
         $this->assertNull(DocsService::source('../web/config'));
         $this->assertNull(DocsService::source('nope'));
         $found = DocsService::search('aipbx-selftest');

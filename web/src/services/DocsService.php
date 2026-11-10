@@ -88,12 +88,21 @@ class DocsService
     }
 
     /** Root-level Markdown files linked from docs/*.md as ../INSTALL.md etc. */
-    private const ROOT_DOCS = ['INSTALL', 'ARCHITECTURE', 'CHANGELOG', 'CONTRIBUTING', 'SECURITY'];
+    private const ROOT_DOCS = [
+        'INSTALL',
+        'ARCHITECTURE',
+        'CHANGELOG',
+        'CHANGELOG-1.6',
+        'CHANGELOG-1.5',
+        'CHANGELOG-archive',
+        'CONTRIBUTING',
+        'SECURITY',
+    ];
 
     /** The Markdown of a document, or null (unknown name or not a docs/ file). */
     public static function source(string $name): ?string
     {
-        if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $name)) {
+        if (str_contains($name, '..') || !preg_match('/^[A-Za-z0-9_.-]{1,64}$/', $name)) {
             return null;
         }
         $file = self::dir() . '/' . $name . '.md';
