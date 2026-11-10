@@ -20,10 +20,15 @@ if is_upgrade; then
     # Existing secrets are reused: regenerating them would lock the portal,
     # Asterisk, chat and TURN out of each other.
     DB_USER="$(env_get DB_USER)"; DB_PASS="$(env_get DB_PASS)"
-    MIGRATOR_USER="$(env_get MIGRATOR_DB_USER)"; MIGRATOR_PASS="$(env_get MIGRATOR_DB_PASS)"
-    if [[ -z "$MIGRATOR_USER" || -z "$MIGRATOR_PASS" ]] && [[ -f /etc/ai-pbx-migrator.env ]]; then
-        MIGRATOR_USER="$(sed -n 's/^MIGRATOR_DB_USER=//p' /etc/ai-pbx-migrator.env | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//")"
-        MIGRATOR_PASS="$(sed -n 's/^MIGRATOR_DB_PASS=//p' /etc/ai-pbx-migrator.env | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//")"
+    MIGRATOR_USER=""
+    MIGRATOR_PASS=""
+    if [[ -f /etc/ai-pbx-migrator.env ]]; then
+        MIGRATOR_USER="$(sed -n 's/^MIGRATOR_DB_USER=//p' /etc/ai-pbx-migrator.env 2>/dev/null | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//")"
+        MIGRATOR_PASS="$(sed -n 's/^MIGRATOR_DB_PASS=//p' /etc/ai-pbx-migrator.env 2>/dev/null | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//")"
+    fi
+    if [[ -z "$MIGRATOR_USER" || -z "$MIGRATOR_PASS" ]]; then
+        MIGRATOR_USER="$(env_get MIGRATOR_DB_USER)"
+        MIGRATOR_PASS="$(env_get MIGRATOR_DB_PASS)"
     fi
     AMI_USER="$(env_get AMI_USER)"; AMI_PASS="$(env_get AMI_PASS)"
     TURN_SECRET="$(env_get TURN_SECRET)"

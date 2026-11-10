@@ -346,7 +346,7 @@ sql_q() { local v="${1//\\/\\\\}"; printf '%s' "${v//\'/\'\'}"; }
 
 # Reads KEY=value from the existing environment file (upgrade mode).
 env_get() {
-    grep -m1 "^$1=" /etc/ai-pbx.env 2>/dev/null | cut -d= -f2-
+    (grep -m1 "^$1=" /etc/ai-pbx.env 2>/dev/null || true) | cut -d= -f2-
 }
 # Appends KEY=value only when the key is missing: new settings introduced by a
 # release are added, values the admin edited are never overwritten.
