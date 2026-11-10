@@ -29,11 +29,15 @@ class DocsService
         'plugin-development',
         'auto-dialer',
         'ai-apps',
+        'ai-voicemail',
         'assistant',
         'cloud-ai',
         'cloud-tts',
+        'cnam',
         'local-ai',
+        'provider-templates',
         'signaling',
+        'sms',
         'web-widgets',
     ];
 
