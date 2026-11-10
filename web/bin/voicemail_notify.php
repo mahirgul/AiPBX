@@ -75,6 +75,7 @@ function voicemailNotifySend(string $ext, int $newCount): void
     // Voicemail as text (AI -> Cloud services -> Voicemail): the e-mail has
     // usually made it already; without an e-mail address it is made here.
     $text = '';
+    $ai = null;
     try {
         require_once dirname(__DIR__) . '/src/services/VoicemailAiService.php';
         $ai = VoicemailAiService::forNewest($ext);
@@ -98,6 +99,7 @@ function voicemailNotifySend(string $ext, int $newCount): void
                 'caller'    => $caller,
                 'duration'  => $duration,
                 'summary'   => $text,
+                'transcript' => (string) ($ai['transcript'] ?? ''),
             ]);
         }
     } catch (\Throwable $e) {

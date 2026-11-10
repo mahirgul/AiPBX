@@ -2,16 +2,9 @@
 
 declare(strict_types=1);
 
-/**
- * Event handler for `ai-voicemail` plugin (`voicemail.created`, emitted by
- * web/bin/voicemail_notify.php for every new message; it used to listen for
- * `voicemail.received`, which nothing emits, so it never ran).
- *
- * Connects to the configured OpenAI-compatible endpoint to transcribe/summarize
- * the voicemail and stores the structured result in the plugin KV store.
- */
+/** Consumes the core's completed transcription; never summarize metadata as message content. */
 return static function (string $eventName, array $envelope, array $settings): void {
-    if ($eventName !== 'voicemail.created') {
+    if ($eventName !== 'voicemail.transcribed') {
         return;
     }
 
@@ -22,16 +15,26 @@ return static function (string $eventName, array $envelope, array $settings): vo
     $msgNum = (string)($data['msg_num'] ?? '1');
     $transcript = trim((string)($data['transcript'] ?? ''));
 
+    $existingSummary = trim((string)($data['summary'] ?? ''));
+    if ($transcript === '' && $existingSummary === '') {
+        return;
+    }
+
+    // Re-delivery of the same event updates its entry instead of creating another summary.
+    $itemKey = hash('sha256', $mailbox . ':' . (string)($envelope['event_id'] ??
+        (($envelope['occurred_at'] ?? '') . ':' . $msgNum . ':' . $transcript . ':' . $existingSummary)));
+    if (PluginManager::kvGet('ai-voicemail', 'summaries', $itemKey) !== null) {
+        return;
+    }
+
     $baseUrl = rtrim(trim((string)($settings['api_base_url'] ?? 'https://api.openai.com/v1')), '/');
     $apiKey = trim((string)($settings['api_key'] ?? ''));
     $llmModel = trim((string)($settings['llm_model'] ?? 'gpt-4o-mini'));
     $lang = trim((string)($settings['summary_language'] ?? 'tr'));
 
-    $summary = '';
-    if ($apiKey !== '' && $baseUrl !== '' && filter_var($baseUrl, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $baseUrl)) {
-        $promptText = $transcript !== ''
-            ? "Voicemail from {$caller} to mailbox {$mailbox} ({$duration}s):\n{$transcript}"
-            : "New voicemail left by {$caller} for mailbox {$mailbox}, duration {$duration} seconds.";
+    $summary = $existingSummary;
+    if ($transcript !== '' && $apiKey !== '' && $baseUrl !== '' && filter_var($baseUrl, FILTER_VALIDATE_URL) && preg_match('#^https?://#i', $baseUrl)) {
+        $promptText = "Voicemail from {$caller} to mailbox {$mailbox} ({$duration}s):\n{$transcript}";
 
         $langInstruction = $lang === 'tr'
             ? 'Özet ve aksiyon maddesini kısa ve net Türkçe olarak yaz.'
@@ -71,18 +74,16 @@ return static function (string $eventName, array $envelope, array $settings): vo
 
             if (is_string($resp) && $code >= 200 && $code < 300) {
                 $decoded = json_decode($resp, true);
-                $summary = trim((string)($decoded['choices'][0]['message']['content'] ?? ''));
+                $answer = trim((string)($decoded['choices'][0]['message']['content'] ?? ''));
+                if ($answer !== '') { $summary = $answer; }
             }
         }
     }
 
     if ($summary === '') {
-        $summary = $transcript !== ''
-            ? mb_substr($transcript, 0, 200)
-            : sprintf('Mailbox %s — %s (%ds)', $mailbox, $caller, $duration);
+        $summary = mb_substr($transcript, 0, 200);
     }
 
-    $itemKey = date('Ymd_His') . '_' . preg_replace('/[^a-zA-Z0-9_-]/', '', $mailbox . '_' . $msgNum);
     PluginManager::kvSet('ai-voicemail', 'summaries', $itemKey, [
         'mailbox'     => $mailbox,
         'caller'      => $caller,

@@ -20,7 +20,7 @@ This directory contains the plugins bundled with AiPBX: **official plugins** and
 | [`ai-tts`](./ai-tts/plugin.json) | `ai` | AiPBX Official Team | AI Text-to-Speech studio for generating IVR and system announcements |
 | [`ai-apps`](./ai-apps/plugin.json) | `ai` | AiPBX Official Team | Conversational AI Voice Bots (`AudioSocket` / `ARI`) for inbound calls |
 | [`ai-models`](./ai-models/plugin.json) | `ai` | AiPBX Official Team | Lightweight local TTS & speech runtime manager |
-| [`ai-voicemail`](./ai-voicemail/plugin.json) | `ai` | AiPBX Official Team | Automatic voicemail transcription & executive summary via OpenAI-compatible Whisper/LLM APIs |
+| [`ai-voicemail`](./ai-voicemail/plugin.json) | `ai` | AiPBX Official Team | Summaries of completed core voicemail transcriptions, with an optional OpenAI-compatible LLM |
 
 ## Community Plugins (`type: "community"`)
 
@@ -50,3 +50,10 @@ my-custom-plugin/
     ├── action.php       # Optional: pre-render POST/export handler returning ['message' => ..., 'error' => ...]
     └── page.php         # Optional: custom PHP view rendered inside /plugins/<slug>
 ```
+
+## Developing and reviewing plugins
+
+Read the [Plugin Developer Guide](../docs/plugin-development.md), including its
+[development requirements and release checklist](../docs/plugin-development.md#6-development-requirements-and-release-checklist),
+before adding or updating a plugin. It covers authentication, outbound HTTP, database and event contracts,
+call-path timeouts, compatibility, lifecycle and required test evidence.

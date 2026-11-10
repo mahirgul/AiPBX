@@ -168,17 +168,17 @@ final class PluginAndApiV1Test extends TestCase
         $masked = PluginManager::getAllSettings('ai-assistant', true);
         $this->assertNotSame('my-secret-key', $masked['api_key']);
 
-        // Enable ai-voicemail and test voicemail.created event hook + AI sidebar group
+        // Enable ai-voicemail and test voicemail.transcribed event hook + AI sidebar group
         $enVm = PluginManager::enable('ai-voicemail', 'test-csrf-token');
         $this->assertTrue($enVm['success']);
         $aiSidebar = PluginManager::dynamicSidebarItems(true, 'ai');
         $this->assertNotEmpty($aiSidebar);
 
-        PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.created', [
-            'event' => 'voicemail.created',
+        PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.transcribed', [
+            'event' => 'voicemail.transcribed',
             'occurred_at' => date(DATE_ATOM),
             'data' => [
-                'mailbox' => '101',
+                'extension' => '101',
                 'caller' => '05551234567',
                 'duration' => 18,
                 'msg_num' => '1',
@@ -192,6 +192,35 @@ final class PluginAndApiV1Test extends TestCase
         PluginManager::disable('ai-voicemail', 'test-csrf-token');
         PluginManager::disable('ai-assistant', 'test-csrf-token');
         $this->assertFalse(PluginManager::isEnabled('ai-assistant'));
+    }
+
+    public function testVoicemailPluginUsesCompletedContentAndIgnoresMetadata(): void
+    {
+        $this->assertTrue(PluginManager::enable('ai-voicemail', 'test-csrf-token')['success']);
+        PluginManager::savePluginSettings('ai-voicemail', ['api_key' => ''], 'test-csrf-token');
+        $this->assertContains('ai-voicemail', PluginManager::pluginsSubscribedToEvent('voicemail.transcribed'));
+        $this->assertNotContains('ai-voicemail', PluginManager::pluginsSubscribedToEvent('voicemail.created'));
+        $event = ['event_id' => 'vm-content-regression', 'occurred_at' => '2026-11-10T12:00:00Z',
+            'data' => ['extension' => '101', 'caller' => 'test', 'duration' => 18, 'new_count' => 1]];
+        $key = hash('sha256', '101:vm-content-regression');
+        PluginManager::kvDelete('ai-voicemail', 'summaries', $key);
+        try {
+            PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.created', $event);
+            PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.transcribed', $event);
+            $this->assertNull(PluginManager::kvGet('ai-voicemail', 'summaries', $key));
+            $event['data']['transcript'] = 'Please send the contract tomorrow morning.';
+            $event['data']['summary'] = 'Caller requests the contract tomorrow.';
+            PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.transcribed', $event);
+            $value = PluginManager::kvGet('ai-voicemail', 'summaries', $key)['value'];
+            $this->assertSame($event['data']['transcript'], $value['transcript']);
+            $this->assertSame($event['data']['summary'], $value['summary']);
+            $event['data']['summary'] = 'A retry must not overwrite the completed result.';
+            PluginManager::deliverEventToPlugin('ai-voicemail', 'voicemail.transcribed', $event);
+            $this->assertSame($value, PluginManager::kvGet('ai-voicemail', 'summaries', $key)['value']);
+        } finally {
+            PluginManager::kvDelete('ai-voicemail', 'summaries', $key);
+            PluginManager::disable('ai-voicemail', 'test-csrf-token');
+        }
     }
 
     public function testPluginSchemaSandboxAndAutoDialerLifecycle(): void

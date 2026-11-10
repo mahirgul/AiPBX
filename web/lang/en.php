@@ -6194,4 +6194,5 @@ Your phone will ring.',
     'feature_codes_status.help_body' => 'For each extension: its pickup group, and whether do not disturb and call forwarding are on.',
     'phone_keys.help_body' => 'Choose what the programmable keys of a phone do. The phone gets them the next time it loads its settings.',
     'webhooks.help_body' => 'Sends PBX events to the addresses you enter, so other systems can act on them. Events waiting to be sent are listed in the queue below.',
+    'plugins.voicemail_transcription_help' => 'Enable voicemail transcription under AI → Cloud services → Voicemail. This page uses completed transcripts; configure the optional LLM above to customize their summaries.',
 ];

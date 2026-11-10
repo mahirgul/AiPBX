@@ -5,6 +5,8 @@
 $summaries = PluginManager::kvList('ai-voicemail', 'summaries', 50);
 ?>
 
+<p><?php echo htmlspecialchars(t('plugins.voicemail_transcription_help')); ?></p>
+
 <div class="card">
     <div class="card-header">
         <div class="card-title">

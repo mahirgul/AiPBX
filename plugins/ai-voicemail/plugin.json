@@ -10,10 +10,10 @@
     "category": "ai",
     "icon": "fas fa-voicemail",
     "icon_style": "color: #8b5cf6;",
-    "description": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint.",
+    "description": "Summarize completed voicemail transcriptions. Requires voicemail transcription enabled under AI → Cloud services → Voicemail; optionally uses an OpenAI-compatible LLM for a custom summary.",
     "description_i18n": {
         "tr": "Gelen sesli mesajları (`voicemail.created`) OpenAI veya OpenAI şeması uyumlu uzak AI sunucuları üzerinden otomatik metne döker ve özetler.",
-        "en": "Automatically transcribe and summarize incoming voicemail messages using OpenAI or any remote OpenAI-compatible Whisper/LLM endpoint."
+        "en": "Summarize completed voicemail transcriptions. Requires voicemail transcription enabled under AI → Cloud services → Voicemail; optionally uses an OpenAI-compatible LLM for a custom summary."
     },
     "scopes": [
         "voicemail:read",
@@ -21,7 +21,7 @@
     ],
     "hooks": {
         "events": [
-            "voicemail.created"
+            "voicemail.transcribed"
         ],
         "admin_page": {
             "group": "ai"
@@ -47,16 +47,6 @@
             "label": "API Key (Bearer Token)",
             "label_i18n": {
                 "tr": "API Anahtarı (Bearer Token)"
-            }
-        },
-        {
-            "key": "stt_model",
-            "type": "text",
-            "default": "whisper-1",
-            "placeholder": "whisper-1 / whisper-large-v3",
-            "label": "Speech-to-Text (STT) Model",
-            "label_i18n": {
-                "tr": " Konuşmadan Metne (STT) Modeli"
             }
         },
         {

@@ -64,7 +64,7 @@ When a plugin needs relational tables (such as campaigns, call queues, or logs b
     },
     "scopes": ["calls:read", "cdr:read"],
     "hooks": {
-        "events": ["call.started", "call.ended", "voicemail.received"],
+        "events": ["call.started", "call.ended", "voicemail.created"],
         "sync_domain": "general_dialplan",
         "admin_page": {
             "group": "integrations"
@@ -109,7 +109,7 @@ When a plugin needs relational tables (such as campaigns, call queues, or logs b
 ## 3. Hook Points
 
 ### A. Event Hook (`events/handler.php`)
-Triggered asynchronously by `aipbx-webhook-worker.service` whenever an event listed in `hooks.events` occurs (`call.started`, `call.answered`, `call.ended`, `call.missed`, `voicemail.received`, `fax.received`, `fax.sent`, `queue.CallEntered`, `queue.AgentConnect`, `queue.Abandon`, `config.sync_applied`).
+Triggered asynchronously by `aipbx-webhook-worker.service` whenever an event listed in `hooks.events` occurs (`call.started`, `call.answered`, `call.ended`, `call.missed`, `voicemail.created`, `fax.received`, `fax.sent`, `queue.CallEntered`, `queue.AgentConnect`, `queue.Abandon`, `config.sync_applied`).
 
 Return a callable receiving `(string $eventName, array $envelope, array $settings)`:
 
@@ -218,3 +218,111 @@ against the catalog's SHA-256 and then installed exactly like an uploaded `.zip`
 
 - Every plugin hook (`events/handler.php`, `sync/Sync.php`, `admin/page.php`) is wrapped in an isolated `try / catch (\Throwable)` block.
 - If a plugin throws **5 consecutive runtime errors**, `PluginManager` automatically disables the plugin (**Safe Mode**), removes its generated Asterisk `.conf` files, and records a `plugin_safe_mode` entry in **Security → Audit Log** (`/audit-log`).
+
+
+## 6. Development Requirements and Release Checklist
+
+Apply these requirements to new plugins and changes to existing plugins. The checks below are review
+and test requirements; the plugin loader does not enforce all of them. Safe Mode catches runtime
+errors, but it is not a security boundary for PHP code, network access, or database queries.
+
+### Access control and secrets
+
+- Treat every `public/handler.php` route as anonymous until the handler authenticates it. A plugin's
+  enabled state, declared scopes, and HTTPS do not authenticate callers. Validate the path, HTTP method,
+  input types, lengths and required fields before any database write, notification or paid API request.
+- For Asterisk-only callbacks, require an exact loopback `REMOTE_ADDR` (`127.0.0.1` or `::1`) and a
+  per-installation random secret. Do not accept `X-Forwarded-For` as proof of loopback access. Send the
+  secret in a header, compare it with `hash_equals`, and reject missing/empty secrets. Clear any Asterisk
+  CURL header option after the request so later requests cannot inherit it.
+- For provider webhooks, verify the provider's documented signature against the original body/URL,
+  including timestamp/replay checks where supported. If signatures are unavailable, require a strong
+  random webhook secret. Keep secret URLs out of logs. Authentication does not make media URLs safe.
+- Enforce per-user ownership on every read, send, download, export and update. Hiding a menu item or
+  checking that a user is signed in does not authorize access to a supplied number or record ID.
+  Validate CSRF tokens on session-authenticated mutations; use POST for those mutations.
+- Store credentials with secret settings (`secret: true` or `PluginManager::setSetting(..., true)`).
+  Keys beginning with `_` are omitted from `getAllSettings()` and hook `$settings`; retrieve a private
+  token explicitly with `PluginManager::getSetting($slug, '_lookup_token')`. Generate tokens once,
+  preserve them across normal syncs, and document rotation and revocation.
+- Escape dynamic HTML and keep credentials, message bodies and personal data out of error responses
+  and routine logs. Bound request size and rate, particularly for routes that can incur provider costs.
+
+### Outbound HTTP and media downloads
+
+- Keep provider API destinations fixed or explicitly configured by an administrator. Treat URLs from
+  webhook bodies, messages and remote responses as untrusted, even when the webhook signature is valid.
+- For untrusted URLs, allow only the required scheme (normally HTTPS) and ports. Reject URL credentials,
+  loopback, private, link-local, reserved and other non-public IPv4/IPv6 destinations. Validate DNS
+  results and pin the connection to a validated address to prevent DNS rebinding; retain TLS hostname
+  and certificate verification. An intentionally configured internal service needs a separate,
+  explicit destination policy, not a general bypass for incoming media links.
+- Disable redirects unless needed. If enabled, validate every redirect destination under the same
+  policy before connecting. Never forward provider credentials to an unrelated host.
+- Set connection and total timeouts. Enforce download size while streaming, including responses without
+  `Content-Length`; a size check after buffering the entire body is insufficient. Limit attachment
+  count, check content types, and serve executable/unknown formats as downloads with `nosniff`.
+- Handle transport errors, non-success HTTP status, malformed JSON and provider-specific error fields.
+  An HTTP 200 alone does not prove a successful operation. Do not report a send as successful merely
+  because an ID is missing and a local replacement was generated.
+
+### Database, events and duplicate processing
+
+- Verify table and column names against actual core migrations and the minimum supported release.
+  Do not assume a table exists from its name. Test optional-plugin dependencies both enabled and absent.
+  Use prepared statements and the plugin's declared `plg_*` tables for plugin-owned data.
+- Test with the real database engine and application permissions. The portal database user is DML-only;
+  do not run ad-hoc schema changes from a request. `CREATE TABLE IF NOT EXISTS` does not upgrade an
+  existing table: define and test a supported upgrade path before changing its schema.
+- Scope deduplication keys to the provider's documented ID namespace, including account and receiving
+  number where needed. The same external ID for two independent destinations must not silently discard
+  one message. Enforce uniqueness atomically in the database; a SELECT followed by INSERT races under
+  concurrent webhook retries. Define behavior for missing IDs and partial attachment failures.
+- Check the actual event producer, event name and payload fields before implementing a consumer.
+  For example, `web/bin/voicemail_notify.php` emits `voicemail.created` with `extension`, `caller`,
+  `duration` and `new_count`; it does not supply a transcript. Its `voicemail.transcribed` emission
+  supplies `summary` and the full `transcript` when available (older releases supply only `summary`). Do not summarize call metadata
+  while presenting the result as a summary of the recording.
+- Test event delivery from producer to consumer, retries and out-of-order delivery. Mock fixtures must
+  match real payloads; a fixture invented to satisfy the consumer can conceal a broken integration.
+
+### Call flow, compatibility and lifecycle
+
+- Keep synchronous call-path work bounded. The provider timeout must fit inside the local callback
+  timeout, with time left for database and response processing. Document the maximum added delay;
+  synchronous HTTP is not delay-free. Use background jobs where the result is not needed immediately.
+- On lookup failure, preserve the existing caller name and allow the call to continue. Test timeout,
+  empty/malformed response and provider outage as well as success. Filter every value written into
+  Asterisk configuration; reject configuration syntax and control-character injection.
+- Set `requires_aipbx` to the first release containing every required hook, table and API. Code present
+  only on `main` is not available in an older release. Release the core dependency before publishing
+  a plugin that requires it, and test the declared minimum version.
+- Run on the supported PHP runtime, including PHP 8.5, with deprecations visible. Avoid obsolete calls
+  such as `curl_close()` on PHP 8.5. Keep dependencies and required extensions documented.
+- Verify fresh install, upgrade with existing data, repeated sync, disable/re-enable and uninstall.
+  Preserve data on disable, stop workers/callback effects when disabled, and verify token/configuration
+  cleanup. Document data retention and the destructive effects of uninstalling.
+
+### Evidence required before release
+
+Include applicable evidence in the plugin README or pull request. Mark checks that do not apply with
+an explanation; do not describe mocked provider tests as live integration tests.
+
+| Area | Required evidence |
+|---|---|
+| Authentication | External request, missing/wrong token, spoofed forwarding header and wrong method rejected before any paid request or side effect; valid caller succeeds. |
+| User permissions | User A cannot read, send, export or modify user B's records by changing an ID. |
+| Network safety | Controlled attempts to fetch loopback/private IPv4 and IPv6, a redirect to an internal target, and oversized/chunked media are rejected. Use an isolated local test server, never a production target. |
+| Data integrity | Real-schema queries pass; exact retries store once; independent destinations/accounts are preserved; concurrent retries do not duplicate side effects. |
+| Event contract | A real producer payload reaches the handler and produces the intended result, including the content needed by the feature. |
+| Call behavior | For dialplan/call changes, real calls on an isolated LXD test installation pass for success, timeout and failure. Generated-config assertions alone are insufficient. |
+| Packaging and compatibility | PHP lint, focused regression tests, minimum-version check, packaged ZIP install and upgrade with existing data pass. |
+| Provider behavior | Request/response fixtures cover errors as well as success; record separately whether a provider sandbox or live account was tested. |
+
+Security fixes require a reproducible isolated attack test that fails before the fix and passes after
+it. Run relevant checks in CI and keep them with the plugin. Passing syntax checks or a high coverage
+percentage alone does not establish correct authorization, billing behavior or call handling.
+
+Develop and test in a workspace or isolated installation. Do not edit the managed `/opt/aipbx` checkout
+on live servers. Distribute bundled changes through tagged AiPBX releases and community changes through
+the supported plugin package/catalog update path.
