@@ -55,4 +55,19 @@ final class DialplanReviewFixesTest extends TestCase
             syncFeatureCodes();
         }
     }
+
+    public function testInboundTrunkDialplanIncludesCnamHook(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_trunks (trunk_name, title, ip_address, is_active) VALUES ('testcnamtrunk', 'Test CNAM Trunk', '127.0.0.1', 1)");
+            syncInboundDialplan();
+            $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
+            $this->assertStringContainsString('GosubIf($[${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)', $conf);
+        } finally {
+            $db->rollBack();
+            syncInboundDialplan();
+        }
+    }
 }

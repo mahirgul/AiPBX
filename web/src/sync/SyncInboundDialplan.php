@@ -158,6 +158,7 @@ function __syncInboundDialplanBody() {
             // The caller's number first, so the blacklist sees the same form as everything after it.
             $same .= inboundNormLines($normRules, $t_name, 'caller');
             $same .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
+            $same .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
 
             if ($is_busy_tone_wrapper) {
                 // Hang-up tone detector (in-band disconnect supervision)
@@ -188,6 +189,7 @@ function __syncInboundDialplanBody() {
             $conf .= " same => n,GotoIf(\$[\"\${AIPBX_TO_USER}\" != \"\" & \"\${AIPBX_TO_USER}\" != \"s\"]?from-trunk-{$t_name},\${AIPBX_TO_USER},1)\n";
             $conf .= inboundNormLines($normRules, $t_name, 'caller');
             $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
+            $conf .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
             if ($is_busy_tone_wrapper) {
                 $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
             }
@@ -325,6 +327,7 @@ function __syncInboundDialplanBody() {
     $conf .= "[from-trunk-kapanma-tonu]\n";
     $conf .= "exten => _X.,1,NoOp(Hangup tone detector active - DID \${EXTEN})\n";
     $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
+    $conf .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
     $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
     $conf .= " same => n,Goto(from-trunk-inbound,\${EXTEN},1)\n\n";
 
