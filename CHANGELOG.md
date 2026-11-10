@@ -11,6 +11,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.73.0
+
+- **Modular installer architecture (`scripts/install/`):** Refactored the monolithic `install.sh` (2,800+ lines) into 15 focused, self-contained step scripts under `scripts/install/` while maintaining full backward-compatibility with remote piped execution (`curl -fsSL ... | sudo bash`) and the `install.sh --upgrade` workflow.
+- **Database privilege separation (DDL vs DML):** Separated migrator credentials into `/etc/ai-pbx-migrator.env` (0600 root:root). Hardened runtime portal database access (`/etc/ai-pbx.env`) to DML privileges only (SELECT, INSERT, UPDATE, DELETE). Added `aipbx-priv plugin-schema` broker command and `web/bin/plugin_schema.php` CLI helper for isolated plugin schema migrations.
+- **Asterisk CLI whitelisting & socket protection:** Hardened `/etc/asterisk` permissions to `0755 root:asterisk` and installed `/etc/asterisk/cli_permissions.conf` (0640 root:asterisk) with `default_perm = deny`, allowing only whitelisted non-destructive operational commands for `www-data` while blocking `core stop`, `module load`, and shell execution.
+- **Edge 443 multiplexer & service sandboxing:** Enforced rate and connection limits (`limit_conn` and `ssl_preread_timeout`) on Nginx Stream 443, configured systemd service sandboxes (`InaccessiblePaths` and `UMask=0027`), secured Composer cache and umask permissions, and enforced TLS certificate verification on SIP trunks.
+- **Root log and state isolation:** Added dedicated `aipbx-log-init`, `aipbx-proxy-https`, and `aipbx-system-state` privilege broker commands ensuring all root log and state files cannot be manipulated or hijacked by lower-privileged services.
+
 ## 1.72.12
 
 - **Inbound caller name (CNAM) dialplan integration (#159):** Added native `sub-cnam-lookup` hook into inbound trunk dialplans with dynamic `DIALPLAN_EXISTS` evaluation, sub-2s timeout fail-open execution, and caller ID name propagation before call distribution.
