@@ -5,6 +5,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 "What's new" on the **System Update** page. To update an installation:
 `sudo aipbx-update` (or portal → System → System Update).
 
+## 1.72.12
+
+- **Inbound caller name (CNAM) dialplan integration (#159):** Added native `sub-cnam-lookup` hook into inbound trunk dialplans with dynamic `DIALPLAN_EXISTS` evaluation, sub-2s timeout fail-open execution, and caller ID name propagation before call distribution.
+- **AI Voicemail transcription lifecycle synchronization:** Subscribed the AI Voicemail plugin to `voicemail.transcribed` instead of preliminary metadata events, guaranteeing completed Whisper speech-to-text transcripts and LLM summaries are reliably captured and displayed.
+- **Plugin development security framework & guidelines:** Documented comprehensive security standards (`docs/plugin-development.md`) covering loopback remote address enforcement, private lookup tokens, outbound SSRF prevention on media/webhooks, DNS rebinding mitigations, and database concurrency controls.
+- **Caller Name (CNAM) community plugin release (v1.0.0):** Published the official community CNAM plugin in the plugin catalog supporting BulkVS, OpenCNAM, Custom HTTP endpoints, and local extension/phonebook matching with a 30-day query cache to minimize provider lookup costs.
+
 ## 1.72.11
 
 - **Security hardening across authentication and credential boundaries:** Fixed a chat authentication token expiry bug where expired tokens were accepted while cached in memory, enforced persistent-only encryption keys in SecretBox to prevent credential loss across service restarts, and closed an outbound dialplan leakage loophole when all configured outbound routes are disabled.
