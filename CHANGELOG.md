@@ -11,6 +11,10 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.73.1
+
+- **Privileged plugin schema execution via privilege broker:** Fixed an issue in web portal plugin installations and updates where unprivileged web processes (`www-data`) failed to execute plugin `schema.sql` statements due to runtime database DDL restrictions. Unprivileged callers now transparently delegate DDL schema application and table drop operations to `sudo aipbx-priv plugin-schema`, ensuring seamless catalog updates without compromising database privilege isolation.
+
 ## 1.73.0
 
 - **Modular installer architecture (`scripts/install/`):** Refactored the monolithic `install.sh` (2,800+ lines) into 15 focused, self-contained step scripts under `scripts/install/` while maintaining full backward-compatibility with remote piped execution (`curl -fsSL ... | sudo bash`) and the `install.sh --upgrade` workflow.
