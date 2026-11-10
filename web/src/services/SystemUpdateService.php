@@ -11,9 +11,9 @@ require_once __DIR__ . '/../priv_helper.php';
  */
 class SystemUpdateService
 {
-    public const CHECK_FILE = '/var/lib/aipbx/update-check.json';
-    public const STATUS_FILE = '/var/lib/aipbx/update-status.json';
-    private const PAGE_TEST_FAILED = '/var/lib/aipbx/update-page-test-failed';
+    public const CHECK_FILE = '/var/lib/aipbx-system/update-check.json';
+    public const STATUS_FILE = '/var/lib/aipbx-system/update-status.json';
+    private const PAGE_TEST_FAILED = '/var/lib/aipbx-system/update-page-test-failed';
     public const LOG_FILE = '/var/log/aipbx/update.log';
 
     public static function currentVersion(): string

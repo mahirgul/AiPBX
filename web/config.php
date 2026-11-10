@@ -437,8 +437,8 @@ function logLoginAttempt($ip, $username, $status) {
         // The timestamp is written with its timezone offset: the portal
         // TIMEZONE and the server's system timezone may differ, and fail2ban
         // would take an offset-less time for system time and ignore the lines
-        // as being "in the future". install.sh makes the directory writable
-        // for www-data (/etc/fail2ban/jail.d/aipbx-web.local watches this file).
+        // as being "in the future". Only this file is writable by www-data;
+        // its parent stays root-owned (/etc/fail2ban watches this file).
         $log_line = sprintf("%s - [%s] FAILED_LOGIN user=%s\n", $ip, date(DATE_ATOM), $safe_username);
         @file_put_contents('/var/log/aipbx/web_login_failures.log', $log_line, FILE_APPEND);
         try {

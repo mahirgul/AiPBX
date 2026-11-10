@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/audit_log.php';
+require_once dirname(__DIR__) . '/priv_helper.php';
 
 /**
  * Service for Reverse Proxy management, client IP resolution behind trusted proxies,
@@ -87,6 +88,9 @@ final class ReverseProxyService
 
         $enabled = !empty($input['enabled']) ? '1' : '0';
         $trustedProxies = trim((string) ($input['trusted_proxies'] ?? self::DEFAULT_TRUSTED_PROXIES));
+        if (!self::validTrustedProxies($trustedProxies)) {
+            return ['success' => false, 'error' => t('reverse_proxy.err_invalid_proxies')];
+        }
         $tlsTermination = (string) ($input['tls_termination'] ?? 'edge');
         if (!in_array($tlsTermination, ['edge', 're_encrypt', 'none'], true)) {
             $tlsTermination = 'edge';
@@ -121,13 +125,68 @@ final class ReverseProxyService
             self::SETTING_PROXY_TYPE => $proxyType,
         ];
 
-        foreach ($updates as $k => $v) {
-            $stmt->execute([$k, $v]);
+        $applied = false;
+        $started = false;
+        $before = null;
+        try {
+            $db->beginTransaction();
+            $started = true;
+            // Serialize concurrent saves before changing either DB or Apache state.
+            $db->query("SELECT setting_key FROM sys_settings WHERE setting_key = 'proxy_enabled' FOR UPDATE");
+            $before = self::getSettings();
+            foreach ($updates as $k => $v) {
+                $stmt->execute([$k, $v]);
+            }
+            $result = PrivHelper::run(['proxy-https', 'apply'], self::httpsPolicyInput($enabled === '1', $trustedProxies));
+            if (!$result['success']) {
+                throw new \RuntimeException('Apache proxy policy could not be applied');
+            }
+            $applied = true;
+            $db->commit();
+        } catch (\Throwable $e) {
+            if ($started && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            if ($applied) {
+                $restored = PrivHelper::run(['proxy-https', 'apply'], self::httpsPolicyInput($before['enabled'], $before['trusted_proxies']));
+                if (!$restored['success']) {
+                    error_log('Reverse proxy settings: Apache policy rollback failed');
+                }
+            }
+            return ['success' => false, 'error' => t('reverse_proxy.err_apply_failed')];
         }
 
         writeAuditLog('security', 'reverse_proxy', 'update', "Updated reverse proxy settings (enabled={$enabled}, fqdn={$fqdn})", 'update', $userId);
 
         return ['success' => true];
+    }
+
+    private static function httpsPolicyInput(bool $enabled, string $trustedProxies): string
+    {
+        return json_encode(['enabled' => $enabled, 'trusted_proxies' => $trustedProxies], JSON_THROW_ON_ERROR);
+    }
+
+    /** Only numeric IPv4/IPv6 addresses and CIDRs can reach the root policy writer. */
+    private static function validTrustedProxies(string $list): bool
+    {
+        if (strlen($list) > 8192) {
+            return false;
+        }
+        $tokens = preg_split('/[\s,]+/', trim($list), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        if (count($tokens) > 128) {
+            return false;
+        }
+        foreach ($tokens as $token) {
+            $parts = explode('/', $token);
+            if (count($parts) > 2 || filter_var($parts[0], FILTER_VALIDATE_IP) === false) {
+                return false;
+            }
+            if (isset($parts[1]) && (!preg_match('/^[0-9]{1,3}$/D', $parts[1])
+                    || (int) $parts[1] > (str_contains($parts[0], ':') ? 128 : 32))) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -235,7 +294,8 @@ final class ReverseProxyService
     public static function isIpTrusted(string $ip, string $trustedList): bool
     {
         $ip = trim($ip);
-        if ($ip === '') {
+        $packed = @inet_pton($ip);
+        if ($packed === false) {
             return false;
         }
 
@@ -250,7 +310,7 @@ final class ReverseProxyService
                     return true;
                 }
             } else {
-                if (strcasecmp($ip, $token) === 0) {
+                if (@inet_pton($token) === $packed) {
                     return true;
                 }
             }
@@ -265,10 +325,14 @@ final class ReverseProxyService
     public static function ipInCidr(string $ip, string $cidr): bool
     {
         if (!str_contains($cidr, '/')) {
-            return strcasecmp($ip, $cidr) === 0;
+            $packed = @inet_pton($ip);
+            return $packed !== false && $packed === @inet_pton($cidr);
         }
 
         [$subnet, $mask] = explode('/', $cidr, 2);
+        if (!preg_match('/^[0-9]{1,3}$/D', $mask)) {
+            return false;
+        }
         $mask = (int) $mask;
 
         $isIpV6 = filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false;

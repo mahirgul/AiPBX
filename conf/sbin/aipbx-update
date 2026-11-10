@@ -35,7 +35,7 @@ fi
 trap 'rm -f "${AIPBX_UPDATE_REEXEC:-}"' EXIT
 
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
-STATE_DIR=/var/lib/aipbx
+STATE_DIR=/var/lib/aipbx-system
 STATUS_FILE="$STATE_DIR/update-status.json"   # read by the portal (www-data)
 CHECK_FILE="$STATE_DIR/update-check.json"     # read by the portal (www-data)
 LOG_FILE=/var/log/aipbx/update.log
@@ -59,12 +59,10 @@ done
 [[ $EUID -eq 0 ]] || { echo "Run as root: sudo aipbx-update" >&2; exit 1; }
 [[ -d "$INSTALL_DIR/.git" ]] || { echo "$INSTALL_DIR is not an AiPBX git installation" >&2; exit 1; }
 
-mkdir -p "$STATE_DIR" "$(dirname "$LOG_FILE")" "$BACKUP_ROOT"
+/usr/local/sbin/aipbx-log-init update || exit 1
+/usr/local/sbin/aipbx-system-state prepare || exit 1
+mkdir -p "$STATE_DIR" "$BACKUP_ROOT"
 chmod 700 "$BACKUP_ROOT"
-[[ -L "$LOG_FILE" ]] && rm -f "$LOG_FILE"
-[[ -f "$LOG_FILE" ]] || install -m 0640 -o root -g www-data /dev/null "$LOG_FILE" 2>/dev/null || touch "$LOG_FILE"
-chown root:www-data "$LOG_FILE" 2>/dev/null || true
-chmod 640 "$LOG_FILE"
 
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') $*" | tee -a "$LOG_FILE"; }
 json_str() { printf '%s' "$1" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))'; }

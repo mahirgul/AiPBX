@@ -132,6 +132,9 @@ final class ScheduledTasksTest extends TestCase
         $this->assertStringStartsNotWith('/var/lib/aipbx/', ScheduledTaskRunner::BASE_DIR . '/');
 
         $install = (string) file_get_contents(dirname(__DIR__, 3) . '/install.sh');
+        foreach (glob(dirname(__DIR__, 3) . '/scripts/install/*.sh') ?: [] as $step) {
+            $install .= "\n" . (string) file_get_contents($step);
+        }
         $this->assertStringContainsString('install -d -o root -g root -m 0755 /var/lib/aipbx-tasks', $install);
     }
 }

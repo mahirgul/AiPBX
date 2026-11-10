@@ -34,6 +34,28 @@ for s in asterisk mariadb nginx apache2 coturn aipbx-chat fail2ban firewalld; do
     check "service $s is running" systemctl is-active --quiet "$s"
 done
 
+# The plugin transition must connect to the DB as the portal user on a fresh
+# install too. Running it as root hides missing group membership and can create
+# privileged files inside the web-writable plugin directory.
+check "portal user can read its environment" runuser -u www-data -- php -r \
+    '$f = @fopen("/etc/ai-pbx.env", "rb"); if ($f === false) { exit(1); } fclose($f);'
+check "environment is not readable by unrelated users" runuser -u nobody -- php -r \
+    '$f = @fopen("/etc/ai-pbx.env", "rb"); if ($f !== false) { fclose($f); exit(1); }'
+check "migrator environment exists and is 0600 root:root" bash -c \
+    'test -f /etc/ai-pbx-migrator.env && [ "$(stat -c "%u:%g:%a" /etc/ai-pbx-migrator.env 2>/dev/null)" = "0:0:600" ]'
+check "portal user cannot read migrator environment" runuser -u www-data -- php -r \
+    '$f = @fopen("/etc/ai-pbx-migrator.env", "rb"); if ($f !== false) { fclose($f); exit(1); }'
+check "asterisk user cannot read migrator environment" runuser -u asterisk -- php -r \
+    '$f = @fopen("/etc/ai-pbx-migrator.env", "rb"); if ($f !== false) { fclose($f); exit(1); }'
+check "runtime environment does not contain DDL migrator secrets" bash -c \
+    '! grep -q "^MIGRATOR_DB_" /etc/ai-pbx.env'
+check "parent /etc/asterisk directory is not group writable" bash -c \
+    '[ "$(stat -c "%a" /etc/asterisk 2>/dev/null)" = "755" ]'
+check "cli_permissions.conf is protected 0640" bash -c \
+    'test -f /etc/asterisk/cli_permissions.conf && [ "$(stat -c "%u:%a" /etc/asterisk/cli_permissions.conf 2>/dev/null)" = "0:640" ]'
+check "plugin transition can be repeated as the portal user" \
+    runuser -u www-data -- php "$INSTALL_DIR/web/bin/migrate-bundled-plugins.php"
+
 # --- Portal login -------------------------------------------------------------
 # A known admin password (the generated one is only in the credentials file).
 E2E_PASS='E2e-Check-2026!'
@@ -154,7 +176,7 @@ rm -f "$E2E_DP"; asterisk -rx "dialplan reload" >/dev/null
 # name would win on format cost).
 # A fresh install is English and leaves the Turkish packages out (install.sh,
 # AIPBX_TR_SOUNDS=auto); they are checked when installed.
-if compgen -G "/var/lib/aipbx/sound-packs/core-tr-*.list" >/dev/null; then
+if compgen -G "/var/lib/aipbx-system/sound-packs/core-tr-*.list" >/dev/null; then
     tr_bad=""
     while IFS='|' read -r name _; do
         got=$(cd /var/lib/asterisk/sounds/tr && compgen -G "$name.*" | sed 's/.*\.//' | sort | tr '\n' ' ')

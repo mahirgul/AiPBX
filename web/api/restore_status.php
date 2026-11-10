@@ -8,7 +8,7 @@ header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 header('X-Content-Type-Options: nosniff');
 
-$file = '/var/lib/aipbx/restore-status.json';
+$file = '/var/lib/aipbx-system/restore-status.json';
 $raw = is_readable($file) ? file_get_contents($file) : false;
 $data = is_string($raw) ? json_decode($raw, true) : null;
 $token = (string) ($_SERVER['HTTP_X_RESTORE_TOKEN'] ?? '');

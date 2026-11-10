@@ -6,9 +6,13 @@ PASS=0; FAIL=0
 pass() { echo "PASS  $1"; PASS=$((PASS + 1)); }
 fail() { echo "FAIL  $1${2:+ — $2}"; FAIL=$((FAIL + 1)); }
 db() { mysql -N asterisk -e "$1"; }
-WORK="$(mktemp -d)"; DEST=/var/backups/aipbx-daily
+WORK="$(mktemp -d)"; DEST=/var/backups/aipbx-daily; STAGED=""
 marker() { db "SELECT setting_value FROM sys_settings WHERE setting_key = 'e2e_backup_marker'"; }
-cleanup() { db "DELETE FROM sys_settings WHERE setting_key = 'e2e_backup_marker'"; rm -rf "$WORK"; }
+cleanup() {
+    db "DELETE FROM sys_settings WHERE setting_key = 'e2e_backup_marker'"
+    if [[ -n "$STAGED" ]]; then runuser -u www-data -- python3 -c 'import os,sys; os.unlink(sys.argv[1])' "$STAGED"; fi
+    rm -rf "$WORK"
+}
 trap cleanup EXIT
 
 # The newest backup whose name ends in $1.
@@ -42,12 +46,15 @@ if [[ -e /etc/cron.d/e2e-evil ]]; then fail "nothing was planted"; else pass "no
 
 # A good upload, restored
 tar czf "$WORK/good.tgz" -C "$DEST" "$NAME"
-UP="$(aipbx-restore --import "$WORK/good.tgz" 2>/dev/null | tail -n 1)"
+STAGED="/var/lib/aipbx/backup-upload/$(openssl rand -hex 16).part"
+install -d -o www-data -g www-data -m 0700 /var/lib/aipbx/backup-upload
+runuser -u www-data -- python3 -c 'import sys; open(sys.argv[1],"xb").write(sys.stdin.buffer.read())' "$STAGED" < "$WORK/good.tgz"
+UP="$(aipbx-priv backup import "${STAGED##*/}" 2>/dev/null | tail -n 1)"
 if [[ "$UP" == *-upload* && -f "$DEST/$UP/uploaded" ]]; then pass "a good upload is accepted: $UP"; else fail "a good upload is accepted" "$UP"; fi
 sleep 61   # the safety backup is named by the minute
 aipbx-restore "$UP" >/dev/null 2>&1
 code=$?
-if [[ $code -eq 0 ]]; then pass "the restore finishes"; else fail "the restore finishes" "exit $code: $(cat /var/lib/aipbx/restore-status.json)"; fi
+if [[ $code -eq 0 ]]; then pass "the restore finishes"; else fail "the restore finishes" "exit $code: $(cat /var/lib/aipbx-system/restore-status.json)"; fi
 if [[ "$(marker)" == before ]]; then pass "the data is back"; else fail "the data is back" "$(marker)"; fi
 SAFETY="$(newest -before-restore)"
 if zcat "$DEST/$SAFETY/db.sql.gz" | grep -q "e2e_backup_marker','after'"; then pass "the safety backup holds the data from before"; else fail "the safety backup holds the data from before"; fi

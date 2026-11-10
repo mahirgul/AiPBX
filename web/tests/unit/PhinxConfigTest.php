@@ -110,4 +110,25 @@ final class PhinxConfigTest extends TestCase
         $this->assertSame('not-a-real-password', $cfg['pass']);
         $this->assertSame('mysql', $cfg['adapter']);
     }
+
+    public function testMigratorCredentialsLoadedFromDedicatedMigratorEnvFile(): void
+    {
+        // Runtime env file has only DML credentials; migrator credentials live in dedicated file
+        $runtimeEnv = $this->envFile([
+            'DB_HOST' => '127.0.0.1',
+            'DB_NAME' => 'asterisk',
+            'DB_USER' => 'aipbx_portal',
+            'DB_PASS' => 'dml-only-pass',
+        ]);
+        $migratorEnv = $this->envFile([
+            'MIGRATOR_DB_USER' => 'aipbx_migrator_dedicated',
+            'MIGRATOR_DB_PASS' => 'dedicated-ddl-pass',
+        ]);
+
+        $cfg = $this->production(['AIPBX_MIGRATOR_ENV_FILE' => $migratorEnv], $runtimeEnv);
+        $this->assertSame('127.0.0.1', $cfg['host']);
+        $this->assertSame('asterisk', $cfg['name']);
+        $this->assertSame('aipbx_migrator_dedicated', $cfg['user']);
+        $this->assertSame('dedicated-ddl-pass', $cfg['pass']);
+    }
 }

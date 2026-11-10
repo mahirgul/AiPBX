@@ -79,7 +79,7 @@ for svc in mariadb apache2 nginx asterisk aipbx-webhook-worker; do
 done
 http="$(curl -sk -o /dev/null -w '%{http_code}' --max-time 15 https://127.0.0.1/login)"
 if [[ "$http" == 200 ]]; then pass "the portal answers"; else fail "the portal answers" "HTTP $http"; fi
-if grep -q 'rolled_back' /var/lib/aipbx/update-status.json 2>/dev/null; then pass "the status says rolled back"; else fail "the status says rolled back" "$(cat /var/lib/aipbx/update-status.json 2>/dev/null | head -c 200)"; fi
+if grep -q 'rolled_back' /var/lib/aipbx-system/update-status.json 2>/dev/null; then pass "the status says rolled back"; else fail "the status says rolled back" "$(cat /var/lib/aipbx-system/update-status.json 2>/dev/null | head -c 200)"; fi
 
 echo "== $PASS passed, $FAIL failed"
 [[ $FAIL -eq 0 ]]

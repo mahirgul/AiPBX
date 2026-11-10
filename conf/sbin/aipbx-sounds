@@ -19,7 +19,7 @@
 #
 # Every installed pack keeps a file list; remove deletes exactly those files.
 # The portal starts this through aipbx-priv in its own systemd unit and reads
-# /var/lib/aipbx/sound-packs.json (installed) and sound-packs-status.json
+# /var/lib/aipbx-system/sound-packs.json (installed) and sound-packs-status.json
 # (running / done / failed).
 #
 # install.sh COPIES this file to /usr/local/sbin as root:root 0755.
@@ -37,7 +37,7 @@ TR_CACHE="/var/cache/aipbx/sounds-tr-${TR_VERSION}"
 SOUNDS_DIR=/var/lib/asterisk/sounds
 SYS_SOUNDS_DIR=/usr/share/asterisk/sounds
 MOH_DIR=/var/lib/asterisk/moh
-STATE_DIR=/var/lib/aipbx
+STATE_DIR=/var/lib/aipbx-system
 DB_FILE="$STATE_DIR/sound-packs.json"            # read by the portal (www-data)
 STATUS_FILE="$STATE_DIR/sound-packs-status.json" # read by the portal (www-data)
 MANIFEST_DIR="$STATE_DIR/sound-packs"
@@ -71,8 +71,9 @@ else
 fi
 MANIFEST="$MANIFEST_DIR/$KEY.list"
 
-mkdir -p "$STATE_DIR" "$MANIFEST_DIR" "$(dirname "$LOG_FILE")"
-touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+/usr/local/sbin/aipbx-log-init sound-packs || exit 1
+/usr/local/sbin/aipbx-system-state prepare || exit 1
+mkdir -p "$STATE_DIR" "$MANIFEST_DIR"
 
 exec 9>/run/aipbx-sounds.lock
 flock -n 9 || die "another sound pack operation is running"

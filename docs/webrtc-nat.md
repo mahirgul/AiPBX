@@ -60,6 +60,14 @@ coturn itself. After the server gets a new IP address run `sudo bash /opt/aipbx/
 or calls that need TURN have no audio. Check it in `/var/log/turnserver/turnserver.log`: a refused
 relay shows `peer IP … denied in the range`.
 
+`/etc/turnserver.conf` contains the long-lived shared authentication key. It is
+`root:turnserver 0640`; unrelated users must not be able to open it. Installer
+temporary files start at 0600, and retained `.new`/`.before-readdress` files are
+restricted too. An upgrade repairs old permissions without restarting coturn when
+the configuration is unchanged. Address refreshes preserve the ownership and mode.
+The portal still uses its runtime environment to issue short-lived credentials;
+these file permissions do not separate all service secrets.
+
 ### 3. A trusted certificate
 
 TURNS is TLS: browsers refuse a self-signed certificate or one for another name **without any visible

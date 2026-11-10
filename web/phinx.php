@@ -34,6 +34,19 @@ function phinxLoadEnv($path = null) {
             }
         }
     }
+    // DDL privileges isolation (P1.3): MIGRATOR_DB_USER / MIGRATOR_DB_PASS are restricted
+    // to root (/etc/ai-pbx-migrator.env, 0600 root:root). Merge if accessible.
+    $migratorPath = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
+    if (is_readable($migratorPath)) {
+        foreach (file($migratorPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#') continue;
+            if (strpos($line, '=') !== false) {
+                list($k, $v) = explode('=', $line, 2);
+                $env[trim($k)] = trim($v, " \t\"'");
+            }
+        }
+    }
     return $env;
 }
 

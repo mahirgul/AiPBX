@@ -27,6 +27,10 @@ set -uo pipefail   # deliberately no -e: the cases assert on failure statuses
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_SH="${1:-$ROOT/install.sh}"
+INSTALL_FILES=("$INSTALL_SH")
+if [ -d "$ROOT/scripts/install" ]; then
+    INSTALL_FILES+=("$ROOT"/scripts/install/*.sh)
+fi
 [ -f "$INSTALL_SH" ] || { echo "FAIL: no such file: $INSTALL_SH"; exit 2; }
 
 fail=0
@@ -57,7 +61,7 @@ echo '--- 0. the SSH advisory cannot fail a finished install'
 # a finished install reported failure and aipbx-update rolled the box back over
 # an advisory. The block is extracted from install.sh rather than copied, so a
 # revert to the bare `sshd -T` fails here.
-advisory="$(awk '/^ssh_cfg=/{p=1} p&&/All credentials saved to/{exit} p{print}' "$INSTALL_SH")"
+advisory="$(awk '/^ssh_cfg=/{p=1} p&&/All credentials saved to/{exit} p{print}' "${INSTALL_FILES[@]}")"
 if [ -z "$advisory" ]; then
     bad 'the SSH advisory is gone from install.sh (deleting it is not a fix)'
 else
@@ -188,13 +192,13 @@ pid_from() { sed -n "s/^$1: \([0-9][0-9]*\)$/\1/p" "$2" | head -1; }
 echo '--- 1. install.sh still routes apt and Composer through the helper'
 # The helper can be perfect and still guard nothing if the calls are reverted
 # to `apt-get ... | tail -5`, which is the form that hid the stall.
-grep -q 'stream_bounded "apt-get update"' "$INSTALL_SH" \
+grep -q 'stream_bounded "apt-get update"' "${INSTALL_FILES[@]}" \
     && pass 'apt-get update goes through stream_bounded' \
     || bad 'apt-get update no longer goes through stream_bounded'
-grep -q 'stream_bounded "apt-get install' "$INSTALL_SH" \
+grep -q 'stream_bounded "apt-get install' "${INSTALL_FILES[@]}" \
     && pass 'apt-get install goes through stream_bounded' \
     || bad 'apt-get install no longer goes through stream_bounded'
-if grep -nE '^[[:space:]]*([A-Za-z_]+=[^[:space:]]+[[:space:]]+)*apt-get\b[^#]*\|[[:space:]]*tail' "$INSTALL_SH"; then
+if grep -nE '^[[:space:]]*([A-Za-z_]+=[^[:space:]]+[[:space:]]+)*apt-get\b[^#]*\|[[:space:]]*tail' "${INSTALL_FILES[@]}"; then
     bad 'apt-get output is piped into tail again'
 else
     pass 'no apt-get output piped into tail'
@@ -202,16 +206,16 @@ fi
 # Composer prints nothing while a dist file comes down, so it is only bounded
 # correctly if it also names the directory its downloads land in: without it a
 # slow packagist fetch is silence again and a working install gets killed.
-grep -q 'stream_bounded "composer install"' "$INSTALL_SH" \
+grep -q 'stream_bounded "composer install"' "${INSTALL_FILES[@]}" \
     && pass 'composer install goes through stream_bounded' \
     || bad 'composer install no longer goes through stream_bounded'
-grep -qE 'COMPOSER_CACHE="\$\{COMPOSER_CACHE_DIR:-\$COMPOSER_HOME/cache\}"' "$INSTALL_SH" \
+grep -qE 'COMPOSER_CACHE="\$\{COMPOSER_CACHE_DIR:-\$COMPOSER_HOME/cache\}"' "${INSTALL_FILES[@]}" \
     && pass 'the progress directory is the Composer cache' \
     || bad 'the progress directory is not the Composer cache any more'
-grep -q -- '--progress="\$COMPOSER_CACHE"' "$INSTALL_SH" \
+grep -q -- '--progress="\$COMPOSER_CACHE"' "${INSTALL_FILES[@]}" \
     && pass 'composer install is told where its progress lands' \
     || bad 'composer install passes no progress directory'
-if grep -nE '^[[:space:]]*([A-Za-z_]+=[^[:space:]]+[[:space:]]+)*composer\b[^#]*\|[[:space:]]*tail' "$INSTALL_SH"; then
+if grep -nE '^[[:space:]]*([A-Za-z_]+=[^[:space:]]+[[:space:]]+)*composer\b[^#]*\|[[:space:]]*tail' "${INSTALL_FILES[@]}"; then
     bad 'composer output is piped into tail again'
 else
     pass 'no composer output piped into tail'

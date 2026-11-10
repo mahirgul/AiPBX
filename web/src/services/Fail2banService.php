@@ -7,7 +7,7 @@ require_once __DIR__ . '/../priv_helper.php';
  * Runs `fail2ban-client` as root through PrivHelper (the aipbx-priv `f2b`
  * subcommands) — no direct sudo call. jail.local is NOT touched for
  * persistence — a separate override file (OVERRIDE_FILE) is used, which is
- * also installed by aipbx-priv from STAGING_FILE.
+ * installed from a validated stdin snapshot by aipbx-priv.
  */
 class Fail2banService {
 
@@ -24,10 +24,9 @@ class Fail2banService {
 
     /**
      * jail.d belongs to root (a jail file can define a command to run, so the
-     * web user cannot write there). The panel stages the file here and
+     * web user cannot write there). The panel sends the content on stdin and
      * `aipbx-priv f2b install-override` validates it line by line and installs it.
      */
-    const STAGING_FILE = '/var/lib/aipbx/fail2ban-override.local';
 
     private static function run(string ...$args): array {
         return PrivHelper::run(array_merge(['f2b'], $args));
@@ -286,10 +285,7 @@ class Fail2banService {
             $lines[] = '';
         }
 
-        if (!FileHelper::writeFile(self::STAGING_FILE, implode("\n", $lines) . "\n", null, null, 0640)) {
-            return sprintf(t('srv_f2b.err_write'), self::STAGING_FILE);
-        }
-        $res = PrivHelper::run(['f2b', 'install-override']);
+        $res = PrivHelper::run(['f2b', 'install-override'], implode("\n", $lines) . "\n");
         if (!$res['success']) {
             return sprintf(t('srv_f2b.err_install'), self::OVERRIDE_FILE, trim($res['output']));
         }

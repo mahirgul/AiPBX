@@ -19,10 +19,10 @@ the networks listed for it go through that router.
 The work runs in its own systemd units: the portal's Apache sandbox keeps /etc read-only,
 and the network may go away under the request that asked for this.
 """
-import ipaddress, json, os, re, shutil, subprocess, sys, time, zlib
+import grp, ipaddress, json, os, re, shutil, stat, subprocess, sys, tempfile, time, zlib
 
 NETPLAN = '/etc/netplan'
-STATE_DIR = '/var/lib/aipbx/netcfg'
+STATE_DIR = '/var/lib/aipbx-system/netcfg'
 STATE = STATE_DIR + '/state.json'
 BACKUP = STATE_DIR + '/backup'
 CLOUD_OFF = '/etc/cloud/cloud.cfg.d/99-aipbx-disable-network-config.cfg'
@@ -565,10 +565,24 @@ def coturn_conf(text, ips, route_ip):
 def refresh_coturn():
     """Returns True when the addresses in coturn's configuration changed."""
     try:
-        with open(COTURN_CONF, encoding='utf-8') as f:
-            text = f.read()
-    except OSError:
+        fd = os.open(COTURN_CONF, os.O_RDONLY | os.O_NOFOLLOW)
+    except FileNotFoundError:
         return False
+    except OSError as e:
+        raise Refused('Cannot safely open coturn configuration') from e
+    try:
+        with os.fdopen(fd, encoding='utf-8') as f:
+            gid = grp.getgrnam('turnserver').gr_gid
+            info = os.fstat(f.fileno())
+            if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+                raise Refused('Unsafe coturn configuration')
+            # Repair permissions even on a no-op refresh or while no IP is up.
+            os.fchmod(f.fileno(), 0o600)
+            os.fchown(f.fileno(), 0, gid)
+            os.fchmod(f.fileno(), 0o640)
+            text = f.read()
+    except (OSError, KeyError) as e:
+        raise Refused('Cannot secure coturn configuration') from e
     ips = run(['hostname', '-I']).stdout.split()
     route = re.search(r'\bsrc (\S+)', run(['ip', '-4', 'route', 'get', '1.1.1.1']).stdout or '')
     if not ips:
@@ -576,8 +590,18 @@ def refresh_coturn():
     new = coturn_conf(text, ips, route.group(1) if route else (ips[0] if ips else ''))
     if new == text:
         return False
-    with open(COTURN_CONF, 'w', encoding='utf-8') as f:
-        f.write(new)
+    fd, path = tempfile.mkstemp(prefix='turnserver.conf.', dir=os.path.dirname(COTURN_CONF))
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8') as f:
+            os.fchown(f.fileno(), 0, gid)
+            os.fchmod(f.fileno(), 0o640)
+            f.write(new)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(path, COTURN_CONF)
+    finally:
+        if os.path.exists(path):
+            os.unlink(path)
     return True
 
 
@@ -623,6 +647,7 @@ def main():
         print('usage: aipbx-netcfg ' + '|'.join(k for k in COMMANDS if not k.startswith('do-') and k != 'boot-check'), file=sys.stderr)
         return 64
     try:
+        run(['/usr/local/sbin/aipbx-system-state', 'prepare'], check=True)
         COMMANDS[sys.argv[1]](sys.argv[2:])
     except Refused as e:
         print(str(e), file=sys.stderr)

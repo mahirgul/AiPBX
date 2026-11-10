@@ -7,12 +7,61 @@ require_once dirname(__DIR__, 2) . '/src/services/ReverseProxyService.php';
 
 final class ReverseProxyTest extends TestCase
 {
+    private ?\Closure $previousPrivFake;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->previousPrivFake = PrivHelper::$fake;
+        PrivHelper::$fake = static fn(array $args, ?string $input): array => ['success' => true, 'output' => ''];
         // Reset sys_settings for proxy keys
         $db = getDB();
         $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'proxy_%'");
+    }
+
+    protected function tearDown(): void
+    {
+        PrivHelper::$fake = $this->previousPrivFake;
+        parent::tearDown();
+    }
+
+    public function testUnsafeProxiesAreRejectedBeforePrivilegedApply(): void
+    {
+        PrivHelper::$fake = static function (): array {
+            throw new \LogicException('Invalid input reached the privileged helper');
+        };
+        foreach (["127.0.0.1\nInclude /tmp/evil", '0.0.0.0/no', '::1/129', '127.0.0.1/33',
+                  '127.0.0.1/-1', '127.0.0.1/255.255.255.0', 'fe80::1%eth0',
+                  str_repeat('127.0.0.1,', 129)] as $list) {
+            $result = ReverseProxyService::saveSettings(['enabled' => 1, 'trusted_proxies' => $list]);
+            $this->assertFalse($result['success'], $list);
+        }
+        $this->assertFalse(ReverseProxyService::getSettings()['enabled']);
+        $this->assertFalse(ReverseProxyService::ipInCidr('203.0.113.7', '0.0.0.0/invalid'));
+    }
+
+    public function testFailedApacheApplyDoesNotSaveNewTrust(): void
+    {
+        $this->assertTrue(ReverseProxyService::saveSettings(['enabled' => 1, 'trusted_proxies' => '::1'])['success']);
+        PrivHelper::$fake = static function (array $args, ?string $input): array {
+            self::assertSame(['proxy-https', 'apply'], $args);
+            self::assertSame(['enabled' => true, 'trusted_proxies' => '0.0.0.0/0'], json_decode((string) $input, true));
+            return ['success' => false, 'output' => 'Apache refused the policy'];
+        };
+        $this->assertFalse(ReverseProxyService::saveSettings(['enabled' => 1, 'trusted_proxies' => '0.0.0.0/0'])['success']);
+        $this->assertSame('::1', ReverseProxyService::getSettings()['trusted_proxies']);
+    }
+
+    public function testExistingTransactionIsNotRolledBackByFailedSave(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $this->assertFalse(ReverseProxyService::saveSettings(['enabled' => 1])['success']);
+            $this->assertTrue($db->inTransaction());
+        } finally {
+            if ($db->inTransaction()) { $db->rollBack(); }
+        }
     }
 
     public function testPortsMatrixContainsEssentialVoipAndWebPorts(): void
@@ -89,6 +138,8 @@ final class ReverseProxyTest extends TestCase
 
         $this->assertTrue(ReverseProxyService::isIpTrusted('127.0.0.1', $trustedList));
         $this->assertTrue(ReverseProxyService::isIpTrusted('::1', $trustedList));
+        $this->assertTrue(ReverseProxyService::isIpTrusted('::1', '0:0:0:0:0:0:0:1'));
+        $this->assertFalse(ReverseProxyService::isIpTrusted('invalid', 'invalid'));
         $this->assertTrue(ReverseProxyService::isIpTrusted('10.5.9.1', $trustedList));
         $this->assertTrue(ReverseProxyService::ipInCidr('192.168.10.50', '192.168.0.0/16'));
 

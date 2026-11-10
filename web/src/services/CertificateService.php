@@ -17,7 +17,7 @@ class CertificateService
     public const COTURN_CRT = '/etc/coturn/aipbx.crt';
     public const ASTERISK_CRT = '/etc/asterisk/keys/fullchain.pem';
     public const STAGE_DIR = '/var/lib/aipbx/cert-stage';
-    public const STATUS_FILE = '/var/lib/aipbx/cert-status.json';
+    public const STATUS_FILE = '/var/lib/aipbx-system/cert-status.json';
     public const CERTBOT = '/usr/bin/certbot';
     public const CF_CRED = '/etc/letsencrypt/cloudflare.ini';
     /** Let's Encrypt renews 30 days before expiry; warn when that did not happen. */

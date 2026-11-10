@@ -44,6 +44,21 @@ cmd="${1:-}"
 [ $# -gt 0 ] && shift
 
 case "$cmd" in
+    plugin-schema)
+        # plugin-schema apply|drop SLUG
+        [ $# -eq 2 ] || die "usage: plugin-schema apply|drop SLUG"
+        case "$1" in apply|drop) ;; *) die "invalid operation: $1" ;; esac
+        match "$2" '^[a-z0-9_-]{2,64}$'
+        WEB_DIR="$(readlink -f /var/www/html 2>/dev/null || echo /opt/aipbx/web)"
+        [ -f "$WEB_DIR/bin/plugin_schema.php" ] || die "plugin_schema.php not found"
+        exec /usr/bin/php "$WEB_DIR/bin/plugin_schema.php" "$1" "$2"
+        ;;
+
+    proxy-https)
+        [ $# -eq 1 ] && [ "$1" = apply ] || die "usage: proxy-https apply < settings.json"
+        exec /usr/bin/python3 -I /usr/local/sbin/aipbx-proxy-https apply
+        ;;
+
     service)
         # service restart|reload UNIT
         [ $# -eq 2 ] || die "usage: service restart|reload UNIT"
@@ -93,25 +108,18 @@ case "$cmd" in
                 ;;
             postmap)
                 [ $# -eq 0 ] || die "usage: postfix postmap"
-                src=/etc/postfix/sasl_passwd
-                [ -f /var/lib/aipbx/sasl_passwd ] && src=/var/lib/aipbx/sasl_passwd
-                [ -f "$src" ] && [ ! -L "$src" ] || die "sasl_passwd missing or invalid"
-                [ "$(stat -c %s "$src")" -le 4096 ] || die "sasl_passwd too large"
-                ! tr -d '\n' < "$src" | LC_ALL=C grep -q '[[:cntrl:]]' || die "control characters in sasl_passwd"
+                # Validate exactly the bytes received, in a root-only directory.
+                tmpdir="$(mktemp -d /run/aipbx-postmap.XXXXXXXX)" || exit 1
+                trap 'rm -rf "$tmpdir"' EXIT
+                src="$tmpdir/input"
+                dd of="$src" bs=4097 count=1 iflag=fullblock status=none || die "credential input failed"
+                [ "$(stat -c %s "$src")" -gt 0 ] && [ "$(stat -c %s "$src")" -le 4096 ] || die "invalid credential size"
+                ! tr -d '\n' < "$src" | LC_ALL=C grep -q '[[:cntrl:]]' || die "control characters in credentials"
                 lines="$(grep -cve '^[[:space:]]*$' "$src" || true)"
-                [ "${lines:-0}" -le 1 ] || die "sasl_passwd may only contain a single relay entry"
-                if [ "${lines:-0}" -eq 1 ]; then
-                    line="$(grep -m1 -ve '^[[:space:]]*$' "$src")"
-                    [[ "$line" =~ ^\[[A-Za-z0-9.:_-]{1,253}\]:[0-9]{1,5}\ [^[:space:][:cntrl:]]+:[^[:cntrl:]]+$ ]] \
-                        || die "invalid sasl_passwd entry format"
-                fi
-                if [ "$src" != /etc/postfix/sasl_passwd ]; then
-                    install -o root -g root -m 0600 "$src" /etc/postfix/sasl_passwd
-                    rm -f "$src"
-                else
-                    chown root:root /etc/postfix/sasl_passwd
-                    chmod 0600 /etc/postfix/sasl_passwd
-                fi
+                [ "$lines" -eq 1 ] || die "expected a single relay entry"
+                line="$(grep -m1 -ve '^[[:space:]]*$' "$src")"
+                [[ "$line" =~ ^\[[A-Za-z0-9.:_-]{1,253}\]:[0-9]{1,5}\ [^[:space:][:cntrl:]]+:[^[:cntrl:]]+$ ]] || die "invalid relay entry"
+                install -o root -g root -m 0600 "$src" /etc/postfix/sasl_passwd || exit 1
                 postmap /etc/postfix/sasl_passwd || exit $?
                 chown root:root /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db 2>/dev/null || true
                 chmod 0600 /etc/postfix/sasl_passwd /etc/postfix/sasl_passwd.db 2>/dev/null || true
@@ -288,17 +296,17 @@ case "$cmd" in
                 exec fail2ban-client set "$1" "$2" "$3"
                 ;;
             install-override)
-                # Validates the persistent settings file staged by the panel and
+                # Validates persistent settings received on stdin from the panel and
                 # installs it into jail.d. jail.d must stay root-owned: a jail file
                 # can define commands to run, so a web-writable one meant root.
                 [ $# -eq 0 ] || die "usage: f2b install-override"
-                stage=/var/lib/aipbx/fail2ban-override.local
                 tmp="$(mktemp)" || exit 1
                 trap 'rm -f "$tmp"' EXIT
-                # nofollow: a symlink must not make us read some other file.
-                dd if="$stage" of="$tmp" iflag=nofollow bs=65536 count=1 status=none \
+                # Capture stdin once; validate and install this private snapshot.
+                dd of="$tmp" iflag=fullblock bs=65536 count=1 status=none \
                     || die "staged file could not be read"
                 [ "$(stat -c %s "$tmp")" -lt 65536 ] || die "staged file too large"
+                [ -s "$tmp" ] || die "empty override input"
                 n=0
                 while IFS= read -r line || [ -n "$line" ]; do
                     n=$((n + 1))
@@ -368,7 +376,7 @@ case "$cmd" in
         # System Update page: version check and starting an update. The update
         # runs in the background as a separate systemd unit (the portal's Apache
         # is restarted during it, so it cannot run inside a request); progress
-        # is read from /var/lib/aipbx/update-status.json.
+        # is read from /var/lib/aipbx-system/update-status.json.
         sub="${1:-}"; [ $# -gt 0 ] && shift
         case "$sub" in
             check)
@@ -392,7 +400,7 @@ case "$cmd" in
                 # While an update waits for calls: end them after all, or give up.
                 [ $# -eq 0 ] || die "usage: update $sub"
                 # Also for an update started at the terminal, which is not that unit.
-                grep -q '"waiting_calls":[1-9]' /var/lib/aipbx/update-status.json 2>/dev/null || die "no update is waiting for calls"
+                grep -q '"waiting_calls":[1-9]' /var/lib/aipbx-system/update-status.json 2>/dev/null || die "no update is waiting for calls"
                 if [ "$sub" = end-calls ]; then touch /run/aipbx-update-end-calls; else touch /run/aipbx-update-cancel; fi
                 ;;
             *) die "unknown update command: $sub" ;;
@@ -468,7 +476,7 @@ case "$cmd" in
             keep)
                 [ $# -eq 1 ] || die "usage: backup keep DAYS"
                 match "$1" '^[1-9][0-9]{0,2}$'
-                printf '%s\n' "$1" > /var/lib/aipbx/backup-keep-days
+                exec /usr/local/sbin/aipbx-system-state keep "$1"
                 ;;
             *) die "unknown backup command: $sub" ;;
         esac
@@ -477,7 +485,7 @@ case "$cmd" in
     sounds)
         # Sounds page → Asterisk sound packs: sounds install|remove KIND LANG FORMAT.
         # Downloading can take minutes, so it runs in its own systemd unit;
-        # progress is read from /var/lib/aipbx/sound-packs-status.json.
+        # progress is read from /var/lib/aipbx-system/sound-packs-status.json.
         [ $# -eq 4 ] || die "usage: sounds install|remove KIND LANG FORMAT"
         case "$1" in install|remove) ;; *) die "invalid operation: $1" ;; esac
         case "$2" in core|extra|moh) ;; *) die "invalid kind: $2" ;; esac
@@ -1117,7 +1125,14 @@ FTPCONF
                 done
                 [ -n "$old" ] && [ -n "$new" ] && [ "$old" != "$new" ] || die "usage: net readdress old=IP new=IP"
                 if [ -f /etc/turnserver.conf ]; then
-                    cp -p /etc/turnserver.conf "/etc/turnserver.conf.before-readdress"
+                    [ ! -L /etc/turnserver.conf ] || die "unsafe coturn configuration"
+                    chmod 0600 /etc/turnserver.conf && chown root:turnserver /etc/turnserver.conf && chmod 0640 /etc/turnserver.conf || die "cannot secure coturn configuration"
+                    # Secure a legacy backup before cp can overwrite its contents.
+                    if [ -e /etc/turnserver.conf.before-readdress ] || [ -L /etc/turnserver.conf.before-readdress ]; then
+                        [ -f /etc/turnserver.conf.before-readdress ] && [ ! -L /etc/turnserver.conf.before-readdress ] || die "unsafe coturn backup"
+                        chmod 0600 /etc/turnserver.conf.before-readdress && chown root:turnserver /etc/turnserver.conf.before-readdress && chmod 0640 /etc/turnserver.conf.before-readdress || die "cannot secure coturn backup"
+                    fi
+                    cp -p /etc/turnserver.conf "/etc/turnserver.conf.before-readdress" || die "cannot back up coturn configuration"
                     sed -i "s/^relay-ip=${old//./\\.}\$/relay-ip=${new}/" /etc/turnserver.conf
                     sed -i '/^allowed-peer-ip=/d' /etc/turnserver.conf
                     for ip in $(hostname -I); do echo "allowed-peer-ip=$ip"; done >> /etc/turnserver.conf

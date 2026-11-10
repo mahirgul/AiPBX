@@ -272,6 +272,5 @@ SH;
     {
         $this->assertSame(['127.0.0.0/8', '::1'], Fail2banService::PROTECTED_IGNOREIPS);
         $this->assertSame('/etc/fail2ban/jail.d/zz-ai-pbx.local', Fail2banService::OVERRIDE_FILE);
-        $this->assertSame('/var/lib/aipbx/fail2ban-override.local', Fail2banService::STAGING_FILE);
     }
 }

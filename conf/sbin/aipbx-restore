@@ -28,18 +28,27 @@ export LC_ALL=C
 umask 077
 
 ENV_FILE=/etc/ai-pbx.env
-STATE_DIR=/var/lib/aipbx
+MIGRATOR_ENV_FILE=/etc/ai-pbx-migrator.env
+STATE_DIR=/var/lib/aipbx-system
 STATUS_FILE="$STATE_DIR/restore-status.json"
 LOG_FILE=/var/log/aipbx/restore.log
 INSTALL_DIR="${AIPBX_INSTALL_DIR:-/opt/aipbx}"
 RE_NAME='^aipbx-[0-9]{8}-[0-9]{4}(-[a-z-]{1,20})?$'
 
 env_get() { [[ -r "$ENV_FILE" ]] && sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//"; }
+migrator_env_get() {
+    if [[ -r "$MIGRATOR_ENV_FILE" ]]; then
+        sed -n "s/^$1=//p" "$MIGRATOR_ENV_FILE" | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//"
+    else
+        env_get "$1"
+    fi
+}
 DEST="$(env_get AIPBX_BACKUP_DIR)"; DEST="${DEST:-/var/backups/aipbx-daily}"
 DB_NAME="$(env_get DB_NAME)"; [[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] || DB_NAME=asterisk
 
-mkdir -p "$(dirname "$LOG_FILE")" "$STATE_DIR"
-touch "$LOG_FILE"; chgrp www-data "$LOG_FILE" 2>/dev/null; chmod 640 "$LOG_FILE"
+/usr/local/sbin/aipbx-log-init restore || exit 1
+/usr/local/sbin/aipbx-system-state prepare || exit 1
+mkdir -p "$STATE_DIR"
 log() { echo "$(date '+%F %T') $*" | tee -a "$LOG_FILE"; }
 
 TOKEN_HASH=""; NAME=""
@@ -60,7 +69,7 @@ import gzip, os, re, shutil, sys, tarfile
 
 ROOTS = ('etc/asterisk', 'var/lib/asterisk/sounds/custom', 'var/lib/asterisk/moh/custom',
          'etc/letsencrypt', 'var/lib/aipbx/plugins', 'etc/ssl/aipbx', 'etc/aipbx', 'var/lib/aipbx-vpn')
-FILES = ('etc/ai-pbx.env', 'var/lib/aipbx/settings.key')
+FILES = ('etc/ai-pbx.env', 'var/lib/aipbx/settings.key', 'etc/ai-pbx-migrator.env')
 MAX_CONFIG = 20 * 1024 ** 3
 MAX_DUMP = 200 * 1024 ** 3
 # Values that cannot leave their place in a generated Apache, nginx or systemd file. A
@@ -227,6 +236,12 @@ PY
 if [[ "${1:-}" == "--import" ]]; then
     FILE="${2:-}"
     [[ -f "$FILE" && ! -L "$FILE" ]] || { echo "no such file" >&2; exit 64; }
+    if [[ "$FILE" == /var/lib/aipbx/backup-upload/* ]]; then
+        IMPORT_TMP="$(mktemp -d /var/lib/aipbx-system/private/import.XXXXXXXX)" || exit 1
+        trap 'rm -rf "$IMPORT_TMP"' EXIT
+        /usr/local/sbin/aipbx-system-state snapshot backup "$IMPORT_TMP/upload" "${FILE##*/}" || exit 1
+        FILE="$IMPORT_TMP/upload"
+    fi
     mkdir -p "$DEST"
     STAMP="$(date +%Y%m%d-%H%M)"; OUT_NAME="aipbx-$STAMP-upload"
     # Two uploads in one minute must not replace each other.
@@ -304,9 +319,9 @@ log "Safety backup: $SAFETY"
 
 import_uploaded_dump() {  # dump
     local user pass cnf status
-    user="$(env_get MIGRATOR_DB_USER)"; pass="$(env_get MIGRATOR_DB_PASS)"
+    user="$(migrator_env_get MIGRATOR_DB_USER)"; pass="$(migrator_env_get MIGRATOR_DB_PASS)"
     if [[ -z "$user" || -z "$pass" ]]; then
-        log "No migration user in the environment file: an uploaded dump is not run as root"
+        log "No migration user configured in migrator env file: an uploaded dump is not run as root"
         return 1
     fi
     cnf="$(mktemp)"  # mode 600

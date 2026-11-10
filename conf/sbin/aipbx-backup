@@ -13,7 +13,7 @@
 #   aipbx-backup [--label WORD]   a labelled backup is named aipbx-YYYYmmdd-HHMM-WORD
 #                                 and is not copied off the server
 #
-# How many days to keep: /var/lib/aipbx/backup-keep-days (the Backup page), else
+# How many days to keep: /var/lib/aipbx-system/backup-keep-days (the Backup page), else
 # AIPBX_BACKUP_KEEP_DAYS.
 #
 # Optional settings in /etc/ai-pbx.env:
@@ -31,9 +31,11 @@ export LC_ALL=C
 
 ENV_FILE=/etc/ai-pbx.env
 LOG_FILE=/var/log/aipbx/backup.log
+/usr/local/sbin/aipbx-log-init backup || exit 1
+/usr/local/sbin/aipbx-system-state prepare || exit 1
 
 env_get() { [[ -r "$ENV_FILE" ]] && sed -n "s/^$1=//p" "$ENV_FILE" | tail -n 1 | sed "s/^[\"']//; s/[\"']\$//"; }
-log() { mkdir -p "$(dirname "$LOG_FILE")"; echo "$(date '+%F %T') $*" | tee -a "$LOG_FILE"; }
+log() { echo "$(date '+%F %T') $*" | tee -a "$LOG_FILE"; }
 
 DEST="$(env_get AIPBX_BACKUP_DIR)"; DEST="${DEST:-/var/backups/aipbx-daily}"
 LABEL=""
@@ -41,7 +43,7 @@ if [[ "${1:-}" == "--label" ]]; then
     LABEL="${2:-}"
     [[ "$LABEL" =~ ^[a-z-]{1,20}$ ]] || { echo "invalid label" >&2; exit 64; }
 fi
-KEEP="$(cat /var/lib/aipbx/backup-keep-days 2>/dev/null || true)"
+KEEP="$(cat /var/lib/aipbx-system/backup-keep-days 2>/dev/null || true)"
 [[ -n "$KEEP" ]] || KEEP="$(env_get AIPBX_BACKUP_KEEP_DAYS)"
 KEEP="${KEEP:-14}"
 [[ "$KEEP" =~ ^[0-9]+$ ]] || KEEP=14
@@ -71,7 +73,7 @@ paths=()
 # AI/TTS keys, S3, mail): a database restored without it cannot read them.
 # etc/ssl/aipbx holds uploaded or self-signed certificates, etc/aipbx the AI
 # service token. The archive is root-only (umask 077 above).
-for p in etc/ai-pbx.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt \
+for p in etc/ai-pbx.env etc/ai-pbx-migrator.env etc/asterisk var/lib/asterisk/sounds/custom var/lib/asterisk/moh/custom etc/letsencrypt \
          var/lib/aipbx/settings.key var/lib/aipbx/plugins etc/ssl/aipbx etc/aipbx var/lib/aipbx-vpn; do
     [[ -e "/$p" ]] && paths+=("$p")
 done

@@ -31,8 +31,9 @@ SELF_KEY=$TLS_DIR/aipbx.key
 CUSTOM_CRT=$TLS_DIR/custom.crt
 CUSTOM_KEY=$TLS_DIR/custom.key
 STAGE_DIR=/var/lib/aipbx/cert-stage
-STATUS_FILE=/var/lib/aipbx/cert-status.json
+STATUS_FILE=/var/lib/aipbx-system/cert-status.json
 ENV_FILE=/etc/ai-pbx.env
+/usr/local/sbin/aipbx-system-state prepare || exit 1
 
 ACTION="${1:-}"
 
@@ -126,9 +127,14 @@ le_live() { echo "/etc/letsencrypt/live/$1"; }
 # Reads a staged file without following symlinks (the stage is web-writable).
 read_staged() {
     local src="$1" dst="$2" max="$3"
-    dd if="$src" of="$dst" iflag=nofollow bs="$max" count=1 status=none 2>/dev/null \
-        || die "staged file missing: $(basename "$src")"
-    [ "$(stat -c %s "$dst")" -lt "$max" ] || die "staged file too large: $(basename "$src")"
+    local kind
+    case "$src" in
+        "$STAGE_DIR/cert.pem") kind=cert ;;
+        "$STAGE_DIR/key.pem") kind=key ;;
+        "$STAGE_DIR/cloudflare.ini") kind=cloudflare ;;
+        *) die "unknown staged input" ;;
+    esac
+    /usr/local/sbin/aipbx-system-state snapshot "$kind" "$dst" || die "unsafe staged certificate input"
 }
 
 # certbot prints the useful part of a failure on these lines.
@@ -209,7 +215,7 @@ do_letsencrypt() {
             trap 'rm -rf "${CF_TMP:-}"' EXIT
             local tmp="$CF_TMP"
             read_staged "$STAGE_DIR/cloudflare.ini" "$tmp/cloudflare.ini" 1024
-            rm -f "$STAGE_DIR/cloudflare.ini"
+            # The portal removes its own staging files after this command.
             if ! grep -qE '^[[:space:]]*dns_cloudflare_api_token[[:space:]]*=[[:space:]]*[A-Za-z0-9_-]{20,100}[[:space:]]*$' "$tmp/cloudflare.ini"; then
                 rm -rf "$tmp"
                 die "invalid Cloudflare API token format in staged credentials"
@@ -306,7 +312,7 @@ do_custom() {
     trap 'rm -rf "$tmp"' EXIT
     read_staged "$STAGE_DIR/cert.pem" "$tmp/cert.pem" 65536
     read_staged "$STAGE_DIR/key.pem" "$tmp/key.pem" 16384
-    rm -f "$STAGE_DIR/cert.pem" "$STAGE_DIR/key.pem"
+    # The portal removes staging files; root never unlinks through that directory.
 
     # Nothing but certificates in the chain file, nothing but one key in the key file.
     grep -vE '^-----(BEGIN|END) CERTIFICATE-----$|^[A-Za-z0-9+/=]*$' "$tmp/cert.pem" | grep -q . \

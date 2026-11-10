@@ -90,7 +90,7 @@ The tones are the ring and busy sounds callers hear. Changing them does not dist
 
 Network settings shows whether each network card is on DHCP or a static address, and can change it with the gateway and DNS servers. A wrong address cuts the server off, so the change goes back by itself after 3 minutes unless you open the portal at the new address and press **Keep this address**. If the address changed, then use **Apply the new address** so phones and TURN follow it.
 
-Only cards managed with netplan and systemd-networkd can be changed here. A desktop system with NetworkManager is shown only. The previous files are kept in `/var/lib/aipbx/netcfg/backup` until the change is confirmed.
+Only cards managed with netplan and systemd-networkd can be changed here. A desktop system with NetworkManager is shown only. The previous files are kept in `/var/lib/aipbx-system/netcfg/backup` until the change is confirmed.
 
 If you are locked out in spite of this, from the server's console: `sudo aipbx-netcfg revert`.
 

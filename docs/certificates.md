@@ -65,7 +65,7 @@ sudo aipbx-cert renew --dry-run
 sudo aipbx-cert selfsigned
 ```
 
-The result of the last operation is in `/var/lib/aipbx/cert-status.json` and on the page.
+The result of the last operation is in `/var/lib/aipbx-system/cert-status.json` and on the page.
 
 ## Renewals
 

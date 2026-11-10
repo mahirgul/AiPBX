@@ -13,8 +13,8 @@ require_once __DIR__ . '/../priv_helper.php';
  */
 class SoundPackService
 {
-    public const DB_FILE = '/var/lib/aipbx/sound-packs.json';
-    public const STATUS_FILE = '/var/lib/aipbx/sound-packs-status.json';
+    public const DB_FILE = '/var/lib/aipbx-system/sound-packs.json';
+    public const STATUS_FILE = '/var/lib/aipbx-system/sound-packs-status.json';
     public const LOG_FILE = '/var/log/aipbx/sound-packs.log';
 
     /** Formats offered (g729 / siren need codec modules most installs lack). */

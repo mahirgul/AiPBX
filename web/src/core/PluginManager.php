@@ -1210,14 +1210,36 @@ final class PluginManager
 
     /**
      * Return a PDO connection capable of running validated `plg_*` DDL statements.
-     * Uses `MIGRATOR_DB_USER` / `MIGRATOR_DB_PASS` from `/etc/ai-pbx.env` when configured
-     * (since runtime `aipbx_portal` is restricted to DML: SELECT/INSERT/UPDATE/DELETE),
-     * falling back to `getDB()` in test environments.
+     * Uses `MIGRATOR_DB_USER` / `MIGRATOR_DB_PASS` from `/etc/ai-pbx-migrator.env` (or
+     * `/etc/ai-pbx.env`) when configured (since runtime `aipbx_portal` is restricted
+     * to DML: SELECT/INSERT/UPDATE/DELETE), falling back to `getDB()` in test environments.
      */
     private static function getSchemaDB(): \PDO
     {
         $migUser = function_exists('portalEnv') ? (string)portalEnv('MIGRATOR_DB_USER', '') : '';
         $migPass = function_exists('portalEnv') ? (string)portalEnv('MIGRATOR_DB_PASS', '') : '';
+        if ($migUser === '' || $migPass === '') {
+            $migFile = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
+            if (is_readable($migFile)) {
+                $lines = @file($migFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+                foreach ($lines as $line) {
+                    $line = trim($line);
+                    if ($line === '' || $line[0] === '#') {
+                        continue;
+                    }
+                    if (str_contains($line, '=')) {
+                        [$k, $v] = explode('=', $line, 2);
+                        $k = trim($k);
+                        $v = trim($v, " \t\"'");
+                        if ($k === 'MIGRATOR_DB_USER') {
+                            $migUser = $v;
+                        } elseif ($k === 'MIGRATOR_DB_PASS') {
+                            $migPass = $v;
+                        }
+                    }
+                }
+            }
+        }
         if ($migUser !== '' && $migPass !== '') {
             try {
                 // Same server and port as the portal: a plugin schema applied

@@ -12,7 +12,6 @@ require_once __DIR__ . '/../priv_helper.php';
 class MailSettingsService
 {
     const SASL_PASSWD = '/etc/postfix/sasl_passwd';
-    const SASL_STAGE = '/var/lib/aipbx/sasl_passwd';
 
     /** Seconds the test e-mail waits for postfix to report the delivery result. */
     const TEST_WAIT = 20;
@@ -104,6 +103,7 @@ class MailSettingsService
         }
 
         $relay_spec = '[' . $host . ']:' . $port;
+        $saslInput = null;
         $steps = [
             ['postfix', 'relay', $host, (string) $port],
             ['postfix', 'tls', $security === 'ssl' ? 'wrapper' : ($security === 'tls' ? 'may' : 'none')],
@@ -117,19 +117,8 @@ class MailSettingsService
             }
             $steps[] = ['postfix', 'sasl', 'on'];
             if (!empty($pass)) {
-                // Stage in /var/lib/aipbx/sasl_passwd (0600) so `aipbx-priv postfix postmap`
-                // can validate and install it as root:root 0600 into /etc/postfix/sasl_passwd
-                // without locking www-data out on subsequent saves.
-                $line = $relay_spec . ' ' . $user . ':' . $pass . "\n";
-                $target = (is_dir(dirname(self::SASL_STAGE)) && is_writable(dirname(self::SASL_STAGE)))
-                    ? self::SASL_STAGE
-                    : self::SASL_PASSWD;
-                $oldUmask = umask(0077);
-                $written = @file_put_contents($target, $line, LOCK_EX);
-                umask($oldUmask);
-                if ($written === false) {
-                    return ['success' => false, 'error' => sprintf(t('srv_mail.err_sasl_write'), self::SASL_PASSWD)];
-                }
+                // The helper validates this exact stdin snapshot; no shared staging path.
+                $saslInput = $relay_spec . ' ' . $user . ':' . $pass . "\n";
                 $steps[] = ['postfix', 'postmap'];
             }
         } else {
@@ -138,7 +127,7 @@ class MailSettingsService
         $steps[] = ['service', 'reload', 'postfix'];
 
         foreach ($steps as $step) {
-            $res = PrivHelper::run($step);
+            $res = PrivHelper::run($step, $step === ['postfix', 'postmap'] ? $saslInput : null);
             if (!$res['success']) {
                 return ['success' => false, 'error' => $res['output']];
             }

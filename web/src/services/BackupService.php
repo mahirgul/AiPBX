@@ -11,10 +11,10 @@ require_once __DIR__ . '/SsoOnlyService.php';
  */
 class BackupService
 {
-    public const STATUS_FILE = '/var/lib/aipbx/restore-status.json';
+    public const STATUS_FILE = '/var/lib/aipbx-system/restore-status.json';
     public const LOG_FILE = '/var/log/aipbx/restore.log';
     public const UPLOAD_DIR = '/var/lib/aipbx/backup-upload';
-    public const KEEP_FILE = '/var/lib/aipbx/backup-keep-days';
+    public const KEEP_FILE = '/var/lib/aipbx-system/backup-keep-days';
     public const CHUNK_BYTES = 1048576;
     public const MAX_UPLOAD_GB = 5;
     private const RE_NAME = '/^aipbx-[0-9]{8}-[0-9]{4}(-[a-z-]{1,20})?$/D';

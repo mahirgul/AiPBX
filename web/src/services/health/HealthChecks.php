@@ -500,7 +500,7 @@ final class HealthChecks
 
     private static function update(): array
     {
-        $j = json_decode((string) @file_get_contents('/var/lib/aipbx/update-check.json'), true);
+        $j = json_decode((string) @file_get_contents('/var/lib/aipbx-system/update-check.json'), true);
         if (!is_array($j) || empty($j['ok'])) {
             return ['info', t('health.msg_update_unknown')];
         }

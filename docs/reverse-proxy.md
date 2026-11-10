@@ -50,7 +50,24 @@ Log in to the AiPBX portal as an administrator and navigate to **Network → Rev
 5. **Trusted Reverse Proxies**: The IP addresses of your reverse proxies; the default is this host only (`127.0.0.1, ::1`). Add the exact address of a proxy on another machine, and avoid whole private networks: every device in a trusted range can claim any client IP in `X-Forwarded-For`, which avoids sign-in lockouts and passes the allowed networks of phone provisioning.
 
 ### Security: Spoofing Prevention
-AiPBX enforces strict header validation. It will **ONLY** honor `X-Forwarded-For` and `X-Forwarded-Proto` headers when the immediate TCP connection originates from an address explicitly listed in **Trusted Reverse Proxies**. Direct connections from unauthorized IPs will have their headers stripped.
+AiPBX honors forwarded headers only when reverse proxy mode is enabled and the
+immediate connection comes from a configured trusted proxy. Untrusted forwarded
+headers do not establish client identity or HTTPS.
+
+The HTTP listener applies the same enabled/trusted-proxy settings before serving
+the portal or proxying WebSocket connections. A direct client sending
+`X-Forwarded-Proto: https` is still redirected to HTTPS. The decision uses the TCP
+peer (`CONN_REMOTE_ADDR`), independently of forwarded client addresses.
+
+Saving this page validates IPv4/IPv6 addresses and CIDRs, applies a fixed Apache
+condition through the privileged helper, and gracefully reloads Apache. If Apache
+rejects the change, the database settings and previous condition are restored.
+The condition is also rebuilt from saved settings on installation/upgrade.
+
+Configure the reverse proxy to **overwrite** `X-Forwarded-Proto` with the actual
+client-facing scheme. The HTTP listener accepts one `https` value; a comma-separated
+chain such as `https, http` is redirected. ACME, phone provisioning and local
+Asterisk HTTP callbacks keep their existing exceptions.
 
 ---
 

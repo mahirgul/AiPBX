@@ -18,6 +18,16 @@ on:
       - 'scripts/check_plugins.py'
       - 'scripts/test_check_plugins.py'
       - 'scripts/i18n.py'
+      - 'scripts/test_proxy_https.py'
+      - 'conf/sbin/aipbx-proxy-https'
+      - 'conf/sbin/aipbx-netcfg'
+      - 'scripts/test_aipbx_netcfg.py'
+      - 'conf/sbin/aipbx-log-init'
+      - 'scripts/test_log_paths.py'
+      - 'conf/sbin/aipbx-system-state'
+      - 'scripts/test_system_state.py'
+      - 'scripts/test_privilege_isolation.py'
+      - 'conf/asterisk/cli_permissions.conf'
       - '.github/workflows/web-ci.yml'
   pull_request:
     paths:
@@ -30,6 +40,16 @@ on:
       - 'scripts/check_plugins.py'
       - 'scripts/test_check_plugins.py'
       - 'scripts/i18n.py'
+      - 'scripts/test_proxy_https.py'
+      - 'conf/sbin/aipbx-proxy-https'
+      - 'conf/sbin/aipbx-netcfg'
+      - 'scripts/test_aipbx_netcfg.py'
+      - 'conf/sbin/aipbx-log-init'
+      - 'scripts/test_log_paths.py'
+      - 'conf/sbin/aipbx-system-state'
+      - 'scripts/test_system_state.py'
+      - 'scripts/test_privilege_isolation.py'
+      - 'conf/asterisk/cli_permissions.conf'
       - '.github/workflows/web-ci.yml'
   workflow_dispatch:
 
@@ -195,5 +215,11 @@ jobs:
         run: python3 scripts/test_check_plugins.py
       - name: VPN helper tests
         run: python3 scripts/test_aipbx_vpn.py && python3 scripts/test_aipbx_netcfg.py
+      - name: Trusted proxy policy security tests
+        run: python3 scripts/test_proxy_https.py
+      - name: Root log path security tests
+        run: python3 scripts/test_log_paths.py && python3 scripts/test_system_state.py
+      - name: Privilege isolation security tests (P1.3 / P1.4)
+        run: python3 scripts/test_privilege_isolation.py
       - name: Validate catalog plugins
         run: python3 scripts/check_plugins.py --no-php-lint

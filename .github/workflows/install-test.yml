@@ -92,13 +92,23 @@ jobs:
         run: |
           sudo /usr/local/sbin/aipbx-priv vpn status | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d["caps"]["wg"] and d["caps"]["ovpn"] and d["server"]["type"] == "off"'
           systemctl cat aipbx-vpn@.service >/dev/null
-      - name: An update with the portal's TFTP switched on
+      - name: An update preserves TFTP and trusted proxy settings
         run: |
           sudo /usr/local/sbin/aipbx-priv netsvc apply mode=tftp tftp=1 net=10.0.0.0/8
           sleep 2
           systemctl is-active aipbx-dnsmasq
           cd /opt/aipbx
+          # Disposable runner only: reproduce the old public config/backup modes.
+          # The TURN security step below must prove that the upgrade repairs all three.
+          sudo cp -p /etc/turnserver.conf /etc/turnserver.conf.new
+          sudo cp -p /etc/turnserver.conf /etc/turnserver.conf.before-readdress
+          sudo chown root:root /etc/turnserver.conf /etc/turnserver.conf.new /etc/turnserver.conf.before-readdress
+          sudo chmod 0644 /etc/turnserver.conf /etc/turnserver.conf.new /etc/turnserver.conf.before-readdress
+          sudo php -r 'require "web/config.php"; require "web/src/services/ReverseProxyService.php"; if (!ReverseProxyService::saveSettings(["enabled" => true, "trusted_proxies" => "127.0.0.0/8, ::1/128"])["success"]) { exit(1); }'
           sudo DEBIAN_FRONTEND=noninteractive bash install.sh --upgrade </dev/null > /tmp/upgrade-tftp.log 2>&1 || { tail -40 /tmp/upgrade-tftp.log; exit 1; }
+          sudo php -r 'require "web/config.php"; require "web/src/services/ReverseProxyService.php"; $s = ReverseProxyService::getSettings(); if (!$s["enabled"] || $s["trusted_proxies"] !== "127.0.0.0/8, ::1/128") { exit(1); }'
+          test "$(curl --noproxy '*' -sS --max-time 10 -o /dev/null -w '%{http_code}' -H 'X-Forwarded-Proto: https' http://127.0.0.1/login)" = 200
+          sudo php -r 'require "web/config.php"; require "web/src/services/ReverseProxyService.php"; if (!ReverseProxyService::saveSettings(["enabled" => false, "trusted_proxies" => "127.0.0.1, ::1"])["success"]) { exit(1); }'
           sudo /usr/local/sbin/aipbx-priv netsvc off
 
       - name: A real video meeting between two browsers
@@ -115,6 +125,18 @@ jobs:
 
       - name: Chat access and attachment security
         run: sudo env AIPBX_E2E=1 php scripts/e2e/chat_security.php
+
+      - name: HTTP redirect and trusted proxy security
+        run: sudo env AIPBX_E2E=1 php scripts/e2e/proxy_https.php
+
+      - name: TURN secret permissions and authenticated TLS relay
+        run: sudo env AIPBX_E2E=1 python3 scripts/e2e/turn_security.py
+
+      - name: Root log symlinks, real writers and logrotate
+        run: sudo env AIPBX_E2E=1 python3 scripts/e2e/log_security.py
+
+      - name: Protected job state and portal upload snapshots
+        run: sudo env AIPBX_E2E=1 python3 scripts/e2e/state_security.py
 
       - name: Real outbound call isolation
         timeout-minutes: 10

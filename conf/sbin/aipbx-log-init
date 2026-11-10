@@ -1,0 +1,134 @@
+#!/usr/bin/python3 -I
+"""Prepare fixed log paths before a privileged writer opens them."""
+import errno
+import fcntl
+import grp
+import os
+from pathlib import Path
+import pwd
+import secrets
+import stat
+import sys
+
+DIRECTORY = Path('/var/log/aipbx')
+ROOT_LOGS = ('backup', 'restore', 'update', 'sound-packs')
+TAIL_BYTES = 8 * 1024 * 1024
+
+
+def clear_acl(fd, default=False):
+    for name in ('system.posix_acl_access',) + (('system.posix_acl_default',) if default else ()):
+        try:
+            os.removexattr(fd, name)
+        except OSError as error:
+            if error.errno not in (errno.ENODATA, errno.ENOTSUP):
+                raise
+
+
+def _configure(names, directory, identities):
+    if identities is None:
+        identities = {
+            'root': (0, grp.getgrnam('www-data').gr_gid),
+            'web': (pwd.getpwnam('www-data').pw_uid, grp.getgrnam('adm').gr_gid),
+        }
+    root_uid, web_gid = identities['root']
+    directory.mkdir(mode=0o750, exist_ok=True)
+    directory_fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    archive_fd = None
+    try:
+        # No log is opened until the old directory owner has lost rename/unlink
+        # access. A directory fd also keeps all operations on this same inode.
+        os.fchown(directory_fd, root_uid, web_gid)
+        os.fchmod(directory_fd, 0o750)
+        clear_acl(directory_fd, default=True)
+        for name in names:
+            if name not in ROOT_LOGS + ('web_login_failures',):
+                raise ValueError('unknown log name')
+            filename = name + '.log'
+            uid, gid = identities['web' if name == 'web_login_failures' else 'root']
+            source_fd = None
+            try:
+                info = os.stat(filename, dir_fd=directory_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                info = None
+            try:
+                if info is not None and stat.S_ISREG(info.st_mode):
+                    source_fd = os.open(filename, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory_fd)
+                    info = os.fstat(source_fd)
+                    if info.st_nlink == 1 and info.st_uid == uid and not info.st_mode & 0o022:
+                        # Keep safe inodes: an update may already hold a stderr fd.
+                        clear_acl(source_fd)
+                        os.fchmod(source_fd, 0o600)
+                        os.fchown(source_fd, uid, gid)
+                        os.fchmod(source_fd, 0o640)
+                        continue
+                temporary = '.log-' + secrets.token_hex(16)
+                target_fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                                    0o600, dir_fd=directory_fd)
+                try:
+                    with os.fdopen(target_fd, 'wb') as target:
+                        # Untrusted logs cannot make migration copy a huge sparse
+                        # file or chase a symlink. Keep the full original below.
+                        if source_fd is not None and info.st_nlink == 1:
+                            start = max(0, info.st_size - TAIL_BYTES)
+                            remaining = min(info.st_size, TAIL_BYTES)
+                            while remaining:
+                                chunk = os.pread(source_fd, min(65536, remaining), start)
+                                if not chunk:
+                                    break
+                                target.write(chunk)
+                                start += len(chunk)
+                                remaining -= len(chunk)
+                        target.flush()
+                        os.fsync(target.fileno())
+                        os.fchown(target.fileno(), uid, gid)
+                        os.fchmod(target.fileno(), 0o640)
+                    if info is not None:
+                        if archive_fd is None:
+                            archive = '.legacy-' + secrets.token_hex(16)
+                            os.mkdir(archive, 0o700, dir_fd=directory_fd)
+                            archive_fd = os.open(archive, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=directory_fd)
+                        # Rename the entry, never chmod/chown a malicious target.
+                        os.rename(filename, filename, src_dir_fd=directory_fd, dst_dir_fd=archive_fd)
+                    os.replace(temporary, filename, src_dir_fd=directory_fd, dst_dir_fd=directory_fd)
+                finally:
+                    try:
+                        os.unlink(temporary, dir_fd=directory_fd)
+                    except FileNotFoundError:
+                        pass
+            finally:
+                if source_fd is not None:
+                    os.close(source_fd)
+        os.fsync(directory_fd)
+    finally:
+        if archive_fd is not None:
+            os.close(archive_fd)
+        os.close(directory_fd)
+
+
+def configure(names, directory=DIRECTORY, identities=None, lock_path=Path('/run/aipbx-log-init.lock')):
+    root_uid = identities['root'][0] if identities is not None else 0
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    with os.fdopen(fd, 'rb') as lock:
+        info = os.fstat(lock.fileno())
+        if not stat.S_ISREG(info.st_mode) or info.st_uid != root_uid or info.st_nlink != 1:
+            raise ValueError('unsafe log initialization lock')
+        os.fchmod(lock.fileno(), 0o600)
+        clear_acl(lock.fileno())
+        # The lock is outside the old web-owned directory and is root-only;
+        # an unprivileged reader cannot hold it to block backup/update jobs.
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        _configure(names, directory, identities)
+
+
+def main():
+    if os.geteuid() != 0 or len(sys.argv) != 2 or sys.argv[1] not in ROOT_LOGS + ('install',):
+        raise ValueError('usage (root only): aipbx-log-init install|backup|restore|update|sound-packs')
+    configure(ROOT_LOGS + ('web_login_failures',) if sys.argv[1] == 'install' else (sys.argv[1],))
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except (OSError, KeyError, ValueError) as error:
+        print('aipbx-log-init: ' + str(error), file=sys.stderr)
+        sys.exit(1)

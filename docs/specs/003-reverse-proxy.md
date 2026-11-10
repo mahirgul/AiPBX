@@ -36,7 +36,7 @@ Deploying AiPBX in modern enterprise infrastructure often requires running behin
 
 ### Acceptance Criteria (Definition of Done)
 - [x] **AC-1:** `/reverse-proxy` route accessible to administrators with full view and configuration persistence in `sys_settings`.
-- [x] **AC-2:** Client IP resolver traverses `X-Forwarded-For` right-to-left only when incoming packets originate from trusted CIDRs (`127.0.0.1`, `::1`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`), falling back to `X-Real-IP`. Direct untrusted connections never honor forwarded headers.
+- [x] **AC-2:** Client IP resolver traverses `X-Forwarded-For` right-to-left only when proxy mode is enabled and the connection originates from configured trusted addresses/CIDRs, falling back to `X-Real-IP`. Only loopback (`127.0.0.1`, `::1`) is trusted by default; private networks require explicit administrator configuration. Direct untrusted connections never honor forwarded headers.
 - [x] **AC-3:** Live reverse proxy config generators support Nginx, Caddy, Traefik, HAProxy, and Apache with WebSocket pass-through for `/ws` and `/chat/ws`.
 - [x] **AC-4:** Cloudflare DNS-01 challenge support added in `CertificateService`, `CertificateController`, and `conf/sbin/aipbx-cert` with wildcard support and secure credential staging (`mktemp -d`, `0600` permissions).
 - [x] **AC-5:** `ReverseProxyService::isHttps()` and `isHttpsRequest()` honor `X-Forwarded-Proto: https` from trusted proxies across Web Chat, OIDC, and SAML callbacks.
@@ -50,7 +50,7 @@ Deploying AiPBX in modern enterprise infrastructure often requires running behin
 ### 3.1 Settings & Storage
 Settings stored in `sys_settings`:
 - `proxy_enabled`: `'0'` or `'1'`
-- `proxy_trusted_proxies`: Comma/newline separated list of IPs and CIDRs (defaults to loopback and RFC 1918 private subnets)
+- `proxy_trusted_proxies`: Comma/newline separated list of IPv4/IPv6 addresses and CIDRs (defaults to loopback only; at most 128 entries)
 - `proxy_tls_termination`: `'edge'`, `'re_encrypt'`, or `'none'`
 - `proxy_external_fqdn`: External portal domain name
 - `proxy_external_port`: External HTTPS port (default `443`)

@@ -19,6 +19,12 @@ function buildCustomTransport(array $t, string $localNets, string $external, str
     $conf = "[{$name}]\ntype=transport\nprotocol={$protocol}\nbind={$addr}:" . (int) $t['port'] . "\nsymmetric_transport=yes\n";
     if ($protocol === 'tls') {
         $conf .= ($cert !== '' ? "cert_file={$cert}\n" : '') . ($key !== '' ? "priv_key_file={$key}\n" : '') . "method={$method}\n";
+        if (is_file('/etc/ssl/certs/ca-certificates.crt')) {
+            $conf .= "ca_list_file=/etc/ssl/certs/ca-certificates.crt\n";
+        }
+        if (!empty($t['verify_server'])) {
+            $conf .= "verify_server=yes\n";
+        }
     }
     $own = (string) preg_replace('/[^A-Za-z0-9.-]/', '', (string) $t['external_address']);
     $conf .= $localNets;
@@ -169,6 +175,18 @@ function __syncTransportsBody() {
         }
         if ($tls_domain !== '') {
             $conf .= "domain={$tls_domain}\n";
+        }
+        $tls_ca_file = trim((string)($settings['tls_ca_file'] ?? ''));
+        if (!empty($tls_ca_file)) {
+            $conf .= "ca_list_file={$tls_ca_file}\n";
+        } elseif (is_file('/etc/ssl/certs/ca-certificates.crt')) {
+            $conf .= "ca_list_file=/etc/ssl/certs/ca-certificates.crt\n";
+        }
+        $tls_verify_server = trim((string)($settings['tls_verify_server'] ?? ''));
+        if ($tls_verify_server === 'yes' || $tls_verify_server === '1') {
+            $conf .= "verify_server=yes\n";
+        } elseif ($tls_verify_server === 'no' || $tls_verify_server === '0') {
+            $conf .= "verify_server=no\n";
         }
         $conf .= "method={$tls_method}\n";
         $conf .= $local_net_lines;

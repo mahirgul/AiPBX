@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 """Checks and netplan editing of conf/sbin/aipbx-netcfg."""
 import importlib.machinery, importlib.util, os, tempfile, unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 path = os.path.join(os.path.dirname(__file__), '..', 'conf', 'sbin', 'aipbx-netcfg')
 loader = importlib.machinery.SourceFileLoader('netcfg', path)
 spec = importlib.util.spec_from_loader('netcfg', loader)
@@ -120,6 +122,44 @@ class Coturn(unittest.TestCase):
         self.assertEqual(out.count('allowed-peer-ip='), 1)
         self.assertIn('relay-ip=10.0.0.9\n', out)
         self.assertNotIn('10.0.0.2', out)
+
+    def test_refresh_secures_legacy_file_without_changing_content(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = temp + '/turnserver.conf'
+            with open(path, 'w') as stream: stream.write(self.CONF)
+            os.chmod(path, 0o644)
+            with patch.object(nc, 'COTURN_CONF', path), patch.object(nc.grp, 'getgrnam', return_value=SimpleNamespace(gr_gid=os.getgid())), \
+                    patch.object(nc.os, 'fchown', side_effect=lambda fd, uid, gid: self.assertEqual(os.fstat(fd).st_mode & 0o777, 0o600)) as chown, \
+                    patch.object(nc, 'run', side_effect=[SimpleNamespace(stdout='10.0.0.1 10.0.0.2'), SimpleNamespace(stdout='src 10.0.0.1')]):
+                self.assertFalse(nc.refresh_coturn())
+                chown.assert_called_once()
+            self.assertEqual(os.stat(path).st_mode & 0o777, 0o640)
+            with open(path) as stream: self.assertEqual(stream.read(), self.CONF)
+
+    def test_refresh_atomic_replacement_keeps_secret_private(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = temp + '/turnserver.conf'
+            with open(path, 'w') as stream: stream.write(self.CONF + 'static-auth-secret=test-only\n')
+            with patch.object(nc, 'COTURN_CONF', path), patch.object(nc.grp, 'getgrnam', return_value=SimpleNamespace(gr_gid=os.getgid())), \
+                    patch.object(nc.os, 'fchown'), patch.object(nc, 'run', side_effect=[SimpleNamespace(stdout='10.0.0.9'), SimpleNamespace(stdout='src 10.0.0.9')]):
+                self.assertTrue(nc.refresh_coturn())
+            self.assertEqual(os.stat(path).st_mode & 0o777, 0o640)
+            with open(path) as stream:
+                text = stream.read()
+            self.assertIn('static-auth-secret=test-only\n', text)
+            self.assertIn('relay-ip=10.0.0.9\n', text)
+            self.assertEqual(os.listdir(temp), ['turnserver.conf'])
+
+    def test_refresh_rejects_symlink_without_modifying_target(self):
+        with tempfile.TemporaryDirectory() as temp:
+            target, path = temp + '/canary', temp + '/turnserver.conf'
+            with open(target, 'w') as stream: stream.write('unchanged')
+            os.chmod(target, 0o644)
+            os.symlink(target, path)
+            with patch.object(nc, 'COTURN_CONF', path), self.assertRaises(nc.Refused):
+                nc.refresh_coturn()
+            self.assertEqual(os.stat(target).st_mode & 0o777, 0o644)
+            with open(target) as stream: self.assertEqual(stream.read(), 'unchanged')
 
 
 if __name__ == '__main__':

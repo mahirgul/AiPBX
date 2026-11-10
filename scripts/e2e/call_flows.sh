@@ -7,11 +7,12 @@
 # calls are started from the per-device contexts (from-internal-<device>-1) the
 # way phones, the mobile app and the web phone enter the dialplan.
 #
-#   bash call_flows.sh            (INSTALL_DIR=/opt/aipbx by default)
+#   bash call_flows.sh            (AIPBX_INSTALL_DIR=/opt/aipbx by default)
+# INSTALL_DIR is still accepted for existing standalone test invocations.
 #
 # Leaves the system as it found it (rules, settings, routes, trunk).
 set -uo pipefail
-INSTALL_DIR="${INSTALL_DIR:-/opt/aipbx}"
+INSTALL_DIR="${AIPBX_INSTALL_DIR:-${INSTALL_DIR:-/opt/aipbx}}"
 PASS=0; FAIL=0
 pass() { echo "PASS  $1"; PASS=$((PASS + 1)); }
 fail() { echo "FAIL  $1${2:+ — $2}"; FAIL=$((FAIL + 1)); }

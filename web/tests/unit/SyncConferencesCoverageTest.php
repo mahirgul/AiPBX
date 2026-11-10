@@ -290,6 +290,9 @@ final class SyncConferencesCoverageTest extends TestCase
         $this->assertStringContainsString('MEET_CHECK:0:5', $src, 'digits in an error page must not pass for a limit');
 
         $install = (string)file_get_contents(dirname(__DIR__, 3) . '/install.sh');
+        foreach (glob(dirname(__DIR__, 3) . '/scripts/install/*.sh') ?: [] as $step) {
+            $install .= "\n" . (string)file_get_contents($step);
+        }
         $this->assertStringContainsString('meeting_join_check', $install, 'the loopback call must not get the HTTPS redirect');
 
         $ext = (string)file_get_contents(dirname(__DIR__, 2) . '/src/sync/SyncExtensions.php');
