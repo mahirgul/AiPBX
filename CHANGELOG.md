@@ -7,11 +7,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
-### Archive & Previous Series
-- 📋 **AiPBX 1.7 Series (Current)** — this document (1.70.0 - 1.72+)
-- 📁 **[AiPBX 1.6 Series (1.60 - 1.61)](CHANGELOG-1.6.md)**
-- 📁 **[AiPBX 1.5 Series (1.50)](CHANGELOG-1.5.md)**
-- 📁 **[AiPBX 1.0 - 1.34 Archive](CHANGELOG-archive.md)**
+> ℹ️ Releases prior to version 1.70.0 are preserved in git release tags and release history.
 
 ---
 

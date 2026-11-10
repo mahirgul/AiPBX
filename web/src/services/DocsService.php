@@ -96,9 +96,6 @@ class DocsService
         'INSTALL',
         'ARCHITECTURE',
         'CHANGELOG',
-        'CHANGELOG-1.6',
-        'CHANGELOG-1.5',
-        'CHANGELOG-archive',
         'CONTRIBUTING',
         'SECURITY',
     ];
