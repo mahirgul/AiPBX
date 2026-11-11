@@ -115,6 +115,26 @@ final class DialplanReviewFixesTest extends TestCase
         }
     }
 
+    public function testDidlessCallChecksNormalizedDidWhenInboundNormRuleExists(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_trunks (trunk_name, title, ip_address, is_active) VALUES ('testnormdid', 'Test Norm DID Trunk', '127.0.0.1', 1)");
+            $db->exec("INSERT INTO pbx_inbound_norm_rules (rule_name, target, match_pattern, strip_front, prepend, trunk_name, is_active)
+                       VALUES ('Trunk DID Norm', 'did', '_0[0-9].', 1, '+90', 'testnormdid', 1)");
+            $db->exec("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('inbound_norm_enabled', '1') ON DUPLICATE KEY UPDATE setting_value = '1'");
+            syncInboundDialplan();
+            $s = $this->didlessBlock('testnormdid');
+            $this->assertStringContainsString('Set(NORMALIZED_DID=${AIPBX_DIALED})', $s);
+            $this->assertStringContainsString('GosubIf($[${DIALPLAN_EXISTS(innorm-did-t-testnormdid,${AIPBX_NORM_IN},1)}]?innorm-did-t-testnormdid,${AIPBX_NORM_IN},1)', $s);
+            $this->assertStringContainsString('${DIALPLAN_EXISTS(from-trunk-inbound,${NORMALIZED_DID},1)}', $s);
+        } finally {
+            $db->rollBack();
+            syncInboundDialplan();
+        }
+    }
+
     /** The trunk's `exten => s` lines, up to its route context. */
     private function didlessBlock(string $trunk): string
     {

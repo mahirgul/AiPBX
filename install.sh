@@ -52,9 +52,13 @@ case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
 esac
 # The number of `step "N. ..."` lines across scripts/install/*.sh, counted so a new step keeps the bar right.
 # Run as `curl ... | sudo bash` or when scripts cannot be read: fallback to 13.
-INSTALL_STEP_DIR="$(dirname "${BASH_SOURCE[0]:-}")/scripts/install"
-TOTAL_STEPS=$(grep -h -c '^step "[0-9]*\. ' "$INSTALL_STEP_DIR"/*.sh 2>/dev/null | awk '{s+=$1} END {print s}')
-[[ -n "$TOTAL_STEPS" && "$TOTAL_STEPS" -gt 0 ]] || TOTAL_STEPS=13
+TOTAL_STEPS=13
+INSTALL_STEP_DIR="$(dirname "${BASH_SOURCE[0]:-.}")/scripts/install"
+if [[ -d "$INSTALL_STEP_DIR" ]]; then
+    _COUNTED=$(grep -h -c '^step "[0-9]*\. ' "$INSTALL_STEP_DIR"/*.sh 2>/dev/null | awk '{s+=$1} END {print s}') || true
+    [[ -n "$_COUNTED" && "$_COUNTED" -gt 0 ]] && TOTAL_STEPS="$_COUNTED"
+    unset _COUNTED
+fi
 START_SECONDS=$SECONDS
 
 info()  { echo -e "   ${BLUE}${I_INFO}${NC} $*"; }

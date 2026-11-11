@@ -186,7 +186,7 @@ function __syncInboundDialplanBody() {
             $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
-            $conf .= didlessHeaderLines($t_name, $trim_digits, $allow_outbound);
+            $conf .= didlessHeaderLines($t_name, $trim_digits, $allow_outbound, $normRules);
             $no_did_number = preg_replace('/[^0-9+]/', '', (string) ($t['no_did_number'] ?? ''));
             if ($no_did_number !== '') {
                 $conf .= " same => n,Goto(from-trunk-{$t_name},{$no_did_number},1)\n";
@@ -382,11 +382,15 @@ function trunkLimitSubroutine(): string
 /**
  * Lines for a call without a DID: the user part of To, P-Called-Party-ID and Diversion, in
  * that order, is followed when an inbound route (or, with transit on, an internal number)
- * exists for it, as it is or after the trunk's DID trim. A number from the carrier without a
- * route is not followed: with transit on it could otherwise go out again.
+ * exists for it, as it is, after the trunk's DID trim, or after inbound DID normalization.
+ * A number from the carrier without a route is not followed: with transit on it could
+ * otherwise go out again.
+ *
+ * @param list<array<string, mixed>> $normRules
  */
-function didlessHeaderLines(string $trunk, int $trimDigits, bool $allowOutbound): string
+function didlessHeaderLines(string $trunk, int $trimDigits, bool $allowOutbound, array $normRules = []): string
 {
+    $hasDidNorm = (bool) array_filter($normRules, static fn(array $r): bool => ($r['target'] ?? '') === 'did');
     $out = '';
     foreach (['To' => 'to', 'P-Called-Party-ID' => 'pcpi', 'Diversion' => 'div'] as $header => $label) {
         $skip = "didless_{$label}_done";
@@ -404,6 +408,15 @@ function didlessHeaderLines(string $trunk, int $trimDigits, bool $allowOutbound)
         if ($trimDigits > 0) {
             $forms[] = "\${AIPBX_DIALED:-{$trimDigits}}";
         }
+        if ($hasDidNorm) {
+            $out .= " same => n,Set(NORMALIZED_DID=\${AIPBX_DIALED})\n";
+            if ($trimDigits > 0) {
+                $out .= " same => n,ExecIf(\$[\${LEN(\${NORMALIZED_DID})} >= {$trimDigits}]?Set(NORMALIZED_DID=\${NORMALIZED_DID:-{$trimDigits}}))\n";
+            }
+            $out .= inboundNormLines($normRules, $trunk, 'did');
+            $forms[] = '${NORMALIZED_DID}';
+        }
+        $forms = array_values(array_unique($forms));
         $routes = [];
         foreach ($forms as $f) {
             $routes[] = "\${DIALPLAN_EXISTS(from-trunk-inbound,{$f},1)}";

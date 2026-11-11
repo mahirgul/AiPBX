@@ -40,7 +40,8 @@ bad()  { printf 'FAIL  %s\n' "$*"; fail=1; }
 echo '--- 00. install.sh starts when piped (curl ... | sudo bash)'
 # Read from stdin, a script has no file: BASH_SOURCE is unset, and under set -u touching it ends
 # the run before the banner. 1.72.4's step counter did exactly that to the one-line install.
-head_out=$(sed -n '1,/^START_SECONDS=/p' "$INSTALL_SH" | bash 2>&1)
+# Also test from /tmp with set -euo pipefail so missing local step scripts fallback cleanly.
+head_out=$(cd /tmp && sed -n '1,/^START_SECONDS=/p' "$INSTALL_SH" | bash 2>&1)
 head_status=$?
 if [ "$head_status" -ne 0 ] || grep -q 'unbound variable' <<<"$head_out"; then
     bad "the start of install.sh fails when piped: $head_out"
