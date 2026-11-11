@@ -118,6 +118,7 @@ TURNS_PORT=443
 # --- Asterisk -> MariaDB (CDR / queue_log through ODBC) ---
 ODBC_DB_PASS=${ODBC_PASS}
 ENVFILE
+)
 fi   # install mode
 
 # Secrets are read by the portal (www-data) AND by the scripts Asterisk runs
