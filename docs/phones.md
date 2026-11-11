@@ -194,7 +194,24 @@ a number and a label:
 | Speed dial | any number | calls it |
 | Call park | parking slot | parks / retrieves |
 | Do not disturb | — | toggles DND |
-| Line | — | the account's line key (usually key 1) |
+| Line | — or a device-only extension | the account's line key (usually key 1); with a device-only extension, one more account on that key |
+
+**A second number on the phone.** A Line key may name a [device-only extension](extensions.md#the-form)
+(a shared line, the lobby number). The phone then registers that extension as one more account next
+to the user's own line: calls to it ring on that key, and pressing the key calls out from it. The same
+extension can sit on several phones; all of them ring. Only device-only extensions can be put on a
+key, so a key cannot make a phone register as another person. The web phone and the mobile app stay
+on the user's own number.
+
+| Vendor | Written | Accounts |
+|--------|---------|----------|
+| Yealink | `account.N.*`, the key's `line = N` | 2 (T31G), 4 (T33G), 12 or 16 on the larger models |
+| Snom | identity `idx="N"`, the key's `context="N"` | 4 (D315, D715), 12 on the others |
+| Grandstream | accounts 2 to 4 (P401…, P501…, P601…); the phone puts each on its next line key by itself | 2 (GRP2612), 4 on the others |
+
+A key beyond what the model registers, or one whose extension is no longer device only, falls back
+to the user's own line. Other vendors keep a single account. The Grandstream P-values are from the
+vendor's list and not yet confirmed on a phone.
 
 Empty keys are cleared on the phone, so a key removed on the page disappears from the phone too.
 **Copy to other users** gives the same layout to several users at once ("the same 15 keys for the

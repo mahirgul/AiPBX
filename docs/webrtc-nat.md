@@ -108,6 +108,29 @@ the answer never reached it, so each WebRTC call waited 3 × 3 seconds before th
 mapping gives Asterisk its public address without a network lookup, so `stunaddr` is off by default.
 The `rtp_stunaddr_enabled` system setting turns it back on for setups that need it.
 
+## Symmetric NAT, and where it does not work
+
+Media never goes from one client to another. Every WebRTC endpoint has direct media off, so a call
+is always client ↔ Asterisk, and Asterisk has a public address. A client behind symmetric NAT, or on
+a network that lets only TCP 443 out, cannot reach Asterisk's RTP ports; its path is then
+client → coturn (TLS on 443) → Asterisk, the `relay` pair in the troubleshooting below. Desk phones
+do not use ICE: they are reached at the address their packets come from (symmetric RTP, rewritten
+contact), see [Desk phones behind NAT](#desk-phones-behind-nat).
+
+Port 443 is shared without decrypting anything: nginx reads only the server name and the ALPN of
+the TLS hello and passes the connection on (web to Apache, TURN to coturn, SIP over TLS to
+Asterisk). That has limits no setting removes:
+
+| Network | What happens |
+|---------|--------------|
+| A proxy that decrypts and re-signs TLS (corporate "SSL inspection") | The portal may still open, with the proxy's certificate. TURN and SIP over TLS are not HTTP: the proxy drops them, so there is no media and desk phones on 443 do not register. Ask for the server to be exempted from inspection. |
+| A firewall that allows 443 only for traffic that looks like a browser (ALPN `h2`/`http/1.1`) | Browsers send TURN over TLS without ALPN: the relay is blocked. Same request: exempt the server. |
+| An explicit HTTP proxy (CONNECT) and no direct route | The browser reaches the portal through the proxy; WebRTC media does not use it unless the proxy allows CONNECT to the server on 443 for all traffic. |
+| Only UDP blocked, TCP 443 open | Works: this is the case the relay on 443 is for. |
+
+`tail /var/log/nginx/stream.log` shows whether the connection arrived at all and which backend got
+it; a network of the first two kinds leaves no line for the TURN attempt.
+
 ## Troubleshooting
 
 | Symptom | Check |

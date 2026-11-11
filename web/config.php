@@ -350,11 +350,12 @@ function getAvailableLanguages() {
 /**
  * Looks up the account a sign-in name refers to. The name may be a username
  * or an extension; when one user's username equals another user's
- * extension, the username match wins.
+ * extension, the username match wins. A device-only extension (is_device)
+ * is no account: it cannot sign in.
  */
 function findLoginUser(string $login, string $columns): array|false
 {
-    $stmt = getDB()->prepare("SELECT {$columns} FROM sys_users WHERE username = ? OR extension = ? ORDER BY (username = ?) DESC, id ASC LIMIT 1");
+    $stmt = getDB()->prepare("SELECT {$columns} FROM sys_users WHERE (username = ? OR extension = ?) AND is_device = 0 ORDER BY (username = ?) DESC, id ASC LIMIT 1");
     $stmt->execute([$login, $login, $login]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }

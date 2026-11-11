@@ -172,7 +172,7 @@ func GetUserByID(id int) (*User, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
-	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 AND role != 'fax_user' LIMIT 1", id)
+	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 AND is_device = 0 AND role != 'fax_user' LIMIT 1", id)
 	var u User
 	var active int
 	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active, &u.TokenEpoch)
@@ -190,7 +190,7 @@ func GetUserByID(id int) (*User, error) {
 }
 
 func GetUserByExt(ext string) (*User, error) {
-	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active FROM sys_users WHERE extension = ? AND is_active = 1 LIMIT 1", ext)
+	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active FROM sys_users WHERE extension = ? AND is_active = 1 AND is_device = 0 LIMIT 1", ext)
 	var u User
 	var active int
 	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active)
@@ -216,7 +216,7 @@ func GetContacts(currentExt string) ([]Contact, error) {
 		           WHERE p.extension = ? AND p.left_at IS NULL
 		       ), 0) AS unread_count
 		FROM sys_users u
-		WHERE u.is_active = 1 AND u.extension IS NOT NULL AND u.extension != '' AND u.extension != ? AND u.role != 'fax_user'
+		WHERE u.is_active = 1 AND u.is_device = 0 AND u.extension IS NOT NULL AND u.extension != '' AND u.extension != ? AND u.role != 'fax_user'
 		ORDER BY (u.extension REGEXP '^[0-9]+$') DESC, CAST(u.extension AS UNSIGNED) ASC, u.extension ASC
 	`
 	rows, err := db.Query(query, currentExt, currentExt)

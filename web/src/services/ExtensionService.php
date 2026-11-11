@@ -30,6 +30,12 @@ class ExtensionService {
             $cid_internal = trim($data['cid_internal'] ?? '');
             $cid_external = trim($data['cid_external'] ?? '');
             $is_active = PBXHelper::boolFlag($data, 'is_active', 0);
+            // Device only: a SIP extension without a portal user. Left as it is when the caller
+            // does not send the field (API, import).
+            $is_device = array_key_exists('is_device', $data) ? (int) !empty($data['is_device']) : null;
+            if ($extension_type === 'fax') {
+                $is_device = $is_device === null ? null : 0;
+            }
             $pickup_group = preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) ($data['pickup_group'] ?? '')));
             $dnd_enabled = PBXHelper::boolFlag($data, 'dnd_enabled', 0);
             $call_forward_number = preg_replace('/[^0-9+*#]/', '', trim((string) ($data['call_forward_number'] ?? '')));
@@ -111,6 +117,10 @@ class ExtensionService {
             // Save/Update Extension
             if ($user_id > 0) {
                 $old_role = DBHelper::fetchColumn('SELECT role FROM sys_users WHERE id = ?', [$user_id]);
+                // An admin, or the account doing this, would be locked out of the portal.
+                if ($is_device === 1 && ($old_role === 'admin' || $user_id === (int) ($_SESSION['user_id'] ?? 0))) {
+                    throw new \Exception(t('srv_ext.err_device_admin'));
+                }
                 if ($old_role === 'admin' && $is_active == 0) {
                     $other_admins = DBHelper::fetchColumn("SELECT COUNT(*) FROM sys_users WHERE role = 'admin' AND is_active = 1 AND id != ?", [$user_id]);
                     if (intval($other_admins) < 1) {
@@ -148,7 +158,11 @@ class ExtensionService {
                     'cf_noanswer_number' => $cf_noanswer_number !== '' ? $cf_noanswer_number : null,
                     'cf_noanswer_timeout' => $cf_noanswer_timeout,
                     'is_active' => $is_active
-                ], 'id', $user_id);
+                ] + self::deviceColumns($is_device), 'id', $user_id);
+                if ($is_device === 1) {
+                    // Sessions and mobile tokens of the former user end now.
+                    getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
+                }
                 // The SIP secret must follow the panel password: SyncExtensions
                 // prefers sip.secret over sys_users.sip_password, so writing
                 // only auth_digest here left the PJSIP endpoint on the OLD
@@ -217,7 +231,7 @@ class ExtensionService {
                     'cf_noanswer_timeout' => $cf_noanswer_timeout,
                     'is_active' => $is_active,
                     'created_at' => date('Y-m-d H:i:s')
-                ]);
+                ] + self::deviceColumns($is_device));
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $sip_password, $sip_auth_digest);
                 if ($extension_type === 'sip') {
                     ExtensionSipOptions::save($extension, $data);
@@ -235,6 +249,20 @@ class ExtensionService {
     }
 
     /** Devices that may register at once. A blank field keeps what is stored. */
+
+    /**
+     * Columns of a device-only extension: it rings as a SIP phone and nothing else.
+     *
+     * @return array<string, int|string>
+     */
+    private static function deviceColumns(?int $isDevice): array
+    {
+        if ($isDevice === null) {
+            return [];
+        }
+        return $isDevice === 1 ? ['is_device' => 1, 'allowed_phone_mode' => 'sip'] : ['is_device' => 0];
+    }
+
     private static function saveMaxContacts(string $extension, array $data): void
     {
         $value = trim((string) ($data['max_contacts'] ?? ''));

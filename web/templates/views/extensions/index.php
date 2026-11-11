@@ -60,7 +60,7 @@
                         <tr>
                             <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $e['id']; ?></td>
                             <td><span class="badge badge-info"><i class="fas fa-phone-alt"></i> <?php echo htmlspecialchars($e['extension']); ?></span></td>
-                            <td class="u-strong"><?php echo htmlspecialchars($e['full_name']); ?></td>
+                            <td class="u-strong"><?php echo htmlspecialchars($e['full_name']); ?><?php if (!empty($e['is_device'])): ?> <span class="badge badge-secondary u-fs-10 u-ml-4"><i class="fas fa-phone"></i> <?php echo t('extensions.badge_device'); ?></span><?php endif; ?></td>
                             <td class="col-hide-mobile"><?php echo htmlspecialchars($e['username']); ?></td>
                             <td class="col-hide-mobile">
                                 <?php if ($e['extension_type'] === 'fax'): ?>
@@ -200,6 +200,15 @@
                             <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">
                             <span class="u-fw-600"><?php echo t('extensions.field_active'); ?></span>
                         </label>
+                    </div>
+
+                    <div class="form-group u-mt-12" id="modal_is_device_group">
+                        <input type="hidden" name="is_device" value="0">
+                        <label class="form-label u-check-label">
+                            <input type="checkbox" name="is_device" id="modal_is_device" value="1" class="u-check">
+                            <span class="u-fw-600"><?php echo t('extensions.field_is_device'); ?></span>
+                        </label>
+                        <small class="u-hint u-fs-11"><?php echo t('extensions.is_device_help'); ?></small>
                     </div>
                 </div>
 

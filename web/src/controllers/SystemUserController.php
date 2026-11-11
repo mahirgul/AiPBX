@@ -41,7 +41,7 @@ class SystemUserController extends BaseController
             if (!static::verifyCsrf()) {
                 $error = t('login.csrf_error');
             } elseif (isset($_POST['save_system_user'])) {
-                $res = UserService::saveUser(['require_extension' => 1] + $_POST);
+                $res = UserService::saveUser($_POST);
                 ['message' => $message, 'error' => $error] = static::notices($res);
                 // A generated password is shown only in this response, in a
                 // box that stays until closed (a 6 s toast would lose it).

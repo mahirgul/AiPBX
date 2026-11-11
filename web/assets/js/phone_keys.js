@@ -47,13 +47,16 @@
         return cell;
     }
 
-    // DND and line keys have no target.
+    // A DND key has no target. A line key may name a device-only extension: the phone then
+    // registers it as one more account (empty = the user's own line).
     function syncTarget(cell) {
         const type = cell.querySelector('.key-type').value;
         const target = cell.querySelector('.key-target');
         const needsTarget = type === 'blf' || type === 'speeddial' || type === 'park';
-        target.style.visibility = needsTarget ? 'visible' : 'hidden';
+        const deviceLine = type === 'line' && data.accounts > 1;
+        target.style.visibility = needsTarget || deviceLine ? 'visible' : 'hidden';
         target.required = needsTarget;
+        target.placeholder = __(deviceLine ? 'js.phones.key_line_target' : 'js.phones.key_target');
     }
 })();
 
@@ -66,7 +69,8 @@ function collectPhoneKeys() {
             page: parseInt(cell.dataset.page, 10),
             position: parseInt(cell.dataset.position, 10),
             type: type,
-            target: cell.querySelector('.key-target').value.trim(),
+            // A hidden field may still hold the number of the key's former type.
+            target: cell.querySelector('.key-target').style.visibility === 'hidden' ? '' : cell.querySelector('.key-target').value.trim(),
             label: cell.querySelector('.key-label').value.trim(),
         });
     });

@@ -63,3 +63,13 @@ New installations install the plugin from the community catalog. Disabling prese
 uninstalling drops the plugin tables. Later updates come from the plugin catalog.
 
 Callback authentication requires exact loopback origin and per-installation HTTP Basic credentials. Apply configuration before starting campaigns after upgrading. The installer performs file migration as `www-data`, avoiding privileged writes into plugin-controlled directories.
+
+## Before a campaign: caller reputation and the law
+
+Answer rates depend far more on the calling number than on the dialer. Carriers label or block
+numbers that place many short or unanswered calls; use numbers you own, attest them through your
+trunk provider where it applies (STIR/SHAKEN in North America), pace campaigns to the agents that
+are free and give every call a way to opt out. Automated calls are regulated almost everywhere
+(TCPA and do-not-call lists in the United States, İYS and BTK rules in Turkey, consent rules under
+GDPR): dialling only numbers you may call, at the hours you may call them, is the operator's
+responsibility.

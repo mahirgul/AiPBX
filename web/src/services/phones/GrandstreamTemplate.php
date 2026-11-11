@@ -17,6 +17,12 @@ final class GrandstreamTemplate extends PhoneTemplate
     /** MPK modes; dnd and line have no MPK mode and are skipped. */
     private const KEY_MODES = ['speeddial' => 0, 'blf' => 1, 'park' => 9];
 
+    /**
+     * P-value base of accounts 2 to 4 (account 2: P401 active, P402 server, … P417 name), from
+     * Grandstream's P-value list for GXP/GRP. Not yet confirmed on a real phone.
+     */
+    private const ACCOUNT_BASE = [2 => 400, 3 => 500, 4 => 600];
+
     /** RTP payload numbers in P57…P62. */
     private const CODECS = ['pcmu' => 0, 'pcma' => 8, 'g722' => 9, 'g729' => 18, 'opus' => 123];
 
@@ -79,6 +85,26 @@ final class GrandstreamTemplate extends PhoneTemplate
             'P1347' => self::clean($ctx['pickup_prefix']),     // BLF call-pickup prefix
             'P2' => self::clean($ctx['admin_password'], 128),  // web admin password
         ];
+
+        // Accounts 2 to 4: device-only extensions of line keys. The phone shows each on its next
+        // line key by itself (a "line" key has no multi-purpose key mode, see KEY_MODES).
+        foreach ($ctx['accounts'] ?? [] as $n => $account) {
+            $base = self::ACCOUNT_BASE[(int) $n] ?? null;
+            if ($base === null) {
+                continue;
+            }
+            $p['P' . ($base + 1)] = '1';                                       // account active
+            $p['P' . ($base + 17)] = self::clean($account['extension']);       // account name
+            $p['P' . ($base + 2)] = $server;                                   // SIP server
+            $p['P' . ($base + 3)] = $p['P48'];                                 // outbound proxy
+            $p['P' . ($base + 4)] = self::clean($account['extension']);        // SIP user ID
+            $p['P' . ($base + 5)] = self::clean($account['extension']);        // authenticate ID
+            $p['P' . ($base + 6)] = self::clean($account['sip_password'], 128);
+            $p['P' . ($base + 7)] = self::clean($account['display_name']);
+            $p['P' . ($base + 26)] = self::clean($ctx['voicemail']);           // voicemail access number
+            $p['P' . ($base + 48)] = $p['P130'];                               // transport
+            $p['P' . ($base + 43)] = $p['P183'];                               // SRTP
+        }
 
         $slot = 57;
         foreach ($ctx['codecs'] as $codec) {

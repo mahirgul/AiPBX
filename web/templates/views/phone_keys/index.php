@@ -56,6 +56,10 @@ for ($page = 0; $page < PhoneModels::pageCount($model); $page++) {
         <p class="text-muted u-fs-12"><i class="fas fa-info-circle"></i> <?php echo sprintf(t('phones.keys_gs_limit'), GrandstreamTemplate::WRITTEN_KEYS); ?></p>
     <?php endif; ?>
 
+    <?php if (PhoneModels::accountCount((string) $model) > 1): ?>
+        <p class="text-muted u-fs-12"><i class="fas fa-info-circle"></i> <?php echo sprintf(t('phones.keys_line_accounts'), PhoneModels::accountCount((string) $model) - 1); ?></p>
+    <?php endif; ?>
+
     <?php if (!$user): ?>
         <div class="text-center text-muted u-p-30"><i class="fas fa-hand-pointer fa-2x"></i><br><br><?php echo t('phones.keys_pick_user'); ?></div>
     <?php else: ?>
@@ -99,6 +103,7 @@ window.PHONE_KEYS = <?php echo json_encode([
     'pages' => $pages,
     'keys' => $keys,
     'types' => PhoneProvisionService::KEY_TYPES,
+    'accounts' => PhoneModels::accountCount((string) $model),
     'editable' => $canEdit,
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
 </script>

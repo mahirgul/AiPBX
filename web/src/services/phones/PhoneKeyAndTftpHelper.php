@@ -81,6 +81,11 @@ final class PhoneKeyAndTftpHelper
                 if (!preg_match('/^[0-9*#+]{1,32}$/', $target)) {
                     throw new \Exception(sprintf(t('phones.err_key_target'), $pos));
                 }
+            } elseif ($type === 'line' && preg_match('/^[0-9]{1,20}$/D', $target)) {
+                // Only a device-only extension: another person's number would register as them.
+                if (PhoneProvisionService::deviceExtension($target) === null) {
+                    throw new \Exception(sprintf(t('phones.err_key_line_target'), $pos));
+                }
             } else {
                 $target = '';
             }

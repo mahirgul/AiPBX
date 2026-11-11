@@ -73,20 +73,29 @@ final class SnomTemplate extends PhoneTemplate
         }
         $srtp = ['off', 'optional', 'mandatory'][max(0, min(2, (int) $ctx['srtp']))];
 
-        $s = [
-            // Account 1
-            ['user_active', 'on', 1],
-            ['user_name', self::xml($ctx['extension']), 1],
-            ['user_pname', self::xml($ctx['extension']), 1],
-            ['user_pass', self::xml($ctx['sip_password'], 128), 1],
-            ['user_realname', self::xml($ctx['display_name']), 1],
-            ['user_host', $server, 1],
-            // Outbound proxy: the one set in the provisioning settings, else the server itself.
-            ['user_outbound', ($ctx['proxy'] !== '' ? self::xml($ctx['proxy'], 255) : $server) . ':' . (int) $ctx['port'] . ';transport=' . $ctx['transport'], 1],
-            ['user_srtp', (int) $ctx['srtp'] > 0 ? 'on' : 'off', 1],
-            ['user_savp', $srtp, 1],
-            ['user_mailbox', self::xml($ctx['voicemail']), 1],
-            ['codec_priority_list', implode(',', $codecs), 1],
+        // Identity 1 is the user's own line; the others are device-only extensions of line keys.
+        $own = ['extension' => $ctx['extension'], 'display_name' => $ctx['display_name'], 'sip_password' => $ctx['sip_password']];
+        $s = [];
+        foreach ([1 => $own] + ($ctx['accounts'] ?? []) as $n => $account) {
+            $n = (int) $n;
+            array_push(
+                $s,
+                ['user_active', 'on', $n],
+                ['user_name', self::xml($account['extension']), $n],
+                ['user_pname', self::xml($account['extension']), $n],
+                ['user_pass', self::xml($account['sip_password'], 128), $n],
+                ['user_realname', self::xml($account['display_name']), $n],
+                ['user_host', $server, $n],
+                // Outbound proxy: the one set in the provisioning settings, else the server itself.
+                ['user_outbound', ($ctx['proxy'] !== '' ? self::xml($ctx['proxy'], 255) : $server) . ':' . (int) $ctx['port'] . ';transport=' . $ctx['transport'], $n],
+                ['user_srtp', (int) $ctx['srtp'] > 0 ? 'on' : 'off', $n],
+                ['user_savp', $srtp, $n],
+                ['user_mailbox', self::xml($ctx['voicemail']), $n],
+                ['codec_priority_list', implode(',', $codecs), $n],
+            );
+        }
+        array_push(
+            $s,
             // Phone
             ['ntp_server', self::xml($ctx['ntp'], 255), null],
             ['utc_offset', (string) ((int) $ctx['utc_offset'] * 60), null],
@@ -95,7 +104,7 @@ final class SnomTemplate extends PhoneTemplate
             ['admin_mode_password', self::xml($ctx['admin_password'], 128), null],
             ['http_user', 'admin', null],
             ['http_pass', self::xml($ctx['admin_password'], 128), null],
-        ];
+        );
         // The D865's new web interface has its own logins; the settings above still serve its old one.
         if ($ctx['model'] === 'snom-d865') {
             $s[] = ['webserver_admin_name', 'admin', null];
@@ -121,7 +130,7 @@ final class SnomTemplate extends PhoneTemplate
             for ($n = 1; $n <= self::totalKeys($ctx['model']); $n++) {
                 $k = $keys[$n] ?? null;
                 $label = $k !== null ? self::xml($k['label']) : '';
-                $xml .= '    <fkey idx="' . ($n - 1) . '"' . self::attributes($attrs['fkey.' . ($n - 1)] ?? [], ['context' => 'active', 'label' => $label, 'perm' => '']) . '>'
+                $xml .= '    <fkey idx="' . ($n - 1) . '"' . self::attributes($attrs['fkey.' . ($n - 1)] ?? [], ['context' => self::keyContext($k), 'label' => $label, 'perm' => '']) . '>'
                     . ($fkeys[$n - 1] ?? self::keyValue($k, $ctx)) . "</fkey>\n";
             }
             $xml .= "  </functionKeys>\n";
@@ -187,6 +196,13 @@ final class SnomTemplate extends PhoneTemplate
             }
         }
         return [$s, $fkeys];
+    }
+
+    /** The identity a key works on: the one in use, or its own for a line key of another account. */
+    private static function keyContext(?array $k): string
+    {
+        $account = (int) ($k['account'] ?? 1);
+        return $k !== null && $k['type'] === 'line' && $account > 1 ? (string) $account : 'active';
     }
 
     /** Snom fkey value; a BLF key picks a ringing call up with the prefix after "|". */

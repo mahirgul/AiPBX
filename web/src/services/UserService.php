@@ -45,10 +45,7 @@ class UserService {
             if ($username === '') {
                 throw new \Exception(t('srv_user.err_username_required'));
             }
-            // The users page asks for it on a new user; an import or the API may leave it out.
-            if ($user_id === 0 && $extension === '' && !empty($data['require_extension'])) {
-                throw new \Exception(t('srv_user.err_extension_required'));
-            }
+            // No extension is fine: such a user has the portal, but no phone and no chat.
             if ($full_name === '') {
                 $full_name = $username;
             }

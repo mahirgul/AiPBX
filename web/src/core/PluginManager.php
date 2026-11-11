@@ -606,8 +606,14 @@ final class PluginManager
     // That repository's CI publishes every community plugin as a .zip, with catalog.json listing
     // them (slug, name, version, sha256, size), on its release "catalog". An administrator opts in
     // on /plugins; installing downloads the .zip, checks its SHA-256 and installs it as an upload.
+    // catalog.json carries a detached Ed25519 signature (catalog.json.sig) made by that CI: a list
+    // without a valid one is not used, so the SHA-256 values come from the key's holder and not
+    // merely from whoever could replace a file on the release.
 
     public const CATALOG_BASE = 'https://github.com/mahirgul/aipbx-plugins/releases/download/catalog/';
+
+    /** Ed25519 public key of the catalog (base64); tests replace it. */
+    public static string $catalogKey = 'zHUKaO/y9dxwJhPqfYOXA+S0Apw4Fu4oUPN5Jpyd6Bc=';
 
     public static function communityCatalogOn(): bool
     {
@@ -624,6 +630,7 @@ final class PluginManager
         if (!is_file($cache) || time() - (int) filemtime($cache) > 3600) {
             // The Plugins page waits for this, so a slow or unreachable GitHub may cost it 8 s once an hour.
             $json = self::download(self::CATALOG_BASE . 'catalog.json', 1024 * 1024, 8);
+            $json = $json !== null && self::catalogIsGenuine($json, $cache) ? $json : null;
             // Only when missing: the page test counts a warning even behind @.
             is_dir(dirname($cache)) || @mkdir(dirname($cache), 0750, true);
             if ($json !== null && is_array(json_decode($json, true))) {
@@ -648,6 +655,26 @@ final class PluginManager
             }
         }
         return $out;
+    }
+
+    /**
+     * Is this catalog.json signed by the catalog's key, and not older than the one in use?
+     * An unsigned or altered list is refused (and recorded); the last good list stays in use.
+     */
+    private static function catalogIsGenuine(string $json, string $cache): bool
+    {
+        $sig = base64_decode(trim((string) self::download(self::CATALOG_BASE . 'catalog.json.sig', 1024, 8)), true);
+        $key = base64_decode(self::$catalogKey, true);
+        $signed = is_string($sig) && strlen($sig) === SODIUM_CRYPTO_SIGN_BYTES
+            && is_string($key) && strlen($key) === SODIUM_CRYPTO_SIGN_PUBLICKEYBYTES
+            && sodium_crypto_sign_verify_detached($sig, $json, $key);
+        // A list signed earlier than the one in use could bring back an old plugin version.
+        $age = static fn(string $raw): int => (int) (json_decode($raw, true)['generated'] ?? 0);
+        $fresh = $signed && $age($json) >= (is_file($cache) ? $age((string) @file_get_contents($cache)) : 0);
+        if (!$fresh) {
+            writeAuditLog('plugins', 'plugin', 'catalog', 'Community plugin catalog refused: ' . ($signed ? 'older than the list in use' : 'no valid signature'), 'error', null);
+        }
+        return $fresh;
     }
 
     /** Turns the community catalog on or off for /plugins. */

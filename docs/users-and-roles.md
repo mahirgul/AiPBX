@@ -18,6 +18,11 @@ deleting `admin`. Two rules always stay: you cannot delete the account you are s
 last active administrator cannot be deleted. `admin` owns extension 1000 by default, so deleting it
 also removes that extension.
 
+**A user without an extension.** The extension is optional. Without one the user has the portal
+(administration, reports, call records, fax) but no phone and no chat, which both go by the
+extension number. The opposite, a phone without a user, is a
+[device-only extension](extensions.md#the-form).
+
 ## Built-in roles
 
 | Role | Key | Lands on | Access |

@@ -96,6 +96,8 @@ function openCreateExtensionModal() {
     document.getElementById('modal_cid_external').value = '';
     const actEl = document.getElementById('modal_is_active');
     if (actEl) actEl.checked = true;
+    const devEl = document.getElementById('modal_is_device');
+    if (devEl) devEl.checked = false;
 
     const dndEl = document.getElementById('modal_dnd_enabled');
     if (dndEl) dndEl.checked = false;
@@ -168,6 +170,8 @@ function openEditExtensionModal(item) {
     document.getElementById('modal_cid_external').value = item.cid_external || '';
     const actEl = document.getElementById('modal_is_active');
     if (actEl) actEl.checked = (item.is_active == 1);
+    const devEl = document.getElementById('modal_is_device');
+    if (devEl) devEl.checked = (item.is_device == 1);
 
     const dndEl = document.getElementById('modal_dnd_enabled');
     if (dndEl) dndEl.checked = (item.dnd_enabled == 1);

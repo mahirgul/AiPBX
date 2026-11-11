@@ -170,11 +170,11 @@ class QrLoginService
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, full_name, extension, is_active FROM sys_users WHERE id = ?');
+        $stmt = $db->prepare('SELECT id, username, full_name, extension, is_active, is_device FROM sys_users WHERE id = ?');
         $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user || empty($user['is_active'])) {
+        if (!$user || empty($user['is_active']) || !empty($user['is_device'])) {
             return ['success' => false, 'error' => t('srv_qr.err_user')];
         }
 

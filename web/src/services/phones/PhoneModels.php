@@ -106,6 +106,25 @@ final class PhoneModels
         'nec' => ['0060b9'],
     ];
 
+    /**
+     * SIP accounts (identities) a model registers, from the vendors' data sheets; a model not
+     * listed has one. Grandstream stops at 4: later accounts use other P-values, not written yet.
+     * More than one lets a "line" key carry a device-only extension (docs/phones.md).
+     */
+    private const ACCOUNTS = [
+        'yealink-t31g' => 2, 'yealink-t33g' => 4, 'yealink-t43u' => 12, 'yealink-t46u' => 16,
+        'yealink-t48u' => 16, 'yealink-t53w' => 12, 'yealink-t54w' => 16, 'yealink-t57w' => 16,
+        'grandstream-grp2612' => 2, 'grandstream-grp2614' => 4, 'grandstream-gxp2135' => 4,
+        'grandstream-gxp2160' => 4, 'grandstream-gxp2170' => 4,
+        'snom-d315' => 4, 'snom-d385' => 12, 'snom-d715' => 4, 'snom-d735' => 12,
+        'snom-d785' => 12, 'snom-d865' => 12,
+    ];
+
+    public static function accountCount(string $model): int
+    {
+        return self::ACCOUNTS[$model] ?? 1;
+    }
+
     public static function get(string $model): ?array
     {
         return self::MODELS[$model] ?? null;

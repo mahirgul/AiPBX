@@ -793,6 +793,7 @@ class PhoneProvisionService
         } catch (\Exception $e) {
             $offset = 0;
         }
+        [$keys, $accounts] = self::lineAccounts(self::getKeys((int) $user['id']), (string) $phone['model'], $ext);
         return [
             'mac' => $phone['mac'],
             'model' => $phone['model'],
@@ -817,10 +818,58 @@ class PhoneProvisionService
             // the model's own load first, else the single fallback field.
             'cisco_load' => PhoneFirmwareService::loadForPhoneFile($phone),
             'admin_password' => SecretBox::decrypt((string) $phone['admin_password']),
-            'keys' => self::getKeys((int) $user['id']),
+            // Each key carries 'account': 1 is the user's own line, 2… are the device-only
+            // extensions of its line keys, listed in 'accounts' (index => extension, name, password).
+            'keys' => $keys,
+            'accounts' => $accounts,
             'extra_settings' => PhoneModelSettingsService::forModel((string) $phone['model']),
             'extra_attributes' => PhoneModelSettingsService::attributesForModel((string) $phone['model']),
         ];
+    }
+
+    /**
+     * A "line" key whose target is a device-only extension makes the phone register that
+     * extension as one more account. A target that is no such extension (any more), or one
+     * beyond what the model registers, falls back to the user's own line.
+     *
+     * @param list<array<string, mixed>> $keys
+     * @return array{0: list<array<string, mixed>>, 1: array<int, array{extension: string, display_name: string, sip_password: string}>}
+     */
+    public static function lineAccounts(array $keys, string $model, string $ownExt): array
+    {
+        $max = PhoneModels::accountCount($model);
+        $accounts = [];
+        $index = [];
+        foreach ($keys as $i => $k) {
+            $keys[$i]['account'] = 1;
+            $target = (string) ($k['target'] ?? '');
+            if (($k['type'] ?? '') !== 'line' || $target === '' || $target === $ownExt) {
+                continue;
+            }
+            if (!isset($index[$target])) {
+                $dev = count($accounts) + 2 <= $max ? self::deviceExtension($target) : null;
+                if ($dev === null) {
+                    continue;
+                }
+                $sipMap = SIPHelper::getSettingsMap($target);
+                $index[$target] = count($accounts) + 2;
+                $accounts[$index[$target]] = [
+                    'extension' => $target,
+                    'display_name' => toCleanAscii((string) $dev['full_name']) ?: $target,
+                    'sip_password' => !empty($sipMap['secret']) ? (string) $sipMap['secret'] : (string) $dev['sip_password'],
+                ];
+            }
+            $keys[$i]['account'] = $index[$target];
+        }
+        return [$keys, $accounts];
+    }
+
+    /** The active device-only SIP extension with this number, or null. */
+    public static function deviceExtension(string $ext): ?array
+    {
+        $st = getDB()->prepare("SELECT id, extension, full_name, sip_password FROM sys_users WHERE extension = ? AND is_device = 1 AND is_active = 1 AND COALESCE(extension_type, 'sip') = 'sip' LIMIT 1");
+        $st->execute([$ext]);
+        return $st->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
     /**

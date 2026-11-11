@@ -11,6 +11,14 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.74.0
+
+- **Device-only extensions:** an extension can be a phone without a person (Extensions → **Device only (no portal user)**, off by default) for a lobby, door or meeting-room phone or a shared line. It registers as a SIP phone and is an extension everywhere, but it cannot sign in to the portal or the mobile app by any way, is not listed under System Users and does not appear in chat. An administrator's or your own account cannot be made device only.
+- **Users without an extension:** the extension is optional on System Users. Such a user has the portal, but no phone and no chat.
+- **A second number on a desk phone:** a **Line** key may carry a device-only extension. The phone registers it as one more account next to the user's own line; calls to it ring on that key and the key calls out from it. Yealink, Snom and Grandstream (accounts 2 to 4, from the vendor's P-value list, not yet confirmed on a phone). Only device-only extensions can be put on a key. The web phone and the mobile app stay on the user's own number.
+- **Signed plugin catalog:** the community catalog is used only with a valid Ed25519 signature of the list (`catalog.json.sig`), and a list older than the one in use is refused. Until now the SHA-256 of a package was only as trustworthy as the unsigned list naming it. A refused list is written to the audit log; the last good one stays in use.
+- **Docs:** what the WebRTC media path does behind symmetric NAT and on networks that inspect or restrict TLS ([WebRTC & NAT](docs/webrtc-nat.md)); carrier registration and caller reputation for SMS and the Auto Dialer.
+
 ## 1.73.5
 
 Fixes for 1.73.0–1.73.4. Updating from 1.72.x is recommended to go straight to this release.

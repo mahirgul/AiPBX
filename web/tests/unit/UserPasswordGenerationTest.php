@@ -86,7 +86,7 @@ final class UserPasswordGenerationTest extends TestCase
         $this->assertSame(0, (int) $u['must_reset_password']);
     }
 
-    public function testOnlyTheUsernameAndOnTheUsersPageTheExtensionAreRequired(): void
+    public function testOnlyTheUsernameIsRequired(): void
     {
         $name = 'zz_min_' . bin2hex(random_bytes(3));
         $ext = '97' . random_int(100, 999);
@@ -94,10 +94,13 @@ final class UserPasswordGenerationTest extends TestCase
         $db = getDB();
         try {
             $this->assertFalse(UserService::saveUser($base + ['username' => '', 'extension' => $ext])['success']);
-            $this->assertFalse(UserService::saveUser($base + ['username' => $name, 'require_extension' => 1])['success'], 'the page needs one');
-            $this->assertSame('0', (string) $db->query("SELECT COUNT(*) FROM sys_users WHERE username = '{$name}'")->fetchColumn());
+            // A user without an extension: the portal, no phone, no chat.
+            $noExt = $name . 'n';
+            $this->assertTrue(UserService::saveUser($base + ['username' => $noExt])['success']);
+            $this->assertNull($db->query("SELECT extension FROM sys_users WHERE username = '{$noExt}'")->fetchColumn());
+            $db->exec("DELETE FROM sys_users WHERE username = '{$noExt}'");
 
-            $res = UserService::saveUser($base + ['username' => $name, 'extension' => $ext, 'require_extension' => 1]);
+            $res = UserService::saveUser($base + ['username' => $name, 'extension' => $ext]);
             $this->assertTrue($res['success'], (string) ($res['error'] ?? ''));
             $this->assertNotSame('', (string) ($res['generated_password'] ?? ''), 'shown once');
             $row = $db->query("SELECT full_name, must_reset_password FROM sys_users WHERE username = '{$name}'")->fetch(PDO::FETCH_ASSOC);

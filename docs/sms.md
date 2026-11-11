@@ -111,3 +111,13 @@ The SMS plugin supports sending and receiving multimedia attachments:
 - **Row-Level Concurrency Locking**: Inbound webhook processing uses database row-level locking (`SELECT ... FOR UPDATE`) during conversation insertion. This ensures messages arriving in rapid succession are written in exact chronological order without duplicate thread creation.
 - **Webhook Replay & Tamper Protection**: All inbound requests from Twilio, Vonage, and Plivo are verified against their cryptographic request signatures before any database transaction is initiated.
 - **Privacy & Purge**: Message logs and MMS media honor the automated privacy retention policies configured in [Privacy & Compliance](privacy.md).
+
+## Before you send: registration and reputation
+
+Whether a message arrives is decided by the carrier, not by this plugin. In the United States and
+Canada application-to-person messages from local numbers need a registered brand and campaign
+(10DLC), toll-free numbers need verification, and unregistered traffic is filtered or surcharged;
+other countries have their own sender registration. Register with your provider before going live,
+keep the opt-in of every recipient and honour STOP. AiPBX stores and relays what you send; the
+registration, the consent records and the content are the operator's responsibility
+([Privacy & Compliance](privacy.md)).

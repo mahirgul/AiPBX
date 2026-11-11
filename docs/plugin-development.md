@@ -215,6 +215,14 @@ Community plugins live in [mahirgul/aipbx-plugins](https://github.com/mahirgul/a
 **Update to vX** when the catalog has a newer version of an installed one. The download is checked
 against the catalog's SHA-256 and then installed exactly like an uploaded `.zip`.
 
+**Signed catalog (AiPBX 1.74+).** A checksum proves that a download is the file the list names, not
+that the list is genuine. `catalog.json` therefore carries a detached Ed25519 signature,
+`catalog.json.sig`, made by the catalog's CI with a key that is in no repository; AiPBX holds the
+public key and uses no list without a valid signature. A list signed earlier than the one in use is
+refused too, so an old plugin version cannot be offered again. A refused list is written to the audit
+log and the last good one stays in use. The signature says the list came from the catalog's
+maintainer; it is not a review of what a plugin does: read a community plugin before you enable it.
+
 ## 5. Safety & Fault Isolation ("Safe Mode")
 
 - Every plugin hook (`events/handler.php`, `sync/Sync.php`, `admin/page.php`) is wrapped in an isolated `try / catch (\Throwable)` block.

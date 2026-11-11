@@ -29,6 +29,7 @@ Every change goes to Asterisk with **Apply** ([Portal basics](portal.md)). Each 
 | Voicemail | Box on or off, PIN (empty: the extension number), e-mail with or without the recording, and when calls go there: no answer, unreachable or always ([Voicemail](voicemail.md)). |
 | Send the caller in a header | Sends the caller in P-Asserted-Identity. On by default; some desk phones (NEC DT700/DT800) show "asterisk" as the caller without it. A caller who hides their number stays hidden. Turn it off only for a phone that has trouble with it. |
 | Active | Off: the extension cannot register or call, and the user cannot sign in. |
+| Device only (no portal user) | For a lobby, door or meeting-room phone or a shared line. The extension registers as a SIP phone and is an extension everywhere (ring groups, queues, BLF keys, inbound routes, provisioning, call records), but it is no person: it cannot sign in to the portal or the mobile app by any way, is not listed under System Users and does not appear in chat. Off by default. An administrator's or your own account cannot be made device only. A [line key](phones.md#key-layout) of a desk phone can carry such an extension next to the user's own. |
 
 ### SIP settings
 

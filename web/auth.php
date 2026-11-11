@@ -43,10 +43,11 @@ function _isSessionEpochCurrent(): bool {
     if ($userId <= 0) {
         return false;
     }
-    $stmt = getDB()->prepare('SELECT token_epoch, is_active FROM sys_users WHERE id = ?');
+    $stmt = getDB()->prepare('SELECT token_epoch, is_active, is_device FROM sys_users WHERE id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$row || empty($row['is_active'])) {
+    // A device-only extension is no account, however the session came to be.
+    if (!$row || empty($row['is_active']) || !empty($row['is_device'])) {
         return false;
     }
     $stamp = $userId . ':' . (int) $row['token_epoch'];

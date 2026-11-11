@@ -135,11 +135,11 @@ function validateMobileToken(?string $token): ?array
 
     // DB user check - T-6: sip_password added so refresh.php does not return an empty password
     $db = getDB();
-    $stmt = $db->prepare('SELECT id, username, full_name, email, role, extension, extension_type, sip_password, allowed_phone_mode, is_active, token_epoch FROM sys_users WHERE id = ?');
+    $stmt = $db->prepare('SELECT id, username, full_name, email, role, extension, extension_type, sip_password, allowed_phone_mode, is_active, is_device, token_epoch FROM sys_users WHERE id = ?');
     $stmt->execute([(int)$userId]);
     $user = $stmt->fetch();
 
-    if (!$user || empty($user['is_active'])) {
+    if (!$user || empty($user['is_active']) || !empty($user['is_device'])) {
         return null;
     }
 
