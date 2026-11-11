@@ -15,7 +15,7 @@ $action = $_GET['action'] ?? $_POST['action'] ?? '';
 // pickup_call/save_call_note need admin/cc_agent/cc_manager.
 // (This role was designed as a "viewer"; being able to see the queue
 // monitoring/board pages must not mean those pages can START calls.)
-$READ_ONLY_SAFE_ACTIONS = ['get_status', 'get_queues', 'get_live_calls', 'get_supervisor_agents', 'get_board_stats', 'my_cdrs', 'get_call_note', 'get_pending_note'];
+$READ_ONLY_SAFE_ACTIONS = ['get_callbacks', 'get_status', 'get_queues', 'get_live_calls', 'get_supervisor_agents', 'get_board_stats', 'my_cdrs', 'get_call_note', 'get_pending_note'];
 $allowed_roles = ['admin', 'cc_agent', 'cc_manager'];
 if (in_array($action, $READ_ONLY_SAFE_ACTIONS, true)) {
     $allowed_roles[] = 'read_only_admin';
@@ -57,6 +57,8 @@ require_once __DIR__ . '/cc_actions/cc_lib.php';
 
 // Action → file map (exact whitelist)
 $ACTION_FILES = [
+    'get_callbacks'         => 'callbacks.php',
+    'originate_callback'    => 'calls.php',
     'originate'             => 'calls.php',
     'hangup'                => 'calls.php',
     'transfer'              => 'calls.php',

@@ -228,7 +228,7 @@ function __syncOutboundDialplanBody() {
                     $header_sub = !empty($trunk_headers[$t['trunk_name']]) ? 'sub-trunk-headers-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $t['trunk_name']) : '';
                     $conf .= " same => n,Set(__AIPBX_TRUNK_HEADERS={$header_sub})\n";
                 }
-                $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1))\n";
+                $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$t['trunk_name']},{$external_dial_timeout},Tb(sub-callee-jb^s^1)U(aipbx-callback-answered^\${FILTER(0-9+,\${EXTEN})}^\${FILTER(0-9,\${AIPBX_SRC_CID})}))\n";
                 if ($limited) {
                     $conf .= " same => n,Goto(afterdial{$step})\n";
                     $conf .= " same => n(trunkfull{$step}),NoOp(Trunk {$t['trunk_name']} over its limit: \${TRUNK_LIMIT})\n";
@@ -281,7 +281,7 @@ function __syncOutboundDialplanBody() {
                 $conf .= " same => n,Set(AIPBX_DIAL_TARGET=\${EXTEN})\n";
                 $conf .= buildTrunkCarrierDialLine($trunk_carrier_norm[$fallback_trunk] ?? null);
                 $conf .= jitterBufferLine();
-                $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$fallback_trunk},{$external_dial_timeout},T)\n";
+                $conf .= " same => n,Dial(PJSIP/\${AIPBX_TRUNK_DIAL}@{$fallback_trunk},{$external_dial_timeout},TU(aipbx-callback-answered^\${FILTER(0-9+,\${EXTEN})}^\${FILTER(0-9,\${CALLERID(num)})}))\n";
                 $conf .= " same => n,Goto(sub-outbound-status,\${IF($[\"\${DIALSTATUS}\" != \"\"]?\${DIALSTATUS}:NOANSWER)},1)\n";
                 $conf .= " same => n(refused),Goto(sub-outbound-status,CONGESTION,1)\n\n";
             }

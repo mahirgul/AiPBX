@@ -7,6 +7,33 @@ var agentTimerInterval = null;
 var agentAutoLoginInterval = null;
 var _loadAgentQueuesInFlight = false;
 var _loadLiveCallsInFlight = false;
+var _loadCallbacksInFlight = false;
+
+function loadCallbacks() {
+    const body = document.getElementById('callbacks-tbody');
+    if (!body || _loadCallbacksInFlight) return;
+    _loadCallbacksInFlight = true;
+    UIHelper.ccGet('get_callbacks').then(data => {
+        if (!data.success) return;
+        body.innerHTML = (data.callbacks || []).map(row => `<tr>
+            <td>${escapeHtml(row.queue_title)}</td><td>${escapeHtml(row.dial_number)}</td>
+            <td>${escapeHtml(row.requested_at)}</td><td><button type="button" class="btn btn-primary btn-xs"
+            ${Number(row.calling) ? 'disabled' : ''} onclick="callCallback(${Number(row.id)}, this)">
+            <i class="fas fa-phone"></i> ${Number(row.calling) ? __('js.agent.callback_calling') : __('js.agent.callback_call')}</button></td>
+            </tr>`).join('') || `<tr><td colspan="4">${escapeHtml(__('js.agent.callbacks_empty'))}</td></tr>`;
+    }).catch(() => {}).finally(() => { _loadCallbacksInFlight = false; });
+}
+
+function callCallback(id, button) {
+    button.disabled = true;
+    UIHelper.ccPost('originate_callback', { callback_id: id }).then(data => {
+        if (data.success) {
+            if (window.notify) window.notify.success(data.message);
+        } else if (window.notify) window.notify.error(data.error);
+    }).catch(() => {
+        if (window.notify) window.notify.error(__('js.agent.callback_failed'));
+    }).finally(loadCallbacks);
+}
 
 function loadAgentQueues() {
     const container = document.getElementById('agent-queues-list');
@@ -310,6 +337,7 @@ function submitCallNote() {
 
 function initAgentPage() {
     if (!document.getElementById('agent-queues-list')) return;
+    loadCallbacks();
 
     // Log in automatically if cc_auto_queue_login is on and the agent has not logged out by hand in this session
     if (!sessionStorage.getItem('cc_agent_manual_logout')) {
@@ -342,6 +370,7 @@ function initAgentPage() {
     if (agentTimerInterval) clearInterval(agentTimerInterval);
     agentTimerInterval = setInterval(() => {
         if (document.getElementById('agent-queues-list')) {
+            loadCallbacks();
             loadAgentQueues();
             loadLiveCalls();
         } else {

@@ -150,13 +150,13 @@ class SoundService {
                         UNION ALL
                         SELECT id FROM pbx_ivr_data_steps WHERE prompt_file = ? OR (found_dest_type = 'announcement' AND (found_dest_id = ? OR found_dest_id = ?)) OR (not_found_dest_type = 'announcement' AND (not_found_dest_id = ? OR not_found_dest_id = ?)) OR (timeout_dest_type = 'announcement' AND (timeout_dest_id = ? OR timeout_dest_id = ?))
                         UNION ALL
-                        SELECT id FROM pbx_queues WHERE periodic_announce = ?
+                        SELECT id FROM pbx_queues WHERE periodic_announce = ? OR callback_announce = ?
                         UNION ALL
                         SELECT id FROM pbx_hangup_actions WHERE announcement_id = ?
                         UNION ALL
                         SELECT 1 AS id FROM sys_settings WHERE setting_key = 'privacy_notice_sound_id' AND setting_value = ?
                     ) refs",
-                    [$sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $anc_id, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $anc_id, $sid]
+                    [$sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $anc_id, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $afile, $anc_id, $sid]
                 );
                 if ($refs > 0) {
                     throw new \Exception(t('srv_tc.err_in_use'));

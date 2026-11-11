@@ -11,6 +11,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.75.0
+
+- **Callback confirmation:** choose a separate confirmation announcement per queue. It plays after a callback request is saved, then the call ends; failed requests never play the success announcement.
+- **Manual queue callbacks:** optionally let callers press 1 while waiting to leave a request using their caller number. Assigned agents see a shared list on the Agent Screen and click Call to ring their own phone first. A completed answered call with any queue agent removes pending requests for the same number, including when the caller rings again; an unanswered call leaves the request pending. Configure a periodic announcement explaining the option. This does not preserve a virtual queue position or call anyone automatically.
+- **Complete translations across all 22 languages:** 100% coverage (6219/6219 strings) across all supported portal languages with strict placeholder and markup validation.
+
 ## 1.74.0
 
 - **Device-only extensions:** an extension can be a phone without a person (Extensions → **Device only (no portal user)**, off by default) for a lobby, door or meeting-room phone or a shared line. It registers as a SIP phone and is an extension everywhere, but it cannot sign in to the portal or the mobile app by any way, is not listed under System Users and does not appear in chat. An administrator's or your own account cannot be made device only.

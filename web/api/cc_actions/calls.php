@@ -1,8 +1,20 @@
 <?php
 // Call actions: originate, hangup, transfer, hold, pickup_call
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
+/** @var string $user_ext Authenticated extension supplied by the dispatcher. */
 
-if ($action === 'originate') {
+if ($action === 'originate' || $action === 'originate_callback') {
+    $callbackId = 0;
+    if ($action === 'originate_callback') {
+        require_once __DIR__ . '/../../src/services/QueueCallbackService.php';
+        $callbackId = (int) ($_POST['callback_id'] ?? 0);
+        $callbackPhone = QueueCallbackService::claim($callbackId, (string) $user_ext);
+        if ($callbackPhone === null) {
+            echo json_encode(['success' => false, 'error' => t('cc_agent.callback_unavailable')]);
+            exit;
+        }
+        $_POST['to'] = $callbackPhone;
+    }
     $to = preg_replace('/[^0-9+]/', '', $_POST['to'] ?? '');
     if (empty($to) || empty($user_ext)) {
         echo json_encode(['success' => false, 'error' => t('api_cc.err_target')]);
@@ -32,6 +44,9 @@ if ($action === 'originate') {
 
     $res = sendAMICommand($cmd);
     if (!$res || strpos($res, 'Response: Success') === false) {
+        if ($callbackId > 0) {
+            QueueCallbackService::release($callbackId, (string) $user_ext);
+        }
         echo json_encode([
             'success' => false,
             'error' => sprintf(t('api_cc.err_not_registered'), $user_ext)

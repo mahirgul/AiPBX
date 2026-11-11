@@ -207,7 +207,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     if (($jb = rtrim(jitterBufferLine())) !== '') {
         $lines[] = $jb;
     }
-    $lines[] = " same => n,Dial(\${DIAL_CONTACTS},{$dialTimeout},tTb(sub-callee-jb^s^1))";
+    $lines[] = " same => n,Dial(\${DIAL_CONTACTS},{$dialTimeout},tTb(sub-callee-jb^s^1)U(aipbx-callback-answered^\${FILTER(0-9+,\${CALLERID(num)})}^{$ext}))";
 
     // 5. Post-Dial status routing
     $lines[] = " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"BUSY\"]?lbl_busy_{$lbl})";

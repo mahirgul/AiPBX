@@ -79,6 +79,7 @@ class QueueHelper {
         // the global "monitor-type = MixMonitor" line in SyncQueues.php);
         // written in a per-queue section it gives an "Unknown keyword" warning.
         $defaults = [
+            'context' => !empty($q['callback_enabled']) ? 'aipbx-callback-' . (int) $q['id'] : '',
             'strategy' => $strategy,
             'timeout' => (string)$timeout,
             'retry' => (string)$retry,

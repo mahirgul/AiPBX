@@ -27,6 +27,7 @@ function __syncAllQueuesBody() {
     $conf .= "autofill = yes\n";
     $conf .= "monitor-type = MixMonitor\n";
     $conf .= "queue_log = yes\n\n";
+    $callbacks = "; Queue callback requests (generated)\n";
 
     foreach ($queues as $q) {
         $q_name = $q['queue_name'];
@@ -43,6 +44,23 @@ function __syncAllQueuesBody() {
         $conf .= "; Call Center Queue ID {$q['id']}: {$title} ({$q_name})\n";
         $conf .= "[{$q_name}]\n";
         $conf .= "musicclass={$musicclass}\n";
+        // Always derive this protected exit context from the current queue row, not a stale map.
+        if (!empty($q['callback_enabled']) || str_starts_with((string) ($q_map['context'] ?? ''), 'aipbx-callback-')) {
+            unset($q_map['context']);
+        }
+        if (!empty($q['callback_enabled'])) {
+            $id = (int) $q['id'];
+            $confirmation = FileHelper::sanitizeAudioPath((string) ($q['callback_announce'] ?? '')) ?: 'queue-thankyou';
+            $conf .= "context=aipbx-callback-{$id}\n";
+            $callbacks .= "[aipbx-callback-{$id}]\n"
+                . "exten => 1,1,Answer()\n"
+                . " same => n,Set(CALLBACK_RESULT=\${SHELL(/usr/local/bin/queue_callback.php {$id} '\${FILTER(0-9+,\${CALLERID(num)})}')})\n"
+                . " same => n,GotoIf(\$[\"\${CALLBACK_RESULT}\" != \"OK\"]?failed)\n"
+                . " same => n,Playback({$confirmation})\n"
+                . " same => n,Hangup()\n"
+                . " same => n(failed),Playback(sorry)\n"
+                . " same => n,Hangup()\n\n";
+        }
 
         // Output all key-value directives stored in `queues_details`
         // Note: monitor-format is omitted to avoid duplicate MixMonitor collisions
@@ -73,6 +91,9 @@ function __syncAllQueuesBody() {
         }
     }
 
+    writeConfWithRollback('extensions_queue_callbacks.conf', $callbacks, function () {
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::execCLI('dialplan reload')], t('sync.ctx_queues'));
+    }, t('sync.ctx_queues'));
     $result = writeConfWithRollback("queues_pbx.conf", $conf, function() {
         refreshAdvancedFileOverlay('queues');
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadQueue('all')], t('sync.ctx_queues'));

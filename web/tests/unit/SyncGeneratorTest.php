@@ -381,7 +381,7 @@ final class SyncGeneratorTest extends TestCase
             $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_general.conf');
 
             $this->assertStringContainsString('exten => 7003,1,NoOp(Direct Call to Extension 7003', $conf);
-            $this->assertStringContainsString('Dial(${DIAL_CONTACTS},15,tTb(sub-callee-jb^s^1))', $conf);
+            $this->assertStringContainsString('Dial(${DIAL_CONTACTS},15,tTb(sub-callee-jb^s^1)U(aipbx-callback-answered^${FILTER(0-9+,${CALLERID(num)})}^7003))', $conf);
             $this->assertStringContainsString('Goto(from-internal-desktop,7004,1)', $conf);
             $this->assertStringContainsString('Goto(from-internal-desktop,05551234567,1)', $conf);
             $this->assertStringContainsString('Call forwarding loop blocked - 7003', $conf);
@@ -656,9 +656,9 @@ final class SyncGeneratorTest extends TestCase
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
 
         // D-1: Dial(...) must not have the 'r' option (so early media is not suppressed)
-        $this->assertMatchesRegularExpression('/Dial\(PJSIP\/[^,\)]+,\d+,Tb\(sub-callee-jb\^s\^1\)\)/', $conf,
-            'the outbound dialplan Dial PJSIP option must be T');
-        $this->assertDoesNotMatchRegularExpression('/Dial\([^,\)]+,\d+,[^\)]*r[^\)]*\)/', $conf,
+        $this->assertMatchesRegularExpression('/Dial\(PJSIP\/[^,\)]+,\d+,Tb\(sub-callee-jb\^s\^1\)U\(aipbx-callback-answered\^/', $conf,
+            'outbound Dial keeps T and jitter buffering, and tracks answered callback conversations');
+        $this->assertDoesNotMatchRegularExpression('/Dial\([^,\)]+,\d+,[a-zA-Z]*r[a-zA-Z]*(?:\(|\))/', $conf,
             'the outbound dialplan must not have the r option, which fakes ringing and drowns early media (D-1)');
     }
 

@@ -131,12 +131,12 @@ function __syncGeneralDialplanBody() {
                     if ($bg_strategy === 'sequential') {
                         $sec_step = max(5, intval($bg_timeout / max(1, count($sec_channels))));
                         foreach ($sec_channels as $sc) {
-                            $conf .= " same => n,Dial({$sc},{$sec_step},tT)\n";
+                            $conf .= " same => n,Dial({$sc},{$sec_step},tTU(aipbx-callback-answered^\${FILTER(0-9+,\${CALLERID(num)})}^{$ext}))\n";
                             $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?sec_ans_{$ext})\n";
                         }
                     } else {
                         $sec_dial_str = implode('&', $sec_channels);
-                        $conf .= " same => n,Dial({$sec_dial_str},{$bg_timeout},tT)\n";
+                        $conf .= " same => n,Dial({$sec_dial_str},{$bg_timeout},tTU(aipbx-callback-answered^\${FILTER(0-9+,\${CALLERID(num)})}^{$ext}))\n";
                         $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?sec_ans_{$ext})\n";
                     }
                     $conf .= " same => n,Set(__SKIP_VM=0)\n";
@@ -161,7 +161,7 @@ function __syncGeneralDialplanBody() {
         $conf .= " same => n,Set(DIAL_CONTACTS=\${C_SIP}\${IF(\$[\"\${C_SIP}\" != \"\" & \"\${C_WEB}\" != \"\"]?&)}\${C_WEB})\n";
         $conf .= " same => n,Set(DIAL_CONTACTS=\${DIAL_CONTACTS}\${IF(\$[\"\${DIAL_CONTACTS}\" != \"\" & \"\${C_MOB}\" != \"\"]?&)}\${C_MOB})\n";
         $conf .= " same => n,GotoIf(\$[\"\${DIAL_CONTACTS}\" = \"\"]?unavail)\n";
-        $conf .= " same => n,Dial(\${DIAL_CONTACTS},{$internal_dial_timeout},tT)\n";
+        $conf .= " same => n,Dial(\${DIAL_CONTACTS},{$internal_dial_timeout},tTU(aipbx-callback-answered^\${FILTER(0-9+,\${CALLERID(num)})}^\${EXTEN}))\n";
         $conf .= " same => n,Hangup()\n";
         $conf .= " same => n(unavail),NoOp(No registered contacts for \${EXTEN})\n";
         $conf .= " same => n,Hangup()\n";
@@ -334,6 +334,13 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Goto(done)\n";
     $conf .= " same => n(noans),Playback(number-not-answering&please-try-again,noanswer)\n";
     $conf .= " same => n(done),Return()\n\n";
+
+    $conf .= "[aipbx-callback-answered]\n";
+    $conf .= "exten => s,1,Set(CHANNEL(hangup_handler_push)=aipbx-callback-finished,s,1(\${ARG1},\${ARG2},\${EPOCH}))\n";
+    $conf .= " same => n,Return()\n\n";
+    $conf .= "[aipbx-callback-finished]\n";
+    $conf .= "exten => s,1,System(/usr/local/bin/queue_callback.php complete '\${FILTER(0-9+,\${ARG1})}' '\${FILTER(0-9,\${ARG2})}' '\${FILTER(0-9,\${ARG3})}')\n";
+    $conf .= " same => n,Return()\n\n";
 
     $ok = writeConfWithRollback('extensions_general.conf', $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_general'));

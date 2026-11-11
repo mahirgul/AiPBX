@@ -117,6 +117,23 @@
 
                 <!-- 1. Basic definitions -->
                 <div id="queue_tab_basic" class="queue-tab-pane active">
+                    <div class="form-group">
+                        <label class="form-label u-check-label">
+                            <input type="checkbox" name="callback_enabled" id="modal_callback_enabled" value="1" class="u-check">
+                            <span><?php echo t('queues.callback_enabled'); ?></span>
+                        </label>
+                        <small class="u-hint"><?php echo t('queues.callback_help'); ?></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('queues.callback_announce'); ?></label>
+                        <select name="callback_announce" id="modal_callback_announce" class="form-control">
+                            <option value=""><?php echo t('queues.callback_announce_choose'); ?></option>
+                            <?php foreach (($announcements ?? []) as $anc): ?>
+                                <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="u-hint"><?php echo t('queues.callback_announce_help'); ?></small>
+                    </div>
                     <div class="form-group u-mb-10">
                         <label class="form-label u-check-label">
                             <input type="checkbox" name="is_active" id="modal_is_active" value="1" checked class="u-check">

@@ -57,6 +57,16 @@
         </div>
     </div>
 
+    <div class="card u-p-16-20 u-mb-0">
+        <div class="card-title"><i class="fas fa-phone-volume"></i> <?php echo t('cc_agent.callbacks'); ?></div>
+        <small class="u-hint"><?php echo t('cc_agent.callbacks_help'); ?></small>
+        <?php echo uiTableOpen([
+            t('cc_agent.col_queue'), t('cc_agent.col_caller'), t('cc_agent.col_date'), t('cc_agent.col_action'),
+        ], ['body_id' => 'callbacks-tbody', 'search' => false]); ?>
+        <tr><td colspan="4"><?php echo t('cc_agent.callbacks_empty'); ?></td></tr>
+        <?php echo uiTableClose(); ?>
+    </div>
+
     <!-- Agent CDR History Card -->
     <div class="card u-p-16-20 u-mb-0">
         <div class="card-header u-mb-12 u-p-0-0-12-16 u-border-bottom-1-solid-border-color">

@@ -2,6 +2,8 @@
  * Multi-Queue Management Client Module
  */
 function openCreateQueueModal() {
+    document.getElementById('modal_callback_enabled').checked = false;
+    document.getElementById('modal_callback_announce').value = '';
     const title = document.getElementById('queueModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.queues.new_title') + '';
 
@@ -74,6 +76,8 @@ function openCreateQueueModal() {
 }
 
 function openEditQueueModal(item) {
+    document.getElementById('modal_callback_enabled').checked = parseInt(item.callback_enabled) === 1;
+    document.getElementById('modal_callback_announce').value = item.callback_announce || '';
     if (!item) return;
 
     const title = document.getElementById('queueModalTitle');

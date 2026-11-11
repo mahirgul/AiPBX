@@ -39,6 +39,17 @@ class QueueService {
                 $record_format = 'wav';   // it goes into the dialplan: never free text
             }
             $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
+            $callback_enabled = PBXHelper::boolFlag($data, 'callback_enabled', 0);
+            $callback_announce = trim((string) ($data['callback_announce'] ?? ''));
+            if ($callback_announce !== '' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ? AND is_active = 1', [$callback_announce])) {
+                $callback_announce = '';
+            }
+            if ($callback_enabled && ($periodic_announce === '' || $periodic_frequency <= 0)) {
+                throw new \Exception(t('queues.callback_needs_announcement'));
+            }
+            if ($callback_enabled && $callback_announce === '') {
+                throw new \Exception(t('queues.callback_needs_confirmation'));
+            }
             $language = trim($data['language'] ?? '');
             if ($language !== '' && !in_array($language, getAvailableLanguages(), true)) {
                 $language = '';
@@ -119,7 +130,9 @@ class QueueService {
                 'supervisors_json' => $supervisors_json,
                 'supervisor_extension' => $primary_supervisor,
                 'internal_number' => $internal_number !== '' ? $internal_number : null,
-                'is_active' => $is_active
+                'is_active' => $is_active,
+                'callback_enabled' => $callback_enabled,
+                'callback_announce' => $callback_announce
             ];
 
             $is_new = ($queue_id <= 0);
@@ -130,6 +143,8 @@ class QueueService {
             // presses Apply on the "Apply" page (2026-08-24, deferred reload
             // system). The real regen+reload: applyPendingSync().
             markPendingSync('queues', 'queue', $queue_name, "Queue: {$title} ({$queue_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('general_dialplan', 'queue', $queue_name, "Queue callbacks: {$title}", 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('outbound_dialplan', 'queue', $queue_name, "Queue callbacks: {$title}", 'update', $_SESSION['user_id'] ?? null);
             // When a number was added, changed or removed, the internal targets context must be rebuilt too.
             if ($internal_number !== $old_number) {
                 markPendingSync('internal_numbers', 'queue', $id,
@@ -175,6 +190,7 @@ class QueueService {
                 QueueHelper::deleteDetails($q_name);
             }
             $removed_number = (string) (DBHelper::fetchColumn("SELECT internal_number FROM pbx_queues WHERE id = ?", [$queue_id]) ?? '');
+            getDB()->prepare('DELETE FROM cc_callbacks WHERE queue_id = ?')->execute([$queue_id]);
             DBHelper::delete('pbx_queues', 'id', $queue_id);
             markPendingSync('queues', 'queue', $q_name ?: ('id_' . $queue_id), "Queue: " . ($q_row['title'] ?? $q_name ?? $queue_id) . " (deleted)", 'delete', $_SESSION['user_id'] ?? null);
             if ($removed_number !== '') {
