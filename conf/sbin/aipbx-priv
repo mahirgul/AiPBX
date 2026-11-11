@@ -51,7 +51,32 @@ case "$cmd" in
         match "$2" '^[a-z0-9_-]{2,64}$'
         WEB_DIR="$(readlink -f /var/www/html 2>/dev/null || echo /opt/aipbx/web)"
         [ -f "$WEB_DIR/bin/plugin_schema.php" ] || die "plugin_schema.php not found"
-        exec /usr/bin/php "$WEB_DIR/bin/plugin_schema.php" "$1" "$2"
+        if command -v systemd-run >/dev/null 2>&1 && [ -d /run/systemd/system ]; then
+            exec systemd-run --pipe --wait --service-type=exec -q \
+                /usr/bin/php "$WEB_DIR/bin/plugin_schema.php" "$1" "$2"
+        else
+            exec /usr/bin/php "$WEB_DIR/bin/plugin_schema.php" "$1" "$2"
+        fi
+        ;;
+
+    asterisk-conf)
+        # asterisk-conf write FILE < content
+        [ $# -eq 2 ] && [ "$1" = write ] || die "usage: asterisk-conf write FILE < content"
+        case "$2" in
+            rtp.conf|udptl.conf|voicemail.conf) ;;
+            *) die "file not allowed: $2" ;;
+        esac
+        target="/etc/asterisk/$2"
+        tmp="$(mktemp /etc/asterisk/.${2}.tmp.XXXXXX 2>/dev/null || mktemp /tmp/.${2}.tmp.XXXXXX)"
+        cat > "$tmp" || { rm -f "$tmp"; die "cannot write content"; }
+        chown asterisk:asterisk "$tmp"
+        chmod 0664 "$tmp"
+        if ! mv -f "$tmp" "$target" 2>/dev/null; then
+            cp -f "$tmp" "$target" && rm -f "$tmp" || { rm -f "$tmp"; die "cannot install $target"; }
+        fi
+        chown asterisk:asterisk "$target"
+        chmod 0664 "$target"
+        exit 0
         ;;
 
     proxy-https)

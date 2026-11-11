@@ -350,7 +350,7 @@ stream {
         listen 443;
         listen [::]:443;
         ssl_preread on;
-        ssl_preread_timeout 5s;
+        preread_timeout 5s;
         limit_conn aipbx_stream_conn 128;
         proxy_pass $aipbx_backend;
         proxy_protocol on;
@@ -683,10 +683,12 @@ systemctl restart postfix
 systemctl restart apache2
 systemctl enable apache2
 
-nginx -t 2>/dev/null && {
+if nginx -t; then
     systemctl restart nginx
     systemctl enable nginx
-}
+else
+    error "Nginx configuration test failed"
+fi
 
 ok "Nginx (Edge 443 ALPN Multiplexer) & Apache2 (80/8443) configured"
 

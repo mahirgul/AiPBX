@@ -36,14 +36,14 @@ function __syncUdptlSettingsBody()
 
     $previous = is_readable(UDPTL_CONF_PATH) ? file_get_contents(UDPTL_CONF_PATH) : null;
 
-    if (!FileHelper::writeFile(UDPTL_CONF_PATH, $conf, 'asterisk', 'asterisk', 0644)) {
+    if (!FileHelper::writeFile(UDPTL_CONF_PATH, $conf, 'asterisk', 'asterisk', 0664)) {
         throw new \Exception(sprintf(t('sync.err_conf_write'), 'udptl.conf'));
     }
 
     try {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadUDPTL()], t('sync.ctx_udptl'));
     } catch (\Exception $e) {
-        if ($previous !== null && FileHelper::writeFile(UDPTL_CONF_PATH, $previous, 'asterisk', 'asterisk', 0644)) {
+        if ($previous !== null && FileHelper::writeFile(UDPTL_CONF_PATH, $previous, 'asterisk', 'asterisk', 0664)) {
             AsteriskHelper::reloadUDPTL();
             throw new \Exception(sprintf(t('sync.err_settings_rolled_back'), 'UDPTL', $e->getMessage()));
         }

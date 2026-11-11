@@ -16,6 +16,7 @@ on:
   pull_request:
     paths:
       - 'install.sh'
+      - 'scripts/install/**'
       - 'scripts/e2e/**'
       - 'web/src/secret_box.php'
       - 'chat/auth.go'
@@ -32,6 +33,7 @@ on:
     tags: [ 'v*' ]
     paths:
       - 'install.sh'
+      - 'scripts/install/**'
       - 'scripts/e2e/**'
       - 'web/src/secret_box.php'
       - 'chat/auth.go'

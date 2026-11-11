@@ -14,6 +14,7 @@ class AsteriskSettingsService {
             'pjsip_tls_port' => '5061',
             'pjsip_tls_domain' => '',
             'pjsip_tls_method' => 'tlsv1_2',
+            'pjsip_tls_verify_server' => 'no',
             'pjsip_external_ip' => '',
             'pjsip_local_net' => '192.168.1.0/24',
             'pjsip_codecs' => 'opus,alaw,ulaw',
@@ -191,6 +192,9 @@ class AsteriskSettingsService {
             'pjsip_tls_port' => (string)$tls_port_val,
             'pjsip_tls_domain' => $tls_domain_val,
             'pjsip_tls_method' => $tls_method_val,
+            'pjsip_tls_verify_server' => (!empty($post['pjsip_tls_verify_server']) && in_array($post['pjsip_tls_verify_server'], ['yes', '1', 'no', '0'], true))
+                ? (($post['pjsip_tls_verify_server'] === 'yes' || $post['pjsip_tls_verify_server'] === '1') ? 'yes' : 'no')
+                : 'no',
             // Edited on Network → Network settings (validated there); this form keeps them.
             'pjsip_external_ip' => (string) getSystemSetting('pjsip_external_ip', ''),
             'pjsip_local_net' => (string) getSystemSetting('pjsip_local_net', '192.168.1.0/24'),
@@ -314,6 +318,7 @@ class AsteriskSettingsService {
         $pj_stmt->execute(['tls_bindport', $new_settings['pjsip_tls_port']]);
         $pj_stmt->execute(['tls_domain', $new_settings['pjsip_tls_domain']]);
         $pj_stmt->execute(['tls_method', $new_settings['pjsip_tls_method']]);
+        $pj_stmt->execute(['tls_verify_server', $new_settings['pjsip_tls_verify_server']]);
         $pj_stmt->execute(['externip_val', $new_settings['pjsip_external_ip']]);
 
         $net_index = 0;

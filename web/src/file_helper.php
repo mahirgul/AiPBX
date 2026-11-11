@@ -17,6 +17,56 @@ class FileHelper {
             @chmod($dir, 0775);
         }
 
+        // When writing protected configuration files in /etc/asterisk (which is 0755 root:asterisk),
+        // unprivileged processes (www-data) cannot create temp files in /etc/asterisk.
+        // Delegate to the privilege broker if available.
+        $baseName = basename($filepath);
+        if (!is_writable($dir) && $dir === '/etc/asterisk' && in_array($baseName, ['rtp.conf', 'udptl.conf', 'voicemail.conf'], true)) {
+            $privBin = '/usr/local/sbin/aipbx-priv';
+            $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
+            if (!$isRoot && is_executable($privBin)) {
+                $descriptors = [
+                    0 => ['pipe', 'r'],
+                    1 => ['pipe', 'w'],
+                    2 => ['pipe', 'w'],
+                ];
+                $process = @proc_open('sudo ' . escapeshellarg($privBin) . ' asterisk-conf write ' . escapeshellarg($baseName), $descriptors, $pipes);
+                if (is_resource($process)) {
+                    fwrite($pipes[0], (string) $content);
+                    fclose($pipes[0]);
+                    stream_get_contents($pipes[1]);
+                    fclose($pipes[1]);
+                    stream_get_contents($pipes[2]);
+                    fclose($pipes[2]);
+                    $status = proc_close($process);
+                    if ($status === 0) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        // Fallback for when directory is not writable but file itself is writable (e.g. 0664 asterisk:asterisk)
+        if (!is_writable($dir) && is_writable($filepath)) {
+            $fp = @fopen($filepath, 'cb');
+            if ($fp !== false) {
+                if (flock($fp, LOCK_EX)) {
+                    ftruncate($fp, 0);
+                    rewind($fp);
+                    $written = fwrite($fp, (string) $content);
+                    fflush($fp);
+                    flock($fp, LOCK_UN);
+                    fclose($fp);
+                    if ($written !== false) {
+                        if ($mode) @chmod($filepath, $mode);
+                        return true;
+                    }
+                } else {
+                    fclose($fp);
+                }
+            }
+        }
+
         // Writing the target file directly with file_put_contents() is NOT
         // atomic — if two concurrent requests (two PHP-FPM workers) write the
         // same master .conf file (e.g. pjsip_endpoints.conf) and an Asterisk

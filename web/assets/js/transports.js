@@ -11,6 +11,14 @@ function transportEditBuiltin(b) {
     UIHelper.openOverlayModal('transportBuiltinModal');
 }
 
+function updateCustomProtocol() {
+    const proto = document.getElementById('custom_protocol').value;
+    const verifyGroup = document.getElementById('custom_verify_group');
+    if (verifyGroup) {
+        verifyGroup.style.display = (proto === 'tls') ? '' : 'none';
+    }
+}
+
 function transportEditCustom(id) {
     const c = (window.TRANSPORTS_CUSTOM || []).find((x) => Number(x.id) === id) || {};
     document.getElementById('custom_id').value = String(id);
@@ -20,5 +28,17 @@ function transportEditCustom(id) {
     document.getElementById('custom_port').value = c.port || '';
     document.getElementById('custom_external').value = c.external_address || '';
     document.getElementById('custom_active').checked = id === 0 || Number(c.is_active) === 1;
+    const verifyBox = document.getElementById('custom_verify_server');
+    if (verifyBox) {
+        verifyBox.checked = Number(c.verify_server || 0) === 1;
+    }
+    updateCustomProtocol();
     UIHelper.openOverlayModal('transportCustomModal');
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const protoSel = document.getElementById('custom_protocol');
+    if (protoSel) {
+        protoSel.addEventListener('change', updateCustomProtocol);
+    }
+});

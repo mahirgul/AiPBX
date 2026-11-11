@@ -206,6 +206,7 @@ final class TransportService
                 throw new \Exception(t('transports.err_external'));
             }
             $active = empty($data['is_active']) ? 0 : 1;
+            $verifyServer = !empty($data['verify_server']) ? 1 : 0;
             $taken = in_array($name, ['transport-udp', 'transport-tcp', 'transport-tls', 'transport-ws', 'transport-wss'], true);
             $db = getDB();
             $same = $db->prepare('SELECT id FROM pbx_transports WHERE name = ? AND id <> ?');
@@ -214,11 +215,11 @@ final class TransportService
                 throw new \Exception(t('transports.err_name_taken'));
             }
             if ($id > 0) {
-                $db->prepare('UPDATE pbx_transports SET name = ?, protocol = ?, bind_addr = ?, port = ?, external_address = ?, is_active = ? WHERE id = ?')
-                    ->execute([$name, $protocol, $addr, $port, $external, $active, $id]);
+                $db->prepare('UPDATE pbx_transports SET name = ?, protocol = ?, bind_addr = ?, port = ?, external_address = ?, is_active = ?, verify_server = ? WHERE id = ?')
+                    ->execute([$name, $protocol, $addr, $port, $external, $active, $verifyServer, $id]);
             } else {
-                $db->prepare('INSERT INTO pbx_transports (name, protocol, bind_addr, port, external_address, is_active) VALUES (?, ?, ?, ?, ?, ?)')
-                    ->execute([$name, $protocol, $addr, $port, $external, $active]);
+                $db->prepare('INSERT INTO pbx_transports (name, protocol, bind_addr, port, external_address, is_active, verify_server) VALUES (?, ?, ?, ?, ?, ?, ?)')
+                    ->execute([$name, $protocol, $addr, $port, $external, $active, $verifyServer]);
             }
             return self::afterChange($name, $active ? $port : 0, $protocol, $id > 0 ? 'update' : 'create', (string) ($data['csrf_token'] ?? ''));
         });

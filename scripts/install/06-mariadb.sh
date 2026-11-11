@@ -10,6 +10,10 @@ systemctl enable mariadb
 # Create database
 mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
+# Validate database usernames
+[[ "$DB_USER" =~ ^[a-zA-Z0-9_]{1,32}$ ]] || error "Invalid database user name: $DB_USER"
+[[ "$MIGRATOR_USER" =~ ^[a-zA-Z0-9_]{1,32}$ ]] || error "Invalid database migrator user name: $MIGRATOR_USER"
+
 # App users: created when missing, password (re)applied — safe to re-run
 mysql <<EOF
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '$(sql_q "${DB_PASS}")';

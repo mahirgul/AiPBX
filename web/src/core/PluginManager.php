@@ -1425,7 +1425,12 @@ final class PluginManager
             $privBin = '/usr/local/sbin/aipbx-priv';
             if (is_executable($privBin) && preg_match('/^[a-z0-9_-]{2,64}$/', $slug)) {
                 $cmd = 'sudo ' . escapeshellarg($privBin) . ' plugin-schema drop ' . escapeshellarg($slug);
-                exec($cmd . ' 2>&1');
+                $out = [];
+                $code = 0;
+                exec($cmd . ' 2>&1', $out, $code);
+                if ($code !== 0) {
+                    throw new \Exception('Failed to drop plugin schema via privilege broker: ' . implode(' ', $out));
+                }
                 return;
             }
         }

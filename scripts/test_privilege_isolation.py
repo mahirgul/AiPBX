@@ -95,7 +95,18 @@ class PrivilegeIsolationTest(unittest.TestCase):
             'pjsip reload',
             'queue reload all',
             'core reload',
+            'moh reload',
+            'voicemail reload',
             'module reload indications',
+            'module reload res_rtp_asterisk.so',
+            'module reload udptl',
+            'devstate change Custom:dnd_100 INUSE',
+            'pjsip set logger on',
+            'pjsip set logger off',
+            'database deltree blacklist',
+            'config show help pjsip',
+            'dialplan show 100@from-internal',
+            'core restart when convenient',
             'fax show sessions',
             'channel request hangup PJSIP/100-00000001',
             'channel get PJSIP/100-00000001 CALLERID(num)',
@@ -160,7 +171,7 @@ class PrivilegeIsolationTest(unittest.TestCase):
         install_sh = self._get_installer_code()
         self.assertIn('limit_conn_zone $binary_remote_addr zone=aipbx_stream_conn:10m', install_sh)
         self.assertIn('limit_conn aipbx_stream_conn 128', install_sh)
-        self.assertIn('ssl_preread_timeout 5s', install_sh)
+        self.assertIn('preread_timeout 5s', install_sh)
 
     def test_service_sandbox_inaccessible_paths(self):
         install_sh = self._get_installer_code()

@@ -76,6 +76,8 @@ MAX_DUMP = 200 * 1024 ** 3
 # generated password may hold more characters, but nothing a shell or a config file treats
 # as special; a display name may hold spaces.
 ENV_VALUE = re.compile(r'^[A-Za-z0-9._@:/+=,%~-]*$')
+ENV_USER_KEY = re.compile(r'^(DB_USER|MIGRATOR_DB_USER)$')
+ENV_USER_VALUE = re.compile(r'^[A-Za-z0-9_]{1,32}$')
 ENV_SECRET_KEY = re.compile(r'(PASS|SECRET|TOKEN|KEY)')
 ENV_SECRET_VALUE = re.compile(r'^[A-Za-z0-9._@:/+=,%~!^*#?-]*$')
 ENV_NAME_KEY = re.compile(r'_NAME$')
@@ -141,7 +143,9 @@ def check_env(data):
         key, sep, value = line.partition('=')
         if len(value) >= 2 and value[0] == value[-1] and value[0] in '"\'':
             value = value[1:-1]
-        if ENV_SECRET_KEY.search(key):
+        if ENV_USER_KEY.match(key):
+            allowed = ENV_USER_VALUE
+        elif ENV_SECRET_KEY.search(key):
             allowed = ENV_SECRET_VALUE
         elif ENV_NAME_KEY.search(key):
             allowed = ENV_NAME_VALUE
@@ -173,7 +177,7 @@ def check_backup(folder, untrusted):
             for m, path in members(tar):
                 if not untrusted or not m.isfile():
                     continue
-                if path == 'etc/ai-pbx.env':
+                if path in ('etc/ai-pbx.env', 'etc/ai-pbx-migrator.env'):
                     check_env(tar.extractfile(m).read())
                 elif path.startswith('etc/asterisk/'):
                     if EXEC_DIRECTIVE.search(tar.extractfile(m).read()):
@@ -186,6 +190,8 @@ def extract_config(folder, untrusted):
     with tarfile.open(os.path.join(folder, 'config.tgz'), 'r:gz') as tar:
         for m, path in members(tar):
             if untrusted and path == 'etc/asterisk/asterisk.conf':
+                continue
+            if untrusted and path == 'etc/ai-pbx-migrator.env':
                 continue
             # Keys from an uploaded file would let its maker in over the VPN.
             if untrusted and (path == 'var/lib/aipbx-vpn' or path.startswith('var/lib/aipbx-vpn/')):
@@ -322,6 +328,10 @@ import_uploaded_dump() {  # dump
     user="$(migrator_env_get MIGRATOR_DB_USER)"; pass="$(migrator_env_get MIGRATOR_DB_PASS)"
     if [[ -z "$user" || -z "$pass" ]]; then
         log "No migration user configured in migrator env file: an uploaded dump is not run as root"
+        return 1
+    fi
+    if [[ ! "$user" =~ ^[a-zA-Z0-9_]{1,32}$ ]]; then
+        log "Invalid database migrator user name in migrator env file: $user"
         return 1
     fi
     cnf="$(mktemp)"  # mode 600

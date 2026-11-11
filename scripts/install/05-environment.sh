@@ -24,12 +24,15 @@ if is_upgrade; then
 
     # P1.3: Separate DDL migrator credentials from runtime env file
     if [[ ! -f /etc/ai-pbx-migrator.env ]]; then
-        cat > /etc/ai-pbx-migrator.env << MIGRATORENV
+        (
+            umask 077
+            cat > /etc/ai-pbx-migrator.env << MIGRATORENV
 # AI PBX - Database Migrator / DDL Configuration
 # Restricted to root — runtime web and asterisk processes must NEVER read this file.
 MIGRATOR_DB_USER=${MIGRATOR_USER}
 MIGRATOR_DB_PASS=${MIGRATOR_PASS}
 MIGRATORENV
+        )
         chmod 0600 /etc/ai-pbx-migrator.env
         chown root:root /etc/ai-pbx-migrator.env
         ok "Migrator credentials moved to /etc/ai-pbx-migrator.env (0600 root:root)"
@@ -50,16 +53,21 @@ SERVER_TIMEZONE="$(timedatectl show -p Timezone --value 2>/dev/null || true)"
 [[ "$SERVER_TIMEZONE" =~ ^[A-Za-z0-9_+/-]+$ ]] || SERVER_TIMEZONE=UTC
 
 # P1.3: Migrator credentials live in dedicated root-only file
-cat > /etc/ai-pbx-migrator.env << MIGRATORENV
+(
+    umask 077
+    cat > /etc/ai-pbx-migrator.env << MIGRATORENV
 # AI PBX - Database Migrator / DDL Configuration
 # Restricted to root — runtime web and asterisk processes must NEVER read this file.
 MIGRATOR_DB_USER=${MIGRATOR_USER}
 MIGRATOR_DB_PASS=${MIGRATOR_PASS}
 MIGRATORENV
+)
 chmod 0600 /etc/ai-pbx-migrator.env
 chown root:root /etc/ai-pbx-migrator.env
 
-cat > /etc/ai-pbx.env << ENVFILE
+(
+    umask 077
+    cat > /etc/ai-pbx.env << ENVFILE
 # AI PBX - Environment Configuration
 # Generated: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
 # KEEP THIS FILE SECURE — it contains all service secrets.

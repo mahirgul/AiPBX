@@ -73,6 +73,14 @@
             <small class="u-hint"><?php echo t('asterisk_settings.tls_domain_help'); ?></small>
         </div>
 
+        <div class="form-group u-mt-12">
+            <label class="u-check-label-6">
+                <input type="checkbox" name="pjsip_tls_verify_server" value="yes" <?php echo (($s['pjsip_tls_verify_server'] ?? 'no') === 'yes') ? 'checked' : ''; ?>>
+                <?php echo t('asterisk_settings.field_tls_verify_server', 'Verify SIP TLS Server Certificates'); ?>
+            </label>
+            <small class="u-hint u-d-block"><?php echo t('asterisk_settings.tls_verify_server_help', 'Enforces X.509 certificate verification for outbound TLS SIP connections.'); ?></small>
+        </div>
+
 
         <div class="form-group u-mt-12">
             <label class="form-label"><?php echo t('asterisk_settings.field_codecs'); ?></label>

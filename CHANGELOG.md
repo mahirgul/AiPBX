@@ -11,6 +11,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.73.2
+
+- **DDL privilege broker Apache sandbox escape:** Updated `aipbx-priv plugin-schema` to execute transiently via `systemd-run` in system root mount namespace, ensuring Apache's `InaccessiblePaths=-/etc/ai-pbx-migrator.env` sandbox restriction does not block the root privilege broker from accessing migrator credentials during web plugin installations and updates. Added error propagation on plugin schema drop.
+- **Atomic configuration write broker for `/etc/asterisk`:** Added `aipbx-priv asterisk-conf write` privilege helper and fallback locking in `FileHelper::writeFile`, allowing unprivileged web processes to safely update `/etc/asterisk/rtp.conf`, `udptl.conf`, and `voicemail.conf` without relaxing directory permissions on `/etc/asterisk` (`0755 root:asterisk`).
+- **Restore archive & MariaDB user sanitization:** Hardened `aipbx-restore` to explicitly ignore untrusted `/etc/ai-pbx-migrator.env` archives and strictly validate database user identifiers against `^[A-Za-z0-9_]{1,32}$`.
+- **Asterisk CLI permission expansion:** Permitted required operational commands for `www-data` in `cli_permissions.conf` including `moh reload`, `voicemail reload`, `devstate change`, `pjsip set logger`, `module reload`, and `database deltree`.
+- **Umask hardening on credentials creation:** Wrapped `/etc/ai-pbx-migrator.env` and `/etc/ai-pbx.env` creation in subshells with `umask 077` to prevent any temporary world-readable permissions during initial file generation.
+- **Nginx Stream directive fix & CI workflow paths:** Corrected invalid Nginx stream directive from `ssl_preread_timeout` to `preread_timeout 5s`, surfaced `nginx -t` validation errors during installation, and included `scripts/install/**` in GitHub Actions install test trigger paths.
+- **End-to-end SIP TLS server certificate verification:** Added `pjsip_tls_verify_server` setting and `pbx_transports.verify_server` column migration with web UI controls for both standard and custom TLS SIP transports.
+
 ## 1.73.1
 
 - **Privileged plugin schema execution via privilege broker:** Fixed an issue in web portal plugin installations and updates where unprivileged web processes (`www-data`) failed to execute plugin `schema.sql` statements due to runtime database DDL restrictions. Unprivileged callers now transparently delegate DDL schema application and table drop operations to `sudo aipbx-priv plugin-schema`, ensuring seamless catalog updates without compromising database privilege isolation.

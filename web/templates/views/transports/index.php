@@ -129,6 +129,11 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
                     <input type="text" name="external_address" id="custom_external" class="form-control" maxlength="255">
                     <small class="u-hint"><?php echo t('transports.field_external_help'); ?></small>
                 </div>
+                <div class="form-group" id="custom_verify_group" style="display:none;">
+                    <label class="u-check-label u-mb-12">
+                        <input type="checkbox" name="verify_server" id="custom_verify_server" value="1" class="u-accent"> <?php echo t('transports.field_verify_server', 'Verify Server Certificate (TLS)'); ?>
+                    </label>
+                </div>
                 <label class="u-check-label u-mb-12">
                     <input type="checkbox" name="is_active" id="custom_active" value="1" class="u-accent" checked> <?php echo t('transports.state_on'); ?>
                 </label>
