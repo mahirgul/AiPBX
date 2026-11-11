@@ -65,7 +65,7 @@ status() {  # state step
 # check-backup DIR UNTRUSTED       the dump is complete, config.tgz holds only what it may
 # extract-config DIR UNTRUSTED     config.tgz to /
 py() { python3 -I - "$@" <<'PY'
-import gzip, os, re, shutil, sys, tarfile
+import grp, gzip, os, re, shutil, sys, tarfile, tempfile
 
 ROOTS = ('etc/asterisk', 'var/lib/asterisk/sounds/custom', 'var/lib/asterisk/moh/custom',
          'etc/letsencrypt', 'var/lib/aipbx/plugins', 'etc/ssl/aipbx', 'etc/aipbx', 'var/lib/aipbx-vpn')
@@ -189,6 +189,21 @@ def check_backup(folder, untrusted):
         die(f'refused: config.tgz: {e}')
 
 
+def preserve_runtime_db(uploaded, current):
+    protected = ('DB_USER', 'DB_PASS')
+    local_db = {}
+    for line in current.splitlines():
+        key, separator, value = line.partition('=')
+        if separator and key in protected:
+            local_db[key] = value
+    if any(not local_db.get(key) for key in protected):
+        raise ValueError('local database credentials are missing')
+    lines = [line for line in uploaded.splitlines()
+             if line.partition('=')[0].strip() not in protected]
+    lines.extend(key + '=' + local_db[key] for key in protected)
+    return '\n'.join(lines) + '\n'
+
+
 def extract_config(folder, untrusted):
     with tarfile.open(os.path.join(folder, 'config.tgz'), 'r:gz') as tar:
         for m, path in members(tar):
@@ -196,28 +211,24 @@ def extract_config(folder, untrusted):
                 continue
             if untrusted and path == 'etc/ai-pbx-migrator.env':
                 continue
-            # Untrusted backup must never overwrite the host system's database runtime credentials
+            # Merge before publishing so uploaded DB credentials are never installed.
             if untrusted and path == 'etc/ai-pbx.env':
-                local_db = {}
-                if os.path.isfile('/etc/ai-pbx.env'):
-                    with open('/etc/ai-pbx.env', 'r', encoding='utf-8', errors='replace') as f:
-                        for line in f:
-                            sline = line.strip()
-                            if sline.startswith('DB_USER=') or sline.startswith('DB_PASS='):
-                                k, _, v = sline.partition('=')
-                                local_db[k] = v
-                m.name = path
-                tar.extract(m, '/', filter='tar')
-                if local_db and os.path.isfile('/etc/ai-pbx.env'):
-                    with open('/etc/ai-pbx.env', 'r', encoding='utf-8', errors='replace') as f:
-                        lines = f.readlines()
-                    with open('/etc/ai-pbx.env', 'w', encoding='utf-8') as f:
-                        for line in lines:
-                            k, _, _ = line.partition('=')
-                            if k in local_db:
-                                f.write(f"{k}={local_db[k]}\n")
-                            else:
-                                f.write(line)
+                with open('/etc/ai-pbx.env', encoding='utf-8') as current:
+                    merged = preserve_runtime_db(tar.extractfile(m).read().decode('utf-8'), current.read())
+                temporary = None
+                try:
+                    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir='/etc',
+                                                     prefix='.aipbx-restore-env-', delete=False) as out:
+                        temporary = out.name
+                        out.write(merged)
+                        out.flush()
+                        os.fsync(out.fileno())
+                        os.fchown(out.fileno(), 0, grp.getgrnam('asterisk').gr_gid)
+                        os.fchmod(out.fileno(), 0o640)
+                    os.replace(temporary, '/etc/ai-pbx.env')
+                finally:
+                    if temporary and os.path.exists(temporary):
+                        os.unlink(temporary)
                 continue
             # Keys from an uploaded file would let its maker in over the VPN.
             if untrusted and (path == 'var/lib/aipbx-vpn' or path.startswith('var/lib/aipbx-vpn/')):
@@ -430,14 +441,8 @@ log "Database restored"
 
 if [[ "$DB_ONLY" != true ]]; then
     status running "Restoring the configuration"
-    local_db_user="$(env_get DB_USER)"
-    local_db_pass="$(env_get DB_PASS)"
     if ! err="$(py extract-config "$DIR" "$UNTRUSTED" 2>&1)"; then
         go_back "The configuration could not be restored: $err"
-    fi
-    if [[ "$UNTRUSTED" == 1 && -n "$local_db_user" ]]; then
-        sed -i "s/^DB_USER=.*/DB_USER=${local_db_user}/" "$ENV_FILE"
-        [[ -n "$local_db_pass" ]] && sed -i "s/^DB_PASS=.*/DB_PASS=${local_db_pass}/" "$ENV_FILE"
     fi
     log "Configuration restored"
 fi

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate database migrator privilege isolation (P1.3) and Asterisk CLI restrictions (P1.4)."""
+import ast
 import configparser
 import os
 from pathlib import Path
@@ -191,7 +192,36 @@ class PrivilegeIsolationTest(unittest.TestCase):
         self.assertIn("'mariadb.sys'", restore_code)
         # Check that untrusted restore preserves local DB_USER and DB_PASS
         self.assertIn("local_db", restore_code)
-        self.assertIn("DB_USER=", restore_code)
+        self.assertIn('preserve_runtime_db', restore_code)
+
+    def restore_env_merger(self):
+        source = (ROOT_DIR / 'conf/sbin/aipbx-restore').read_text()
+        python = source.split("<<'PY'\n", 1)[1].split('\nPY\n}', 1)[0]
+        definition = next(node for node in ast.parse(python).body
+                          if isinstance(node, ast.FunctionDef) and node.name == 'preserve_runtime_db')
+        namespace = {}
+        exec(compile(ast.Module(body=[definition], type_ignores=[]), '<restore-env>', 'exec'), namespace)
+        return namespace['preserve_runtime_db']
+
+    def test_restore_keeps_literal_local_passwords(self):
+        merge = self.restore_env_merger()
+        for password in [r'fixture&value/with\backslash', "'quoted&value'", 'fixture=with$characters']:
+            with self.subTest(password=password):
+                current = 'DB_USER=aipbx_portal\nDB_PASS=' + password + '\n'
+                result = merge('DB_USER=uploaded\nDB_PASS=uploaded\nSITE_NAME=Restored\n', current)
+                self.assertEqual('SITE_NAME=Restored\n' + current, result)
+
+    def test_restore_adds_missing_credentials_and_removes_duplicates(self):
+        merge = self.restore_env_merger()
+        current = 'DB_USER=aipbx_portal\nDB_PASS=fixture\n'
+        for uploaded in ['SITE_NAME=Restored', 'SITE_NAME=Restored\nDB_USER=uploaded\nDB_USER=other\n DB_PASS=uploaded\n']:
+            self.assertEqual('SITE_NAME=Restored\n' + current, merge(uploaded, current))
+
+    def test_restore_refuses_missing_local_credentials(self):
+        merge = self.restore_env_merger()
+        for current in ['', 'DB_USER=aipbx_portal\n', 'DB_USER=aipbx_portal\nDB_PASS=\n']:
+            with self.assertRaises(ValueError):
+                merge('DB_USER=uploaded\nDB_PASS=uploaded\n', current)
 
     def test_mariadb_installer_rejects_reserved_users(self):
         install_sh = self._get_installer_code()

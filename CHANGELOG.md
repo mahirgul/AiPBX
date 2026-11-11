@@ -11,6 +11,11 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.73.4
+
+- **Robust runtime database credential preservation in restore:** Replaced fragile post-extract shell sed substitution in `aipbx-restore` with pure-Python literal merger `preserve_runtime_db()` using safe atomic replacement via `tempfile.NamedTemporaryFile` (mode 0640 `root:asterisk`), ensuring passwords with special characters (`&`, `/`, `\`, `$`, quotes) are perfectly preserved during untrusted backup restoration. Added regression test coverage.
+- **UI style lint fix:** Removed undefined CSS helper class `u-d-block` from Asterisk settings TLS verification hint element, passing all smoke test conventions.
+
 ## 1.73.3
 
 - **Harden database user validation & prevent account hijacking from untrusted archives:** Prevented untrusted backup restores in `aipbx-restore` from altering the host system's database runtime credentials (`DB_USER` and `DB_PASS`). Enforced strict reserved-account rejections (`root`, `admin`, `mysql`, `mariadb.sys`, `debian-sys-maint`, `asterisk_odbc`, `asterisk`) in both `aipbx-restore` and the MariaDB installer step (`06-mariadb.sh`).
