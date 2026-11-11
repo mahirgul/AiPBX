@@ -11,6 +11,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.73.3
+
+- **Harden database user validation & prevent account hijacking from untrusted archives:** Prevented untrusted backup restores in `aipbx-restore` from altering the host system's database runtime credentials (`DB_USER` and `DB_PASS`). Enforced strict reserved-account rejections (`root`, `admin`, `mysql`, `mariadb.sys`, `debian-sys-maint`, `asterisk_odbc`, `asterisk`) in both `aipbx-restore` and the MariaDB installer step (`06-mariadb.sh`).
+- **Enforce strict atomic file writing contracts in FileHelper:** Removed non-atomic in-place truncation and flock fallbacks in `FileHelper::writeFile`. When writing to protected `/etc/asterisk` configuration files, `FileHelper` delegates exclusively to `aipbx-priv asterisk-conf write` and fails cleanly without modifying or truncating the target file if the broker fails. Added `FileHelperAtomicTest`.
+- **Localization completeness:** Added missing English and Turkish dictionary translations for SIP TLS verification (`asterisk_settings.field_tls_verify_server`, `asterisk_settings.tls_verify_server_help`, `transports.field_verify_server`).
+
 ## 1.73.2
 
 - **DDL privilege broker Apache sandbox escape:** Updated `aipbx-priv plugin-schema` to execute transiently via `systemd-run` in system root mount namespace, ensuring Apache's `InaccessiblePaths=-/etc/ai-pbx-migrator.env` sandbox restriction does not block the root privilege broker from accessing migrator credentials during web plugin installations and updates. Added error propagation on plugin schema drop.

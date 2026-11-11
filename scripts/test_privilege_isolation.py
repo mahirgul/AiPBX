@@ -183,6 +183,21 @@ class PrivilegeIsolationTest(unittest.TestCase):
         self.assertIn('ca_list_file', sync_code)
         self.assertIn('verify_server', sync_code)
 
+    def test_restore_rejects_reserved_database_users(self):
+        restore_code = (ROOT_DIR / 'conf/sbin/aipbx-restore').read_text()
+        self.assertIn('RESERVED_DB_USERS', restore_code)
+        self.assertIn("'root'", restore_code)
+        self.assertIn("'mysql'", restore_code)
+        self.assertIn("'mariadb.sys'", restore_code)
+        # Check that untrusted restore preserves local DB_USER and DB_PASS
+        self.assertIn("local_db", restore_code)
+        self.assertIn("DB_USER=", restore_code)
+
+    def test_mariadb_installer_rejects_reserved_users(self):
+        install_sh = self._get_installer_code()
+        self.assertIn('for reserved in root admin mysql mariadb.sys', install_sh)
+        self.assertIn('Runtime database user cannot be reserved user', install_sh)
+
 
 if __name__ == '__main__':
     unittest.main()

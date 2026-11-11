@@ -78,6 +78,7 @@ MAX_DUMP = 200 * 1024 ** 3
 ENV_VALUE = re.compile(r'^[A-Za-z0-9._@:/+=,%~-]*$')
 ENV_USER_KEY = re.compile(r'^(DB_USER|MIGRATOR_DB_USER)$')
 ENV_USER_VALUE = re.compile(r'^[A-Za-z0-9_]{1,32}$')
+RESERVED_DB_USERS = {'root', 'admin', 'mysql', 'mariadb.sys', 'debian-sys-maint', 'asterisk_odbc', 'asterisk'}
 ENV_SECRET_KEY = re.compile(r'(PASS|SECRET|TOKEN|KEY)')
 ENV_SECRET_VALUE = re.compile(r'^[A-Za-z0-9._@:/+=,%~!^*#?-]*$')
 ENV_NAME_KEY = re.compile(r'_NAME$')
@@ -145,6 +146,8 @@ def check_env(data):
             value = value[1:-1]
         if ENV_USER_KEY.match(key):
             allowed = ENV_USER_VALUE
+            if value.lower() in RESERVED_DB_USERS:
+                die(f'refused: reserved database user name {value[:40]!r}')
         elif ENV_SECRET_KEY.search(key):
             allowed = ENV_SECRET_VALUE
         elif ENV_NAME_KEY.search(key):
@@ -192,6 +195,29 @@ def extract_config(folder, untrusted):
             if untrusted and path == 'etc/asterisk/asterisk.conf':
                 continue
             if untrusted and path == 'etc/ai-pbx-migrator.env':
+                continue
+            # Untrusted backup must never overwrite the host system's database runtime credentials
+            if untrusted and path == 'etc/ai-pbx.env':
+                local_db = {}
+                if os.path.isfile('/etc/ai-pbx.env'):
+                    with open('/etc/ai-pbx.env', 'r', encoding='utf-8', errors='replace') as f:
+                        for line in f:
+                            sline = line.strip()
+                            if sline.startswith('DB_USER=') or sline.startswith('DB_PASS='):
+                                k, _, v = sline.partition('=')
+                                local_db[k] = v
+                m.name = path
+                tar.extract(m, '/', filter='tar')
+                if local_db and os.path.isfile('/etc/ai-pbx.env'):
+                    with open('/etc/ai-pbx.env', 'r', encoding='utf-8', errors='replace') as f:
+                        lines = f.readlines()
+                    with open('/etc/ai-pbx.env', 'w', encoding='utf-8') as f:
+                        for line in lines:
+                            k, _, _ = line.partition('=')
+                            if k in local_db:
+                                f.write(f"{k}={local_db[k]}\n")
+                            else:
+                                f.write(line)
                 continue
             # Keys from an uploaded file would let its maker in over the VPN.
             if untrusted and (path == 'var/lib/aipbx-vpn' or path.startswith('var/lib/aipbx-vpn/')):
@@ -404,8 +430,14 @@ log "Database restored"
 
 if [[ "$DB_ONLY" != true ]]; then
     status running "Restoring the configuration"
+    local_db_user="$(env_get DB_USER)"
+    local_db_pass="$(env_get DB_PASS)"
     if ! err="$(py extract-config "$DIR" "$UNTRUSTED" 2>&1)"; then
         go_back "The configuration could not be restored: $err"
+    fi
+    if [[ "$UNTRUSTED" == 1 && -n "$local_db_user" ]]; then
+        sed -i "s/^DB_USER=.*/DB_USER=${local_db_user}/" "$ENV_FILE"
+        [[ -n "$local_db_pass" ]] && sed -i "s/^DB_PASS=.*/DB_PASS=${local_db_pass}/" "$ENV_FILE"
     fi
     log "Configuration restored"
 fi

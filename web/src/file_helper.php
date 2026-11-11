@@ -44,27 +44,8 @@ class FileHelper {
                     }
                 }
             }
-        }
-
-        // Fallback for when directory is not writable but file itself is writable (e.g. 0664 asterisk:asterisk)
-        if (!is_writable($dir) && is_writable($filepath)) {
-            $fp = @fopen($filepath, 'cb');
-            if ($fp !== false) {
-                if (flock($fp, LOCK_EX)) {
-                    ftruncate($fp, 0);
-                    rewind($fp);
-                    $written = fwrite($fp, (string) $content);
-                    fflush($fp);
-                    flock($fp, LOCK_UN);
-                    fclose($fp);
-                    if ($written !== false) {
-                        if ($mode) @chmod($filepath, $mode);
-                        return true;
-                    }
-                } else {
-                    fclose($fp);
-                }
-            }
+            // If the broker is not available or fails, return false to preserve original file atomically.
+            return false;
         }
 
         // Writing the target file directly with file_put_contents() is NOT

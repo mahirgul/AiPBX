@@ -14,6 +14,11 @@ mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE u
 [[ "$DB_USER" =~ ^[a-zA-Z0-9_]{1,32}$ ]] || error "Invalid database user name: $DB_USER"
 [[ "$MIGRATOR_USER" =~ ^[a-zA-Z0-9_]{1,32}$ ]] || error "Invalid database migrator user name: $MIGRATOR_USER"
 
+for reserved in root admin mysql mariadb.sys debian-sys-maint asterisk_odbc asterisk; do
+    [[ "${DB_USER,,}" != "$reserved" ]] || error "Runtime database user cannot be reserved user '$DB_USER'"
+    [[ "${MIGRATOR_USER,,}" != "$reserved" ]] || error "Migrator database user cannot be reserved user '$MIGRATOR_USER'"
+done
+
 # App users: created when missing, password (re)applied — safe to re-run
 mysql <<EOF
 CREATE USER IF NOT EXISTS '${DB_USER}'@'localhost' IDENTIFIED BY '$(sql_q "${DB_PASS}")';
