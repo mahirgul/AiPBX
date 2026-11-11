@@ -411,6 +411,8 @@ Code comments, commit messages and documentation are written in English.
 
 ## ⚖️ Disclaimer & Legal Notice / Sorumluluk Reddi
 
+> ℹ️ **Independent project:** This is a personal, independent open-source pet project developed entirely in my private spare time and is not affiliated with, endorsed by, or related to my employer.
+
 > ⚠️ **English — Disclaimer of Warranty & Regulatory Responsibility**
 > 1. **Provided "AS IS":** AiPBX is open-source software provided under the [MIT License](LICENSE) **"AS IS"**, without warranty of any kind, express or implied. In no event shall the author or contributors be liable for any direct, indirect, incidental, special, exemplary, or consequential damages (including, without limitation, service interruptions, data loss, or toll fraud) arising out of the use or inability to use this software.
 > 2. **Call Recording, AI Processing & Automated Outbound Dialing Compliance:** Features such as call recording, AI speech-to-text / LLM processing, and automated outbound dialing (`auto-dialer` / AMD) are subject to strict telecommunications, wiretapping, and data protection laws worldwide (including **GDPR**, **KVKK**, **FCC / TCPA**, **CCPA**, **HIPAA**, and local two-party consent statutes). Configuring appropriate pre-call disclosures, obtaining caller/callee consent, and complying with local laws are the **sole responsibility of the system administrator and deploying organization**.
@@ -460,3 +462,5 @@ Sign up via our affiliate link to claim **$250 in free cloud credits**:
 ## 👤 Author & Creator
 
 **Mahir Gül** · [mhrgl.com](https://mhrgl.com) · [LinkedIn](https://www.linkedin.com/in/mhrgl/) · [@mahirgul](https://github.com/mahirgul)
+
+This is a personal, independent open-source pet project developed entirely in my private spare time and is not affiliated with, endorsed by, or related to my employer.
