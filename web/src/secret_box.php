@@ -37,6 +37,11 @@ final class SecretBox
     {
         $existing = @file_get_contents($file);
         if (is_string($existing) && strlen($existing) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+            if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                @chown($file, 'www-data');
+                @chgrp($file, 'www-data');
+                @chmod($file, 0600);
+            }
             return $existing;
         }
         $old = umask(0077);
@@ -54,6 +59,11 @@ final class SecretBox
                     throw new RuntimeException('Cannot read the settings encryption key.');
                 }
                 if (strlen($raw) === SODIUM_CRYPTO_SECRETBOX_KEYBYTES) {
+                    if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                        @chown($file, 'www-data');
+                        @chgrp($file, 'www-data');
+                        @chmod($file, 0600);
+                    }
                     return $raw;
                 }
                 if ($raw !== '') {
@@ -63,6 +73,11 @@ final class SecretBox
                 if (fwrite($fp, $raw) !== strlen($raw) || !fflush($fp) || !fsync($fp)) {
                     throw new RuntimeException('Cannot persist the settings encryption key.');
                 }
+                if (function_exists('posix_geteuid') && posix_geteuid() === 0) {
+                    @chown($file, 'www-data');
+                    @chgrp($file, 'www-data');
+                }
+                @chmod($file, 0600);
                 return $raw;
             } finally {
                 flock($fp, LOCK_UN);

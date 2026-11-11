@@ -1284,23 +1284,15 @@ final class PluginManager
 
         $statements = self::parseAndValidatePluginSchemaSql($rawSql);
 
-        // When running under web server or unprivileged process where migrator credentials
-        // are inaccessible, delegate DDL execution to the root privilege broker.
-        $migFile = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
-        $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
-        $isTest = (getenv('DB_NAME') === 'asterisk_test');
-        if (!is_readable($migFile) && !$isRoot && !$isTest) {
-            $privBin = '/usr/local/sbin/aipbx-priv';
-            if (is_executable($privBin) && preg_match('/^[a-z0-9_-]{2,64}$/', $slug)) {
-                $cmd = 'sudo ' . escapeshellarg($privBin) . ' plugin-schema apply ' . escapeshellarg($slug);
-                $out = [];
-                $code = 0;
-                exec($cmd . ' 2>&1', $out, $code);
-                if ($code !== 0) {
-                    throw new \Exception('Failed to apply plugin schema via privilege broker: ' . implode(' ', $out));
-                }
-                return array_column($statements, 'table');
-            }
+        // schema.sql may only CREATE plg_* tables: when they all exist there is nothing to do.
+        // Plugins call this on every request and worker tick, and the worker (NoNewPrivileges)
+        // cannot use sudo: without this check it failed five times and the plugin turned itself off.
+        if (self::tablesExist(array_column($statements, 'table'))) {
+            return array_column($statements, 'table');
+        }
+
+        if (self::delegatePrivilegedSchema('apply', $slug)) {
+            return array_column($statements, 'table');
         }
 
         $db = self::getSchemaDB();
@@ -1416,23 +1408,8 @@ final class PluginManager
             return;
         }
 
-        // When running under web server or unprivileged process where migrator credentials
-        // are inaccessible, delegate DDL drop to the root privilege broker.
-        $migFile = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
-        $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
-        $isTest = (getenv('DB_NAME') === 'asterisk_test');
-        if (!is_readable($migFile) && !$isRoot && !$isTest) {
-            $privBin = '/usr/local/sbin/aipbx-priv';
-            if (is_executable($privBin) && preg_match('/^[a-z0-9_-]{2,64}$/', $slug)) {
-                $cmd = 'sudo ' . escapeshellarg($privBin) . ' plugin-schema drop ' . escapeshellarg($slug);
-                $out = [];
-                $code = 0;
-                exec($cmd . ' 2>&1', $out, $code);
-                if ($code !== 0) {
-                    throw new \Exception('Failed to drop plugin schema via privilege broker: ' . implode(' ', $out));
-                }
-                return;
-            }
+        if (self::delegatePrivilegedSchema('drop', $slug)) {
+            return;
         }
 
         $db = self::getSchemaDB();
@@ -1518,5 +1495,47 @@ final class PluginManager
             }
         }
         @rmdir($dir);
+    }
+
+    /** @param list<string> $tables */
+    private static function tablesExist(array $tables): bool
+    {
+        if ($tables === []) {
+            return true;
+        }
+        try {
+            $st = getDB()->prepare('SELECT COUNT(DISTINCT TABLE_NAME) FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME IN ('
+                . implode(',', array_fill(0, count($tables), '?')) . ')');
+            $st->execute($tables);
+            return (int) $st->fetchColumn() === count(array_unique($tables));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Delegate plugin schema DDL operations to the root privilege broker when running
+     * in an unprivileged context without direct migrator credentials.
+     *
+     * @return bool True if delegated and successfully executed, false if local execution should proceed.
+     * @throws \Exception If delegation was required but failed.
+     */
+    private static function delegatePrivilegedSchema(string $action, string $slug): bool
+    {
+        $migFile = getenv('AIPBX_MIGRATOR_ENV_FILE') ?: '/etc/ai-pbx-migrator.env';
+        $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
+        $isTest = (getenv('DB_NAME') === 'asterisk_test');
+        if (!is_readable($migFile) && !$isRoot && !$isTest) {
+            if (!preg_match('/^[a-z0-9_-]{2,64}$/', $slug)) {
+                throw new \InvalidArgumentException('Invalid plugin slug');
+            }
+            require_once __DIR__ . '/../priv_helper.php';
+            $res = \PrivHelper::run(['plugin-schema', $action, $slug]);
+            if (!$res['success']) {
+                throw new \Exception("Failed to {$action} plugin schema via privilege broker: " . $res['output']);
+            }
+            return true;
+        }
+        return false;
     }
 }

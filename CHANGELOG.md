@@ -11,6 +11,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.73.5
+
+Fixes for 1.73.0–1.73.4. Updating from 1.72.x is recommended to go straight to this release.
+
+- **Phones can be re-provisioned and restarted again:** since 1.73.0 the portal was no longer allowed to send the SIP NOTIFY for "Resync" and "Reboot" on the Phones page.
+- **API v1 click-to-call works again:** `POST /api/v1/calls` was refused by Asterisk since 1.73.0.
+- **The portal's Asterisk command list is enforced as intended:** Asterisk matches each allowed command anywhere in what is typed, so 1.73.0's list let a forbidden command through when it contained an allowed phrase. Every entry is now matched from start to end, and a test checks that each command the portal sends is on the list.
+- **Plugins with tables no longer turn themselves off:** since 1.73.1 a plugin with a `schema.sql` and a background worker (Auto Dialer) failed on every worker tick, was switched off after five errors and lost its API token, typically right after an update. Existing tables are now recognised without needing extra rights. If Auto Dialer is off after 1.73.1–1.73.4, enable it again under Plugins.
+- **Calls without a DID can be routed:** new trunk field **Number for calls without a DID** (Trunks → Inbound call & DID normalization). Before it, AiPBX looks for the dialled number in the `To`, `P-Called-Party-ID` (also `tel:`) and `Diversion` headers and follows the first one with an inbound route, also after the trunk's DID trim. A header number without a route is not followed, so a carrier header cannot send a call out through transit routing. 1.73.0–1.73.4 read only `To` and dropped calls whose To header held letters or an unknown number. See [Trunks](docs/trunks.md#calls-without-a-did).
+- **Behaviour change kept from 1.73.0, now stated:** when outbound routes exist but all are disabled, outbound calls are off. The first trunk is no longer used as a fallback.
+- **Restore:** database migration credentials in an uploaded backup are ignored; the settings key keeps its owner after a restore.
+- **Installer:** the progress bar counts the steps in `scripts/install/`.
+- Plugin schema changes and `/etc/asterisk` writes go through the shared privilege helper.
+
 ## 1.73.4
 
 - **Robust runtime database credential preservation in restore:** Replaced fragile post-extract shell sed substitution in `aipbx-restore` with pure-Python literal merger `preserve_runtime_db()` using safe atomic replacement via `tempfile.NamedTemporaryFile` (mode 0640 `root:asterisk`), ensuring passwords with special characters (`&`, `/`, `\`, `$`, quotes) are perfectly preserved during untrusted backup restoration. Added regression test coverage.

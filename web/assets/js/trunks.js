@@ -93,6 +93,7 @@ function openCreateTrunkModal() {
     document.getElementById('modal_custom_pjsip_params').value = '';
     document.getElementById('modal_custom_sip_headers').value = '';
     document.getElementById('modal_did_trim_digits').value = 0;
+    document.getElementById('modal_no_did_number').value = '';
     const allowOutEl = document.getElementById('modal_allow_outbound_routing');
     if (allowOutEl) allowOutEl.checked = false;
     document.getElementById('modal_outbound_route_group').value = 1;
@@ -179,6 +180,7 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_custom_pjsip_params').value = item.custom_pjsip_params || '';
     document.getElementById('modal_custom_sip_headers').value = item.custom_sip_headers || '';
     document.getElementById('modal_did_trim_digits').value = item.did_trim_digits !== undefined ? item.did_trim_digits : 0;
+    document.getElementById('modal_no_did_number').value = item.no_did_number || '';
     const allowOutEl = document.getElementById('modal_allow_outbound_routing');
     if (allowOutEl) allowOutEl.checked = (item.allow_outbound_routing == 1);
     document.getElementById('modal_outbound_route_group').value = item.outbound_route_group || 1;

@@ -22,26 +22,12 @@ class FileHelper {
         // Delegate to the privilege broker if available.
         $baseName = basename($filepath);
         if (!is_writable($dir) && $dir === '/etc/asterisk' && in_array($baseName, ['rtp.conf', 'udptl.conf', 'voicemail.conf'], true)) {
-            $privBin = '/usr/local/sbin/aipbx-priv';
             $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
-            if (!$isRoot && is_executable($privBin)) {
-                $descriptors = [
-                    0 => ['pipe', 'r'],
-                    1 => ['pipe', 'w'],
-                    2 => ['pipe', 'w'],
-                ];
-                $process = @proc_open('sudo ' . escapeshellarg($privBin) . ' asterisk-conf write ' . escapeshellarg($baseName), $descriptors, $pipes);
-                if (is_resource($process)) {
-                    fwrite($pipes[0], (string) $content);
-                    fclose($pipes[0]);
-                    stream_get_contents($pipes[1]);
-                    fclose($pipes[1]);
-                    stream_get_contents($pipes[2]);
-                    fclose($pipes[2]);
-                    $status = proc_close($process);
-                    if ($status === 0) {
-                        return true;
-                    }
+            if (!$isRoot) {
+                require_once __DIR__ . '/priv_helper.php';
+                $res = PrivHelper::run(['asterisk-conf', 'write', $baseName], (string) $content);
+                if ($res['success']) {
+                    return true;
                 }
             }
             // If the broker is not available or fails, return false to preserve original file atomically.

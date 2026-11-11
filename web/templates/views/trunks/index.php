@@ -459,6 +459,15 @@
                         </div>
 
                         <div class="form-group u-mb-0 u-mt-12">
+                            <label class="form-label form-label-help">
+                                <span><?php echo t('trunks.field_no_did_number'); ?></span>
+                                <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('trunks.no_did_number_help'); ?></span></span>
+                            </label>
+                            <input type="text" name="no_did_number" id="modal_no_did_number" class="form-control" maxlength="32" inputmode="tel" pattern="[0-9+]*">
+                            <small class="u-hint u-fs-11"><?php echo t('trunks.no_did_number_hint'); ?></small>
+                        </div>
+
+                        <div class="form-group u-mb-0 u-mt-12">
                             <label class="form-label u-check-label">
                                 <input type="checkbox" name="allow_outbound_routing" id="modal_allow_outbound_routing" value="1" class="u-check">
                                 <span class="u-fw-600 u-fs-13"><?php echo t('trunks.field_allow_outbound_routing'); ?></span>

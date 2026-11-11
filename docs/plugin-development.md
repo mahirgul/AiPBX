@@ -166,6 +166,7 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
 - **`worker/tick.php`** (`"worker": true`): returns `function (string $slug, array $settings)`, called by
   `aipbx-webhook-worker` every ~2 s. Keep your own clock (e.g. in `sys_plugin_kv`) for slower jobs and
   keep each call short.
+- **`hooks.reload`**: Asterisk configuration reload command executed after sync or uninstall. Under AiPBX 1.73+ CLI privilege isolation (`conf/asterisk/cli_permissions.conf`), `www-data` is strictly restricted to safe operational reloads (`dialplan reload`, `pjsip reload`, `queue reload`, `moh reload`, `voicemail reload`, `module reload res_*.so`). Arbitrary commands or destructive operations (`core stop`, `module load`) are rejected by the Asterisk control socket.
 - **`public/handler.php`** (`"public_endpoints": true`): returns `function (string $subPath, array $settings)`
   for `/api/plugins/<slug>/<subPath>`. **There is no sign-in on this URL**; check the caller yourself.
   Plain HTTP is accepted only from `127.0.0.1` (Asterisk `CURL()`), everyone else is redirected to HTTPS.

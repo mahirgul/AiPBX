@@ -70,4 +70,58 @@ final class DialplanReviewFixesTest extends TestCase
             syncInboundDialplan();
         }
     }
+
+    public function testInboundTrunkDidlessToHeaderJumpIsConditional(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_trunks (trunk_name, title, ip_address, is_active) VALUES ('testtojump', 'Test To Jump Trunk', '127.0.0.1', 1)");
+            syncInboundDialplan();
+            $s = $this->didlessBlock('testtojump');
+            // Only to a number with an inbound route; each header is skipped when absent.
+            foreach (['To', 'P-Called-Party-ID', 'Diversion'] as $header) {
+                $this->assertStringContainsString("Set(AIPBX_DIALED=\${PJSIP_HEADER(read,{$header})})", $s);
+            }
+            $this->assertStringContainsString('& ${DIALPLAN_EXISTS(from-trunk-testtojump,${AIPBX_DIALED},1)} & $[${DIALPLAN_EXISTS(from-trunk-inbound,${AIPBX_DIALED},1)}]]?from-trunk-testtojump,${AIPBX_DIALED},1)', $s);
+            $this->assertStringNotContainsString('from-internal-pbx-ortak', $s, 'without transit an internal number is no target');
+            // No fixed number: nothing else leaves the s path.
+            $this->assertSame(3, substr_count($s, '?from-trunk-testtojump,'));
+            $this->assertStringContainsString('Goto(from-trunk-testtojump-route,s,1)', $s);
+        } finally {
+            $db->rollBack();
+            syncInboundDialplan();
+        }
+    }
+
+    public function testDidlessCallUsesTrimTransitAndTheTrunkNumber(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_trunks (trunk_name, title, ip_address, is_active, did_trim_digits, allow_outbound_routing, no_did_number)
+                       VALUES ('testnodid', 'No DID Trunk', '127.0.0.1', 1, 4, 1, '+90312555 0100')");
+            syncInboundDialplan();
+            $s = $this->didlessBlock('testnodid');
+            $this->assertStringContainsString('${DIALPLAN_EXISTS(from-trunk-inbound,${AIPBX_DIALED:-4},1)}', $s);
+            $this->assertStringContainsString('${DIALPLAN_EXISTS(from-internal-pbx-ortak,${AIPBX_DIALED},1)}', $s);
+            // The trunk's number after the headers, before the s route; stored junk is dropped.
+            $this->assertStringContainsString('Goto(from-trunk-testnodid,+903125550100,1)', $s);
+            $this->assertLessThan(strpos($s, 'Goto(from-trunk-testnodid,+903125550100,1)'), strrpos($s, 'PJSIP_HEADER(read,Diversion)'));
+            $this->assertGreaterThan(strpos($s, 'Goto(from-trunk-testnodid,+903125550100,1)'), strpos($s, 'Goto(from-trunk-testnodid-route,s,1)'));
+        } finally {
+            $db->rollBack();
+            syncInboundDialplan();
+        }
+    }
+
+    /** The trunk's `exten => s` lines, up to its route context. */
+    private function didlessBlock(string $trunk): string
+    {
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_inbound.conf');
+        $start = strpos($conf, "Inbound call without DID [{$trunk}]");
+        $this->assertNotFalse($start);
+        $end = strpos($conf, "[from-trunk-{$trunk}-route]", $start);
+        return substr($conf, $start, $end - $start);
+    }
 }

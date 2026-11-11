@@ -181,12 +181,16 @@ function __syncInboundDialplanBody() {
                 $same
             ) . "\n";
 
-            // For calls arriving without a DID (s), attempt to recover dialed DID from SIP To header
+            // A call without a DID (s): the dialled number is looked for in the To, P-Called-Party-ID
+            // and Diversion headers, then the trunk's "number when none is sent" is used.
             $conf .= "exten => s,1,NoOp(Inbound call without DID [{$t_name}] - caller: \${CALLERID(num)})\n";
             $conf .= " same => n,Set(CDR(direction)=inbound)\n";
             $conf .= " same => n,Set(CDR(inbound_trunk)={$t_name})\n";
-            $conf .= " same => n,Set(AIPBX_TO_USER=\${PJSIP_PARSE_URI(\${PJSIP_HEADER(read,To)},user)})\n";
-            $conf .= " same => n,GotoIf(\$[\"\${AIPBX_TO_USER}\" != \"\" & \"\${AIPBX_TO_USER}\" != \"s\"]?from-trunk-{$t_name},\${AIPBX_TO_USER},1)\n";
+            $conf .= didlessHeaderLines($t_name, $trim_digits, $allow_outbound);
+            $no_did_number = preg_replace('/[^0-9+]/', '', (string) ($t['no_did_number'] ?? ''));
+            if ($no_did_number !== '') {
+                $conf .= " same => n,Goto(from-trunk-{$t_name},{$no_did_number},1)\n";
+            }
             $conf .= inboundNormLines($normRules, $t_name, 'caller');
             $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
             $conf .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
@@ -373,6 +377,46 @@ function trunkLimitSubroutine(): string
         . " same => n,Set(DB(trunkblock/\${ARG1})=\${first}:\${n}:\${TRUNK_LIMIT}:\${EPOCH})\n"
         . " same => n,NoOp(Trunk \${ARG1}: call refused, limit \${TRUNK_LIMIT})\n"
         . " same => n,Return()\n\n";
+}
+
+/**
+ * Lines for a call without a DID: the user part of To, P-Called-Party-ID and Diversion, in
+ * that order, is followed when an inbound route (or, with transit on, an internal number)
+ * exists for it, as it is or after the trunk's DID trim. A number from the carrier without a
+ * route is not followed: with transit on it could otherwise go out again.
+ */
+function didlessHeaderLines(string $trunk, int $trimDigits, bool $allowOutbound): string
+{
+    $out = '';
+    foreach (['To' => 'to', 'P-Called-Party-ID' => 'pcpi', 'Diversion' => 'div'] as $header => $label) {
+        $skip = "didless_{$label}_done";
+        $out .= " same => n,GotoIf(\$[\"\${PJSIP_HEADER(read,{$header})}\" = \"\"]?{$skip})\n";
+        // The user part by hand: PJSIP_PARSE_URI reads neither tel: URIs nor a header with
+        // parameters after the URI (Diversion: <sip:...>;reason=...), both tried live.
+        // CUT takes a variable name; "\;" because ";" starts a comment in extensions.conf.
+        $out .= " same => n,Set(AIPBX_DIALED=\${PJSIP_HEADER(read,{$header})})\n";
+        $out .= " same => n,Set(AIPBX_DIALED=\${CUT(AIPBX_DIALED,>,1)})\n";
+        $out .= " same => n,ExecIf(\$[\"\${AIPBX_DIALED}\" : \".*<\"]?Set(AIPBX_DIALED=\${CUT(AIPBX_DIALED,<,2)}))\n";
+        $out .= " same => n,Set(AIPBX_DIALED=\${CUT(AIPBX_DIALED,:,2)})\n";
+        $out .= " same => n,Set(AIPBX_DIALED=\${CUT(AIPBX_DIALED,@,1)})\n";
+        $out .= " same => n,Set(AIPBX_DIALED=\${CUT(AIPBX_DIALED,\\;,1)})\n";
+        $forms = ['${AIPBX_DIALED}'];
+        if ($trimDigits > 0) {
+            $forms[] = "\${AIPBX_DIALED:-{$trimDigits}}";
+        }
+        $routes = [];
+        foreach ($forms as $f) {
+            $routes[] = "\${DIALPLAN_EXISTS(from-trunk-inbound,{$f},1)}";
+            if ($allowOutbound) {
+                $routes[] = "\${DIALPLAN_EXISTS(from-internal-pbx-ortak,{$f},1)}";
+            }
+        }
+        $out .= " same => n,GotoIf(\$[\"\${AIPBX_DIALED}\" != \"\" & \"\${AIPBX_DIALED}\" != \"s\""
+            . " & \${DIALPLAN_EXISTS(from-trunk-{$trunk},\${AIPBX_DIALED},1)} & \$[" . implode(' | ', $routes) . "]]"
+            . "?from-trunk-{$trunk},\${AIPBX_DIALED},1)\n";
+        $out .= " same => n({$skip}),NoOp()\n";
+    }
+    return $out;
 }
 
 /**

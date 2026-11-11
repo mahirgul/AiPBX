@@ -119,9 +119,11 @@ if [[ ! -s /var/lib/aipbx/settings.key ]]; then
     tmp_settings_key="$(mktemp /var/lib/aipbx/.settings.key.XXXXXX)"
     head -c 32 /dev/urandom > "$tmp_settings_key"
     chmod 600 "$tmp_settings_key"
+    chown www-data:www-data "$tmp_settings_key" 2>/dev/null || true
     mv -f "$tmp_settings_key" /var/lib/aipbx/settings.key
 fi
 chmod 600 /var/lib/aipbx/settings.key
+chown www-data:www-data /var/lib/aipbx/settings.key 2>/dev/null || true
 mkdir -p /etc/asterisk/pbx
 mkdir -p /etc/asterisk/keys
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-system-state" /usr/local/sbin/aipbx-system-state

@@ -54,6 +54,24 @@ Trimming applies to every call from the trunk. If the trunk also sends transit c
 cuts those numbers too — `4440478` becomes `0478`. Use it only when the trunk sends nothing but
 DIDs; otherwise define the inbound routes with the full numbers the trunk sends.
 
+### Calls without a DID
+
+Some carriers, mostly on registration trunks, send no dialled number: the call arrives as `s`.
+AiPBX then looks for the number in these headers, in this order, and follows the first one that has
+an inbound route (as sent, or after the DID trim above):
+
+1. `To`
+2. `P-Called-Party-ID` (`sip:` and `tel:` numbers)
+3. `Diversion`
+
+A number from a header without an inbound route is not followed; with transit routing on, an
+internal number counts as well. This way a carrier header cannot send a call out again.
+
+When no header helps, **Number for calls without a DID** is used: the call is routed as if that
+number had been dialled, so an [inbound route](inbound-routes.md) for it decides where the call goes
+(extension, queue, IVR, recording, fax detection and so on). Usually this is the line's own number.
+Left empty, such calls are refused as "no matching inbound route".
+
 ## Limits
 
 Two limits per trunk (**Routing** tab), both for inbound and outbound calls together, 0 = none:

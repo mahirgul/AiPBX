@@ -199,7 +199,8 @@ def preserve_runtime_db(uploaded, current):
     if any(not local_db.get(key) for key in protected):
         raise ValueError('local database credentials are missing')
     lines = [line for line in uploaded.splitlines()
-             if line.partition('=')[0].strip() not in protected]
+             if line.partition('=')[0].strip() not in protected
+             and not line.partition('=')[0].strip().startswith('MIGRATOR_DB_')]
     lines.extend(key + '=' + local_db[key] for key in protected)
     return '\n'.join(lines) + '\n'
 
@@ -241,6 +242,12 @@ def extract_config(folder, untrusted):
                 die(f'refused: {path} would land outside its folder')
             m.name = path
             tar.extract(m, '/', filter='tar')
+            if path == 'var/lib/aipbx/settings.key':
+                try:
+                    os.chmod('/var/lib/aipbx/settings.key', 0o600)
+                    shutil.chown('/var/lib/aipbx/settings.key', user='www-data', group='www-data')
+                except (OSError, LookupError):
+                    pass
 
 
 def check_archive(archive, out):

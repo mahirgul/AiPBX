@@ -148,6 +148,7 @@ class TrunkService {
 
             $context = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['context'] ?? '')) ?: 'from-trunk-inbound';
             $did_trim_digits = max(0, min(30, intval($data['did_trim_digits'] ?? 0)));
+            $no_did_number = substr((string) preg_replace('/[^0-9+]/', '', trim($data['no_did_number'] ?? '')), 0, 32);
             $allow_outbound_routing = isset($data['allow_outbound_routing']) ? intval($data['allow_outbound_routing']) : 0;
             $outbound_route_group = max(1, intval($data['outbound_route_group'] ?? 1));
             $max_channels = max(0, intval($data['max_channels'] ?? 0));
@@ -221,6 +222,7 @@ class TrunkService {
                 'dtmf_mode' => $dtmf_mode,
                 'context' => $context,
                 'did_trim_digits' => $did_trim_digits,
+                'no_did_number' => $no_did_number !== '' ? $no_did_number : null,
                 'allow_outbound_routing' => $allow_outbound_routing,
                 'outbound_route_group' => $outbound_route_group,
                 'max_channels' => $max_channels,

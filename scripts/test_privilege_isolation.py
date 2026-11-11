@@ -49,6 +49,9 @@ class PrivilegeIsolationTest(unittest.TestCase):
 
         permitted_commands = [v for k, v in www_rules if k == 'permit']
 
+        for pat in permitted_commands:
+            self.assertTrue(pat.startswith('^') and pat.endswith('$'), f"permit '{pat}' must be anchored with ^...$")
+
         # 4. Check forbidden dangerous commands are NOT permitted
         dangerous = [
             'core stop',
@@ -62,11 +65,18 @@ class PrivilegeIsolationTest(unittest.TestCase):
             'file convert /etc/shadow /tmp/shadow',
             'cli show permissions',
             'config reload',
+            'channel originate Local/100@cc-internal application System /bin/sh',
+            'channel originate Local/100@other extension 100@from-internal',
+            # Asterisk searches a permit anywhere in the command: an allowed phrase
+            # inside a forbidden command must not open it (hence the ^...$ anchors).
+            'module load x pjsip show.x',
+            'zz core show version',
+            'channel originate Local/1@x application System "sh -c id # pjsip show x"',
         ]
         for cmd in dangerous:
             matched = False
             for pat in permitted_commands:
-                if re.fullmatch(pat, cmd):
+                if re.search(pat, cmd, re.IGNORECASE):
                     matched = True
                     break
             self.assertFalse(matched, f"Dangerous command '{cmd}' must NOT match any permit pattern in [www-data]")
@@ -109,6 +119,9 @@ class PrivilegeIsolationTest(unittest.TestCase):
             'dialplan show 100@from-internal',
             'core restart when convenient',
             'fax show sessions',
+            'pjsip send notify aipbx-check-cfg endpoint 100',
+            'pjsip send notify aipbx-reboot endpoint 200',
+            'channel originate Local/100@cc-internal extension 05551234567@from-internal-web',
             'channel request hangup PJSIP/100-00000001',
             'channel get PJSIP/100-00000001 CALLERID(num)',
             'logger rotate',
@@ -116,10 +129,83 @@ class PrivilegeIsolationTest(unittest.TestCase):
         for cmd in legitimate:
             matched = False
             for pat in permitted_commands:
-                if re.fullmatch(pat, cmd):
+                if re.search(pat, cmd, re.IGNORECASE):
                     matched = True
                     break
             self.assertTrue(matched, f"Operational command '{cmd}' should be permitted for [www-data]")
+
+    def test_all_codebase_asterisk_commands_are_permitted_in_cli_permissions(self):
+        """Dynamic audit: all Asterisk CLI commands invoked across web/ and plugins/
+        must match at least one permitted pattern in cli_permissions.conf for [www-data]."""
+        conf_path = ROOT_DIR / 'conf' / 'asterisk' / 'cli_permissions.conf'
+        self.assertTrue(conf_path.is_file())
+        permitted = []
+        in_www = False
+        for line in conf_path.read_text().splitlines():
+            l = line.strip()
+            if l == '[www-data]':
+                in_www = True
+            elif l.startswith('[') and l.endswith(']'):
+                in_www = False
+            elif in_www and l.startswith('permit = '):
+                pat = l.partition('=')[2].strip()
+                permitted.append(re.compile(pat, re.IGNORECASE))
+
+        php_targets = list((ROOT_DIR / 'web').rglob('*.php')) + list((ROOT_DIR / 'plugins').rglob('*.php'))
+        # Exclude vendor and unit tests from source audit
+        php_files = [p for p in php_targets if 'vendor' not in p.parts and 'tests' not in p.parts]
+
+        def sanitize_cmd(raw: str) -> str:
+            # Replace PHP variables / expressions with safe dummy values
+            s = re.sub(r'\{\$[A-Za-z0-9_]+\}', '100', raw)
+            s = re.sub(r'\$[A-Za-z0-9_]+', '100', s)
+            s = re.sub(r'sprintf\s*\([^,]+,\s*', '', s)
+            s = s.replace('%s', '100').replace('%d', '100')
+            s = s.replace('"', '').replace("'", '').replace('\\', '').strip()
+            return s
+
+        commands_found = []
+        for pf in php_files:
+            txt = pf.read_text(encoding='utf-8', errors='ignore')
+            lines = txt.splitlines()
+            for idx, line in enumerate(lines, 1):
+                if 'execCLI' in line or 'asterisk -rx' in line or 'notifyCommand' in line:
+                    # Match literals inside execCLI('...') or execCLI("...")
+                    for m in re.finditer(r'execCLI\s*\(\s*([\'\"][^\'\"]+[\'\"])', line):
+                        val = m.group(1)[1:-1].strip()
+                        if val and not val.startswith('$') and val != 'a command that does not exist':
+                            commands_found.append((pf, idx, sanitize_cmd(val)))
+                    # Match literals inside escapeshellarg('...')
+                    for m in re.finditer(r'escapeshellarg\s*\(\s*([\'\"][^\'\"]+[\'\"])', line):
+                        val = m.group(1)[1:-1].strip()
+                        if val and not val.startswith('$') and val != 'a command that does not exist':
+                            commands_found.append((pf, idx, sanitize_cmd(val)))
+                    # Match string concatenation with asterisk -rx
+                    for m in re.finditer(r'asterisk\s+-rx\s+[\'\"].*?escapeshellarg\s*\(\s*([^\)]+)\)', line):
+                        val = m.group(1).strip()
+                        if val and not val.startswith('$'):
+                            commands_found.append((pf, idx, sanitize_cmd(val)))
+                    # Match sprintf channel originate or similar commands
+                    for m in re.finditer(r'sprintf\s*\(\s*[\'\"](channel originate[^\'\"]+)[\'\"]', line):
+                        val = m.group(1).strip()
+                        commands_found.append((pf, idx, sanitize_cmd(val)))
+                    # Match pjsip send notify template
+                    for m in re.finditer(r'[\'\"](pjsip send notify[^\'\"]+)[\'\"]', line):
+                        val = m.group(1).strip()
+                        commands_found.append((pf, idx, sanitize_cmd(val)))
+
+        self.assertGreater(len(commands_found), 15, "Should find multiple Asterisk CLI commands across codebase")
+
+        unmatched = []
+        for pf, idx, cmd in commands_found:
+            # Skip non-command fragments or empty strings
+            if not cmd or cmd.startswith('.'):
+                continue
+            matched = any(p.search(cmd) for p in permitted)
+            if not matched:
+                unmatched.append(f"{pf.relative_to(ROOT_DIR)}:{idx} -> '{cmd}'")
+
+        self.assertEqual(unmatched, [], f"The following codebase CLI commands are NOT permitted in cli_permissions.conf:\n" + "\n".join(unmatched))
 
     def _get_installer_code(self):
         code = (ROOT_DIR / 'install.sh').read_text()

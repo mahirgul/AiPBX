@@ -50,9 +50,11 @@ case "${LC_ALL:-${LC_CTYPE:-${LANG:-}}}" in
         I_OK='+'; I_WARN='!'; I_INFO='i'; I_ERR='x'; BAR_ON='#'; BAR_OFF='.'; SEP='-'
         B_TL='+'; B_TR='+'; B_BL='+'; B_BR='+'; B_H='-'; B_V='|' ;;
 esac
-# The number of `step "N. ..."` lines below, counted so a new step keeps the bar right. Run as
-# `curl ... | sudo bash` there is no file to count (and BASH_SOURCE is unset under set -u): 13.
-TOTAL_STEPS=$(grep -c '^step "[0-9]*\. ' "${BASH_SOURCE[0]:-}" 2>/dev/null) || TOTAL_STEPS=13
+# The number of `step "N. ..."` lines across scripts/install/*.sh, counted so a new step keeps the bar right.
+# Run as `curl ... | sudo bash` or when scripts cannot be read: fallback to 13.
+INSTALL_STEP_DIR="$(dirname "${BASH_SOURCE[0]:-}")/scripts/install"
+TOTAL_STEPS=$(grep -h -c '^step "[0-9]*\. ' "$INSTALL_STEP_DIR"/*.sh 2>/dev/null | awk '{s+=$1} END {print s}')
+[[ -n "$TOTAL_STEPS" && "$TOTAL_STEPS" -gt 0 ]] || TOTAL_STEPS=13
 START_SECONDS=$SECONDS
 
 info()  { echo -e "   ${BLUE}${I_INFO}${NC} $*"; }
