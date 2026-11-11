@@ -2,7 +2,8 @@
 
 AiPBX provides dedicated command-line utilities in `/usr/local/sbin` and helper scripts in `/opt/aipbx/web/bin` for system administration, lifecycle management, disaster recovery, network configuration, and automated diagnostics.
 
-All management commands are designed with **failsafe rollback mechanisms** and safe execution practices.
+Update, restore and network changes have their own recovery paths. Read the relevant command section
+before using options that restart services, replace data or change network connectivity.
 
 ---
 
@@ -40,7 +41,7 @@ sudo aipbx-update
 # Non-interactive update (used by automated pipelines and web portal)
 sudo aipbx-update --yes
 
-# Update (or rollback) to a specific release tag
+# Select a specific release tag (not a general database downgrade mechanism)
 sudo aipbx-update --to v1.72.10
 
 # When an Asterisk restart is required:
@@ -48,7 +49,7 @@ sudo aipbx-update --wait-calls    # Waits until active calls finish before resta
 sudo aipbx-update --allow-calls   # Drops active calls immediately to apply update
 ```
 
-### Safety & Zero-Downtime Guarantee:
+### Call handling and rollback
 - **Asterisk Reload vs Restart:** Before applying an update, `scripts/asterisk-restart-needed.sh` evaluates the diff between versions. If only web portal, dialplan generators, translations, or database migrations changed, Asterisk is **reloaded** rather than restarted. Calls in progress stay connected.
 - **Automated Rollback:** If any database migration or post-install verification step fails, code, database, and system configs are restored to the previous release automatically.
 
@@ -76,11 +77,15 @@ sudo aipbx-backup --label pre-cutover
 
 ## 🔄 `aipbx-restore` — Disaster Recovery & Restore
 
-Restores an existing backup or imports an external backup archive.
+Imports an external archive for validation, or restores an existing named backup. Importing does
+not start a restore; use the name it prints in the restore command.
 
 ```bash
 # List available backups
 ls -la /var/backups/aipbx-daily/
+
+# Validate and import an archive downloaded from another AiPBX server
+sudo aipbx-restore --import /tmp/aipbx-recovery.tar.gz
 
 # Restore a specific backup
 sudo aipbx-restore aipbx-20261109-1430-pre-cutover
@@ -96,6 +101,12 @@ sudo aipbx-restore --import /tmp/aipbx-backup-transfer.tar.gz
 > `aipbx-restore` automatically takes a safety backup of the current state before restoring. If the restore encounters any error, it rolls back to the safety backup immediately.
 
 ---
+
+Uploaded backups preserve the current runtime DB credentials and do not replace migration credentials
+or VPN enrolments. See [Backups and recovery](backup-and-rollback.md#3-the-backup--restore-page)
+for the full policy. Root job status is in `/var/lib/aipbx-system`; root logs are in `/var/log/aipbx`.
+The portal reads these areas but must not own them. See [Job state](root-state-paths.md) and
+[Log permissions](root-log-paths.md).
 
 ## 🩺 `aipbx-selftest` — Instant System Health Check
 

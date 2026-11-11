@@ -1,6 +1,6 @@
 # Video calls
 
-Video calls work between the web phone, the Android app and desk video phones. They are **off by
+One-to-one video calls work between the web phone, the Android app and desk video phones. They are **off by
 default**: video uses many times the bandwidth of audio.
 
 ## Switching them on
@@ -33,7 +33,8 @@ talks without video.
 
 ## Notes
 
-- Video calls are bridged by Asterisk; there is no video conference or recording of the picture.
+- One-to-one calls are bridged by Asterisk; their video is not recorded. Multi-party video is available
+  separately through [Video meetings](meetings.md), with SFU Gallery and Follow-Talker conference modes.
 - While video calls are on, the WebRTC endpoints have no RTP timeout: browsers send audio and video
   over one bundled port and Asterisk would see the video stream as silent and hang up after 30 s.
   Calls of a closed browser or app still end through SIP session timers.

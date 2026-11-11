@@ -3,9 +3,9 @@
 **AI PBX** is an open-source, enterprise-grade IP PBX and Unified Communications platform integrating:
 - **Asterisk 22** as the real-time VoIP & WebRTC telephony engine
 - **Nginx / Apache 2.4** as the high-concurrency ingress, TLS termination, and WebSocket multiplexing layer
-- **PHP 8 MVC** as the strictly layered, secure administration and self-service management portal
+- **PHP 8.5 MVC** as the strictly layered, secure administration and self-service management portal
 - **Go** as the lightweight, high-performance instant messaging WebSocket service
-- **Android Client (Kotlin)** with dual-engine PJSIP/WebRTC communication and background persistence
+- **Android Client (Kotlin)** with JsSIP/WebRTC calling and background persistence
 - **coturn** for enterprise-grade STUN/TURN NAT traversal
 
 ---
@@ -246,10 +246,10 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 - **Diagnostics System**: Integrated `AppLogManager` capturing runtime system parameters and Logcat traces with one-click export/sharing (see [AiPBX-Android](https://github.com/mahirgul/AiPBX-Android)).
 
 ### 5.2 Android 15 (API 35+) Edge-to-Edge Architectural Standard
-- **Centralized Pattern**: All UI activities strictly extend `BaseActivity` in the [AiPBX-Android repository](https://github.com/mahirgul/AiPBX-Android), which invokes standard `enableEdgeToEdge()` prior to `super.onCreate()`.
+- **Centralized Pattern**: All UI activities strictly extend `BaseActivity` in the [AiPBX-Android repository](https://github.com/mahirgul/AiPBX-Android), which applies system-bar icon appearance and root-view insets. Android 15+ provides edge-to-edge for the target SDK; Android 8–14 retains classic bars. Do not call AndroidX `enableEdgeToEdge()` or `EdgeToEdge.enable()`: their older-platform implementations introduce deprecated window APIs into the built app.
 - **Zero Deprecation Guarantee**: Direct calls to `Window.setDecorFitsSystemWindows`, `WindowCompat.setDecorFitsSystemWindows`, `setStatusBarColor`, `setNavigationBarColor`, or custom `SystemBarStyle` parameters are strictly forbidden.
 - **Window Insets Management**: Layout roots dynamically dispatch insets with `applyEdgeToEdgeInsets(view, consumeIme)` to preserve padding against status/navigation bars, display cutouts, and IME soft keyboards.
-- **Automated Guardrails**: `EdgeToEdgeComplianceTest` (JUnit) and `android/bin/edge_to_edge_audit.sh` run on every build to halt builds upon any violation.
+- **Automated Guardrails**: the Android repository runs `EdgeToEdgeComplianceTest`, release lint and source audits. `bin/check_deprecated_window_apis.sh` also audits the built release APK with its R8 mapping so dependency code is checked too.
 
 ---
 
@@ -314,3 +314,16 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 6. **Apache Sandbox**: Ubuntu's hardened `apache2.service` is kept; the installer's override only makes `/etc/sudoers*` readable and `/etc/asterisk`, `/etc/postfix`, `/etc/fail2ban/jail.d` writable.
 7. **Optional Global Privacy & Telecom Compliance Engine (`/privacy`)**: 100% opt-in compliance controls (`PrivacyService` + `PrivacyDataSubjectHelper`) supporting KVKK, GDPR, US CCPA/FCC, HIPAA, PCI-DSS v4.0, and LGPD presets, `[sub-privacy-consent]` pre-call disclosure/opt-in/opt-out dialplan generation, `MixMonitor B(n)` periodic recording beeps, live AGI/AI transcript Luhn payment card & PII redaction (`[REDACTED-CARD]`), nightly dual-DB (`asteriskcdr` + `cdrs`) retention purge (`privacy_purge.php`), SAR JSON export, Right to Erasure (`PRIVACY_ERASURE`), and Cross-Border Cloud AI Lock.
 
+
+## Runtime and privileged maintenance boundaries
+
+The portal uses DML-only database credentials; migrations use a separate root-only credential file.
+Plugin schema operations are validated by the privilege broker. Root job output belongs under
+`/var/lib/aipbx-system`, separate from portal-writable data under `/var/lib/aipbx`. Root job logs
+have a protected parent and remain readable, not writable, by the portal. See
+[Security](docs/security.md#database-and-asterisk-privileges),
+[Job state](docs/root-state-paths.md) and [Log permissions](docs/root-log-paths.md).
+
+The server, Android and iOS clients have separate repositories and release workflows. A server release
+does not automatically publish either mobile app. Community plugins have a separate signed catalog;
+see [Plugin development](docs/plugin-development.md#from-the-community-catalog-aipbx-172).

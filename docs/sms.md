@@ -1,123 +1,100 @@
 # SMS & MMS Messaging (Plugin)
 
-> 🔌 **Plugin (`sms`)**: Community plugin from the official catalog (`mahirgul/AiPBX-plugins`). Enable it under **Integration → Plugin Catalog** (requires AiPBX 1.71.0 or newer). See [Plugin system & developer guide](plugin-development.md).
+The community `sms` plugin sends and receives messages on your provider-hosted numbers through
+**Twilio, Vonage, Plivo, Telnyx, Bandwidth, Sinch, VoIP.ms or BulkVS**. Administrators configure it
+at `/plugins/sms`; assigned users use **Apps → Messages** (`/apps/sms`) in the web portal.
+This inbox is separate from the native mobile apps' PBX chat.
 
-**Apps → Messages** (`/apps/sms`) adds native, two-way SMS and multimedia MMS messaging to AiPBX. Staff members can send and receive text messages, images, documents, and business cards directly from the web portal and mobile apps using your existing telecom DIDs.
+The plugin needs AiPBX **1.71+** for user pages; catalog installation needs **1.72+**. On current
+AiPBX, enable the community catalog under **Integration → Plugin Catalog**, install SMS / MMS,
+and enable it. See [Plugin development](plugin-development.md#from-the-community-catalog-aipbx-172)
+for signed-catalog verification and ZIP installation.
 
----
+## Set up a number
 
-## 🏗️ Architecture & Inbound Webhooks
+1. Open the SMS / MMS plugin page and enter the provider account credentials. Secret settings
+   are encrypted in the database.
+2. Add your number in international form, such as `+15551234567`, select its provider, and assign
+   the users allowed to read and send from it. Administrators can access every configured number.
+3. Copy the **exact webhook URL shown on the plugin page** into the provider's incoming-message
+   configuration. Its format is `/api/plugins/sms/<provider>/<secret-key>`; the secret component is
+   required. **Make a new secret key** invalidates the previous webhook URLs.
+4. Send a test message to the number and reply from `/apps/sms`. Use a provider sandbox or a number
+   you control; provider billing and delivery rules still apply.
 
-```
-  Customer Smartphone
-        │  (SMS / MMS)
-        ▼
-  Telecom Carrier (Twilio, Telnyx, Vonage, etc.)
-        │
-        ▼  HTTP POST / Inbound Webhook (Cryptographically Signed)
-  AiPBX Webhook Endpoint (`/api/plugins/sms/webhook/{provider}`)
-        │
-        ├── 1. Cryptographic Signature Verification (Twilio HMAC, Vonage SHA256, etc.)
-        ├── 2. E.164 Number Normalization & Routing Lookup
-        ├── 3. Concurrency Lock (`FOR UPDATE`) & Message Ingestion (`plg_sms_messages`)
-        ├── 4. MMS Media Download (SSRF-Protected) ──► File Storage (Local / S3)
-        ├── 5. Browser Push / WebSocket Live Event
-        └── 6. Optional E-mail Alert (Throttled: max 1 per 10 min per conversation)
-        │
-        ▼
-  User Portal Inbox (`/apps/sms`) & Mobile Apps
-```
+## Provider verification and attachments
 
-### 📡 Public Webhook Endpoints
+Every webhook needs the secret key in its URL. Additional provider verification is:
 
-Configure your provider's messaging portal with the matching webhook URL from AiPBX:
+| Provider | Request proof | Attachment notes |
+|----------|---------------|------------------|
+| Twilio | `X-Twilio-Signature`, using the Auth Token | MMS supported |
+| Vonage | Signed webhook JWT when the signature secret is configured | US MMS; one picture per message |
+| Plivo | `X-Plivo-Signature-V2`, using the Auth Token | MMS supported |
+| Telnyx | Ed25519 signature when the public key is configured | MMS supported |
+| Bandwidth | Secret key in webhook URL | MMS supported |
+| Sinch | Secret key in webhook URL | MMS depends on region/account; one picture per message |
+| VoIP.ms | Secret key in callback URL | Up to three attachments |
+| BulkVS | Secret key in webhook URL | Up to three attachments |
 
-| Provider | Webhook URL Format | Signature / Authentication Method |
-|---|---|---|
-| **Twilio** | `https://<pbx-domain>/api/plugins/sms/webhook/twilio` | `X-Twilio-Signature` HMAC-SHA1 using Auth Token |
-| **Vonage** | `https://<pbx-domain>/api/plugins/sms/webhook/vonage` | Vonage Signature Secret (SHA-256 HMAC) |
-| **Plivo** | `https://<pbx-domain>/api/plugins/sms/webhook/plivo` | `X-Plivo-Signature-V2` HMAC-SHA256 |
-| **Telnyx** | `https://<pbx-domain>/api/plugins/sms/webhook/telnyx` | ED25519 public key webhook verification |
-| **Bandwidth** | `https://<pbx-domain>/api/plugins/sms/webhook/bandwidth` | Basic Auth / Account Secret |
-| **Sinch** | `https://<pbx-domain>/api/plugins/sms/webhook/sinch` | Sinch App Token & Secret |
-| **VoIP.ms** | `https://<pbx-domain>/api/plugins/sms/webhook/voipms` | Callback URL with DID parameter mapping |
-| **BulkVS** | `https://<pbx-domain>/api/plugins/sms/webhook/bulkvs` | JSON POST callback with API Key |
+Use the provider-specific instructions shown on the plugin page. Do not replace the displayed URL
+with `/webhook/<provider>` or publish its secret key in a support issue.
 
----
+MMS media is stored in `plg_sms_media` in the database, not in the chat attachment Local/S3 store.
+Outgoing media is exposed to the provider through a tokenised URL
+`/api/plugins/sms/media/<id>/<token>`. The provider must be able to reach the portal's HTTPS domain.
+The plugin accepts up to three outgoing files, 5 MB each; provider limits may be lower.
 
-## 🗄️ Database Tables (`plg_` Sandbox)
+Incoming media downloads must use HTTPS on port 443 and resolve to public addresses. Redirects are
+validated again, DNS addresses are pinned for the connection, and downloads are bounded to 5 MB.
+An attachment failure is recorded without discarding the text. Automatic attachment retry is not
+implemented.
 
-The SMS plugin operates in dedicated, isolated `plg_*` database tables:
+## Using the inbox
 
-| Table | Purpose |
-|---|---|
-| 📱 `plg_sms_numbers` | Configured DIDs, assigned carrier/provider, and default outbound caller ID name |
-| 🔑 `plg_sms_access` | Access control mappings: which users and extensions have permission to read/send from which number |
-| 💬 `plg_sms_messages` | Inbound and outbound message records (E.164 numbers, direction, body, status, carrier message ID, timestamps) |
-| 📎 `plg_sms_media` | MMS attachments (MIME type, file size, storage URL/path, SHA256 checksum) |
-| 📇 `plg_sms_contacts` | Contact directory: name, business organization, notes, linked to phone number |
+Choose one of your assigned numbers and a conversation, or enter a destination number in international
+form. Conversations and messages refresh by polling every five seconds; a reply being composed stays
+in place. **Save name** gives the peer a name shared by the users of that number.
 
----
+The composer allows up to 1600 characters. Since SMS plugin **1.2.2**, Send disables immediately and
+shows **Sending…** until the request completes, blocking repeated submission from that form. A server
+error renders a usable form with the error, and returning through browser history restores the button.
+The control guards that form; it is not provider-wide idempotency across independent browser tabs.
 
-## ⚙️ Configuration & Setup
+Outgoing statuses are `sending`, `sent` or `failed`; received messages are `received`. **Sent** means
+the provider accepted the send request, not that a carrier delivery receipt confirmed arrival on the
+recipient's device. The plugin does not implement a separate delivered-status workflow or a live
+SMS-segment counter.
 
-### 1. Configure Provider Credentials
-Navigate to **Settings → Plugins → SMS / MMS** (`/plugins/sms`):
-- Enter the API Key, Secret, or Auth Token for your provider.
-- If using **Twilio**, **Vonage**, or **Plivo**, provide the webhook signing secret to enforce cryptographic sender verification.
-- **E-mail Notification**: Check this box to alert users via email when a new message arrives. To avoid inbox flooding during active chats, alerts are automatically throttled to **at most 1 email every 10 minutes** per conversation.
+When enabled, incoming messages notify the number's users by email at most once per conversation
+in ten minutes. Users need an email address and working portal [mail settings](mail.md).
 
-### 2. Add DID Numbers & Assign Staff Access
-Under the **Numbers** tab:
-1. Click **+ Add Number**.
-2. Enter the DID in standard E.164 format (e.g. `+12025550150` or `+902125550190`).
-3. Select the carrier provider that hosts this number.
-4. Select which **Users / Extensions** are allowed to manage this number:
-   - **Shared Team Inbox**: Assign multiple users or a department to a single number. Everyone assigned sees incoming messages and replies in real time.
-   - **Dedicated DID**: Assign a direct line to an individual extension owner.
+## Storage, retries and privacy
 
----
+| Table | Content |
+|-------|---------|
+| `plg_sms_numbers` | Configured numbers and providers |
+| `plg_sms_access` | Users allowed to use each number |
+| `plg_sms_messages` | Incoming/outgoing text, status and provider message IDs |
+| `plg_sms_media` | Attachment bytes, type, name and fetch token |
+| `plg_sms_contacts` | Peer name shared within a configured number |
 
-## 💬 User Experience (`/apps/sms`)
+Incoming provider IDs are checked per receiving number/provider under an InnoDB row lock. Media
+fetches and email run after the transaction. Independent destinations are retained; messages without
+provider IDs cannot be reliably deduplicated and are stored separately.
 
-Staff members access their messaging interface under **Apps → Messages**:
+Do not assume core chat/CDR retention settings purge these plugin tables. Define the operator's
+retention/export/deletion process for SMS data and include its database storage in capacity planning.
+Plugin disable preserves tables; uninstall removes declared plugin tables. See
+[Plugin lifecycle](plugin-development.md).
 
-- **Conversations List**: Threads sorted by recent activity with unread message badges.
-- **Message Composer**:
-  - Live character and segment counter (160 characters for standard GSM-7; 70 characters for Unicode/emojis).
-  - Automatic multi-part message concatenation.
-  - Attachment button for uploading pictures, documents, or audio files.
-- **Delivery Status Indicators**:
-  - 🕒 `Pending`: Queued for dispatch.
-  - 📤 `Sent`: Accepted by provider network.
-  - ✅ `Delivered`: Carrier delivery receipt confirmed.
-  - ❌ `Failed`: Delivery error with actionable failure code.
-- **Integrated Contact Directory**: Save customer names and notes directly from the chat view. Contact names automatically synchronize with the [Caller Name (CNAM)](cnam.md) plugin.
+Before production use, check your provider's sender registration, permitted traffic, consent and
+opt-out requirements. The PBX passes the message to the provider; delivery, segmentation and billing
+remain provider-dependent.
 
----
+## Test evidence
 
-## 📎 Multimedia Messaging (MMS)
-
-The SMS plugin supports sending and receiving multimedia attachments:
-
-- **Supported Formats**: JPEG, PNG, GIF, WebP, PDF documents, Audio clips (MP3/WAV/OGG), and vCard contacts (`.vcf`).
-- **File Storage**: Attachments are managed through AiPBX's unified storage backend: either on the local server disk or an S3-compatible cloud bucket (AWS S3, MinIO, Wasabi, Cloudflare R2) — see [File Storage](file-storage.md).
-- **🛡️ SSRF Security Shield**: When receiving MMS media from external carrier webhooks, AiPBX validates all media URLs through an SSRF-safe HTTP client. Downloads to internal, private (`10.*`, `192.168.*`, `127.*`), or cloud metadata IPs are strictly forbidden.
-
----
-
-## 🛡️ Concurrency & Security
-
-- **Row-Level Concurrency Locking**: Inbound webhook processing uses database row-level locking (`SELECT ... FOR UPDATE`) during conversation insertion. This ensures messages arriving in rapid succession are written in exact chronological order without duplicate thread creation.
-- **Webhook Replay & Tamper Protection**: All inbound requests from Twilio, Vonage, and Plivo are verified against their cryptographic request signatures before any database transaction is initiated.
-- **Privacy & Purge**: Message logs and MMS media honor the automated privacy retention policies configured in [Privacy & Compliance](privacy.md).
-
-## Before you send: registration and reputation
-
-Whether a message arrives is decided by the carrier, not by this plugin. In the United States and
-Canada application-to-person messages from local numbers need a registered brand and campaign
-(10DLC), toll-free numbers need verification, and unregistered traffic is filtered or surcharged;
-other countries have their own sender registration. Register with your provider before going live,
-keep the opt-in of every recipient and honour STOP. AiPBX stores and relays what you send; the
-registration, the consent records and the content are the operator's responsibility
-([Privacy & Compliance](privacy.md)).
+The [plugin README](https://github.com/mahirgul/AiPBX-plugins/tree/main/plugins/community/sms)
+lists provider-request/signature checks, media security checks, and real MySQL receipt/concurrency
+tests. These do not send paid messages or certify a live provider account. Community users reported
+sending/receiving with Twilio and VoIP.ms; test your own provider configuration before enabling staff.

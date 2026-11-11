@@ -19,6 +19,19 @@ fixes it; run `install.sh --upgrade` if the override is missing.
 Usually an IVR/announcement sound is missing. Look for *"does not exist in any format"* in
 `/var/log/asterisk/messages.log` and see [Sounds](sounds.md#where-sounds-live).
 
+## Queue callbacks do not appear or stay pending
+
+Use the [callback setup checklist](queue-callbacks.md#verify-the-setup) and
+[symptom table](queue-callbacks.md#troubleshooting). Confirm that callbacks are enabled and applied,
+the caller number is present, and the agent is assigned to the active queue. Both the periodic
+invitation and a separate confirmation announcement must be selected.
+
+A pending request is removed after an answered conversation with a queue agent ends, not after
+an IVR answers or an agent's phone merely rings. Allow five seconds for the list to refresh.
+Compare caller-number formats: `+` and `00` international prefixes match, but national and
+international forms are not guessed from the last digits. Use consistent
+[inbound number normalization](call-normalization.md) on the relevant trunks.
+
 ## A number is not routed ("No matching inbound route", congestion)
 
 Find out what the trunk actually sends (next section), then check:
@@ -156,8 +169,12 @@ phone (open the app once after signing in), and "failed: ..." carries Firebase's
 
 ## System Update fails with "Code was modified by hand"
 
-`aipbx-update` refuses to update when files under `/opt/aipbx` were changed.
-Installations on **1.34.0 – 1.34.2** hit this without anyone editing anything:
+This message comes from older updater versions. Since 1.60.19, modified files are backed up and
+preserved unless the release changes the same path; then the release copy wins and the log names it.
+Keep custom configuration outside the managed checkout regardless: use the portal, `/etc/ai-pbx.env`
+and `*_custom.conf`. See [Update behavior](backup-and-rollback.md#2-updates-and-automatic-rollback-aipbx-update).
+
+For the historical **1.34.0 – 1.34.2** issue, installations hit the error without anyone editing anything:
 their installer made `web/bin/aipbx_ops.php` executable, and the updater of those
 versions counts that as a change. Restore the file once, then update as usual:
 
@@ -166,9 +183,8 @@ sudo git -C /opt/aipbx checkout -- web/bin/aipbx_ops.php
 sudo aipbx-update
 ```
 
-From 1.50.2 on the updater ignores file mode changes. For any other file listed by
-the error, keep your change outside the code (portal, `/etc/ai-pbx.env`,
-`*_custom.conf`) and restore the file the same way.
+The historical 1.50.2 fix ignores file-mode-only changes. If an older updater lists other files,
+save and inspect their changes before restoring anything; do not discard local work blindly.
 
 ## Useful commands
 

@@ -4,7 +4,8 @@
 
 **System → Users** adds portal users, with or without an extension ([Extensions](extensions.md)).
 
-- **Two fields are enough:** the username and the extension. An empty full name becomes the username.
+- **Only the username is required:** add an extension if the user needs a phone. An empty full name
+  becomes the username. A phone without a portal user is a [device-only extension](extensions.md#the-form).
 - **The password:** leave it empty. With an e-mail address the user gets an invitation and sets their
   own; without one a password is generated and shown to you once, and the user must change it at the
   first sign-in. **Send Login Email to Selected** sends the invitation again to several users.
@@ -40,6 +41,23 @@ access / edit / delete* permissions.
 
 Some pages are admin-only regardless of the permission matrix: roles, system users, firewall, fail2ban,
 mail settings and system update.
+
+## Queue agents and callbacks
+
+An agent needs an extension and an assignment on the queue's agents tab. Administrators and queue
+managers with extensions can be agents too; being an administrator or manager does not automatically
+assign the extension to every queue. See [Queues and the agent screen](queues.md).
+
+Since **1.75.0**, the Agent Screen includes [Callback requests](queue-callbacks.md). The list contains
+requests for that extension's assigned active queues. Clicking **Call** rings the agent first and
+uses their usual outbound route group and dialing permissions. A user without an extension cannot
+place these calls. A viewer cannot start callback calls.
+
+## Meeting permissions
+
+The **Meetings** module has separate access, edit and delete permissions. Viewing the list does not
+grant permission to create, invite or cancel. Guest links open a separate browser lobby without a
+portal account and do not grant host rights. See [Video meetings](meetings.md).
 
 ## My Phone
 

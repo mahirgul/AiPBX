@@ -3,7 +3,7 @@
 AiPBX includes a modular **Plugin Catalog & Custom `.zip` Plugin Engine** (`PluginManager`) integrated with `/api/v1/*` and Outbound Webhooks.
 
 - 📦 **Bundled catalog (`plugins/<slug>/`)**: Ships in the repository. Official plugins: `google-auth`, `oidc-auth`, `saml-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`. Fresh installations start lean; administrators enable only the plugins they need under **Integration → Plugin Catalog** (`/plugins`). Existing installations automatically keep previously configured integrations enabled on upgrade.
-- 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`) and installed as an uploaded `.zip`. Bundled plugins are maintained in the main repository; community plugins are maintained in the separate plugin repository.
+- 🌐 **Community plugins**: published in [AiPBX-plugins](https://github.com/mahirgul/AiPBX-plugins) (`plugins/community/<slug>/`), installed and updated through the opt-in community catalog or uploaded as a `.zip`. Bundled plugins are maintained in the main repository; community plugins are maintained in the separate plugin repository.
 - 📤 **Custom Uploaded Plugins (`/var/lib/aipbx/plugins/<slug>/`)**: Any developer or administrator can package a custom integration into a `.zip` archive and upload it directly in **Integration → Plugin Catalog → Upload Custom Plugin (`.zip`)**.
 
 **A working example of every hook:** [`examples/sample-plugin`](https://github.com/mahirgul/AiPBX-plugins/tree/main/examples/sample-plugin)
@@ -37,6 +37,13 @@ When a plugin needs relational tables (such as campaigns, call queues, or logs b
 1. 📄 Place a `schema.sql` file in the plugin root and list the table names under `"tables": ["plg_my_table"]` in `plugin.json`.
 2. 🛡️ **Strict Prefix Sandbox**: Every table in `schema.sql` **must** start with `plg_` (`CREATE TABLE IF NOT EXISTS plg_<name> (...)`). `PluginManager::parseAndValidatePluginSchemaSql()` rejects any statement that touches core tables (`sys_*`, `pbx_*`, `cdrs`) or contains destructive DDL (`DROP`, `ALTER`, `TRUNCATE`).
 3. 🔄 **Lifecycle**: Tables are automatically created when the plugin is enabled, preserved when disabled, and dropped when uninstalled.
+
+Runtime hooks use the DML-only portal database connection. Missing tables are created through the
+root privilege broker using the root-only migrator credentials; do not request those credentials
+in a plugin or grant DDL to the runtime user. `applyPluginSchema()` returns without delegation when
+all declared tables already exist. This matters for workers running with `NoNewPrivileges`, which
+cannot elevate with sudo on every tick. Schema SQL still permits only validated `CREATE TABLE`
+statements; it is not a general plugin migration engine.
 
 ---
 
@@ -208,6 +215,14 @@ version it needs, instead of the plugin failing at its first missing hook.
 ---
 
 ### From the community catalog (AiPBX 1.72+)
+
+**Previously bundled plugins (1.73+).** `auto-dialer`, `ai-assistant` and `ai-voicemail` are maintained
+in the community repository. An upgrade moves an existing bundled copy into
+`/var/lib/aipbx/plugins/<slug>/` using an offline transition package, preserving its state and
+settings; an existing uploaded copy is kept. Fresh installations do not enable them automatically.
+Subsequent updates come from the community catalog. Their supported minimum core version is
+recorded in each manifest's `requires_aipbx` field.
+
 Community plugins live in [mahirgul/aipbx-plugins](https://github.com/mahirgul/aipbx-plugins) under
 `plugins/community/<slug>/`. Its CI builds each one as `<slug>.zip` (the `tests/` folder left out) with
 `catalog.json` (slug, name, version, SHA-256) on the release `catalog`. On **Integration → Plugin Catalog**,

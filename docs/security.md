@@ -95,6 +95,37 @@ The portal never runs arbitrary commands as root. `/etc/sudoers.d/aipbx` allows 
 `/usr/local/sbin/aipbx-priv`, whose subcommands each map to one fixed operation with validated
 arguments (service reloads, postfix relay, firewall rules, fail2ban, update check/start).
 
+### Database and Asterisk privileges
+
+The portal's runtime database account (normally `aipbx_portal`) has only
+`SELECT`, `INSERT`, `UPDATE` and `DELETE` on the application database. Schema migrations use a
+separate account in `/etc/ai-pbx-migrator.env` (`0600 root:root`); its rights are limited to this
+database. Apache and the background worker cannot read that file. Do not give the runtime account
+DDL or global database privileges to work around a plugin installation problem.
+
+Plugin table creation and removal go through validated `plugin-schema` operations in the root
+helper when necessary. An already installed schema is checked without invoking sudo, so the
+`NoNewPrivileges` worker can use its existing tables. See [Plugin development](plugin-development.md).
+
+`conf/asterisk/cli_permissions.conf` restricts the commands the web account can send to Asterisk.
+Its allow-list patterns are anchored at both ends: Asterisk searches a regular expression anywhere
+in a command. An allowed phrase embedded inside another command must not grant access to it.
+
+### Job state, logs and uploads
+
+Root-written job status, installed-version metadata and backup retention live in
+`/var/lib/aipbx-system` (`root:www-data 0750`). The portal reads public status there but cannot
+create or replace files. Network rollback and upload snapshots use root-only subdirectories.
+`/var/lib/aipbx` remains the writable application-data directory, not a staging area for root output.
+
+Root job logs in `/var/log/aipbx` use a protected parent and `root:www-data 0640` files. PHP can
+read them; the separate login-failure log is writable by PHP. Certificate and backup uploads are
+copied into a validated root-private snapshot before privileged processing. Postfix and Fail2ban
+inputs travel through stdin rather than portal-written root configuration files.
+
+See [Privileged job state](root-state-paths.md) and [Privileged logs](root-log-paths.md) for ownership,
+migration and rotation details. Do not use recursive chmod/chown to make these areas web-writable.
+
 ## Apache sandbox
 
 Ubuntu's `apache2.service` is hardened with systemd sandboxing. The installer's override
@@ -103,7 +134,12 @@ Ubuntu's `apache2.service` is hardened with systemd sandboxing. The installer's 
 - `/etc/sudoers` and `/etc/sudoers.d` readable, so `sudo aipbx-priv` works;
 - `/etc/asterisk`, `/etc/postfix` and `/etc/fail2ban/jail.d` writable (everything else under `/etc`
   stays read-only);
-- `/root`, `/boot`, `/etc/ssh`, `/etc/apt` stay inaccessible.
+- `/root`, `/boot`, `/etc/ssh`, `/etc/apt` and `/etc/ai-pbx-migrator.env` stay inaccessible.
+
+The sandbox's writable directory list does not bypass Unix ownership. Protected files such as
+`rtp.conf`, `udptl.conf` and `voicemail.conf` are written through the privilege helper when the
+portal cannot write them directly. Only the dedicated generated proxy/SIP-443 configuration
+locations are opened to the required helpers; arbitrary web input is not an Apache or nginx config.
 
 ## Scheduled task sandbox
 
@@ -117,4 +153,7 @@ External database queries in IVR data steps and plugins run in strictly enforced
 
 TOTP two-factor authentication, passkeys, account/IP lockout with CAPTCHA, CSRF tokens on every form
 and API call, sessions revoked on password change, least-privilege database users (runtime vs.
-migrations), secrets only in `/etc/ai-pbx.env` (`640 root:asterisk`), Asterisk HTTP/AMI on loopback.
+migrations), runtime credentials in `/etc/ai-pbx.env` (`640 root:asterisk`), migration credentials
+in the root-only migrator file, and Asterisk HTTP/AMI on loopback. Plugin/provider secrets stored
+encrypted in the database depend on `/var/lib/aipbx/settings.key` (`0600 www-data:www-data`);
+include that key in protected backups.

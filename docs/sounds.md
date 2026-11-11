@@ -18,6 +18,24 @@ up. The links live outside dpkg-owned files, so package upgrades keep them.
 Sounds should be 8 kHz mono WAV (16-bit PCM). Uploaded files with the same name as a shipped file are
 never overwritten by updates.
 
+## Queue callback announcements
+
+[Manual queue callbacks](queue-callbacks.md), available since 1.75.0, use two recordings selected
+in the queue form:
+
+| Recording | When it plays | Suggested text |
+|-----------|---------------|----------------|
+| Periodic announcement | Repeated while the caller waits, at the queue's configured interval | “To request a callback on the number you are calling from, press 1. Otherwise, please continue to hold.” |
+| Callback confirmation announcement | Once, after the callback request is saved; the PBX then hangs up | “Your callback request has been received. Our agents will call you on this number. Thank you.” |
+
+Add the recordings on **Sounds**, then select them on **Queues**. Enabling callbacks requires both
+an active confirmation announcement and a periodic announcement with an interval greater than zero.
+The PBX does not generate the spoken confirmation from its interface label; supply the recording
+in the language your callers expect. A failed request does not play the success confirmation.
+
+An announcement referenced by a queue cannot be deleted. Choose a replacement on the queue first,
+save and **Apply**, then remove the unused recording.
+
 ## Languages
 
 A call uses the language set on its inbound route. When a prompt is missing in that

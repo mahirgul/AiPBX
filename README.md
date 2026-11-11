@@ -200,6 +200,9 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Agent desk and wallboard** — live queues, waiting callers (with pickup), agent states
   (idle / ringing / in call / on break), SLA, answered / missed / abandoned statistics
 - **Breaks with reasons**, applied in Asterisk per queue, and break reports
+- **[Manual queue callbacks](docs/queue-callbacks.md)** — callers press 1 while waiting, hear a
+  confirmation and hang up; assigned agents call from a shared list. Answered agent conversations
+  clear the request, including when the customer calls again; unanswered attempts stay pending.
 - **Listen, whisper and barge** — from the wallboard or with `*90`/`*91`/`*92`
 - **Call transfer** that keeps the caller connected through queue Local channels
 - **Queue Report Centre** — service level, answered / lost calls, average wait and talk time per queue
@@ -271,6 +274,9 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
 - **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
 - **First-Class Plugin System (`/plugins`)** — zero-bloat modular integrations (`google-auth`, `ms-teams`, `web-widgets`, `ai-cloud`, `ai-tts`, `ai-apps`, `ai-models`), dedicated `plg_*` MySQL table sandbox (`schema.sql`), custom `.zip` plugin uploader, encrypted secret storage, pages for signed-in users as well as administrators (`user_page`, v1.71+), and **Safe Mode** circuit breaker (auto-disables any plugin after 5 consecutive runtime errors)
+- **Signed community catalog** — opt-in plugin install/update with Ed25519 catalog verification (1.74+)
+  and package checksums; Auto Dialer, AI Assistant and AI Voicemail are maintained in the separate
+  [plugin repository](https://github.com/mahirgul/AiPBX-plugins).
 - **Auto Dialer & AMD Campaigns (`auto-dialer`)** — automated outbound calling campaigns with Asterisk Answering Machine Detection (`AMD()`), global & per-campaign AMD tuning, queue free-agent pacing, voicemail drop (`WaitForSilence`), and CSV call outcome export
 
 ### 🛡️ Global Privacy & Telecom Compliance (`/privacy`)

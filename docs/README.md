@@ -47,10 +47,13 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📡 [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server, an NTP server and phone logs (syslog) by IP or MAC |
 | 🩺 [Health checks](health.md) | The server watches itself (services, trunks, disk, certificate, backup …), alarm e-mails, the daily summary with yesterday's calls, `aipbx-selftest` |
 | 🎙️ [Call recordings](recordings.md) | Where recordings live, automatic MP3 conversion, playback |
+| 🎧 [Queues and the agent screen](queues.md) | Queue setup, static and dynamic agents, breaks, waiting calls and manual callbacks |
+| ☎️ [Manual queue callbacks](queue-callbacks.md) | Press 1 while waiting, confirmation announcement, agent callback list, automatic removal after a conversation, troubleshooting |
 | 📊 [Reports](reports.md) | Call reports with trunks and direction, Queue Report Centre, PDF and Excel export |
 | 🔊 [Sounds & languages](sounds.md) | Custom sounds, the Turkish prompt packages (six formats), regenerating a prompt |
 | 🌍 [Translating](translating.md) | Interface languages, adding or correcting a translation with `scripts/i18n.py`, mobile app texts, prompts in other languages |
 | 📹 [Video calls](video-calls.md) | Video between the web phone, the Android app and desk video phones; the one video codec; bandwidth |
+| 🗓️ [Video meetings](meetings.md) | Scheduled browser rooms, SFU/Follow-Talker, guest links, invitations, join windows and calendar downloads |
 | 🎧 [WebRTC, NAT and TURN](webrtc-nat.md) | Browser and app audio across NAT, external IP, TURNS on 443, troubleshooting silent calls |
 | 🗄️ [External databases & IVR data steps](external-databases.md) | Read-only MySQL/PostgreSQL connections, encrypted credentials, real-time IVR caller/DTMF data lookups and call branching |
 | 🎚️ [PBX fine tuning & maintenance](pbx-tuning.md) | Jitter buffer, SIP protocol timers (T1, B, Max-Forwards), 10-minute SIP debug, safe night restart window, spoken status messages |
@@ -62,6 +65,8 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 |------|----------------|
 | 👥 [Users & roles](users-and-roles.md) | Adding users and invitations, the `admin` account, built-in roles, permissions, *My Phone* |
 | 🛡️ [Security](security.md) | Firewall (common and per-card rules), fail2ban, the `aipbx-priv` root helper, Apache sandbox |
+| 🔒 [Privileged job state](root-state-paths.md) | Root-owned status, network rollback data and validated upload snapshots |
+| 📜 [Privileged job logs](root-log-paths.md) | Root log ownership, portal read access and rotation |
 | 🖧 [Network ports & firewall](network-ports.md) | Complete matrix of all TCP/UDP ports, public vs LAN scopes, NAT guidelines, UFW/firewalld/iptables recipes |
 | 🛡️ [Threat model & attack surface](threat-model.md) | Security architecture, SIP exposure boundaries, WebRTC/TURNS credentials, recording retention, mobile push tokens, and AI least privilege guardrails |
 | ⚖️ [GDPR, KVKK & data privacy](privacy.md) | Optional regulatory presets (KVKK, GDPR, CCPA/FCC, HIPAA, PCI-DSS, LGPD), pre-call opt-in/opt-out, periodic beep, retention purge, SAR export, Right to Erasure, and Cloud AI lock |
@@ -75,7 +80,9 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 
 ## 🔌 Plugins
 
-Optional applications and integrations bundled with AiPBX (`plugins/`: official plugins and community plugins), enabled on demand under **Integration → Plugin Catalog** (`/plugins`):
+Optional integrations are enabled under **Integration → Plugin Catalog** (`/plugins`). Official
+plugins ship in AiPBX's `plugins/` directory; community plugins are installed from the opt-in signed
+catalog or as uploaded ZIPs. See each guide for its minimum version and installation method:
 
 | Page | Plugin slug | What it covers |
 |------|-------------|----------------|
@@ -110,5 +117,4 @@ link in their invitation e-mail.
 | 📜 [SDD Guide & Constitution](specs/README.md) | Specification-Driven Development (SDD) guide, core architectural rules (zero regressions, circuit breakers, pure generators), and living specifications index (Specs 001, 002, 003) |
 | 🗺️ [Roadmap](roadmap.md) | Planned work across future waves with detailed requirements and milestone criteria |
 
-Planned work (website call widget, chat message deletion, S3 storage, video calls, local AI models,
-busy lamps on desk phones, phone provisioning, DHCP/TFTP …) with a short explanation of each: [Roadmap](roadmap.md).
+The [Roadmap](roadmap.md) distinguishes delivered features from proposals and larger future projects.

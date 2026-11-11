@@ -2,8 +2,9 @@
 
 **PBX → Extensions** lists every extension with its state (*Registered*, *On a Call*,
 *Unreachable*), its SIP password and its settings. A user and an extension are one record: a user
-added under **System → Users** with an extension appears here, and an extension added here is a user
-who can sign in to the portal. Fax users are not listed here; they are on **Fax → Fax Units** (see
+added under **System → Users** with an extension appears here. An extension can also be marked
+**Device only (no portal user)** for a shared or unattended phone; it cannot sign in to the portal
+or mobile app. Portal users may have no extension at all. Fax users are not listed here; they are on **Fax → Fax Units** (see
 [Fax users](fax-users.md)).
 
 Every change goes to Asterisk with **Apply** ([Portal basics](portal.md)). Each extension becomes
@@ -17,6 +18,9 @@ Every change goes to Asterisk with **Apply** ([Portal basics](portal.md)). Each 
 - **Remove** deletes the extension only; the user account stays.
 
 ## The form
+
+The editor has five tabs: **Basic Settings**, **Call Routing & Forwarding**, **Groups & Pickup**,
+**Voicemail** and **Advanced SIP & Media**. Save the form, then Apply the pending changes.
 
 | Field | Meaning |
 |-------|---------|
@@ -40,12 +44,15 @@ For the extension's desk phone or softphone only; the web phone and the mobile a
 |---------|--------|------|
 | Transport | UDP, TCP, TLS | Default follows the transport the phone registered on, which suits nearly every phone. A chosen one must match the phone, or calls do not reach it. See [Transports](transports.md). |
 | DTMF mode | RFC 4733, Inband, SIP INFO, Auto | How key presses are sent. |
-| Media encryption | Off, SRTP (SDES) | The phone must offer SRTP too, otherwise calls fail. |
+| Media encryption | Off, SRTP (SDES), DTLS-SRTP | Choose the method the device supports; DTLS-SRTP is normally used for WebRTC-capable devices. |
+| Optimistic media encryption, ICE | Yes / No | Device-specific negotiation/NAT behavior. Leave Default unless the device requires an override. |
+| Media address | address | Advertised media address override for this endpoint. Check the server NAT configuration before setting it. |
 | Force rport, Rewrite contact, Symmetric RTP | Yes / No | NAT options, for a phone behind a router that rewrites its addresses. |
 | Direct media | Yes / No | Lets audio flow between two phones directly, past the PBX. |
 | Codecs, in order | opus, g722, alaw, ulaw, g729 | Comma separated. Empty: the system list. |
 | Devices at once | a number | How many devices may register with this extension at the same time. |
 | Check interval (seconds) | a number | How often Asterisk checks the phone. 0: never. Empty: the system value. |
+| RTP timeout, RTP keepalive | seconds | Timeout controls how long missing RTP is tolerated; keepalive sends periodic RTP to maintain NAT state. Empty inherits the system value. |
 | Prompt language | a language | The language of the prompts this extension hears. |
 
 For anything not listed, use [Advanced Configuration](advanced-config.md), which can also apply a

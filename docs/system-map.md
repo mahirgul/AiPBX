@@ -88,7 +88,10 @@ Units marked "when switched on" only run when the page enables them.
 
 | Path | What |
 |------|------|
-| `/etc/ai-pbx.env` | Database users and passwords, AMI user, domain, paths. Read by the portal and scripts |
+| `/etc/ai-pbx.env` | Runtime database credentials, AMI credentials, domain and paths (`640 root:asterisk`) |
+| `/etc/ai-pbx-migrator.env` | Migration database credentials (`0600 root:root`), hidden from Apache and the worker |
+| `/var/lib/aipbx-system/` | Root-written job status, installed version, backup retention; root-only network rollback/upload snapshots |
+| `/var/lib/aipbx/plugins/` | Installed community/uploaded plugins, preserved across core updates |
 | `/var/lib/aipbx/settings.key` | Key that encrypts secrets stored in the database (SIP/trunk/API passwords, SecretBox) |
 | `/etc/aipbx/ai.token` | Shared token between the portal and the local AI service |
 | `/etc/ssl/aipbx/active.crt`, `active.key` | Certificate in use (copied to coturn and Asterisk by `aipbx-cert`) |
@@ -103,7 +106,7 @@ Units marked "when switched on" only run when the page enables them.
 | `/etc/cron.d/aipbx` | Scheduled jobs (section 7) |
 | `/var/lib/aipbx-netsvc/` | DHCP/TFTP/FTP/syslog settings written by `aipbx-priv netsvc` |
 
-Never paste `/etc/ai-pbx.env` or `settings.key` into a ticket: they hold every secret. Losing
+Never paste either environment file or `settings.key` into a ticket: they hold every secret. Losing
 `settings.key` makes the encrypted passwords in the database unreadable; it is in the backups.
 
 ### Data
@@ -168,6 +171,10 @@ Never paste `/etc/ai-pbx.env` or `settings.key` into a ticket: they hold every s
 
 To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file>`.
 
+See [Privileged job state](root-state-paths.md) and [Privileged logs](root-log-paths.md) before changing
+ownership or investigating an unsafe legacy path. The portal reads root job state/logs; it must not
+be able to replace their files.
+
 ## 6. Database (`asterisk`)
 
 `mysql asterisk` as root opens it. Main tables by area:
@@ -184,7 +191,7 @@ To see what changed: `diff /etc/asterisk/pbx/<file>.prev /etc/asterisk/pbx/<file
 | `pbx_phones`, `pbx_phones_waiting`, `pbx_phone_keys`, `pbx_phone_fetch_log` | Desk phone provisioning |
 | `pbx_ai_apps`, `ai_requests`, `ai_cloud_usage`, `ai_tts_history`, `voicemail_ai` | AI |
 | `asteriskcdr`, `asteriskcel`, `cdrs` | Call records (Asterisk CDR/CEL, portal call list) |
-| `asteriskqueue`, `cc_queue_logs`, `cc_pause_logs`, `queues_details` | Call center |
+| `asteriskqueue`, `cc_queue_logs`, `cc_pause_logs`, `queues_details`, `cc_callbacks` | Call center and pending manual callback requests |
 | `chat_*` | Chat |
 | `fax_received`, `fax_sent` | Fax |
 | `health_checks`, `health_events` | Health page |

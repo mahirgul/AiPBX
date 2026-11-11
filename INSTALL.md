@@ -71,6 +71,17 @@ To run it in a container instead of on the server itself, see [Incus or LXD](doc
 5. **Edge & Reverse Proxy**: nginx on 443 routes TLS by ALPN to Apache (portal, `/ws` Asterisk WebRTC, `/chat/*` chat service) or coturn (TURNS), passing the real client address with the PROXY protocol.
 6. **Credential Safe**: Prints full credentials in a formatted terminal summary and writes a protected file to `/root/aipbx-credentials.txt` (`chmod 600`).
 
+### Installer files and permissions
+
+The installer entry point sources numbered steps from `scripts/install/`. Keep those scripts with
+`install.sh` when using a repository checkout; run the entry point rather than individual steps.
+The one-line installation path obtains the repository before those steps are needed.
+
+Install and upgrade also separate runtime and migration database credentials, prepare protected
+job state/log directories, and apply the service sandbox configuration. See
+[Security](docs/security.md#database-and-asterisk-privileges) for the ownership model. An upgrade
+preserves existing credentials; do not copy migrator credentials into the portal environment.
+
 ---
 
 ## 🌐 2. How Traffic Flows

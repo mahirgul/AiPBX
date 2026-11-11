@@ -4,11 +4,22 @@ Planned work, roughly in the order it is expected. Nothing here is a promise of 
 [issues](https://github.com/mahirgul/AiPBX/issues) hold the discussion of each item, and ideas are
 welcome there.
 
-## Next: after the 1.50 maintenance freeze
+## Delivered updates (reviewed 11 November 2026)
 
-Since 1.50 (October 2026) only bug fixes and tests go in. The items below are collected for the time
-after it, in three waves: small things with immediate use first, then platform features, then the
-large projects.
+The 1.50 maintenance freeze ended on 1 November 2026. Features and fixes have continued since then.
+The older waves below are design history, not a list of everything still missing. Current user guides
+and the [changelog](../CHANGELOG.md) describe shipped behavior.
+
+| Delivered area | Current guide |
+|----------------|---------------|
+| Manual queue callbacks with confirmation announcement (1.75.0) | [Callbacks](queue-callbacks.md) |
+| Device-only extensions, users without extensions, additional desk-phone accounts (1.74.0) | [Extensions](extensions.md), [Phones](phones.md) |
+| Signed community catalog and migration of optional bundled plugins (1.73–1.74) | [Plugin development](plugin-development.md) |
+| VPN server/client, network-address workflow and per-card firewall rules | [VPN](vpn.md), [Network settings](network-settings.md), [Security](security.md) |
+| Backup/restore portal and restricted uploaded-backup import | [Backup and recovery](backup-and-rollback.md) |
+| Video meetings and guest scheduling (1.60.0), separate mobile client repositories | [Video calls](video-calls.md), [Meetings](meetings.md) |
+
+## Earlier implementation waves
 
 ### Wave 1: small, immediate use — done (1.50.10)
 
@@ -160,10 +171,11 @@ A conference room per chat group (hidden number), started from the mobile app; m
 before joining; the group gets a "call started — join" message and a push notification, members join
 when they want (no ringing everyone).
 
-#### 3.3 Community plugins
+#### 3.3 Community plugins — delivered
 
-Move `ai-assistant` out of the core into a community plugin, with a migration for installations that
-use it.
+`ai-assistant`, `auto-dialer` and `ai-voicemail` now live in the community repository. Core upgrades
+move existing bundled copies offline while preserving configuration. Catalog installs/updates and
+signature verification are described in [Plugin development](plugin-development.md).
 
 #### 3.4 Remote TTS server
 
@@ -292,12 +304,10 @@ attached file is removed from the server's disk. Changes are needed in the chat 
 web chat and the Android and iOS apps; an administrator setting may limit how long after sending a
 message can still be deleted.
 
-## 3. S3 storage for chat attachments
+## 3. S3 storage for chat attachments — delivered
 
-Attachments are stored on the server's disk today. An optional S3-compatible storage (AWS S3,
-MinIO, Wasabi, Backblaze B2 …) would keep large files off the PBX: bucket, key and region on an
-admin page, a connection test, and a one-time move of existing files. Downloads keep going through
-the chat service, so access rules stay the same.
+Local and S3-compatible attachment storage, connection testing and migration controls are available
+on **System → File storage**. Access checks remain in the chat service. See [File storage](file-storage.md) for the current setup and behavior.
 
 ## 4. Video calls *(done in 1.60.0: Asterisk ConfBridge SFU multi-screen WebRTC gallery, Follow-Talker for SIP video phones, /meetings scheduler, /meet/{token} zero-install public guest lobby, .ics calendar invitations)*
 
