@@ -6,6 +6,7 @@
  * class and passes the data to the view.
  */
 require_once __DIR__ . '/../asterisk_helper.php';
+require_once __DIR__ . '/../services/CdrCallAnalyzer.php';
 
 class DashboardRepository extends BaseRepository
 {
@@ -102,8 +103,8 @@ class DashboardRepository extends BaseRepository
         // Today's calls, one per call (linkedid), answered if any leg was answered.
         $row = $db->query(
             "SELECT COUNT(*) AS total, COALESCE(SUM(answered), 0) AS answered FROM (
-                 SELECT MAX(disposition = 'ANSWERED') AS answered
-                 FROM asteriskcdr
+                 SELECT MAX(" . CdrCallAnalyzer::SQL_ANSWERED_LEG . ") AS answered
+                 FROM asteriskcdr c
                  WHERE calldate >= CURDATE()
                  GROUP BY COALESCE(NULLIF(linkedid, ''), uniqueid)
              ) calls"

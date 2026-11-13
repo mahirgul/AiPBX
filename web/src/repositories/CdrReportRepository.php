@@ -227,9 +227,13 @@ class CdrReportRepository extends BaseRepository
         // Extension vs trunk channels: see CdrCallAnalyzer::endpoint().
         $ext = "'" . CdrCallAnalyzer::SQL_EXT_CHANNEL . "'";
         $isTrunk = fn(string $col) => "({$col} LIKE 'PJSIP/%' AND {$col} NOT REGEXP {$ext})";
+        $answered = CdrCallAnalyzer::SQL_ANSWERED_LEG;
+        // A queue call: the agent's own leg is the talk time (the queue row also
+        // counts the wait, the caller being answered on entering the queue).
         $answeredBilled = "COALESCE(
-                MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.lastapp = 'Queue' THEN c.billsec END),
-                MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.billsec END),
+                CASE WHEN MAX(c.lastapp = 'Queue') = 1 THEN MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.lastapp = 'Dial' AND c.channel LIKE 'Local/%' THEN c.billsec END) END,
+                MAX(CASE WHEN {$answered} AND c.lastapp = 'Queue' THEN c.billsec END),
+                MAX(CASE WHEN {$answered} THEN c.billsec END),
                 0)";
 
         $inner = "SELECT
@@ -256,9 +260,9 @@ class CdrReportRepository extends BaseRepository
                 MAX(CASE WHEN c.dst REGEXP '^[0-9]{3,5}$' AND c.dst != c.src THEN c.dst END)
             ) AS agent_extension,
             CASE
-                WHEN SUM(c.disposition = 'ANSWERED') > 0 THEN 'ANSWERED'
+                WHEN SUM({$answered}) > 0 THEN 'ANSWERED'
                 WHEN SUM(c.disposition = 'BUSY') > 0 THEN 'BUSY'
-                WHEN MAX(c.lastapp) = 'Queue' THEN 'ABANDON'
+                WHEN MAX(c.lastapp = 'Queue') = 1 THEN 'ABANDON'
                 ELSE 'NO ANSWER'
             END AS status,
             {$answeredBilled} AS billsec,

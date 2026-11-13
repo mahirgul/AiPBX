@@ -21,6 +21,14 @@ final class CdrCallAnalyzer
     public const SQL_EXT_CHANNEL = '^PJSIP/[0-9]+(-[a-z]+)*-[0-9a-f]+$';
 
     /**
+     * A CDR row (alias c) that a person answered. A call is answered when it
+     * enters a queue (so the caller hears music and announcements), which makes
+     * the queue row ANSWERED even when no agent took it: that row has no
+     * destination channel and does not count.
+     */
+    public const SQL_ANSWERED_LEG = "(c.disposition = 'ANSWERED' AND NOT (c.lastapp = 'Queue' AND COALESCE(c.dstchannel, '') = ''))";
+
+    /**
      * @param array<string, string> $trunkTitles trunk_name => title
      * @param array<string, string> $userNames   extension => full name
      */

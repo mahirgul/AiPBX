@@ -153,6 +153,33 @@ final class CdrReportTest extends TestCase
         $this->assertSame([4, 1, 1, 1, 1], [$summary['total'], $summary['inbound'], $summary['outbound'], $summary['internal'], $summary['transit']]);
     }
 
+    /** The three rows are what Asterisk wrote for these calls on a test system (2026-11-13). */
+    public function testAQueueCallNobodyTookIsAbandonedNotAnswered(): void
+    {
+        $db = getDB();
+        $now = date('Y-m-d H:i:s');
+        $ins = $db->prepare("INSERT INTO asteriskcdr
+            (calldate, clid, src, dst, did, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid, accountcode)
+            VALUES (?, '', '0599000009', ?, '5550002', 'ctx', ?, ?, ?, ?, ?, ?, ?, ?, ?, '')");
+        $leg = fn(string $call, int $i, array $l) => $ins->execute([$now, $l[0], $l[1], $l[2], $l[3], $l[4], $l[5], $l[6], $l[7], "test-cdr-group-q-{$call}", "test-cdr-group-q-{$call}-{$i}"]);
+        // dst, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition
+        $leg('waiting', 0, ['5550002', 'PJSIP/trk-00000000', '', 'Queue', 'rigq,tT,,,20', 4, 4, 'ANSWERED']);
+        $leg('ringing', 0, ['5550002', 'PJSIP/trk-00000001', 'Local/7410@from-internal-pbx-00000000;1', 'Queue', 'rigq,tT,,,20', 5, 5, 'NO ANSWER']);
+        $leg('ringing', 1, ['7410', 'Local/7410@from-internal-pbx-00000000;2', 'PJSIP/7410-sip-00000002', 'Dial', 'PJSIP/7410-sip', 0, 4, 'NO ANSWER']);
+        $leg('taken', 0, ['5550002', 'PJSIP/trk-00000003', 'Local/7410@from-internal-pbx-00000001;1', 'Queue', 'rigq,tT,,,20', 14, 14, 'ANSWERED']);
+        $leg('taken', 1, ['7410', 'Local/7410@from-internal-pbx-00000001;2', 'PJSIP/7410-sip-00000004', 'Dial', 'PJSIP/7410-sip', 4, 13, 'ANSWERED']);
+
+        $rows = array_column(CdrReportRepository::search(true, '', null, null, '', '', 'test-cdr-group-q-', 1, 50, '', 'grouped'), null, 'linkedid');
+        $this->assertSame('ABANDON', $rows['test-cdr-group-q-waiting']['status'], 'hung up while waiting, no agent rang');
+        $this->assertSame('ABANDON', $rows['test-cdr-group-q-ringing']['status'], 'hung up while an agent rang');
+        $this->assertSame('ANSWERED', $rows['test-cdr-group-q-taken']['status']);
+        $this->assertSame(4, (int) $rows['test-cdr-group-q-taken']['billsec'], 'talk time, without the wait in the queue');
+        $this->assertSame(0, (int) $rows['test-cdr-group-q-waiting']['billsec']);
+
+        $summary = CdrReportRepository::summary(true, '', null, null, '', '', 'test-cdr-group-q-', '', 'grouped');
+        $this->assertSame([3, 1], [(int) $summary['total'], (int) $summary['answered']]);
+    }
+
     public function testDeleteCdrRemovesAllLegsOfLinkedCall(): void
     {
         $db = getDB();

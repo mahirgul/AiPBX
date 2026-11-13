@@ -19,7 +19,8 @@ as agents too. Their role alone does not assign them to a queue.
 
 A call that enters a queue is answered, so the caller hears the music and the position and hold-time
 announcements; charging for the caller starts then. An agent's own voicemail never takes a queue
-call (the same holds for ring groups): an agent who does not answer is skipped.
+call (the same holds for ring groups): an agent who does not answer is skipped. In reports the call is answered only
+when an agent takes it: a caller who hangs up while waiting is listed as abandoned.
 
 Queue membership and phone registration are separate: an assigned or joined agent can have an
 offline phone. Check both the queue status and the extension's registered devices when calls do
