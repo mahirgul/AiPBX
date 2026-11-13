@@ -269,6 +269,39 @@ class VoicemailService {
         return "Old:{$target}";
     }
 
+    /**
+     * Deletes the spool messages (INBOX, Old, Urgent of every mailbox) that $match
+     * accepts, fn(string $mailbox, int $origtime, string $callerid): bool, and
+     * returns how many. Retention and erasure saw only the archive tables, so
+     * the messages themselves stayed in the spool for ever.
+     */
+    public static function purgeSpool(callable $match, ?string $spool = null): int
+    {
+        $base = $spool ?? '/var/spool/asterisk/voicemail/default';
+        $count = 0;
+        $boxes = [];
+        foreach (glob("{$base}/*/{INBOX,Old,Urgent}/msg[0-9][0-9][0-9][0-9].txt", GLOB_BRACE) ?: [] as $txt) {
+            $mailbox = basename(dirname($txt, 2));
+            $meta = [];
+            foreach (@file($txt, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+                [$k, $v] = array_pad(explode('=', $line, 2), 2, '');
+                $meta[$k] = $v;
+            }
+            if (!ctype_digit($mailbox) || !$match($mailbox, (int) ($meta['origtime'] ?? 0), (string) ($meta['callerid'] ?? ''))) {
+                continue;
+            }
+            foreach (glob(substr($txt, 0, -4) . '.*') ?: [] as $f) {
+                @unlink($f);
+            }
+            $count++;
+            $boxes[$mailbox] = true;
+        }
+        foreach (array_keys($boxes) as $mailbox) {
+            self::syncInboxCount((string) $mailbox, $spool);
+        }
+        return $count;
+    }
+
     /** Updates sys_settings vm_notify_new_<mailbox> with current INBOX message count. */
     public static function syncInboxCount(string $ext, ?string $spool = null): void
     {

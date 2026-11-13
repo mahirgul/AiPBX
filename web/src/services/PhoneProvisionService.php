@@ -1007,7 +1007,14 @@ class PhoneProvisionService
 
     private static function recordWaiting(string $mac, string $vendor, string $ip, string $ua): void
     {
-        getDB()->prepare(
+        // Made-up MACs must not fill the table: at 500 waiting phones only known ones are updated.
+        $db = getDB();
+        $known = $db->prepare('SELECT 1 FROM pbx_phones_waiting WHERE mac = ?');
+        $known->execute([$mac]);
+        if (!$known->fetchColumn() && (int) $db->query('SELECT COUNT(*) FROM pbx_phones_waiting')->fetchColumn() >= 500) {
+            return;
+        }
+        $db->prepare(
             'INSERT INTO pbx_phones_waiting (mac, vendor, ip, user_agent) VALUES (?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE vendor = VALUES(vendor), ip = VALUES(ip), user_agent = VALUES(user_agent),
                  request_count = request_count + 1, last_seen_at = NOW()'

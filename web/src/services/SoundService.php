@@ -20,12 +20,32 @@ class SoundService {
         }
     }
 
+    /**
+     * The uploaded file of $field, null when none was chosen. Any other upload
+     * error is said out loud: a file over PHP's limit used to be dropped with
+     * no message at all, so "nothing happened" (issue #164).
+     */
+    private static function uploadedFile($files, string $field): ?array
+    {
+        $f = $files[$field] ?? null;
+        if (!is_array($f) || ($f['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            return null;
+        }
+        if (in_array($f['error'], [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+            throw new \Exception(sprintf(t('srv_sound.err_too_big'), ini_get('upload_max_filesize')));
+        }
+        if ($f['error'] !== UPLOAD_ERR_OK) {
+            throw new \Exception(t('srv_sound.err_upload') . ' (' . (int) $f['error'] . ')');
+        }
+        return $f;
+    }
+
     public static function uploadAnnouncement($data, $files) {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data, $files) {
             $sound_name = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['sound_name'] ?? ''));
             $custom_dir = SOUNDS_CUSTOM_DIR;
 
-            if (!isset($files['audio_file']) || $files['audio_file']['error'] !== UPLOAD_ERR_OK || empty($sound_name)) {
+            if (self::uploadedFile($files, 'audio_file') === null || empty($sound_name)) {
                 throw new \Exception(t('srv_sound.err_file_name'));
             }
 
@@ -99,7 +119,7 @@ class SoundService {
             }
             $msg = sprintf(t('srv_sound.title_updated'), $title);
 
-            if (isset($files['audio_file']) && $files['audio_file']['error'] === UPLOAD_ERR_OK) {
+            if (self::uploadedFile($files, 'audio_file') !== null) {
                 $anc = DBHelper::fetchOne("SELECT audio_file FROM pbx_announcements WHERE id = ?", [$anc_id]);
                 if ($anc) {
                     $sound_name = str_replace('custom/', '', $anc['audio_file']);
@@ -240,12 +260,8 @@ class SoundService {
                 @chown($target_dir, 'asterisk');
             }
 
-            // Note: on the original page nothing happened silently when the
-            // file was missing/broken (no message/error) — that behaviour is
-            // kept (returns an empty string, handleAction() treats it as
-            // "success, no message").
-            if (!isset($files['moh_audio']) || $files['moh_audio']['error'] !== UPLOAD_ERR_OK) {
-                return '';
+            if (self::uploadedFile($files, 'moh_audio') === null) {
+                throw new \Exception(t('srv_sound.err_moh_upload'));
             }
 
             $base_name = preg_replace('/[^a-zA-Z0-9_-]/', '', pathinfo($files['moh_audio']['name'], PATHINFO_FILENAME));

@@ -39,6 +39,12 @@ class MailSettingsService
         $from_address = trim($data['mail_from_address'] ?? 'no-reply@example.com');
         $from_name = trim($data['mail_from_name'] ?? 'AI PBX');
         $fax_from_address = trim($data['fax_email_from_address'] ?? 'fax@example.com');
+        // They go to sendmail as "-f <address>": a space in one added options of its own.
+        foreach ([$from_address, $fax_from_address] as $addr) {
+            if ($addr !== '' && filter_var($addr, FILTER_VALIDATE_EMAIL) === false) {
+                return ['success' => false, 'error' => sprintf(t('srv_mail.err_from'), $addr)];
+            }
+        }
         $fax_from_name = trim($data['fax_email_from_name'] ?? 'AI PBX Fax System');
         $sync_postfix = !empty($data['mail_sync_postfix']) ? 'yes' : 'no';
 

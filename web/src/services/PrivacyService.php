@@ -162,6 +162,7 @@ final class PrivacyService
             'optout_timeout'        => max(1, min(10, (int)getSystemSetting('privacy_optout_timeout', '3'))),
             'recording_beep_sec'    => self::validBeepSec((int)getSystemSetting('privacy_recording_beep_sec', '0')),
             'pci_pause_enabled'     => getSystemSetting('privacy_pci_pause_enabled', '0') === '1',
+            'record_outbound'       => getSystemSetting('privacy_record_outbound', '1') !== '0',
             'retention_enabled'     => getSystemSetting('privacy_retention_enabled', '0') === '1',
             'ret_recordings_days'   => max(0, min(3650, (int)getSystemSetting('privacy_ret_recordings_days', '180'))),
             'ret_voicemail_days'    => max(0, min(3650, (int)getSystemSetting('privacy_ret_voicemail_days', '90'))),
@@ -185,7 +186,7 @@ final class PrivacyService
      */
     public static function applyProfile(array $post): array
     {
-        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+        if (!verifyCSRFToken((string)($post['csrf_token'] ?? ''))) {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $key = (string)($post['jurisdiction_profile'] ?? '');
@@ -239,7 +240,7 @@ final class PrivacyService
      */
     public static function saveNotice(array $post): array
     {
-        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+        if (!verifyCSRFToken((string)($post['csrf_token'] ?? ''))) {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $mode = self::validNoticeMode((string)($post['notice_mode'] ?? 'off'));
@@ -248,6 +249,9 @@ final class PrivacyService
         $timeout = max(1, min(10, (int)($post['optout_timeout'] ?? 3)));
         $beepSec = self::validBeepSec((int)($post['recording_beep_sec'] ?? 0));
         $pciPause = !empty($post['pci_pause_enabled']) ? '1' : '0';
+        // Only when the form sent it (a hidden 0 and the checkbox): a caller that
+        // does not know the field must not switch outbound recording off.
+        $recordOut = array_key_exists('record_outbound', $post) ? (!empty($post['record_outbound']) ? '1' : '0') : null;
 
         if ($mode !== 'off' && $soundId <= 0) {
             return ['success' => false, 'error' => t('privacy.err_sound_required')];
@@ -260,7 +264,7 @@ final class PrivacyService
             'privacy_optout_timeout'     => (string)$timeout,
             'privacy_recording_beep_sec' => (string)$beepSec,
             'privacy_pci_pause_enabled'  => $pciPause,
-        ]);
+        ] + ($recordOut !== null ? ['privacy_record_outbound' => $recordOut] : []));
 
         $uid = $_SESSION['user_id'] ?? null;
         if (function_exists('markPendingSync')) {
@@ -269,13 +273,14 @@ final class PrivacyService
             markPendingSync('inbound_dialplan', 'privacy', 'notice', $lbl, 'update', $uid);
             markPendingSync('queues', 'privacy', 'notice', $lbl, 'update', $uid);
             markPendingSync('ring_groups', 'privacy', 'notice', $lbl, 'update', $uid);
+            markPendingSync('outbound_dialplan', 'privacy', 'notice', $lbl, 'update', $uid);
         }
         if (function_exists('writeAuditLog')) {
             writeAuditLog(
                 'privacy',
                 'notice',
                 'settings',
-                "Pre-call notice: mode={$mode}, sound_id={$soundId}, digit={$digit}, beep={$beepSec}s, pci_pause={$pciPause}",
+                "Pre-call notice: mode={$mode}, sound_id={$soundId}, digit={$digit}, beep={$beepSec}s, pci_pause={$pciPause}, record_outbound=" . ($recordOut ?? 'unchanged'),
                 'update',
                 $uid
             );
@@ -292,7 +297,7 @@ final class PrivacyService
      */
     public static function saveRetention(array $post): array
     {
-        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+        if (!verifyCSRFToken((string)($post['csrf_token'] ?? ''))) {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $enabled = !empty($post['retention_enabled']) ? '1' : '0';
@@ -337,7 +342,7 @@ final class PrivacyService
      */
     public static function saveCompliance(array $post): array
     {
-        if (array_key_exists('csrf_token', $post) && !verifyCSRFToken((string)$post['csrf_token'])) {
+        if (!verifyCSRFToken((string)($post['csrf_token'] ?? ''))) {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
         $blockCloudAi = !empty($post['block_cloud_ai']) ? '1' : '0';

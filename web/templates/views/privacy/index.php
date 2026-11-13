@@ -144,6 +144,14 @@ $activeProfileCode = $profiles[$settings['jurisdiction_profile']]['code'] ?? 'GD
                 </div>
 
                 <div class="form-group u-mb-16">
+                    <input type="hidden" name="record_outbound" value="0">
+                    <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fw-600">
+                        <input type="checkbox" name="record_outbound" value="1"<?php echo !empty($settings['record_outbound']) ? ' checked' : ''; ?>>
+                        <span><?php echo htmlspecialchars(t('privacy.field_record_outbound')); ?></span>
+                    </label>
+                </div>
+
+                <div class="form-group u-mb-16">
                     <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fw-600">
                         <input type="checkbox" name="pci_pause_enabled" value="1"<?php echo !empty($settings['pci_pause_enabled']) ? ' checked' : ''; ?>>
                         <span><?php echo htmlspecialchars(t('privacy.field_pci_pause')); ?></span>

@@ -92,6 +92,10 @@ final class PrivacyDataSubjectHelper
                 } catch (\Throwable $e) {
                 }
             }
+            // The messages still in the spool (never listened to, or no bucket archive).
+            require_once dirname(__DIR__) . '/VoicemailService.php';
+            $cutoff = time() - $vmDays * 86400;
+            $counts['voicemail'] += VoicemailService::purgeSpool(fn(string $box, int $t) => $t > 0 && $t < $cutoff);
             foreach (['voicemail_ai', 'pbx_voicemail_ai', 'ai_requests'] as $aiTable) {
                 try {
                     $stmt = $db->prepare("DELETE FROM {$aiTable} WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
@@ -223,6 +227,23 @@ final class PrivacyDataSubjectHelper
      *
      * @return array<string, mixed>|null
      */
+    /**
+     * How a number is matched. A full number (10+ digits) by its last ten digits
+     * anywhere, so 0532…, +90532… and 90532… are one person. A shorter one only
+     * exactly: as a substring, `212` or an extension matched other people's
+     * calls, and the erasure then deleted their faxes and voicemails.
+     *
+     * @return array{0: string, 1: string, 2: string, 3: list<string>} plain LIKE, caller-ID LIKE, SIP URI LIKE, recording file globs
+     */
+    private static function subjectPatterns(string $digits): array
+    {
+        if (strlen($digits) >= 10) {
+            $tail = substr($digits, -10);
+            return ['%' . $tail . '%', '%' . $tail . '%', '%' . $tail . '%', ['*' . $tail . '*']];
+        }
+        return [$digits, '%<' . $digits . '>%', '%:' . $digits . '@%', ['*_' . $digits . '_*', '*_to_' . $digits]];
+    }
+
     public static function lookupSubject(string $rawNumber): ?array
     {
         $clean = preg_replace('/[^0-9+]/', '', trim($rawNumber)) ?? '';
@@ -232,7 +253,7 @@ final class PrivacyDataSubjectHelper
         }
 
         $db = getDB();
-        $like = '%' . $digitsOnly . '%';
+        [$like, $cidLike, $uriLike, $globs] = self::subjectPatterns($digitsOnly);
 
         $cdrs = [];
         $recordingFiles = [];
@@ -279,7 +300,10 @@ final class PrivacyDataSubjectHelper
         }
 
         // Also scan monitor filename matches
-        $globbed = glob('/var/spool/asterisk/monitor/*' . $digitsOnly . '*.{wav,mp3,ogg}', GLOB_BRACE) ?: [];
+        $globbed = [];
+        foreach ($globs as $g) {
+            $globbed = array_merge($globbed, glob('/var/spool/asterisk/monitor/' . $g . '.{wav,mp3,ogg}', GLOB_BRACE) ?: []);
+        }
         foreach ($globbed as $gf) {
             if (is_file($gf)) {
                 $recordingFiles[$gf] = $gf;
@@ -296,7 +320,7 @@ final class PrivacyDataSubjectHelper
                  WHERE va.mailbox = ? OR va.callerid LIKE ?
                  ORDER BY va.origtime DESC LIMIT 100"
             );
-            $stmt->execute([$digitsOnly, $like]);
+            $stmt->execute([$digitsOnly, $cidLike]);
             $voicemails = $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
         }
@@ -308,7 +332,7 @@ final class PrivacyDataSubjectHelper
                      WHERE mailboxuser = ? OR callerid LIKE ?
                      ORDER BY origtime DESC LIMIT 100"
                 );
-                $stmt->execute([$digitsOnly, $like]);
+                $stmt->execute([$digitsOnly, $cidLike]);
                 $voicemails = $stmt->fetchAll(PDO::FETCH_ASSOC);
             } catch (\Throwable $e) {
             }
@@ -358,7 +382,7 @@ final class PrivacyDataSubjectHelper
             $stmt = $db->prepare(
                 "SELECT COUNT(*) FROM pbx_signaling_events WHERE from_uri LIKE ? OR to_uri LIKE ?"
             );
-            $stmt->execute([$like, $like]);
+            $stmt->execute([$uriLike, $uriLike]);
             $signalingCount = (int)$stmt->fetchColumn();
         } catch (\Throwable $e) {
         }
@@ -396,7 +420,7 @@ final class PrivacyDataSubjectHelper
         $db = getDB();
         $clean = $info['query'];
         $digits = $info['digits'];
-        $like = '%' . $digits . '%';
+        [$like, $cidLike, $uriLike] = self::subjectPatterns($digits);
 
         $deletedRecs = 0;
         foreach ($info['recording_files'] as $file) {
@@ -455,23 +479,27 @@ final class PrivacyDataSubjectHelper
         }
         try {
             $stmtArchive = $db->prepare("SELECT object_key FROM voicemail_archive WHERE (mailbox = ? OR callerid LIKE ?) AND object_key IS NOT NULL AND object_key != ''");
-            $stmtArchive->execute([$digits, $like]);
+            $stmtArchive->execute([$digits, $cidLike]);
             foreach ($stmtArchive->fetchAll(PDO::FETCH_COLUMN) as $objKey) {
                 if (!empty($objKey)) {
                     BucketFiles::delete($objKey);
                 }
             }
             $stmt = $db->prepare("DELETE FROM voicemail_archive WHERE mailbox = ? OR callerid LIKE ?");
-            $stmt->execute([$digits, $like]);
+            $stmt->execute([$digits, $cidLike]);
             $delVm += $stmt->rowCount();
         } catch (\Throwable $e) {
         }
         try {
             $stmt = $db->prepare("DELETE FROM pbx_voicemail_archive WHERE mailboxuser = ? OR callerid LIKE ?");
-            $stmt->execute([$digits, $like]);
+            $stmt->execute([$digits, $cidLike]);
             $delVm += $stmt->rowCount();
         } catch (\Throwable $e) {
         }
+        // The same messages in the spool: the person's own mailbox and what they left.
+        require_once dirname(__DIR__) . '/VoicemailService.php';
+        $cidRe = '/^' . str_replace('%', '.*', preg_quote($cidLike, '/')) . '$/';
+        $delVm += VoicemailService::purgeSpool(fn(string $box, int $t, string $cid) => $box === $digits || preg_match($cidRe, $cid) === 1);
         try {
             $stmt = $db->prepare("DELETE FROM ai_requests WHERE caller = ? OR caller LIKE ?");
             $stmt->execute([$clean, $like]);
@@ -509,7 +537,7 @@ final class PrivacyDataSubjectHelper
         $delSig = 0;
         try {
             $stmt = $db->prepare("DELETE FROM pbx_signaling_events WHERE from_uri LIKE ? OR to_uri LIKE ?");
-            $stmt->execute([$like, $like]);
+            $stmt->execute([$uriLike, $uriLike]);
             $delSig = $stmt->rowCount();
         } catch (\Throwable $e) {
         }

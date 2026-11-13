@@ -435,7 +435,12 @@ class MailTemplateService
             $addr = getSystemSetting('mail_from_address', getSystemSetting('portal_email_from_address', 'no-reply@example.com'));
             $name = getSystemSetting('mail_from_name', getSystemSetting('portal_email_from_name', 'AiPBX'));
         }
-        return [$clean($addr), $clean($name)];
+        // An address saved before it was checked never reaches sendmail's command line.
+        $addr = $clean($addr);
+        if (filter_var($addr, FILTER_VALIDATE_EMAIL) === false) {
+            $addr = 'no-reply@example.com';
+        }
+        return [$addr, $clean($name)];
     }
 
     private static function encodeHeader(string $s): string
