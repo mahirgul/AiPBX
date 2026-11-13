@@ -20,13 +20,15 @@ Content-Type: application/json
 
 | Scope | Description |
 |---|---|
-| `pbx:read` | Read extensions, trunks, DID/outbound routes, IVRs, queues, ring groups, conferences, time conditions, and web widgets |
+| `pbx:read` | Read extensions, trunks, DID/outbound routes, IVRs, ring groups, conferences, time conditions, and web widgets |
 | `pbx:write` | Create, update (`PATCH`/`PUT`), or delete PBX routing and extension resources (queues need `queues:write`) |
-| `calls:read` | Read active channels (`/api/v1/calls/active`) and live queue board (`/api/v1/queues/live`) |
-| `calls:write` | Originate calls (`/api/v1/calls/originate`) and hangup channels (`/api/v1/calls/hangup`) |
-| `cdr:read` | Query Call Detail Records (`/api/v1/cdr`) |
-| `voicemail:read` | List voicemails (`/api/v1/voicemails`) |
-| `users:read` / `users:write` | Manage portal users and inspect RBAC roles |
+| `queues:read` / `queues:write` | Queues, agents and the live queue board (`/api/v1/queues/live`); change queues and live agent state |
+| `calls:read` | Active channels (`/api/v1/calls/active`), Call Detail Records (`/api/v1/cdr`) and voicemails of **any** extension (`/api/v1/voicemails`) |
+| `calls:write` | Originate calls (`/api/v1/calls/originate`) and hang up channels (`/api/v1/calls/hangup`) |
+| `fax:read` / `fax:write` | Fax inbox, sent faxes and fax units; send faxes |
+| `sounds:read` / `sounds:write` | Sounds, announcements and music on hold |
+| `devices:read` / `devices:write` | Desk phones and their keys |
+| `users:read` / `users:write` | Manage portal users and inspect RBAC roles. `users:write` can create administrators and set passwords: give it only where full access is meant |
 | `system:read` / `system:write` | Read health/info/audit log, trigger Asterisk sync (`/api/v1/system/apply-sync`), and manage webhooks/plugins |
 | `*` | Full administrative access to all `/api/v1/*` endpoints |
 
@@ -46,6 +48,10 @@ Every `/api/v1/*` response uses a uniform envelope:
   }
 }
 ```
+
+**Secrets are never returned:** password hashes, SIP passwords (except where an endpoint exists to
+hand them out), PINs (voicemail, conference user and admin), API and provisioning tokens, two-factor
+data, password-reset tokens and phones' admin passwords are left out of every record.
 
 ---
 

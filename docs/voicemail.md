@@ -28,7 +28,8 @@ unreachable, or always — chosen per extension (the Voicemail part of the form 
 
 A PIN typed on the extension form or in *My phone* must follow the rules. A mailbox saved without a
 PIN gets a random one (6 digits or the minimum, whichever is longer); before 1.50.10 an empty PIN
-became the extension number, which anyone could guess. The tab shows how many mailboxes still have
+became the extension number, which anyone could guess. A mailbox still without a PIN (imported, or
+from an old release) gets a random one at the next Apply. The tab shows how many mailboxes still have
 a PIN that breaks the rules. A PIN changed from a phone (\*97) must be at least as long as set here
 (Asterisk's `minpassword`).
 

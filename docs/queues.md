@@ -7,7 +7,8 @@ agents work on **Agent Screen** (`/cc-agent`). Queue configuration is an adminis
 
 1. Add a queue with a unique queue name and a title agents will recognise.
 2. Choose the distribution strategy, ringing timeout, retry delay and wrap-up time.
-3. Choose the music on hold and announcements, maximum waiting time and timeout destination.
+3. Choose the music on hold and announcements, maximum waiting time and timeout destination. The
+   music on hold class must exist (**Sounds → Music on hold**).
 4. Assign extensions on the agents tab. Choose **dynamic** for an agent who joins and leaves,
    or **static** for membership that stays in the queue. Static agents can still pause.
 5. Save and **Apply** the pending changes. Point an [inbound route](inbound-routes.md), IVR option
@@ -15,6 +16,10 @@ agents work on **Agent Screen** (`/cc-agent`). Queue configuration is an adminis
 
 An agent must have an extension. Administrators and queue managers with extensions can be assigned
 as agents too. Their role alone does not assign them to a queue.
+
+A call that enters a queue is answered, so the caller hears the music and the position and hold-time
+announcements; charging for the caller starts then. An agent's own voicemail never takes a queue
+call (the same holds for ring groups): an agent who does not answer is skipped.
 
 Queue membership and phone registration are separate: an assigned or joined agent can have an
 offline phone. Check both the queue status and the extension's registered devices when calls do

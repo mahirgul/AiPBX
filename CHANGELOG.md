@@ -11,6 +11,31 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.76.0
+
+Fixes from a review of the whole code base. **Read before updating:** dial permission rules are enforced for the first time (until now only a group's default action applied), calls are answered when they enter a queue, and invitation or password-reset links sent before the update stop working.
+
+- **Calls and registrations dropped without an answer:** every dialplan reload (each Apply) left one more internal subscription behind in Asterisk, caused by the unused sample `users.conf`. They piled up until Asterisk restarted, and then a phone's REGISTER or INVITE could get no reply at all ("stasis/pool-control ... reached 500 scheduled tasks" in the log). The update moves the unused file aside (`users.conf.aipbx-unused`); a `users.conf` with users of its own is kept.
+- **Dial permission groups:** the rules of a group never matched, and patterns with `+` or `*` broke the check. A dialled number with characters other than digits, `*`, `#` and `+` is refused before the permission check; a call transferred from the Agent Screen now follows the agent's own permission group and outbound routes.
+- **Names in the dialplan:** names and titles (extension, route, queue, IVR, DID, fax header and station ID) are written to the dialplan as letters, digits, space and `. _ + -` only; the blacklist patterns are filtered the same way.
+- **Queues and ring groups:** a caller waiting in a queue hears the music and announcements (the call is answered on entry); a member's own voicemail no longer takes a queue or ring-group call.
+- **Boss–secretary filter** also applies when a DID, IVR key, time condition or announcement leads to the boss's extension.
+- **Trunks:** a registering trunk whose user name differs from its name can register from any address; a `;` in a SIP password or in the outbound proxy (`;lr`, `;transport=tls`) is kept; a new trunk name needs a letter (a number-only name clashed with an extension).
+- **Outbound recording** honours the caller's privacy opt-out and the recording beep setting, and can be switched off: Privacy → **Record outbound calls** (on by default, as before).
+- **Accounts:** a role change takes effect at once in open sessions, the REST API session fallback follows password changes too, reset tokens are stored hashed and no longer returned by the API, the e-mailed mobile sign-in link is not offered to accounts with two-factor or single sign-on only, and the 8-character password rule applies on every path.
+- **REST API v1** no longer returns conference PINs or a phone's (encrypted) admin password.
+- **Extensions without a password** (desk phone without digest auth): their web and mobile accounts could end up with the guessable password `Pass<extension>!` (after the extension's number was changed). They now get a random password, which the web phone and the mobile app also receive.
+- **Mobile app sessions:** turning on two-factor authentication ends the account's other sessions, the app's included; a password handed out by the administrator must be changed on the web before the app signs in with it.
+- **Sender addresses** in the mail and fax settings must be valid e-mail addresses.
+- **Registering trunks with a From domain** register to the trunk's port (a carrier on 5080 was registered to on 5060).
+- **Files and PINs:** generated Asterisk files are written 0640; a new night-protection PIN needs 6 digits; a mailbox without a PIN gets a random one instead of the extension number.
+- **Privacy:** retention and erasure also remove messages from the voicemail spool; a number shorter than 10 digits matches exactly (as a fragment it matched, and erased, other people's records).
+- **Queue log:** the agent's name in the call steps is escaped.
+- **Web server:** the server-side folders (`templates`, `config`, `lang`, `docs`, `etc`) and `.md` files are no longer served.
+- **Backups:** every update starts with a full backup that is listed on the Backup page (`…-before-update`) and can be restored from there; if it fails, the update does not start. An uploaded dump with triggers, routines or events can be restored; `aipbx-update` prunes only its own backup folders. (The update to this release still runs with the previous updater; the backup is taken from the next update on.)
+- A second queue with an existing name gets a clear message instead of a database error.
+- **Sound and music-on-hold uploads** ([#164](https://github.com/mahirgul/AiPBX/issues/164)): PHP's upload limit was 2 MB, so a few minutes of music (or a larger plugin package) was refused and the page showed nothing. Uploads may now be up to 64 MB, and a refused file says why. Uploaded WAV, MP3 and other formats are converted for Asterisk as before.
+
 ## 1.75.0
 
 - **Callback confirmation:** choose a separate confirmation announcement per queue. It plays after a callback request is saved, then the call ends; failed requests never play the success announcement.

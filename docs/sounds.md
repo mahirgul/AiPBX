@@ -15,8 +15,10 @@ and `/usr/share/asterisk/sounds/tr` to `/var/lib/asterisk/sounds/tr`. Without th
 announcements and Turkish prompts fail with *"File … does not exist in any format"* and the call is hung
 up. The links live outside dpkg-owned files, so package upgrades keep them.
 
-Sounds should be 8 kHz mono WAV (16-bit PCM). Uploaded files with the same name as a shipped file are
-never overwritten by updates.
+Asterisk plays 8 kHz mono WAV (16-bit PCM). Uploads (announcements, IVR prompts, music on hold) may be
+WAV, MP3 or another common format and are converted to that on upload. A file may be up to 64 MB; a
+refused upload says why (too large, or the upload broke off). Uploaded files with the same name as a
+shipped file are never overwritten by updates.
 
 ## Queue callback announcements
 

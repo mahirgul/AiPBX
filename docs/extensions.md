@@ -26,10 +26,10 @@ The editor has five tabs: **Basic Settings**, **Call Routing & Forwarding**, **G
 |-------|---------|
 | Full name, Extension no | Required. The name is shown to the people this extension calls. |
 | SIP password | For desk phones, softphones, the web phone and the apps. Separate from the portal password. |
-| SIP authentication | *Enabled* (default) asks every phone for the password. *Disabled* lets a device in by its From header alone: only for devices on a trusted network that cannot authenticate. |
+| SIP authentication | *Enabled* (default) asks every phone for the password. *Disabled* lets a device in by its From header alone: only for devices on a trusted network that cannot authenticate. The web phone and the mobile app always use a password: left empty, a random one is set and handed to them. |
 | Internal / External Call CID | The number sent on internal and outbound calls. Which one an outbound route uses is set on the route; a fixed caller ID on the route comes first. |
 | Calling permission group, Outbound route group | Which numbers the extension may dial and which outbound routes it uses ([Outbound routes](outbound-routes.md)). |
-| Boss - Secretary group | Puts the extension into a boss/secretary pair. |
+| Boss - Secretary group | Puts the extension into a boss/secretary pair. The secretary filter applies to internal calls and to every call that reaches the boss from outside: an inbound route, an IVR key, a time condition or an announcement. |
 | Voicemail | Box on or off, PIN (empty: the extension number), e-mail with or without the recording, and when calls go there: no answer, unreachable or always ([Voicemail](voicemail.md)). |
 | Send the caller in a header | Sends the caller in P-Asserted-Identity. On by default; some desk phones (NEC DT700/DT800) show "asterisk" as the caller without it. A caller who hides their number stays hidden. Turn it off only for a phone that has trouble with it. |
 | Active | Off: the extension cannot register or call, and the user cannot sign in. |

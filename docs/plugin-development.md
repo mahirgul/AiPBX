@@ -69,7 +69,7 @@ statements; it is not a general plugin migration engine.
         "tr": "Çağrı olaylarını CRM sistemine iletir ve son çağrıları gösterir.",
         "en": "Push call events to CRM and display recent synced calls."
     },
-    "scopes": ["calls:read", "cdr:read"],
+    "scopes": ["calls:read"],
     "hooks": {
         "events": ["call.started", "call.ended", "voicemail.created"],
         "sync_domain": "general_dialplan",

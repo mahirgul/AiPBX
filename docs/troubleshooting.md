@@ -128,6 +128,16 @@ The `INVITE` line shows the number a trunk sends, `From` the caller ID, and a `4
 `Reason` header why the other side rejected a call (e.g. *403 No Rates Found* = the carrier has no route
 for that number). Open the file in Wireshark for RTP/audio analysis.
 
+## Phones or calls get no answer now and then
+
+If `messages.log` shows `The 'stasis/pool-control' task processor queue reached 500 scheduled tasks`,
+Asterisk was overloaded at that moment and dropped the SIP requests that came in (no reply at all).
+On releases before 1.76.0 the cause is the unused sample `/etc/asterisk/users.conf`: every *Apply*
+left one more internal subscription behind until Asterisk restarted. Updating moves the file aside
+(`users.conf.aipbx-unused`); on an older release, move it yourself and restart Asterisk when no call
+is up. `asterisk -rx "core show taskprocessors" | grep -c manager:core` should then stay small after
+several Applies.
+
 ## Phones stop registering after a wrong password
 
 fail2ban bans the address after repeated failures. Check `fail2ban-client status asterisk`, unban with

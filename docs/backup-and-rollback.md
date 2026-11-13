@@ -83,8 +83,11 @@ At a terminal `aipbx-update` asks; with `--yes` and neither option it stops inst
 
 **The steps:**
 
-1. **Backup**: the database, `/etc/ai-pbx.env` and `/etc/asterisk` into `/var/backups/aipbx/`
-   (the last few are kept). If the database backup fails, nothing is changed.
+1. **Backup**: first a full backup with the daily backup tool, named `aipbx-YYYYmmdd-HHMM-before-update`.
+   It is listed on the Backup & Restore page and can be restored from there like any other (it is
+   kept as long as the daily backups). Then the database, `/etc/ai-pbx.env` and `/etc/asterisk` into
+   `/var/backups/aipbx/` for the automatic rollback (the last few are kept). If either backup fails,
+   nothing is changed. (The full backup is taken by updates from 1.76.0 on.)
 2. **Check out** the release tag and run `install.sh --upgrade` (migrations, permissions, services;
    secrets are never made again).
 3. **Check**: `mariadb`, `apache2`, `nginx`, `asterisk` and `aipbx-webhook-worker` must be running

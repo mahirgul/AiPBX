@@ -8,7 +8,12 @@
   becomes the username. A phone without a portal user is a [device-only extension](extensions.md#the-form).
 - **The password:** leave it empty. With an e-mail address the user gets an invitation and sets their
   own; without one a password is generated and shown to you once, and the user must change it at the
-  first sign-in. **Send Login Email to Selected** sends the invitation again to several users.
+  first sign-in (on the web: the mobile app refuses such a password until it is changed). **Send Login
+  Email to Selected** sends the invitation again to several users. The invitation's mobile sign-in link
+  is left out for accounts with two-factor authentication or with single sign-on only; they sign in on
+  the web and scan the QR code under *My phone*.
+- **Passwords** need at least 8 characters, whoever sets them (the user, an administrator, the REST
+  API, a CSV import).
 - **Bulk import (CSV):** the preview shows which rows are ready and which have errors before anything
   is added; generated passwords can be downloaded as a CSV.
 - **Call Pickup Group:** users in the same group pick up each other's ringing phone with `*20`.

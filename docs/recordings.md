@@ -6,7 +6,7 @@ Recordings are written by Asterisk (MixMonitor) to `/var/spool/asterisk/monitor/
 
 | Prefix | Recorded when |
 |--------|---------------|
-| `outbound_…` | always, for every call that leaves through a trunk (a fax excepted); there is no switch |
+| `outbound_…` | every call that leaves through a trunk (a fax excepted) while **Privacy → Record outbound calls** is on (the default); not when the caller opted out of recording (an inbound call forwarded out keeps that choice). The recording beep applies as for inbound calls |
 | `inbound_…` | the inbound route has *record call* enabled |
 | `rg_…` | a ring group records |
 | queue recordings | the queue records |

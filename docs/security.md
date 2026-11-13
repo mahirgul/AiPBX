@@ -79,11 +79,16 @@ Three brakes, all off until switched on:
 - **Night dialling protection** (*Dial permissions* page): outside the night hours set there (and all
   weekend if wanted), calls to protected prefixes (default `00` international and `0900` premium) are
   blocked ("Your call cannot be completed as dialled", without answering the call) or need a night PIN
-  (three tries). It runs before the permission groups, so it also covers trunk-to-trunk transit;
+  (three tries; a new PIN needs at least 6 digits). It runs before the permission groups, so it also covers trunk-to-trunk transit;
   portal faxes are exempt. Blocked calls carry `NIGHT_GUARD` in the CDR user field.
 - **Trunk limits** (*Trunks → Routing*): concurrent channels and calls per minute, with the health
   alarm *Trunk limits* (see [Trunks](trunks.md#limits)).
-- **Dial permission groups**: which numbers a group of users may dial at all.
+- **Dial permission groups**: which numbers a group of users may dial at all. The rules run in priority
+  order and the first match wins; the group's default action covers every other number. A dialled
+  number with any character other than digits, `*`, `#` and `+` is refused before the check. A call
+  transferred from the Agent Screen follows the agent's group and outbound routes.
+  **Before 1.76.0 the rules of a group never matched** and only its default action applied: after
+  updating, check each group's rules, because they now take effect.
 
 One brake is on from the start: a user can send 30 faxes an hour (*System → Fax Mail*; 0 turns it off,
 administrators are not limited). Deleting faxes does not free the limit, so a stolen account cannot
@@ -152,8 +157,15 @@ External database queries in IVR data steps and plugins run in strictly enforced
 ## Other measures
 
 TOTP two-factor authentication, passkeys, account/IP lockout with CAPTCHA, CSRF tokens on every form
-and API call, sessions revoked on password change, least-privilege database users (runtime vs.
+and API call, sessions revoked on password change and when two-factor authentication is turned on (the
+mobile app's too), a role change effective at once in open sessions, password reset and invitation
+links stored only as a hash, one password rule (8 characters) on every path, least-privilege database users (runtime vs.
 migrations), runtime credentials in `/etc/ai-pbx.env` (`640 root:asterisk`), migration credentials
 in the root-only migrator file, and Asterisk HTTP/AMI on loopback. Plugin/provider secrets stored
 encrypted in the database depend on `/var/lib/aipbx/settings.key` (`0600 www-data:www-data`);
 include that key in protected backups.
+
+Generated Asterisk files in `/etc/asterisk/pbx` (they hold voicemail PINs, the night PIN and SIP
+passwords) are `0640`, group `asterisk`. The web server serves none of the server-side folders
+(`src`, `vendor`, `db`, `bin`, `tests`, `templates`, `config`, `lang`, `docs`, `etc`) and no `.md` file.
+Names and titles written into the dialplan keep only letters, digits, space and `. _ + -`.

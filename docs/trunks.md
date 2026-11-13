@@ -18,6 +18,15 @@ managed on **Trunks**; the edit dialog is split into tabs.
 Calls from a trunk are recognised by source IP (the trunk address plus *matched hosts*). Two trunks
 must not share an address: a call would match both. Change the IP when you copy a trunk.
 
+In **registration mode** (the far PBX registers to AiPBX) the trunk is also recognised by the user
+name it authenticates with, so the far end may register from any address, also when that user name
+differs from the trunk's system name.
+
+The free-text SIP fields are checked on save: *From user* (no spaces), *From domain* and the entries
+of *matched hosts* (an IP, a CIDR range or a host name), and the *outbound proxy* (`sip:` is added when
+it is missing; parameters such as `;lr` or `;transport=tls` are typed plain and reach Asterisk as they are). A wrong value used to pass the Apply and remove the trunk at the next Asterisk restart.
+With a *From domain* set, registration goes to that domain on the trunk's port.
+
 ## Media and signaling
 
 Configured per trunk under **Media & Fax** and **Network & NAT**:
@@ -123,6 +132,7 @@ according to the secondary trunk's own format rules.
 
 ## Renaming, copying, ordering
 
+- The **system name** needs at least one letter: a number-only name would clash with an extension.
 - The **system name** can be changed after creation. The old PJSIP objects are removed, outbound routes
   that use the trunk are updated, and the dialplan is marked for *Apply*. Old CDRs keep the old name.
 - **Copy** creates a new trunk with the same settings (see [Portal basics](portal.md#copying-records)).

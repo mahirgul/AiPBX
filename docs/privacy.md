@@ -27,7 +27,8 @@ When enabled on inbound DID routes (`[sub-privacy-consent]` in `extensions_inbou
 - **Disclosure Announcement Only (`notice`):** Plays the selected announcement sound before routing the call.
 - **Opt-Out Key (`optout`):** Plays the announcement and listens for the opt-out digit (default `9`). If pressed, Asterisk sets `__PRIVACY_NO_RECORD=1` across all child channels, skips `MixMonitor` in the DID route, Queue, and Ring Group, and tags `CDR(accountcode)=PRIVACY_OPTOUT`.
 - **Explicit Consent Opt-In (`optin`):** Sets `__PRIVACY_NO_RECORD=1` by default and only enables recording (`__PRIVACY_NO_RECORD=0`) if the caller presses the consent key (default `1`).
-- **FCC Periodic Recording Beep (`recording_beep_sec`):** Passes `,B(15)` (or `,B(30)`) to `MixMonitor` so a subtle periodic beep is played every N seconds while a call is being recorded.
+- **FCC Periodic Recording Beep (`recording_beep_sec`):** Passes `,B(15)` (or `,B(30)`) to `MixMonitor` so a subtle periodic beep is played every N seconds while a call is being recorded. It applies to every recording: inbound routes, queues, ring groups and outbound calls.
+- **Record outbound calls:** on by default. Switched off, calls that leave through a trunk are not recorded at all. An inbound call that is forwarded out keeps the caller's opt-out (`PRIVACY_NO_RECORD`), so it is not recorded either.
 
 ---
 
@@ -36,7 +37,7 @@ When enabled on inbound DID routes (`[sub-privacy-consent]` in `extensions_inbou
 When **Enable automated nightly data retention purge** is checked, `/etc/cron.d/aipbx` runs `php /usr/local/bin/privacy_purge.php` every night at 03:45 (or on demand via **Run Purge Policy Now**):
 
 - Deletes call recording audio files (`/var/spool/asterisk/monitor/*`) older than N days
-- Deletes voicemail archives and AI transcripts older than N days
+- Deletes voicemail archives and AI transcripts older than N days, and the voicemail messages themselves (`INBOX`, `Old`, `Urgent` of every mailbox), whether they were listened to or not
 - Deletes fax logs and spool files older than N days
 - Deletes chat messages older than N days
 - Anonymizes expired CDR rows across both `asteriskcdr` (Asterisk ODBC runtime) and `cdrs` (`src = 'REDACTED'`, `dst = 'REDACTED'`, `clid = 'REDACTED'`) so call volume statistics remain intact without retaining personal phone numbers (or deletes expired CDR rows if configured)
@@ -45,7 +46,10 @@ When **Enable automated nightly data retention purge** is checked, `/etc/cron.d/
 
 ## 4. Subject Access Request (SAR) & Right to Erasure
 
-Searching a phone number or extension lists all matching CDRs (across `asteriskcdr` and `cdrs`), audio recordings, voicemails, faxes, and SIP signaling rows:
+Searching a phone number or extension lists all matching CDRs (across `asteriskcdr` and `cdrs`), audio recordings, voicemails, faxes, and SIP signaling rows.
+
+**How a number matches.** A full number (10 digits or more) matches by its last ten digits, so `0532…`, `+90532…` and `90532…` are one person. A shorter number (an extension, a short code) matches only exactly. Before 1.76.0 it matched as a fragment anywhere, and an erasure for `212` removed other people's records too. The erasure also removes the person's voicemail messages from the spool (their own mailbox and the messages they left).
+
 
 - **Export SAR Data Package (JSON):** Downloads a structured JSON archive for KVKK Art. 11 / GDPR Art. 15 & 20 requests and logs `PRIVACY_SAR_EXPORT` in the Audit Log.
 - **Execute Right to Erasure:** Permanently deletes matching audio recordings, voicemails, faxes, and signaling events, anonymizes matching CDR entries as `REDACTED`, and records an immutable `PRIVACY_ERASURE` certificate in the Audit Log.

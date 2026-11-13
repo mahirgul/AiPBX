@@ -69,6 +69,12 @@ client-facing scheme. The HTTP listener accepts one `https` value; a comma-separ
 chain such as `https, http` is redirected. ACME, phone provisioning and local
 Asterisk HTTP callbacks keep their existing exceptions.
 
+A proxy **on the same machine** must always send `X-Forwarded-For` (all examples
+below do). A few endpoints are meant for Asterisk on this server only (IVR data
+lookups, the meeting join check, voicemail text): they accept a request from
+127.0.0.1 that carries no forwarded header. A local proxy that leaves the header
+out would let anyone on the internet call them as if they were Asterisk.
+
 ---
 
 ## 3. WebRTC WebSocket (`/ws`) Requirements

@@ -19,7 +19,7 @@ Saving stores the settings and updates postfix through `aipbx-priv` (`relayhost`
 Verify on the **Test** tab of the same page (*Send Test E-Mail*).
 
 Sender addresses: the portal sender (invitations, password e-mails) and the fax sender are set on the
-same page.
+same page. Each must be a valid e-mail address.
 
 ## Templates
 
