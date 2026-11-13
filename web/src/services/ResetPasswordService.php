@@ -20,7 +20,7 @@ class ResetPasswordService {
         if (!$user) {
             return ['success' => false, 'error' => t('srv_resetpw.err_link')];
         }
-        if (mb_strlen($new_password) < 8) {
+        if (passwordTooShort($new_password)) {
             return ['success' => false, 'error' => t('srv_resetpw.err_length')];
         }
         if (strcasecmp($new_password, $user['username']) === 0) {

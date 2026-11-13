@@ -160,7 +160,7 @@ class UserImportService
             if (!in_array($row['role'], $validRoles, true)) {
                 $errors[] = sprintf(t('srv_import.e_role'), $row['role']);
             }
-            if ($row['password'] !== '' && mb_strlen($row['password']) < 8) {
+            if ($row['password'] !== '' && passwordTooShort($row['password'])) {
                 $errors[] = t('srv_import.e_password');
             }
 

@@ -440,7 +440,7 @@ class QueueLogRepository extends BaseRepository
         $d4 = htmlspecialchars($ev['data4'] ?? '');
 
         $agentDisplay = !empty($agentExt) 
-            ? (!empty($agentName) ? "{$agentExt} ({$agentName})" : $agentExt) 
+            ? htmlspecialchars(!empty($agentName) ? "{$agentExt} ({$agentName})" : $agentExt)
             : (($ev['agent'] ?? '') !== 'NONE' ? htmlspecialchars($ev['agent'] ?? '') : '');
 
         switch ($event) {

@@ -506,7 +506,7 @@ final class ApiV1PbxHandlers
     {
         if ($method === 'GET' && $idStr === null && $subAction === null) {
             ApiRequestContext::requireScope('pbx:read');
-            ApiResponse::success(ConferenceService::getConferences());
+            ApiResponse::success(ResourceNormalizer::sanitizeList(ConferenceService::getConferences()));
         }
         if ($method === 'GET' && $idStr !== null && $subAction === 'members') {
             ApiRequestContext::requireScope('pbx:read');
@@ -522,7 +522,7 @@ final class ApiV1PbxHandlers
             if (!$row) {
                 ApiResponse::error('NOT_FOUND', 'Conference room not found.', 404);
             }
-            ApiResponse::success($row);
+            ApiResponse::success(ResourceNormalizer::sanitizeRow($row));
         }
         if ($method === 'POST' && $idStr === null) {
             ApiRequestContext::requireScope('pbx:write');

@@ -233,8 +233,13 @@ class TwoFactorService
         $hashedCodes = self::hashRecoveryCodes($plainCodes);
 
         $db = getDB();
-        $stmt = $db->prepare('UPDATE sys_users SET two_factor_enabled = 1, two_factor_secret = ?, two_factor_recovery_codes = ?, two_factor_confirmed_at = NOW() WHERE id = ?');
+        // token_epoch + 1: sessions opened before 2FA (the mobile app's too) end;
+        // this browser stays signed in (refreshOwnSessionEpoch).
+        $stmt = $db->prepare('UPDATE sys_users SET two_factor_enabled = 1, two_factor_secret = ?, two_factor_recovery_codes = ?, two_factor_confirmed_at = NOW(), token_epoch = token_epoch + 1 WHERE id = ?');
         $stmt->execute([$secret, $hashedCodes, $userId]);
+        if (function_exists('refreshOwnSessionEpoch')) {
+            refreshOwnSessionEpoch($userId);
+        }
 
         if (function_exists('writeAuditLog')) {
             $uStmt = $db->prepare('SELECT username FROM sys_users WHERE id = ?');

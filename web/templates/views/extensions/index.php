@@ -77,7 +77,7 @@
                             <td class="col-hide-mobile">
                                 <?php if ($e['extension_type'] === 'fax'): ?>
                                     <span class="text-muted u-fs-12"><?php echo t('extensions.no_sip_registration'); ?></span>
-                                <?php elseif (isset($e['sip_auth_digest']) && (int)$e['sip_auth_digest'] === 0 && empty($e['sip_password'])): ?>
+                                <?php elseif (isset($e['sip_auth_digest']) && (int)$e['sip_auth_digest'] === 0): ?>
                                     <span class="text-muted u-fs-12 u-font-style-italic"><i class="fas fa-unlock"></i> <?php echo t('extensions.no_auth_required'); ?></span>
                                 <?php else: ?>
                                     <div class="u-d-inline-flex u-ai-center u-gap-6">

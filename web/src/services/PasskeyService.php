@@ -7,6 +7,7 @@
 if (is_file(dirname(__DIR__, 2) . '/vendor/autoload.php')) {
     require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
 }
+require_once dirname(__DIR__) . '/secret_box.php';
 
 use lbuchs\WebAuthn\WebAuthn;
 use lbuchs\WebAuthn\WebAuthnException;
@@ -184,7 +185,7 @@ class PasskeyService
             // A name without passkeys gets a made-up credential, the same every time:
             // an empty list would tell anyone which user names have passkeys.
             if ($allowedCredentials === []) {
-                $allowedCredentials[] = hash_hmac('sha256', 'passkey-decoy:' . strtolower($username), (string) portalEnv('DB_PASS', ''), true);
+                $allowedCredentials[] = hash_hmac('sha256', 'passkey-decoy:' . strtolower($username), SecretBox::derivedKey('passkey-decoy'), true);
             }
         }
 

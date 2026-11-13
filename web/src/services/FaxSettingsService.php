@@ -220,7 +220,7 @@ class FaxSettingsService {
                 return self::saveUnit($looseMapping, $name, $numbers, $email, empty($data['is_active']) ? 0 : 1, $linked, $linkedMail);
             }
             $password = (string) ($data['password'] ?? '');
-            if ($password !== '' && strlen($password) < 8) {
+            if ($password !== '' && passwordTooShort($password)) {
                 throw new \Exception(t('fax_settings.err_password'));
             }
             $username = trim((string) ($data['username'] ?? ''));

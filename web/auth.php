@@ -36,19 +36,23 @@ function requireLogin() {
  * thief's browser signed in. A session is stamped on its first request, so a
  * session from before this check is not thrown out, and the stamp names the user
  * because signing in as someone else keeps the same session data. A disabled or
- * removed account loses its session here too.
+ * removed account loses its session here too. The role is read again on every
+ * request: an admin turned into a user kept admin rights until signing out.
  */
 function _isSessionEpochCurrent(): bool {
     $userId = (int) ($_SESSION['user_id'] ?? 0);
     if ($userId <= 0) {
         return false;
     }
-    $stmt = getDB()->prepare('SELECT token_epoch, is_active, is_device FROM sys_users WHERE id = ?');
+    $stmt = getDB()->prepare('SELECT token_epoch, is_active, is_device, role FROM sys_users WHERE id = ?');
     $stmt->execute([$userId]);
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
     // A device-only extension is no account, however the session came to be.
     if (!$row || empty($row['is_active']) || !empty($row['is_device'])) {
         return false;
+    }
+    if (!(PHP_SAPI === 'cli' && defined('AIPBX_SMOKE_FORGED_ROLE'))) {
+        $_SESSION['user_role'] = (string) $row['role'];
     }
     $stamp = $userId . ':' . (int) $row['token_epoch'];
     $held = $_SESSION['session_epoch'] ?? null;

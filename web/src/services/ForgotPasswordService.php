@@ -53,7 +53,7 @@ class ForgotPasswordService
 
         $token = bin2hex(random_bytes(32));
         $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ? WHERE id = ?')
-            ->execute([$token, date('Y-m-d H:i:s', time() + self::TOKEN_MINUTES * 60), $user['id']]);
+            ->execute([hash('sha256', $token), date('Y-m-d H:i:s', time() + self::TOKEN_MINUTES * 60), $user['id']]);
 
         $url = self::portalUrl() . '/reset-password?token=' . $token;
         $lang = MailTemplateService::languageFor(null, (int) $user['id']);

@@ -105,7 +105,7 @@ class SecurityController extends BaseController
                             exit;
                         }
                         $error = t('security.wrong_current_password');
-                    } elseif (mb_strlen($newPass) < 8) {
+                    } elseif (passwordTooShort($newPass)) {
                         $error = t('security.password_min_length');
                     } elseif ($newPass !== $confPass) {
                         $error = t('security.password_mismatch');

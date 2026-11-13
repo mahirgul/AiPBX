@@ -32,7 +32,7 @@ class ForceResetService {
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', time() + 1800); // 30 minutes
         $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ? WHERE id = ?');
-        $upd->execute([$token, $expires, $user_id]);
+        $upd->execute([hash('sha256', $token), $expires, $user_id]);
 
         require_once __DIR__ . '/ForgotPasswordService.php';
         $resetUrl = rtrim(ForgotPasswordService::portalUrl(), '/') . '/reset-password?token=' . $token;

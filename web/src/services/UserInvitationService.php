@@ -21,7 +21,7 @@ class UserInvitationService
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT id, username, full_name, email, extension, is_active FROM sys_users WHERE id = ?');
+        $stmt = $db->prepare('SELECT id, username, full_name, email, extension, is_active, role, two_factor_enabled FROM sys_users WHERE id = ?');
         $stmt->execute([$userId]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -53,7 +53,7 @@ class UserInvitationService
         // once the mail went out — set before, a failed send left the user
         // forced into a reset whose link never arrived.
         $upd = $db->prepare('UPDATE sys_users SET reset_token = ?, reset_token_expires = ? WHERE id = ?');
-        $upd->execute([$token, $expires, $userId]);
+        $upd->execute([hash('sha256', $token), $expires, $userId]);
 
         // Build the link URL
         require_once __DIR__ . '/ForgotPasswordService.php';
@@ -63,8 +63,8 @@ class UserInvitationService
         // On a phone it opens the app and signs in; on a computer it shows a QR.
         // A user without an extension gets no mobile sign-in (it needs a SIP account).
         $mobileUrl = '';
-        if (!empty($user['extension'])) {
-            require_once __DIR__ . '/QrLoginService.php';
+        require_once __DIR__ . '/QrLoginService.php';
+        if (!empty($user['extension']) && QrLoginService::emailLinkAllowed($user)) {
             $mobileRes = QrLoginService::createEmailLink($userId);
             $mobileUrl = $mobileRes['url'] ?? '';
         }

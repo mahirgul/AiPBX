@@ -30,6 +30,10 @@ class UserService {
             $username = trim($data['username'] ?? '');
             $password = trim($data['password'] ?? '');
             $sip_password = trim($data['sip_password'] ?? '');
+            // The admin and API path too: only the self-service paths had the rule.
+            if ($password !== '' && passwordTooShort($password)) {
+                throw new \Exception(t('security.password_min_length'));
+            }
             $full_name = trim($data['full_name'] ?? '');
             $email = trim($data['email'] ?? '');
             $role = trim($data['role'] ?? 'user');
@@ -329,7 +333,7 @@ class UserService {
                 throw new \Exception(t('srv_user.err_no_password'));
             }
 
-            if (!empty($new_password) && mb_strlen($new_password) < 8) {
+            if (!empty($new_password) && passwordTooShort($new_password)) {
                 throw new \Exception(t('security.password_min_length'));
             }
 

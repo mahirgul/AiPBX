@@ -23,6 +23,11 @@ final class ResourceNormalizer
         'provision_token',
         'two_factor_secret',
         'two_factor_recovery_codes',
+        'reset_token',
+        'reset_token_expires',
+        'user_pin',
+        'admin_pin',
+        'admin_password',
     ];
 
     private const JSON_COLUMNS = [

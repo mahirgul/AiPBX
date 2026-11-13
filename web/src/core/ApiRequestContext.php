@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/ApiResponse.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
 
 /**
  * Stateless authentication, scope authorization, IP allowlist verification,
@@ -35,8 +36,9 @@ final class ApiRequestContext
             return;
         }
 
-        // Allow logged-in admin session for browser-based GETs or CSRF-verified mutations
-        if (isset($_SESSION['user_id']) && ($_SESSION['user_role'] ?? '') === 'admin' && _isSessionActivityFresh()) {
+        // Allow logged-in admin session for browser-based GETs or CSRF-verified mutations.
+        // The epoch check first, as on every page: it also reloads the role.
+        if (isset($_SESSION['user_id']) && _isSessionActivityFresh() && _isSessionEpochCurrent() && ($_SESSION['user_role'] ?? '') === 'admin') {
             $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
             if (!in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
                 $csrfHeader = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');

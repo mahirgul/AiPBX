@@ -49,6 +49,13 @@ class QrLoginService
         ];
     }
 
+    /** The invitation's mobile link is for accounts a password alone may open. */
+    public static function emailLinkAllowed(array $user): bool
+    {
+        require_once __DIR__ . '/SsoOnlyService.php';
+        return empty($user['two_factor_enabled']) && SsoOnlyService::roleMayUsePassword((string) ($user['role'] ?? ''));
+    }
+
     /**
      * One-time mobile sign-in link valid for 7 days, for the invitation email.
      * The link only opens the /mobile-login page; the code is spent when the
@@ -272,7 +279,7 @@ class QrLoginService
         }
 
         $db = getDB();
-        $stmt = $db->prepare('SELECT q.id AS token_id, q.user_id, q.expires_at, q.used_at,
+        $stmt = $db->prepare('SELECT q.id AS token_id, q.user_id, q.expires_at, q.used_at, q.purpose, u.two_factor_enabled,
                                      u.id, u.username, u.full_name, u.role, u.extension,
                                      u.email, u.extension_type, u.sip_password, u.allowed_phone_mode, u.is_active, u.token_epoch
                               FROM sys_user_qr_tokens q
@@ -300,6 +307,12 @@ class QrLoginService
 
         if (empty($record['extension'])) {
             return ['success' => false, 'error' => t('mobile_api.no_extension_assigned'), 'code' => 400];
+        }
+
+        // The e-mailed link proves only the mailbox: not enough where 2FA or
+        // single sign-on is required (the QR on My Phone comes after them).
+        if (($record['purpose'] ?? '') === 'email' && !self::emailLinkAllowed($record)) {
+            return ['success' => false, 'error' => t('srv_qr.err_email_link_blocked'), 'code' => 403];
         }
 
         // Mark the token as used, atomically: two scans at the same moment

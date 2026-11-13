@@ -20,6 +20,12 @@ final class SecretBox
         self::$key = $key;
     }
 
+    /** A key of its own for one purpose, from the settings key (never the key itself). */
+    public static function derivedKey(string $purpose): string
+    {
+        return hash_hkdf('sha256', self::key(), 32, 'aipbx-' . $purpose);
+    }
+
     private static function key(): string
     {
         if (self::$key !== null) {

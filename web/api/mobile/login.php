@@ -24,7 +24,7 @@ if (checkBruteForceLockout($client_ip, $username)) {
     mobileError(t('mobile_api.too_many_attempts'), 429);
 }
 
-$user = findLoginUser($username, 'id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, allowed_phone_mode, is_active, two_factor_enabled, two_factor_secret');
+$user = findLoginUser($username, 'id, username, password_hash, full_name, email, role, extension, extension_type, sip_password, allowed_phone_mode, is_active, two_factor_enabled, two_factor_secret, must_reset_password');
 
 if (!$user || !verifyLoginPassword($password, (string) $user['password_hash'])) {
     logLoginAttempt($client_ip, $username, 'FAILED');
@@ -38,6 +38,12 @@ if (empty($user['is_active'])) {
 
 if (empty($user['extension'])) {
     mobileError(t('mobile_api.no_extension_assigned'), 400);
+}
+
+// A password the administrator handed out must be changed on the web first:
+// the mobile app has no screen for it, so it stayed in use for good.
+if (!empty($user['must_reset_password'])) {
+    mobileError(t('mobile_api.must_reset_password'), 403);
 }
 
 // On an account with two-step verification the password alone is not enough
