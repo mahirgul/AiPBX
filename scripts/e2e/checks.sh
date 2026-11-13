@@ -50,7 +50,7 @@ check "asterisk user cannot read migrator environment" runuser -u asterisk -- ph
 check "runtime environment does not contain DDL migrator secrets" bash -c \
     '! grep -q "^MIGRATOR_DB_" /etc/ai-pbx.env'
 check "parent /etc/asterisk directory is not group writable" bash -c \
-    '[ "$(stat -c "%a" /etc/asterisk 2>/dev/null)" = "755" ]'
+    'm="$(stat -c "%a" /etc/asterisk 2>/dev/null)"; [ "$m" = "755" ] || [ "$m" = "2755" ]'
 check "cli_permissions.conf is protected 0640" bash -c \
     'test -f /etc/asterisk/cli_permissions.conf && [ "$(stat -c "%u:%a" /etc/asterisk/cli_permissions.conf 2>/dev/null)" = "0:640" ]'
 check "plugin transition can be repeated as the portal user" \

@@ -64,3 +64,14 @@
     AllowOverride None
     Require all denied
 </Directory>
+
+# Server-side only: templates ran as PHP on their own, the docs told outsiders the stack.
+<DirectoryMatch "^/var/www/html/(templates|config|lang|docs|etc)/">
+    Options -Indexes
+    AllowOverride None
+    Require all denied
+</DirectoryMatch>
+
+<FilesMatch "\.md$">
+    Require all denied
+</FilesMatch>

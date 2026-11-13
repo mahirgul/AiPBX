@@ -269,6 +269,17 @@ fi
 status running "Taking a backup"
 
 # ------------------------------------------------------------------ backup
+# First a full backup with the daily backup tool: it is listed on the Backup page
+# (aipbx-YYYYmmdd-HHMM-before-update) and can be restored from there like any
+# other. The copy below is only for this script's own automatic rollback.
+if [[ -x /usr/local/sbin/aipbx-backup ]]; then
+    if ! FULL_BACKUP_LOG="$(/usr/local/sbin/aipbx-backup --label before-update 2>&1)"; then
+        log "ERROR: the full backup failed, nothing was changed: $FULL_BACKUP_LOG"
+        status failed "Full backup failed"
+        exit 1
+    fi
+    log "Full backup: $(printf '%s\n' "$FULL_BACKUP_LOG" | grep -o '/[^ ]*before-update' | tail -n 1)"
+fi
 DB_NAME="$(grep -m1 '^DB_NAME=' /etc/ai-pbx.env 2>/dev/null | cut -d= -f2- | tr -d "\"'" || true)"
 [[ "$DB_NAME" =~ ^[A-Za-z0-9_]+$ ]] || DB_NAME=asterisk
 BACKUP_DIR="$BACKUP_ROOT/$(date +%Y%m%d-%H%M%S)_${CURRENT}"
@@ -292,8 +303,9 @@ if [[ ${#HAND_FILES[@]} -gt 0 ]]; then
     log "Files changed by hand (${#HAND_FILES[@]}) saved in $BACKUP_DIR/hand-changed-files.tgz"
 fi
 log "Backup: $BACKUP_DIR"
-# Prune old backups (the last $KEEP_BACKUPS are kept)
-ls -1dt "$BACKUP_ROOT"/*/ 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -rf
+# Prune old backups (the last $KEEP_BACKUPS are kept). Only this script's own
+# folders (<date>-<time>_<version>): BACKUP_ROOT may be shared with aipbx-backup.
+ls -1dt "$BACKUP_ROOT"/[0-9]*_*/ 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -rf
 
 # ------------------------------------------------------------------ rollback
 rollback() {

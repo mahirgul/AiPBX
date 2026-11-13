@@ -15,9 +15,11 @@ a2enmod mpm_prefork 2>/dev/null || true
 # Ubuntu's apache2.service has MemoryDenyWriteExecute=yes: PHP's PCRE JIT cannot
 # get executable memory, falls back to the interpreter and logged "Allocation of
 # JIT memory failed" for every request. Switch the JIT off for Apache's PHP.
+# PHP's own upload limits (2 MB a file, 8 MB a request) refused a few minutes of
+# music on hold or a plugin package, and the page showed nothing (issue #164).
 for php_conf_d in /etc/php/*/apache2/conf.d; do
     if [[ -d "$php_conf_d" ]]; then
-        printf '; AiPBX (install.sh): apache2.service denies executable memory\npcre.jit=0\n' > "$php_conf_d/99-aipbx.ini"
+        printf '; AiPBX (install.sh): apache2.service denies executable memory\npcre.jit=0\n; sound, MOH and plugin uploads\nupload_max_filesize=64M\npost_max_size=72M\n' > "$php_conf_d/99-aipbx.ini"
     fi
 done
 
@@ -170,6 +172,13 @@ cat > /etc/apache2/conf-available/aipbx-routing.conf << 'ROUTING'
 <Directory "/var/www/html/tests">
     Require all denied
 </Directory>
+# Server-side only: templates ran as PHP on their own, the docs told outsiders the stack.
+<DirectoryMatch "^/var/www/html/(templates|config|lang|docs|etc)/">
+    Require all denied
+</DirectoryMatch>
+<FilesMatch "\.md$">
+    Require all denied
+</FilesMatch>
 ROUTING
 
 # Security headers for every response (clickjacking, MIME sniffing, version

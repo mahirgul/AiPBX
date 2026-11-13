@@ -23,6 +23,17 @@ for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.co
     fi
 done
 
+# users.conf is not used by AiPBX, but pbx_config reads it on every dialplan
+# reload, and with the packaged sample each reload left one more subscription
+# to the manager topic behind (Asterisk 22.5). They pile up until Asterisk
+# restarts; every event then fans out to all of them and the stasis pool
+# overflows ("stasis/pool-control ... reached 500 scheduled tasks"), when
+# Asterisk drops SIP requests without an answer. A file with users of its own
+# (made by hand) is kept.
+if [[ -f /etc/asterisk/users.conf ]] && ! grep -qE '^\s*\[[^]]+\]' <(grep -vE '^\s*\[general\]' /etc/asterisk/users.conf); then
+    mv /etc/asterisk/users.conf /etc/asterisk/users.conf.aipbx-unused
+fi
+
 # Voicemail: Ensure Asterisk app_voicemail doesn't emit "maxsilence should be less than minsecs"
 if [[ -f /etc/asterisk/voicemail.conf ]]; then
     sed -i -E 's/^[; ]*minsecs\s*=.*/minsecs=3/' /etc/asterisk/voicemail.conf

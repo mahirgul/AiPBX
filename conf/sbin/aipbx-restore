@@ -380,8 +380,11 @@ import_uploaded_dump() {  # dump
     fi
     cnf="$(mktemp)"  # mode 600
     printf '[client]\nuser="%s"\npassword="%s"\n' "$user" "$pass" > "$cnf"
-    # A view's DEFINER line goes: the view then belongs to this user. A dump cannot name root.
-    zcat "$1" | sed -E '/^\/\*!50013 DEFINER=.* SQL SECURITY (DEFINER|INVOKER) \*\/$/d' \
+    # Every DEFINER goes (views, triggers, events, routines): the object then belongs
+    # to this user. A dump cannot name root, and the migrator may not set another user.
+    zcat "$1" | sed -E -e '/^\/\*!50013 DEFINER=.* SQL SECURITY (DEFINER|INVOKER) \*\/$/d' \
+            -e 's#/\*!50(017|020|117) DEFINER=[^*]*\*/ ?##g' \
+            -e 's#^CREATE DEFINER=`[^`]*`@`[^`]*` #CREATE #' \
         | mysql --defaults-extra-file="$cnf" --binary-mode --one-database "$DB_NAME" 2>>"$LOG_FILE"
     status=$?
     rm -f "$cnf"
