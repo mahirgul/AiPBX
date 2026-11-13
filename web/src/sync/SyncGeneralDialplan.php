@@ -179,6 +179,8 @@ function __syncGeneralDialplanBody() {
     // The include is searched after the shared context's OWN extensions:
     // a real extension number always wins.
     $conf .= "include => internal-numbers-pbx\n";
+    // Conferences started from a group chat ("cc<room>", SyncConferences).
+    $conf .= "include => chat-calls-pbx\n";
     $conf .= "include => custom-dialplan-pbx\n";
 
     $conf .= "\n; Default (group 1) — internal + outbound routes\n";

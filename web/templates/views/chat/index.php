@@ -140,6 +140,12 @@ $delete_window = (int) ($delete_window ?? 0);
                         <button id="active-target-call-btn" class="btn btn-sm btn-outline-primary u-r-8" title="<?php echo t('chat.call_ext'); ?>" onclick="callTargetExtension()">
                             <i class="fas fa-phone-alt"></i> <span class="d-none d-md-inline u-ml-4"><?php echo t('chat.call'); ?></span>
                         </button>
+                        <button id="active-group-voice-btn" class="btn btn-sm btn-outline-primary u-r-8" title="<?php echo t('chat.group_voice_call'); ?>" style="display: none;" onclick="startChatCall(false)">
+                            <i class="fas fa-phone-alt"></i>
+                        </button>
+                        <button id="active-group-video-btn" class="btn btn-sm btn-outline-primary u-r-8" title="<?php echo t('chat.group_video_call'); ?>" style="display: none;" onclick="startChatCall(true)">
+                            <i class="fas fa-video"></i>
+                        </button>
                         <button id="active-group-info-btn" class="btn btn-sm btn-outline-secondary u-r-8" title="<?php echo t('chat.group_info'); ?>" style="display: none;" onclick="openGroupInfoModal()">
                             <i class="fas fa-info-circle"></i> <span class="d-none d-md-inline u-ml-4"><?php echo t('chat.group'); ?></span>
                         </button>

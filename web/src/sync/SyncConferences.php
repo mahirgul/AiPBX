@@ -119,7 +119,51 @@ function __syncConferencesBody() {
         $conf .= " same => n,Hangup()\n\n";
     }
 
+    $conf .= chatCallsDialplan();
+
     return writeConfWithRollback('extensions_conferences.conf', $conf, function() {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_conferences'));
     }, t('sync.ctx_conferences'));
+}
+
+/**
+ * [chat-calls-pbx]: a conference started from a group chat. The apps call
+ * "cc<room>"; the room is random and every caller is checked: the endpoint
+ * Asterisk authenticated must belong to a member of that chat and the call
+ * must be open (api/chat_call_check.php). No reload per call: one pattern.
+ */
+function chatCallsDialplan(): string
+{
+    $check = 'http://127.0.0.1/api/chat_call_check.php';
+    $c = "[chat-calls-pbx]\n";
+    $c .= "exten => _ccX.,1,NoOp(Chat call room \${EXTEN:2} by \${CHANNEL(endpoint)})\n";
+    $c .= " same => n,Set(CC_ROOM=\${FILTER(0-9,\${EXTEN:2})})\n";
+    // "\-": a bare dash in FILTER() is a range, and the endpoint name lost its dashes.
+    $c .= " same => n,Set(CC_EP=\${FILTER(a-zA-Z0-9_\\-,\${CHANNEL(endpoint)})})\n";
+    $c .= " same => n,GotoIf(\$[\"\${CC_ROOM}\" = \"\" | \"\${CC_EP}\" = \"\"]?deny)\n";
+    // The prefix is required: digits in an HTTP error page must never pass for a limit.
+    $c .= " same => n,Set(CC_CHECK=\${CURL({$check}?event=join&room=\${CC_ROOM}&endpoint=\${CC_EP})})\n";
+    $c .= " same => n,GotoIf(\$[\"\${CC_CHECK:0:5}\" != \"JOIN:\"]?deny)\n";
+    $c .= " same => n,Set(CC_MAX=\${FILTER(0-9,\${CUT(CC_CHECK,:,2)})})\n";
+    $c .= " same => n,Set(CC_VIDEO=\${FILTER(a-z_,\${CUT(CC_CHECK,:,3)})})\n";
+    $c .= " same => n,GotoIf(\$[\"\${CC_MAX}\" = \"\"]?deny)\n";
+    $c .= " same => n,GotoIf(\$[0\${CONFBRIDGE_INFO(parties,chat\${CC_ROOM})} >= \${CC_MAX}]?full)\n";
+    $c .= " same => n,Set(CDR(direction)=internal)\n";
+    $c .= " same => n,Answer()\n";
+    $c .= " same => n,GotoIf(\$[\"\${CC_VIDEO}\" != \"follow_talker\"]?enter)\n";
+    $c .= " same => n,Set(CONFBRIDGE(bridge,video_mode)=follow_talker)\n";
+    $c .= " same => n,Set(CONFBRIDGE(bridge,video_update_discard)=0)\n";
+    $c .= " same => n(enter),Set(CONFBRIDGE(user,music_on_hold_when_empty)=yes)\n";
+    $c .= " same => n,Set(CONFBRIDGE(user,announce_join_leave)=no)\n";
+    $c .= " same => n,Set(CONFBRIDGE(user,quiet)=yes)\n";
+    $c .= " same => n,Set(CHANNEL(hangup_handler_push)=chat-call-left,s,1(\${CC_ROOM}))\n";
+    $c .= " same => n,Set(CC_IN=\${CURL({$check}?event=parties&room=\${CC_ROOM}&parties=\$[0\${CONFBRIDGE_INFO(parties,chat\${CC_ROOM})} + 1])})\n";
+    $c .= " same => n,ConfBridge(chat\${CC_ROOM})\n";
+    $c .= " same => n,Hangup()\n";
+    $c .= " same => n(deny),Hangup(21)\n";
+    $c .= " same => n(full),Hangup(34)\n\n";
+    $c .= "[chat-call-left]\n";
+    $c .= "exten => s,1,Set(CC_LEFT=\${CURL({$check}?event=parties&room=\${FILTER(0-9,\${ARG1})}&parties=0\${CONFBRIDGE_INFO(parties,chat\${FILTER(0-9,\${ARG1})})})})\n";
+    $c .= " same => n,Return()\n\n";
+    return $c;
 }

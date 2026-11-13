@@ -56,6 +56,7 @@ func main() {
 				writeJSONError(w, http.StatusMethodNotAllowed, "Invalid request method.")
 			}
 		}))
+		mux.HandleFunc(prefix+"/api/conversations/call", server.authMiddleware(server.HandleCall))
 		mux.HandleFunc(prefix+"/api/conversations/group/update", server.authMiddleware(server.HandleUpdateGroup))
 		mux.HandleFunc(prefix+"/api/conversations/group/members/add", server.authMiddleware(server.HandleAddGroupMembers))
 		mux.HandleFunc(prefix+"/api/conversations/group/members/remove", server.authMiddleware(server.HandleRemoveGroupMember))
@@ -80,6 +81,7 @@ func main() {
 		})
 		mux.HandleFunc(prefix+"/api/internal/presence", server.HandleInternalPresence)
 		mux.HandleFunc(prefix+"/api/internal/notify", server.HandleInternalNotify)
+		mux.HandleFunc(prefix+"/api/internal/call/ended", server.HandleInternalCallEnded)
 		mux.HandleFunc(prefix+"/api/internal/files", server.HandlePbxFiles)
 		mux.HandleFunc(prefix+"/api/internal/storage/test", server.HandleStorageTest)
 		mux.HandleFunc(prefix+"/api/internal/storage/migrate", server.HandleStorageMigrate)

@@ -74,7 +74,7 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     # the PBX itself (Asterisk CURL() to http://127.0.0.1/api/...; CURL() does
     # not follow a redirect); everyone else is sent to HTTPS like the rest of
     # the portal (sign-in callbacks, widgets).
-    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$|meeting_join_check\.php\$) [OR]
+    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$|meeting_join_check\.php\$|chat_call_check\.php\$) [OR]
     RewriteCond %{CONN_REMOTE_ADDR} !^(127\.0\.0\.1|::1)\$
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 

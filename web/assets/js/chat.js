@@ -515,9 +515,11 @@ async function openConversation(conv, pushHistory = true) {
         statusText.style.color = 'var(--text-muted)';
         callBtn.style.display = 'none';
         groupInfoBtn.style.display = 'inline-flex';
+        setGroupCallButtons(true);
 
         fetchGroupDetails(conv.id);
     } else {
+        setGroupCallButtons(false);
         avatarBox.style.background = 'var(--primary)';
         avatarBox.innerHTML = `
             <span id="active-target-initial">${(conv.target_name || conv.target_ext || 'U').charAt(0).toUpperCase()}</span>
@@ -626,8 +628,9 @@ function appendMessageToUI(msg, replaceEl) {
             font-size: 11.5px; border-radius: 12px; max-width: 85%;
             text-align: center; line-height: 1.4;
         `;
-        sysRow.innerHTML = `<i class="fas fa-info-circle" style="margin-right: 4px;"></i> ${escapeHtml(msg.message)}`;
+        sysRow.innerHTML = chatCallCardHtml(msg) || `<i class="fas fa-info-circle" style="margin-right: 4px;"></i> ${escapeHtml(msg.message)}`;
         scrollEl.appendChild(sysRow);
+        markEndedChatCalls();
         return;
     }
 
@@ -957,6 +960,78 @@ function callTargetExtension() {
     } else {
         window.location.href = 'tel:' + currentTargetExt;
     }
+}
+
+// 14b. Conference call of a group chat. The chat service opens the call and
+// gives its dial address; joining is an ordinary call from the header phone,
+// and the PBX lets only members of the group in.
+function setGroupCallButtons(show) {
+    const voice = document.getElementById('active-group-voice-btn');
+    const video = document.getElementById('active-group-video-btn');
+    if (voice) voice.style.display = show ? 'inline-flex' : 'none';
+    if (video) video.style.display = show && typeof headerVideoAllowed === 'function' && headerVideoAllowed() ? 'inline-flex' : 'none';
+}
+
+function chatCallMeta(msg) {
+    try { return JSON.parse(msg.system_meta || '{}') || {}; } catch (e) { return {}; }
+}
+
+// The "call started" / "call ended" card of a system message, '' for any other.
+function chatCallCardHtml(msg) {
+    if (msg.system_event !== 'call_started' && msg.system_event !== 'call_ended') return '';
+    const meta = chatCallMeta(msg);
+    const callId = parseInt(meta.call_id, 10) || 0;
+    const video = meta.video === '1';
+    const icon = `<i class="fas ${video ? 'fa-video' : 'fa-phone-alt'}" style="margin-right: 4px;"></i>`;
+    if (msg.system_event === 'call_ended') {
+        const secs = parseInt(meta.duration, 10) || 0;
+        const dur = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
+        return `<span data-call-ended="${callId}">${icon}${escapeHtml(__('js.chat.call_ended', dur))}</span>`;
+    }
+    const who = escapeHtml(msg.sender_name || msg.sender_ext || '');
+    const text = escapeHtml(__(video ? 'js.chat.call_started_video' : 'js.chat.call_started_voice', who));
+    return `${icon}${text} <button type="button" class="btn btn-sm btn-primary u-r-8" data-call-join="${callId}" data-call-video="${video ? 1 : 0}" style="margin-left: 8px; padding: 1px 10px; font-size: 11.5px;" onclick="joinChatCall(${callId}, ${video})">${escapeHtml(__('js.chat.call_join'))}</button>`;
+}
+
+// A call that has its "ended" message no longer offers Join.
+function markEndedChatCalls() {
+    document.querySelectorAll('[data-call-ended]').forEach(function (el) {
+        document.querySelectorAll(`[data-call-join="${el.getAttribute('data-call-ended')}"]`).forEach(function (btn) { btn.remove(); });
+    });
+}
+
+async function chatCallRequest(body, video) {
+    if ((localStorage.getItem('phone_mode') || 'webrtc') === 'sip' || typeof headerPhoneMakeCall !== 'function') {
+        if (window.notify) window.notify.warning(__('js.chat.call_needs_webphone'));
+        return;
+    }
+    try {
+        const res = await fetch('/chat/api/conversations/call', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + window.CHAT_TOKEN, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const json = await res.json();
+        if (!json.success || !json.call || !/^cc[0-9]+$/.test(json.call.dial || '')) {
+            if (window.notify) window.notify.error(json.error || __('js.chat.call_failed'));
+            return;
+        }
+        const input = document.getElementById('header-quick-dial-input');
+        if (input) input.value = json.call.dial;
+        headerPhoneMakeCall(!!json.call.video && video !== false);
+        if (input) input.value = '';
+    } catch (e) {
+        if (window.notify) window.notify.error(__('js.chat.call_failed'));
+    }
+}
+
+function startChatCall(video) {
+    if (!currentConvId) return;
+    chatCallRequest({ conversation_id: currentConvId, video: !!video }, !!video);
+}
+
+function joinChatCall(callId, video) {
+    chatCallRequest({ call_id: callId }, !!video);
 }
 
 // 15. Lightbox image viewer

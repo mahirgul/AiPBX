@@ -118,6 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'allowed_phone_mode' => $updated['allowed_phone_mode'] ?? 'both',
             'video' => mobileVideoSettings($updated['allowed_phone_mode'] ?? 'both'),
             'conference_prefix' => getConferencePrefix(),
+            'chat_calls' => true, // conferences started from a group chat (POST /chat/api/conversations/call)
             'conference_rooms' => mobileConferenceRooms()
         ]
     ]);
@@ -138,6 +139,7 @@ mobileJson([
         'allowed_phone_mode' => $details['allowed_phone_mode'] ?? 'both',
         'video' => mobileVideoSettings($details['allowed_phone_mode'] ?? 'both'),
         'conference_prefix' => getConferencePrefix(),
+            'chat_calls' => true, // conferences started from a group chat (POST /chat/api/conversations/call)
         'conference_rooms' => mobileConferenceRooms()
     ]
 ]);

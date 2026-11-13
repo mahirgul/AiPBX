@@ -11,6 +11,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.77.0
+
+### ✨ New
+
+- **Group calls from the chat:** a group chat has a voice call and a video call button. Pressing one opens a conference for that group and posts a card to the chat; the other members join from the card. Only members of the group are let in (checked by the PBX for every caller), the room closes when the last one leaves and the chat then shows how long the call took. Video shows whoever is speaking. Works in the web chat with the web phone; the mobile apps get it with their next release (`chat_calls` in the mobile feature list tells them the server has it).
+
 ## 1.76.0
 
 Fixes from a review of the whole code base. **Read before updating:** dial permission rules are enforced for the first time (until now only a group's default action applied), calls are answered when they enter a queue, and invitation or password-reset links sent before the update stop working.

@@ -31,6 +31,24 @@ talks without video.
 - Answering with *Answer* (audio) still shows the caller's picture if they send one.
 - Without a camera, with the camera busy or the permission refused, the call goes on with audio.
 
+## Group calls from the chat
+
+A **group** chat has two buttons next to the group info: a voice call and a video call (the video
+button shows only where video calls are on). Pressing one opens a conference for that group and
+posts a *call started* card to the chat. The other members press **Join** on the card; nobody's
+phone rings.
+
+- Only current members of the group are let in. The PBX checks every caller itself, so knowing the
+  room is not enough.
+- Video shows whoever is speaking at the moment (one picture, switching with the speaker). For a
+  gallery of all participants use [Video meetings](meetings.md).
+- The room closes when the last one leaves, and the chat shows that the call ended and how long it
+  took. While it is open, pressing a call button again joins the same call.
+- At most 8 take part in a video call and 25 in a voice call.
+- In the portal the call is made with the web phone; with the phone mode set to desk phone the
+  buttons ask you to switch. Outside guests cannot join: for them there are meetings.
+- Group calls are not recorded.
+
 ## Notes
 
 - One-to-one calls are bridged by Asterisk; their video is not recorded. Multi-party video is available
