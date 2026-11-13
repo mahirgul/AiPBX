@@ -43,16 +43,17 @@ final class NightGuardTest extends TestCase
 
         syncPermissions();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_permissions.conf');
-        $this->assertStringContainsString('Gosub(sub-night-guard,s,1(${ARG2}))', $conf);
+        $this->assertStringContainsString('Gosub(sub-night-guard,s,1(${ARG1}))', $conf);
     }
 
     public function testPinNeedsFourDigitsAndIsKeptWhenLeftEmpty(): void
     {
         $base = ['csrf_token' => 'ng', 'night_guard_enabled' => '1', 'night_guard_prefixes' => '00', 'night_guard_action' => 'pin'];
         $this->assertFalse(NightGuardService::save($base + ['night_guard_pin' => '12'])['success']);
-        $this->assertTrue(NightGuardService::save($base + ['night_guard_pin' => '4711'])['success']);
+        $this->assertFalse(NightGuardService::save($base + ['night_guard_pin' => '4711'])['success'], 'a new PIN needs 6 digits');
+        $this->assertTrue(NightGuardService::save($base + ['night_guard_pin' => '471100'])['success']);
         $this->assertTrue(NightGuardService::save($base + ['night_guard_pin' => ''])['success']);
-        $this->assertStringContainsString('Authenticate(4711)', NightGuardService::dialplan());
+        $this->assertStringContainsString('Authenticate(471100)', NightGuardService::dialplan());
     }
 
     public function testDaytimeRangeWithoutWeekend(): void

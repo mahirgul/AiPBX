@@ -74,6 +74,19 @@ final class SyncGeneratorTest extends TestCase
         $this->assertStringContainsString("qualify_frequency=60\nqualify_timeout=8\n", $conf);
     }
 
+    /** With a From domain the registration went to port 5060 whatever the trunk's port was. */
+    public function testRegistrationKeepsTheTrunkPortWithAFromDomain(): void
+    {
+        $db = getDB();
+        $db->prepare("UPDATE pbx_trunks SET port = 5080, registration_enabled = 1, auth_username = 'reguser', auth_password = 'Reg-Pass-1', from_domain = 'sip.example.net' WHERE trunk_name = ?")
+            ->execute([Fixtures::TRUNK_NAME]);
+        SIPHelper::deleteSettings(Fixtures::TRUNK_NAME);
+        syncAllTrunks();
+        $conf = $this->trunkConf();
+        $this->assertStringContainsString("server_uri=sip:sip.example.net:5080\n", $conf);
+        $this->assertStringContainsString("client_uri=sip:reguser@sip.example.net\n", $conf);
+    }
+
     public function testT38IsNotWrittenWhenOff(): void
     {
         getDB()->prepare('UPDATE pbx_trunks SET t38_support = 0 WHERE trunk_name = ?')
@@ -479,8 +492,8 @@ final class SyncGeneratorTest extends TestCase
         $announcementBlock = substr($c, strpos($c, 'exten => 1091,'), strpos($c, 'exten => 1092,') - strpos($c, 'exten => 1091,'));
         $queueBlock = substr($c, strpos($c, 'exten => 1092,'));
         $this->assertStringContainsString('Answer()', $announcementBlock);
-        $this->assertStringNotContainsString('Answer()', $queueBlock,
-            'Answer() before Queue() breaks the CDR answered statistics');
+        $this->assertStringContainsString('ExecIf($["${CHANNEL(state)}" != "Up"]?Answer())', $queueBlock,
+            'K1: Queue() answers unanswered callers so hold music and announcements play');
     }
 
     public function testItemWithoutNumberIsNotInTheContext(): void
@@ -769,7 +782,7 @@ final class SyncGeneratorTest extends TestCase
         syncOutboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
         if (str_contains($conf, 'MixMonitor(${REC_FILE})')) {
-            $this->assertStringContainsString('GotoIf($["${AIPBX_FAX}" = "1"]?norec)', $conf);
+            $this->assertStringContainsString('GotoIf($["${AIPBX_FAX}" = "1" | "${PRIVACY_NO_RECORD}" = "1"]?norec)', $conf);
             $this->assertStringContainsString(' same => n(norec),NoOp()', $conf);
         }
         $this->assertStringNotContainsString(" same => n,Set(JITTERBUFFER(adaptive)=default)\n", $conf);

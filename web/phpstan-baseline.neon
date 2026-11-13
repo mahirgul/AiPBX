@@ -63,6 +63,12 @@ parameters:
 		-
 			message: '#^Variable \$db might not be defined\.$#'
 			identifier: variable.undefined
+			count: 3
+			path: api/cc_actions/calls.php
+
+		-
+			message: '#^Variable \$user might not be defined\.$#'
+			identifier: variable.undefined
 			count: 2
 			path: api/cc_actions/calls.php
 

@@ -249,7 +249,7 @@ final class WebWidgetTest extends TestCase
         $this->assertStringContainsString('Set(TIMEOUT(absolute)=600)', $conf);
         $this->assertStringContainsString('Set(CDR(did)=7001)', $conf);
         $this->assertStringContainsString("Set(CDR(inbound_trunk)=widget-{$id})", $conf);
-        $this->assertStringContainsString('PJSIP_DIAL_CONTACTS(' . self::EXT, $conf);
+        $this->assertStringContainsString('DIALPLAN_EXISTS(from-internal-pbx-ortak,' . self::EXT . ',1)}]?from-internal-pbx-ortak,' . self::EXT . ',1', $conf);
         $this->assertStringNotContainsString("Sales, \"web\"", $conf, 'name is cleaned for the dialplan');
 
         // The endpoint's context holds nothing but the token check.

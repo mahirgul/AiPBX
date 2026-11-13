@@ -163,6 +163,18 @@ final class UserInvitationAndQrLoginTest extends TestCase
         $this->assertSame('used', QrLoginService::inspectToken($token)['reason']);
     }
 
+    public function testEmailLinkIsRefusedOnceTheAccountHasTwoFactor(): void
+    {
+        $link = QrLoginService::createEmailLink($this->testUserId);
+        $token = substr($link['url'], strpos($link['url'], 'token=') + 6);
+        $this->db->prepare('UPDATE sys_users SET two_factor_enabled = 1 WHERE id = ?')->execute([$this->testUserId]);
+
+        $this->assertFalse(QrLoginService::emailLinkAllowed(['role' => 'cc_agent', 'two_factor_enabled' => 1]));
+        $res = QrLoginService::authenticateMobile($token, 'test phone', '192.0.2.10');
+        $this->assertFalse($res['success']);
+        $this->assertSame(403, $res['code']);
+    }
+
     public function testNewEmailLinkRevokesPreviousOne(): void
     {
         $first = QrLoginService::createEmailLink($this->testUserId);

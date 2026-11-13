@@ -20,6 +20,7 @@
  * nothing to compare the two roles on.
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
+define('AIPBX_SMOKE_FORGED_ROLE', true);
 
 $script  = $argv[1] ?? '';
 $role    = $argv[2] ?? 'admin';

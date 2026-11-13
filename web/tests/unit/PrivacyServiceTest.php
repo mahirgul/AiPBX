@@ -11,6 +11,7 @@ final class PrivacyServiceTest extends TestCase
 {
     protected function setUp(): void
     {
+        $_SESSION['csrf_token'] = 'priv';
         if (DB_NAME !== 'asterisk_test') {
             $this->fail('tests must run only on asterisk_test');
         }
@@ -28,6 +29,7 @@ final class PrivacyServiceTest extends TestCase
     public function testSaveRetentionAndRunPurge(): void
     {
         $res = PrivacyService::saveRetention([
+            'csrf_token'          => 'priv',
             'retention_enabled'   => '1',
             'ret_recordings_days' => '90',
             'ret_voicemail_days'  => '60',
@@ -59,14 +61,14 @@ final class PrivacyServiceTest extends TestCase
 
     public function testApplyGlobalJurisdictionPresetsAndPeriodicBeep(): void
     {
-        $res = PrivacyService::applyProfile(['jurisdiction_profile' => 'us_two_party']);
+        $res = PrivacyService::applyProfile(['csrf_token' => 'priv', 'jurisdiction_profile' => 'us_two_party']);
         $this->assertArrayHasKey('message', $res);
         $cfg = PrivacyService::settings();
         $this->assertSame('us_two_party', $cfg['jurisdiction_profile']);
         $this->assertSame(15, $cfg['recording_beep_sec']);
         $this->assertSame(',B(15)', PrivacyService::mixMonitorOptionSuffix());
 
-        $hipaa = PrivacyService::applyProfile(['jurisdiction_profile' => 'hipaa']);
+        $hipaa = PrivacyService::applyProfile(['csrf_token' => 'priv', 'jurisdiction_profile' => 'hipaa']);
         $this->assertArrayHasKey('message', $hipaa);
         $this->assertTrue(PrivacyService::settings()['block_cloud_ai']);
         $this->assertFalse(CloudAiService::configured('openai'));
@@ -98,11 +100,11 @@ final class PrivacyServiceTest extends TestCase
 
     public function testCrossBorderCloudAiLockBlocksCloudProviders(): void
     {
-        PrivacyService::saveCompliance(['block_cloud_ai' => '1']);
+        PrivacyService::saveCompliance(['csrf_token' => 'priv', 'block_cloud_ai' => '1']);
         $this->assertTrue(PrivacyService::settings()['block_cloud_ai']);
         $this->assertFalse(CloudAiService::configured('openai'));
 
-        PrivacyService::saveCompliance([]);
+        PrivacyService::saveCompliance(['csrf_token' => 'priv']);
         $this->assertFalse(PrivacyService::settings()['block_cloud_ai']);
     }
 
@@ -121,7 +123,7 @@ final class PrivacyServiceTest extends TestCase
         $this->assertSame($raw, PrivacyService::redactTranscriptIfEnabled($raw));
 
         // Enable KVKK or PCI-DSS -> transcript is automatically redacted
-        PrivacyService::applyProfile(['jurisdiction_profile' => 'kvkk']);
+        PrivacyService::applyProfile(['csrf_token' => 'priv', 'jurisdiction_profile' => 'kvkk']);
         $redacted = PrivacyService::redactTranscriptIfEnabled($raw);
         $this->assertStringContainsString('[REDACTED-CARD]', $redacted);
         $this->assertStringContainsString('[REDACTED-ID]', $redacted);
@@ -139,6 +141,7 @@ final class PrivacyServiceTest extends TestCase
         $soundId = (int)$db->lastInsertId();
 
         $res = PrivacyService::saveNotice([
+            'csrf_token' => 'priv',
             'notice_mode'      => 'optout',
             'notice_sound_id'  => (string)$soundId,
             'optout_digit'     => '9',
@@ -165,5 +168,13 @@ final class PrivacyServiceTest extends TestCase
 
         $db->exec("DELETE FROM sys_users WHERE username = 'privacy_test_admin'");
         $db->prepare("DELETE FROM pbx_announcements WHERE id = ?")->execute([$soundId]);
+    }
+
+    /** A caller that sends no token at all is refused too (it used to skip the check). */
+    public function testMissingCsrfTokenIsRefused(): void
+    {
+        foreach (['applyProfile', 'saveNotice', 'saveRetention', 'saveCompliance'] as $fn) {
+            $this->assertFalse(PrivacyService::$fn(['jurisdiction_profile' => 'off'])['success'], $fn);
+        }
     }
 }

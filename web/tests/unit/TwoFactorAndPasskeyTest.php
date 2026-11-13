@@ -149,6 +149,16 @@ final class TwoFactorAndPasskeyTest extends TestCase
         $this->assertNull($userRowAfter['two_factor_secret']);
     }
 
+    /** Sessions opened before 2FA, the mobile app's too, end when it is turned on. */
+    public function testEnablingTwoFactorEndsOlderSessions(): void
+    {
+        $epoch = fn() => (int) getDB()->query('SELECT token_epoch FROM sys_users WHERE id = ' . (int) $this->testUserId)->fetchColumn();
+        $before = $epoch();
+        $secret = TwoFactorService::generateSecret(32);
+        $this->assertTrue(TwoFactorService::enableTwoFactor($this->testUserId, $secret, TwoFactorService::calculateCode($secret, time()))['success']);
+        $this->assertSame($before + 1, $epoch());
+    }
+
     /**
      * Recovery code consumption (single-use rule)
      */

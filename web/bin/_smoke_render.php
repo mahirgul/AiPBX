@@ -15,6 +15,7 @@
  * Usage: php bin/_smoke_render.php <path> <lang> <role> <outfile>
  */
 if (PHP_SAPI !== 'cli') { http_response_code(403); exit(1); }
+define('AIPBX_SMOKE_FORGED_ROLE', true);
 
 $path    = $argv[1] ?? '';
 $lang    = $argv[2] ?? 'tr';

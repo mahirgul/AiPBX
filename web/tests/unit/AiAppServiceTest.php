@@ -130,7 +130,7 @@ final class AiAppServiceTest extends TestCase
         $this->assertStringNotContainsString('&text=', $conf);
         $this->assertStringContainsString('Set(AI_INTENT=${CURL(http://127.0.0.1:8790/v1/calls/${AI_CALL}/result?key=', $conf);
         $this->assertStringContainsString('System(/usr/local/bin/ai_request.php 9 ${FILTER(0-9a-f-,${AI_CALL})} ', $conf);
-        $this->assertStringContainsString('${URIENCODE(${CALLERID(name)})} >/dev/null 2>&1 &)', $conf);
+        $this->assertStringContainsString('${URIENCODE(${FILTER(A-Za-z0-9 ._,${CALLERID(name)})})} >/dev/null 2>&1 &)', $conf);
         $this->assertStringContainsString('GotoIf($["${AI_INTENT}" = "havlu"]?req_havlu)', $conf);
         $this->assertStringContainsString('same => n(req_ariza),NoOp', $conf);
         $this->assertStringContainsString('same => n(fallback),NoOp', $conf);

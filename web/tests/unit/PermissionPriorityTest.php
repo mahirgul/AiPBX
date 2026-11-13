@@ -39,7 +39,8 @@ final class PermissionPriorityTest extends TestCase
         $this->assertSame('^00.+', permissionPatternToRegex('_00.', false));
         $this->assertSame('^5[0-9][0-9]$', permissionPatternToRegex('5XX', true));
         $this->assertSame('^[2-9][0-9][1-9]$', permissionPatternToRegex('nxz', true));
-        $this->assertSame('^\\*21$', permissionPatternToRegex('*21', true));
+        $this->assertSame('^[*]21$', permissionPatternToRegex('*21', true));
+        $this->assertSame('^[+]90.+', permissionPatternToRegex('+90.', false));
     }
 
     public function testFirstMatchInPriorityOrderWins(): void

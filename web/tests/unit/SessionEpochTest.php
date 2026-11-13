@@ -48,6 +48,13 @@ final class SessionEpochTest extends TestCase
         $this->assertFalse(_isSessionEpochCurrent());
     }
 
+    public function testARoleChangeReachesTheOpenSession(): void
+    {
+        $_SESSION['user_role'] = 'admin';
+        $this->assertTrue(_isSessionEpochCurrent());
+        $this->assertSame('user', $_SESSION['user_role'], 'the role in the database wins');
+    }
+
     public function testWhoChangedTheirOwnPasswordStaysSignedIn(): void
     {
         $this->assertTrue(_isSessionEpochCurrent());
