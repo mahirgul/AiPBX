@@ -38,7 +38,7 @@ function buildInboundNormContexts(array $rules, array $trunkNames): string
                 $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', (string) $r['match_pattern']);
                 $prepend = preg_replace('/[^0-9+*#]/', '', (string) $r['prepend']);
                 $strip = max(0, (int) $r['strip_front']);
-                $conf .= "exten => {$pattern},1,NoOp(Inbound normalization: " . toCleanAscii((string) $r['rule_name']) . ")\n";
+                $conf .= "exten => {$pattern},1,NoOp(Inbound normalization: " . dialplanText((string) $r['rule_name']) . ")\n";
                 $conf .= " same => n,Set({$var}={$prepend}\${EXTEN:{$strip}})\n";
                 $conf .= " same => n,Return()\n";
             }
@@ -135,7 +135,7 @@ function __syncInboundDialplanBody() {
         foreach ($trunks as $t) {
             $t_name = preg_replace('/[^a-zA-Z0-9_-]/', '', $t['trunk_name']);
             if (empty($t_name)) continue;
-            $title = toCleanAscii($t['title'] ?? $t_name);
+            $title = dialplanText($t['title'] ?? $t_name);
             $trim_digits = intval($t['did_trim_digits'] ?? 0);
             $allow_outbound = !empty($t['allow_outbound_routing']);
             $route_group = max(1, intval($t['outbound_route_group'] ?? 1));
@@ -266,7 +266,7 @@ function __syncInboundDialplanBody() {
             if ($is_pattern && !preg_match('/[.!]/', $num)) {
                 $pattern_lengths[strlen($num)] = true;
             }
-            $title = toCleanAscii($d['title']);
+            $title = dialplanText($d['title']);
             $conf .= "; DID: {$exten_key} ({$title})\n";
             $conf .= "exten => {$exten_key},1,NoOp(Inbound call for DID {$exten_key} - {$title})\n";
             $conf .= " same => n,Set(CDR(did)={$did_cdr})\n";
@@ -491,7 +491,9 @@ function inboundBlacklistSubroutine(): string
     if (!empty($patterns)) {
         $out .= "[sub-inbound-blacklist-patterns]\n";
         foreach ($patterns as $p) {
-            $num = trim($p['number']);
+            // A pattern is an exten: anything else in it would run as dialplan.
+            $num = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', (string) $p['number']);
+            if (strlen($num) < 2) continue;
             $act = in_array($p['block_action'], ['busy', 'congestion', 'drop', 'announcement'], true) ? $p['block_action'] : 'busy';
             $out .= "exten => {$num},1,Set(BLK_MATCH=1)\n";
             $out .= " same => n,Set(BLK_ACTION={$act})\n";

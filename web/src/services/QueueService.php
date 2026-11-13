@@ -14,7 +14,7 @@ class QueueService {
             $timeout = intval($data['timeout'] ?? 15) ?: 15;
             $retry = intval($data['retry'] ?? 5) ?: 5;
             $wrapup = intval($data['wrapuptime'] ?? 10) ?: 10;
-            $musicclass = trim($data['musicclass'] ?? 'default');
+            $musicclass = trim($data['musicclass'] ?? '') ?: 'default';
             $maxlen = intval($data['maxlen'] ?? 0);
             $announce_frequency = intval($data['announce_frequency'] ?? 30);
             $announce_holdtime = trim($data['announce_holdtime'] ?? 'yes');
@@ -57,6 +57,13 @@ class QueueService {
 
             if ($fallback_action === 'forward' && empty($fallback_target)) {
                 throw new \Exception(t('srv_queue.err_timeout_ext'));
+            }
+            // A class that does not exist left the caller in silence (Asterisk only warns).
+            if ($musicclass !== 'default' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_moh_classes WHERE name = ? AND is_active = 1', [$musicclass])) {
+                throw new \Exception(sprintf(t('srv_queue.err_musicclass'), $musicclass));
+            }
+            if ($queue_name !== '' && DBHelper::fetchColumn('SELECT 1 FROM pbx_queues WHERE queue_name = ? AND id <> ?', [$queue_name, $queue_id])) {
+                throw new \Exception(sprintf(t('srv_queue.err_name_exists'), $queue_name));
             }
             // For every agent member_mode[ext] = '' (not assigned) | 'dynamic' | 'static'.
             $selected_members = [];

@@ -30,7 +30,7 @@ function __syncTimeConditionBody($tc_id) {
         return true;
     }
 
-    $title = toCleanAscii($tc['title']);
+    $title = dialplanText($tc['title']);
 
     // Rule list: [{time_group_id, match_dest_type, match_dest_id}, ...]
     // Same schema as TimeConditionService::saveTimeCondition().

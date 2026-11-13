@@ -60,7 +60,7 @@ function __syncConferencesBody() {
     foreach ($conferences as $cf) {
         $id = intval($cf['id']);
         $num = preg_replace('/[^0-9]/', '', (string)$cf['room_number']);
-        $title = toCleanAscii($cf['title']);
+        $title = dialplanText($cf['title']);
         $user_pin = preg_replace('/[^0-9]/', '', (string)($cf['user_pin'] ?? ''));
         $admin_pin = preg_replace('/[^0-9]/', '', (string)($cf['admin_pin'] ?? ''));
         $wait_marked = !empty($cf['wait_marked']) ? 'yes' : 'no';

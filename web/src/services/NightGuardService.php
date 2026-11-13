@@ -64,7 +64,9 @@ final class NightGuardService
         if ($values['night_guard_enabled'] === '1' && $values['night_guard_prefixes'] === '') {
             return ['success' => false, 'error' => t('night_guard.err_prefixes')];
         }
-        if ($values['night_guard_action'] === 'pin' && strlen($values['night_guard_pin']) < 4) {
+        // A new PIN needs 6 digits (4 digits with 3 tries a call was easy to guess);
+        // a 4-digit PIN set before keeps working until it is changed.
+        if (($pin !== '' && strlen($pin) < 6) || ($values['night_guard_action'] === 'pin' && strlen($values['night_guard_pin']) < 4)) {
             return ['success' => false, 'error' => t('night_guard.err_pin')];
         }
         $st = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');

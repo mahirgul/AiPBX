@@ -59,6 +59,8 @@ function __syncAllTrunksBody() {
         $force_rport = toCleanAscii(!empty($sip_map['force_rport']) ? $sip_map['force_rport'] : (!empty($t['force_rport']) ? $t['force_rport'] : 'yes'));
         $rewrite_contact = toCleanAscii(!empty($sip_map['rewrite_contact']) ? $sip_map['rewrite_contact'] : (!empty($t['rewrite_contact']) ? $t['rewrite_contact'] : 'yes'));
         $outbound_proxy = toCleanAscii(!empty($sip_map['outbound_proxy']) ? $sip_map['outbound_proxy'] : (!empty($t['outbound_proxy']) ? $t['outbound_proxy'] : ''));
+        // `;` starts a comment in a .conf file: "sip:host;lr" reached Asterisk as "sip:host".
+        $outbound_proxy = confValue((string) preg_replace('/\s+/', '', $outbound_proxy));
         $match_hosts = toCleanAscii(!empty($sip_map['match_hosts']) ? $sip_map['match_hosts'] : (!empty($t['match_hosts']) ? $t['match_hosts'] : $ip));
         $max_contacts = !empty($sip_map['max_contacts']) ? intval($sip_map['max_contacts']) : intval($t['max_contacts'] ?? 1 ?: 1);
 
@@ -70,11 +72,16 @@ function __syncAllTrunksBody() {
         $fax_detect_timeout = !empty($sip_map['fax_detect_timeout']) ? intval($sip_map['fax_detect_timeout']) : intval($t['fax_detect_timeout'] ?? 10 ?: 10);
 
         $auth_user = toCleanAscii(!empty($sip_map['auth_username']) ? $sip_map['auth_username'] : (!empty($t['auth_username']) ? $t['auth_username'] : ''));
-        $auth_pass = toCleanAscii(!empty($sip_map['auth_password']) ? $sip_map['auth_password'] : (!empty($t['auth_password']) ? $t['auth_password'] : ''));
+        $auth_pass = confValue(toCleanAscii(!empty($sip_map['auth_password']) ? $sip_map['auth_password'] : (!empty($t['auth_password']) ? $t['auth_password'] : '')));
         $has_auth = ($auth_user !== '' && $auth_pass !== '');
 
         $from_user = toCleanAscii(!empty($sip_map['from_user']) ? $sip_map['from_user'] : (!empty($t['from_user']) ? $t['from_user'] : ''));
         $from_domain = toCleanAscii(!empty($sip_map['from_domain']) ? $sip_map['from_domain'] : (!empty($t['from_domain']) ? $t['from_domain'] : ''));
+        // No whitespace in these: Asterisk refuses the whole endpoint at the next
+        // restart (a reload hid it). The trunk page checks them since 1.76.0;
+        // this covers values saved before.
+        $from_user = (string) preg_replace('/\s+/', '', $from_user);
+        $from_domain = (string) preg_replace('/\s+/', '', $from_domain);
         $send_pai = (!empty($sip_map['send_pai']) && $sip_map['send_pai'] === 'yes') || !empty($t['send_pai']);
         $send_rpid = (!empty($sip_map['send_rpid']) && $sip_map['send_rpid'] === 'yes') || !empty($t['send_rpid']);
 
@@ -202,7 +209,7 @@ function __syncAllTrunksBody() {
         ];
         foreach ($sip_map as $k => $v) {
             if (in_array($k, $ignore_keys) || $v === '') continue;
-            $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
+            $conf .= toCleanAscii($k) . "=" . confValue(toCleanAscii($v)) . "\n";
         }
         $conf .= "\n";
 
@@ -246,13 +253,17 @@ function __syncAllTrunksBody() {
         // 4. Outbound Registration Section (if enabled and auth credentials present)
         if ($reg_enabled && $has_auth) {
             $server_host = ($from_domain !== '') ? $from_domain : ($ip . ':' . $port);
+            // With a From domain the registrar is that domain, but on the trunk's
+            // port: a carrier on 5080 was registered to on 5060.
+            $server_uri_host = ($from_domain !== '' && $port !== 5060 && !str_contains($from_domain, ':'))
+                ? $from_domain . ':' . $port : $server_host;
             $client_user = ($from_user !== '') ? $from_user : $auth_user;
             $reg_contact_user = toCleanAscii(!empty($sip_map['contact_user']) ? $sip_map['contact_user'] : '');
             $conf .= "[{$t_name}-reg]\n";
             $conf .= "type=registration\n";
             $conf .= "transport={$transport}\n";
             $conf .= "outbound_auth={$t_name}-auth\n";
-            $conf .= "server_uri=sip:{$server_host}\n";
+            $conf .= "server_uri=sip:{$server_uri_host}\n";
             $conf .= "client_uri=sip:{$client_user}@{$server_host}\n";
             if ($reg_contact_user !== '') {
                 $conf .= "contact_user={$reg_contact_user}\n";
@@ -270,6 +281,19 @@ function __syncAllTrunksBody() {
         $conf .= "type=identify\n";
         $conf .= "endpoint={$t_name}\n";
         $conf .= "match={$match_hosts}\n\n";
+
+        // Register mode with a user name other than the trunk name: found by the
+        // user name it authenticates with, too. Otherwise only the fixed IP (or a
+        // From user equal to the trunk name) matched, and a far end on another IP
+        // got 401 for ever, which is the very case register mode is for.
+        // (identify_by=auth_username does not do it: Asterisk then looks for an
+        // endpoint NAMED like the user.)
+        if ($conn_mode === 'register' && $aor_name !== $t_name) {
+            $conf .= "[{$t_name}-auth-identify]\n";
+            $conf .= "type=identify\n";
+            $conf .= "endpoint={$t_name}\n";
+            $conf .= "match_header=Authorization: /username=\"{$aor_name}\"/\n\n";
+        }
     }
 
     // Delete old individual trunk files if any exist

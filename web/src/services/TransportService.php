@@ -258,6 +258,10 @@ final class TransportService
         setSystemSetting(self::CHANGED_SETTING, (string) time());
         $uid = $_SESSION['user_id'] ?? null;
         markPendingSync('transports', 'transports', 'all', "Transport: {$name}", $action, $uid);
+        if ($name === 'transport-ws') {
+            // The web phone endpoints name this transport only while it is on.
+            markPendingSync('extensions', 'transports', 'all', "Transport: {$name}", $action, $uid);
+        }
         writeAuditLog('transports', 'transport', 0, $name, $action, $uid);
     }
 }

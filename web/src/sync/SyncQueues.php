@@ -67,7 +67,7 @@ function __syncAllQueuesBody() {
         // with the dialplan MixMonitor managed in DialplanDestinationBuilder.
         foreach ($q_map as $k => $v) {
             if ($v === '' || $v === null || $k === 'monitor-format') continue;
-            $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
+            $conf .= toCleanAscii($k) . "=" . confValue(toCleanAscii($v)) . "\n";
         }
 
         // Static agents: a member loaded from the config is not "dynamic" for

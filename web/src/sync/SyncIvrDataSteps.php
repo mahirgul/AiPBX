@@ -11,7 +11,7 @@ declare(strict_types=1);
 function buildIvrDataStepDialplanBlock(array $step): string
 {
     $id = (int)$step['id'];
-    $name = toCleanAscii((string)$step['name']);
+    $name = dialplanText((string)$step['name']);
     $prompt = !empty($step['prompt_file']) ? FileHelper::sanitizeAudioPath((string)$step['prompt_file']) : '';
     $inputSource = (string)($step['input_source'] ?? 'dtmf');
     $maxDigits = max(1, min(30, (int)($step['max_digits'] ?? 10)));

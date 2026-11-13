@@ -136,6 +136,13 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
         return sprintf(t('internal_number.feature_code'), $title);
     }
 
+    // A trunk with an all-digit name shares the `sip` rows of the extension with that number.
+    $tr = $db->prepare("SELECT trunk_name FROM pbx_trunks WHERE trunk_name = ? LIMIT 1");
+    $tr->execute([$number]);
+    if ($name = $tr->fetchColumn()) {
+        return sprintf(t('internal_number.trunk'), $name);
+    }
+
     foreach (INTERNAL_NUMBER_SOURCES as $key => $src) {
         $sql = "SELECT {$src['label_col']} AS label FROM {$src['table']} WHERE internal_number = ?";
         $params = [$number];

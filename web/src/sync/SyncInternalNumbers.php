@@ -95,7 +95,7 @@ function buildInternalNumbersConf(array $entries): string
         if ($num === '' || isset($seen[$num])) continue;
         $seen[$num] = true;
 
-        $label = toCleanAscii((string) $e['label']);
+        $label = dialplanText((string) $e['label']);
         $conf .= "\n; " . $e['dest_type'] . " #" . $e['dest_id'] . " ({$label})\n";
         $conf .= "exten => {$num},1,NoOp(Internal number {$num} -> " . $e['dest_type'] . "/" . $e['dest_id'] . " - {$label})\n";
         $conf .= " same => n,Set(CDR(direction)=internal)\n";

@@ -18,7 +18,9 @@ function writePBXConf($filename, $content) {
     keepHandEditedConf($filename, $file_path);
     // A failed write used to pass silently: the reload then succeeded with the
     // old file and the pending change was marked as applied.
-    if (FileHelper::writeFile($file_path, $content, 'asterisk', 'asterisk', 0644) === false) {
+    // 0640: the files hold voicemail PINs, the night-guard PIN and SIP passwords.
+    // Asterisk and the portal (www-data is in the asterisk group) still read them.
+    if (FileHelper::writeFile($file_path, $content, 'asterisk', 'asterisk', 0640) === false) {
         $err = error_get_last()['message'] ?? 'unknown error';
         throw new \Exception(sprintf(t('sync.err_write'), $file_path, $err));
     }
@@ -94,9 +96,7 @@ function writeConfWithRollback($filename, $content, callable $reloadFn, $context
         // Success — keep this content as the "known good" version to go back
         // to on the next failure (the current file is exactly this already).
         if ($previous_content !== null) {
-            @file_put_contents($backup_path, $previous_content);
-            @chown($backup_path, 'asterisk');
-            @chgrp($backup_path, 'asterisk');
+            @FileHelper::writeFile($backup_path, $previous_content, 'asterisk', 'asterisk', 0640);
         }
         return true;
     } catch (\Exception $e) {

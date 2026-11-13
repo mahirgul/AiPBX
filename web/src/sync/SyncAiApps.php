@@ -78,7 +78,7 @@ function buildAiAppsDialplan(array $apps, string $key): string {
             continue;
         }
         $id = (int) $a['id'];
-        $name = toCleanAscii((string) $a['title']);
+        $name = dialplanText((string) $a['title']);
         $model = AiAppService::resolveModel((string) $a['model_id']);
         $speed = number_format(max(0.5, min(2.0, (float) $a['speed'])), 2, '.', '');
         $max = max(1, min(50, (int) $a['max_concurrent']));
@@ -119,7 +119,7 @@ function buildAiAppsDialplan(array $apps, string $key): string {
 /** [aipbx-ai-app-<id>] of a voice-requests application. */
 function buildVoiceRequestsContext(array $a, string $key): string {
     $id = (int) $a['id'];
-    $name = toCleanAscii((string) $a['title']);
+    $name = dialplanText((string) $a['title']);
     $max = max(1, min(50, (int) $a['max_concurrent']));
     $intents = AiAppService::config($a)['intents'] ?? [];
     $post = 'app=' . $id . '&key=' . $key . '&max=' . $max
@@ -136,7 +136,8 @@ function buildVoiceRequestsContext(array $a, string $key): string {
         $c .= " same => n,AudioSocket(\${AI_CALL}," . AI_APP_AUDIOSOCKET . ")\n";
         $c .= " same => n,Set(AI_INTENT=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/result?key={$key})})\n";
         // Request log and e-mail in the background; the caller name reaches the shell URI-encoded only.
-        $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} \${URIENCODE(\${CALLERID(name)})} >/dev/null 2>&1 &)\n";
+        // URIENCODE leaves ' ( ) alone, and the shell broke on them: filter the name first.
+        $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} \${URIENCODE(\${FILTER(A-Za-z0-9 ._,\${CALLERID(name)})})} >/dev/null 2>&1 &)\n";
         foreach ($intents as $i) {
             $iid = preg_replace('/[^a-z0-9_]/', '', (string) $i['id']);
             $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"{$iid}\"]?req_{$iid})\n";
@@ -147,7 +148,7 @@ function buildVoiceRequestsContext(array $a, string $key): string {
     $c .= " same => n,Hangup()\n";
     foreach ($key !== '' ? $intents : [] as $i) {
         $iid = preg_replace('/[^a-z0-9_]/', '', (string) $i['id']);
-        $c .= " same => n(req_{$iid}),NoOp(AI application {$id}: request " . toCleanAscii((string) $i['name']) . ")\n";
+        $c .= " same => n(req_{$iid}),NoOp(AI application {$id}: request " . dialplanText((string) $i['name']) . ")\n";
         if (($i['dest_type'] ?? '') !== '') {
             $c .= buildDestinationLines((string) $i['dest_type'], (string) $i['dest_id']) . "\n";
         }

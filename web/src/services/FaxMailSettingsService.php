@@ -12,15 +12,21 @@ class FaxMailSettingsService {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
 
+        $fax_from = trim($data['fax_email_from_address'] ?? 'fax@example.com');
+        if ($fax_from !== '' && filter_var($fax_from, FILTER_VALIDATE_EMAIL) === false) {
+            return ['success' => false, 'error' => sprintf(t('srv_mail.err_from'), $fax_from)];
+        }
+
         $fax_settings = [
-            'fax_email_from_address' => trim($data['fax_email_from_address'] ?? 'fax@example.com'),
+            'fax_email_from_address' => $fax_from,
             'fax_email_from_name'    => trim($data['fax_email_from_name'] ?? 'AI PBX Fax System'),
             'fax_email_rx_enabled'   => trim($data['fax_email_rx_enabled'] ?? 'yes'),
             'fax_email_rx_attach_pdf' => trim($data['fax_email_rx_attach_pdf'] ?? 'yes'),
             'fax_email_tx_enabled'   => trim($data['fax_email_tx_enabled'] ?? 'yes'),
             'fax_retention_days'     => trim($data['fax_retention_days'] ?? '60'),
-            'fax_header_info'        => trim($data['fax_header_info'] ?? 'AI PBX Fax Server'),
-            'fax_local_station_id'   => trim($data['fax_local_station_id'] ?? 'AiPBX'),
+            // Both go into the dialplan: stored as they will be used.
+            'fax_header_info'        => mb_substr(dialplanText($data['fax_header_info'] ?? 'AI PBX Fax Server'), 0, 50),
+            'fax_local_station_id'   => mb_substr(dialplanText($data['fax_local_station_id'] ?? 'AiPBX'), 0, 20),
             'fax_max_retries'        => trim($data['fax_max_retries'] ?? '3'),
             'fax_retry_time'         => trim($data['fax_retry_time'] ?? '60'),
             'fax_wait_time'          => trim($data['fax_wait_time'] ?? '30'),

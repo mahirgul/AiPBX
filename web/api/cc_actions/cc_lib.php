@@ -10,6 +10,26 @@ if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
  * without it sub-check-dial-permission saw an empty group and let every
  * restricted extension call barred destinations through this API.
  */
+/**
+ * Where a call started by this agent goes out and what it may dial: the context of
+ * the agent's outbound route group and the agent's permission group. A call made
+ * and a call transferred use the same pair.
+ *
+ * @return array{0: string, 1: int} [context, permission group]
+ */
+function agentDialScope(array $user, PDO $db): array
+{
+    $group = max(1, intval($user['outbound_group'] ?? 1));
+    // getCurrentUser() does not select the column, so read it when needed.
+    $perm = intval($user['permission_group_id'] ?? 0);
+    if ($perm < 1 && !empty($user['id'])) {
+        $st = $db->prepare('SELECT permission_group_id FROM sys_users WHERE id = ?');
+        $st->execute([intval($user['id'])]);
+        $perm = intval($st->fetchColumn());
+    }
+    return [$group > 1 ? "from-internal-web-{$group}" : 'from-internal-web', max(1, $perm)];
+}
+
 function buildOriginateCommand(string $user_ext, string $to, string $outbound_context, int $perm_group): string
 {
     $perm_group = max(1, $perm_group);

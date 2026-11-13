@@ -80,6 +80,11 @@ class TrunkService {
             if (($trunk_id <= 0 || $renamed) && DBHelper::fetchOne("SELECT id FROM pbx_trunks WHERE trunk_name = ?", [$trunk_name])) {
                 throw new \Exception(sprintf(t('srv_trunk.err_exists'), $trunk_name));
             }
+            // An all-digit name shared the `sip` rows (and the PJSIP aor) of the
+            // extension with that number: after a restart both were gone.
+            if (($trunk_id <= 0 || $renamed) && !preg_match('/[a-zA-Z]/', $trunk_name)) {
+                throw new \Exception(t('srv_trunk.err_name_letter'));
+            }
             if ($port < 1 || $port > 65535) {
                 throw new \Exception(t('srv_trunk.err_port'));
             }
@@ -140,6 +145,40 @@ class TrunkService {
 
             $from_user = trim($data['from_user'] ?? '');
             $from_domain = trim($data['from_domain'] ?? '');
+
+            // Free-text SIP fields: a reload kept the old object, so a bad value
+            // showed no error until Asterisk restarted, and then the whole trunk
+            // was gone (a space in From user, seen in a test, 2026-11-13).
+            $hostRe = '/^(?=.{1,253}$)([a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)*[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(:\d{1,5})?$/';
+            // All digits and dots is meant as an IP address: "10.0.0" is a typo, not a host name.
+            $validHost = fn(string $h): bool => filter_var(preg_replace('/:\d{1,5}$/', '', $h), FILTER_VALIDATE_IP) !== false
+                || (!preg_match('/^[\d.]+(:\d+)?$/', $h) && (bool) preg_match($hostRe, $h));
+            if ($from_user !== '' && !preg_match('/^[A-Za-z0-9._+*#!~-]{1,64}$/', $from_user)) {
+                throw new \Exception(sprintf(t('srv_trunk.err_field'), 'From user', $from_user));
+            }
+            if ($from_domain !== '' && !$validHost($from_domain)) {
+                throw new \Exception(sprintf(t('srv_trunk.err_field'), 'From domain', $from_domain));
+            }
+            if ($outbound_proxy !== '') {
+                // Asterisk wants a SIP URI; a bare host name was accepted and did nothing.
+                if (!preg_match('/^sips?:/i', $outbound_proxy)) {
+                    $outbound_proxy = 'sip:' . $outbound_proxy;
+                }
+                // Typed as in Asterisk's own files ("\;lr") or plain (";lr"): stored plain,
+                // the config writer escapes it.
+                $outbound_proxy = str_replace('\\;', ';', $outbound_proxy);
+                if (!preg_match('/^sips?:[^\s;<>"\\\\]+(;[A-Za-z0-9._=-]+)*$/i', $outbound_proxy) || !$validHost((string) preg_replace('/^sips?:([^@]*@)?|;.*$/i', '', $outbound_proxy))) {
+                    throw new \Exception(sprintf(t('srv_trunk.err_field'), 'Outbound proxy', $outbound_proxy));
+                }
+            }
+            if ($match_hosts !== '') {
+                foreach (array_map('trim', explode(',', $match_hosts)) as $m) {
+                    $ipPart = (string) preg_replace('#/\d{1,3}$#', '', $m);
+                    if ($m === '' || (filter_var($ipPart, FILTER_VALIDATE_IP) === false && !$validHost($m))) {
+                        throw new \Exception(sprintf(t('srv_trunk.err_field'), 'Match', $m));
+                    }
+                }
+            }
             $outbound_caller_id = preg_replace('/[^0-9+]/', '', trim($data['outbound_caller_id'] ?? ''));
 
             $dtmf_mode = in_array(strtolower(trim($data['dtmf_mode'] ?? '')), ['rfc4733', 'inband', 'info', 'auto'], true)

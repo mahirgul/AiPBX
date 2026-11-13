@@ -534,6 +534,30 @@ function toCleanAscii($str) {
     return trim($str);
 }
 
+/** The one password rule for every path (self-service, admin, API, import, fax users). */
+function passwordTooShort(string $password): bool {
+    return mb_strlen($password) < 8;
+}
+
+/**
+ * A value for an Asterisk .conf file: one line, and `;` escaped, or Asterisk
+ * reads the rest as a comment (password `Sip;Pass` became `Sip`). Letters are
+ * left alone: a password must reach Asterisk as the phone sends it.
+ */
+function confValue($str): string {
+    return (string) preg_replace(['/[\x00-\x1F\x7F]/', '/(?<!\\\\);/'], ['', '\\;'], trim((string) $str));
+}
+
+/**
+ * Free text (a name, a title, a fax header) written into the dialplan. Only
+ * letters, digits, space and . _ + - stay: `${...}` in a name ran as dialplan
+ * (SHELL()), and `;` `,` `)` cut the line. Not for config values: those keep
+ * toCleanAscii().
+ */
+function dialplanText($str): string {
+    return trim((string) preg_replace('/[^A-Za-z0-9 ._+-]/', '', toCleanAscii($str)));
+}
+
 /**
  * Whitelist a routing destination type (inbound route / IVR / time condition
  * destination type) against the fixed set buildDestinationLines() understands.

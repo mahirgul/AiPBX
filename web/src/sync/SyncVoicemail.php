@@ -85,8 +85,14 @@ function __syncVoicemailBody() {
         $enabled = isset($u['voicemail_enabled']) ? intval($u['voicemail_enabled']) : 1;
         if (!$enabled) continue;
 
-        $pin = !empty($u['voicemail_pin']) ? preg_replace('/[^0-9]/', '', (string)$u['voicemail_pin']) : $ext;
-        if ($pin === '') $pin = $ext;
+        // No PIN: a random one, kept on the user. The extension number as PIN
+        // was the first thing anyone would try from outside.
+        $pin = preg_replace('/[^0-9]/', '', (string) ($u['voicemail_pin'] ?? ''));
+        if ($pin === '') {
+            require_once dirname(__DIR__) . '/services/VoicemailPolicy.php';
+            $pin = VoicemailPolicy::randomPin($ext);
+            $db->prepare('UPDATE sys_users SET voicemail_pin = ? WHERE id = ?')->execute([$pin, (int) $u['id']]);
+        }
 
         // One line per mailbox, fields split by commas: a comma or line break
         // in a value shifted the fields or added lines of its own (e.g. a

@@ -71,7 +71,7 @@ function __syncGeneralDialplanBody() {
     if (!empty($active_exts)) {
         foreach ($active_exts as $e) {
             $ext = trim($e['extension']);
-            $name = toCleanAscii($e['full_name']);
+            $name = dialplanText($e['full_name']);
             // Without a hint, the device state of a queue member
             // "Local/{$ext}@from-internal-pbx" calling this extension ALWAYS
             // looked "Not in use" (idle/available) — the device state of a
@@ -263,8 +263,8 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Set(FAX_ERR=\${FILTER(A-Za-z0-9_ .:/,\${FAXOPT(error)}: \${FAXOPT(statusstr)})})\n";
     $conf .= " same => n,ExecIf(\$[\"\${FAX_FILE}\" != \"\"]?System(/usr/local/bin/process_incoming_fax.sh \"\${FAX_FILE}\" \"\${FAX_DID}\" \"\${FAX_CNUM}\" \"\${FAXOPT(pages)}\" \"\${FAXOPT(status)}\" \"\${FAX_ERR}\"))\n";
 
-    $fax_header_info = toCleanAscii(getSystemSetting('fax_header_info', 'AI PBX Fax Server'));
-    $fax_station_id = toCleanAscii(getSystemSetting('fax_local_station_id', 'AiPBX'));
+    $fax_header_info = dialplanText(getSystemSetting('fax_header_info', 'AI PBX Fax Server'));
+    $fax_station_id = dialplanText(getSystemSetting('fax_local_station_id', 'AiPBX'));
 
     $conf .= "\n; Native Outgoing FAX Context (SendFAX via Call Files)\n";
     $conf .= "[outbound-fax]\n";

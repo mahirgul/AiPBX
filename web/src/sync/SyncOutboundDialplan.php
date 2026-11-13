@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/services/TrunkService.php';
+require_once dirname(__DIR__) . '/services/PrivacyService.php';
 /**
  * Sync Outbound Routes Dialplan (/etc/asterisk/pbx/extensions_outbound.conf)
  */
@@ -17,6 +18,7 @@ function syncOutboundDialplan() {
 }
 
 function __syncOutboundDialplanBody() {
+    $record_outbound = PrivacyService::settings()['record_outbound'];
     // Trunk channel limits. The route's trunks_json does not have them; the
     // limit is kept on the trunk's own record (pbx_trunks.max_channels).
     $trunk_limits = [];
@@ -94,7 +96,7 @@ function __syncOutboundDialplanBody() {
 
     if (!empty($routes)) {
         foreach ($routes as $r) {
-            $name = toCleanAscii($r['route_name']);
+            $name = dialplanText($r['route_name']);
             $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim($r['match_pattern']));
             $prepend = cleanRoutePrefix((string)($r['prepend'] ?? ''));
             $append = preg_replace('/[^0-9]/', '', trim($r['append'] ?? ''));
@@ -144,7 +146,7 @@ function __syncOutboundDialplanBody() {
                     $conf .= " same => n,Set(__AIPBX_GEOLOCATION_ROUTING={$routingVal})\n";
                 }
             }
-            $conf .= " same => n,Gosub(sub-check-dial-permission,s,1(\${CALLERID(num)},\${EXTEN}))\n";
+            $conf .= dialPermissionCheckLines();
 
             if (empty($trunk_chain)) {
                 $conf .= " same => n,NoOp(No defined/active trunk for this route)\n";
@@ -172,11 +174,16 @@ function __syncOutboundDialplanBody() {
 
             // A fax sent from the portal (AIPBX_FAX=1, set in its call file) takes
             // the same route but is not recorded: the recording is modem noise.
-            $conf .= " same => n,GotoIf(\$[\"\${AIPBX_FAX}\" = \"1\"]?norec)\n";
-            $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$dial_num}.wav)\n";
-            $conf .= " same => n,MixMonitor(\${REC_FILE})\n";
-            $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
-            $conf .= " same => n(norec),NoOp()\n";
+            // Same as inbound: the privacy opt-out (an inbound call forwarded out keeps
+            // it) is honoured, and the recording beep setting applies. Outbound
+            // recording itself can be switched off (Privacy page).
+            if ($record_outbound) {
+                $conf .= " same => n,GotoIf(\$[\"\${AIPBX_FAX}\" = \"1\" | \"\${PRIVACY_NO_RECORD}\" = \"1\"]?norec)\n";
+                $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$dial_num}.wav)\n";
+                $conf .= " same => n,MixMonitor(\${REC_FILE}" . PrivacyService::mixMonitorOptionSuffix() . ")\n";
+                $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
+                $conf .= " same => n(norec),NoOp()\n";
+            }
             $conf .= " same => n,Set(CHANNEL(accountcode)=\${CALLERID(num)})\n";
 
             // Try in order: when a trunk returns CHANUNAVAIL/CONGESTION, move on to the next.
@@ -272,7 +279,7 @@ function __syncOutboundDialplanBody() {
             foreach (['_NXXXXXX' => 'Fallback Outbound Call', '_05XXXXXXXXX' => 'Fallback Mobile Outbound Call'] as $fbPattern => $fbLabel) {
                 $conf .= "exten => {$fbPattern},1,NoOp({$fbLabel})\n";
                 $conf .= " same => n,Set(CDR(direction)=outbound)\n";
-                $conf .= " same => n,Gosub(sub-check-dial-permission,s,1(\${CALLERID(num)},\${EXTEN}))\n";
+                $conf .= dialPermissionCheckLines();
                 $conf .= " same => n,GotoIf(\$[\"\${CF_HOPS}\" = \"\" & \${REGEX(\"^PJSIP/{$hp}-[0-9a-f]+\$\" \${CHANNEL(name)})}]?refused)\n";
                 if ($limit > 0 || $rate > 0) {
                     $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$fallback_trunk},{$limit},{$rate},trunk))\n";
@@ -396,7 +403,7 @@ function buildDialplanNormalizationRules(int $group_no, array $rules): string
     foreach ($types as $type => $typeRules) {
         $conf .= "[sub-norm-{$type}-{$group_no}]\n";
         foreach ($typeRules as $r) {
-            $name = toCleanAscii($r['rule_name'] ?? '');
+            $name = dialplanText($r['rule_name'] ?? '');
             $pattern = preg_replace('/[^0-9NXZnxz.\[\]_!*#+-]/', '', trim($r['match_pattern'] ?? ''));
             if ($pattern === '') continue;
 

@@ -88,8 +88,13 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                 $lines[] = " same => n,Set(CHANNEL(language)={$q_lang})";
             }
             $queue_timeout = intval($q['max_wait_seconds'] ?? 300) ?: 300;
-            $lines[] = " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Ringing())";
+            // Answered first: an unanswered caller heard none of the queue's
+            // music or position/hold-time announcements (only 180 Ringing went out).
+            $lines[] = " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Answer())";
+            // A member's own voicemail must not take the queue call (SKIP_VM, as for a secretary).
+            $lines[] = " same => n,Set(__SKIP_VM=1)";
             $lines[] = " same => n,Queue({$q_name},tT,,,{$queue_timeout})";
+            $lines[] = " same => n,Set(__SKIP_VM=0)";
             $lines = array_merge($lines, buildCallCenterFallbackLines($q['fallback_action'] ?? 'hangup', $q['fallback_target'] ?? ''));
             break;
 
@@ -125,19 +130,15 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                 $lines[] = " same => n,Hangup(1)";
                 break;
             }
-            // buildDestinationLines('extension', ...) can be called more than
-            // once inside the same context/exten block (e.g. a multi-rule time
-            // condition with the same extension as both match and nomatch
-            // target). A fixed "ext_unavail_{$ext}" label would then be
-            // generated twice and break the Asterisk dialplan reload — a unique
-            // counter is added per call site.
-            static $ext_label_seq = 0;
-            $ext_label_seq++;
+            // Into the extension's own line of the internal plan, not a second copy
+            // of its dial lines: the copy skipped the boss-secretary filter, so a DID,
+            // IVR key or time condition reached a boss unfiltered.
             $ext = preg_replace('/[^0-9]/', '', $dest_id);
             $lines[] = " same => n,Set(CHANNEL(accountcode)={$ext})";
-
-            $extDial = buildExtensionDialLines($ext, $db, "dest_{$ext_label_seq}");
-            $lines = array_merge($lines, $extDial['lines']);
+            $lines[] = " same => n,GotoIf(\$[\${DIALPLAN_EXISTS(from-internal-pbx-ortak,{$ext},1)}]?from-internal-pbx-ortak,{$ext},1)";
+            $lines[] = " same => n,NoOp(Extension {$ext} not found)";
+            $lines[] = " same => n,Congestion(10)";
+            $lines[] = " same => n,Hangup(1)";
             break;
 
         case 'ring_group':

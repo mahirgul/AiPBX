@@ -18,7 +18,7 @@ function __syncRingGroupsBody() {
     foreach ($ring_groups as $rg) {
         $id = intval($rg['id']);
         $num = preg_replace('/[^0-9]/', '', (string)$rg['group_number']);
-        $name = toCleanAscii($rg['name']);
+        $name = dialplanText($rg['name']);
         $timeout = max(5, min(300, intval($rg['ring_timeout'] ?: 30)));
         $strategy = $rg['ring_strategy'] ?? 'ringall';
         $cid_prefix = trim($rg['cid_prefix'] ?? '');
@@ -36,7 +36,7 @@ function __syncRingGroupsBody() {
 
         // Letters, digits, space and . _ - only: quotes or brackets broke the
         // ExecIf() expression around it.
-        $clean_prefix = trim((string) preg_replace('/[^A-Za-z0-9 ._-]/', '', toCleanAscii($cid_prefix)));
+        $clean_prefix = dialplanText($cid_prefix);
         if ($clean_prefix !== '') {
             $conf .= " same => n,ExecIf(\$[\"\${CALLERID(name)}\" != \"\"]?Set(CALLERID(name)={$clean_prefix} \${CALLERID(name)}):Set(CALLERID(name)={$clean_prefix} \${CALLERID(num)}))\n";
         }
@@ -83,6 +83,8 @@ function __syncRingGroupsBody() {
         }
         $channels = array_values(array_unique($channels));
         $conf .= " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Ringing())\n";
+        // A member's own voicemail must not answer the group's call.
+        $conf .= " same => n,Set(__SKIP_VM=1)\n";
 
         if (empty($channels)) {
             $conf .= " same => n,NoOp(Ring group {$id} has no numbers to ring)\n";
@@ -117,7 +119,8 @@ function __syncRingGroupsBody() {
             $conf .= " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?rg_done_{$id})\n";
         }
 
-        // Fallback Hedefi
+        // Fallback destination: an extension there keeps its own voicemail again.
+        $conf .= " same => n,Set(__SKIP_VM=0)\n";
         $fallback = buildDestinationLines($rg['fallback_dest_type'] ?? 'hangup', $rg['fallback_dest_id'] ?? 'busy');
         $conf .= " same => n,NoOp(Ring group {$id} not answered -> fallback)\n";
         $conf .= $fallback . "\n";

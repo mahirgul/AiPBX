@@ -110,6 +110,13 @@ function pbxVideoCodecs(): array {
     return [$codec];
 }
 
+/** The built-in WS transport is on (Transports page); SyncTransports writes it only then. */
+function wsTransportEnabled(): bool
+{
+    $v = (string) (getDB()->query("SELECT data FROM pjsipsettings WHERE keyword = 'ws_enabled'")->fetchColumn() ?: '');
+    return $v !== '' && $v !== '0' && strtolower($v) !== 'no';
+}
+
 function syncAllExtensions() {
     return withSyncLock('extensions', '__syncAllExtensionsBody');
 }
@@ -192,7 +199,12 @@ function __syncAllExtensionsBody() {
     $conf .= "context=from-internal-pbx\n";
     $conf .= "disallow=all\n";
     $conf .= "allow={$webrtc_codecs}\n";
-    $conf .= "transport=transport-ws\n";
+    // Only while the WS transport exists: switched off, every call to a web
+    // phone logged "Unable to retrieve PJSIP transport 'transport-ws'". The web
+    // phone's own WebSocket connection carries the call either way.
+    if (wsTransportEnabled()) {
+        $conf .= "transport=transport-ws\n";
+    }
     $conf .= "identify_by=auth_username,username\n";
     $conf .= "dtmf_mode=rfc4733\n";
     // With video on, no RTP timeout here: WebRTC bundles audio and video on one
@@ -272,7 +284,18 @@ function __syncAllExtensionsBody() {
             $sip_map = SIPHelper::getSettingsMap($ext);
         }
 
-        $secret = !empty($sip_map['secret']) ? $sip_map['secret'] : (!empty($u['sip_password']) ? $u['sip_password'] : 'Pass' . $ext . '!');
+        // No password at all (desk phone without digest auth): the web and mobile
+        // accounts still need one, and the old fallback was 'Pass<extension>!',
+        // which anyone could guess. A random one is kept on the user instead;
+        // the web phone and the mobile app read it from there.
+        // (It was reached when the number of such an extension was changed: the
+        // new number's `sip` rows had no secret.) The user row also carries the
+        // secret in use, or the web phone was handed an empty password.
+        if (empty($u['sip_password'])) {
+            $u['sip_password'] = !empty($sip_map['secret']) ? (string) $sip_map['secret'] : SIPHelper::generateStrongSIPPassword();
+            $db->prepare('UPDATE sys_users SET sip_password = ? WHERE id = ?')->execute([$u['sip_password'], (int) $u['id']]);
+        }
+        $secret = confValue(!empty($sip_map['secret']) ? $sip_map['secret'] : $u['sip_password']);
         $auth_digest = isset($u['sip_auth_digest']) ? (intval($u['sip_auth_digest']) === 1) : true;
         if (isset($sip_map['auth_digest']) && !isset($u['sip_auth_digest'])) {
             $auth_digest = !in_array(strtolower($sip_map['auth_digest']), ['no', '0', 'false', 'off'], true);
@@ -371,7 +394,7 @@ function __syncAllExtensionsBody() {
         foreach ($sip_map as $k => $v) {
             if (in_array($k, $ignore_keys) || $v === '' || ExtensionSipOptions::isOwnKey((string) $k)) continue;
             if (!in_array($k, $sip_blocked)) {
-                $conf .= toCleanAscii($k) . "=" . toCleanAscii($v) . "\n";
+                $conf .= toCleanAscii($k) . "=" . confValue(toCleanAscii($v)) . "\n";
             }
         }
         $conf .= "\n";

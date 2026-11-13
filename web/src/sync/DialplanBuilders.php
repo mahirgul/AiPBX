@@ -216,6 +216,19 @@ function buildTrunkCallerIdLine($trunk_entry, $is_internal) {
 }
 
 /**
+ * Dial permission check at the top of every outbound route. A dialled number
+ * that is not only 0-9 * # + is refused first: `&` in it added a second
+ * channel to Dial() and `,` shifted the Gosub arguments, both past the
+ * permission rules. The comparison is on lengths, so no character of the
+ * number ever lands inside the expression.
+ */
+function dialPermissionCheckLines(): string
+{
+    return " same => n,GotoIf(\$[\${LEN(\${FILTER(0-9*#+,\${EXTEN})})} != \${LEN(\${EXTEN})}]?sub-permission-denied,s,1)\n"
+        . " same => n,Gosub(sub-check-dial-permission,s,1(\${EXTEN}))\n";
+}
+
+/**
  * The jitter buffer line before a Dial (PBX settings → Tuning): nothing when
  * switched off, Asterisk's defaults unless a size was changed, and never for
  * a fax (it reshapes the modem's timing).

@@ -22,23 +22,11 @@ if ($action === 'originate' || $action === 'originate_callback') {
     }
 
     // Dual endpoint: there is no endpoint named PJSIP/<ext>; the call goes through
-    // the dialplan via a Local channel (from-internal-pbx → PJSIP_DIAL_CONTACTS → all devices)
-    // Outbound route group: if the user is assigned to a group other than 1, that group's context is used
-    $outbound_grp = max(1, intval($user['outbound_group'] ?? 1));
-    $outbound_context = ($outbound_grp > 1) ? "from-internal-web-{$outbound_grp}" : 'from-internal-web';
-
+    // the dialplan via a Local channel (from-internal-pbx → PJSIP_DIAL_CONTACTS → all devices).
     // The permission group travels with the Originate: the Local leg has no
-    // endpoint variables, and an empty group passes the dial-permission
-    // check (it is what inbound calls have), so restrictions were skipped.
-    // getCurrentUser() does not select the column, so read it when needed.
-    $perm_grp = 1;
-    if (!empty($user['permission_group_id'])) {
-        $perm_grp = max(1, intval($user['permission_group_id']));
-    } elseif (!empty($user['id'])) {
-        $perm_grp = max(1, intval($db->query(
-            'SELECT permission_group_id FROM sys_users WHERE id = ' . intval($user['id'])
-        )->fetchColumn() ?: 1));
-    }
+    // endpoint variables, and an empty group passes the dial-permission check
+    // (it is what inbound calls have), so restrictions were skipped.
+    [$outbound_context, $perm_grp] = agentDialScope($user, $db);
 
     $cmd = buildOriginateCommand($user_ext, $to, $outbound_context, $perm_grp);
 
@@ -97,8 +85,20 @@ if ($action === 'transfer') {
         echo json_encode(['success' => false, 'error' => t('api_cc.err_no_call')]);
         exit;
     }
-    $res = sendAMICommand("Action: Redirect\r\nChannel: $caller_channel\r\nContext: cc-internal\r\nExten: $to\r\nPriority: 1\r\n\r\n");
+    // The caller's channel carries no permission group, and an empty group may
+    // dial anything: the transfer went out past the agent's own restrictions.
+    // It now takes the agent's group and the agent's outbound routes; when the
+    // group cannot be set the call is not transferred.
+    [$transfer_context, $perm_grp] = agentDialScope($user, $db);
+    if ($transfer_context === 'from-internal-web') {
+        $transfer_context = 'cc-internal';
+    }
+    $res = sendAMICommand("Action: Setvar\r\nChannel: $caller_channel\r\nVariable: __PERMISSION_GROUP_ID\r\nValue: $perm_grp\r\n\r\n");
     $ok = ($res && strpos($res, 'Response: Success') !== false);
+    if ($ok) {
+        $res = sendAMICommand("Action: Redirect\r\nChannel: $caller_channel\r\nContext: $transfer_context\r\nExten: $to\r\nPriority: 1\r\n\r\n");
+        $ok = ($res && strpos($res, 'Response: Success') !== false);
+    }
     echo json_encode(['success' => $ok, 'message' => $ok ? sprintf(t('api_cc.transferring'), $to) : t('api_cc.err_transfer')]);
     exit;
 }

@@ -32,7 +32,7 @@ function syncAllIVRs() {
  */
 function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numbers = [], $outbound_routes = []) {
     $ivr_id = $ivr['id'];
-    $title = toCleanAscii($ivr['title']);
+    $title = dialplanText($ivr['title']);
     $prompt = FileHelper::sanitizeAudioPath($ivr['prompt_file']);
     $timeout = intval($ivr['timeout_seconds'] ?: 10);
     $max_failures = max(1, intval($ivr['max_failures'] ?: 3));
@@ -97,7 +97,7 @@ function buildIVRDialplanBlock($ivr, $entries, $active_exts = [], $internal_numb
                 $ext_rule = ($pat_clean[0] === '_' || preg_match('/^[+0-9*#]+$/', $pat_clean)) ? $pat_clean : "_{$pat_clean}";
                 if (isset($used_digits[$ext_rule]) || isset($dialable[$ext_rule])) continue;
                 if (in_array($ext_rule, ['_.', '_!', '_X.', '_X!'], true)) continue;
-                $r_name = toCleanAscii($r['route_name'] ?? 'Route');
+                $r_name = dialplanText($r['route_name'] ?? 'Route');
                 $conf .= "exten => {$ext_rule},1,NoOp(IVR {$ivr_id} Direct Dial to Outbound Route {$r_name}: \${EXTEN})\n";
                 $conf .= " same => n,Goto(from-internal-pbx,\${EXTEN},1)\n\n";
             }
