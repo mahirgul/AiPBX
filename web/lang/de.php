@@ -6229,4 +6229,11 @@ Ihr Telefon wird klingeln.',
     'phone_keys.help_body' => 'Legen Sie fest, was die programmierbaren Tasten eines Telefons tun. Das Telefon übernimmt sie beim nächsten Laden seiner Einstellungen.',
     'webhooks.help_body' => 'Sendet PBX-Ereignisse an die von Ihnen eingegebenen Adressen, damit andere Systeme darauf reagieren können. Zum Senden ausstehende Ereignisse sind unten in der Warteschlange aufgeführt.',
     'plugins.voicemail_transcription_help' => 'Aktivieren Sie die Voicemail-Transkription unter KI → Cloud-Dienste → Voicemail. Diese Seite verwendet fertige Transkripte; konfigurieren Sie das optionale LLM oben, um deren Zusammenfassungen anzupassen.',
+
+    'mobile_api.must_reset_password' => 'Bitte melden Sie sich einmal im Webportal an und legen Sie ein neues Passwort fest, danach melden Sie sich hier an.',
+    'srv_mail.err_from' => 'Ungültige Absender-E-Mail-Adresse: %s',
+    'srv_sound.err_too_big' => 'Die Datei ist größer als das Upload-Limit (%s). Verwenden Sie eine kürzere oder stärker komprimierte Datei.',
+    'srv_queue.err_musicclass' => 'Es gibt keine aktive Wartemusik-Klasse mit dem Namen \'%s\'.',
+    'srv_trunk.err_field' => '%s ist ungültig: "%s". Prüfen Sie auf Leerzeichen oder Tippfehler.',
+    'privacy.field_record_outbound' => 'Ausgehende Anrufe aufzeichnen (die Aufzeichnung für eingehende Anrufe, Warteschlangen und Rufgruppen wird je Route, Warteschlange und Gruppe festgelegt)',
 ];

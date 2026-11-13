@@ -6229,4 +6229,11 @@ Váš telefon zazvoní.',
     'phone_keys.help_body' => 'Zvolte funkci programovatelných kláves telefonu. Telefon je převezme při příštím načtení svého nastavení.',
     'webhooks.help_body' => 'Odesílá události ústředny na zadané adresy, aby na ně mohly reagovat jiné systémy. Události čekající na odeslání jsou uvedeny ve frontě níže.',
     'plugins.voicemail_transcription_help' => 'Povolte přepis hlasových zpráv v nabídce AI → Cloudové služby → Hlasová schránka. Tato stránka používá hotové přepisy; výše nakonfigurujte volitelný LLM pro úpravu jejich shrnutí.',
+
+    'mobile_api.must_reset_password' => 'Přihlaste se prosím jednou do webového portálu a nastavte si nové heslo, poté se přihlaste zde.',
+    'srv_mail.err_from' => 'Neplatná e-mailová adresa odesílatele: %s',
+    'srv_sound.err_too_big' => 'Soubor je větší než limit pro nahrání (%s). Použijte kratší nebo více komprimovaný soubor.',
+    'srv_queue.err_musicclass' => 'Neexistuje žádná aktivní třída hudby při čekání s názvem \'%s\'.',
+    'srv_trunk.err_field' => '%s není platné: "%s". Zkontrolujte mezery nebo překlepy.',
+    'privacy.field_record_outbound' => 'Nahrávat odchozí hovory (nahrávání příchozích hovorů, front a vyzváněcích skupin se nastavuje u každé trasy, fronty a skupiny)',
 ];

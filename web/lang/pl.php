@@ -6229,4 +6229,11 @@ Telefon zadzwoni.',
     'phone_keys.help_body' => 'Wybierz działanie programowalnych klawiszy telefonu. Telefon pobierze je przy kolejnym wczytaniu swoich ustawień.',
     'webhooks.help_body' => 'Wysyła zdarzenia PBX na wprowadzone adresy, dzięki czemu inne systemy mogą na nie reagować. Zdarzenia oczekujące na wysłanie są wymienione w poniższej kolejce.',
     'plugins.voicemail_transcription_help' => 'Włącz transkrypcję poczty głosowej w menu SI → Usługi w chmurze → Poczta głosowa. Ta strona używa gotowych transkrypcji; skonfiguruj powyższy opcjonalny model LLM, aby dostosować podsumowania.',
+
+    'mobile_api.must_reset_password' => 'Zaloguj się raz w portalu WWW i ustaw nowe hasło, a następnie zaloguj się tutaj.',
+    'srv_mail.err_from' => 'Nieprawidłowy adres e-mail nadawcy: %s',
+    'srv_sound.err_too_big' => 'Plik jest większy niż limit przesyłania (%s). Użyj krótszego lub bardziej skompresowanego pliku.',
+    'srv_queue.err_musicclass' => 'Brak aktywnej klasy muzyki na czekanie o nazwie \'%s\'.',
+    'srv_trunk.err_field' => '%s jest nieprawidłowe: "%s". Sprawdź spacje lub literówki.',
+    'privacy.field_record_outbound' => 'Nagrywaj połączenia wychodzące (nagrywanie połączeń przychodzących, kolejek i grup dzwonienia ustawia się na każdej trasie, kolejce i grupie)',
 ];

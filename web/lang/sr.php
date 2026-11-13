@@ -6229,4 +6229,11 @@ Vaš telefon će zazvoniti.',
     'phone_keys.help_body' => 'Izaberite šta rade programabilni tasteri telefona. Telefon ih preuzima sledeći put kada učita svoja podešavanja.',
     'webhooks.help_body' => 'Šalje PBX događaje na adrese koje unesete, tako da drugi sistemi mogu da reaguju na njih. Događaji koji čekaju na slanje navedeni su u redu čekanja ispod.',
     'plugins.voicemail_transcription_help' => 'Omogućite transkripciju govorne pošte pod AI → Usluge u oblaku → Govorna pošta. Ova stranica koristi završene transkripte; konfigurišite opcioni LLM iznad za prilagođavanje sažetaka.',
+
+    'mobile_api.must_reset_password' => 'Molimo prijavite se jednom na veb portal i postavite novu lozinku, pa se zatim prijavite ovde.',
+    'srv_mail.err_from' => 'Neispravna e-mail adresa pošiljaoca: %s',
+    'srv_sound.err_too_big' => 'Datoteka je veća od ograničenja za otpremanje (%s). Koristite kraću ili više komprimovanu datoteku.',
+    'srv_queue.err_musicclass' => 'Ne postoji aktivna klasa muzike na čekanju pod nazivom \'%s\'.',
+    'srv_trunk.err_field' => '%s nije ispravno: "%s". Proverite razmake ili greške u kucanju.',
+    'privacy.field_record_outbound' => 'Snimaj odlazne pozive (snimanje dolaznih poziva, redova čekanja i grupa zvonjenja podešava se na svakoj ruti, redu i grupi)',
 ];

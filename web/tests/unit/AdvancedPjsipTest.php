@@ -86,6 +86,9 @@ final class AdvancedPjsipTest extends TestCase
     {
         $name = 'zz_handedit_test.conf';
         $path = ASTERISK_PBX_DIR . '/' . $name;
+        foreach (glob($path . '*') ?: [] as $f) {
+            @unlink($f);
+        }
         try {
             writePBXConf($name, "generated\n");
             writePBXConf($name, "generated again\n");

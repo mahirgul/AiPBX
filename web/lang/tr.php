@@ -6229,4 +6229,11 @@ Telefonunuz çaldırılacak.',
     'phone_keys.help_body' => 'Bir telefonun programlanabilir tuşlarının ne işe yarayacağını seçin. Telefon bunları ayarlarını bir sonraki yükleyişinde alır.',
     'webhooks.help_body' => 'PBX olaylarını girdiğiniz adreslere gönderir, böylece diğer sistemler bunlara göre işlem yapabilir. Gönderilmeyi bekleyen olaylar aşağıdaki kuyrukta listelenir.',
     'plugins.voicemail_transcription_help' => 'Sesli mesaj transkripsiyonunu Yapay Zeka → Bulut servisleri → Sesli mesaj altından etkinleştirin. Bu sayfa tamamlanan transkriptleri kullanır; özetlerini özelleştirmek için yukarıdaki isteğe bağlı LLM\'yi yapılandırın.',
+
+    'mobile_api.must_reset_password' => 'Lütfen web portalına bir kez giriş yapıp yeni bir şifre belirleyin, ardından buradan giriş yapın.',
+    'srv_mail.err_from' => 'Geçersiz gönderen e-posta adresi: %s',
+    'srv_sound.err_too_big' => 'Dosya yükleme sınırından (%s) büyük. Daha kısa veya daha sıkıştırılmış bir dosya kullanın.',
+    'srv_queue.err_musicclass' => '\'%s\' adında etkin bir bekleme müziği sınıfı yok.',
+    'srv_trunk.err_field' => '%s geçerli değil: "%s". Boşluk veya yazım hatası olup olmadığını kontrol edin.',
+    'privacy.field_record_outbound' => 'Giden aramaları kaydet (gelen, kuyruk ve çağrı grubu kaydı her rota, kuyruk ve grup için ayrı ayarlanır)',
 ];

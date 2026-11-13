@@ -6229,4 +6229,11 @@ Votre téléphone va sonner.',
     'phone_keys.help_body' => 'Choisissez ce que font les touches programmables d\'un téléphone. Le téléphone les recevra lors du prochain chargement de ses paramètres.',
     'webhooks.help_body' => 'Envoie les événements du PBX aux adresses que vous saisissez, afin que d\'autres systèmes puissent agir en conséquence. Les événements en attente d\'envoi sont listés dans la file d\'attente ci-dessous.',
     'plugins.voicemail_transcription_help' => 'Activez la transcription de la messagerie vocale sous IA → Services cloud → Messagerie vocale. Cette page utilise les transcriptions terminées ; configurez le LLM optionnel ci-dessus pour personnaliser leurs résumés.',
+
+    'mobile_api.must_reset_password' => 'Veuillez vous connecter une fois au portail web et définir un nouveau mot de passe, puis connectez-vous ici.',
+    'srv_mail.err_from' => 'Adresse e-mail d\'expéditeur invalide : %s',
+    'srv_sound.err_too_big' => 'Le fichier dépasse la limite d\'envoi (%s). Utilisez un fichier plus court ou plus compressé.',
+    'srv_queue.err_musicclass' => 'Il n\'existe aucune classe active de musique d\'attente nommée \'%s\'.',
+    'srv_trunk.err_field' => '%s n\'est pas valide : "%s". Vérifiez les espaces ou les fautes de frappe.',
+    'privacy.field_record_outbound' => 'Enregistrer les appels sortants (l\'enregistrement des appels entrants, files d\'attente et groupes de sonnerie est défini sur chaque route, file et groupe)',
 ];

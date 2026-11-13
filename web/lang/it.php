@@ -6229,4 +6229,11 @@ Il suo telefono squillerà.',
     'phone_keys.help_body' => 'Scegli le funzioni dei tasti programmabili di un telefono. Il telefono le riceverà al successivo caricamento delle impostazioni.',
     'webhooks.help_body' => 'Invia gli eventi del PBX agli indirizzi inseriti, in modo che altri sistemi possano elaborarli. Gli eventi in attesa di invio sono elencati nella coda sottostante.',
     'plugins.voicemail_transcription_help' => 'Abilita la trascrizione della segreteria sotto IA → Servizi cloud → Segreteria. Questa pagina utilizza le trascrizioni completate; configura l\'LLM opzionale sopra per personalizzarne i riepiloghi.',
+
+    'mobile_api.must_reset_password' => 'Accedi una volta al portale web e imposta una nuova password, poi accedi qui.',
+    'srv_mail.err_from' => 'Indirizzo e-mail del mittente non valido: %s',
+    'srv_sound.err_too_big' => 'Il file supera il limite di caricamento (%s). Usa un file più corto o più compresso.',
+    'srv_queue.err_musicclass' => 'Non esiste alcuna classe attiva di musica di attesa chiamata \'%s\'.',
+    'srv_trunk.err_field' => '%s non è valido: "%s". Controlla eventuali spazi o errori di battitura.',
+    'privacy.field_record_outbound' => 'Registra le chiamate in uscita (la registrazione di chiamate in ingresso, code e gruppi di suoneria si imposta su ogni rotta, coda e gruppo)',
 ];

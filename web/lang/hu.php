@@ -6229,4 +6229,11 @@ A telefonja csörögni fog.',
     'phone_keys.help_body' => 'Válassza ki, mit tegyenek a telefon programozható gombjai. A telefon a beállításai következő betöltésekor veszi át őket.',
     'webhooks.help_body' => 'PBX-eseményeket küld a megadott címekre, így más rendszerek reagálhatnak rájuk. A küldésre váró események az alábbi várólistában szerepelnek.',
     'plugins.voicemail_transcription_help' => 'Engedélyezze a hangposta-átírást az MI → Felhőszolgáltatások → Hangposta menüpontban. Ez az oldal kész átiratokat használ; konfigurálja a fenti opcionális LLM-et az összefoglalók testreszabásához.',
+
+    'mobile_api.must_reset_password' => 'Kérjük, jelentkezzen be egyszer a webportálra, állítson be új jelszót, majd jelentkezzen be itt.',
+    'srv_mail.err_from' => 'Érvénytelen feladói e-mail-cím: %s',
+    'srv_sound.err_too_big' => 'A fájl nagyobb a feltöltési korlátnál (%s). Használjon rövidebb vagy jobban tömörített fájlt.',
+    'srv_queue.err_musicclass' => 'Nincs \'%s\' nevű aktív várakoztató zene osztály.',
+    'srv_trunk.err_field' => '%s nem érvényes: "%s". Ellenőrizze a szóközöket vagy az elgépeléseket.',
+    'privacy.field_record_outbound' => 'Kimenő hívások rögzítése (a bejövő hívások, várólisták és csengőcsoportok rögzítése minden útvonalon, várólistán és csoporton külön állítható be)',
 ];

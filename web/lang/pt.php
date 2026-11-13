@@ -6229,4 +6229,11 @@ O seu telefone vai tocar.',
     'phone_keys.help_body' => 'Escolha o que fazem as teclas programáveis de um telefone. O telefone recebe-as na próxima vez que carregar as suas definições.',
     'webhooks.help_body' => 'Envia eventos do PBX para os endereços introduzidos, para que outros sistemas possam agir sobre eles. Os eventos a aguardar envio estão listados na fila abaixo.',
     'plugins.voicemail_transcription_help' => 'Ative a transcrição de correio de voz em IA → Serviços em nuvem → Correio de voz. Esta página usa transcrições concluídas; configure o LLM opcional acima para personalizar resumos.',
+
+    'mobile_api.must_reset_password' => 'Inicie sessão uma vez no portal web e defina uma nova palavra-passe; depois, inicie sessão aqui.',
+    'srv_mail.err_from' => 'Endereço de e-mail do remetente inválido: %s',
+    'srv_sound.err_too_big' => 'O ficheiro é maior do que o limite de envio (%s). Utilize um ficheiro mais curto ou mais comprimido.',
+    'srv_queue.err_musicclass' => 'Não existe nenhuma classe ativa de música em espera com o nome \'%s\'.',
+    'srv_trunk.err_field' => '%s não é válido: "%s". Verifique se existem espaços ou erros de digitação.',
+    'privacy.field_record_outbound' => 'Gravar chamadas efetuadas (a gravação de chamadas recebidas, filas e grupos de toque é definida em cada rota, fila e grupo)',
 ];

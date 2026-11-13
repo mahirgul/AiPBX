@@ -6229,4 +6229,11 @@ Telefonunuz çalacaq.',
     'phone_keys.help_body' => 'Telefonun proqramlaşdırıla bilən düymələrinin nə etdiyini seçin. Telefon parametrlərini növbəti dəfə yükləyəndə onları əldə edir.',
     'webhooks.help_body' => 'PBX hadisələrini daxil etdiyiniz ünvanlara göndərir ki, digər sistemlər onlara uyğun hərəkət edə bilsin. Göndərilməyi gözləyən hadisələr aşağıdakı növbədə sadalanır.',
     'plugins.voicemail_transcription_help' => 'Səsli poçt transkripsiyasını Süni intellekt → Bulud xidmətləri → Səsli poçt bölməsindən aktivləşdirin. Bu səhifə tamamlanmış mətnləri istifadə edir; xülasələri fərdiləşdirmək üçün yuxarıdakı seçimli LLM-i konfiqurasiya edin.',
+
+    'mobile_api.must_reset_password' => 'Zəhmət olmasa bir dəfə veb portala daxil olub yeni şifrə təyin edin, sonra burada daxil olun.',
+    'srv_mail.err_from' => 'Yanlış göndərən e-poçt ünvanı: %s',
+    'srv_sound.err_too_big' => 'Fayl yükləmə limitindən (%s) böyükdür. Daha qısa və ya sıxılmış fayldan istifadə edin.',
+    'srv_queue.err_musicclass' => '\'%s\' adlı aktiv gözləmə musiqisi sinfi yoxdur.',
+    'srv_trunk.err_field' => '%s etibarlı deyil: "%s". Boşluqları və ya yazı xətalarını yoxlayın.',
+    'privacy.field_record_outbound' => 'Gedən zəngləri yaz (gələn, növbə və zəng qrupu yazısı hər marşrut, növbə və qrupda təyin olunur)',
 ];

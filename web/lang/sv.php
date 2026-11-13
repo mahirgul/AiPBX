@@ -6229,4 +6229,11 @@ Din telefon kommer att ringa.',
     'phone_keys.help_body' => 'Välj vad telefonens programmerbara knappar gör. Telefonen hämtar dem nästa gång den läser in sina inställningar.',
     'webhooks.help_body' => 'Skickar PBX-händelser till adresserna du anger så att andra system kan agera på dem. Händelser som väntar på att skickas listas i kön nedan.',
     'plugins.voicemail_transcription_help' => 'Aktivera röstbrevlådetranskription under AI → Molntjänster → Röstbrevlåda. Den här sidan använder slutförda transkriptioner; konfigurera den valfria LLM-modellen ovan för att anpassa sammanfattningarna.',
+
+    'mobile_api.must_reset_password' => 'Logga in på webbportalen en gång och ange ett nytt lösenord, och logga sedan in här.',
+    'srv_mail.err_from' => 'Ogiltig avsändar-e-postadress: %s',
+    'srv_sound.err_too_big' => 'Filen är större än uppladdningsgränsen (%s). Använd en kortare eller mer komprimerad fil.',
+    'srv_queue.err_musicclass' => 'Det finns ingen aktiv väntemusik-klass med namnet \'%s\'.',
+    'srv_trunk.err_field' => '%s är inte giltigt: "%s". Kontrollera mellanslag eller stavfel.',
+    'privacy.field_record_outbound' => 'Spela in utgående samtal (inspelning av inkommande samtal, köer och ringgrupper ställs in på varje rutt, kö och grupp)',
 ];

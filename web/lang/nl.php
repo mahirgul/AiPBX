@@ -6229,4 +6229,11 @@ Je telefoon gaat over.',
     'phone_keys.help_body' => 'Kies wat de programmeerbare toetsen van een telefoon doen. De telefoon ontvangt ze de volgende keer dat deze zijn instellingen laadt.',
     'webhooks.help_body' => 'Verzendt PBX-gebeurtenissen naar de adressen die je invoert, zodat andere systemen erop kunnen reageren. Gebeurtenissen die wachten op verzending staan in de onderstaande wachtrij.',
     'plugins.voicemail_transcription_help' => 'Schakel voicemailtranscriptie in onder AI → Cloudservices → Voicemail. Deze pagina gebruikt voltooide transcripties; configureer het optionele LLM hierboven om de samenvattingen aan te passen.',
+
+    'mobile_api.must_reset_password' => 'Meld u eenmaal aan bij het webportaal en stel een nieuw wachtwoord in; meld u daarna hier aan.',
+    'srv_mail.err_from' => 'Ongeldig e-mailadres van afzender: %s',
+    'srv_sound.err_too_big' => 'Het bestand is groter dan de uploadlimiet (%s). Gebruik een korter of meer gecomprimeerd bestand.',
+    'srv_queue.err_musicclass' => 'Er is geen actieve wachtmuziekklasse met de naam \'%s\'.',
+    'srv_trunk.err_field' => '%s is ongeldig: "%s". Controleer op spaties of typefouten.',
+    'privacy.field_record_outbound' => 'Uitgaande gesprekken opnemen (opname voor inkomende gesprekken, wachtrijen en belgroepen wordt per route, wachtrij en groep ingesteld)',
 ];

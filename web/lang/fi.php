@@ -6229,4 +6229,11 @@ Puhelimesi soi.',
     'phone_keys.help_body' => 'Valitse, mitä puhelimen ohjelmoitavat näppäimet tekevät. Puhelin ottaa ne käyttöön seuraavan kerran asetuksia ladatessaan.',
     'webhooks.help_body' => 'Lähettää PBX-tapahtumia antamiisi osoitteisiin, jotta muut järjestelmät voivat reagoida niihin. Lähetystä odottavat tapahtumat on lueteltu alla olevassa jonossa.',
     'plugins.voicemail_transcription_help' => 'Ota vastaajan litterointi käyttöön kohdassa Tekoäly → Pilvipalvelut → Vastaaja. Tämä sivu käyttää valmiita litterointeja; mukauta niiden tiivistelmiä määrittämällä yllä oleva valinnainen LLM.',
+
+    'mobile_api.must_reset_password' => 'Kirjaudu kerran verkkoportaaliin ja aseta uusi salasana, ja kirjaudu sitten tänne.',
+    'srv_mail.err_from' => 'Virheellinen lähettäjän sähköpostiosoite: %s',
+    'srv_sound.err_too_big' => 'Tiedosto ylittää lähetysrajan (%s). Käytä lyhyempää tai tiiviimmin pakattua tiedostoa.',
+    'srv_queue.err_musicclass' => 'Aktiivista jonotusmusiikkiluokkaa nimellä \'%s\' ei ole.',
+    'srv_trunk.err_field' => '%s ei kelpaa: "%s". Tarkista välilyönnit ja kirjoitusvirheet.',
+    'privacy.field_record_outbound' => 'Tallenna lähtevät puhelut (saapuvien puheluiden, jonojen ja soitonryhmien tallennus asetetaan kunkin reitin, jonon ja ryhmän kohdalla)',
 ];

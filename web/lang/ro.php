@@ -6229,4 +6229,11 @@ Telefonul dvs. va suna.',
     'phone_keys.help_body' => 'Alegeți funcțiile tastelor programabile ale unui telefon. Telefonul le preia la următoarea încărcare a setărilor sale.',
     'webhooks.help_body' => 'Trimite evenimentele din PBX către adresele introduse, astfel încât alte sisteme să poată acționa pe baza lor. Evenimentele în așteptarea trimiterii sunt listate în coada de mai jos.',
     'plugins.voicemail_transcription_help' => 'Activați transcrierea mesageriei vocale sub IA → Servicii cloud → Mesagerie vocală. Această pagină folosește transcrieri finalizate; configurați modelul LLM opțional de mai sus pentru a personaliza rezumatele.',
+
+    'mobile_api.must_reset_password' => 'Vă rugăm să vă autentificați o dată în portalul web și să setați o parolă nouă, apoi autentificați-vă aici.',
+    'srv_mail.err_from' => 'Adresă de e-mail a expeditorului nevalidă: %s',
+    'srv_sound.err_too_big' => 'Fișierul depășește limita de încărcare (%s). Folosiți un fișier mai scurt sau mai comprimat.',
+    'srv_queue.err_musicclass' => 'Nu există nicio clasă activă de muzică de așteptare numită \'%s\'.',
+    'srv_trunk.err_field' => '%s nu este valid: "%s". Verificați spațiile sau greșelile de scriere.',
+    'privacy.field_record_outbound' => 'Înregistrează apelurile efectuate (înregistrarea apelurilor primite, a cozilor și a grupurilor de apelare se setează pe fiecare rută, coadă și grup)',
 ];
