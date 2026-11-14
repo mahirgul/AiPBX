@@ -11,9 +11,10 @@ class VpnServerController extends BaseController
 
         $qr = null;
         $notices = ['message' => '', 'error' => ''];
-        if (static::isPost() && (isset($_POST['peer_download']) || isset($_POST['peer_qr']))) {
+        if (static::isPost() && (isset($_POST['peer_download']) || isset($_POST['peer_qr']) || isset($_POST['peer_yealink']))) {
             $res = PBXHelper::handleAction(static::csrfToken(), function () use (&$qr) {
-                $profile = VpnService::peerProfile((int) ($_POST['peer_id'] ?? 0));
+                $id = (int) ($_POST['peer_id'] ?? 0);
+                $profile = isset($_POST['peer_yealink']) ? VpnService::peerYealinkTar($id) : VpnService::peerProfile($id);
                 if (isset($_POST['peer_qr'])) {
                     $qr = ['name' => $profile['name'], 'image' => VpnService::profileQr($profile['content'])];
                     return '';

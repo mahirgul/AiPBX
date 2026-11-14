@@ -109,6 +109,9 @@ $size = function (int $bytes): string {
                                 <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
                                 <input type="hidden" name="peer_id" value="<?php echo (int) $peer['id']; ?>">
                                 <button type="submit" name="peer_download" value="1" class="btn btn-xs btn-secondary" title="<?php echo t('vpn.download'); ?>"><i class="fas fa-download"></i> <?php echo t('vpn.download'); ?></button>
+                                <?php if ($type === 'ovpn'): ?>
+                                    <button type="submit" name="peer_yealink" value="1" class="btn btn-xs btn-secondary" title="<?php echo t('vpn.yealink_hint'); ?>"><i class="fas fa-phone"></i> Yealink</button>
+                                <?php endif; ?>
                                 <?php if ($type === 'wg'): ?>
                                     <button type="submit" name="peer_qr" value="1" class="btn btn-xs btn-secondary" title="<?php echo t('vpn.qr'); ?>"><i class="fas fa-qrcode"></i> <?php echo t('vpn.qr'); ?></button>
                                 <?php endif; ?>

@@ -131,6 +131,24 @@ class OpenVpnProfile(unittest.TestCase):
             text = vpn.wg_profile_peer({'server': {**state['server']}}, {'id': 1, 'name': 'x', 'ip': '10.99.0.2', 'psk': KEY})
         vpn.parse_wg_profile(text)
 
+    def test_yealink_tar_has_vpn_cnf_and_keys(self):
+        import io
+        import tarfile
+        state = {'server': {'type': 'ovpn', 'port': 1194, 'proto': 'udp', 'net': '10.99.0.0/24', 'endpoint': 'pbx.example.com'}}
+        with mock.patch.object(vpn, 'read_file', side_effect=lambda path: 'DATA ' + os.path.basename(path)):
+            raw = vpn.yealink_tar_peer(state, {'name': 'desk 1', 'cn': 'peer-7'})
+        with tarfile.open(fileobj=io.BytesIO(raw)) as tar:
+            names = tar.getnames()
+            files = {n: tar.extractfile(n).read().decode() for n in names if tar.getmember(n).isfile()}
+        self.assertEqual(names, ['./keys', './vpn.cnf', './keys/ca.crt', './keys/client.crt', './keys/client.key', './keys/ta.key'])
+        self.assertEqual(files['./keys/client.key'], 'DATA peer-7.key\n')
+        self.assertEqual(files['./keys/ta.key'], 'DATA tls-crypt.key\n')
+        cnf = files['./vpn.cnf']
+        for line in ('remote pbx.example.com 1194', 'proto udp', 'tls-crypt /config/openvpn/keys/ta.key',
+                     'key /config/openvpn/keys/client.key', 'ignore-unknown-option data-ciphers'):
+            self.assertIn(line + '\n', cnf)
+        self.assertLess(cnf.index('ignore-unknown-option data-ciphers'), cnf.index('data-ciphers AES'))
+
     def test_commands_and_file_access_refused(self):
         for line in ('up /tmp/x.sh', 'down /tmp/x.sh', 'script-security 2', 'plugin /tmp/x.so', 'route-up /tmp/x',
                      'route-pre-down /tmp/x', 'ipchange /tmp/x', 'tls-verify /tmp/x', 'tls-export-cert /tmp',

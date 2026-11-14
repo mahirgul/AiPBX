@@ -145,6 +145,27 @@ class VpnService
         throw new \Exception(t('vpn.err_no_peer'));
     }
 
+    /**
+     * A Yealink phone's OpenVPN package (.tar with vpn.cnf and keys/): it holds the
+     * device's private key, so it is in the audit log like the profile.
+     *
+     * @return array{name: string, content: string}
+     */
+    public static function peerYealinkTar(int $id): array
+    {
+        foreach (self::status()['server']['peers'] as $peer) {
+            if ((int) $peer['id'] === $id) {
+                $tar = base64_decode(trim(self::helper(['peer-yealink', 'id=' . $id])), true);
+                if ($tar === false || $tar === '') {
+                    throw new \Exception(t('vpn.err_helper'));
+                }
+                self::audit('device', $id, (string) $peer['name'], 'download');
+                return ['name' => preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $peer['name']) . '-yealink.tar', 'content' => $tar];
+            }
+        }
+        throw new \Exception(t('vpn.err_no_peer'));
+    }
+
     public static function profileQr(string $content): string
     {
         $options = new QROptions(['outputInterface' => QRMarkupSVG::class, 'outputBase64' => true, 'eccLevel' => EccLevel::L, 'addQuietzone' => true, 'scale' => 5]);

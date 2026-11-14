@@ -19,6 +19,21 @@ Deleting a device shuts it out at once; the other devices stay connected.
 
 Changing the type, the port or the public address means loading the profiles again. Devices of the other type are kept and work again when you go back. To change the VPN network, remove the devices first.
 
+### Yealink phones
+
+With the OpenVPN server, each device has a **Yealink** button next to **Download**. It gives the
+package Yealink phones load: a `.tar` with `vpn.cnf` and a `keys/` folder (the device's certificate and key,
+the server's CA and the `tls-crypt` key).
+
+1. Add a device for the phone and press **Yealink**.
+2. On the phone's web page: **Network → Advanced → VPN**, upload the `.tar`, turn **Active** on and confirm. The phone restarts.
+3. Set the phone's provisioning server to the server's VPN address (**Settings → Auto Provision**), or
+   register it to that address by hand.
+
+The phone's OpenVPN must know `tls-crypt` (OpenVPN 2.4 or newer): firmware that only knows `tls-auth`
+cannot connect. Newer options the phone does not know (`data-ciphers`) are skipped. Discovery by broadcast
+does not cross the tunnel, so a phone behind the VPN does not appear under *Discovered on the network*.
+
 ## VPN Client: this PBX connects to another network
 
 Use it for a SIP trunk or another PBX that is only reachable through a VPN, or to manage this server through a VPN.

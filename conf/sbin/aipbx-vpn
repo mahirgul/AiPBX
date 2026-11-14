@@ -617,6 +617,50 @@ def ovpn_profile_peer(state, peer):
     return '\n'.join(body) + '\n'
 
 
+# Yealink phones load OpenVPN as a .tar with vpn.cnf and a keys/ folder (Network →
+# Advanced → VPN, or openvpn.url in their provisioning file) and read the files from
+# /config/openvpn/keys. Their client is older: data-ciphers is skipped when it does
+# not know it and the cipher is then agreed by NCP (OpenVPN 2.4 and later).
+YEALINK_KEYS = '/config/openvpn/keys/'
+
+
+def yealink_vpn_cnf(state, peer):
+    server = state['server']
+    proto = 'tcp-client' if server['proto'] == 'tcp' else 'udp'
+    return '\n'.join([
+        '# AiPBX VPN profile for a Yealink phone: ' + peer['name'],
+        'client', 'dev tun', f'proto {proto}', f'remote {server["endpoint"]} {int(server["port"])}',
+        'resolv-retry infinite', 'nobind', 'persist-key', 'persist-tun', 'remote-cert-tls server', 'verb 3',
+        'ignore-unknown-option data-ciphers', 'data-ciphers AES-256-GCM:AES-128-GCM:CHACHA20-POLY1305',
+        'tls-version-min 1.2',
+        f'ca {YEALINK_KEYS}ca.crt', f'cert {YEALINK_KEYS}client.crt', f'key {YEALINK_KEYS}client.key',
+        f'tls-crypt {YEALINK_KEYS}ta.key',
+    ]) + '\n'
+
+
+def yealink_tar_peer(state, peer):
+    """The phone's .tar: ./vpn.cnf and ./keys/ (Yealink wants exactly these names)."""
+    import io
+    import tarfile
+    import time
+    now = int(time.time())
+    files = [('./vpn.cnf', yealink_vpn_cnf(state, peer))]
+    for name, path in (('ca.crt', 'ca.crt'), ('client.crt', peer['cn'] + '.crt'),
+                       ('client.key', peer['cn'] + '.key'), ('ta.key', 'tls-crypt.key')):
+        files.append(('./keys/' + name, read_file(priv('ovpn', path)).strip() + '\n'))
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode='w', format=tarfile.USTAR_FORMAT) as tar:
+        info = tarfile.TarInfo('./keys')
+        info.type, info.mode, info.mtime = tarfile.DIRTYPE, 0o755, now
+        tar.addfile(info)
+        for name, text in files:
+            data = text.encode()
+            info = tarfile.TarInfo(name)
+            info.size, info.mode, info.mtime = len(data), 0o600, now
+            tar.addfile(info, io.BytesIO(data))
+    return buf.getvalue()
+
+
 def wg_profile_peer(state, peer):
     server = state['server']
     return '\n'.join([
@@ -1122,6 +1166,19 @@ def cmd_peer_profile(args):
     print(wg_profile_peer(state, peer) if state['server']['type'] == 'wg' else ovpn_profile_peer(state, peer), end='')
 
 
+def cmd_peer_yealink(args):
+    """The Yealink .tar of an OpenVPN device, base64 (the portal reads text)."""
+    import base64
+    a = parse_args(args, {'id'})
+    state = load_state()
+    peer = find_peer(state, a.get('id', ''))
+    if state['server']['type'] != 'ovpn':
+        raise Refused('Yealink phones need the OpenVPN server.')
+    if not state['server']['endpoint']:
+        raise Refused('The server has no public address yet.')
+    print(base64.b64encode(yealink_tar_peer(state, peer)).decode(), end='')
+
+
 # --------------------------------------------------------------- tunnel commands
 
 def read_stdin_json():
@@ -1254,7 +1311,7 @@ def cmd_reapply(_args):
 
 COMMANDS = {
     'status': cmd_status, 'server-set': cmd_server_set, 'peer-add': cmd_peer_add, 'peer-del': cmd_peer_del,
-    'peer-profile': cmd_peer_profile, 'tunnel-add': cmd_tunnel_add, 'tunnel-set': cmd_tunnel_set,
+    'peer-profile': cmd_peer_profile, 'peer-yealink': cmd_peer_yealink, 'tunnel-add': cmd_tunnel_add, 'tunnel-set': cmd_tunnel_set,
     'tunnel-del': cmd_tunnel_del, 'log': cmd_log, 'reapply': cmd_reapply, 'run': cmd_run,
 }
 LOCKED = {'server-set', 'peer-add', 'peer-del', 'tunnel-add', 'tunnel-set', 'tunnel-del', 'reapply'}
