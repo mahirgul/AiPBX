@@ -48,6 +48,10 @@ class AuditLogController extends BaseController
         $audit_domains = array_merge(PENDING_SYNC_DOMAIN_MAP, [
             'privacy'            => 'privacy',
             'security'           => 'security',
+            'users'              => 'users',
+            'system'             => 'system',
+            'fax'                => 'fax',
+            'reports'            => 'reports',
             'plugins'            => 'plugins',
             'phones'             => 'phones',
             'ai_cloud'           => 'ai_cloud',

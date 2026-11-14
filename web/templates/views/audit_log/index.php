@@ -24,6 +24,10 @@
             'privacy'  => t('sidebar.item_privacy', $d),
             'security' => t('sidebar.group_security', $d),
             'plugins'  => t('sidebar.item_plugins', $d),
+            'users'    => t('sidebar.item_system_users', $d),
+            'system'   => t('sidebar.group_system', $d),
+            'fax'      => t('sidebar.group_fax', $d),
+            'reports'  => t('sidebar.item_cdr_reports', $d),
             default    => t('pending_sync.domain_' . $d, $d),
         };
         ?>
@@ -101,8 +105,8 @@
                             <td class="u-nowrap u-fs-12 u-muted"><?php echo htmlspecialchars($log['created_at']); ?></td>
                             <td><?php echo htmlspecialchars($log['username'] ?? t('pending_sync.unknown_user')); ?></td>
                             <td>
-                                <?php if (!empty($log['domain'])): ?>
-                                    <span class="badge badge-info"><?php echo htmlspecialchars($resolveAuditDomainLabel((string)$log['domain'])); ?></span>
+                                <?php if (!empty($log['effective_domain'])): ?>
+                                    <span class="badge badge-info"><?php echo htmlspecialchars($resolveAuditDomainLabel((string)$log['effective_domain'])); ?></span>
                                 <?php else: ?>
                                     <span class="u-muted">—</span>
                                 <?php endif; ?>

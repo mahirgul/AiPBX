@@ -7,7 +7,23 @@
  * snapshot and stored, so the record stays readable even if the user is
  * deleted later.
  */
+/**
+ * The area (domain) of records written without one, by what they are about.
+ * Older rows keep their empty domain (the log is never changed); the Audit page
+ * reads them through this map too, so its area filter finds them.
+ */
+const AUDIT_DOMAIN_BY_TYPE = [
+    'firewall' => 'security', 'fail2ban' => 'security', 'auth_sso_only' => 'security',
+    'user_account' => 'users', 'system_users' => 'users', 'role' => 'users', 'user_settings' => 'users',
+    'system' => 'system', 'system_service' => 'system', 'brand_settings' => 'system', 'mobile_settings' => 'system',
+    'mail_settings' => 'system', 'mail_templates' => 'system', 'sound_pack' => 'system',
+    'fax_cover' => 'fax', 'fax_inbox' => 'fax', 'fax_mail_settings' => 'fax', 'fax_sent' => 'fax',
+    'cdr' => 'reports', 'report' => 'reports',
+    'ai_tts' => 'ai_cloud', 'phonebook' => 'phones',
+];
+
 function writeAuditLog($domain, $entity_type, $entity_id, $entity_label, $action, $user_id = null) {
+    $domain = $domain ?? (AUDIT_DOMAIN_BY_TYPE[(string) $entity_type] ?? null);
     try {
         $db = getDB();
         $username = null;

@@ -56,4 +56,20 @@ final class AuditCoverageTest extends TestCase
         $this->assertSame(['phone_waiting', 'delete'], [$row['entity_type'], $row['action']]);
         $this->assertStringContainsStringIgnoringCase('00:11:22:aa:bb:cc', $row['entity_label']);
     }
+
+    public function testRecordsWithoutADomainAreFoundUnderTheirArea(): void
+    {
+        require_once __DIR__ . '/../../src/repositories/AuditLogRepository.php';
+        $db = getDB();
+        // An older row: written before the domain was filled in from the type.
+        $db->exec("INSERT INTO sys_audit_log (domain, entity_type, entity_id, entity_label, action, created_at)
+                   VALUES (NULL, 'firewall', 'x', 'audit-domain-test old firewall rule', 'create', NOW())");
+        writeAuditLog(null, 'role', 'y', 'audit-domain-test new role', 'update');
+        $this->assertSame('users', $db->query("SELECT domain FROM sys_audit_log WHERE entity_label = 'audit-domain-test new role'")->fetchColumn());
+
+        $find = fn(string $domain) => array_column(AuditLogRepository::search(0, time() + 60, $domain, '', '', 'audit-domain-test'), 'effective_domain', 'entity_label');
+        $this->assertSame(['audit-domain-test old firewall rule' => 'security'], $find('security'));
+        $this->assertSame(['audit-domain-test new role' => 'users'], $find('users'));
+        $this->assertCount(2, $find(''));
+    }
 }

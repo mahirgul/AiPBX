@@ -20,7 +20,14 @@ class AuditLogRepository extends BaseRepository
      */
     public static function search(int $startTs, int $endTs, string $domainFilter, string $actionFilter, string $userFilter, string $searchQuery): array
     {
-        $sql = "SELECT * FROM sys_audit_log WHERE 1=1";
+        // Rows written without a domain get it from their type (AUDIT_DOMAIN_BY_TYPE).
+        require_once __DIR__ . '/../audit_log.php';
+        $case = 'CASE entity_type';
+        foreach (AUDIT_DOMAIN_BY_TYPE as $type => $domain) {
+            $case .= " WHEN '{$type}' THEN '{$domain}'";
+        }
+        $effective = "COALESCE(domain, {$case} END)";
+        $sql = "SELECT *, {$effective} AS effective_domain FROM sys_audit_log WHERE 1=1";
         $params = [];
 
         if ($startTs > 0) {
@@ -32,7 +39,7 @@ class AuditLogRepository extends BaseRepository
             $params[] = date('Y-m-d H:i:s', $endTs);
         }
         if ($domainFilter !== '') {
-            $sql .= " AND domain = ?";
+            $sql .= " AND {$effective} = ?";
             $params[] = $domainFilter;
         }
         if ($actionFilter !== '') {
