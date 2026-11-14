@@ -11,6 +11,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.77.1
+
+### ✨ New
+
+- **Phonebook** (Provisioning → Phonebook): company contacts everyone can reach (suppliers, customers, branches), added by hand or from a CSV file.
+- **LDAP phonebook for desk phones:** Yealink, Grandstream, Fanvil, Snom, Htek and other phones can search the extensions and the contacts by name and show the caller's name. Off until turned on on the Phonebook page; read-only, with a password the page makes; ports 389 (StartTLS) and 636 (LDAPS), which the firewall keeps closed until you open them for the phones' network. See [Phonebook](docs/phonebook.md).
+- **Contacts from Active Directory / OpenLDAP:** the new community plugin `ldap-sync` reads your company directory into the phonebook at an interval.
+
+### 🐛 Fixes
+
+- Fax extensions are no longer listed among the contacts (mobile apps, My Phone).
+
 ## 1.77.0
 
 ### ✨ New
