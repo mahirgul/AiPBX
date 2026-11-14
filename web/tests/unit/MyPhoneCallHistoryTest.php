@@ -196,4 +196,19 @@ final class MyPhoneCallHistoryTest extends TestCase
             $db->exec("UPDATE sys_users SET call_history_cleared_at = NULL WHERE id = $uid");
         }
     }
+
+    public function testFaxExtensionsAreLeftOutOfTheDirectory(): void
+    {
+        $db = getDB();
+        $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, role, extension, extension_type, is_active) VALUES (?, ?, ?, ?, ?, 'fax', 1)")
+            ->execute(['myphone_test_fax', password_hash('Test1234!', PASSWORD_BCRYPT), 'Fax Machine', 'user', '3009']);
+        $faxId = (int)$db->lastInsertId();
+        try {
+            $exts = array_column(MyPhoneRepository::getInternalDirectory(), 'extension');
+            $this->assertContains('3001', $exts);
+            $this->assertNotContains('3009', $exts);
+        } finally {
+            $db->exec("DELETE FROM sys_users WHERE id = $faxId");
+        }
+    }
 }

@@ -486,7 +486,8 @@ class MyPhoneRepository extends BaseRepository
     }
 
     /**
-     * Get internal directory of all active extensions
+     * The company directory: active extensions people can call or chat with.
+     * Fax extensions are left out; nobody talks to a fax machine.
      */
     public static function getInternalDirectory(): array
     {
@@ -494,6 +495,7 @@ class MyPhoneRepository extends BaseRepository
             "SELECT extension, full_name, role
              FROM sys_users
              WHERE extension IS NOT NULL AND extension != '' AND is_active = 1
+               AND (extension_type IS NULL OR extension_type != 'fax')
              ORDER BY extension ASC"
         );
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
