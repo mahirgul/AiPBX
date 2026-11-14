@@ -192,7 +192,13 @@ final class PhonebookService
     /** Is the chat service answering on the port (it follows the switch within 15 s)? */
     public static function listening(int $port): bool
     {
-        $fp = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.3);
+        // A closed port is an answer here, not an error: no warning for it.
+        set_error_handler(static fn(): bool => true);
+        try {
+            $fp = fsockopen('127.0.0.1', $port, $errno, $errstr, 0.3);
+        } finally {
+            restore_error_handler();
+        }
         if ($fp) {
             fclose($fp);
             return true;

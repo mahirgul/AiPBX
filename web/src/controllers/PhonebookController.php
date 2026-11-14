@@ -26,11 +26,12 @@ class PhonebookController extends BaseController
             }
         }
 
+        $ldap = PhonebookService::ldapSettings();
         static::renderPage('phonebook/index', [
             'contacts' => PhonebookService::contacts(),
             'counts' => PhonebookService::countsBySource(),
-            'ldap' => PhonebookService::ldapSettings(),
-            'listening' => ['ldap' => PhonebookService::listening(389), 'ldaps' => PhonebookService::listening(636)],
+            'ldap' => $ldap,
+            'listening' => $ldap['enabled'] ? ['ldap' => PhonebookService::listening(389), 'ldaps' => PhonebookService::listening(636)] : [],
             'host' => preg_replace('/:\d+$/', '', (string) ($_SERVER['HTTP_HOST'] ?? '')),
             'canEdit' => $canEdit,
             'canDelete' => $canDelete,
