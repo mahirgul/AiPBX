@@ -35,7 +35,6 @@ return [
             ['href' => '/my-phone', 'icon' => 'fas fa-phone-volume', 'label' => 'sidebar.item_my_phone', 'show' => $can('my_phone'), 'pages' => ['my_phone.php']],
             ['href' => '/chat', 'icon' => 'fas fa-comments', 'label' => 'sidebar.item_chat', 'show' => $can('chat'), 'pages' => ['chat.php']],
             ['href' => '/cdr-reports', 'icon' => 'fas fa-file-audio', 'label' => 'sidebar.item_cdr_reports', 'show' => $can('cdr_reports') || $can('cc_reports'), 'pages' => ['cdr_reports.php', 'reports.php']],
-            ['href' => '/call-quality', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_call_quality', 'show' => $isAdmin, 'pages' => ['call_quality.php']],
             ...PluginManager::userSidebarItems((array) ($user ?? [])),
         ],
     ],
@@ -107,7 +106,6 @@ return [
             ['href' => '/phones', 'icon' => 'fas fa-phone', 'label' => 'sidebar.item_phones', 'show' => $can('phones'), 'pages' => ['phones.php', 'phone_keys.php']],
             ['href' => '/phonebook', 'icon' => 'fas fa-address-book', 'label' => 'sidebar.item_phonebook', 'show' => $can('phones'), 'pages' => ['phonebook.php']],
             ['href' => '/phone-regions', 'icon' => 'fas fa-map-marker-alt', 'label' => 'sidebar.item_phone_regions', 'show' => $isAdmin, 'pages' => ['phone_regions.php']],
-            ['href' => '/phone-logs', 'icon' => 'fas fa-scroll', 'label' => 'sidebar.item_phone_logs', 'show' => $isAdmin, 'pages' => ['phone_logs.php']],
         ],
     ],
     [
@@ -152,6 +150,16 @@ return [
             ['href' => '/ms-teams', 'icon' => 'fab fa-windows', 'icon_style' => 'color: #6264a7;', 'label' => 'sidebar.item_ms_teams', 'show' => $can('ms_teams') && $pluginOn('ms-teams'), 'pages' => ['ms_teams.php']],
             ['href' => '/web-widgets', 'icon' => 'fas fa-headset', 'label' => 'sidebar.item_web_widgets', 'show' => $can('web_widgets') && $pluginOn('web-widgets'), 'pages' => ['web_widgets.php']],
             ...PluginManager::dynamicSidebarItems($isAdmin, 'integrations'),
+        ],
+    ],
+    [
+        // Tools for a problem with calls or phones; each its own page, admin only.
+        'id' => 'troubleshooting', 'icon' => 'fas fa-stethoscope u-warning', 'label' => 'sidebar.group_troubleshooting',
+        'items' => [
+            ['href' => '/problem-recording', 'icon' => 'fas fa-file-medical', 'label' => 'sidebar.item_problem_recording', 'show' => $isAdmin, 'pages' => ['problem_recording.php']],
+            ['href' => '/registrations', 'icon' => 'fas fa-plug', 'label' => 'sidebar.item_registrations', 'show' => $isAdmin, 'pages' => ['registrations.php']],
+            ['href' => '/call-quality', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_call_quality', 'show' => $isAdmin, 'pages' => ['call_quality.php']],
+            ['href' => '/phone-logs', 'icon' => 'fas fa-scroll', 'label' => 'sidebar.item_phone_logs', 'show' => $isAdmin, 'pages' => ['phone_logs.php']],
         ],
     ],
     [

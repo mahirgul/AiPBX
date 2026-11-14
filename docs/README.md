@@ -77,7 +77,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 🗄️ [File storage](file-storage.md) | Chat attachments on the local disk or in an S3-compatible bucket (AWS S3, MinIO, Wasabi, Backblaze B2), moving existing files |
 | 🔑 [REST API v1 & outbound webhooks](rest-api-v1.md) | Stateless `/api/v1/*` endpoints, OpenAPI 3.1 spec, Bearer API keys (`apbx_...`), scopes, IP allowlists, and HMAC-SHA256 signed webhooks |
 | ⏱️ [Scheduled tasks](scheduled-tasks.md) | Sandboxed background shell, PHP and Python scripts on a cron schedule (`aipbx-task`, systemd-run), run history, bell alarms |
-| 🛠️ [Troubleshooting](troubleshooting.md) | Changes not applied, calls hung up, sounds not found, SIP captures |
+| 🛠️ [Troubleshooting](troubleshooting.md) | The Troubleshooting menu (problem recording, registrations), changes not applied, calls hung up, sounds not found, SIP captures |
 
 ## 🔌 Plugins
 

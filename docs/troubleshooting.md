@@ -1,5 +1,53 @@
 # Troubleshooting
 
+## The Troubleshooting menu
+
+The **Troubleshooting** menu in the portal (administrators only) gathers the tools for a problem with calls or phones.
+Each is a page of its own; the health checks of the server stay under **System → Health checks**.
+
+| Page | For |
+|---|---|
+| **Problem recording** | one try of the problem as a masked zip to attach to a report |
+| **Registrations** | which phone, browser and app of each extension is registered, and the state of the trunks |
+| **Call quality** | packet loss and jitter of calls from RTCP ([Call quality](call-quality.md)) |
+| **Phone logs** | the syslog of desk phones ([Desk phones](phones.md)) |
+
+### Problem recording
+
+**Troubleshooting → Problem recording.** For a report about calls or phones. **Start recording** (it stops by itself after 5 to 30 minutes),
+repeat the problem, then **Stop and make the zip** and download it. The zip holds:
+
+| File | What |
+|---|---|
+| `asterisk.log` | Asterisk's log of that time at verbose level 4, with every SIP message (`pjsip set logger`) |
+| `calls.tsv` | the call records (CDR) of that time |
+| `queue_log.txt` | the queue events of that time |
+| `state.txt` | phones, trunks, registrations, transports, queues, channels, codecs, version |
+| `selftest.txt` | `aipbx-selftest` |
+| `errors.txt` | warnings of Asterisk and the AiPBX services, the last portal errors |
+| `config/` | the Asterisk files AiPBX generates (`/etc/asterisk/pbx`) |
+
+Before the zip is written, passwords, digest answers, keys and tokens are replaced by `***`, and every
+number of 7 digits or more loses its last 5 digits (`05321112233` → `053211xxxxx`); extensions, times,
+addresses and Asterisk ids stay. No call recordings, voicemail or faxes. The recording uses its own log
+channel and leaves the PBX's verbose level as it is. Zips are kept for 7 days in `/var/lib/aipbx/diag`;
+starting, stopping and downloading are in the audit log. The work is done by `aipbx-diag` (root, through
+`aipbx-priv`).
+
+### Registrations
+
+**Troubleshooting → Registrations** reads Asterisk when the page opens:
+
+- **Extensions:** each registered desk phone, browser (web phone) and mobile app with its address, program
+  (user agent), the round trip of its last check and when the registration runs out. Browsers and the apps come
+  through the portal's WebSocket, so their address shows as `WebSocket`. An extension with nothing registered
+  is one row, *Not registered*.
+- **Trunks:** whether a registering trunk's registration is accepted, and whether the provider answers the
+  PBX's checks (OPTIONS), with the round trip. An IP trunk has no registration.
+
+The states: *Answering* (`Avail`), *Registered* (`NonQual`: registered, not checked, as for the apps),
+*Not answering* (`Unavail`).
+
 ## Apply succeeds but nothing changes
 
 - Check **Pending Changes**: a change that could not be written or loaded stays in the list; the error is shown on Apply and kept in the audit log.

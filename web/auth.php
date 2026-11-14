@@ -184,7 +184,7 @@ function getModuleKeyForPage($page = null) {
         'vpn_server.php'        => 'phones',
         'vpn_client.php'        => 'phones',
         'reverse_proxy.php'     => 'phones',
-        'phone_logs.php'        => 'phones',
+        'phone_logs.php'        => 'troubleshooting',
         'ring_groups.php'       => 'ring_groups',
         'conferences.php'       => 'conferences',
         'meetings.php'          => 'meetings',
@@ -243,6 +243,9 @@ function getModuleKeyForPage($page = null) {
         'file_storage.php'          => 'file_storage',
         'health.php'                => 'health',
         'call_quality.php'          => 'call_quality',
+        // Troubleshooting menu: admin-only tools that look into calls and registrations.
+        'problem_recording.php'     => 'troubleshooting',
+        'registrations.php'         => 'troubleshooting',
     ];
     if (str_starts_with((string)$page, 'plugin_') && str_ends_with((string)$page, '.php')) {
         return 'plugins';
@@ -341,7 +344,7 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'ai_cloud': holds the API keys of paid cloud AI services.
     // 'ai_apps': an application's lookup URL is requested by the server itself.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality', 'custom_dialplan'], true)) {
+    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'assistant', 'health', 'call_quality', 'custom_dialplan', 'troubleshooting'], true)) {
         return $role === 'admin';
     }
 

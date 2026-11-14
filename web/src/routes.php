@@ -80,6 +80,8 @@ return [
     '/scheduled-tasks' => ['controller' => ScheduledTasksController::class, 'action' => 'index', 'module' => 'scheduled_tasks.php'],
     '/health'          => ['controller' => HealthController::class, 'action' => 'index', 'module' => 'health.php'],
     '/call-quality'    => ['controller' => CallQualityController::class, 'action' => 'index', 'module' => 'call_quality.php'],
+    '/problem-recording' => ['controller' => ProblemRecordingController::class, 'action' => 'index', 'module' => 'problem_recording.php'],
+    '/registrations'   => ['controller' => RegistrationsController::class, 'action' => 'index', 'module' => 'registrations.php'],
     '/brand-settings'  => ['controller' => BrandSettingsController::class, 'action' => 'index', 'module' => 'brand_settings.php'],
     '/push-settings'   => ['controller' => PushSettingsController::class, 'action' => 'index', 'module' => 'push_settings.php'],
     '/fax-settings'    => ['controller' => FaxSettingsController::class, 'action' => 'index', 'module' => 'fax_settings.php'],

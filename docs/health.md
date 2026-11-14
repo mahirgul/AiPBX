@@ -85,28 +85,6 @@ At the chosen time (default 08:00), to the same people:
 
 *Send the summary now* on the page sends it at once (to check the recipients and the mail settings).
 
-## Problem recording
-
-For a report about calls or phones. **Start recording** (it stops by itself after 5 to 30 minutes),
-repeat the problem, then **Stop and make the zip** and download it. The zip holds:
-
-| File | What |
-|---|---|
-| `asterisk.log` | Asterisk's log of that time at verbose level 4, with every SIP message (`pjsip set logger`) |
-| `calls.tsv` | the call records (CDR) of that time |
-| `queue_log.txt` | the queue events of that time |
-| `state.txt` | phones, trunks, registrations, transports, queues, channels, codecs, version |
-| `selftest.txt` | `aipbx-selftest` |
-| `errors.txt` | warnings of Asterisk and the AiPBX services, the last portal errors |
-| `config/` | the Asterisk files AiPBX generates (`/etc/asterisk/pbx`) |
-
-Before the zip is written, passwords, digest answers, keys and tokens are replaced by `***`, and every
-number of 7 digits or more loses its last 5 digits (`05321112233` → `053211xxxxx`); extensions, times,
-addresses and Asterisk ids stay. No call recordings, voicemail or faxes. The recording uses its own log
-channel and leaves the PBX's verbose level as it is. Zips are kept for 7 days in `/var/lib/aipbx/diag`;
-starting, stopping and downloading are in the audit log. The work is done by `aipbx-diag` (root, through
-`aipbx-priv`).
-
 ## Command line
 
 ```

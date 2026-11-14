@@ -48,6 +48,7 @@ final class RbacTest extends TestCase
         'assistant',
         'health',
         'call_quality',
+        'troubleshooting',
         'custom_dialplan',
         'advanced_config',
     ];
