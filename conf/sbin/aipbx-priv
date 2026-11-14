@@ -1193,6 +1193,16 @@ FTPCONF
         exec /usr/local/sbin/aipbx-netcfg "$@"
         ;;
 
+    diag)
+        # diag start [minutes=N]|stop|status|delete name=FILE — the problem recording of
+        # System -> Health checks. aipbx-diag checks every value itself.
+        case "${1:-}" in
+            start|stop|status|delete) ;;
+            *) die "unknown diag command: ${1:-<empty>}" ;;
+        esac
+        exec /usr/local/sbin/aipbx-diag "$@"
+        ;;
+
     vpn)
         # vpn SUBCOMMAND ... — Network -> VPN Server and VPN Client. aipbx-vpn checks every
         # value (profiles arrive on stdin) and is what holds the keys; "run" is for its

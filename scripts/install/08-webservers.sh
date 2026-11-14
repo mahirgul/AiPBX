@@ -431,6 +431,10 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-selftest" /usr/loc
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-dhcp-probe" /usr/local/sbin/aipbx-dhcp-probe
 # VPN server and client connections; the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-vpn" /usr/local/sbin/aipbx-vpn
+# Problem recording (Health checks): Asterisk log + call data of a test, as one masked zip.
+# The zips are read by the portal for the download: group www-data, nothing else.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-diag" /usr/local/sbin/aipbx-diag
+install -d -o root -g www-data -m 0750 /var/lib/aipbx/diag
 # The server's own address (Network settings); a change on trial goes back at a reboot.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-netcfg" /usr/local/sbin/aipbx-netcfg
 cat > /etc/systemd/system/aipbx-netcfg-boot.service << 'NETCFGUNIT'

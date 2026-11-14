@@ -1,0 +1,290 @@
+#!/usr/bin/python3
+"""aipbx-diag — the problem recording of System → Health checks.
+
+  aipbx-diag start [minutes=N]   turn the recording on (stops by itself after N minutes, 1..30)
+  aipbx-diag stop                turn it off and pack what it saw into one zip
+  aipbx-diag status              JSON: running or not, since when, the zips
+  aipbx-diag delete name=FILE    delete one zip
+
+The portal runs it through aipbx-priv (www-data may run nothing else as root).
+
+What a zip holds: Asterisk's log of the recording (with the SIP messages), the
+call records and queue events of that time, the state of phones, trunks and
+queues, the generated Asterisk files, aipbx-selftest, the version and the last
+error lines of the services. Passwords, digest answers, keys and tokens are
+taken out, and every phone number of 7 digits or more loses its last 5 digits
+("05321112233" -> "053211xxxxx"); extensions stay readable. No recordings,
+voicemail or faxes. Zips are deleted after 7 days.
+"""
+import datetime
+import glob
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+import zipfile
+
+DIR = '/var/lib/aipbx/diag'
+STATE = os.path.join(DIR, 'state.json')
+LOG = '/var/log/asterisk/aipbx-diag.log'
+TIMER = 'aipbx-diag-stop'
+KEEP_DAYS = 7
+MAX_LOG = 200 * 1024 * 1024  # what is read of the Asterisk log at most
+
+
+class Refused(Exception):
+    pass
+
+
+def run(args, timeout=60):
+    try:
+        r = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+        return (r.stdout + r.stderr).strip()
+    except Exception as e:  # a missing tool must not stop the zip
+        return f'({" ".join(args)}: {e})'
+
+
+def ast(cmd):
+    return run(['asterisk', '-rx', cmd], timeout=30)
+
+
+def load_state():
+    try:
+        with open(STATE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
+
+
+def save_state(state):
+    tmp = STATE + '.tmp'
+    with open(tmp, 'w') as f:
+        json.dump(state, f)
+    os.replace(tmp, STATE)
+
+
+# ------------------------------------------------------------------ masking
+
+SECRET_LINE = re.compile(
+    r'^(\s*(?:password|secret|md5_cred|auth_pass|remotesecret|inkeys|outkeys|api_?key|token|'
+    r'capture_password|webhook_secret|private_key|client_secret)\s*[=:]\s*)(.+)$', re.I | re.M)
+DIGEST = re.compile(r'((?:response|cnonce|nonce|opaque)\s*=\s*")[^"]*(")', re.I)
+BEARER = re.compile(r'(Bearer\s+)[A-Za-z0-9._~+/=-]{8,}', re.I)
+TOKEN_PARAM = re.compile(r'((?:token|secret|password|key|sig)=)[^&\s"\'<>]{6,}', re.I)
+# Not after '-': Asterisk channel counters (PJSIP/1001-00000003) are no numbers.
+NUMBER = re.compile(r'(?<![\w.-])(\+?)(\d{2,})(\d{5})(?![\w.])')
+
+
+def _mask_number(m):
+    digits = m.group(2) + m.group(3)
+    # Unix times (queue_log, Asterisk ids) look like 10-digit numbers starting with 1.
+    if len(digits) == 10 and digits[0] == '1' and 1_400_000_000 < int(digits) < 2_200_000_000:
+        return m.group(0)
+    return m.group(1) + m.group(2) + 'xxxxx'
+
+
+def mask(text):
+    text = SECRET_LINE.sub(lambda m: m.group(1) + '***', text)
+    text = DIGEST.sub(r'\1***\2', text)
+    text = BEARER.sub(r'\1***', text)
+    text = TOKEN_PARAM.sub(r'\1***', text)
+    return NUMBER.sub(_mask_number, text)
+
+
+# ------------------------------------------------------------------ commands
+
+def stop_timer():
+    run(['systemctl', 'stop', TIMER + '.timer', TIMER + '.service'], timeout=20)
+
+
+def cmd_start(args):
+    minutes = int(args['minutes']) if args.get('minutes', '').isdigit() else 15
+    if not 1 <= minutes <= 30:
+        raise Refused('Choose 1 to 30 minutes.')
+    state = load_state()
+    if state.get('running'):
+        raise Refused('A recording is already running.')
+    os.makedirs(DIR, mode=0o750, exist_ok=True)
+    try:
+        os.unlink(LOG)
+    except FileNotFoundError:
+        pass
+    state = {'running': True, 'start': int(time.time()), 'minutes': minutes}
+    save_state(state)
+    # The channel has its own verbose level: "core set verbose" over asterisk -rx only
+    # changes that remote console, and the PBX's own level stays as it is.
+    ast(f'logger add channel {LOG} NOTICE,WARNING,ERROR,VERBOSE(4)')
+    ast('pjsip set logger on')
+    stop_timer()
+    run(['systemd-run', '--quiet', '--unit', TIMER, f'--on-active={minutes}min',
+         '/usr/local/sbin/aipbx-diag', 'stop'], timeout=20)
+    print(json.dumps({'running': True, 'start': state['start'], 'minutes': minutes}))
+
+
+def section(title, body):
+    return f'===== {title} =====\n{body}\n\n'
+
+
+def window_sql(start, end):
+    fmt = lambda t: datetime.datetime.fromtimestamp(t).strftime('%Y-%m-%d %H:%M:%S')
+    return fmt(start - 60), fmt(end + 60)
+
+
+def build_zip(start, end, minutes):
+    t_from, t_to = window_sql(start, end)
+    name = 'aipbx-diag-' + datetime.datetime.fromtimestamp(start).strftime('%Y%m%d-%H%M%S') + '.zip'
+    path = os.path.join(DIR, name)
+    version = open('/opt/aipbx/VERSION').read().strip() if os.path.exists('/opt/aipbx/VERSION') else '?'
+    files = {}
+
+    files['README.txt'] = (
+        f'AiPBX problem recording\nVersion: {version}\n'
+        f'From {t_from} to {t_to} (server time, {time.strftime("%Z")}), {minutes} min at most\n\n'
+        'asterisk.log    Asterisk log of the recording, SIP messages included\n'
+        'calls.tsv       call records (CDR) of that time\n'
+        'queue_log.txt   queue events of that time\n'
+        'state.txt       phones, trunks, queues, channels, version\n'
+        'selftest.txt    aipbx-selftest\n'
+        'errors.txt      last error lines of Asterisk, the portal and the AiPBX services\n'
+        'config/         the Asterisk files AiPBX generates\n\n'
+        'Passwords, digest answers, keys and tokens are removed. Phone numbers of 7 digits or\n'
+        'more lose their last 5 digits; extensions stay readable. No recordings, voicemail or faxes.\n')
+
+    log = ''
+    if os.path.exists(LOG):
+        with open(LOG, errors='replace') as f:
+            log = f.read(MAX_LOG)
+    files['asterisk.log'] = log or '(nothing was logged)\n'
+
+    files['calls.tsv'] = run(['mysql', '--batch', 'asterisk', '-e',
+        "SELECT calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, duration, "
+        "billsec, disposition, uniqueid, linkedid FROM asteriskcdr "
+        f"WHERE calldate BETWEEN '{t_from}' AND '{t_to}' ORDER BY calldate"])
+
+    qlines = []
+    for qfile in ('/var/log/asterisk/queue_log',):
+        if os.path.exists(qfile):
+            with open(qfile, errors='replace') as f:
+                for line in f:
+                    head = line.split('|', 1)[0]
+                    if head.isdigit() and start - 60 <= int(head) <= end + 60:
+                        qlines.append(line)
+    files['queue_log.txt'] = ''.join(qlines) or '(no queue events)\n'
+
+    files['state.txt'] = ''.join(section(c, ast(c)) for c in (
+        'core show version', 'core show uptime', 'pjsip show endpoints', 'pjsip show contacts',
+        'pjsip show registrations', 'pjsip show transports', 'queue show', 'core show channels verbose',
+        'confbridge list', 'module show like codec')) + section('AiPBX version', version)
+    files['selftest.txt'] = run(['/usr/local/sbin/aipbx-selftest'], timeout=180)
+
+    since = '@' + str(start - 300)
+    errors = section('journal: asterisk, aipbx services',
+                     run(['journalctl', '--no-pager', '-p', 'warning', '--since', since,
+                          '-u', 'asterisk', '-u', 'aipbx-chat', '-u', 'aipbx-signaling', '-u', 'aipbx-webhook-worker',
+                          '-u', 'apache2', '-u', 'coturn', '-n', '400']))
+    for err_log in ('/var/log/apache2/aipbx_ssl_error.log', '/var/log/asterisk/messages.log'):
+        if os.path.exists(err_log):
+            errors += section(err_log, run(['tail', '-n', '300', err_log]))
+    files['errors.txt'] = errors
+
+    for conf in sorted(glob.glob('/etc/asterisk/pbx/*.conf')):
+        if os.path.getsize(conf) <= 5 * 1024 * 1024:
+            with open(conf, errors='replace') as f:
+                files['config/' + os.path.basename(conf)] = f.read()
+
+    tmp = path + '.tmp'
+    with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as z:
+        for fname, text in files.items():
+            z.writestr(fname, mask(text))
+    os.chmod(tmp, 0o640)
+    try:
+        import grp
+        os.chown(tmp, 0, grp.getgrnam('www-data').gr_gid)
+    except (KeyError, OSError):
+        pass
+    os.replace(tmp, path)
+    return name
+
+
+def cmd_stop(_args):
+    state = load_state()
+    if not state.get('running'):
+        print(json.dumps({'running': False}))
+        return
+    stop_timer()
+    ast(f'logger remove channel {LOG}')
+    # The 10-minute SIP debug of PBX settings may still want the logger.
+    until = run(['mysql', '-N', 'asterisk', '-e',
+                 "SELECT setting_value FROM sys_settings WHERE setting_key = 'sip_debug_until'"])
+    if not (until.isdigit() and int(until) > time.time()):
+        ast('pjsip set logger off')
+    end = int(time.time())
+    save_state({'running': False})
+    name = build_zip(int(state.get('start', end)), end, int(state.get('minutes', 15)))
+    try:
+        os.unlink(LOG)
+    except FileNotFoundError:
+        pass
+    prune()
+    print(json.dumps({'running': False, 'zip': name}))
+
+
+def prune():
+    limit = time.time() - KEEP_DAYS * 86400
+    for z in glob.glob(os.path.join(DIR, 'aipbx-diag-*.zip')):
+        if os.path.getmtime(z) < limit:
+            os.unlink(z)
+
+
+def zips():
+    out = []
+    for z in sorted(glob.glob(os.path.join(DIR, 'aipbx-diag-*.zip')), reverse=True):
+        out.append({'name': os.path.basename(z), 'size': os.path.getsize(z), 'mtime': int(os.path.getmtime(z))})
+    return out
+
+
+def cmd_status(_args):
+    prune()
+    state = load_state()
+    print(json.dumps({'running': bool(state.get('running')), 'start': state.get('start'),
+                      'minutes': state.get('minutes'), 'zips': zips()}))
+
+
+def cmd_delete(args):
+    name = args.get('name', '')
+    if not re.fullmatch(r'aipbx-diag-\d{8}-\d{6}\.zip', name):
+        raise Refused('No such recording.')
+    path = os.path.join(DIR, name)
+    if not os.path.exists(path):
+        raise Refused('No such recording.')
+    os.unlink(path)
+    print(json.dumps({'deleted': name}))
+
+
+COMMANDS = {'start': (cmd_start, {'minutes'}), 'stop': (cmd_stop, set()),
+            'status': (cmd_status, set()), 'delete': (cmd_delete, {'name'})}
+
+
+def main(argv):
+    if not argv or argv[0] not in COMMANDS:
+        raise Refused('usage: aipbx-diag start|stop|status|delete')
+    fn, allowed = COMMANDS[argv[0]]
+    args = {}
+    for item in argv[1:]:
+        key, sep, value = item.partition('=')
+        if not sep or key not in allowed or not re.fullmatch(r'[A-Za-z0-9._-]{0,64}', value):
+            raise Refused('invalid argument: ' + item[:40])
+        args[key] = value
+    if os.geteuid() != 0:
+        raise Refused('must run as root')
+    fn(args)
+
+
+if __name__ == '__main__':
+    try:
+        main(sys.argv[1:])
+    except Refused as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(64)

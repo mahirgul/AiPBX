@@ -214,7 +214,7 @@ jobs:
       - name: Plugin checker unit tests
         run: python3 scripts/test_check_plugins.py
       - name: VPN helper tests
-        run: python3 scripts/test_aipbx_vpn.py && python3 scripts/test_aipbx_netcfg.py
+        run: python3 scripts/test_aipbx_vpn.py && python3 scripts/test_aipbx_netcfg.py && python3 scripts/test_aipbx_diag.py
       - name: Trusted proxy policy security tests
         run: python3 scripts/test_proxy_https.py
       - name: Root log path security tests
