@@ -46,7 +46,9 @@ phone rings.
   took. While it is open, pressing a call button again joins the same call.
 - At most 8 take part in a video call and 25 in a voice call.
 - In the portal the call is made with the web phone; with the phone mode set to desk phone the
-  buttons ask you to switch. Outside guests cannot join: for them there are meetings.
+  buttons ask you to switch. In the **Android app** (when `chat_calls` is advertised by the
+  server), group chats show voice/video call buttons in the header, an active-call banner, and
+  **Join** on the chat card. Outside guests cannot join: for them there are meetings.
 - Group calls are not recorded.
 
 ## Notes

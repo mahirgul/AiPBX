@@ -15,7 +15,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ### ✨ New
 
-- **Group calls from the chat:** a group chat has a voice call and a video call button. Pressing one opens a conference for that group and posts a card to the chat; the other members join from the card. Only members of the group are let in (checked by the PBX for every caller), the room closes when the last one leaves and the chat then shows how long the call took. Video shows whoever is speaking. Works in the web chat with the web phone; the mobile apps get it with their next release (`chat_calls` in the mobile feature list tells them the server has it).
+- **Group calls from the chat:** a group chat has a voice call and a video call button. Pressing one opens a conference for that group and posts a card to the chat; the other members join from the card. Only members of the group are let in (checked by the PBX for every caller), the room closes when the last one leaves and the chat then shows how long the call took. Video shows whoever is speaking. Works in the web chat with the web phone and in the Android app (`chat_calls` in `features.php` advertises server support).
 
 ## 1.76.0
 
