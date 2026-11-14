@@ -17,7 +17,6 @@ $group_slugs = RoleRepository::groupSlugs();
 <?php echo uiHelpBoxClose(); ?>
 
     <?php echo uiTableOpen([
-        ['label' => '#', 'class' => 'col-hide-mobile u-w-50'],
         ['label' => t('roles.col_role_id'), 'class' => 'col-hide-mobile'],
         t('roles.col_role'),
         ['label' => t('roles.col_description'), 'class' => 'col-hide-mobile'],
@@ -26,24 +25,23 @@ $group_slugs = RoleRepository::groupSlugs();
         ['label' => t('roles.col_actions'), 'class' => 'text-right'],
     ]); ?>
                 <?php if (empty($roles)): ?>
-                    <?php echo uiTableEmptyRow(7, t('roles.empty'), 'fa-user-shield'); ?>
+                    <?php echo uiTableEmptyRow(6, t('roles.empty'), 'fa-user-shield'); ?>
                 <?php else: ?>
                     <?php foreach ($roles as $r): ?>
                         <tr>
-                            <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $r['id']; ?></td>
                             <td class="col-hide-mobile"><code><?php echo htmlspecialchars($r['role_key']); ?></code></td>
                             <td>
                                 <strong class="u-text-main u-fs-14">
                                     <?php echo htmlspecialchars($r['role_name']); ?>
                                 </strong>
                             </td>
-                            <td class="col-hide-mobile"><span class="cell-truncate u-muted u-fs-13" title="<?php echo htmlspecialchars($r['description']); ?>"><?php echo htmlspecialchars($r['description']); ?></span></td>
+                            <td class="col-hide-mobile"><span class="cell-truncate u-maxw-260 u-muted u-fs-13" title="<?php echo htmlspecialchars($r['description']); ?>"><?php echo htmlspecialchars($r['description']); ?></span></td>
                             <td>
                                 <span class="badge badge-info"><i class="fas fa-users"></i> <?php echo $r['user_count']; ?> <?php echo t('roles.user_count_suffix'); ?></span>
                             </td>
                             <td class="col-hide-mobile">
                                 <?php if ($r['is_system']): ?>
-                                    <span class="badge badge-success"><i class="fas fa-shield-alt"></i> <?php echo t('roles.system_protected'); ?></span>
+                                    <span class="badge badge-success u-nowrap"><i class="fas fa-shield-alt"></i> <?php echo t('roles.system_protected'); ?></span>
                                 <?php else: ?>
                                     <span class="badge badge-secondary"><?php echo t('roles.custom_role'); ?></span>
                                 <?php endif; ?>
