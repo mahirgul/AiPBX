@@ -128,6 +128,11 @@ chmod -R 755 /var/lib/asterisk/sounds/
 # announcements into custom/: group-writable, and files it may overwrite too.
 chmod 2775 /var/lib/asterisk/sounds/custom
 find /var/lib/asterisk/sounds/custom -maxdepth 1 -type f -exec chmod 664 {} +
+# Hold music the same way: the portal uploads into the class folders and makes
+# new ones. They were asterisk:root 0755 (custom/ even root:root), so every
+# upload failed with "Permission denied" (#164). Links to the stock tracks stay.
+find /var/lib/asterisk/moh -type d -exec chown asterisk:asterisk {} + -exec chmod 2775 {} +
+find /var/lib/asterisk/moh -type f -exec chown asterisk:asterisk {} + -exec chmod 664 {} +
 
 # Debian's Asterisk searches prompts in /usr/share/asterisk/sounds, where
 # "custom" points at /usr/local/share/asterisk/sounds. The portal stores sounds

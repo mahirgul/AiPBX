@@ -6295,4 +6295,5 @@ Your phone will ring.',
     'sidebar.item_sign_in_settings' => 'Sign-in',
     'sign_in_settings.title' => 'Sign-in',
     'sign_in_settings.desc' => 'How everyone signs in to the portal: the check on the sign-in page, an e-mail when an account signs in from a new address, and signing in only through your identity provider. Your own two-factor sign-in and passkeys are under your account\'s Security page.',
+    'srv_sound.err_moh_dir' => 'The PBX cannot write into the hold music folder %s. Run sudo aipbx-update (it fixes the folder permissions) and try again.',
 ];

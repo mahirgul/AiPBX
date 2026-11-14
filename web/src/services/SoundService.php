@@ -205,10 +205,7 @@ class SoundService {
                 throw new \Exception(t('srv_sound.err_moh_name'));
             }
             $target_dir = MOH_BASE_DIR . '/' . $class_name;
-            if (!is_dir($target_dir)) {
-                @mkdir($target_dir, 0755, true);
-                @chown($target_dir, 'asterisk');
-            }
+            self::mohDir($target_dir);
 
             $db = getDB();
             $stmt = $db->prepare("INSERT INTO pbx_moh_classes (name, directory, mode, sort) VALUES (?, ?, 'files', 'alpha') ON DUPLICATE KEY UPDATE directory = VALUES(directory)");
@@ -255,10 +252,7 @@ class SoundService {
             $moh_class = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($data['moh_class'] ?? 'default'));
             $target_dir = ($moh_class === 'default') ? MOH_BASE_DIR : MOH_BASE_DIR . '/' . $moh_class;
 
-            if (!is_dir($target_dir)) {
-                @mkdir($target_dir, 0755, true);
-                @chown($target_dir, 'asterisk');
-            }
+            self::mohDir($target_dir);
 
             if (self::uploadedFile($files, 'moh_audio') === null) {
                 throw new \Exception(t('srv_sound.err_moh_upload'));
@@ -284,7 +278,24 @@ class SoundService {
                     @unlink($raw_upload);
                 }
             }
-            throw new \Exception(t('srv_sound.err_moh_upload'));
+            throw new \Exception(sprintf(t('srv_sound.err_moh_dir'), $target_dir));
         });
+    }
+
+    /**
+     * A hold-music folder the portal can write into: group-writable, group
+     * asterisk (www-data is a member). The setgid bit comes from the MOH folder
+     * (install sets 2775): Apache runs with RestrictSUIDSGID, so asking for it
+     * here fails with "Operation not permitted". Refuses with the folder's name
+     * when it cannot write, instead of a bare upload error.
+     */
+    private static function mohDir(string $dir): void
+    {
+        if (!is_dir($dir) && !@mkdir($dir, 0775, true)) {
+            throw new \Exception(sprintf(t('srv_sound.err_moh_dir'), $dir));
+        }
+        if (!is_writable($dir)) {
+            throw new \Exception(sprintf(t('srv_sound.err_moh_dir'), $dir));
+        }
     }
 }
