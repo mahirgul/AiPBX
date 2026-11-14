@@ -49,7 +49,6 @@ return [
             ['href' => '/brand-settings', 'icon' => 'fas fa-palette', 'label' => 'sidebar.item_brand_settings', 'show' => $can('brand_settings'), 'pages' => ['brand_settings.php']],
             ['href' => '/push-settings', 'icon' => 'fas fa-bell', 'label' => 'sidebar.item_push_settings', 'show' => $can('push_settings'), 'pages' => ['push_settings.php']],
             ['href' => '/mail-settings', 'icon' => 'fas fa-envelope-open-text', 'label' => 'sidebar.item_mail_settings', 'show' => $can('mail_settings'), 'pages' => ['mail_settings.php']],
-            ['href' => '/fax-mail-settings', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_mail_settings', 'show' => $can('fax_mail_settings'), 'pages' => ['fax_mail_settings.php']],
             ['href' => '/file-storage', 'icon' => 'fas fa-hard-drive', 'label' => 'sidebar.item_file_storage', 'show' => $can('file_storage'), 'pages' => ['file_storage.php']],
             ['href' => '/pending-sync', 'icon' => 'fas fa-cloud-upload-alt', 'label' => 'sidebar.item_pending_sync', 'show' => $can('pending_sync'), 'pages' => ['pending_sync.php']],
             ['href' => '/backup', 'icon' => 'fas fa-box-archive', 'label' => 'sidebar.item_backup', 'show' => $isAdmin, 'pages' => ['backup.php']],
@@ -128,6 +127,7 @@ return [
             ['href' => '/fax-send', 'icon' => 'fas fa-paper-plane', 'label' => 'sidebar.item_fax_send', 'show' => $can('fax_send'), 'pages' => ['fax_send.php']],
             ['href' => '/fax-sent', 'icon' => 'fas fa-history', 'label' => 'sidebar.item_fax_sent', 'show' => $can('fax_sent'), 'pages' => ['fax_sent.php']],
             ['href' => '/fax-settings', 'icon' => 'fas fa-fax', 'label' => 'sidebar.item_fax_settings', 'show' => $can('fax_settings'), 'pages' => ['fax_settings.php']],
+            ['href' => '/fax-mail-settings', 'icon' => 'fas fa-sliders', 'label' => 'fax_mail_settings.title', 'show' => $can('fax_mail_settings'), 'pages' => ['fax_mail_settings.php']],
         ],
     ],
     [

@@ -23,9 +23,9 @@ A received fax is **one copy**, seen by everyone on that number. Anyone with the
 
 A number with a fax login stays on while one of those logins is active, and goes when the last one is deleted. Received and sent faxes stay.
 
-## Fax Mail settings
+## Fax Settings
 
-**System → Fax Mail** holds what applies to every unit:
+**Fax → Fax Settings** holds what applies to every unit:
 
 - **Sender** address and name of the fax mails, and whether mails go out for incoming faxes (with or
   without the PDF) and for the result of a sent fax.

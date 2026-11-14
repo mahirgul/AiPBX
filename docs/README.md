@@ -35,7 +35,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📟 [Extensions](extensions.md) | The extension form, copying a SIP password, per-extension SIP settings (transport, DTMF, SRTP, NAT, codecs) |
 | 🛣️ [Transports](transports.md) | Where Asterisk listens for SIP: ports, TCP and TLS, your own transports |
 | 🎛️ [Advanced Configuration](advanced-config.md) | Your own Asterisk options, objects and file text that survive regeneration and updates, versions, generated files changed by hand |
-| 📠 [Fax users and numbers](fax-users.md) | Fax Units, the number a fax goes out with, several and shared numbers, Fax Mail settings, who can delete |
+| 📠 [Fax users and numbers](fax-users.md) | Fax Units, the number a fax goes out with, several and shared numbers, Fax Settings, who can delete |
 | 📠 [Fax cover page](fax-cover-page.md) | One cover template for the organisation, logo, preview as a fax |
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |

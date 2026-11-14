@@ -90,7 +90,7 @@ Three brakes, all off until switched on:
   **Before 1.76.0 the rules of a group never matched** and only its default action applied: after
   updating, check each group's rules, because they now take effect.
 
-One brake is on from the start: a user can send 30 faxes an hour (*System → Fax Mail*; 0 turns it off,
+One brake is on from the start: a user can send 30 faxes an hour (*Fax → Fax Settings*; 0 turns it off,
 administrators are not limited). Deleting faxes does not free the limit, so a stolen account cannot
 hide what it sends and carry on.
 

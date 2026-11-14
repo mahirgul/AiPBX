@@ -23,7 +23,7 @@ again reuses the same TIFF) waits until that fax has finished too.
 
 - Viewing and downloading work as before, with the same access rules; the files come through the PBX.
 - *Send again* on a fax whose files are in the bucket brings the TIFF back to the disk first.
-- Deleting a fax, and the retention period (*System → Fax Mail → Fax Archive Retention Period*), delete the files in
+- Deleting a fax, and the retention period (*Fax → Fax Settings → Fax Archive Retention Period*), delete the files in
   the bucket too.
 - When the bucket cannot be reached, the files stay on the disk and move on a later run.
 
