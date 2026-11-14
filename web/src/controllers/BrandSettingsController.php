@@ -1,9 +1,5 @@
 <?php
 require_once __DIR__ . '/../services/BrandSettingsService.php';
-require_once __DIR__ . '/../services/LoginCaptchaService.php';
-require_once __DIR__ . '/../services/SsoOnlyService.php';
-require_once __DIR__ . '/../services/SamlAuthService.php';
-require_once __DIR__ . '/../services/OidcAuthService.php';
 
 /**
  * Appearance page (/brand-settings).
@@ -21,9 +17,6 @@ class BrandSettingsController extends BaseController
         $notices = static::handlePost([
             'save_brand_settings' => fn() => BrandSettingsService::saveSettings($_POST),
             'reset_brand_settings' => fn() => BrandSettingsService::resetToDefaults($_POST),
-            'save_sso_only' => fn() => SsoOnlyService::saveSettings($_POST),
-            'save_login_captcha' => fn() => LoginCaptchaService::saveSettings($_POST),
-            'save_login_alert' => fn() => LoginAlertService::saveSettings($_POST),
         ]);
 
         $defaults = BrandSettingsService::defaults();
@@ -41,14 +34,6 @@ class BrandSettingsController extends BaseController
             'logo_preview_url' => $logo_preview_url,
             'logo_dark_preview_url' => $logo_dark_preview_url,
             'favicon_preview_url' => $favicon_preview_url,
-            'sso_only_on' => getSystemSetting('auth_sso_only', '0') === '1',
-            'sso_only_provider' => SsoOnlyService::provider(),
-            'sso_saml_enabled' => SsoOnlyService::providerEnabled('saml'),
-            'sso_oidc_enabled' => SsoOnlyService::providerEnabled('oidc'),
-            'captcha_provider' => (string) getSystemSetting('login_captcha_provider', 'math'),
-            'captcha_site_key' => LoginCaptchaService::siteKey(),
-            'captcha_secret_set' => (string) getSystemSetting('login_turnstile_secret', '') !== '',
-            'login_alert_on' => LoginAlertService::enabled(),
         ], ['title' => $page_title] + $notices);
     }
 }

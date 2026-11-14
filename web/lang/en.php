@@ -6292,4 +6292,7 @@ Your phone will ring.',
     'phonebook.ldap_name_attr' => 'Name attribute',
     'phonebook.ldap_number_attrs' => 'Number attributes',
     'phonebook.ldap_firewall' => 'Open ports 389 and 636 on the Firewall page only for the network the phones are in; the phonebook should not be reachable from the internet.',
+    'sidebar.item_sign_in_settings' => 'Sign-in',
+    'sign_in_settings.title' => 'Sign-in',
+    'sign_in_settings.desc' => 'How everyone signs in to the portal: the check on the sign-in page, an e-mail when an account signs in from a new address, and signing in only through your identity provider. Your own two-factor sign-in and passkeys are under your account\'s Security page.',
 ];

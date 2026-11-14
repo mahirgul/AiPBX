@@ -217,6 +217,8 @@ function getModuleKeyForPage($page = null) {
         'audit_log.php'            => 'audit_log',
         'firewall.php'              => 'firewall',
         'fail2ban.php'              => 'fail2ban',
+        // Sign-in settings (sign-in check, alerts, SSO only): admin-only like the other security pages.
+        'sign_in_settings.php'      => 'fail2ban',
         'certificates.php'          => 'certificates',
         'system_update.php'         => 'system_update',
         'backup.php'                => 'backup',

@@ -72,6 +72,7 @@ return [
     '/vpn-client'      => ['controller' => VpnClientController::class, 'action' => 'index', 'module' => 'vpn_client.php'],
     '/reverse-proxy'    => ['controller' => ReverseProxyController::class, 'action' => 'index', 'module' => 'reverse_proxy.php'],
     '/fail2ban'        => ['controller' => Fail2banController::class, 'action' => 'index', 'module' => 'fail2ban.php'],
+    '/sign-in-settings' => ['controller' => SignInSettingsController::class, 'action' => 'index', 'module' => 'sign_in_settings.php'],
     '/certificates'    => ['controller' => CertificateController::class, 'action' => 'index', 'module' => 'certificates.php'],
     '/privacy'         => ['controller' => PrivacyController::class, 'action' => 'index', 'module' => 'privacy.php'],
     '/backup'          => ['controller' => BackupController::class, 'action' => 'index', 'module' => 'backup.php'],

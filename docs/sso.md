@@ -102,7 +102,7 @@ The mobile application exchanges the code for a local session token, enabling co
 
 ## Sign In Only Through the Identity Provider
 
-Under **Appearance → Sign in only through the identity provider**, choose SAML or OpenID Connect. Then local passwords,
+Under **Security → Sign-in → Sign in only through the identity provider**, choose SAML or OpenID Connect. Then local passwords,
 passkeys, Google sign-in and the password reset stop working for signing in, and the sign-in page goes straight to the
 provider.
 
