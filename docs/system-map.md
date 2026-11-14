@@ -69,7 +69,7 @@ and line.
 | `nginx` | Port 443 multiplexer (web vs TURNS) | 443 | `/var/log/nginx/stream.log`, `error.log` |
 | `mariadb` | Database `asterisk` | 127.0.0.1:3306 | `journalctl -u mariadb` |
 | `coturn` | TURN/TURNS relay for WebRTC media | 3478, 5349 | `/var/log/turnserver/turnserver.log` |
-| `aipbx-chat` | Chat service (Go) | 127.0.0.1:8086 | `journalctl -u aipbx-chat` |
+| `aipbx-chat` | Chat service (Go); LDAP phonebook for desk phones when turned on ([Phonebook](phonebook.md)) | 127.0.0.1:8086; 389, 636 | `journalctl -u aipbx-chat` |
 | `aipbx-ai` | Local AI models, voice requests, AudioSocket | 127.0.0.1:8790 (HTTP), 8791 (AudioSocket) | `journalctl -u aipbx-ai` |
 | `postfix` | Outgoing mail (voicemail, fax, alerts) | 25 (local) | `journalctl -u postfix`, `mailq` |
 | `fail2ban`, `firewalld` | Bans, firewall | – | `fail2ban-client status`, `firewall-cmd --list-all` |

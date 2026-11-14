@@ -190,6 +190,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Phone regions** — groups of phones get their own SIP server, port, transport, proxy, NTP, syslog, codecs, time zone and language (*Provisioning → Regions*), e.g. one set inside the network and one outside
 - **SIP over TLS on port 443 (v1.71+)** — for desk phones on networks that let TLS out only on 443: the same 443 port serves the portal, TURN and these phones. nginx tells them apart by the region's own SIP server name (`sip1.example.com` beside the portal's name) or, without one, by the phones' addresses; Asterisk accepts the name and Let's Encrypt puts it on the one certificate. One switch on the region; see [docs/phones.md](docs/phones.md#sip-over-tls-on-port-443)
 - **Automated SCCP-to-SIP Firmware Switching** — model-by-model firmware migration pipeline that moves Cisco 7900 phones from proprietary SCCP to Cisco SIP firmware upon restart, with server-side `.loads` manifest validation before deployment
+- **Phonebook and LDAP directory for desk phones (v1.77.1+)** — shared company contacts (*Provisioning → Phonebook*, CSV import) served with the extensions over a read-only LDAP phonebook (389 StartTLS / 636 LDAPS): phones search by name and show the caller's name; the [`ldap-sync`](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/ldap-sync) plugin brings people from Active Directory or OpenLDAP; see [docs/phonebook.md](docs/phonebook.md)
 
 ### 📠 Fax
 - **Inbound/outbound fax** — T.38 and G.711 (res_fax + SpanDSP)
@@ -232,6 +233,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **1-to-1 and group chat** (Go WebSocket service `aipbx-chat`), group admins, member management
 - **Photos and files** with thumbnails; access limited to the conversation's participants
 - **Presence, typing indicators, read receipts**; push notifications on mobile
+- **Group voice and video calls from the chat (v1.77+)** — a call button in a group opens a conference for its members only; the others join from the chat card, on the web and in the Android app; video follows the speaker
 - **SMS / MMS on your numbers (community plugin, v1.71+)** — Twilio, Vonage, Plivo, Telnyx, Bandwidth, Sinch or VoIP.ms; the users a number is given read and answer its messages under *Messages* ([`sms`](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/sms) in the plugin catalog)
 
 ### 📱 Mobile Apps

@@ -205,8 +205,9 @@ before it is built.
 - **Limits:** PIN codes for outbound routes (only the night guard has a PIN today), monthly minutes or
   cost per trunk (today: concurrent calls and calls per minute).
 - **Operations:** Asterisk's log in the portal with its log level, writing a line into the queue log.
-- **Contacts:** a shared phonebook for phones (see the LDAP phonebook plan) and caller name lookup
-  (CNAM, #159).
+- **Contacts:** done — shared phonebook with an LDAP directory for phones (1.77.1,
+  [Phonebook](phonebook.md)), Active Directory / OpenLDAP contacts (`ldap-sync` plugin) and caller name
+  lookup (`cnam` plugin, #159). Next: the shared contacts in the mobile apps.
 - **Mail:** see 3.5.
 
 Already in AiPBX under other names: Class of Service (Calling Permissions), Dynamic Routes (IVR data
