@@ -19,6 +19,7 @@ This document details all network ports, protocols, and access scopes required b
 | **5349** | TCP | TURNS TLS (coturn) | Public | **YES** | Encrypted TLS TURN relay for strict networks. |
 | **51820** / **1194** | UDP (OpenVPN also TCP) | VPN server, default ports, off by default ([VPN](vpn.md)) | Public WAN | **YES** | Opened only while the VPN server is on, on the port chosen on the page |
 | **69** | UDP | TFTP Phone Provisioning | LAN only | **YES** | Legacy desk phone configuration and firmware. |
+| **389** / **636** | TCP | LDAP phonebook for desk phones (StartTLS on 389, LDAPS on 636), off by default ([Phonebook](phonebook.md)) | LAN only | **YES** | Read-only. Open on the Firewall page only for the phones' network. |
 | **9061** | UDP | HEP / Homer SIP Capture | Internal / LAN | **YES** | Encapsulated SIP packet capture for monitoring. |
 | **5038** | TCP | AMI (Asterisk Manager) | Localhost (127.0.0.1) | **YES** | Internal PBX daemon management. **Never expose.** |
 | **3306** | TCP | MariaDB Database | Localhost (127.0.0.1) | **YES** | Internal PBX relational database. **Never expose.** |

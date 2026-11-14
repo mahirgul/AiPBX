@@ -106,6 +106,7 @@ return [
         'id' => 'provisioning', 'icon' => 'fas fa-phone u-primary', 'label' => 'sidebar.group_provisioning',
         'items' => [
             ['href' => '/phones', 'icon' => 'fas fa-phone', 'label' => 'sidebar.item_phones', 'show' => $can('phones'), 'pages' => ['phones.php', 'phone_keys.php']],
+            ['href' => '/phonebook', 'icon' => 'fas fa-address-book', 'label' => 'sidebar.item_phonebook', 'show' => $can('phones'), 'pages' => ['phonebook.php']],
             ['href' => '/phone-regions', 'icon' => 'fas fa-map-marker-alt', 'label' => 'sidebar.item_phone_regions', 'show' => $isAdmin, 'pages' => ['phone_regions.php']],
             ['href' => '/phone-logs', 'icon' => 'fas fa-scroll', 'label' => 'sidebar.item_phone_logs', 'show' => $isAdmin, 'pages' => ['phone_logs.php']],
         ],

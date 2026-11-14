@@ -28,6 +28,7 @@ PACKAGES=(
   php-intl
   php-bcmath
   php-zip
+  php-ldap
   php-odbc
   unixodbc
   odbc-mariadb

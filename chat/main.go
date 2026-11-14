@@ -34,6 +34,12 @@ func main() {
 	storage := NewStorage(cfg.UploadDir, cfg.SettingsKey)
 	hub.storage = storage
 	go hub.Run()
+	ldapCtx, ldapCancel := context.WithCancel(context.Background())
+	ldapDone := make(chan struct{})
+	go func() {
+		defer close(ldapDone)
+		RunLdapDirectory(ldapCtx, db, cfg.SettingsKey)
+	}()
 
 	server := NewServer(cfg, hub)
 	server.storage = storage
@@ -115,6 +121,9 @@ func main() {
 
 	<-stop
 	log.Println("[AI-PBX Chat] Shutting down gracefully...")
+
+	ldapCancel()
+	<-ldapDone
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

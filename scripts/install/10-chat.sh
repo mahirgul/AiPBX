@@ -20,6 +20,10 @@ if [[ -f "$INSTALL_DIR/chat/main.go" ]]; then
     fi
 
     if [[ -f "$INSTALL_DIR/chat/aipbx-chat" ]]; then
+        # LDAP phonebook for desk phones (off until turned on in the portal):
+        # ports 389/636 need the bind capability; the portal certificate is
+        # handed over via a systemd drop-in so www-data never reads the key file
+        # and aipbx-chat still starts cleanly before a certificate exists.
         cat > /etc/systemd/system/aipbx-chat.service << EOF
 [Unit]
 Description=AI-PBX Chat & Messaging Service
@@ -39,6 +43,8 @@ ProtectKernelTunables=yes
 ProtectControlGroups=yes
 InaccessiblePaths=-/etc/ai-pbx-migrator.env
 UMask=0027
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
 ExecStart=${INSTALL_DIR}/chat/aipbx-chat
 Restart=always
 RestartSec=3
@@ -47,6 +53,17 @@ LimitNOFILE=65536
 [Install]
 WantedBy=multi-user.target
 EOF
+        if [[ -f /etc/ssl/aipbx/active.crt && -f /etc/ssl/aipbx/active.key ]]; then
+            mkdir -p /etc/systemd/system/aipbx-chat.service.d
+            cat > /etc/systemd/system/aipbx-chat.service.d/tls.conf << 'EOF'
+[Service]
+LoadCredential=ldap.crt:/etc/ssl/aipbx/active.crt
+LoadCredential=ldap.key:/etc/ssl/aipbx/active.key
+EOF
+            chmod 644 /etc/systemd/system/aipbx-chat.service.d/tls.conf
+        else
+            rm -f /etc/systemd/system/aipbx-chat.service.d/tls.conf
+        fi
         systemctl daemon-reload
         systemctl enable aipbx-chat 2>/dev/null || true
         # restart (not start): on upgrade the freshly built binary must take over

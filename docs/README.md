@@ -40,6 +40,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |
 | ☎️ [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, phones found on the network, key layouts (BLF, speed dial, park), re-provision, regions, SIP over TLS on port 443 |
+| 📒 [Phonebook](phonebook.md) | Shared company contacts, LDAP phonebook for desk phones (name search, caller name), contacts from Active Directory / OpenLDAP with the `ldap-sync` plugin |
 | 🔵 [Cisco 7900 / 8800 series](cisco-callmanager.md) | Cisco's enterprise phones (CallManager firmware): the `SEP<MAC>.cnf.xml` AiPBX writes, the firmware, the usecallmanager.nz Asterisk patch and the shared files you provide |
 | 🖧 [Network settings](network-settings.md) | The server's network cards, and moving every address after an IP change in one step |
 | 🔐 [VPN server and client](vpn.md) | WireGuard or OpenVPN: let phones and laptops reach the PBX through a tunnel, and connect the PBX to another network by uploading a profile |

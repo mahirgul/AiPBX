@@ -45,6 +45,7 @@ return [
     '/ui-kit'          => ['controller' => UiKitController::class, 'action' => 'index', 'module' => 'ui_kit.php'],
     '/transports'      => ['controller' => TransportController::class, 'action' => 'index', 'module' => 'transports.php'],
     '/phone-keys'      => ['controller' => PhoneKeysController::class, 'action' => 'index', 'module' => 'phone_keys.php'],
+    '/phonebook'       => ['controller' => PhonebookController::class, 'action' => 'index', 'module' => 'phonebook.php'],
     '/phone-regions'   => ['controller' => PhoneRegionsController::class, 'action' => 'index', 'module' => 'phone_regions.php'],
     '/ring-groups'      => ['controller' => RingGroupController::class, 'action' => 'index', 'module' => 'ring_groups.php'],
     '/conferences'      => ['controller' => ConferenceController::class, 'action' => 'index', 'module' => 'conferences.php'],

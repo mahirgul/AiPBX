@@ -176,6 +176,7 @@ function getModuleKeyForPage($page = null) {
         'extensions.php'        => 'extensions',
         'phones.php'            => 'phones',
         'phone_keys.php'        => 'phones',
+        'phonebook.php'         => 'phones',
         'phone_regions.php'     => 'phones',
         // DHCP/TFTP for desk phones: admin-only like the Phones page.
         'network_services.php'  => 'phones',

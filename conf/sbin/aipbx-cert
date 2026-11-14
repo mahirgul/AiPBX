@@ -79,6 +79,22 @@ reload_services() {
         echo "aipbx-cert: apache configtest failed, Apache not reloaded" >&2
     fi
     systemctl restart coturn >/dev/null 2>&1 || true
+    # The LDAP phonebook (aipbx-chat) gets the certificate at start.
+    # Ensure the LoadCredential drop-in exists if aipbx-chat was installed
+    # before any certificate was deployed.
+    if [ -f /etc/systemd/system/aipbx-chat.service ] && [ -r "$ACTIVE_CRT" ] && [ -r "$ACTIVE_KEY" ]; then
+        if ! grep -q '^LoadCredential=ldap\.crt:' /etc/systemd/system/aipbx-chat.service 2>/dev/null; then
+            local dropin=/etc/systemd/system/aipbx-chat.service.d/tls.conf
+            local desired=$'[Service]\nLoadCredential=ldap.crt:'"$ACTIVE_CRT"$'\nLoadCredential=ldap.key:'"$ACTIVE_KEY"
+            if [ ! -f "$dropin" ] || [ "$(cat "$dropin" 2>/dev/null)" != "$desired" ]; then
+                mkdir -p /etc/systemd/system/aipbx-chat.service.d
+                printf '%s\n' "$desired" > "$dropin"
+                chmod 644 "$dropin"
+                systemctl daemon-reload >/dev/null 2>&1 || true
+            fi
+        fi
+    fi
+    systemctl try-restart aipbx-chat >/dev/null 2>&1 || true
     if systemctl is-active --quiet asterisk; then
         asterisk -rx "module reload res_pjsip.so" >/dev/null 2>&1 || true
     fi
