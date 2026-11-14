@@ -11,6 +11,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.77.2
+
+### ✨ New
+
+- **Yealink VPN package (#158):** with the OpenVPN server, every device has a **Yealink** button that gives the `.tar` Yealink phones load (`vpn.cnf` and `keys/`). Upload it on the phone under Network → Advanced → VPN. The phone's OpenVPN must know `tls-crypt` (2.4 or newer). See [VPN](docs/vpn.md).
+- **Company logo in the mobile app:** the logo (and the dark-theme logo) and the main colour from the Appearance page are shown on the app's sign-in screen and header (Android 1.77.2). The launcher icon stays AiPBX.
+- **Security → Sign-in:** the sign-in check (sum or Cloudflare Turnstile), sign-in alerts and "sign in only through the identity provider" moved here from the Appearance page.
+
+### 🐛 Fixes
+
+- **Hold music uploads (#164):** uploading music on hold, and creating a new MOH class, failed with "Error while uploading the MOH file!": the portal could not write into the MOH folders. The update makes them `asterisk:asterisk 2775`; a folder that still cannot be written is named in the error.
+- **Fax Settings** (fax header, retries, fax mail) are in the Fax menu instead of System.
+- The Phonebook page checks the LDAP ports only when the LDAP phonebook is on (no PHP warning in the log).
+
 ## 1.77.1
 
 ### ✨ New
