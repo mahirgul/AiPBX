@@ -151,6 +151,22 @@ final class MyPhoneCallHistoryTest extends TestCase
     }
 
     /** #10: a user hides calls from their own list; the CDR rows stay. */
+    public function testAGroupCallFromTheChatIsNotListedAsANumberToCallBack(): void
+    {
+        $db = getDB();
+        $ins = $db->prepare("INSERT INTO asteriskcdr
+            (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, duration, billsec, disposition, linkedid, uniqueid, userfield)
+            VALUES (NOW(), '\"Alice\" <3002>', '3002', ?, 'from-internal-pbx', 'PJSIP/3002-mob-webrtc-0000aa01', ?, ?, ?, 40, 40, 'ANSWERED', ?, ?, '')");
+        $ins->execute(['cc123456789012', '', 'ConfBridge', 'chat123456789012', 'test-myphone-cc-1', 'test-myphone-cc-1']);
+        $ins->execute(['3001', 'PJSIP/3001-sip-0000aa02', 'Dial', 'PJSIP/3001-sip', 'test-myphone-cc-2', 'test-myphone-cc-2']);
+
+        $numbers = array_column(MyPhoneRepository::getRecentCalls('3002', null, null, 50), 'party');
+        $this->assertContains('3001', $numbers);
+        foreach ($numbers as $n) {
+            $this->assertStringNotContainsString('123456789012', (string) $n);
+        }
+    }
+
     public function testHiddenAndClearedCallsLeaveTheListButNotTheCdr(): void
     {
         $db = getDB();

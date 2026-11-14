@@ -118,6 +118,8 @@ class MyPhoneRepository extends BaseRepository
         }
 
         $fetchLimit = max((int)$limit * 3, 100);
+        // A group call from the chat (dst cc<room>) is left out: it is no number to call back,
+        // and redialled from the history its digits went out as an ordinary call.
         $sql = "SELECT id, calldate, clid, src, dst, duration, billsec, disposition, channel, dstchannel, linkedid, uniqueid, userfield, lastapp, lastdata, dcontext
                 FROM asteriskcdr
                 WHERE (
@@ -129,6 +131,7 @@ class MyPhoneRepository extends BaseRepository
                 AND channel NOT LIKE 'Local/%'
                 AND channel NOT LIKE 'CLIEval/%'
                 AND dst != 's'
+                AND dst NOT REGEXP '^cc[0-9]+\$'
                 %CLEARED%
                 ORDER BY calldate DESC, id DESC LIMIT " . (int)$fetchLimit;
 
