@@ -463,10 +463,18 @@
                 });
                 newScript.setAttribute('data-page-script', 'true');
                 newScript.appendChild(document.createTextNode(oldScript.innerHTML));
-                try {
-                    document.body.appendChild(newScript); // inline script: appendChild runs it synchronously
-                } catch (scriptErr) {
-                    console.error('[SPA Router] Inline script execution error:', scriptErr);
+                const runInline = () => {
+                    try {
+                        document.body.appendChild(newScript); // inline script: appendChild runs it synchronously
+                    } catch (scriptErr) {
+                        console.error('[SPA Router] Inline script execution error:', scriptErr);
+                    }
+                };
+                if (loadPromises.length === 0) {
+                    runInline();
+                } else {
+                    const waitPrev = Promise.all(loadPromises.slice());
+                    loadPromises.push(waitPrev.then(runInline));
                 }
             }
         });

@@ -11,6 +11,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.79.1
+
+### 🐛 Fixes
+
+- **SPA script execution ordering (`web/assets/js/spa_router.js`):** `executePageScripts()` now awaits preceding external `<script src>` loads before running subsequent inline `<script>` blocks, preventing `ReferenceError` races (such as `/ai-apps` calling `destinations_helper.js` helpers before the script finishes loading).
+- **AI Applications page initialization & form controls (`AI → Applications`):** moved `AI_DEST_MODULES`, `AI_T`, and `aiIntentSeq` declarations before `aiAppEdit()`, defaulted null/empty `model_id` values to `engine:tr`, guarded `bindDestinationSelector` / `loadDestinationOptions` calls, and deferred destination selector binding cleanly until `destinations_helper.js` loads so **New** and **Edit** buttons work reliably on both initial load and SPA navigation.
+- **Cloud TTS titles & attribute escaping (`AI → Applications`):** displayed configured cloud TTS provider titles (`cloud:<id>`) in the applications table, safely handled null `model_id` values, and escaped edit button `onclick` JSON payloads with `JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP`.
+- **Showcase seed (`scripts/showcase/seed.php`):** added explicit `model_id` (`engine:en`) values to the three seeded `pbx_ai_apps` rows (`7501`, `7502`, `7503`).
+
 ## 1.79.0
 
 ### ✨ New

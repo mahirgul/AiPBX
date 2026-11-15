@@ -320,9 +320,9 @@ $ins('pbx_scheduled_tasks', [
     ['name' => 'Clean old recordings', 'description' => 'Deletes recordings older than 90 days', 'is_active' => 0, 'cron_expression' => '30 3 * * 0', 'script_type' => 'shell', 'script_content' => 'echo clean', 'timeout_sec' => 600, 'created_by' => 1],
 ]);
 $ins('pbx_ai_apps', [
-    ['title' => 'Order status bot', 'app_type' => 'announcement', 'internal_number' => '7501', 'text_template' => 'Your order {order} is {status}.', 'lookup_url' => 'https://erp.northwind.example/api/order', 'dest_type' => 'queue', 'dest_id' => '2', 'max_concurrent' => 4, 'is_active' => 1],
-    ['title' => 'After-hours receptionist', 'app_type' => 'speech_routing', 'internal_number' => '7502', 'text_template' => 'Thank you for calling Northwind.', 'dest_type' => 'voicemail', 'dest_id' => '1001', 'max_concurrent' => 2, 'is_active' => 1],
-    ['title' => 'Callback taker', 'app_type' => 'voice_requests', 'internal_number' => '7503', 'text_template' => 'Tell us your name and number.', 'dest_type' => 'hangup', 'dest_id' => '', 'max_concurrent' => 2, 'is_active' => 1],
+    ['title' => 'Order status bot', 'app_type' => 'announcement', 'internal_number' => '7501', 'model_id' => 'engine:en', 'text_template' => 'Your order {order} is {status}.', 'lookup_url' => 'https://erp.northwind.example/api/order', 'dest_type' => 'queue', 'dest_id' => '2', 'max_concurrent' => 4, 'is_active' => 1],
+    ['title' => 'After-hours receptionist', 'app_type' => 'speech_routing', 'internal_number' => '7502', 'model_id' => 'engine:en', 'text_template' => 'Thank you for calling Northwind.', 'dest_type' => 'voicemail', 'dest_id' => '1001', 'max_concurrent' => 2, 'is_active' => 1],
+    ['title' => 'Callback taker', 'app_type' => 'voice_requests', 'internal_number' => '7503', 'model_id' => 'engine:en', 'text_template' => 'Tell us your name and number.', 'dest_type' => 'hangup', 'dest_id' => '', 'max_concurrent' => 2, 'is_active' => 1],
 ]);
 $audit = [['extensions', 'extension', '1006', 'Extension: 1006 (Sofia Rossi)', 'create'], ['queues', 'queue', 'sales', 'Queue: Sales', 'update'], ['trunks', 'trunk', 'sbc_tls', 'Trunk: SBC over TLS', 'create'],
     ['did_routes', 'did', '+15550101', 'Inbound: Support line', 'update'], ['ivrs', 'ivr', '1', 'IVR: Main menu', 'update'], ['system', 'apply', '', 'Apply: 6 changes', 'update'], ['phones', 'phone', '00:15:65:a1:b2:01', 'Phone: Yealink T54W (1001)', 'create']];

@@ -5,6 +5,9 @@ use PBX\Destinations\DestinationRegistry;
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $labelCache = [];
 $voiceTitles = array_column($voices, 'title', 'id');
+foreach ($cloud_tts ?? [] as $ct) {
+    $voiceTitles['cloud:' . $ct['id']] = $ct['title'];
+}
 $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' . $l));
 ?>
 <div class="card">
@@ -29,7 +32,8 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
     ], ['frame' => 'u-card-pad']); ?>
             <?php if (!$apps): ?><tr><td colspan="6" class="u-muted"><?php echo t('ai_apps.none'); ?></td></tr><?php endif; ?>
             <?php foreach ($apps as $a):
-                $voice = str_starts_with($a['model_id'], 'engine:') ? $engineTitle(substr($a['model_id'], 7)) : ($voiceTitles[$a['model_id']] ?? $a['model_id']);
+                $modelId = (string) ($a['model_id'] ?? '');
+                $voice = str_starts_with($modelId, 'engine:') ? $engineTitle(substr($modelId, 7)) : ($voiceTitles[$modelId] ?? $modelId);
                 $mod = DestinationRegistry::getModule($a['dest_type']);
                 $dest = ($mod ? $mod->getName() : $a['dest_type']) . ($a['dest_id'] !== '' ? ': ' . (DestinationRegistry::resolveLabel($a['dest_type'], $a['dest_id'], $labelCache) ?? $a['dest_id']) : ''); ?>
                 <tr>
@@ -39,7 +43,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                     <td class="u-fs-12"><?php echo $h($dest); ?></td>
                     <td><?php echo (int) $a['is_active'] ? '<span class="badge badge-success">' . t('common.active') . '</span>' : '<span class="badge badge-secondary">' . t('common.passive') . '</span>'; ?></td>
                     <td class="u-ta-right u-nowrap">
-                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='aiAppEdit(<?php echo $h(json_encode($a, JSON_UNESCAPED_UNICODE)); ?>)'><i class="fas fa-pen"></i></button>
+                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='aiAppEdit(<?php echo $h(json_encode($a, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)); ?>)'><i class="fas fa-pen"></i></button>
                         <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo $h(json_encode(t('ai_apps.confirm_delete'))); ?>)">
                             <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
                             <button type="submit" name="delete_app" value="<?php echo (int) $a['id']; ?>" class="btn btn-icon btn-danger btn-sm"><i class="fas fa-trash-alt"></i></button>
@@ -187,6 +191,12 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
 <script src="<?php echo asset('/assets/js/destinations_helper.js'); ?>"></script>
 <script>
 window.AI_APPS_TEXT = { edit: <?php echo json_encode(t('ai_apps.edit')); ?>, create: <?php echo json_encode(t('ai_apps.btn_new')); ?> };
+var AI_DEST_MODULES = <?php echo json_encode(array_map(fn($m) => ['key' => $m['key'], 'name' => $m['name']], $modules), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
+var AI_T = <?php echo json_encode(['name' => t('ai_apps.intent_name'), 'keywords' => t('ai_apps.intent_keywords'), 'examples' => t('ai_apps.intent_examples'),
+    'reply' => t('ai_apps.intent_reply'), 'email' => t('ai_apps.intent_email'), 'dest' => t('ai_apps.intent_dest'), 'none' => t('ai_apps.intent_dest_none'),
+    'remove' => t('common.delete'), 'routing_greeting' => t('ai_apps.routing_greeting_placeholder'),
+    'requests_greeting' => t('ai_apps.greeting_placeholder')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
+var aiIntentSeq = 0;
 function aiAppEdit(a) {
     const f = (id, v) => { const el = document.getElementById(id); if (el.type === 'checkbox') el.checked = !!Number(v); else el.value = v; };
     a = a || { id: 0, title: '', internal_number: '', model_id: 'engine:tr', speed: '1', text_template: '', lookup_url: '', fallback_text: '', dest_type: 'hangup', dest_id: '', max_concurrent: 4, is_active: 1 };
@@ -194,8 +204,9 @@ function aiAppEdit(a) {
     f('ai_text', a.text_template); f('ai_lookup', a.lookup_url || ''); f('ai_fallback', a.fallback_text || '');
     f('ai_max', a.max_concurrent); f('ai_active', a.is_active);
     const m = document.getElementById('ai_model');
-    if (![...m.options].some(o => o.value === a.model_id)) { const o = new Option(a.model_id, a.model_id); m.add(o); }
-    m.value = a.model_id;
+    const modelId = a.model_id || 'engine:tr';
+    if (![...m.options].some(o => o.value === modelId)) { const o = new Option(modelId, modelId); m.add(o); }
+    m.value = modelId;
     document.getElementById('ai_type').value = a.app_type || 'announcement';
     const c = a.config ? (typeof a.config === 'string' ? JSON.parse(a.config) : a.config) : {};
     f('ai_greeting', c.greeting || ''); f('ai_retry', c.retry || ''); f('ai_nu', c.not_understood || '');
@@ -212,20 +223,14 @@ function aiAppEdit(a) {
     if (!(c.intents || []).length) aiIntentAdd();
     aiAppType();
     document.getElementById('ai_dest_type').value = a.dest_type;
-    loadDestinationOptions('ai_dest_type', 'ai_dest_id', a.dest_id || '');
+    if (typeof loadDestinationOptions === 'function') {
+        loadDestinationOptions('ai_dest_type', 'ai_dest_id', a.dest_id || '');
+    }
     document.getElementById('aiAppFormTitle').textContent = a.id ? window.AI_APPS_TEXT.edit + ': ' + a.title : window.AI_APPS_TEXT.create;
     const card = document.getElementById('aiAppFormCard');
     card.style.display = '';
     card.scrollIntoView({ behavior: 'smooth' });
 }
-bindDestinationSelector('ai_dest_type', 'ai_dest_id');
-
-var AI_DEST_MODULES = <?php echo json_encode(array_map(fn($m) => ['key' => $m['key'], 'name' => $m['name']], $modules), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
-var AI_T = <?php echo json_encode(['name' => t('ai_apps.intent_name'), 'keywords' => t('ai_apps.intent_keywords'), 'examples' => t('ai_apps.intent_examples'),
-    'reply' => t('ai_apps.intent_reply'), 'email' => t('ai_apps.intent_email'), 'dest' => t('ai_apps.intent_dest'), 'none' => t('ai_apps.intent_dest_none'),
-    'remove' => t('common.delete'), 'routing_greeting' => t('ai_apps.routing_greeting_placeholder'),
-    'requests_greeting' => t('ai_apps.greeting_placeholder')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
-var aiIntentSeq = 0;
 function aiAppType() {
     const t = document.getElementById('ai_type').value;
     const listens = t === 'voice_requests' || t === 'speech_routing';
@@ -267,8 +272,28 @@ function aiIntentAdd(i) {
     row.querySelectorAll('.ai-intent-extra').forEach(el => el.style.display = document.getElementById('ai_type').value === 'voice_requests' ? '' : 'none');
     const dt = document.getElementById('ai_idt_' + n);
     dt.value = i.dest_type || '';
-    bindDestinationSelector('ai_idt_' + n, 'ai_idi_' + n);
-    if (i.dest_type) loadDestinationOptions('ai_idt_' + n, 'ai_idi_' + n, i.dest_id || '');
+    if (typeof bindDestinationSelector === 'function') {
+        bindDestinationSelector('ai_idt_' + n, 'ai_idi_' + n);
+    }
+    if (i.dest_type && typeof loadDestinationOptions === 'function') {
+        loadDestinationOptions('ai_idt_' + n, 'ai_idi_' + n, i.dest_id || '');
+    }
+}
+function aiBindAppDestination() {
+    if (typeof bindDestinationSelector !== 'function') return false;
+    bindDestinationSelector('ai_dest_type', 'ai_dest_id');
+    return true;
+}
+if (!aiBindAppDestination()) {
+    const helperScript = document.querySelector('script[src*="destinations_helper.js"]:not(.spa-inert)');
+    const onReady = () => {
+        if (aiBindAppDestination()) {
+            document.removeEventListener('spa:pageLoaded', onReady);
+            if (helperScript) helperScript.removeEventListener('load', onReady);
+        }
+    };
+    document.addEventListener('spa:pageLoaded', onReady, { once: true });
+    if (helperScript) helperScript.addEventListener('load', onReady, { once: true });
 }
 if (!window._aiAppsChangeBound) {
     window._aiAppsChangeBound = true;
