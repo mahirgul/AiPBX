@@ -14,33 +14,26 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <a href="/sip-capture-settings"><?php echo t('sidebar.item_sip_capture_settings'); ?></a></div>
     <?php endif; ?>
 
-    <div class="u-d-flex u-gap-8 u-mb-12" style="flex-wrap: wrap; align-items: center;">
+    <div class="u-d-flex u-wrap u-flex-center u-gap-8 u-mb-12">
         <button type="button" id="sipLiveToggle" class="btn btn-secondary btn-sm">
             <i class="fas fa-pause"></i> <span><?php echo t('siptrace.live_pause'); ?></span>
         </button>
         <button type="button" id="sipLiveClear" class="btn btn-secondary btn-sm">
             <i class="fas fa-eraser"></i> <?php echo t('siptrace.live_clear'); ?>
         </button>
-        <input type="text" id="sipLiveFilter" class="form-control form-control-sm" style="max-width: 320px;" placeholder="<?php echo t('siptrace.filter_ph'); ?>">
+        <input type="text" id="sipLiveFilter" class="form-control form-control-sm u-maxw-320" placeholder="<?php echo t('siptrace.filter_ph'); ?>">
     </div>
 
-    <div class="table-responsive" style="max-height: 360px; overflow: auto;">
-        <table class="table table-sm table-hover" id="sipLiveTable">
-            <thead>
-                <tr>
-                    <th><?php echo t('siptrace.col_time'); ?></th>
-                    <th><?php echo t('siptrace.col_method'); ?></th>
-                    <th><?php echo t('siptrace.col_caller'); ?></th>
-                    <th><?php echo t('siptrace.col_called'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('siptrace.col_src'); ?></th>
-                    <th class="col-hide-mobile"><?php echo t('siptrace.col_dst'); ?></th>
-                </tr>
-            </thead>
-            <tbody id="sipLiveBody">
-                <tr id="sipLiveEmpty"><td colspan="6" class="text-muted text-center u-fs-12"><?php echo t('siptrace.live_waiting'); ?></td></tr>
-            </tbody>
-        </table>
-    </div>
+    <?php echo uiTableOpen([
+        t('siptrace.col_time'),
+        t('siptrace.col_method'),
+        t('siptrace.col_caller'),
+        t('siptrace.col_called'),
+        ['label' => t('siptrace.col_src'), 'class' => 'col-hide-mobile'],
+        ['label' => t('siptrace.col_dst'), 'class' => 'col-hide-mobile'],
+    ], ['id' => 'sipLiveTable', 'body_id' => 'sipLiveBody', 'search' => false, 'frame' => 'u-maxh-360 u-of-auto']); ?>
+        <tr id="sipLiveEmpty"><td colspan="6" class="text-muted text-center u-fs-12"><?php echo t('siptrace.live_waiting'); ?></td></tr>
+    <?php echo uiTableClose(); ?>
 
     <div class="u-mt-10">
         <div class="u-fs-12 u-muted" id="sipLiveHead"><?php echo t('siptrace.click_message'); ?></div>

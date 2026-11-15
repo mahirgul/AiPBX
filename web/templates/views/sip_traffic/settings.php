@@ -9,7 +9,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
         <a href="/sip-live" class="btn btn-secondary btn-sm"><i class="fas fa-satellite-dish"></i> <?php echo t('sidebar.item_sip_live'); ?></a>
 <?php echo uiPageHeaderClose(); ?>
 
-    <div class="alert alert-info u-fs-13 u-mb-12" style="display: flex; flex-wrap: wrap; gap: 16px;">
+    <div class="alert alert-info u-fs-13 u-mb-12 u-d-flex u-wrap u-gap-16">
         <span><strong><?php echo t('siptrace.status_events_24h'); ?>:</strong> <?php echo (int) ($status['rows'] ?? 0); ?></span>
         <span><strong><?php echo t('siptrace.status_last_event'); ?>:</strong> <?php echo $h(!empty($status['last']) ? $status['last'] : '—'); ?></span>
         <span><strong><?php echo t('siptrace.status_files'); ?>:</strong> <?php echo (int) ($status['files'] ?? 0); ?> (<?php echo $h(number_format(((int) ($status['bytes'] ?? 0)) / 1048576, 2)); ?> MB)</span>
@@ -31,15 +31,15 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                 <span><?php echo t('siptrace.field_files'); ?></span>
             </label>
         </div>
-        <div class="form-group u-mt-10" style="max-width: 280px;">
+        <div class="form-group u-mt-10 u-maxw-260">
             <label class="form-label" for="sip_days"><?php echo t('siptrace.field_days'); ?></label>
             <input type="number" id="sip_days" name="days" min="1" max="10" class="form-control" value="<?php echo (int) ($settings['days'] ?? 10); ?>">
         </div>
-        <div class="form-group u-mt-10" style="max-width: 280px;">
+        <div class="form-group u-mt-10 u-maxw-260">
             <label class="form-label" for="sip_max_mb"><?php echo t('siptrace.field_max_mb'); ?></label>
             <input type="number" id="sip_max_mb" name="max_mb" min="100" max="51200" class="form-control" value="<?php echo (int) ($settings['max_mb'] ?? 2048); ?>">
         </div>
-        <div class="form-group u-mt-10" style="max-width: 280px;">
+        <div class="form-group u-mt-10 u-maxw-260">
             <label class="form-label" for="sip_retention"><?php echo t('siptrace.field_retention'); ?></label>
             <input type="number" id="sip_retention" name="retention" min="1" max="3650" class="form-control" value="<?php echo (int) ($settings['retention'] ?? 30); ?>">
         </div>

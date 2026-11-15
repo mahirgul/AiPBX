@@ -45,7 +45,7 @@ $t0 = $messages[0]['ts'] ?? 0;
                     $x1 = $x($m['src']);
                     $x2 = $x($m['dst']);
                     $c = $color($m); ?>
-                    <g class="sip-msg" data-n="<?php echo $n; ?>" style="cursor: pointer;">
+                    <g class="sip-msg u-pointer" data-n="<?php echo $n; ?>">
                         <rect x="0" y="<?php echo $y - 22; ?>" width="<?php echo $width; ?>" height="<?php echo $rowH; ?>" fill="transparent"/>
                         <text x="6" y="<?php echo $y; ?>" fill="currentColor" fill-opacity=".6">+<?php echo $h(number_format($m['ts'] - $t0, 3)); ?></text>
                         <line x1="<?php echo $x1; ?>" y1="<?php echo $y; ?>" x2="<?php echo $x2; ?>" y2="<?php echo $y; ?>" stroke="<?php echo $c; ?>" stroke-width="2" marker-end="url(#arr)"/>
