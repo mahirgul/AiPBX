@@ -11,6 +11,12 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.79.3
+
+### 🐛 Fixes
+
+- **Preserve `/var/lib/aipbx/sip-capture` and `/var/lib/aipbx/diag` ownership on upgrades (`scripts/install/08-webservers.sh`):** restores `asterisk:asterisk` ownership recursively on `/var/lib/aipbx/sip-capture` and `root:www-data` ownership on `/var/lib/aipbx/diag` after `04-directories.sh` runs `chown -R www-data:www-data /var/lib/aipbx` during `aipbx-update`.
+
 ## 1.79.2
 
 ### 🐛 Fixes
