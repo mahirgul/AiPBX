@@ -11,6 +11,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.79.4
+
+### ✨ New
+
+- **External AI voice agents (`AI → External agents`, `pbx_ai_agents`, `AiAgentService`, `SyncAiAgents`):** route calls from IVRs, inbound routes, queues, and other destinations to an external SIP voice agent (`sip:user@host:port`), with concurrency limit, maximum call duration, caller headers (`X-AiPBX-*`), fallback destination, and `REFER` hand-over restricted to the agent's configured hand-over destination ([docs/ai-agents.md](docs/ai-agents.md)).
+- **Conversation mode, barge-in & assistant hand-over (`AI → Applications`, `conversation.py`, `voice_requests.py`):**
+  - **Conversation mode:** multi-turn dialogue powered by the configured cloud language model following company instructions, calling up to 5 configured HTTP lookups mid-call, and finishing by transferring to a configured request or destination or hanging up politely ([docs/ai-apps.md](docs/ai-apps.md)).
+  - **Barge-in:** per-application setting (off by default) allowing callers to interrupt the greeting and retry prompt after `0.2 s` of speech or a DTMF key, capturing the spoken request from the first syllable.
+  - **Assistant-to-assistant hand-over:** when a conversation transfers a call, it writes a one-sentence summary that leads the request log and e-mail and seeds the next AI application's conversation context.
+- **Automated call quality review & supervisor board (`CDR Reports`, `Call Center → Board`, `CdrAiService`, `bin/cdr_qa.php`):** scores transcribed calls (`0–100`, caller mood, resolved status, one-sentence reason) against administrator criteria in `AI → Cloud services`, displays scores and badges in CDR reports and the audio player, supports optional automatic daily review (`qa_auto`, `qa_daily_max`), and adds per-agent quality metrics (reviewed calls, average score, % resolved, unhappy callers) to the Call Center board ([docs/recordings.md](docs/recordings.md)).
+- **Outbound AI campaigns (`auto-dialer` plugin `1.2.0`):** when an Auto Dialer campaign targets an AI application or external AI agent, the dialplan presents the dialed party as the caller and records what the AI understood (`AI:<request>`) as the number's campaign result ([docs/auto-dialer.md](docs/auto-dialer.md)).
+
+### 🐛 Fixes
+
+- **Unified destination deletion check (`DestinationRegistry::usedBy`):** queues, ring groups, IVRs, time conditions, conferences, announcements, hang-up actions, outbound routes, AI applications, and external AI agents all check every routing table before deletion.
+
 ## 1.79.3
 
 ### 🐛 Fixes
