@@ -6,6 +6,7 @@
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/internal_numbers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
+require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
 
 /**
  * PBX → Ring groups: save/delete; marks ring_groups and internal_numbers for Apply
@@ -85,24 +86,7 @@ class RingGroupService {
                 $refs[] = "Inbound routes (" . implode(', ', $d) . ")";
             }
             $sid = (string) $id;
-            $count = DBHelper::fetchColumn(
-                "SELECT COUNT(*) FROM (
-                    SELECT id FROM pbx_ivr_entries WHERE dest_type = 'ring_group' AND dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'ring_group' AND timeout_dest_id = ?) OR (invalid_dest_type = 'ring_group' AND invalid_dest_id = ?)
-                    UNION ALL
-                    SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'ring_group' AND match_dest_id = ?) OR (nomatch_dest_type = 'ring_group' AND nomatch_dest_id = ?) OR rules_json LIKE ?
-                    UNION ALL
-                    SELECT id FROM pbx_announcements WHERE post_dest_type = 'ring_group' AND post_dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'ring_group' AND fallback_dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_ring_groups WHERE id != ? AND fallback_dest_type = 'ring_group' AND fallback_dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'ring_group' AND dest_id = ?
-                ) refs",
-                [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"ring_group","match_dest_id":"' . $sid . '"%', $sid, $sid, $id, $sid, $sid]
-            );
+            $count = \PBX\Destinations\DestinationRegistry::usageCount('ring_group', $sid, ['pbx_dids' => null, 'pbx_ring_groups' => ['id', $id]]);
             if ($count > 0) {
                 $refs[] = "IVR / time condition / announcement / fallback destinations ({$count})";
             }

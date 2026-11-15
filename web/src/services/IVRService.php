@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../internal_numbers.php';
+require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
 /**
  * IVR Menu & Entry Service
  */
@@ -82,20 +83,7 @@ class IVRService {
         return PBXHelper::handleAction($csrf_token, function() use ($ivr_id) {
             $ivr_id = intval($ivr_id);
             $ivr_title = DBHelper::fetchColumn("SELECT title FROM pbx_ivrs WHERE id = ?", [$ivr_id]);
-            $refs = DBHelper::fetchColumn(
-                "SELECT COUNT(*) FROM (
-                    SELECT id FROM pbx_dids WHERE dest_type = 'ivr' AND dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_ivr_entries WHERE dest_type = 'ivr' AND dest_id = ? AND ivr_id != ?
-                    UNION ALL
-                    SELECT id FROM pbx_ivrs WHERE id != ? AND ((timeout_dest_type = 'ivr' AND timeout_dest_id = ?) OR (invalid_dest_type = 'ivr' AND invalid_dest_id = ?))
-                    UNION ALL
-                    SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'ivr' AND match_dest_id = ?) OR (nomatch_dest_type = 'ivr' AND nomatch_dest_id = ?) OR rules_json LIKE ?
-                    UNION ALL
-                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'ivr' AND dest_id = ?
-                ) refs",
-                [(string)$ivr_id, (string)$ivr_id, $ivr_id, $ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, (string)$ivr_id, '%"match_dest_type":"ivr","match_dest_id":"' . $ivr_id . '"%', (string)$ivr_id]
-            );
+            $refs = \PBX\Destinations\DestinationRegistry::usageCount('ivr', (string) $ivr_id, ['pbx_ivr_entries' => ['ivr_id', $ivr_id], 'pbx_ivrs' => ['id', $ivr_id]]);
             if ($refs > 0) {
                 throw new \Exception(t('srv_ivr.err_in_use'));
             }

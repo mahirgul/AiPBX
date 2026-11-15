@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../internal_numbers.php';
+require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
 /**
  * Announcements & MOH Sound Service
  */
@@ -152,23 +153,14 @@ class SoundService {
             if ($anc) {
                 $sid = (string) $anc_id;
                 $afile = (string) ($anc['audio_file'] ?? '');
-                $refs = (int) DBHelper::fetchColumn(
+                $ids = $afile !== '' ? [$sid, $afile] : [$sid];
+                // Destinations (by id or by file), and the places that play it without a destination.
+                $refs = \PBX\Destinations\DestinationRegistry::usageCount('announcement', $ids, ['pbx_announcements' => ['id', $anc_id]])
+                    + (int) DBHelper::fetchColumn(
                     "SELECT COUNT(*) FROM (
-                        SELECT id FROM pbx_dids WHERE dest_type = 'announcement' AND (dest_id = ? OR dest_id = ?)
+                        SELECT id FROM pbx_ivrs WHERE prompt_file = ?
                         UNION ALL
-                        SELECT id FROM pbx_ivr_entries WHERE dest_type = 'announcement' AND (dest_id = ? OR dest_id = ?)
-                        UNION ALL
-                        SELECT id FROM pbx_ivrs WHERE prompt_file = ? OR (timeout_dest_type = 'announcement' AND (timeout_dest_id = ? OR timeout_dest_id = ?)) OR (invalid_dest_type = 'announcement' AND (invalid_dest_id = ? OR invalid_dest_id = ?))
-                        UNION ALL
-                        SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'announcement' AND (match_dest_id = ? OR match_dest_id = ?)) OR (nomatch_dest_type = 'announcement' AND (nomatch_dest_id = ? OR nomatch_dest_id = ?))
-                        UNION ALL
-                        SELECT id FROM pbx_announcements WHERE id != ? AND post_dest_type = 'announcement' AND (post_dest_id = ? OR post_dest_id = ?)
-                        UNION ALL
-                        SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'announcement' AND (fallback_dest_id = ? OR fallback_dest_id = ?)
-                        UNION ALL
-                        SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'announcement' AND (fallback_dest_id = ? OR fallback_dest_id = ?)
-                        UNION ALL
-                        SELECT id FROM pbx_ivr_data_steps WHERE prompt_file = ? OR (found_dest_type = 'announcement' AND (found_dest_id = ? OR found_dest_id = ?)) OR (not_found_dest_type = 'announcement' AND (not_found_dest_id = ? OR not_found_dest_id = ?)) OR (timeout_dest_type = 'announcement' AND (timeout_dest_id = ? OR timeout_dest_id = ?))
+                        SELECT id FROM pbx_ivr_data_steps WHERE prompt_file = ?
                         UNION ALL
                         SELECT id FROM pbx_queues WHERE periodic_announce = ? OR callback_announce = ?
                         UNION ALL
@@ -176,7 +168,7 @@ class SoundService {
                         UNION ALL
                         SELECT 1 AS id FROM sys_settings WHERE setting_key = 'privacy_notice_sound_id' AND setting_value = ?
                     ) refs",
-                    [$sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $anc_id, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $sid, $afile, $sid, $afile, $sid, $afile, $afile, $afile, $anc_id, $sid]
+                    [$afile, $afile, $afile, $afile, $anc_id, $sid]
                 );
                 if ($refs > 0) {
                     throw new \Exception(t('srv_tc.err_in_use'));

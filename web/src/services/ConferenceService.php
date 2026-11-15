@@ -6,6 +6,7 @@
 require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/internal_numbers.php';
 require_once dirname(__DIR__) . '/asterisk_sync.php';
+require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
 
 /**
  * PBX → Conference rooms: save/delete rooms (marks conferences and internal_numbers
@@ -85,26 +86,7 @@ class ConferenceService {
             return true;
         }
         $sid = (string)$id;
-        $count = (int)DBHelper::fetchColumn(
-            "SELECT COUNT(*) FROM (
-                SELECT id FROM pbx_ivr_entries WHERE dest_type = 'conference' AND dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'conference' AND timeout_dest_id = ?) OR (invalid_dest_type = 'conference' AND invalid_dest_id = ?)
-                UNION ALL
-                SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'conference' AND match_dest_id = ?) OR (nomatch_dest_type = 'conference' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
-                UNION ALL
-                SELECT id FROM pbx_announcements WHERE post_dest_type = 'conference' AND post_dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'conference' AND found_dest_id = ?) OR (not_found_dest_type = 'conference' AND not_found_dest_id = ?) OR (timeout_dest_type = 'conference' AND timeout_dest_id = ?)
-                UNION ALL
-                SELECT id FROM pbx_web_widgets WHERE dest_type = 'conference' AND dest_id = ?
-            ) refs",
-            [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"conference","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"conference","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid, $sid]
-        );
+        $count = \PBX\Destinations\DestinationRegistry::usageCount('conference', $sid, ['pbx_dids' => null]);
         return $count > 0;
     }
 
@@ -122,26 +104,7 @@ class ConferenceService {
                 $refs[] = "Inbound routes (" . implode(', ', $d) . ")";
             }
             $sid = (string)$id;
-            $count = DBHelper::fetchColumn(
-                "SELECT COUNT(*) FROM (
-                    SELECT id FROM pbx_ivr_entries WHERE dest_type = 'conference' AND dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'conference' AND timeout_dest_id = ?) OR (invalid_dest_type = 'conference' AND invalid_dest_id = ?)
-                    UNION ALL
-                    SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'conference' AND match_dest_id = ?) OR (nomatch_dest_type = 'conference' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
-                    UNION ALL
-                    SELECT id FROM pbx_announcements WHERE post_dest_type = 'conference' AND post_dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'conference' AND fallback_dest_id = ?
-                    UNION ALL
-                    SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'conference' AND found_dest_id = ?) OR (not_found_dest_type = 'conference' AND not_found_dest_id = ?) OR (timeout_dest_type = 'conference' AND timeout_dest_id = ?)
-                    UNION ALL
-                    SELECT id FROM pbx_web_widgets WHERE dest_type = 'conference' AND dest_id = ?
-                ) refs",
-                [$sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"conference","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"conference","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid, $sid]
-            );
+            $count = \PBX\Destinations\DestinationRegistry::usageCount('conference', $sid, ['pbx_dids' => null]);
             if ($count > 0) {
                 $refs[] = "IVR / time condition / announcement / fallback destinations ({$count})";
             }

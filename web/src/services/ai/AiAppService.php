@@ -17,6 +17,7 @@ require_once dirname(__DIR__, 2) . '/asterisk_sync.php';
 require_once dirname(__DIR__, 2) . '/internal_numbers.php';
 require_once dirname(__DIR__) . '/LocalAiService.php';
 require_once dirname(__DIR__) . '/ai/CloudAiService.php';
+require_once dirname(__DIR__, 3) . '/modules/destinations/DestinationRegistry.php';
 
 class AiAppService
 {
@@ -159,28 +160,7 @@ class AiAppService
             return;
         }
         $sid = (string) $id;
-        $refs = (int) DBHelper::fetchColumn(
-            "SELECT COUNT(*) FROM (
-                SELECT id FROM pbx_dids WHERE dest_type = 'ai_app' AND dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ivr_entries WHERE dest_type = 'ai_app' AND dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'ai_app' AND timeout_dest_id = ?) OR (invalid_dest_type = 'ai_app' AND invalid_dest_id = ?)
-                UNION ALL
-                SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'ai_app' AND match_dest_id = ?) OR (nomatch_dest_type = 'ai_app' AND nomatch_dest_id = ?) OR rules_json LIKE ? OR rules_json LIKE ?
-                UNION ALL
-                SELECT id FROM pbx_announcements WHERE post_dest_type = 'ai_app' AND post_dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_boss_secretary_groups WHERE fallback_dest_type = 'ai_app' AND fallback_dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ring_groups WHERE fallback_dest_type = 'ai_app' AND fallback_dest_id = ?
-                UNION ALL
-                SELECT id FROM pbx_ivr_data_steps WHERE (found_dest_type = 'ai_app' AND found_dest_id = ?) OR (not_found_dest_type = 'ai_app' AND not_found_dest_id = ?) OR (timeout_dest_type = 'ai_app' AND timeout_dest_id = ?)
-                UNION ALL
-                SELECT id FROM pbx_web_widgets WHERE dest_type = 'ai_app' AND dest_id = ?
-            ) refs",
-            [$sid, $sid, $sid, $sid, $sid, $sid, '%"match_dest_type":"ai_app","match_dest_id":"' . $sid . '"%', '%"nomatch_dest_type":"ai_app","nomatch_dest_id":"' . $sid . '"%', $sid, $sid, $sid, $sid, $sid, $sid, $sid]
-        );
+        $refs = \PBX\Destinations\DestinationRegistry::usageCount('ai_app', $sid);
         if ($refs > 0) {
             throw new InvalidArgumentException(t('srv_tc.err_in_use'));
         }

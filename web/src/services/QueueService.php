@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../internal_numbers.php';
+require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
 /**
  * Call Center Queue Service
  */
@@ -177,20 +178,7 @@ class QueueService {
             $q_row = DBHelper::fetchOne("SELECT queue_name, title FROM pbx_queues WHERE id = ?", [$queue_id]);
             $q_name = $q_row['queue_name'] ?? null;
             if (!empty($q_name)) {
-                $refs = DBHelper::fetchColumn(
-                    "SELECT COUNT(*) FROM (
-                        SELECT id FROM pbx_dids WHERE dest_type = 'queue' AND dest_id = ?
-                        UNION ALL
-                        SELECT id FROM pbx_ivr_entries WHERE dest_type = 'queue' AND dest_id = ?
-                        UNION ALL
-                        SELECT id FROM pbx_ivrs WHERE (timeout_dest_type = 'queue' AND timeout_dest_id = ?) OR (invalid_dest_type = 'queue' AND invalid_dest_id = ?)
-                        UNION ALL
-                        SELECT id FROM pbx_time_conditions WHERE (match_dest_type = 'queue' AND match_dest_id = ?) OR (nomatch_dest_type = 'queue' AND nomatch_dest_id = ?) OR rules_json LIKE ?
-                        UNION ALL
-                        SELECT id FROM pbx_web_widgets WHERE dest_type = 'queue' AND (dest_id = ? OR dest_id = ?)
-                    ) refs",
-                    [$q_name, $q_name, $q_name, $q_name, $q_name, $q_name, '%"match_dest_type":"queue","match_dest_id":"' . $q_name . '"%', $q_name, (string)$queue_id]
-                );
+                $refs = \PBX\Destinations\DestinationRegistry::usageCount('queue', [$q_name, (string) $queue_id]);
                 if ($refs > 0) {
                     throw new \Exception(t('srv_queue.err_in_use'));
                 }

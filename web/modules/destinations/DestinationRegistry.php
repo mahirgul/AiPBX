@@ -63,28 +63,42 @@ class DestinationRegistry {
     ];
 
     /**
-     * How many places send calls to $type/$id: every destination column of
-     * DEST_COLUMNS and the rules of time conditions. A table of a feature that
-     * is not installed counts as none.
+     * How many places send calls to $type with one of $ids (a queue is stored
+     * by name or by id): every destination column of DEST_COLUMNS and the rules
+     * of time conditions. $except: table => null to leave it out (a caller that
+     * lists those rows itself), or [column, value] to leave out the rows of the
+     * thing being deleted (an IVR's own entries). A table of a feature that is
+     * not installed counts as none.
+     *
+     * @param string|list<string> $ids
+     * @param array<string, null|array{0: string, 1: int|string}> $except
      */
-    public static function usageCount(string $type, string $id): int {
+    public static function usageCount(string $type, $ids, array $except = []): int {
+        $ids = array_values(array_unique(array_map('strval', (array) $ids)));
+        $in = implode(',', array_fill(0, count($ids), '?'));
         $db = \getDB();
         $n = 0;
-        foreach (self::DEST_COLUMNS as $table => $prefixes) {
+        $tables = self::DEST_COLUMNS + ['pbx_time_conditions#rules' => ['rules']];
+        foreach ($tables as $key => $prefixes) {
+            $table = explode('#', $key)[0];
+            if (array_key_exists($table, $except) && $except[$table] === null) {
+                continue;
+            }
+            [$skipSql, $skipArg] = isset($except[$table]) ? [' AND ' . $except[$table][0] . ' != ?', [$except[$table][1]]] : ['', []];
             foreach ($prefixes as $p) {
                 try {
-                    $st = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$p}_type = ? AND {$p}_id = ?");
-                    $st->execute([$type, $id]);
+                    if ($p === 'rules') {
+                        $alt = implode('|', array_map(fn($id) => preg_quote($id), $ids));
+                        $st = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE rules_json REGEXP ?{$skipSql}");
+                        $st->execute(['"(match|nomatch)_dest_type":"' . preg_quote($type) . '","(match|nomatch)_dest_id":"?(' . $alt . ')"?[,}]', ...$skipArg]);
+                    } else {
+                        $st = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$p}_type = ? AND {$p}_id IN ({$in}){$skipSql}");
+                        $st->execute([$type, ...$ids, ...$skipArg]);
+                    }
                     $n += (int) $st->fetchColumn();
                 } catch (\Throwable $e) {
                 }
             }
-        }
-        try {
-            $st = $db->prepare('SELECT COUNT(*) FROM pbx_time_conditions WHERE rules_json REGEXP ?');
-            $st->execute(['"(match|nomatch)_dest_type":"' . preg_quote($type) . '","(match|nomatch)_dest_id":"?' . preg_quote($id) . '"?[,}]']);
-            $n += (int) $st->fetchColumn();
-        } catch (\Throwable $e) {
         }
         return $n;
     }
