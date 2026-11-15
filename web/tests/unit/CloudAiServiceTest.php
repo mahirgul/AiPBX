@@ -16,20 +16,22 @@ final class CloudAiServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->before = getDB()->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $this->before = getDB()->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
         $_SESSION['user_id'] = null;
     }
 
     protected function tearDown(): void
     {
         TtsHttp::$transport = null;
+        $ref = new ReflectionProperty(LocalAiService::class, 'modelsCache');
+        $ref->setValue(null, null);
         $db = getDB();
-        $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%'");
+        $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%'");
         $st = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
         foreach ($this->before as $k => $v) {
             $st->execute([$k, $v]);
         }
-        $db->exec("DELETE FROM ai_cloud_usage WHERE provider LIKE 'test%' OR provider IN ('deepgram', 'groq')");
+        $db->exec("DELETE FROM ai_cloud_usage WHERE provider LIKE 'test%' OR provider IN ('deepgram', 'groq', 'openai', 'nvidia', 'qwen', 'openai_compat')");
     }
 
     private function fake(array $answer): void
@@ -189,5 +191,79 @@ final class CloudAiServiceTest extends TestCase
         } catch (CloudAiException $e) {
             $this->assertSame(t('ai_cloud.err_base_url'), $e->getMessage());
         }
+    }
+
+    public function testMonthlyQuotaLimitsWarningExceededAndFallback(): void
+    {
+        CloudAiService::save('deepgram', [
+            'api_key' => 'dg-key',
+            'limit_stt_min' => '1',
+        ]);
+        CloudAiService::save('openai', [
+            'api_key' => 'sk-test-123',
+            'limit_tts_chars' => '100',
+            'limit_llm_tokens' => '50',
+        ]);
+        $this->assertSame(['stt_min' => 1, 'tts_chars' => 0, 'llm_tokens' => 0], CloudAiService::limits('deepgram'));
+        $this->assertSame(['stt_min' => 0, 'tts_chars' => 100, 'llm_tokens' => 50], CloudAiService::limits('openai'));
+
+        $warn = CloudAiService::usageStatus('openai', ['tts_chars' => 85, 'llm_tokens' => 10]);
+        $this->assertSame(85, $warn['pct']);
+        $this->assertTrue($warn['warn']);
+        $this->assertFalse($warn['exceeded']);
+
+        // Count 60 seconds of STT on deepgram (1 minute limit reached) and 50 LLM tokens on openai.
+        CloudAiService::count('deepgram', 'stt_seconds', 60.0);
+        CloudAiService::count('openai', 'llm_tokens', 50);
+
+        $this->assertTrue(CloudAiService::overLimit('deepgram', 'stt'));
+        $this->assertTrue(CloudAiService::overLimit('openai', 'llm'));
+        $this->assertFalse(CloudAiService::overLimit('openai', 'tts'));
+
+        try {
+            CloudAiService::stt('deepgram', self::wav(1), 'tr');
+            $this->fail('STT over limit must be refused');
+        } catch (CloudAiException $e) {
+            $this->assertSame(t('ai_cloud.err_quota_exceeded'), $e->getMessage());
+        }
+
+        try {
+            CloudAiService::chat('openai', 'hi');
+            $this->fail('LLM over limit must be refused');
+        } catch (CloudAiException $e) {
+            $this->assertSame(t('ai_cloud.err_quota_exceeded'), $e->getMessage());
+        }
+
+        // Engine configured as cloud:deepgram falls back to a matching local model when over limit.
+        CloudAiService::saveEngines(['engine_stt_tr' => 'cloud:deepgram']);
+        $this->assertSame('cloud:deepgram', CloudAiService::engine('stt', 'tr', false));
+
+        $tokFile = tempnam(sys_get_temp_dir(), 'ai_tok_');
+        file_put_contents($tokFile, '0123456789abcdef');
+        $prevEnv = getenv('AIPBX_AI_TOKEN_FILE');
+        putenv('AIPBX_AI_TOKEN_FILE=' . $tokFile);
+        $ref = new ReflectionProperty(LocalAiService::class, 'modelsCache');
+        $ref->setValue(null, null);
+        TtsHttp::$transport = function (string $method, string $url) {
+            if (str_contains($url, '/v1/models')) {
+                return ['status' => 200, 'body' => json_encode([
+                    'models' => [
+                        ['id' => 'vosk-tr-small', 'kind' => 'stt', 'state' => 'ready', 'languages' => ['tr']],
+                    ],
+                ]), 'type' => 'application/json'];
+            }
+            return ['status' => 404, 'body' => '{}', 'type' => 'application/json'];
+        };
+        try {
+            $this->assertSame('local:vosk-tr-small', CloudAiService::engine('stt', 'tr'));
+        } finally {
+            putenv($prevEnv === false ? 'AIPBX_AI_TOKEN_FILE' : 'AIPBX_AI_TOKEN_FILE=' . $prevEnv);
+            @unlink($tokFile);
+            $ref->setValue(null, null);
+        }
+
+        // Clearing provider removes its limits too.
+        CloudAiService::save('deepgram', ['clear' => '1']);
+        $this->assertSame(['stt_min' => 0, 'tts_chars' => 0, 'llm_tokens' => 0], CloudAiService::limits('deepgram'));
     }
 }

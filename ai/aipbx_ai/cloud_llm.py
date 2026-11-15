@@ -139,8 +139,9 @@ def validate(cfg):
     if provider in OWN_ADDRESS and base:
         if not isinstance(base, str) or len(base) > 200 or not _BASE_URL.match(base.rstrip("/")):
             raise ValueError("llm_cloud.base_url is not valid")
+        allow = ALLOW_PRIVATE_URLS or provider == "openai_compat"
         try:
-            assert_public_url(base.rstrip("/"), resolve=True, allow_private=(ALLOW_PRIVATE_URLS or provider == "openai_compat"))
+            assert_public_url(base.rstrip("/"), resolve=False, allow_private=allow, allow_loopback=allow)
         except ValueError:
             raise ValueError("llm_cloud.base_url is not valid") from None
         out["base_url"] = base.rstrip("/")
@@ -172,7 +173,7 @@ def prompt(transcript, intents):
 
 def _post(url, headers, body, allow_private=ALLOW_PRIVATE_URLS):
     try:
-        assert_public_url(url, resolve=True, allow_private=allow_private)
+        assert_public_url(url, resolve=True, allow_private=allow_private, allow_loopback=allow_private)
         req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"),
                                      headers=dict(headers, **{"Content-Type": "application/json", "User-Agent": "aipbx-ai"}),
                                      method="POST")

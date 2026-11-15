@@ -190,7 +190,7 @@ function echoAsk() {
   const fd = new FormData();
   fd.append('question', q);
   asstPost('echo', fd, (r) => {
-    if (!r.success) { out.innerHTML = '<span class="u-muted">' + (r.error || ASST.err_generic) + '</span>'; return; }
+    if (!r.success) { out.innerHTML = '<span class="u-muted">' + asstEsc(r.error || ASST.err_generic) + '</span>'; return; }
     if (r.askable) { out.innerHTML = '<div class="assistant-preview">' + asstEsc(r.askable) + '</div>'; return; }
     let html = '<div class="assistant-preview"><div class="u-strong">' + asstEsc(r.title) + '</div>';
     if (r.rows && r.rows.length) {

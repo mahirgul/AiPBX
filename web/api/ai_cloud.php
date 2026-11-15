@@ -26,7 +26,7 @@ try {
         throw new CloudAiException('Unknown action');
     }
     $id = (string) ($_POST['provider'] ?? '');
-    if (!CloudAiService::configured($id)) {
+    if (!CloudAiService::configured($id, $_POST)) {
         throw new CloudAiException(t('ai_tts.not_configured'));
     }
     echo json_encode(['success' => true, 'message' => CloudAiService::test($id, $_POST)], JSON_UNESCAPED_UNICODE);

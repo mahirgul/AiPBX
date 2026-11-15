@@ -33,8 +33,8 @@ from array import array
 from collections import OrderedDict
 from pathlib import Path
 
-from . import cloud_llm, cloud_stt
-from .models import UnknownModel
+from . import cloud_llm, cloud_stt, cloud_tts
+from .models import READY, UnknownModel
 
 log = logging.getLogger("aipbx_ai.voice_requests")
 
@@ -128,9 +128,13 @@ def _words(intent, name, where):
 
 def _model(data, name, kind, manager):
     value = data.get(name)
-    # Speech to text may also be a cloud provider (cloud_stt.py), named "cloud:<provider>".
+    # Speech to text and text to speech may also use a configured cloud provider ("cloud:<provider>").
     if kind == "stt" and isinstance(value, str) and value.startswith("cloud:"):
         if value[6:] not in cloud_stt.PROVIDERS:
+            raise ConfigError(f"{name}: unknown cloud provider")
+        return value
+    if kind == "tts" and isinstance(value, str) and value.startswith("cloud:"):
+        if value[6:] not in cloud_tts.PROVIDERS:
             raise ConfigError(f"{name}: unknown cloud provider")
         return value
     if not isinstance(value, str) or not _MODEL_ID.match(value):
@@ -183,6 +187,21 @@ def validate_config(data, manager=None):
             raise ConfigError(str(e)) from None
         if config["stt_cloud"]["provider"] != config["stt_model"][6:]:
             raise ConfigError("stt_cloud.provider does not match stt_model")
+    if config["tts_model"].startswith("cloud:"):
+        try:
+            config["tts_cloud"] = cloud_tts.validate(data.get("tts_cloud"))
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        if config["tts_cloud"]["provider"] != config["tts_model"][6:]:
+            raise ConfigError("tts_cloud.provider does not match tts_model")
+    if isinstance(data.get("language"), str) and data["language"] in ("tr", "de", "en"):
+        config["language"] = data["language"]
+    for fb_key, kind in (("tts_fallback", "tts"), ("stt_fallback", "stt")):
+        fb_val = data.get(fb_key)
+        if isinstance(fb_val, str) and fb_val.strip():
+            if fb_val.strip().startswith("cloud:"):
+                raise ConfigError(f"{fb_key} must be a local model")
+            config[fb_key] = _model({fb_key: fb_val.strip()}, fb_key, kind, manager)
     intents = data.get("intents")
     if not isinstance(intents, list) or not intents:
         raise ConfigError("intents must be a non-empty list")
@@ -212,12 +231,37 @@ def validate_config(data, manager=None):
     return config
 
 
+def pick_local_fallback(manager, kind, lang="tr", preferred=None):
+    """Best ready local model of `kind` for fallback when a cloud provider fails."""
+    if manager is None:
+        return None
+    if isinstance(preferred, str) and preferred and not preferred.startswith("cloud:"):
+        try:
+            info = manager.describe(preferred)
+            if info.get("kind") == kind and info.get("state") == READY:
+                return preferred
+        except UnknownModel:
+            pass
+    lang_prefix = (lang or "tr")[:2].lower()
+    ready = [m for m in manager.describe_all() if m.get("kind") == kind and m.get("state") == READY]
+    if not ready:
+        return None
+    default_id = "piper-tr-dfki" if kind == "tts" else "vosk-tr-small"
+    for m in ready:
+        if m["id"] == default_id:
+            return m["id"]
+    for m in ready:
+        if any(str(l)[:2].lower() == lang_prefix for l in (m.get("languages") or ())):
+            return m["id"]
+    return ready[0]["id"]
+
+
 def public(config):
     """A config as the API shows it: a cloud provider's key is never returned."""
     out = dict(config)
-    for name in ("stt_cloud", "llm_cloud"):
+    for name in ("stt_cloud", "tts_cloud", "llm_cloud"):
         if name in out:
-            out[name] = {k: v for k, v in out[name].items() if k != "api_key"}
+            out[name] = {k: v for k, v in out[name].items() if k not in ("api_key", "key")}
             out[name]["api_key_set"] = True
     return out
 
@@ -338,7 +382,18 @@ class AppStore:
         text = self.prompt_text(config, key)
         pcm = b""
         if text:
-            pcm = bytes(self.manager.synthesize(config["tts_model"], text, config["speed"], SAMPLE_RATE))
+            if config["tts_model"].startswith("cloud:"):
+                lang = config.get("language") or config.get("tts_cloud", {}).get("lang") or "tr"
+                try:
+                    pcm = bytes(cloud_tts.synthesize(config["tts_cloud"], text, lang=lang, speed=config["speed"]))
+                except Exception as e:  # noqa: BLE001
+                    fb = pick_local_fallback(self.manager, "tts", lang=lang, preferred=config.get("tts_fallback"))
+                    if not fb:
+                        raise
+                    log.warning("app %d: cloud tts (%s) failed (%s), falling back to %s", app_id, config["tts_model"], type(e).__name__, fb)
+                    pcm = bytes(self.manager.synthesize(fb, text, config["speed"], SAMPLE_RATE))
+            else:
+                pcm = bytes(self.manager.synthesize(config["tts_model"], text, config["speed"], SAMPLE_RATE))
             if len(pcm) % 2:
                 pcm = pcm[:-1]
         with self._mu:

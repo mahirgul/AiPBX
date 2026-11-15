@@ -23,6 +23,7 @@ function playCdrAudio(cdrId, callerNum, dateTime) {
     if (titleEl) titleEl.innerText = __('js.cdr.recording_title') + cdrId;
     if (infoEl) infoEl.innerText = __('js.cdr.caller') + callerNum + ' | ' + dateTime;
     if (dlLink) dlLink.href = '/api/cc_audio.php?id=' + cdrId + '&download=1';
+    loadCdrAudioAi(cdrId);
     
     if (modalEl) modalEl.classList.add('active');
     if (loadingEl) loadingEl.style.display = 'flex';
@@ -66,6 +67,99 @@ function playCdrAudio(cdrId, callerNum, dateTime) {
         const playBtn = document.getElementById('cdrWavePlayBtn');
         if (playBtn) playBtn.innerHTML = '<i class="fas fa-play"></i>';
     });
+}
+
+var currentCdrAiItem = window.currentCdrAiItem || null;
+
+function renderCdrAudioAi(item, errorMsg) {
+    const box = document.getElementById('cdrAudioAiBox');
+    const btn = document.getElementById('cdrAudioAiBtn');
+    const sumEl = document.getElementById('cdrAudioAiSummary');
+    const txtEl = document.getElementById('cdrAudioAiText');
+    if (!box || !btn || !sumEl || !txtEl) return;
+
+    currentCdrAiItem = item || null;
+    btn.disabled = false;
+    if (errorMsg) {
+        btn.textContent = box.dataset.labelTranscribe || 'Transcribe';
+        sumEl.style.display = 'none';
+        txtEl.textContent = errorMsg;
+        return;
+    }
+    if (!item || (!item.transcript && !item.summary)) {
+        btn.textContent = box.dataset.labelTranscribe || 'Transcribe';
+        sumEl.style.display = 'none';
+        txtEl.textContent = box.dataset.labelEmpty || '';
+        return;
+    }
+    btn.textContent = box.dataset.labelRetranscribe || 'Re-transcribe';
+    if (item.summary) {
+        sumEl.textContent = (box.dataset.labelSummary ? box.dataset.labelSummary + ': ' : '') + item.summary;
+        sumEl.style.display = '';
+    } else {
+        sumEl.style.display = 'none';
+    }
+    txtEl.textContent = item.transcript || '';
+}
+
+function loadCdrAudioAi(cdrId) {
+    const box = document.getElementById('cdrAudioAiBox');
+    const btn = document.getElementById('cdrAudioAiBtn');
+    const sumEl = document.getElementById('cdrAudioAiSummary');
+    const txtEl = document.getElementById('cdrAudioAiText');
+    if (!box || !btn || !sumEl || !txtEl) return;
+
+    currentCdrAiItem = null;
+    btn.disabled = true;
+    btn.textContent = '...';
+    sumEl.style.display = 'none';
+    txtEl.textContent = '';
+
+    fetch('/api/cdr_ai.php?id=' + encodeURIComponent(cdrId), { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(d => {
+            if (currentCdrAudioId !== cdrId) return;
+            renderCdrAudioAi(d && d.ok ? d.item : null, '');
+        })
+        .catch(() => {
+            if (currentCdrAudioId === cdrId) renderCdrAudioAi(null, '');
+        });
+}
+
+function transcribeCdrAudio() {
+    const box = document.getElementById('cdrAudioAiBox');
+    const btn = document.getElementById('cdrAudioAiBtn');
+    if (!box || !btn || !currentCdrAudioId) return;
+
+    const targetId = currentCdrAudioId;
+    btn.disabled = true;
+    btn.textContent = box.dataset.labelTranscribing || 'Transcribing...';
+
+    const body = new URLSearchParams({
+        id: String(targetId),
+        csrf_token: box.dataset.csrf || (window.CSRF_TOKEN || ''),
+        force: currentCdrAiItem ? '1' : '0'
+    });
+    fetch('/api/cdr_ai.php', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString()
+    })
+        .then(r => r.json())
+        .then(d => {
+            if (currentCdrAudioId !== targetId) return;
+            if (d && d.ok && d.item) {
+                renderCdrAudioAi(d.item, '');
+            } else {
+                renderCdrAudioAi(currentCdrAiItem, (d && d.error) || box.dataset.labelFailed || 'Failed');
+            }
+        })
+        .catch(() => {
+            if (currentCdrAudioId === targetId) {
+                renderCdrAudioAi(currentCdrAiItem, box.dataset.labelFailed || 'Failed');
+            }
+        });
 }
 
 function toggleCdrWavePlay() {

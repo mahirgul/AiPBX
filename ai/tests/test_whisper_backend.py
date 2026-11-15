@@ -106,6 +106,51 @@ class WhisperDownloadTest(unittest.TestCase):
         b.spec.languages = ("de-DE",)
         self.assertEqual(b.language, "de")
 
+    @unittest.skipUnless(HAVE_NUMPY, "numpy not installed")
+    def test_shared_engine_across_languages(self):
+        created = []
+
+        class FakeModel:
+            n_mels = 80
+
+            def __init__(self, path, **kw):
+                created.append(path)
+
+            def generate(self, features, prompts, **kw):
+                return [SimpleNamespace(no_speech_prob=0.9, scores=[-2.0], sequences=[[]])]
+
+        fake_ct2 = SimpleNamespace(
+            models=SimpleNamespace(Whisper=FakeModel),
+            StorageView=SimpleNamespace(from_array=lambda arr: arr),
+        )
+        orig_ct2 = sys.modules.get("ctranslate2")
+        sys.modules["ctranslate2"] = fake_ct2
+        whisper_backend._engines.clear()
+        try:
+            a = self.backend()
+            b = self.backend()
+            b.spec.id = "whisper-y"
+            b.spec.languages = ("de-DE",)
+            b.spec.source = dict(b.spec.source, language="de")
+            b.dir = self.data / "models" / "whisper-y"
+            a.download(lambda p: None)
+            b.download(lambda p: None)
+            a.load()
+            b.load()
+            self.assertEqual(len(created), 1)
+            self.assertEqual(len(whisper_backend._engines), 1)
+            self.assertEqual(whisper_backend._engines[a.model_sha]["users"], {"whisper-x", "whisper-y"})
+            a.unload()
+            self.assertEqual(len(whisper_backend._engines), 1)
+            b.unload()
+            self.assertEqual(len(whisper_backend._engines), 0)
+        finally:
+            whisper_backend._engines.clear()
+            if orig_ct2 is None:
+                sys.modules.pop("ctranslate2", None)
+            else:
+                sys.modules["ctranslate2"] = orig_ct2
+
 
 class RepeatTest(unittest.TestCase):
     def test_repeated_sentence_is_kept_once(self):

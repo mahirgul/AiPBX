@@ -78,6 +78,13 @@ class MeaningTest(unittest.TestCase):
         self.assertIsNone(m["intent"])
         self.assertIsNone(m["method"])
 
+    def test_single_intent_does_not_match_unrelated_utterance(self):
+        embed = _fake_embed({"I have a question about my bill": 0.0, "invoice": 0.05, "Accounting": 0.1,
+                             "something completely unrelated": 1.2})
+        m = match("something completely unrelated", [INTENTS[0]], 0.5, embed=embed)
+        self.assertIsNone(m["intent"])
+        self.assertLess(max(m["meaning"].values()), 0.5)
+
 
 @unittest.skipUnless(E5_DIR, "AIPBX_E5_DIR not set (real multilingual-e5-small files)")
 class RealModelTest(unittest.TestCase):

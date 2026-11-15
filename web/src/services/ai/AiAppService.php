@@ -21,6 +21,7 @@ require_once dirname(__DIR__) . '/ai/CloudAiService.php';
 class AiAppService
 {
     public const TYPES = ['announcement', 'voice_requests', 'speech_routing'];
+    public const CLOUD_TTS_PROVIDERS = ['openai', 'azure', 'elevenlabs', 'google'];
 
     /**
      * Types that listen to the caller: voice requests, and routing by speech
@@ -71,7 +72,8 @@ class AiAppService
             throw new \Exception(t('ai_apps.err_type'));
         }
         $model = (string) ($d['model_id'] ?? '');
-        if (!preg_match('/^(engine:(tr|de|en)|[a-z0-9][a-z0-9._-]{1,63})$/', $model)) {
+        if (!preg_match('/^(engine:(tr|de|en)|cloud:[a-z_]{2,20}|[a-z0-9][a-z0-9._-]{1,63})$/', $model)
+            || (str_starts_with($model, 'cloud:') && !in_array(substr($model, 6), self::CLOUD_TTS_PROVIDERS, true))) {
             throw new \Exception(t('ai_apps.err_model'));
         }
         $text = trim((string) ($d['text_template'] ?? ''));
@@ -297,52 +299,145 @@ class AiAppService
     }
 
     /** The speech-to-text model a voice-requests application uses now. */
-    public static function resolveSttModel(string $model): string
+    public static function resolveSttModel(string $model, string $lang = 'tr'): string
     {
         if (str_starts_with($model, 'engine:')) {
-            $e = CloudAiService::engine('stt', substr($model, 7));
+            $lang = substr($model, 7);
+            $e = CloudAiService::engine('stt', $lang);
             if (str_starts_with($e, 'local:')) {
                 return substr($e, 6);
             }
-            return str_starts_with($e, 'cloud:') ? $e : '';
+            if (str_starts_with($e, 'cloud:')) {
+                return $e;
+            }
+            return self::localFallbackModel('stt', $lang);
+        }
+        if (str_starts_with($model, 'cloud:') && CloudAiService::overLimit(substr($model, 6), 'stt')) {
+            return self::localFallbackModel('stt', $lang);
         }
         return $model;
+    }
+
+    /** Picks the best ready/installed local model of kind ("tts" or "stt") for $lang. */
+    public static function localFallbackModel(string $kind, string $lang): string
+    {
+        $lang = strtolower(str_replace('_', '-', $lang));
+        $models = array_values(array_filter(
+            LocalAiService::models(),
+            fn($m) => ($m['kind'] ?? '') === $kind && in_array($m['state'] ?? '', ['ready', 'installed', 'loading'], true)
+        ));
+        $matchesLang = static function (array $m) use ($lang): bool {
+            foreach ((array) ($m['languages'] ?? []) as $ml) {
+                if (str_starts_with(strtolower(str_replace('_', '-', (string) $ml)), $lang)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        foreach (['ready', 'installed', 'loading'] as $state) {
+            foreach ($models as $m) {
+                if ($m['state'] === $state && $matchesLang($m)) {
+                    return (string) $m['id'];
+                }
+            }
+        }
+        foreach ($models as $m) {
+            if ($matchesLang($m)) {
+                return (string) $m['id'];
+            }
+        }
+        return '';
+    }
+
+    public static function isCloudTtsReady(string $provider): bool
+    {
+        if (!in_array($provider, self::CLOUD_TTS_PROVIDERS, true) || !CloudAiService::configured($provider)) {
+            return false;
+        }
+        if ($provider === 'google' && trim((string) (CloudAiService::config('google')['api_key'] ?? '')) === '') {
+            return false;
+        }
+        return !CloudAiService::overLimit($provider, 'tts');
+    }
+
+    /** @return array<string, string> */
+    private static function cloudTtsPayload(string $provider, string $lang): array
+    {
+        $pc = CloudAiService::config($provider);
+        $out = [
+            'provider' => $provider,
+            'api_key' => (string) ($pc['api_key'] ?? ''),
+            'lang' => $lang,
+        ];
+        foreach (['region', 'model', 'voice'] as $k) {
+            if (!empty($pc[$k])) {
+                $out[$k] = (string) $pc[$k];
+            }
+        }
+        return $out;
+    }
+
+    /** @return array<string, string> */
+    private static function cloudSttPayload(string $provider, string $lang): array
+    {
+        $pc = CloudAiService::config($provider);
+        $out = [
+            'provider' => $provider,
+            'api_key' => (string) ($pc['api_key'] ?? ''),
+            'region' => (string) ($pc['region'] ?? ''),
+            'lang' => $lang,
+        ];
+        if (!empty($pc['base_url'])) {
+            $out['base_url'] = (string) $pc['base_url'];
+        }
+        if (!empty($pc['stt_model']) || !empty($pc['model'])) {
+            $out['model'] = (string) ($pc['stt_model'] ?? $pc['model']);
+        }
+        return $out;
     }
 
     /** What PUT /v1/apps/<id> sends to the local AI service. */
     public static function serviceConfig(array $app): array
     {
         $c = self::config($app);
-        $stt = self::resolveSttModel((string) ($c['stt_model'] ?? ''));
+        $lang = in_array($c['stt_lang'] ?? '', ['tr', 'de', 'en'], true)
+            ? (string) $c['stt_lang']
+            : (str_starts_with((string) ($app['model_id'] ?? ''), 'engine:') ? substr((string) $app['model_id'], 7) : 'tr');
+        $tts = self::resolveModel((string) $app['model_id'], true, $lang);
+        $stt = self::resolveSttModel((string) ($c['stt_model'] ?? ''), $lang);
         $extra = [];
+        if (str_starts_with($tts, 'cloud:')) {
+            // The service calls the provider itself: it gets the key with the settings.
+            $extra['tts_cloud'] = self::cloudTtsPayload(substr($tts, 6), $lang);
+            $ttsFallback = self::localFallbackModel('tts', $lang);
+            if ($ttsFallback !== '') {
+                $extra['tts_fallback'] = $ttsFallback;
+            }
+        }
         if (str_starts_with($stt, 'cloud:')) {
             // The service calls the provider itself: it gets the key with the settings
             // (kept 0600 by the service, never returned by its API).
-            $provider = substr($stt, 6);
-            $pc = CloudAiService::config($provider);
-            $sttPayload = [
-                'provider' => $provider,
-                'api_key' => (string) ($pc['api_key'] ?? ''),
-                'region' => (string) ($pc['region'] ?? ''),
-                'lang' => (string) ($c['stt_lang'] ?? 'tr'),
-            ];
-            if (!empty($pc['base_url'])) {
-                $sttPayload['base_url'] = (string) $pc['base_url'];
+            $extra['stt_cloud'] = self::cloudSttPayload(substr($stt, 6), (string) ($c['stt_lang'] ?? 'tr'));
+            $sttFallback = self::localFallbackModel('stt', $lang);
+            if ($sttFallback !== '') {
+                $extra['stt_fallback'] = $sttFallback;
             }
-            if (!empty($pc['stt_model']) || !empty($pc['model'])) {
-                $sttPayload['model'] = (string) ($pc['stt_model'] ?? $pc['model']);
-            }
-            $extra['stt_cloud'] = $sttPayload;
         }
         $understand = (string) ($c['understand'] ?? 'auto');
         if (str_starts_with($understand, 'cloud:')) {
-            // The service asks the provider itself: it gets the key with the settings.
-            $extra['llm_cloud'] = CloudAiService::llmSettings(substr($understand, 6));
+            $prov = substr($understand, 6);
+            if (!CloudAiService::overLimit($prov, 'llm')) {
+                // The service asks the provider itself: it gets the key with the settings.
+                $extra['llm_cloud'] = CloudAiService::llmSettings($prov);
+            } else {
+                $understand = 'auto';
+            }
         }
         return $extra + [
             'type' => 'voice_requests',
-            'tts_model' => self::resolveModel((string) $app['model_id']),
+            'tts_model' => $tts,
             'stt_model' => $stt,
+            'language' => $lang,
             'speed' => (float) $app['speed'],
             'greeting' => (string) ($c['greeting'] ?? ''),
             'retry' => (string) ($c['retry'] ?? ''),
@@ -350,7 +445,7 @@ class AiAppService
             'listen_seconds' => (int) ($c['listen_seconds'] ?? 7),
             'retries' => (int) ($c['retries'] ?? 1),
             'threshold' => (float) ($c['threshold'] ?? 0.5),
-            'understand' => str_starts_with((string) ($c['understand'] ?? ''), 'cloud:') ? 'cloud' : (string) ($c['understand'] ?? 'auto'),
+            'understand' => str_starts_with($understand, 'cloud:') ? 'cloud' : $understand,
             'intents' => array_map(fn($i) => ['id' => $i['id'], 'name' => $i['name'], 'keywords' => $i['keywords'],
                                                'examples' => $i['examples'], 'reply' => $i['reply']], $c['intents'] ?? []),
         ];
@@ -372,11 +467,24 @@ class AiAppService
     }
 
     /** The voice model an application uses now ("engine:<lang>" follows AI → Cloud services). */
-    public static function resolveModel(string $model): string
+    public static function resolveModel(string $model, bool $allowCloud = false, string $lang = 'tr'): string
     {
         if (str_starts_with($model, 'engine:')) {
-            $e = CloudAiService::engine('tts', substr($model, 7));
-            return str_starts_with($e, 'local:') ? substr($e, 6) : '';
+            $lang = substr($model, 7);
+            $e = CloudAiService::engine('tts', $lang);
+            if (str_starts_with($e, 'local:')) {
+                return substr($e, 6);
+            }
+            if ($allowCloud && str_starts_with($e, 'cloud:') && self::isCloudTtsReady(substr($e, 6))) {
+                return $e;
+            }
+            return self::localFallbackModel('tts', $lang);
+        }
+        if (str_starts_with($model, 'cloud:')) {
+            if ($allowCloud && self::isCloudTtsReady(substr($model, 6))) {
+                return $model;
+            }
+            return self::localFallbackModel('tts', $lang);
         }
         return $model;
     }

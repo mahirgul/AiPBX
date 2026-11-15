@@ -305,7 +305,8 @@ $filter_url = function (array $override) {
                                 </span>
                             </td>
                             <td class="u-maxw-220">
-                                <?php if (!empty($c['note_disposition']) || !empty($c['note_text']) || !empty($c['note_customer_name'])): ?>
+                                <?php $ai_row = $cdr_ai[(int) ($c['id'] ?? 0)] ?? null; ?>
+                                <?php if (!empty($c['note_disposition']) || !empty($c['note_text']) || !empty($c['note_customer_name']) || !empty($ai_row)): ?>
                                     <?php if (!empty($c['note_disposition'])): ?>
                                         <span class="badge badge-info u-fs-10"><?php echo htmlspecialchars($c['note_disposition']); ?></span>
                                     <?php endif; ?>
@@ -316,6 +317,14 @@ $filter_url = function (array $override) {
                                         <div class="u-fs-11 u-muted u-mt-2 u-white-space-normal u-overflow-wrap-anywhere" title="<?php echo htmlspecialchars($c['note_text']); ?>">
                                             <?php echo htmlspecialchars(mb_strlen($c['note_text']) > 60 ? mb_substr($c['note_text'], 0, 60) . '…' : $c['note_text']); ?>
                                         </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($ai_row)):
+                                        $ai_preview = trim((string) (($ai_row['summary'] ?? '') !== '' ? $ai_row['summary'] : ($ai_row['transcript'] ?? ''))); ?>
+                                        <?php if ($ai_preview !== ''): ?>
+                                            <div class="u-fs-11 u-muted u-mt-4 u-white-space-normal u-overflow-wrap-anywhere" title="<?php echo htmlspecialchars((string) ($ai_row['transcript'] ?? $ai_preview)); ?>">
+                                                <span class="badge badge-info u-fs-10 u-mr-4">AI</span><?php echo htmlspecialchars(mb_strlen($ai_preview) > 70 ? mb_substr($ai_preview, 0, 70) . '…' : $ai_preview); ?>
+                                            </div>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 <?php else: ?>
                                     <span class="u-muted u-fs-12">-</span>

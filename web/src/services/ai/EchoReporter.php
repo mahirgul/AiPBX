@@ -43,7 +43,7 @@ class EchoReporter
         'answered.rate' => [
             'title_key'   => 'echo.q_answered_rate',
             'sql'         => "SELECT COUNT(*) AS total,
-                                     SUM(CASE WHEN status LIKE '%ANSWER%' THEN 1 ELSE 0 END) AS answered
+                                     SUM(CASE WHEN status = 'ANSWERED' THEN 1 ELSE 0 END) AS answered
                               FROM cdrs
                               WHERE start_time >= CURDATE()",
             'labels'      => ['echo.lbl_total', 'echo.lbl_answered'],
@@ -91,6 +91,7 @@ class EchoReporter
                 'query'     => '',
                 'title'     => '',
                 'rows'      => [],
+                'labels'    => [],
                 'askable'   => self::askable(),
                 'narration' => null,
             ];
@@ -100,6 +101,7 @@ class EchoReporter
             'query'     => $query,
             'title'     => t(self::QUERIES[$query]['title_key']),
             'rows'      => $rows,
+            'labels'    => array_map('t', self::QUERIES[$query]['labels'] ?? []),
             'askable'   => '',
             'narration' => self::narrate($question, $query, $rows),
         ];

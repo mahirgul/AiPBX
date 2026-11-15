@@ -44,6 +44,11 @@ class AiAppsController extends BaseController
             'requests' => AiAppService::requests(100),
             'cloud_llm' => array_map(fn($id) => ['id' => $id, 'title' => CloudAiService::provider($id)['title']], CloudAiService::withCap('llm')),
             'cloud_stt' => array_map(fn($id) => ['id' => $id, 'title' => CloudAiService::provider($id)['title']], CloudAiService::withCap('stt')),
+            'cloud_tts' => array_values(array_map(
+                fn($id) => ['id' => $id, 'title' => CloudAiService::provider($id)['title']],
+                array_filter(AiAppService::CLOUD_TTS_PROVIDERS, fn($id) => CloudAiService::configured($id)
+                    && ($id !== 'google' || trim((string) (CloudAiService::config('google')['api_key'] ?? '')) !== ''))
+            )),
             'modules' => DestinationRegistry::getModuleList(),
             'service_ok' => LocalAiService::health() !== null,
             'csrf_token' => getCSRFToken(),

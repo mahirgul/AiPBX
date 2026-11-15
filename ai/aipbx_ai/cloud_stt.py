@@ -10,10 +10,15 @@ The key is stored with the app config ($AIPBX_AI_DATA/apps/<id>.json, mode
 0600, readable by the aipbx-ai user only) and never returned by the API.
 """
 import base64
+import ipaddress
 import json
 import re
 import secrets
+import urllib.error
+import urllib.parse
 import urllib.request
+
+from .cloud_llm import ALLOW_PRIVATE_URLS, _BASE_URL, _MODEL, assert_public_url
 
 PROVIDERS = ("openai", "groq", "deepgram", "azure", "elevenlabs", "google_ai", "openai_compat")
 LANGS = {"tr": ("tr-TR", "Turkish"), "de": ("de-DE", "German"), "en": ("en-US", "English")}
@@ -25,6 +30,17 @@ class CloudSttError(Exception):
     pass
 
 
+def _is_local_http(url):
+    host = (urllib.parse.urlsplit(url).hostname or "").strip(".").lower().split("%", 1)[0]
+    if host == "localhost":
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+        return ip.is_private or ip.is_loopback
+    except ValueError:
+        return False
+
+
 def validate(cfg):
     """Normalised stt_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
@@ -32,8 +48,10 @@ def validate(cfg):
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("stt_cloud.provider is not supported")
-    key = cfg.get("api_key")
-    if not isinstance(key, str) or not 8 <= len(key.strip()) <= 400 or any(c in key for c in "\r\n"):
+    key = cfg.get("api_key") or ""
+    keyless = provider == "openai_compat"
+    if not isinstance(key, str) or any(c in key for c in "\r\n") or len(key.strip()) > 400 \
+            or (not keyless and len(key.strip()) < 8):
         raise ValueError("stt_cloud.api_key is missing")
     lang = cfg.get("lang", "tr")
     if lang not in LANGS:
@@ -45,9 +63,16 @@ def validate(cfg):
     if provider == "openai_compat":
         base_url = cfg.get("base_url") or ""
         model = cfg.get("model") or "whisper-1"
-        if not (isinstance(base_url, str) and base_url.startswith("https://") and len(base_url) <= 200):
+        if not isinstance(base_url, str) or len(base_url) > 200 or not _BASE_URL.match(base_url.rstrip("/")):
             raise ValueError("stt_cloud.base_url is not valid")
-        if not (isinstance(model, str) and 1 <= len(model) <= 100):
+        clean_base = base_url.rstrip("/")
+        try:
+            assert_public_url(clean_base, resolve=False, allow_private=True, allow_loopback=True)
+        except ValueError:
+            raise ValueError("stt_cloud.base_url is not valid") from None
+        if urllib.parse.urlsplit(clean_base).scheme == "http" and not (ALLOW_PRIVATE_URLS or _is_local_http(clean_base)):
+            raise ValueError("stt_cloud.base_url is not valid")
+        if not isinstance(model, str) or not _MODEL.match(model):
             raise ValueError("stt_cloud.model is not valid")
         out["base_url"] = base_url
         out["model"] = model
@@ -59,12 +84,13 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         raise urllib.error.HTTPError(req.full_url, code, msg, headers, fp)
 
 
-_OPENER = urllib.request.build_opener(_NoRedirect)
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
 
 
-def _request(url, headers, body):
-    req = urllib.request.Request(url, data=body, headers=dict(headers, **{"User-Agent": "aipbx-ai"}), method="POST")
+def _request(url, headers, body, allow_private=ALLOW_PRIVATE_URLS):
     try:
+        assert_public_url(url, resolve=True, allow_private=allow_private, allow_loopback=allow_private)
+        req = urllib.request.Request(url, data=body, headers=dict(headers, **{"User-Agent": "aipbx-ai"}), method="POST")
         with _OPENER.open(req, timeout=TIMEOUT) as resp:
             return json.loads(resp.read(2 * 1024 * 1024).decode("utf-8"))
     except urllib.error.HTTPError as e:
@@ -102,7 +128,10 @@ def transcribe(cfg, wav, request=_request):
         headers = {"Content-Type": ctype}
         if key:
             headers["Authorization"] = "Bearer " + key
-        d = request(url, headers, body)
+        if request is _request:
+            d = _request(url, headers, body, allow_private=(ALLOW_PRIVATE_URLS or p == "openai_compat"))
+        else:
+            d = request(url, headers, body)
         return str(d.get("text") or "").strip()
     if p == "deepgram":
         d = request(f"https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&language={lang}",

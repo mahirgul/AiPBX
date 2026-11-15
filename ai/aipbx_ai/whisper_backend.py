@@ -42,6 +42,7 @@ import hashlib
 import os
 import re
 import shutil
+import threading
 import urllib.request
 from pathlib import Path
 
@@ -57,6 +58,9 @@ NO_SPEECH_PROB, LOGPROB_FLOOR = 0.6, -1.0
 BEAM_SIZE = 5
 CONTEXT_PAD = 3.0       # the encoder sees the audio + 3 s of silence; None: Whisper's full 30 s
 _REPEAT = re.compile(r"(\S.{4,}?)(?:\s+\1)+", re.S)
+# One CTranslate2 Whisper engine per model.bin SHA-256 across language specs.
+_engine_lock = threading.Lock()
+_engines = {}
 
 
 def _sha256(path):
@@ -164,6 +168,11 @@ class WhisperBackend:
         self._model = None
         self._filters = None
         self._np = None
+        self._run_lock = None
+
+    @property
+    def model_sha(self):
+        return self._files()["model.bin"]["sha256"]
 
     @property
     def language(self):
@@ -224,17 +233,44 @@ class WhisperBackend:
         for name, entry in self._files().items():
             if _sha256(self.dir / name) != entry["sha256"]:
                 raise RuntimeError(f"{name}: checksum mismatch, download the model again")
-        model = ctranslate2.models.Whisper(str(self.dir), device="cpu", compute_type="int8",
-                                           intra_threads=os.cpu_count() or 1, inter_threads=1)
-        self._np = np
-        self._filters = mel_filters(np, getattr(model, "n_mels", 80))
-        self._model = model
-        self._run(np.zeros(RATE, np.float32))      # warm-up: the first run allocates its buffers
+        sha = self.model_sha
+        with _engine_lock:
+            shared = _engines.get(sha)
+            if shared is None:
+                model = ctranslate2.models.Whisper(str(self.dir), device="cpu", compute_type="int8",
+                                                   intra_threads=os.cpu_count() or 1, inter_threads=1)
+                filters = mel_filters(np, getattr(model, "n_mels", 80))
+                shared = _engines[sha] = {"model": model, "filters": filters, "np": np,
+                                          "users": set(), "lock": threading.Lock()}
+                first = True
+            else:
+                first = False
+            shared["users"].add(self.spec.id)
+            self._model = shared["model"]
+            self._filters = shared["filters"]
+            self._np = shared["np"]
+            self._run_lock = shared["lock"]
+        if first:
+            try:
+                self._run(np.zeros(RATE, np.float32))      # warm-up: the first run allocates its buffers
+            except Exception:
+                self.unload()
+                raise
 
     def unload(self):
-        if self._model is not None:
+        if self._model is None:
+            return
+        sha = self.model_sha
+        with _engine_lock:
+            shared = _engines.get(sha)
+            if shared is not None:
+                shared["users"].discard(self.spec.id)
+                if not shared["users"]:
+                    del _engines[sha]
             self._model = None
-            gc.collect()
+            self._filters = None
+            self._run_lock = None
+        gc.collect()
 
     def _prompt(self):
         return ["<|startoftranscript|>", f"<|{self.language}|>", "<|transcribe|>", "<|notimestamps|>"]
@@ -242,18 +278,23 @@ class WhisperBackend:
     def _run(self, audio):
         import ctranslate2
 
-        model, np = self._model, self._np
+        model, np, lock = self._model, self._np, self._run_lock
         if model is None:
             raise RuntimeError("model not loaded")
         frames = N_FRAMES
         if self.context_pad is not None:
-            frames = min(N_FRAMES, (len(audio) // HOP + int(self.context_pad * 100) + 1) // 2 * 2)
+            frames = max(2, min(N_FRAMES, (len(audio) // HOP + int(self.context_pad * 100) + 1) // 2 * 2))
         features = ctranslate2.StorageView.from_array(
             np.ascontiguousarray(log_mel(np, audio, self._filters, frames)[None]))
         prompt = self._prompt()
         tokens = min(MAX_TOKENS, TOKENS_BASE + int(TOKENS_PER_SECOND * len(audio) / RATE))
-        result = model.generate(features, [prompt], beam_size=self.beam_size, max_length=len(prompt) + tokens,
-                                return_scores=True, return_no_speech_prob=True, suppress_blank=True)[0]
+        if lock is not None:
+            with lock:
+                result = model.generate(features, [prompt], beam_size=self.beam_size, max_length=len(prompt) + tokens,
+                                        return_scores=True, return_no_speech_prob=True, suppress_blank=True)[0]
+        else:
+            result = model.generate(features, [prompt], beam_size=self.beam_size, max_length=len(prompt) + tokens,
+                                    return_scores=True, return_no_speech_prob=True, suppress_blank=True)[0]
         if result.no_speech_prob > NO_SPEECH_PROB and result.scores and result.scores[0] < LOGPROB_FLOOR:
             return ""
         return collapse_repeats(tokens_to_text(result.sequences[0]))

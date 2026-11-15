@@ -71,8 +71,12 @@ function __syncTimeConditionBody($tc_id) {
 
         $ast_days = [];
         foreach (explode(',', $days_raw) as $d) {
-            $d = trim($d);
-            if (isset($day_map[$d])) $ast_days[] = $day_map[$d];
+            $d = strtolower(trim($d));
+            if (isset($day_map[$d])) {
+                $ast_days[] = $day_map[$d];
+            } elseif (in_array($d, $day_map, true)) {
+                $ast_days[] = $d;
+            }
         }
 
         $days_str = '*';

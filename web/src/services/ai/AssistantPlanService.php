@@ -103,9 +103,10 @@ class AssistantPlanService
     /** Recent audit rows for the Dialplan editor page. */
     public static function recent(int $limit = 30): array
     {
-        $st = getDB()->prepare('SELECT id, ts, user_id, request, action, summary, source, status,
+        $st = getDB()->prepare("SELECT id, ts, user_id, request, action, summary, source, status,
                                        rolled_back_at IS NOT NULL AS rolled_back
-                                FROM pbx_ai_changes ORDER BY ts DESC, id DESC LIMIT ' . max(1, min(100, $limit)));
+                                FROM pbx_ai_changes WHERE status IN ('applied', 'rolled_back')
+                                ORDER BY ts DESC, id DESC LIMIT " . max(1, min(100, $limit)));
         $st->execute();
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
@@ -137,7 +138,7 @@ class AssistantPlanService
             return ['action' => $action, 'arguments' => $args];
         }
         if (isset($a['queue'])) {
-            $st = getDB()->prepare('SELECT timeout, members_json FROM pbx_queues WHERE id = ?');
+            $st = getDB()->prepare('SELECT timeout, members_json, static_members_json FROM pbx_queues WHERE id = ?');
             $st->execute([(int) $a['queue']]);
             $q = $st->fetch(PDO::FETCH_ASSOC);
             if (!$q) {
@@ -149,6 +150,7 @@ class AssistantPlanService
             }
             if (isset($a['extensions'])) {
                 $args['extensions'] = array_values(array_filter(array_map('trim', (array) (json_decode((string) ($q['members_json'] ?? '[]'), true) ?: []))));
+                $args['static_members'] = array_values(array_filter(array_map('trim', (array) (json_decode((string) ($q['static_members_json'] ?? '[]'), true) ?: []))));
             }
             // Same NESTED shape as the extension path: rollback() reads
             // $before['arguments'] — not the raw field list.
@@ -277,17 +279,24 @@ class AssistantPlanService
         // what was asked for changes. members are decoded from members_json;
         // a new member_mode array marks every member static, matching how
         // the page's own multi-select posts them.
-        $members = is_array(json_decode($q['members_json'] ?? '[]', true))
+        $membersBefore = is_array(json_decode($q['members_json'] ?? '[]', true))
             ? json_decode($q['members_json'] ?: '[]', true) : [];
+        $static = is_array(json_decode($q['static_members_json'] ?? '[]', true))
+            ? json_decode($q['static_members_json'] ?: '[]', true) : [];
+        $supervisors = is_array(json_decode($q['supervisors_json'] ?? '[]', true))
+            ? json_decode($q['supervisors_json'] ?: '[]', true) : [];
         $data = $q;
         // QueueService::saveQueue keys UPDATE vs INSERT on the FORM field
         // `queue_id`, not on the row's `id` — without this the assistant's
         // edit turns into an INSERT and dies with a duplicate queue_name.
         $data['queue_id'] = (int) $q['id'];
         $data['csrf_token'] = self::csrf();
+        $data['supervisors'] = $supervisors;
         if (isset($a['seconds'])) {
             $data['timeout'] = (int) $a['seconds'];
         }
+        $members = $membersBefore;
+        $staticList = array_map('strval', $static);
         if (isset($a['extensions'])) {
             // Membership is a SET, not a merge: exactly like the page's own
             // multi-select (and ring groups), so the undo's before-value can
@@ -295,9 +304,23 @@ class AssistantPlanService
             // the final list — the planner merges the current members in.
             $members = array_values(array_unique(array_map('strval', (array) $a['extensions'])));
             $data['members_json'] = null; // recomputed by saveQueue
+            $hasStatic = isset($a['static_members']) && is_array($a['static_members']);
+            $targetStatic = $hasStatic ? array_map('strval', $a['static_members']) : $staticList;
+            $beforeList = array_map('strval', $membersBefore);
             $mode = [];
             foreach ($members as $m) {
-                $mode[(string) $m] = 'static';
+                $ms = (string) $m;
+                $mode[$ms] = ($hasStatic
+                    ? in_array($ms, $targetStatic, true)
+                    : !(in_array($ms, $beforeList, true) && !in_array($ms, $staticList, true)))
+                    ? 'static' : 'dynamic';
+            }
+            $data['member_mode'] = $mode;
+        } else {
+            $mode = [];
+            foreach ($members as $m) {
+                $ms = (string) $m;
+                $mode[$ms] = in_array($ms, $staticList, true) ? 'static' : 'dynamic';
             }
             $data['member_mode'] = $mode;
         }
@@ -306,12 +329,17 @@ class AssistantPlanService
 
     private static function applyTimeCondition(array $a): void
     {
+        $dayMap = ['mon' => '1', 'tue' => '2', 'wed' => '3', 'thu' => '4', 'fri' => '5', 'sat' => '6', 'sun' => '7'];
+        $days = array_map(
+            fn($d) => $dayMap[strtolower((string) $d)] ?? (string) $d,
+            (array) ($a['days'] ?? [])
+        );
         self::assertApplied(TimeConditionService::saveTimeGroup([
             'csrf_token' => self::csrf(),
             'title' => $a['title'],
             'time_start' => $a['open'],
             'time_end' => $a['close'],
-            'days' => (array) $a['days'],
+            'days' => $days,
         ]));
         $st = getDB()->prepare('SELECT id FROM pbx_time_groups WHERE title = ? ORDER BY id DESC LIMIT 1');
         $st->execute([(string) $a['title']]);
@@ -320,6 +348,10 @@ class AssistantPlanService
             'csrf_token' => self::csrf(),
             'title' => $a['title'],
             'time_group_id' => $tgId,
+            'match_dest_type' => (string) ($a['match_dest_type'] ?? 'hangup'),
+            'match_dest_id' => (string) ($a['match_dest_id'] ?? ''),
+            'nomatch_dest_type' => (string) ($a['nomatch_dest_type'] ?? 'hangup'),
+            'nomatch_dest_id' => (string) ($a['nomatch_dest_id'] ?? ''),
         ]));
     }
 

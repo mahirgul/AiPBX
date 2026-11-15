@@ -16,6 +16,7 @@ require_once dirname(__DIR__, 2) . '/helpers.php';
 require_once dirname(__DIR__, 2) . '/secret_box.php';
 require_once dirname(__DIR__, 2) . '/audit_log.php';
 require_once dirname(__DIR__) . '/AiTtsService.php';
+require_once dirname(__DIR__) . '/LocalAiService.php';
 
 final class CloudAiException extends RuntimeException
 {
@@ -133,13 +134,19 @@ class CloudAiService
         return $cfg;
     }
 
-    public static function configured(string $id): bool
+    public static function configured(string $id, array $post = []): bool
     {
         if (function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1') {
             return false;
         }
         $cfg = self::config($id);
         $fields = self::provider($id)['fields'];
+        foreach ($fields as $f) {
+            $k = $f['key'];
+            if (isset($post[$k]) && trim((string) $post[$k]) !== '') {
+                $cfg[$k] = trim((string) $post[$k]);
+            }
+        }
         // Google Cloud: either the service account or the API key.
         if ($id === 'google') {
             return trim($cfg['service_account'] ?? '') !== '' || trim($cfg['api_key'] ?? '') !== '';
@@ -173,7 +180,8 @@ class CloudAiService
                 $fields[] = $f + ['value' => $f['secret'] ? '' : $v, 'masked' => $f['secret'] ? $masked : ''];
             }
             $out[] = ['id' => $id, 'title' => $p['title'], 'caps' => $p['caps'], 'url' => $p['url'], 'free' => $p['free'],
-                      'configured' => self::configured($id), 'fields' => $fields, 'usage' => $usage[$id] ?? null];
+                      'configured' => self::configured($id), 'fields' => $fields, 'usage' => $usage[$id] ?? null,
+                      'limits' => self::limits($id), 'quota' => self::usageStatus($id, $usage[$id] ?? null)];
         }
         return $out;
     }
@@ -211,6 +219,7 @@ class CloudAiService
                 $set->execute([$key, mb_substr($v, 0, 200)]);
             }
         }
+        self::saveLimits($id, $post);
         writeAuditLog('ai_cloud', 'provider', $id, $p['title'] . (!empty($post['clear']) ? ' (credentials removed)' : ' (settings saved)'), 'update', $_SESSION['user_id'] ?? null);
     }
 
@@ -299,6 +308,9 @@ class CloudAiService
     {
         if (!in_array('stt', self::provider($id)['caps'], true) || !self::configured($id)) {
             throw new CloudAiException(t('ai_cloud.err_no_stt'));
+        }
+        if (self::overLimit($id, 'stt')) {
+            throw new CloudAiException(t('ai_cloud.err_quota_exceeded'));
         }
         $lang = array_key_exists($lang, self::LANGS) ? $lang : 'tr';
         $cfg = self::config($id);
@@ -404,6 +416,9 @@ class CloudAiService
         if (!in_array('llm', self::provider($id)['caps'], true) || !self::configured($id)) {
             throw new CloudAiException(t('ai_cloud.err_no_llm'));
         }
+        if (self::overLimit($id, 'llm')) {
+            throw new CloudAiException(t('ai_cloud.err_quota_exceeded'));
+        }
         if ($id === 'google_ai') {
             $d = self::json(TtsHttp::request('POST', 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
                 ['x-goog-api-key' => self::config($id)['api_key'] ?? '', 'Content-Type' => 'application/json'],
@@ -485,6 +500,115 @@ class CloudAiService
         }
     }
 
+    /**
+     * Monthly quota limits configured for a provider (0 = unlimited).
+     * @return array{stt_min: int, tts_chars: int, llm_tokens: int}
+     */
+    public static function limits(string $id): array
+    {
+        return [
+            'stt_min' => max(0, (int) getSystemSetting("ai_limit.{$id}.stt_min", '0')),
+            'tts_chars' => max(0, (int) getSystemSetting("ai_limit.{$id}.tts_chars", '0')),
+            'llm_tokens' => max(0, (int) getSystemSetting("ai_limit.{$id}.llm_tokens", '0')),
+        ];
+    }
+
+    public static function saveLimits(string $id, array $post): void
+    {
+        $db = getDB();
+        $set = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+        $del = $db->prepare('DELETE FROM sys_settings WHERE setting_key = ?');
+        foreach (['stt_min', 'tts_chars', 'llm_tokens'] as $metric) {
+            $key = "ai_limit.{$id}.{$metric}";
+            if (!empty($post['clear'])) {
+                $del->execute([$key]);
+                continue;
+            }
+            $field = "limit_{$metric}";
+            if (!array_key_exists($field, $post)) {
+                continue;
+            }
+            $v = max(0, (int) $post[$field]);
+            if ($v <= 0) {
+                $del->execute([$key]);
+            } else {
+                $set->execute([$key, (string) $v]);
+            }
+        }
+    }
+
+    /**
+     * Computes this month's quota percentage and warning/exceeded flags.
+     * @param array{stt_seconds?: float|int, tts_chars?: int, llm_tokens?: int}|null $usageRow
+     * @return array{pct: int, warn: bool, exceeded: bool, jobs: array{stt: bool, tts: bool, llm: bool}}
+     */
+    public static function usageStatus(string $id, ?array $usageRow = null): array
+    {
+        $limits = self::limits($id);
+        if ($usageRow === null) {
+            $usageRow = self::usageThisMonth()[$id] ?? [];
+        }
+        $caps = [
+            'stt' => [$limits['stt_min'] * 60, (float) ($usageRow['stt_seconds'] ?? 0)],
+            'tts' => [$limits['tts_chars'], (float) ($usageRow['tts_chars'] ?? 0)],
+            'llm' => [$limits['llm_tokens'], (float) ($usageRow['llm_tokens'] ?? 0)],
+        ];
+        $maxPct = 0;
+        $jobs = ['stt' => false, 'tts' => false, 'llm' => false];
+        foreach ($caps as $job => [$lim, $used]) {
+            if ($lim <= 0) {
+                continue;
+            }
+            $pct = (int) floor(($used / $lim) * 100);
+            if ($used >= $lim) {
+                $jobs[$job] = true;
+                $pct = max($pct, 100);
+            }
+            $maxPct = max($maxPct, $pct);
+        }
+        $exceeded = in_array(true, $jobs, true) || $maxPct >= 100;
+        return [
+            'pct' => $maxPct,
+            'warn' => !$exceeded && $maxPct >= 80,
+            'exceeded' => $exceeded,
+            'jobs' => $jobs,
+        ];
+    }
+
+    public static function overLimit(string $id, string $job = ''): bool
+    {
+        $st = self::usageStatus($id);
+        if ($job !== '' && array_key_exists($job, $st['jobs'])) {
+            return $st['jobs'][$job];
+        }
+        return $st['exceeded'];
+    }
+
+    private static function localFallback(string $job, string $lang): string
+    {
+        if (!in_array($job, ['tts', 'stt'], true)) {
+            return '';
+        }
+        $lang = strtolower(str_replace('_', '-', $lang));
+        $matches = static function (array $m) use ($lang): bool {
+            foreach ((array) ($m['languages'] ?? []) as $ml) {
+                if (str_starts_with(strtolower(str_replace('_', '-', (string) $ml)), $lang)) {
+                    return true;
+                }
+            }
+            return false;
+        };
+        $models = LocalAiService::models();
+        foreach (['ready', 'installed'] as $state) {
+            foreach ($models as $m) {
+                if (($m['kind'] ?? '') === $job && ($m['state'] ?? '') === $state && $matches($m)) {
+                    return 'local:' . $m['id'];
+                }
+            }
+        }
+        return '';
+    }
+
     // ------------------------------------------------------------ engine per job
 
     /** Jobs with a choice of engine: speech and speech to text per language. */
@@ -499,9 +623,13 @@ class CloudAiService
         return $out;
     }
 
-    public static function engine(string $job, string $lang): string
+    public static function engine(string $job, string $lang, bool $fallback = true): string
     {
-        return (string) getSystemSetting("ai_engine.{$job}.{$lang}", '');
+        $v = (string) getSystemSetting("ai_engine.{$job}.{$lang}", '');
+        if ($fallback && str_starts_with($v, 'cloud:') && self::overLimit(substr($v, 6), $job)) {
+            return self::localFallback($job, $lang);
+        }
+        return $v;
     }
 
     /** Values: "local:<model id>" or "cloud:<provider>". */

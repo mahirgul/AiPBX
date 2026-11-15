@@ -11,6 +11,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.79.0
+
+### ✨ New
+
+- **Cloud TTS & automatic local fallback for AI Applications** (`AI → Applications`): `voice_requests` and `speech_routing` applications can now speak using configured cloud TTS providers (**OpenAI**, **Microsoft Azure AI Speech**, **ElevenLabs**, **Google Cloud Text-to-Speech**) or follow `AI → Cloud services`, and automatically fall back to an installed local Piper/Vosk model if a cloud TTS/STT provider fails or exceeds its monthly limit.
+- **Monthly cloud AI quota limits & auto fallback** (`AI → Cloud services`): configure per-provider monthly caps for speech-to-text minutes, text-to-speech characters, and LLM tokens with warning (`>=80%`) and exceeded (`100%`) badges; when reached, cloud requests stop and configured engines fall back to local models.
+- **Call recording transcription, summary & search** (`CDR Reports` / audio player): transcribe and summarize recorded calls on demand inside the WaveSurfer audio player (`/api/cdr_ai.php`, `CdrAiService`), display AI summaries in the CDR table, and search call records by spoken transcript or summary text.
+
+### 🐛 Fixes
+
+- **AI stability & security hardening:** fixed local Whisper/Vosk model handling and catalog cleanup, SSRF and URL validation for cloud LLM/STT providers, improved intent matching normalization, hardened AI Assistant plan/destination validation, and resolved community plugin handler/console checks.
+
 ## 1.78.0
 
 ### ✨ New

@@ -207,5 +207,43 @@ final class AssistantPlanServiceTest extends TestCase
 
         $ansRate = EchoReporter::ask('answered rate');
         $this->assertSame('answered.rate', $ansRate['query']);
+        $this->assertSame(1, (int) ($ansRate['rows'][0]['answered'] ?? 0));
+        $this->assertNotEmpty($ansRate['labels']);
+    }
+
+    public function testQueueTimeoutPreservesMembersAndSupervisors(): void
+    {
+        $db = getDB();
+        $st = $db->prepare('SELECT id, timeout, members_json, static_members_json, supervisors_json FROM pbx_queues WHERE queue_name = ? LIMIT 1');
+        $st->execute([Fixtures::QUEUE_NAME]);
+        $orig = $st->fetch(PDO::FETCH_ASSOC);
+        $this->assertIsArray($orig);
+        $qid = (int) $orig['id'];
+
+        $db->prepare('UPDATE pbx_queues SET timeout = 15, members_json = ?, static_members_json = ?, supervisors_json = ? WHERE id = ?')
+            ->execute(['["101","102"]', '["101"]', '["101"]', $qid]);
+
+        try {
+            getCSRFToken();
+            AssistantPlanService::apply([
+                'ok' => true,
+                'action' => 'queue.timeout',
+                'source' => 'rules',
+                'arguments' => [
+                    'queue' => $qid,
+                    'seconds' => 25,
+                ],
+            ], 'Set queue timeout to 25s');
+
+            $st->execute([Fixtures::QUEUE_NAME]);
+            $after = $st->fetch(PDO::FETCH_ASSOC);
+            $this->assertSame(25, (int) $after['timeout']);
+            $this->assertSame(['101', '102'], json_decode((string) $after['members_json'], true));
+            $this->assertSame(['101'], json_decode((string) $after['static_members_json'], true));
+            $this->assertSame(['101'], json_decode((string) $after['supervisors_json'], true));
+        } finally {
+            $db->prepare('UPDATE pbx_queues SET timeout = ?, members_json = ?, static_members_json = ?, supervisors_json = ? WHERE id = ?')
+                ->execute([$orig['timeout'], $orig['members_json'], $orig['static_members_json'], $orig['supervisors_json'], $qid]);
+        }
     }
 }

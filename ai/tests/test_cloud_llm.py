@@ -84,6 +84,8 @@ class CloudLlmTest(unittest.TestCase):
         url, headers, body = seen[-1]
         self.assertEqual(url, "http://10.0.0.5:11434/v1/chat/completions")
         self.assertNotIn("Authorization", headers)        # keyless local server
+        local_loopback = cloud_llm.validate({"provider": "openai_compat", "base_url": "http://127.0.0.1:11434/v1", "model": "qwen2.5:7b"})
+        self.assertEqual(local_loopback["base_url"], "http://127.0.0.1:11434/v1")
         for bad in ({"provider": "openai_compat", "model": "m"},                       # no address
                     {"provider": "openai_compat", "base_url": "ftp://x/v1", "model": "m"},
                     {"provider": "openai_compat", "base_url": "http://u:p@x/v1", "model": "m"}):

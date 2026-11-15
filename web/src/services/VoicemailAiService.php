@@ -47,15 +47,16 @@ final class VoicemailAiService
      */
     public static function languageOf(string $mailbox): string
     {
-        $lang = substr((string) getSystemSetting('system_default_language', ''), 0, 2);
+        $lang = '';
+        try {
+            $st = getDB()->prepare("SELECT language_preference FROM sys_users WHERE extension = ? AND extension_type = 'sip' ORDER BY id LIMIT 1");
+            $st->execute([$mailbox]);
+            $lang = substr((string) ($st->fetchColumn() ?: ''), 0, 2);
+        } catch (\Throwable $e) {
+            $lang = '';
+        }
         if (!isset(self::LANG_NAMES[$lang])) {
-            try {
-                $st = getDB()->prepare("SELECT language_preference FROM sys_users WHERE extension = ? AND extension_type = 'sip' ORDER BY id LIMIT 1");
-                $st->execute([$mailbox]);
-                $lang = (string) ($st->fetchColumn() ?: '');
-            } catch (\Throwable $e) {
-                $lang = '';
-            }
+            $lang = substr((string) getSystemSetting('system_default_language', ''), 0, 2);
         }
         return isset(self::LANG_NAMES[$lang]) ? $lang : 'tr';
     }

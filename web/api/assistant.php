@@ -44,8 +44,10 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCSRFToken($_POST['csrf_token
     echo json_encode(['success' => false, 'error' => t('common.invalid_csrf')]);
     exit;
 }
-if ($action !== 'echo') {
-    // Changes to the PBX are audited here too: who clicked, when.
+if (!in_array($action, ['echo', 'plan'], true)) {
+    // Mutating actions to the PBX are audited here too (without CSRF secrets).
+    $auditPost = $_POST;
+    unset($auditPost['csrf_token']);
     try {
         getDB()->prepare('INSERT INTO pbx_ai_changes (ts, user_id, request, action, arguments, summary, source, status)
                           VALUES (NOW(), ?, ?, ?, ?, ?, "api", "pending")')
@@ -53,11 +55,11 @@ if ($action !== 'echo') {
                 (int) ($_SESSION['user_id'] ?? 0),
                 'api:' . $action,
                 $action,
-                (string) json_encode($_POST, JSON_UNESCAPED_UNICODE),
+                (string) json_encode($auditPost, JSON_UNESCAPED_UNICODE),
                 'API call, ' . ($_SERVER['REMOTE_ADDR'] ?? ''),
             ]);
     } catch (\Throwable $e) {
-        // audit failure never blocks the answer itself; plan/echo are safe ops
+        // audit failure never blocks the answer itself
     }
 }
 

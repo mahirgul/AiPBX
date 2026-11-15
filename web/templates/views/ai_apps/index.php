@@ -1,5 +1,5 @@
 <?php
-/** @var array $apps @var array $voices @var array $stt_models @var array $cloud_stt @var array $requests @var array $modules @var bool $service_ok @var string $csrf_token */
+/** @var array $apps @var array $voices @var array $stt_models @var array $cloud_stt @var array $cloud_tts @var array $requests @var array $modules @var bool $service_ok @var string $csrf_token */
 use PBX\Destinations\DestinationRegistry;
 
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
@@ -74,6 +74,9 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                     </optgroup>
                     <?php if ($voices): ?><optgroup label="<?php echo $h(t('ai_cloud.engine_local')); ?>">
                         <?php foreach ($voices as $v): ?><option value="<?php echo $h($v['id']); ?>"><?php echo $h($v['title'] . ' (' . implode(', ', (array) ($v['languages'] ?? [])) . ')'); ?></option><?php endforeach; ?>
+                    </optgroup><?php endif; ?>
+                    <?php if (!empty($cloud_tts)): ?><optgroup label="<?php echo $h(t('ai_cloud.engine_cloud')); ?>">
+                        <?php foreach ($cloud_tts as $p): ?><option value="cloud:<?php echo $h($p['id']); ?>"><?php echo $h($p['title']); ?></option><?php endforeach; ?>
                     </optgroup><?php endif; ?>
                 </select></div>
             <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_speed'); ?></label>

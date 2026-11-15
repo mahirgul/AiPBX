@@ -8,9 +8,25 @@ class CdrReportRepository extends BaseRepository
     /** Records per page. */
     public const PAGE_SIZE = 50;
 
+    public static function hasCdrAiTable(): bool
+    {
+        try {
+            return static::db()->query("SHOW TABLES LIKE 'cdr_ai'")->fetchColumn() !== false;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
     public static function agentsForFilter(): array
     {
         return static::db()->query("SELECT extension, full_name FROM sys_users WHERE extension IS NOT NULL AND extension != '' ORDER BY extension ASC")->fetchAll();
+    }
+
+    protected static ?array $lookupMaps = null;
+
+    public static function resetLookupMaps(): void
+    {
+        static::$lookupMaps = null;
     }
 
     /**
@@ -18,9 +34,8 @@ class CdrReportRepository extends BaseRepository
      */
     protected static function getLookupMaps(): array
     {
-        static $maps = null;
-        if ($maps !== null) {
-            return $maps;
+        if (static::$lookupMaps !== null) {
+            return static::$lookupMaps;
         }
 
         $userMap = [];
@@ -43,8 +58,7 @@ class CdrReportRepository extends BaseRepository
             // fallback
         }
 
-        $maps = [$userMap, $didMap];
-        return $maps;
+        return static::$lookupMaps = [$userMap, $didMap];
     }
 
     /**
@@ -78,10 +92,17 @@ class CdrReportRepository extends BaseRepository
             $params[] = $deviceFilter;
         }
         if (!empty($searchQuery)) {
-            $sql .= " AND (c.caller_num LIKE ? OR c.agent_extension LIKE ? OR c.agent_name LIKE ? OR c.call_id LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.disposition LIKE ? OR n.notes LIKE ?)";
+            $aiSql = '';
+            $aiParams = [];
+            if (static::hasCdrAiTable()) {
+                $aiSql = " OR EXISTS (SELECT 1 FROM cdr_ai ca WHERE (ca.cdr_id = c.id OR (ca.call_id != '' AND ca.call_id = c.call_id)) AND (ca.transcript LIKE ? OR ca.summary LIKE ?))";
+                $aiParams = ["%$searchQuery%", "%$searchQuery%"];
+            }
+            $sql .= " AND (c.caller_num LIKE ? OR c.agent_extension LIKE ? OR c.agent_name LIKE ? OR c.call_id LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.disposition LIKE ? OR n.notes LIKE ?{$aiSql})";
             for ($i = 0; $i < 8; $i++) {
                 $params[] = "%$searchQuery%";
             }
+            array_push($params, ...$aiParams);
         }
         return [$sql, $params];
     }
@@ -218,10 +239,17 @@ class CdrReportRepository extends BaseRepository
             array_push($params, "%-{$deviceFilter}%", "%-{$deviceFilter}%");
         }
         if (!empty($searchQuery)) {
-            $where .= " AND (c.src LIKE ? OR c.dst LIKE ? OR c.did LIKE ? OR c.clid LIKE ? OR c.uniqueid LIKE ? OR c.linkedid LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.notes LIKE ?)";
+            $aiSql = '';
+            $aiParams = [];
+            if (static::hasCdrAiTable()) {
+                $aiSql = " OR EXISTS (SELECT 1 FROM cdr_ai ca WHERE (ca.cdr_id = c.id OR (ca.call_id != '' AND (ca.call_id = c.uniqueid OR ca.call_id = c.linkedid))) AND (ca.transcript LIKE ? OR ca.summary LIKE ?))";
+                $aiParams = ["%$searchQuery%", "%$searchQuery%"];
+            }
+            $where .= " AND (c.src LIKE ? OR c.dst LIKE ? OR c.did LIKE ? OR c.clid LIKE ? OR c.uniqueid LIKE ? OR c.linkedid LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.notes LIKE ?{$aiSql})";
             for ($i = 0; $i < 9; $i++) {
                 $params[] = "%$searchQuery%";
             }
+            array_push($params, ...$aiParams);
         }
 
         // Extension vs trunk channels: see CdrCallAnalyzer::endpoint().

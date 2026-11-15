@@ -722,7 +722,7 @@ _TR_PHONE = re.compile(r"(?<![\d+])(\+\d{1,3}|0\d{2,4})((?:[ \-/]\d{2,4}){2,5})(
 
 
 def _tr_amount(whole, cents, cur):
-    unit, sub = _TR_CURRENCY[cur.lower()]
+    unit, sub = _TR_CURRENCY[cur.replace("İ", "i").replace("I", "ı").lower()]
     n = int(whole.replace(".", ""))
     c = int((cents or "0").ljust(2, "0"))
     if n == 0 and c:

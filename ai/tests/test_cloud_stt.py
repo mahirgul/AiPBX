@@ -31,6 +31,13 @@ class CloudSttTest(unittest.TestCase):
                                              "base_url": "https://api.example.com/v1", "model": "whisper-custom"}),
                          {"provider": "openai_compat", "api_key": KEY, "lang": "en", "region": "westeurope",
                           "base_url": "https://api.example.com/v1", "model": "whisper-custom"})
+        self.assertEqual(cloud_stt.validate({"provider": "openai_compat", "api_key": "", "lang": "en",
+                                             "base_url": "http://10.0.0.5:8000/v1", "model": "whisper-local"}),
+                         {"provider": "openai_compat", "api_key": "", "lang": "en", "region": "westeurope",
+                          "base_url": "http://10.0.0.5:8000/v1", "model": "whisper-local"})
+        self.assertEqual(cloud_stt.validate({"provider": "openai_compat", "lang": "en",
+                                             "base_url": "http://127.0.0.1:8000/v1"})["base_url"],
+                         "http://127.0.0.1:8000/v1")
         for bad in (None, {"provider": "x", "api_key": KEY}, {"provider": "groq", "api_key": "short"},
                     {"provider": "groq", "api_key": KEY, "lang": "fr"}, {"provider": "groq", "api_key": KEY + "\nX"},
                     {"provider": "azure", "api_key": KEY, "region": "../x"},

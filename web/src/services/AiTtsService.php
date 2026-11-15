@@ -236,6 +236,12 @@ class AiTtsService
         $speed = max(0.5, min(2.0, round($speed, 2)));
         $client = self::client($provider);
         $cls = self::providerClass($provider);
+        if (!$cls::local()) {
+            require_once __DIR__ . '/ai/CloudAiService.php';
+            if (CloudAiService::overLimit($provider, 'tts')) {
+                throw new TtsException(t('ai_cloud.err_quota_exceeded'));
+            }
+        }
 
         $audio = '';
         foreach (self::chunks($text, $cls::maxChars()) as $piece) {

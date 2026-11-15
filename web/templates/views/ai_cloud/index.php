@@ -76,7 +76,14 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
         <input type="hidden" name="save_provider" value="<?php echo $h($p['id']); ?>">
         <div class="u-flex-between u-mb-10">
             <div class="u-strong"><?php echo $h($p['title']); ?></div>
-            <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.configured' : 'ai_tts.not_configured'); ?></span>
+            <div class="u-d-flex u-ai-center u-gap-6">
+                <?php if (!empty($p['quota']['exceeded'])): ?>
+                    <span class="badge badge-danger u-fs-11"><?php echo $h(sprintf(t('ai_cloud.quota_exceeded'), (int) ($p['quota']['pct'] ?? 100))); ?></span>
+                <?php elseif (!empty($p['quota']['warn'])): ?>
+                    <span class="badge badge-warning u-fs-11"><?php echo $h(sprintf(t('ai_cloud.quota_warning'), (int) ($p['quota']['pct'] ?? 80))); ?></span>
+                <?php endif; ?>
+                <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.configured' : 'ai_tts.not_configured'); ?></span>
+            </div>
         </div>
         <div class="u-mb-10">
             <?php foreach ($p['caps'] as $c): ?><span class="badge badge-info u-fs-11 u-mr-4"><?php echo $h($capLabel($c)); ?></span><?php endforeach; ?>
@@ -98,13 +105,36 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
                 <?php endif; ?>
             </div>
         <?php endforeach; ?>
+        <?php $lim = $p['limits'] ?? ['stt_min' => 0, 'tts_chars' => 0, 'llm_tokens' => 0]; ?>
+        <?php if (array_intersect($p['caps'], ['stt', 'tts', 'llm'])): ?>
+            <div class="u-grid-2 u-gap-8 u-mb-10">
+                <?php if (in_array('stt', $p['caps'], true)): ?>
+                    <div class="form-group u-mb-0">
+                        <label class="form-label u-fs-11"><?php echo t('ai_cloud.limit_stt_min'); ?></label>
+                        <input type="number" min="0" name="limit_stt_min" class="form-control" value="<?php echo $lim['stt_min'] > 0 ? (int) $lim['stt_min'] : ''; ?>" placeholder="<?php echo $h(t('ai_cloud.limit_unlimited')); ?>">
+                    </div>
+                <?php endif; ?>
+                <?php if (in_array('tts', $p['caps'], true)): ?>
+                    <div class="form-group u-mb-0">
+                        <label class="form-label u-fs-11"><?php echo t('ai_cloud.limit_tts_chars'); ?></label>
+                        <input type="number" min="0" name="limit_tts_chars" class="form-control" value="<?php echo $lim['tts_chars'] > 0 ? (int) $lim['tts_chars'] : ''; ?>" placeholder="<?php echo $h(t('ai_cloud.limit_unlimited')); ?>">
+                    </div>
+                <?php endif; ?>
+                <?php if (in_array('llm', $p['caps'], true)): ?>
+                    <div class="form-group u-mb-0">
+                        <label class="form-label u-fs-11"><?php echo t('ai_cloud.limit_llm_tokens'); ?></label>
+                        <input type="number" min="0" name="limit_llm_tokens" class="form-control" value="<?php echo $lim['llm_tokens'] > 0 ? (int) $lim['llm_tokens'] : ''; ?>" placeholder="<?php echo $h(t('ai_cloud.limit_unlimited')); ?>">
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
         <?php if (!empty($p['usage'])): $u = $p['usage']; ?>
             <div class="u-muted u-fs-11 u-mb-10"><i class="fas fa-chart-simple"></i> <?php echo $h(sprintf(t('ai_cloud.usage'), number_format($u['stt_seconds'] / 60, 1), number_format($u['tts_chars']), number_format($u['llm_tokens']))); ?></div>
         <?php endif; ?>
         <div class="u-flex-gap">
             <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+            <button type="button" class="btn btn-secondary btn-sm" data-test="<?php echo $h($p['id']); ?>"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
             <?php if ($p['configured']): ?>
-                <button type="button" class="btn btn-secondary btn-sm" data-test="<?php echo $h($p['id']); ?>"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
                 <button type="submit" name="clear" value="1" class="btn btn-icon btn-danger btn-sm" onclick="return confirm(<?php echo $h(json_encode(t('ai_tts.confirm_clear'))); ?>)"><i class="fas fa-trash-alt"></i></button>
             <?php endif; ?>
         </div>

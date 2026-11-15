@@ -43,7 +43,7 @@ class AiCloudController extends BaseController
 
         $engines = [];
         foreach (CloudAiService::jobs() as $j) {
-            $engines[] = $j + ['value' => CloudAiService::engine($j['job'], $j['lang'])];
+            $engines[] = $j + ['value' => CloudAiService::engine($j['job'], $j['lang'], false)];
         }
         static::renderPage('ai_cloud/index', [
             'providers' => CloudAiService::forPage(),

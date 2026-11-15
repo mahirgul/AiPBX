@@ -12,7 +12,9 @@ Environment:
 """
 import logging
 import os
+import signal
 import sys
+import threading
 from pathlib import Path
 
 HOST = "127.0.0.1"   # never anything else: the API is for the portal on this server
@@ -55,6 +57,7 @@ def main():
     audiosocket = AudioSocketServer((HOST, audiosocket_port), server.calls).start()
     manager.start()
     logging.info("listening on %s:%d (AudioSocket %s:%d)", HOST, port, HOST, audiosocket_port)
+    signal.signal(signal.SIGTERM, lambda *_: threading.Thread(target=server.shutdown, daemon=True).start())
     try:
         server.serve_forever()
     except KeyboardInterrupt:

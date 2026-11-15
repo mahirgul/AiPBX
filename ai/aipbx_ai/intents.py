@@ -177,7 +177,7 @@ def _meaning(transcript, intents, embed):
         top = sorted(values, reverse=True)[:2]
         sims[intent_id] = sum(top) / len(top)
     ranked = sorted(sims.items(), key=lambda kv: kv[1], reverse=True)
-    lead = ranked[0][1] - ranked[1][1] if len(ranked) > 1 else 1.0
+    lead = ranked[0][1] - ranked[1][1] if len(ranked) > 1 else ranked[0][1] - 0.85
     score = max(0.0, min(1.0, 0.5 + MEANING_SCALE * (lead - MEANING_LEAD)))
     return ranked[0][0], round(score, 3), {k: round(v, 3) for k, v in sims.items()}
 

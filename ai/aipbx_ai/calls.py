@@ -67,7 +67,7 @@ from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
-from .voice_requests import AppStore, Listener, ResultStore
+from .voice_requests import AppStore, Listener, ResultStore, pick_local_fallback
 
 log = logging.getLogger("aipbx_ai.calls")
 
@@ -1024,8 +1024,18 @@ class VoiceRequestsCall:
                     from . import cloud_stt
                     from .vosk_backend import pcm16_from_wav
                     pcm16k, _ = pcm16_from_wav(wav_bytes(pcm, SAMPLE_RATE))   # 16 kHz: what every provider takes
-                    box["text"] = cloud_stt.transcribe(self.config["stt_cloud"], wav_bytes(pcm16k, 16000))
-                    return
+                    try:
+                        box["text"] = cloud_stt.transcribe(self.config["stt_cloud"], wav_bytes(pcm16k, 16000))
+                        return
+                    except Exception as ce:  # noqa: BLE001
+                        lang = self.config.get("stt_cloud", {}).get("lang") or self.config.get("language") or "tr"
+                        fb = pick_local_fallback(self.registry.manager, "stt", lang=lang, preferred=self.config.get("stt_fallback"))
+                        if not fb:
+                            raise
+                        log.warning("call app=%d: cloud stt (%s) failed (%s), falling back to %s",
+                                    self.session.app, model, type(ce).__name__, fb)
+                        box["text"] = (self.registry.manager.transcribe(fb, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
+                        return
                 box["text"] = (self.registry.manager.transcribe(model, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
             except Exception as e:  # noqa: BLE001
                 box["error"] = type(e).__name__

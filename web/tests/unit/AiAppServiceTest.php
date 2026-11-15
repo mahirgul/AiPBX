@@ -181,4 +181,60 @@ final class AiAppServiceTest extends TestCase
             }
         }
     }
+
+    public function testCloudTextToSpeechPayloadAndQuotaFallback(): void
+    {
+        $db = getDB();
+        $before = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_limit.openai.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $tok = tempnam(sys_get_temp_dir(), 'tok');
+        file_put_contents($tok, str_repeat('ab', 16));
+        $prevEnv = getenv('AIPBX_AI_TOKEN_FILE');
+        putenv('AIPBX_AI_TOKEN_FILE=' . $tok);
+        $ref = new ReflectionProperty(LocalAiService::class, 'modelsCache');
+        $ref->setValue(null, null);
+        TtsHttp::$transport = function (string $method, string $url) {
+            if (str_contains($url, '/v1/models')) {
+                return ['status' => 200, 'body' => json_encode([
+                    'models' => [
+                        ['id' => 'piper-tr-fahrettin', 'kind' => 'tts', 'state' => 'ready', 'languages' => ['tr']],
+                        ['id' => 'vosk-tr-small', 'kind' => 'stt', 'state' => 'ready', 'languages' => ['tr']],
+                    ],
+                ]), 'type' => 'application/json'];
+            }
+            return ['status' => 404, 'body' => '{}', 'type' => 'application/json'];
+        };
+        try {
+            CloudAiService::save('openai', ['api_key' => 'sk-openai-test-123', 'model' => 'gpt-4o-mini-tts']);
+            $v = AiAppService::validate(self::requestsForm(['model_id' => 'cloud:openai', 'stt_lang' => 'tr']));
+            $cfg = AiAppService::serviceConfig(['id' => 2, 'title' => 'CloudApp', 'speed' => '1'] + $v);
+            $this->assertSame('cloud:openai', $cfg['tts_model']);
+            $this->assertSame('tr', $cfg['language']);
+            $this->assertSame(['provider' => 'openai', 'api_key' => 'sk-openai-test-123', 'lang' => 'tr', 'model' => 'gpt-4o-mini-tts'], $cfg['tts_cloud']);
+            $this->assertSame('piper-tr-fahrettin', $cfg['tts_fallback']);
+
+            // Announcement resolveModel($model) keeps $allowCloud = false and resolves to local.
+            $this->assertSame('piper-tr-fahrettin', AiAppService::resolveModel('cloud:openai'));
+
+            // When OpenAI TTS quota is exhausted, serviceConfig falls back to local Piper voice.
+            CloudAiService::save('openai', ['limit_tts_chars' => '100']);
+            CloudAiService::count('openai', 'tts_chars', 100);
+            $fallbackCfg = AiAppService::serviceConfig(['id' => 2, 'title' => 'CloudApp', 'speed' => '1'] + $v);
+            $this->assertSame('piper-tr-fahrettin', $fallbackCfg['tts_model']);
+            $this->assertArrayNotHasKey('tts_cloud', $fallbackCfg);
+
+            $this->expectException(\Exception::class);
+            AiAppService::validate(self::requestsForm(['model_id' => 'cloud:deepgram'])); // deepgram has no TTS
+        } finally {
+            TtsHttp::$transport = null;
+            putenv($prevEnv === false ? 'AIPBX_AI_TOKEN_FILE' : 'AIPBX_AI_TOKEN_FILE=' . $prevEnv);
+            @unlink($tok);
+            $ref->setValue(null, null);
+            $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_limit.openai.%'");
+            $db->exec("DELETE FROM ai_cloud_usage WHERE provider = 'openai'");
+            $st = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
+            foreach ($before as $k => $val) {
+                $st->execute([$k, $val]);
+            }
+        }
+    }
 }

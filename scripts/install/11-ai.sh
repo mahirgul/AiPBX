@@ -56,7 +56,8 @@ RestartSec=5
 # Calls come first: Asterisk keeps the CPU when both want it.
 Nice=5
 CPUWeight=50
-MemoryMax=2G
+MemoryHigh=2G
+MemoryMax=4G
 NoNewPrivileges=yes
 ProtectSystem=strict
 ReadWritePaths=/var/lib/aipbx-ai

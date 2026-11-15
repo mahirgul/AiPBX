@@ -55,6 +55,8 @@ class CdrReportService {
         } else {
             DBHelper::delete('asteriskcdr', 'id', $del_id);
         }
+        require_once __DIR__ . '/CdrAiService.php';
+        CdrAiService::deleteForCdr($del_id, !empty($linkId) ? (string) $linkId : null);
         writeAuditLog(null, 'cdr', $del_id, "Call record: " . ($cdr['caller_num'] ?? $del_id) . " (" . ($cdr['start_time'] ?? '') . ", deleted)", 'delete', $_SESSION['user_id'] ?? null);
         notify(t('srv_cdr.deleted'), 'success');
         return true;

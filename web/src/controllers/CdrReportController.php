@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/CdrReportService.php';
+require_once __DIR__ . '/../services/CdrAiService.php';
 require_once __DIR__ . '/../services/ReportExport.php';
 
 /**
@@ -153,6 +154,7 @@ class CdrReportController extends BaseController
             ],
             'view_mode' => $view_mode,
             'cdrs' => $cdrs,
+            'cdr_ai' => CdrAiService::forCdrIds(array_map('intval', array_column($cdrs, 'id'))),
             'stat_total_ring' => $stat_total_ring,
             'stat_avg_talk' => $stat_avg_talk,
             'stat_avg_ring' => $stat_avg_ring,

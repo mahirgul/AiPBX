@@ -293,6 +293,7 @@ class ModelManager:
         self._mu = threading.Lock()
         self._cond = threading.Condition(self._mu)
         self._stopped_mu = threading.Lock()   # _set_stopped runs with and without _mu
+        self._load_mu = threading.Lock()      # serialize backend.load() to avoid startup RSS spikes/skew
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
         self._state_file = Path(data_dir) / "state.json"
         self._stopped = self._read_stopped()
@@ -463,10 +464,11 @@ class ModelManager:
             state = self._state(entry)
             if state in (DOWNLOADING, LOADING) or entry.unloading:
                 raise ModelBusy(model_id)
-            self._set_stopped(model_id, True)
-            if state != READY:
-                return state
-            entry.unloading = True   # no new jobs while it unloads
+            if state == READY:
+                entry.unloading = True   # no new jobs while it unloads
+        self._set_stopped(model_id, True)
+        if state != READY:
+            return state
         try:
             with entry.job_lock:     # a running synthesis finishes first
                 entry.backend.unload()
@@ -485,7 +487,8 @@ class ModelManager:
             self._entries[spec.id] = _Entry(spec, self._make(spec))
 
     def has(self, model_id):
-        return model_id in self._entries
+        with self._mu:
+            return model_id in self._entries
 
     def source_files(self, model_id):
         """Paths of the model's files in its source repository (to spot duplicates)."""
@@ -528,12 +531,12 @@ class ModelManager:
                     entry.state, entry.progress = LOADING, 100
             log.info("%s: loading", spec_id)
             started = time.monotonic()
-            before = sysinfo.rss_mb()
-            entry.backend.load()
-            with self._mu:
-                entry.state = READY
-                # Approximate: other models loading at the same time count too.
-                entry.memory_mb = max(0, sysinfo.rss_mb() - before)
+            with self._load_mu:
+                before = sysinfo.rss_mb()
+                entry.backend.load()
+                with self._mu:
+                    entry.state = READY
+                    entry.memory_mb = max(0, sysinfo.rss_mb() - before)
             log.info("%s: ready in %.1f s", spec_id, time.monotonic() - started)
         except Exception as e:  # noqa: BLE001 - any failure becomes the "error" state
             log.exception("%s: install/load failed", spec_id)
