@@ -11,6 +11,21 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.78.0
+
+### ✨ New
+
+- **Troubleshooting menu:** a new top-level menu that brings diagnostic tools together — **SIP traffic**, **Problem recording**, **Registrations**, **Call quality** and **Phone logs**. See [Troubleshooting](docs/troubleshooting.md).
+- **SIP traffic** (`Troubleshooting → SIP traffic`): `aipbx-signaling` can write rotating `.pcap` capture files (1–10 days, configurable size limit) in `/var/lib/aipbx/sip-capture`. Browse the Call-ID dialogs of a capture file, open any call as an interactive SVG call-flow ladder diagram with full SIP packet text, or watch SIP packets live in the browser (**Live SIP**). See [Signaling capture](docs/signaling.md).
+- **Problem recording** (`Troubleshooting → Problem recording` and `Health checks`): start a recording window (5–60 minutes), repeat the problem, stop, and download one masked `.zip` (`aipbx-diag`) with the Asterisk log, SIP messages, call records, queue events and PBX state.
+- **Registrations** (`Troubleshooting → Registrations`): a dedicated page listing all desk phones, browsers, mobile apps and SIP trunks with their registration status, IP address, user agent and round-trip time (RTT).
+
+### 🐛 Fixes
+
+- **Roles list:** removed the duplicate `#` column and shortened the description so the role type badge is no longer cut under the actions; **Fax Settings** is listed under **Fax** in the roles matrix to match the menu.
+- **Audit log filter:** records written without an explicit area (`users`, `roles`, `firewall`, `fail2ban`, `system`, `fax`, `reports`) get their area from their type so the area filter finds older and newer records alike.
+- **Complete translations across all 22 languages:** 100% coverage (6,385/6,385 strings) across all supported portal languages.
+
 ## 1.77.2
 
 ### ✨ New
