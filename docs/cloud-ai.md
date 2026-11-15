@@ -41,6 +41,18 @@ running or downloaded local model or a configured cloud provider (`ai_engine.<jo
 `local:<model id>` or `cloud:<provider>`). AI features that come later (AI applications, voice
 requests) use these choices, so switching between local and cloud needs no other change.
 
+## Monthly limits
+
+Each provider can have a monthly limit for **speech to text** (minutes), **speech** (characters)
+and the **language model** (tokens); 0 or empty means no limit (`ai_limit.<provider>.stt_min`,
+`.tts_chars`, `.llm_tokens`). The provider's row shows this month's use, a **Quota %** badge from
+80 % and **Quota exceeded** at 100 %.
+
+Over the limit, that provider gets no more requests of that kind until the next month. A job whose
+engine is that provider falls back to a ready local model of the same language (speech to text and
+speech; a language model has no local fallback, so the feature works without it — e.g. no call
+summary). Without a local model the job simply does not run.
+
 ## Trying
 
 *AI → Local models → Try: speech to text* lists the configured cloud providers next to the local

@@ -52,3 +52,17 @@ stay playable as long as the bucket settings are kept.
 
 Admins and users with **can listen recordings** hear every recording; other users only recordings of
 their own calls.
+
+## Transcript and summary
+
+In the player of a recording (Reports → CDR), **Transcribe & Summarize** writes the call down with
+the speech-to-text engine of the language ([Cloud AI services](cloud-ai.md#engine-for-each-job), or
+a local Whisper/Vosk model) and, when a cloud language model is set, adds a one- or two-sentence
+summary. Only on request, one recording at a time; **Re-transcribe** makes it again. Who may do it
+follows the rules of *Access* above, and each one is written to the audit log (who, which call,
+which engine) — with a cloud engine the audio goes to that provider.
+
+The text is kept in `cdr_ai` and the CDR search finds calls by what was said. Masking of card
+numbers and ids applies when a privacy preset asks for it ([Privacy](privacy.md)). A transcript is
+deleted with its recording: by the recording retention, the deletion of the call record and the
+right to erasure.

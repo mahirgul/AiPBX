@@ -14,7 +14,9 @@ unless a tab says otherwise.
 | **Language** | The system's default language, and **Time zone and tones**: one time zone for the server, the portal, call records and time conditions, and the ring and busy tones by country. | [Network settings](network-settings.md#time-zone-and-tones) |
 | **AMD** | Answering machine detection, used by the auto dialer. | [Auto dialer](auto-dialer.md) |
 | **Voicemail** | Message limits and PIN rules. | [Voicemail](voicemail.md#limits-and-pin-rules) |
-| **Signaling** | Signaling capture (SIP and call quality) and how many days it is kept. | [Signaling](signaling.md), [Call quality](call-quality.md) |
 | **Tuning & Ops** | Max-Forwards, Timer B, the jitter buffer, the night restart window, failed registration alarms. | [PBX tuning](pbx-tuning.md) |
+
+Signaling capture (SIP traffic files, call quality) was a tab here until 1.79.2; it is now
+**Troubleshooting → SIP capture settings** ([Signaling](signaling.md)).
 
 Settings an option list does not reach go into [Advanced Configuration](advanced-config.md).

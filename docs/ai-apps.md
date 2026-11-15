@@ -32,9 +32,11 @@ properly: Turkish "1.234,50 TL" or "1.234,50 lira" becomes "bin iki yüz otuz d�
 Example: text "Sayın {caller_name}, borcunuz {amount}. Son ödeme tarihi {date}.", lookup
 `https://crm.example.com/aipbx/balance`, afterwards: the accounting queue.
 
-Voice: a model of *AI → Local models*, or "the engine for the language" chosen on
-*AI → Cloud services*. Speed 0.5–2. **Calls at the same time**: above this number, callers go
-straight to the destination (a small server prepares one announcement per voice at a time).
+Voice: a model of *AI → Local models*, "the engine for the language" chosen on
+*AI → Cloud services*, or a cloud voice directly (OpenAI, Azure, ElevenLabs, Google Cloud — those
+with a key saved there). When the provider fails or is over its
+[monthly limit](cloud-ai.md#monthly-limits), a ready local voice of the language speaks instead.
+Speed 0.5–2. **Calls at the same time**: above this number, callers go straight to the destination (a small server prepares one announcement per voice at a time).
 
 ## Voice requests
 
@@ -48,8 +50,9 @@ phone and says "could I get two more towels?".
 3. **Speech to text** with a local model (Vosk or Whisper, see [Local AI models](local-ai.md)), the
    engine set for the language under *AI → Cloud services*, or a cloud provider directly (OpenAI,
    Groq, Deepgram, Azure, ElevenLabs, Google AI — those with a key saved there). The cloud key is
-   kept by the AI service in a file only it can read; when the provider cannot be reached the call
-   counts as "not understood" and goes to the application's destination.
+   kept by the AI service in a file only it can read; when the provider cannot be reached or is
+   over its monthly limit, a ready local model of the language listens instead; without one the
+   call counts as "not understood" and goes to the application's destination.
 4. **Matching** the text to the configured **requests**. Each request has:
    - **keywords** — word beginnings, the strongest signal ("temiz" also matches "temizliği");
      a keyword that several requests share counts less;

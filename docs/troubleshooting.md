@@ -33,8 +33,9 @@ repeat the problem, then **Stop and make the zip** and download it. The zip hold
 | `selftest.txt` | `aipbx-selftest` |
 | `errors.txt` | warnings of Asterisk and the AiPBX services, the last portal errors |
 | `config/` | the Asterisk files AiPBX generates (`/etc/asterisk/pbx`) |
+| `sip.pcap` | the SIP messages of that time from the [SIP traffic](#sip-traffic) files, for Wireshark (only when the files are on; 50 MB at most) |
 
-Before the zip is written, passwords, digest answers, keys and tokens are replaced by `***`, and every
+Before the zip is written (`sip.pcap` included), passwords, digest answers, keys and tokens are replaced by `***`, and every
 number of 7 digits or more loses its last 5 digits (`05321112233` → `053211xxxxx`); extensions, times,
 addresses and Asterisk ids stay. No call recordings, voicemail or faxes. The recording uses its own log
 channel and leaves the PBX's verbose level as it is. Zips are kept for 7 days in `/var/lib/aipbx/diag`;

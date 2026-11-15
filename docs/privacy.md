@@ -36,7 +36,7 @@ When enabled on inbound DID routes (`[sub-privacy-consent]` in `extensions_inbou
 
 When **Enable automated nightly data retention purge** is checked, `/etc/cron.d/aipbx` runs `php /usr/local/bin/privacy_purge.php` every night at 03:45 (or on demand via **Run Purge Policy Now**):
 
-- Deletes call recording audio files (`/var/spool/asterisk/monitor/*`) older than N days
+- Deletes call recording audio files (`/var/spool/asterisk/monitor/*`) older than N days, with their transcripts and summaries (`cdr_ai`)
 - Deletes voicemail archives and AI transcripts older than N days, and the voicemail messages themselves (`INBOX`, `Old`, `Urgent` of every mailbox), whether they were listened to or not
 - Deletes fax logs and spool files older than N days
 - Deletes chat messages older than N days
@@ -52,7 +52,7 @@ Searching a phone number or extension lists all matching CDRs (across `asteriskc
 
 
 - **Export SAR Data Package (JSON):** Downloads a structured JSON archive for KVKK Art. 11 / GDPR Art. 15 & 20 requests and logs `PRIVACY_SAR_EXPORT` in the Audit Log.
-- **Execute Right to Erasure:** Permanently deletes matching audio recordings, voicemails, faxes, and signaling events, anonymizes matching CDR entries as `REDACTED`, and records an immutable `PRIVACY_ERASURE` certificate in the Audit Log.
+- **Execute Right to Erasure:** Permanently deletes matching audio recordings (and their transcripts), voicemails, faxes, and signaling events, anonymizes matching CDR entries as `REDACTED`, and records an immutable `PRIVACY_ERASURE` certificate in the Audit Log.
 
 ---
 

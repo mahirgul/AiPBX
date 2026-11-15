@@ -21,6 +21,7 @@ names, so calls over renamed or deleted trunks still show them.
 
 Direction and trunk are filters as well; the summary above the table counts calls per direction.
 Recordings play and download from the row (see [Call recordings](recordings.md) for who may hear what).
+The search also finds calls by the words of their [transcript](recordings.md#transcript-and-summary).
 
 ## Queue Report Centre
 
