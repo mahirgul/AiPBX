@@ -60,7 +60,7 @@ def benchmark_text(languages):
 
 _MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop)$")
 _APP = re.compile(r"^/v1/apps/([0-9]{1,7})$")
-_CALL = re.compile(r"^/v1/calls/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(/audio|/result)?$")
+_CALL = re.compile(r"^/v1/calls/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(/audio|/result|/summary)?$")
 MAX_APP_BODY = 4 * 1024 * 1024  # an app config: up to 30 intents x 61 texts of 1000 characters
 
 
@@ -200,13 +200,15 @@ class Handler(BaseHTTPRequestHandler):
 
         calls = self.server.calls
         key = (parse_qs(urlsplit(self.path).query).get("key") or [""])[0]
-        if part == "/result":
+        if part in ("/result", "/summary"):
             answer = ""
             if self._forwarded():
-                log.warning("call result refused: forwarded request")
-            else:
+                log.warning("call %s refused: forwarded request", part[1:])
+            elif part == "/result":
                 answer = calls.result_for_dialplan(call_uuid, key)
-            return self._send(HTTPStatus.OK, answer.encode("ascii", "replace"), "text/plain; charset=utf-8")
+            else:
+                answer = calls.summary_for_dialplan(call_uuid, key)
+            return self._send(HTTPStatus.OK, answer.encode("utf-8"), "text/plain; charset=utf-8")
         if self._forwarded():
             raise ApiError(HTTPStatus.FORBIDDEN, "forwarded requests are not accepted")
         if self.headers.get("Authorization") is not None or not key:

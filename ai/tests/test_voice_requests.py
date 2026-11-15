@@ -661,7 +661,7 @@ class VoiceRequestsTest(unittest.TestCase):
         self.stt.texts = ["kahvaltı saat kaçta", "bir de havlu lazım"]
         u, c, prompts = self.conversation_call([
             {"action": "reply", "say": "Kahvaltı yedi ile on arası."},
-            {"action": "transfer", "intent": "towels", "say": "Havlunuz geliyor."}])
+            {"action": "transfer", "intent": "towels", "say": "Havlunuz geliyor.", "summary": "Oda 12 iki havlu istiyor."}])
         self.assertTrue(c.wait_prompts(1))
         c.speak(0.8)
         self.assertTrue(c.wait_prompts(2))
@@ -670,6 +670,9 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual(c.prompts(), [self.value(hotel_config()["greeting"]), self.value("Kahvaltı yedi ile on arası."),
                                        self.value("Havlunuz geliyor.")])
         self.assertEqual(self.result(u), "towels")                  # the dialplan goes to the request's destination
+        status, _, body = self.request("GET", f"/v1/calls/{u}/summary?key={KEY}", token=None)
+        self.assertEqual((status, body.decode()), (200, "Oda 12 iki havlu istiyor."))   # handed over with the call
+        self.assertEqual(self.request("GET", f"/v1/calls/{u}/summary?key=00", token=None)[2], b"")
         data = self.details(u)[1]
         self.assertEqual([m["role"] for m in data["conversation"]], ["caller", "assistant", "caller", "assistant"])
         self.assertIn("Caller: kahvaltı saat kaçta", prompts[1])
@@ -699,6 +702,26 @@ class VoiceRequestsTest(unittest.TestCase):
         self.wait_done(c)
         self.assertEqual(self.result(u), "none")
         self.assertEqual(self.details(u)[1]["result"], "not_understood")
+
+    def test_conversation_gets_the_summary_of_the_assistant_before(self):
+        self.stt.texts = ["evet"]
+        from unittest import mock
+        prompts = []
+
+        def answer(cfg, text, post=None):
+            prompts.append(text)
+            return json.dumps({"action": "end", "say": "Görüşmek üzere."})
+        with mock.patch("aipbx_ai.cloud_llm.answer_text", side_effect=answer):
+            self.assertEqual(self.put_app(conversation=True, understand="cloud", retries=0,
+                                          llm_cloud={"provider": "openai", "api_key": "sk-test-1234567890"})[0], 200)
+            u = self.start(context="Kemal Bey faturasını soruyor.\x07")
+            c = Caller(self.audio.server_address[1], u)
+            self.callers.append(c)
+            self.assertTrue(c.wait_prompts(1))
+            c.speak(0.8)
+            self.wait_done(c)
+        self.assertIn("Before you (another assistant's summary): Kemal Bey faturasını soruyor.", prompts[0])
+        self.assertEqual(self.result(u), "_end")
 
     def test_conversation_needs_a_cloud_model(self):
         self.assertEqual(self.put_app(conversation=True)[0], 400)

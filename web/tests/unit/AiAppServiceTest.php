@@ -176,6 +176,8 @@ final class AiAppServiceTest extends TestCase
         $conf = buildAiAppsDialplan([$app], str_repeat('cd', 32));
         $this->assertStringContainsString('GotoIf($["${AI_INTENT}" = "_end"]?conv_end)', $conf);
         $this->assertStringContainsString('same => n(conv_end),NoOp(AI application 9: conversation ended)', $conf);
+        $this->assertStringContainsString('&context=${URIENCODE(${AI_SUMMARY})}', $conf);
+        $this->assertStringContainsString('Set(__AI_SUMMARY=${CURL(http://127.0.0.1:8790/v1/calls/${AI_CALL}/summary?key=', $conf);
     }
 
     public function testPushAppsPutsAndDeletes(): void

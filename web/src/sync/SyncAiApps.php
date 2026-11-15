@@ -123,7 +123,9 @@ function buildVoiceRequestsContext(array $a, string $key): string {
     $max = max(1, min(50, (int) $a['max_concurrent']));
     $intents = AiAppService::config($a)['intents'] ?? [];
     $post = 'app=' . $id . '&key=' . $key . '&max=' . $max
-        . '&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}';
+        . '&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}'
+        // What an assistant before this one handed over (a conversation's summary).
+        . '&context=${URIENCODE(${AI_SUMMARY})}';
 
     $c = "; --- AI application {$id}: {$name} (voice requests) ---\n";
     $c .= "[aipbx-ai-app-{$id}]\n";
@@ -135,6 +137,10 @@ function buildVoiceRequestsContext(array $a, string $key): string {
         $c .= " same => n,GotoIf(\$[\"\${LEN(\${AI_CALL})}\" != \"36\"]?fallback)\n";
         $c .= " same => n,AudioSocket(\${AI_CALL}," . AI_APP_AUDIOSOCKET . ")\n";
         $c .= " same => n,Set(AI_INTENT=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/result?key={$key})})\n";
+        if (!empty(AiAppService::config($a)['conversation'])) {
+            // Its summary goes with the call: to the next assistant (above) and into the request log.
+            $c .= " same => n,Set(__AI_SUMMARY=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/summary?key={$key})})\n";
+        }
         // Request log and e-mail in the background; the caller name reaches the shell URI-encoded only.
         // URIENCODE leaves ' ( ) alone, and the shell broke on them: filter the name first.
         $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} \${URIENCODE(\${FILTER(A-Za-z0-9 ._,\${CALLERID(name)})})} >/dev/null 2>&1 &)\n";

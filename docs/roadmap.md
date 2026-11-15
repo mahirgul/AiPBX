@@ -471,7 +471,7 @@ Structured implementation phases for AiPBX AI (`ai-apps`, Cloud AI, CDR AI, and 
 
 **Phase 3 — Advanced (Call center automation):**
 7. **Outbound AI campaigns (`auto-dialer` + `ai-apps`)** *(done: auto-dialer plugin 1.2.0, [auto-dialer.md](auto-dialer.md#ai-campaigns))*: Combine appointment confirmations, payment/balance notifications, and survey calls with the existing auto-dialer.
-8. **Automated Quality Assurance (Auto-QA) and assistant hand-over** *(call scoring done after 1.79.3, in CDR reports and per agent on the call-center board: [recordings.md](recordings.md#quality-review); hand-over between several assistants not yet)*: Automatically score completed calls for script adherence, sentiment, and resolution inside the `/cc` supervisor panel, and support multi-specialist assistant hand-over with conversation summary transfer.
+8. **Automated Quality Assurance (Auto-QA) and assistant hand-over** *(call scoring done after 1.79.3, in CDR reports and per agent on the call-center board: [recordings.md](recordings.md#quality-review); hand-over between assistants with a summary: [ai-apps.md](ai-apps.md#conversation))*: Automatically score completed calls for script adherence, sentiment, and resolution inside the `/cc` supervisor panel, and support multi-specialist assistant hand-over with conversation summary transfer.
 
 ## 6. iOS app parity — done
 

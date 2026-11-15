@@ -119,6 +119,12 @@ or when the model cannot be reached or is over its [monthly limit](cloud-ai.md#m
 call goes to the application's destination; over the limit the application works as single
 requests by keywords until the next month.
 
+**Handing over with a summary.** When it transfers, the assistant writes one sentence for whoever
+takes the call ("Room 12 wants two more towels"). It is the first thing in the request log and the
+request's e-mail, and when the request's destination is another AI application — a specialist
+assistant, for example billing after reception — that assistant starts with it, so the caller does
+not have to repeat themselves (`AI_SUMMARY` in the dialplan, `context` of the call).
+
 What the caller says, the facts above and the lookup answers go to the cloud provider: say so in
 the greeting or in the [call announcement](privacy.md) where the law asks for it. The request log
 keeps what the caller said; the whole conversation, the answers too, is in the call's record of the

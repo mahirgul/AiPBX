@@ -53,6 +53,8 @@ class StepTest(unittest.TestCase):
         self.assertEqual(p({"action": "reply", "say": "Hello"}), {"action": "reply", "say": "Hello"})
         self.assertEqual(p({"action": "transfer", "intent": "none", "say": ""})["intent"], None)
         self.assertEqual(p({"action": "transfer", "intent": "sales"})["intent"], "sales")
+        self.assertEqual(p({"action": "transfer", "intent": "sales", "summary": "x" * 500})["summary"], "x" * conversation.SUMMARY_CHARS)
+        self.assertEqual(p({"action": "transfer", "intent": "sales", "summary": 5})["summary"], "")
         self.assertEqual(p({"action": "lookup", "tool": "order", "query": "A12"})["query"], "A12")
         self.assertEqual(len(p({"action": "reply", "say": "x" * 900})["say"]), conversation.SAY_CHARS)
         for bad in ({"action": "dial", "number": "0900"}, {"action": "transfer", "intent": "boss"},

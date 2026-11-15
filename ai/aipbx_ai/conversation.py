@@ -31,6 +31,7 @@ MAX_TURNS_MIN, MAX_TURNS_MAX, MAX_TURNS_DEFAULT = 2, 12, 6
 LOOKUPS_PER_TURN = 2
 RESULT_CHARS = 2000          # of a lookup answer, for the model
 SAY_CHARS = 400              # of one spoken answer
+SUMMARY_CHARS = 300          # of the summary handed over with a transfer
 ACTIONS = ("reply", "lookup", "transfer", "end")
 _TOOL_NAME = re.compile(r"^[a-z0-9_]{1,30}$")
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
@@ -100,7 +101,8 @@ def prompt(config, history, lang):
     tools = "\n".join(f'- "{t["name"]}": {t["description"]}' for t in config.get("tools", [])) or "(none)"
     lines = []
     for role, text in history:
-        lines.append({"caller": "Caller", "assistant": "You", "lookup": "Lookup result"}[role] + ": " + text)
+        lines.append({"caller": "Caller", "assistant": "You", "lookup": "Lookup result",
+                      "context": "Before you (another assistant's summary)"}[role] + ": " + text)
     return (
         "You are the voice assistant answering a company's telephone line. A speech recogniser wrote down "
         "what the caller said; it may contain errors, so judge by meaning.\n"
@@ -116,7 +118,8 @@ def prompt(config, history, lang):
         "Reply with JSON only, one of:\n"
         '{"action": "reply", "say": "<your answer>"}\n'
         '{"action": "lookup", "tool": "<lookup name>", "query": "<what to look up>"}\n'
-        '{"action": "transfer", "intent": "<request id or none>", "say": "<short sentence before the transfer>"}\n'
+        '{"action": "transfer", "intent": "<request id or none>", "say": "<short sentence before the transfer>", '
+        '"summary": "<one sentence for whoever takes the call: who, what they want, what you found>"}\n'
         '{"action": "end", "say": "<goodbye>"}  (only when the caller has nothing more to ask)'
     )
 
@@ -149,6 +152,8 @@ def parse_step(raw, config):
             step["intent"] = intent
         else:
             raise cloud_llm.CloudLlmError("unknown request")
+        summary = data.get("summary") if isinstance(data.get("summary"), str) else ""
+        step["summary"] = _CONTROL.sub(" ", summary).strip()[:SUMMARY_CHARS]
     return step
 
 

@@ -312,6 +312,7 @@ def _lookup(form):
 class CallSession:
     def __init__(self, app, model, caller, did, uniqueid, kind=ANNOUNCEMENT):
         self.uuid = str(uuid.uuid4())
+        self.context = ""              # a conversation: the summary handed over by the assistant before
         self.kind = kind
         self.app = app
         self.model = model
@@ -496,6 +497,8 @@ class CallRegistry:
                               _id_field(form, "did", _ID_FIELD, MAX_ID_FIELD),
                               _id_field(form, "uniqueid", _UNIQUEID, MAX_UNIQUEID), kind=VOICE_REQUESTS)
         session.config, session.version = config, version
+        # Handed over by another assistant of a conversation: its summary (SyncAiApps.php sends AI_SUMMARY).
+        session.context = re.sub(r"[\x00-\x1f\x7f]", " ", form.get("context", ""))[:500].strip()
         self._reserve(session, limit)
         try:
             try:
@@ -529,6 +532,13 @@ class CallRegistry:
         if result.get("result") == "ended":
             return "_end"              # conversation said goodbye: the dialplan hangs up
         return result.get("intent") or "none"
+
+    def summary_for_dialplan(self, call_uuid, key):
+        """GET /v1/calls/<uuid>/summary: what a conversation handed over, or ""."""
+        if not self.key_ok(key):
+            return ""
+        result = self.results.get(call_uuid)
+        return (result or {}).get("summary") or ""
 
     def _reserve(self, session, limit):
         with self._mu:
@@ -856,6 +866,7 @@ class VoiceRequestsCall:
         self.reply_started = None      # monotonic
         self.speech_end = None         # monotonic arrival of the last loud frame of the last attempt
         self.history = []              # conversation mode: (role, text)
+        self.summary = ""              # conversation mode: handed over with a transfer
         self._mu = threading.Lock()
         self._current = None           # the prompt being sent by the pump
         self._stop_pump = threading.Event()
@@ -1198,6 +1209,8 @@ class VoiceRequestsCall:
         """greeting -> (listen -> model step -> answer)* -> transfer, goodbye or the application's destination."""
         session, cfg = self.session, self.config
         lang = cfg.get("language") or "tr"
+        if session.context:
+            self.history.append(("context", session.context))
         played, pre = self.play_interruptible(session.pcm)
         if not played:
             return self.save("hangup")
@@ -1241,6 +1254,7 @@ class VoiceRequestsCall:
                 self.history.append(("assistant", step["say"]))
             if step["action"] == "end":
                 return self._finish(self.speak(step["say"]), "ended")
+            self.summary = step.get("summary", "")
             if step["intent"]:
                 self.matched = next(i for i in cfg["intents"] if i["id"] == step["intent"])
                 session.intent = self.matched["id"]
@@ -1270,6 +1284,8 @@ class VoiceRequestsCall:
         }
         if self.history:
             record["conversation"] = [{"role": r, "text": t} for r, t in self.history]
+        if self.summary:
+            record["summary"] = self.summary
         self.registry.results.save(record, self.audio)
         self.saved = True
         log.info("call app=%d caller=%s voice_requests result=%s intent=%s score=%.2f transcripts=%s %s",

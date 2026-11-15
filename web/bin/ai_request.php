@@ -54,8 +54,9 @@ try {
             $intent = $i;
         }
     }
+    // A conversation's summary first: what the person taking the call needs to know.
     $transcript = PrivacyService::redactTranscriptIfEnabled(
-        implode(' / ', array_filter(array_map('strval', (array) ($call['transcripts'] ?? []))))
+        implode(' / ', array_filter(array_map('strval', [(string) ($call['summary'] ?? ''), ...(array) ($call['transcripts'] ?? [])])))
     );
     $caller = mb_substr((string) ($call['caller'] ?? ''), 0, 40);
     $callerName = mb_substr(trim(rawurldecode((string) ($argv[4] ?? ''))), 0, 80);
