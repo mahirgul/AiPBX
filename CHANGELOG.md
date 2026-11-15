@@ -11,6 +11,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.79.5
+
+### ✨ New
+
+- **OpenAI-compatible TTS (`AI → Cloud services`, `cloud_tts.py`, `CloudAiService`, `AiAppService`):** adds `tts` capability (`tts_model`, `tts_voice`, optional API key) to the `openai_compat` provider so both OpenAI-compatible cloud TTS endpoints and self-hosted remote GPU TTS servers (e.g. Kokoro-FastAPI, XTTS, Fish Speech, `nefes-0.5`) can be used directly via `/v1/audio/speech` with automatic WAV/PCM resampling to 8 kHz AudioSocket PCM.
+- **Deepgram WebSocket streaming STT (`deepgram_stream.py`, `calls.py`):** streams live 8 kHz PCM frames over `wss://api.deepgram.com/v1/listen` while the caller speaks for `cloud:deepgram` voice-request apps, cutting post-speech turn-taking latency; falls back seamlessly to REST/local STT on connection or stream errors.
+
 ## 1.79.4
 
 ### ✨ New
