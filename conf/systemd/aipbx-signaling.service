@@ -15,6 +15,8 @@ PrivateTmp=yes
 PrivateDevices=yes
 CapabilityBoundingSet=
 WorkingDirectory=/opt/aipbx/signaling
+# SIP traffic files (Troubleshooting → SIP traffic): the one place it may write.
+ReadWritePaths=-/var/lib/aipbx/sip-capture
 ExecStart=/usr/bin/python3 -m aipbx_signaling
 Restart=on-failure
 RestartSec=10

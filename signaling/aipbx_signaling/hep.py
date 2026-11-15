@@ -395,6 +395,13 @@ def parse_event(data: bytes) -> Optional[dict]:
         "rtcp_jitter": (summary or {}).get("jitter"),
     }
     event["line"] = summary_line(event)
+    # For the SIP traffic files (pcap.py), not for the database: the whole
+    # message, the exact time and both ends as (address, port).
+    if proto == "sip" and payload:
+        event["_payload"] = payload
+        event["_ts_us"] = _u32(fields.get(0x000A, b""))
+        event["_src"] = (src_ip, _u16(fields.get(HEP_SRC_PORT, b"")))
+        event["_dst"] = (dst_ip, _u16(fields.get(HEP_DST_PORT, b"")))
     return event
 
 

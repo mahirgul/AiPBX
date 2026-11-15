@@ -166,7 +166,7 @@ untested here: UDP is the path that works out of the box.
 |---------|-------|
 | The phone reboots and never registers | Is it running a **SIP** load and not SCCP? Its own status screen says which. A 7900 still on SCCP needs the switch in section 3 (and the restart that comes with it); AiPBX does not run chan-sccp, so a phone left on SCCP never registers. |
 | A 7900 sits at *Upgrading* | It is asking for a firmware file the server does not have (a load from the single field is not checked): `aipbx_cisco_firmware.php` lists what the per-model list needs. Copy the rest of that release's package into the TFTP folder — do not rename the files, and do not use another model's package (the loads are signed per model). |
-| It has a name but no extension | The file was not fetched: DHCP option 150, or the TFTP folder's owner and the allowed networks. `Provisioning → Phone logs → TFTP/FTP` shows every fetch the PBX answered. |
+| It has a name but no extension | The file was not fetched: DHCP option 150, or the TFTP folder's owner and the allowed networks. `Troubleshooting → Phone logs → TFTP/FTP` shows every fetch the PBX answered. |
 | It fetched the file and stayed on the old settings | The `loadInformation` you set may be a load you do not have. Clear it and re-provision (↻). |
 | The lamp of a BLF key never changes | A hint in the dialplan and the usecallmanager Asterisk patch — both are outside AiPBX's file. |
 | It asks for `Softkeys.xml` / `DialTemplate.xml` and logs a 404 | Harmless (the phone uses its defaults), but copy the shared files in and re-provision to get the intended soft keys. |

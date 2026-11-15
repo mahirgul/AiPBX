@@ -1,13 +1,14 @@
 # Signaling capture
 
 > Built by Gregory Merriweather ([@shido6](https://github.com/shido6)). Part of AiPBX itself since 1.50.8:
-> **PBX settings → Signaling**. Until then it was switched by the bundled `signaling-capture` plugin, which
+> **PBX settings → Signaling** (and **Troubleshooting → SIP capture settings**). Until then it was switched by the bundled `signaling-capture` plugin, which
 > pointed Asterisk at a port nothing listened on; the update turns capture on when that plugin was on and
 > removes it.
 
 AiPBX ships an optional signaling pipeline: what crosses the SIP stack can
-be captured, kept on this server and read by the dialplan editor's Echo box
-and [Call quality](call-quality.md).
+be captured, kept on this server and read by the dialplan editor's Echo box,
+[Call quality](call-quality.md), and **Troubleshooting → SIP traffic** / **Live SIP**
+([Troubleshooting](troubleshooting.md#sip-traffic)).
 Capture is opt-in and off by default, so a normal installation captures
 nothing and pays no overhead.
 
@@ -42,12 +43,15 @@ turns a PBX into a free SIP sniffer for anyone who finds it.
 **Daemon side** — `python -m aipbx_signaling` (installed by `install.sh`,
 and therefore by `aipbx-update` on every upgrade, as
 `aipbx-signaling.service`). Reads `/etc/ai-pbx.env` for database credentials
-(the same file the portal reads; the `asterisk` group owns it). One setting
-comes from `sys_settings` (default when absent, clamped 1..3650):
+(the same file the portal reads; the `asterisk` group owns it). Four settings
+come from `sys_settings` (re-read every 30 seconds; defaults when absent):
 
 | setting                    | meaning                                 |
 |----------------------------|-----------------------------------------|
-| `signaling_retention_days` | delete events older than this (1–3650; PBX settings → Signaling) |
+| `signaling_retention_days` | delete events older than this (1–3650; PBX settings → Signaling / SIP capture settings) |
+| `sip_capture_files`        | write raw HEP SIP `.pcap` files (`0`/`1`; Troubleshooting → SIP capture settings) |
+| `sip_capture_days`         | delete `.pcap` files older than this (1–10 days) |
+| `sip_capture_max_mb`       | disk budget for `.pcap` files (100–51200 MB; oldest deleted first) |
 
 The daemon reads HEPv3 as specified: a 6-byte packet header and chunks with
 a 6-byte header (vendor, type, length). Until 1.50.8 it read 4-byte chunk
@@ -59,6 +63,11 @@ transport, src, dst, from_uri, to_uri, cseq, status_code, first_line, line,
 capture_id, rtcp_ssrc, rtcp_lost, rtcp_fraction_lost, rtcp_jitter`. Message
 text is kept in `first_line`/`line` (bounded); phones still show in
 `from_uri`. Rows are pruned by the retention setting.
+
+When `sip_capture_files` is enabled, the daemon also writes full clear-text SIP
+messages into `/var/lib/aipbx/sip-capture/sip-*.pcap` (10 MB per file,
+`LINKTYPE_RAW` IPv4/IPv6 + UDP, readable by Wireshark), viewed and downloaded
+under **Troubleshooting → SIP traffic** and **Live SIP**.
 
 **RTCP counters** — an RTP stream reports its own quality. `res_hep_rtcp`
 sends each Sender/Receiver Report through the same datagram path, and the

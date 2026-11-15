@@ -485,6 +485,9 @@ if [ -d "$INSTALL_DIR/signaling" ]; then
     if command -v apt-get >/dev/null 2>&1; then
         DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-pymysql
     fi
+    # SIP traffic files: written by the daemon (asterisk), read by the portal
+    # (www-data is in the asterisk group), nobody else.
+    install -d -o asterisk -g asterisk -m 0750 /var/lib/aipbx/sip-capture
     if [ -d /etc/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
         install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
         systemctl daemon-reload >/dev/null 2>&1 || true

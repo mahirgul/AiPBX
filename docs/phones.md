@@ -125,7 +125,7 @@ Phone networks often have no DNS or no internet access, so a phone cannot resolv
 | **Outbound proxy** | the outbound proxy of the line (Yealink, Grandstream, Fanvil, Snom, Poly, Cisco SPA, NEC), same port as the SIP server; empty: none |
 | **Provisioning address** | where phones fetch their files, e.g. `192.168.1.70` (no scheme: HTTP), `192.168.1.70:8080` or `https://pbx.example.com:8443`: the per-phone URLs on the page and DHCP option 66/160 |
 | **NTP server** | a name or an IP address (NEC: IP address only); this server's IP with [NTP server](network-services.md#ntp-server-time) on under Network services |
-| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [Provisioning → Phone logs](network-services.md#syslog-phone-logs) |
+| **Syslog server** | where phones send their log (UDP 514), an IPv4 address (NEC); this server's IP with *Syslog* on under Network services: read on [Troubleshooting → Phone logs](network-services.md#syslog-phone-logs) |
 
 Re-provision the phones after changing them. `/provision/` is also answered over plain **HTTP**
 (no redirect to HTTPS), for phones that cannot do HTTPS to an IP address or do not follow a
@@ -255,7 +255,7 @@ Limits in this first version:
 
 ## Logging and protection
 
-- Every request is logged (time, MAC, file, result, IP, User-Agent) on *Provisioning → Phone logs*;
+- Every request is logged (time, MAC, file, result, IP, User-Agent) on *Troubleshooting → Phone logs*;
   rows are kept 90 days. Passwords and tokens are never logged.
 - **Rate limit:** requests per minute per IP address (default 60); more get HTTP 429.
 - **Allowed networks:** when set, phones outside them get nothing, not even with a valid URL.

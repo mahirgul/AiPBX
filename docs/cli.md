@@ -15,6 +15,7 @@ before using options that restart services, replace data or change network conne
 | [`aipbx-backup`](#aipbx-backup) | Creates full DB and configuration backups | `sudo aipbx-backup --label pre-change` | Yes |
 | [`aipbx-restore`](#aipbx-restore) | Restores system state from backup archives | `sudo aipbx-restore <backup-name>` | Yes |
 | [`aipbx-selftest`](#aipbx-selftest) | Immediate diagnostic check of all subsystems | `sudo aipbx-selftest` | Yes |
+| [`aipbx-diag`](troubleshooting.md#problem-recording) | Problem recording start/stop/status/delete (masked diagnostic zip) | `sudo aipbx-diag start minutes=15` | Yes |
 | [`aipbx-cert`](#aipbx-cert) | SSL/TLS certificate issuance, renewal & sync | `sudo aipbx-cert renew` | Yes |
 | [`aipbx-readdress`](#aipbx-readdress) | Updates PBX configuration when server IP changes | `sudo aipbx-readdress <old-ip> <new-ip> --yes` | Yes |
 | [`aipbx-netcfg`](#aipbx-netcfg) | Manages network cards, IP, gateway & routing | `sudo aipbx-netcfg status` | Yes |

@@ -24,11 +24,11 @@ class View
 
     public static function render(string $view, array $data = []): void
     {
-        $file = dirname(__DIR__, 2) . '/templates/views/' . $view . '.php';
-        if (!is_file($file)) {
-            throw new \RuntimeException("View not found: {$view} ({$file})");
+        $__file = dirname(__DIR__, 2) . '/templates/views/' . $view . '.php';
+        if (!is_file($__file)) {
+            throw new \RuntimeException("View not found: {$view} ({$__file})");
         }
         extract($data, EXTR_SKIP);
-        require $file;
+        require $__file;
     }
 }

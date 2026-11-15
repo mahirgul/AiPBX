@@ -7,10 +7,17 @@ Each is a page of its own; the health checks of the server stay under **System �
 
 | Page | For |
 |---|---|
+| **SIP traffic** | `.pcap` captures of Asterisk's HEP SIP messages, calls grouped by Call-ID, and a ladder diagram |
+| **Live SIP** | live stream of incoming/outgoing SIP messages from the current capture file |
 | **Problem recording** | one try of the problem as a masked zip to attach to a report |
 | **Registrations** | which phone, browser and app of each extension is registered, and the state of the trunks |
 | **Call quality** | packet loss and jitter of calls from RTCP ([Call quality](call-quality.md)) |
 | **Phone logs** | the syslog of desk phones ([Desk phones](phones.md)) |
+| **SIP capture settings** | enable/disable HEP SIP `.pcap` files, retention days, and total disk budget |
+
+### SIP traffic
+
+**Troubleshooting → SIP traffic**, **Live SIP**, and **SIP capture settings.** When SIP capture files are turned on under **SIP capture settings**, `aipbx-signaling` writes every SIP message Asterisk reports over HEP into `/var/lib/aipbx/sip-capture` as standard `.pcap` files (10 MB per file, kept for 1–10 days within the configured disk limit; Wireshark-compatible). From **SIP traffic** you can download `.pcap` files, inspect calls grouped by Call-ID, view each dialog as a ladder diagram with full headers/SDP, or watch traffic in real time under **Live SIP**.
 
 ### Problem recording
 

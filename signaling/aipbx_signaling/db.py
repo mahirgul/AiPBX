@@ -168,6 +168,7 @@ class Store:
                     "SELECT setting_value FROM sys_settings "
                     "WHERE setting_key = %s LIMIT 1", (key,))
                 row = cur.fetchone()
+            conn.commit()
             if row and row[0] is not None:
                 return str(row[0])
         except Exception:

@@ -104,7 +104,7 @@ restarts chrony. Switching it off removes the file and the firewall rules again.
 
 ## Phone logs: one page for every service
 
-**Provisioning → Phone logs** has a tab for every way a desk phone talks to this server, so one page
+**Troubleshooting → Phone logs** has a tab for every way a desk phone talks to this server, so one page
 answers "did the phone get its file, and if not, why":
 
 | Tab | Shows | Source |
@@ -125,7 +125,7 @@ match (see FTP above).
 ## Syslog (phone logs)
 
 **Syslog (phone logs)** receives what desk phones log (syslog, UDP 514) from the same networks as
-TFTP and FTP; read it on **Provisioning → Phone logs**. Set this server's IP as *Syslog server* on
+TFTP and FTP; read it on **Troubleshooting → Phone logs**. Set this server's IP as *Syslog server* on
 *Provisioning → Regions* (NEC phones get it with their file; other phones in their
 own menu or web page).
 

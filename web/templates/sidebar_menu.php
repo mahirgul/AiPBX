@@ -156,10 +156,13 @@ return [
         // Tools for a problem with calls or phones; each its own page, admin only.
         'id' => 'troubleshooting', 'icon' => 'fas fa-stethoscope u-warning', 'label' => 'sidebar.group_troubleshooting',
         'items' => [
+            ['href' => '/sip-traffic', 'icon' => 'fas fa-route', 'label' => 'sidebar.item_sip_traffic', 'show' => $isAdmin, 'pages' => ['sip_traffic.php']],
+            ['href' => '/sip-live', 'icon' => 'fas fa-satellite-dish', 'label' => 'sidebar.item_sip_live', 'show' => $isAdmin, 'pages' => ['sip_live.php']],
             ['href' => '/problem-recording', 'icon' => 'fas fa-file-medical', 'label' => 'sidebar.item_problem_recording', 'show' => $isAdmin, 'pages' => ['problem_recording.php']],
             ['href' => '/registrations', 'icon' => 'fas fa-plug', 'label' => 'sidebar.item_registrations', 'show' => $isAdmin, 'pages' => ['registrations.php']],
             ['href' => '/call-quality', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_call_quality', 'show' => $isAdmin, 'pages' => ['call_quality.php']],
             ['href' => '/phone-logs', 'icon' => 'fas fa-scroll', 'label' => 'sidebar.item_phone_logs', 'show' => $isAdmin, 'pages' => ['phone_logs.php']],
+            ['href' => '/sip-capture-settings', 'icon' => 'fas fa-sliders', 'label' => 'sidebar.item_sip_capture_settings', 'show' => $isAdmin, 'pages' => ['sip_capture_settings.php']],
         ],
     ],
     [

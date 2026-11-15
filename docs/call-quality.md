@@ -1,6 +1,6 @@
 # Call quality
 
-**Reports → Call quality** (administrators) shows how the audio of the calls was: packet loss in both
+**Troubleshooting → Call quality** (administrators) shows how the audio of the calls was: packet loss in both
 directions and jitter, per trunk and per extension, from the RTCP reports Asterisk already sends. Nothing
 on the PBX is changed by it.
 
@@ -8,7 +8,7 @@ Idea and first version: Gregory Merriweather ([@shido6](https://github.com/shido
 
 ## Turning it on
 
-It reads [signaling capture](signaling.md): **PBX settings → Signaling → Capture: On**. From then on the
+It reads [signaling capture](signaling.md): **PBX settings → Signaling → Capture: On** (or **Troubleshooting → SIP capture settings**). From then on the
 measurements appear a minute after each call. Without capture the page says so and the health check
 *Call quality* is "not used".
 

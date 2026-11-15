@@ -246,6 +246,9 @@ function getModuleKeyForPage($page = null) {
         // Troubleshooting menu: admin-only tools that look into calls and registrations.
         'problem_recording.php'     => 'troubleshooting',
         'registrations.php'         => 'troubleshooting',
+        'sip_traffic.php'           => 'troubleshooting',
+        'sip_live.php'              => 'troubleshooting',
+        'sip_capture_settings.php'  => 'troubleshooting',
     ];
     if (str_starts_with((string)$page, 'plugin_') && str_ends_with((string)$page, '.php')) {
         return 'plugins';

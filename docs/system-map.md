@@ -76,7 +76,7 @@ and line.
 | `chrony` | Time sync; NTP server for phones when switched on | 123 udp | `chronyc tracking`, `chronyc clients` |
 | `aipbx-dnsmasq` | DHCP/TFTP for desk phones (*Network services*) | 67, 69 udp | `journalctl -u aipbx-dnsmasq` |
 | `aipbx-vsftpd` | Read-only FTP for desk phones | 21, 40000–40049 | `/var/log/aipbx-ftp.log` |
-| `aipbx-syslog` | Phone log receiver (*Provisioning → Phone logs*) | 514 udp | `/var/log/aipbx-phones/phones.log` |
+| `aipbx-syslog` | Phone log receiver (*Troubleshooting → Phone logs*) | 514 udp | `/var/log/aipbx-phones/phones.log` |
 | `aipbx-mdns` | `aipbx.local` name on the LAN | 5353 udp | `journalctl -u aipbx-mdns` |
 
 `systemctl status <unit>` shows whether it runs; `journalctl -u <unit> -n 100` its recent log.
@@ -120,6 +120,8 @@ Never paste either environment file or `settings.key` into a ticket: they hold e
 | `/var/lib/aipbx/chat_files/` | Chat attachments (when not on S3) |
 | `/var/lib/aipbx/tftp/` | TFTP/FTP folder for desk phones |
 | `/var/lib/aipbx/tts/` | Generated speech |
+| `/var/lib/aipbx/sip-capture/` | SIP traffic `.pcap` files (*Troubleshooting → SIP traffic*) |
+| `/var/lib/aipbx/diag/` | Masked problem-recording zips (*Troubleshooting → Problem recording*) |
 | `/var/lib/aipbx-ai/` | Local AI models and app configs |
 | `/var/backups/aipbx-daily/` | Daily backup (`aipbx-backup`) |
 | `/var/backups/aipbx/` | Backup taken before each update (`aipbx-update`) |
@@ -134,7 +136,7 @@ Never paste either environment file or `settings.key` into a ticket: they hold e
 | `/var/log/apache2/aipbx_ssl_access.log` | Every web/API request (a WebSocket line is written when it closes) |
 | `/var/log/aipbx/update.log` | Updates; `backup.log` backups; `web_login_failures.log` failed portal logins |
 | `/var/log/fax_incoming.log`, `fax_outgoing.log` | Fax processing |
-| `/var/log/aipbx-phones/phones.log` | Desk phone syslog (*Provisioning → Phone logs*) |
+| `/var/log/aipbx-phones/phones.log` | Desk phone syslog (*Troubleshooting → Phone logs*) |
 | `/var/log/aipbx-ftp.log` | FTP transfers of desk phones |
 | `journalctl -t aipbx-voicemail` | Voicemail notifications (push, mail) |
 | Portal: *Security → Audit log* | Who changed what in the portal, and Apply errors |
@@ -258,7 +260,7 @@ be able to replace their files.
 ### Desk phone does not get its configuration
 1. *Provisioning → Phones*: *Show the phone's file* shows exactly what it gets; *Provisioning → Regions*
    shows the addresses the phones are told.
-2. *Provisioning → Phone logs*: one tab each for the phone's own log (syslog), HTTPS, FTP, TFTP and DHCP,
+2. *Troubleshooting → Phone logs*: one tab each for the phone's own log (syslog), HTTPS, FTP, TFTP and DHCP,
    by IP or MAC.
 3. On the server: `journalctl -u aipbx-dnsmasq`, `/var/log/aipbx-ftp.log`, files in
    `/var/lib/aipbx/tftp`.

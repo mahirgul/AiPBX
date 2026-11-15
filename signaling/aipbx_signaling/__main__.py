@@ -29,6 +29,7 @@ import time
 
 from . import hep
 from .db import BATCH_MAX, Store
+from .pcap import PcapWriter
 
 LOG = logging.getLogger("aipbx-signaling")
 
@@ -46,6 +47,9 @@ PRUNE_SECONDS = 6 * 3600
 #: Longest a parsed batch may grow before it is written regardless.
 MAX_QUEUE = BATCH_MAX * 4
 
+#: The SIP traffic file settings (Troubleshooting → SIP traffic) are re-read this often.
+SETTINGS_SECONDS = 30
+
 
 def parse_listen(value: str) -> tuple:
     """"host:port" -> (host, port). A bare port means the loopback address."""
@@ -58,8 +62,9 @@ def parse_listen(value: str) -> tuple:
 
 
 class Capture:
-    def __init__(self, store: Store, source_check: bool = True):
+    def __init__(self, store: Store, source_check: bool = True, pcap: PcapWriter = None):
         self.store = store
+        self.pcap = pcap or PcapWriter()
         self.source_check = source_check
         self.queue: list = []
         self.lock = threading.Lock()
@@ -80,6 +85,7 @@ class Capture:
             self.stats["dropped"] += 1
             return
         self.stats["parsed"] += 1
+        self.pcap.write(event)
         with self.lock:
             self.queue.append(event)
             if len(self.queue) > MAX_QUEUE:
@@ -100,6 +106,20 @@ class Capture:
             # The rows are gone: saying so is the only option (fail-open).
             LOG.warning("could not write %d events: %s", len(batch),
                         self.store.last_error or "unknown error")
+
+    def load_settings(self) -> None:
+        """SIP traffic files: on/off, days kept (1-10) and the disk they may use."""
+        setting = getattr(self.store, "setting", None)
+        if setting is None:
+            return
+        try:
+            def num(key, default):
+                value = setting(key, str(default))
+                return int(value) if value.isdigit() else default
+            self.pcap.configure(setting("sip_capture_files", "0") == "1",
+                                num("sip_capture_days", 10), num("sip_capture_max_mb", 2048))
+        except Exception as exc:  # the capture goes on; the files stay as they were
+            LOG.warning("sip capture settings: %s", exc)
 
     def report(self) -> None:
         line = ("received=%d parsed=%d dropped=%d wrong_source=%d written=%d errors=%d"
@@ -152,6 +172,8 @@ def serve(listen: str = "", source_check: bool = True, store: Store = None,
     last_flush = time.monotonic()
     last_prune = time.monotonic()
     last_report = time.monotonic()
+    capture.load_settings()
+    last_settings = time.monotonic()
     while not capture.stop.is_set():
         try:
             data, addr = sock.recvfrom(MAX_DATAGRAM)
@@ -177,11 +199,17 @@ def serve(listen: str = "", source_check: bool = True, store: Store = None,
                 LOG.info("retention: removed %d old events", deleted)
             last_prune = now
 
+        if now - last_settings >= SETTINGS_SECONDS:
+            capture.load_settings()
+            capture.pcap.prune()
+            last_settings = now
+
         if now - last_report >= 300:
             capture.report()
             last_report = now
 
     capture.flush(time.time())
+    capture.pcap.close()
     sock.close()
     capture.report()
     return 0
