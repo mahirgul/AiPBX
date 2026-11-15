@@ -186,26 +186,8 @@ class IvrDataStepService
 
     public static function usageCount(int $id): int
     {
-        $db = getDB();
-        $pairs = [
-            ['pbx_dids', 'dest'], ['pbx_ring_groups', 'fallback_dest'], ['pbx_ivrs', 'timeout_dest'], ['pbx_ivrs', 'invalid_dest'],
-            ['pbx_announcements', 'post_dest'], ['pbx_ai_apps', 'dest'], ['pbx_web_widgets', 'dest'], ['pbx_ivr_entries', 'dest'],
-            ['pbx_boss_secretary_groups', 'fallback_dest'], ['pbx_time_conditions', 'match_dest'], ['pbx_time_conditions', 'nomatch_dest'],
-            ['pbx_ivr_data_steps', 'found_dest'], ['pbx_ivr_data_steps', 'not_found_dest'], ['pbx_ivr_data_steps', 'timeout_dest'],
-        ];
-        $n = 0;
-        foreach ($pairs as [$table, $col]) {
-            try {
-                $st = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$col}_type = 'ivr_data' AND {$col}_id = ?");
-                $st->execute([(string) $id]);
-                $n += (int) $st->fetchColumn();
-            } catch (\Throwable $e) {
-                // a table of a feature that is not installed
-            }
-        }
-        $st = $db->prepare("SELECT COUNT(*) FROM pbx_time_conditions WHERE rules_json REGEXP ?");
-        $st->execute(['"(match|nomatch)_dest_type":"ivr_data","(match|nomatch)_dest_id":"?' . $id . '"?[,}]']);
-        return $n + (int) $st->fetchColumn();
+        require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
+        return \PBX\Destinations\DestinationRegistry::usageCount('ivr_data', (string) $id);
     }
 
     public static function deleteStep(int $id): bool

@@ -134,6 +134,7 @@ return [
             ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts') && $pluginOn('ai-tts'), 'pages' => ['ai_tts.php']],
             ['href' => '/assistant', 'icon' => 'fas fa-wand-magic-sparkles', 'label' => 'sidebar.item_assistant', 'show' => $isAdmin, 'pages' => ['assistant.php']],
             ['href' => '/ai-apps', 'icon' => 'fas fa-robot', 'label' => 'sidebar.item_ai_apps', 'show' => $isAdmin && $pluginOn('ai-apps'), 'pages' => ['ai_apps.php']],
+            ['href' => '/ai-agents', 'icon' => 'fas fa-satellite', 'label' => 'sidebar.item_ai_agents', 'show' => $can('ai_agents'), 'pages' => ['ai_agents.php']],
             ['href' => '/ai-models', 'icon' => 'fas fa-microchip', 'label' => 'sidebar.item_ai_models', 'show' => $isAdmin && $pluginOn('ai-models'), 'pages' => ['ai_models.php']],
             ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => 'sidebar.item_ai_cloud', 'show' => $isAdmin && $pluginOn('ai-cloud'), 'pages' => ['ai_cloud.php']],
             ...PluginManager::dynamicSidebarItems($isAdmin, 'ai'),

@@ -53,6 +53,42 @@ class DestinationRegistry {
         return $mod ? $mod->getOptions() : [];
     }
 
+    /** Table => prefixes of its destination columns (<prefix>_type, <prefix>_id). */
+    public const DEST_COLUMNS = [
+        'pbx_dids' => ['dest'], 'pbx_ivr_entries' => ['dest'], 'pbx_ivrs' => ['timeout_dest', 'invalid_dest'],
+        'pbx_time_conditions' => ['match_dest', 'nomatch_dest'], 'pbx_announcements' => ['post_dest'],
+        'pbx_boss_secretary_groups' => ['fallback_dest'], 'pbx_ring_groups' => ['fallback_dest'],
+        'pbx_ivr_data_steps' => ['found_dest', 'not_found_dest', 'timeout_dest'], 'pbx_web_widgets' => ['dest'],
+        'pbx_ai_apps' => ['dest'], 'pbx_ai_agents' => ['handover_dest', 'fallback_dest'],
+    ];
+
+    /**
+     * How many places send calls to $type/$id: every destination column of
+     * DEST_COLUMNS and the rules of time conditions. A table of a feature that
+     * is not installed counts as none.
+     */
+    public static function usageCount(string $type, string $id): int {
+        $db = \getDB();
+        $n = 0;
+        foreach (self::DEST_COLUMNS as $table => $prefixes) {
+            foreach ($prefixes as $p) {
+                try {
+                    $st = $db->prepare("SELECT COUNT(*) FROM {$table} WHERE {$p}_type = ? AND {$p}_id = ?");
+                    $st->execute([$type, $id]);
+                    $n += (int) $st->fetchColumn();
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+        try {
+            $st = $db->prepare('SELECT COUNT(*) FROM pbx_time_conditions WHERE rules_json REGEXP ?');
+            $st->execute(['"(match|nomatch)_dest_type":"' . preg_quote($type) . '","(match|nomatch)_dest_id":"?' . preg_quote($id) . '"?[,}]']);
+            $n += (int) $st->fetchColumn();
+        } catch (\Throwable $e) {
+        }
+        return $n;
+    }
+
     /**
      * Resolve a stored dest_type/dest_id pair to its current human-readable name
      * (e.g. 'queue' + 'queue_cc' -> "CM (queue_cc)"). Returns null if the module is

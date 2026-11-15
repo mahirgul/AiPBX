@@ -108,6 +108,7 @@ return [
     '/ai-models'       => ['controller' => AiModelsController::class, 'action' => 'index', 'module' => 'ai_models.php'],
     '/ai-cloud'        => ['controller' => AiCloudController::class, 'action' => 'index', 'module' => 'ai_cloud.php'],
     '/ai-apps'         => ['controller' => AiAppsController::class, 'action' => 'index', 'module' => 'ai_apps.php'],
+    '/ai-agents'       => ['controller' => AiAgentsController::class, 'action' => 'index', 'module' => 'ai_agents.php'],
     '/assistant'       => ['controller' => AssistantController::class, 'action' => 'index', 'module' => 'assistant.php'],
     '/plugins'         => ['controller' => PluginsController::class, 'action' => 'index', 'module' => 'plugins.php'],
     '/api-keys'        => ['controller' => ApiKeysController::class, 'action' => 'index', 'module' => 'api_keys.php'],

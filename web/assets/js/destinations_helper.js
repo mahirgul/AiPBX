@@ -54,3 +54,15 @@ function bindDestinationSelector(typeSelectId, idSelectId) {
         });
     }
 }
+
+/**
+ * A type select with data-dest-target="<id select>" (and data-dest-selected)
+ * needs no script of its own: it is bound and filled when the page loads.
+ */
+function initDestinationPairs(root = document) {
+    root.querySelectorAll('select[data-dest-target]').forEach(function (typeEl) {
+        bindDestinationSelector(typeEl.id, typeEl.dataset.destTarget);
+        loadDestinationOptions(typeEl.id, typeEl.dataset.destTarget, typeEl.dataset.destSelected || '');
+    });
+}
+initDestinationPairs();

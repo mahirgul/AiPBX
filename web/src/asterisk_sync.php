@@ -185,6 +185,7 @@ const PENDING_SYNC_DOMAIN_MAP = [
     'permissions'       => 'syncPermissions',
     'widgets'           => 'syncWidgets',
     'ai_apps'           => 'syncAiApps',
+    'ai_agents'         => 'syncAiAgents',
     'custom_dialplan'   => 'syncCustomDialplan',
     'advanced_pjsip'    => 'syncAdvancedPjsip',
     'readdress'         => 'syncReaddress',
@@ -350,6 +351,7 @@ require_once __DIR__ . '/sync/SyncVoicemail.php';
 require_once __DIR__ . '/sync/SyncPermissions.php';
 require_once __DIR__ . '/sync/SyncWidgets.php';
 require_once __DIR__ . '/sync/SyncAiApps.php';
+require_once __DIR__ . '/sync/SyncAiAgents.php';
 require_once __DIR__ . '/sync/SyncCustomDialplan.php';
 require_once __DIR__ . '/sync/SyncAdvancedPjsip.php';
 require_once __DIR__ . '/sync/SyncReaddress.php';

@@ -72,6 +72,7 @@ class RoleRepository extends BaseRepository
             'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all, 'plugin' => 'ai-tts'],
             'assistant'          => ['title' => 'Dialplan editor', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'ai_apps'            => ['title' => 'AI Applications', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-apps'],
+            'ai_agents'          => ['title' => 'External AI Agents', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'ai_models'          => ['title' => 'Local Models', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-models'],
             'ai_cloud'           => ['title' => 'Cloud Services', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-cloud'],
             'plugins'            => ['title' => 'Plugin Catalog', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
