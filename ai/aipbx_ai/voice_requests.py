@@ -33,7 +33,7 @@ from array import array
 from collections import OrderedDict
 from pathlib import Path
 
-from . import cloud_llm, cloud_stt, cloud_tts
+from . import cloud_llm, cloud_stt, cloud_tts, conversation
 from .models import READY, UnknownModel
 
 log = logging.getLogger("aipbx_ai.voice_requests")
@@ -219,8 +219,8 @@ def validate_config(data, manager=None):
         intent_id = intent.get("id")
         if not isinstance(intent_id, str) or not _INTENT_ID.match(intent_id):
             raise ConfigError(f"{where}id must be 1-40 characters a-z 0-9 _ -")
-        if intent_id == "none":
-            raise ConfigError(f"{where}id 'none' is reserved")
+        if intent_id in ("none", "_end"):
+            raise ConfigError(f"{where}id '{intent_id}' is reserved")
         if intent_id in seen:
             raise ConfigError(f"{where}id {intent_id} is used twice")
         seen.add(intent_id)
@@ -232,6 +232,16 @@ def validate_config(data, manager=None):
             raise ConfigError(f"{where}needs at least one keyword or example")
         out.append(item)
     config["intents"] = out
+    # Conversation: several turns with the cloud language model (conversation.py).
+    if data.get("conversation") is True:
+        if config["understand"] != "cloud" or not config.get("llm_cloud"):
+            raise ConfigError("a conversation needs a cloud language model (understand: cloud)")
+        try:
+            config.update(conversation.validate(
+                data, lambda url: cloud_llm.assert_public_url(url, resolve=False)))
+        except conversation.ConversationError as e:
+            raise ConfigError(str(e)) from None
+        config["conversation"] = True
     return config
 
 
@@ -383,7 +393,15 @@ class AppStore:
         pcm = self.cached(app_id, version, key)
         if pcm is not None:
             return pcm
-        text = self.prompt_text(config, key)
+        pcm = self.speech(app_id, config, self.prompt_text(config, key))
+        with self._mu:
+            if self._version.get(app_id) == version:
+                self._cache[(app_id, version, key)] = pcm
+        return pcm
+
+    def speech(self, app_id, config, text):
+        """Any text in the application's voice as 8 kHz PCM (b"" for an empty text), not cached:
+        the prompts, and the answers of a conversation. Raises what ModelManager.synthesize raises."""
         pcm = b""
         if text:
             if config["tts_model"].startswith("cloud:"):
@@ -400,9 +418,6 @@ class AppStore:
                 pcm = bytes(self.manager.synthesize(config["tts_model"], text, config["speed"], SAMPLE_RATE))
             if len(pcm) % 2:
                 pcm = pcm[:-1]
-        with self._mu:
-            if self._version.get(app_id) == version:
-                self._cache[(app_id, version, key)] = pcm
         return pcm
 
     def warm(self, app_id, version, config):

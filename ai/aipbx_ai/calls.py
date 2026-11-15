@@ -63,6 +63,7 @@ import urllib.request
 import uuid
 from collections import deque
 
+from . import cloud_llm, conversation
 from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
@@ -525,6 +526,8 @@ class CallRegistry:
         result = self.results.get(call_uuid)
         if result is None:
             return ""
+        if result.get("result") == "ended":
+            return "_end"              # conversation said goodbye: the dialplan hangs up
         return result.get("intent") or "none"
 
     def _reserve(self, session, limit):
@@ -852,6 +855,7 @@ class VoiceRequestsCall:
         self.matched = None            # the intent dict
         self.reply_started = None      # monotonic
         self.speech_end = None         # monotonic arrival of the last loud frame of the last attempt
+        self.history = []              # conversation mode: (role, text)
         self._mu = threading.Lock()
         self._current = None           # the prompt being sent by the pump
         self._stop_pump = threading.Event()
@@ -1046,7 +1050,6 @@ class VoiceRequestsCall:
         """The request in what the caller said (intents.match result shape)."""
         mode = cfg.get("understand", "auto")
         if mode == "cloud" and cfg.get("llm_cloud"):
-            from . import cloud_llm
             started = time.monotonic()
             try:
                 c = cloud_llm.classify(cfg["llm_cloud"], text, cfg["intents"])
@@ -1127,6 +1130,8 @@ class VoiceRequestsCall:
     def _run(self):
         session, cfg = self.session, self.config
         try:
+            if cfg.get("conversation"):
+                return self._converse()
             played, pre = self.play_interruptible(session.pcm)
             if not played:
                 return self.save("hangup")
@@ -1152,21 +1157,97 @@ class VoiceRequestsCall:
                 heard = any(a["speech_seconds"] for a in self.attempts)
                 result = "not_understood" if heard else "silence"
                 pcm = self.prompt("not_understood")
-            played = self.play(pcm, mark_reply=True)
-            if not played:
-                return self.save("hangup")
-            self.save(result)
-            if self.reader.gone.wait(TAIL_SECONDS):       # silence frames go on meanwhile
-                return result
-            self._stop_pump.set()
-            self._pump_thread.join(1.0)
-            self.conn.sendall(message(KIND_HANGUP))
-            self.reader.gone.wait(1.0)
-            return result
+            return self._finish(pcm, result)
         except OSError:
             if not self.saved:
                 self.save("hangup")
             return "hangup"
+
+    def _finish(self, pcm, result):
+        """The last words, the result saved, then "terminate": the dialplan goes on."""
+        if not self.play(pcm, mark_reply=True):
+            return self.save("hangup")
+        self.save(result)
+        if self.reader.gone.wait(TAIL_SECONDS):       # silence frames go on meanwhile
+            return result
+        self._stop_pump.set()
+        self._pump_thread.join(1.0)
+        self.conn.sendall(message(KIND_HANGUP))
+        self.reader.gone.wait(1.0)
+        return result
+
+    # ---- conversation mode ----------------------------------------------
+
+    def speak(self, text):
+        """A text of the conversation in the application's voice; b"" when it cannot be made."""
+        try:
+            return self.registry.apps.speech(self.session.app, self.config, text)
+        except Exception as e:  # noqa: BLE001
+            log.warning("call app=%d: speech failed (%s)", self.session.app, type(e).__name__)
+            return b""
+
+    def lookup(self, tool, query):
+        """One of the application's lookups, as the text the model reads; ValueError on failure."""
+        s = self.session
+        t = next(t for t in self.config["tools"] if t["name"] == tool)
+        url = lookup_url(t["url"], s.caller, s.did, s.app)
+        url += ("&" if "?" in url else "?") + urllib.parse.urlencode({"q": query})
+        return json.dumps(fetch_values(url), ensure_ascii=False)
+
+    def _converse(self):
+        """greeting -> (listen -> model step -> answer)* -> transfer, goodbye or the application's destination."""
+        session, cfg = self.session, self.config
+        lang = cfg.get("language") or "tr"
+        played, pre = self.play_interruptible(session.pcm)
+        if not played:
+            return self.save("hangup")
+        quiet = 0
+        for _ in range(cfg["max_turns"]):
+            attempt = self.listen(pre)
+            pre = None
+            if attempt is None:
+                return self.save("hangup")
+            self.attempts.append(attempt)
+            text = attempt["transcript"]
+            if attempt["dtmf"]:
+                text = (text + " " if text else "") + f"(pressed the key {attempt['dtmf']})"
+            if not text:
+                quiet += 1
+                if quiet > cfg["retries"]:
+                    break
+                played, pre = self.play_interruptible(self.prompt("retry"))
+                if not played:
+                    return self.save("hangup")
+                continue
+            quiet = 0
+            session.transcript = text
+            self.history.append(("caller", text))
+            started = time.monotonic()
+            try:
+                step = conversation.next_step(cfg, self.history, lang, self.lookup)
+            except cloud_llm.CloudLlmError as e:
+                log.warning("call app=%d: conversation model failed (%s): to the destination", session.app, e)
+                break
+            attempt["step"] = step["action"]
+            log.info("call app=%d: conversation step %s in %d ms", session.app, step["action"],
+                     int((time.monotonic() - started) * 1000))
+            if step["action"] == "reply":
+                self.history.append(("assistant", step["say"]))
+                played, pre = self.play_interruptible(self.speak(step["say"]))
+                if not played:
+                    return self.save("hangup")
+                continue
+            if step["say"]:
+                self.history.append(("assistant", step["say"]))
+            if step["action"] == "end":
+                return self._finish(self.speak(step["say"]), "ended")
+            if step["intent"]:
+                self.matched = next(i for i in cfg["intents"] if i["id"] == step["intent"])
+                session.intent = self.matched["id"]
+                return self._finish(self.speak(step["say"]) or self.prompt("reply:" + session.intent), "matched")
+            return self._finish(self.speak(step["say"]) or self.prompt("not_understood"), "not_understood")
+        heard = any(a["speech_seconds"] for a in self.attempts)
+        return self._finish(self.prompt("not_understood"), "not_understood" if heard else "silence")
 
     saved = False
 
@@ -1187,6 +1268,8 @@ class VoiceRequestsCall:
             "dtmf": "".join(s.dtmf), "result": result, "audio": False,
             "attempts": self.attempts, "timings": timings,
         }
+        if self.history:
+            record["conversation"] = [{"role": r, "text": t} for r, t in self.history]
         self.registry.results.save(record, self.audio)
         self.saved = True
         log.info("call app=%d caller=%s voice_requests result=%s intent=%s score=%.2f transcripts=%s %s",

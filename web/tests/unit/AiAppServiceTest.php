@@ -144,6 +144,40 @@ final class AiAppServiceTest extends TestCase
         $this->assertTrue($barge['barge_in']);
     }
 
+    public function testConversationSettingsAndDialplan(): void
+    {
+        $form = self::requestsForm() + ['conversation' => '1', 'instructions' => 'Open 9-18.', 'max_turns' => '40',
+            'tools' => "order | order status | https://crm.example.com/o\n\n"];
+        try {
+            AiAppService::validate($form);
+            $this->fail('a conversation without a cloud model');
+        } catch (\Exception $e) {
+            $this->assertStringContainsString('cloud', $e->getMessage());
+        }
+        $c = AiAppService::validateConversation($form, 'cloud:openai');
+        $this->assertSame([true, 12, [['name' => 'order', 'description' => 'order status', 'url' => 'https://crm.example.com/o']]],
+            [$c['conversation'], $c['max_turns'], $c['tools']]);
+        foreach (['x | y', 'Bad Name | y | https://h.example.com', 'a | y | ftp://h', 'a | y | http://127.0.0.1/x',
+                  'a | y | http://192.168.1.5/x', 'a | y | http://localhost/x', "a | y | https://h.example.com\na | z | https://h.example.com"] as $bad) {
+            try {
+                AiAppService::validateConversation(['conversation' => '1', 'tools' => $bad], 'cloud:openai');
+                $this->fail('accepted ' . $bad);
+            } catch (\Exception $e) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        $this->assertSame(['conversation' => false], AiAppService::validateConversation([], 'auto'));
+
+        // Without a usable cloud model (not set up, or over its limit) the service gets no conversation.
+        $app = ['id' => 9, 'title' => 'Resepsiyon', 'model_id' => 'ema-lightning', 'speed' => '1', 'dest_type' => 'hangup', 'dest_id' => '', 'max_concurrent' => 4,
+            'app_type' => 'voice_requests', 'config' => json_encode(['greeting' => 'Hi', 'stt_model' => 'vosk-tr-small', 'understand' => 'auto',
+            'intents' => [], 'conversation' => true, 'tools' => []])];
+        $this->assertArrayNotHasKey('conversation', AiAppService::serviceConfig($app));
+        $conf = buildAiAppsDialplan([$app], str_repeat('cd', 32));
+        $this->assertStringContainsString('GotoIf($["${AI_INTENT}" = "_end"]?conv_end)', $conf);
+        $this->assertStringContainsString('same => n(conv_end),NoOp(AI application 9: conversation ended)', $conf);
+    }
+
     public function testPushAppsPutsAndDeletes(): void
     {
         $tok = tempnam(sys_get_temp_dir(), 'tok');

@@ -86,6 +86,11 @@ class FakeBackend:
         return {"text": self.texts.pop(0) if self.texts else "", "seconds": 1.0}
 
 
+def cloud_llm_error():
+    from aipbx_ai.cloud_llm import CloudLlmError
+    return CloudLlmError("timeout")
+
+
 def spec(id, kind):
     return ModelSpec(id=id, title=id, kind=kind, languages=("tr",), license="Apache-2.0",
                      license_url="https://example.invalid", homepage="https://example.invalid",
@@ -627,6 +632,76 @@ class VoiceRequestsTest(unittest.TestCase):
         self.wait_done(c, timeout=20)
         self.assertGreaterEqual(self.greeting_seconds(c), 2.9)
         self.assertEqual(self.details(u)[1]["attempts"][0]["reason"], "silence")
+
+    # ---- conversation -------------------------------------------------------
+
+    def conversation_call(self, steps, **over):
+        from unittest import mock
+        steps = list(steps)
+        prompts = []
+
+        def answer(cfg, text, post=None):
+            prompts.append(text)
+            step = steps.pop(0)
+            if isinstance(step, Exception):
+                raise step
+            return json.dumps(step)
+        patcher = mock.patch("aipbx_ai.cloud_llm.answer_text", side_effect=answer)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        cfg = dict(conversation=True, understand="cloud", retries=0,
+                   llm_cloud={"provider": "openai", "api_key": "sk-test-1234567890"},
+                   instructions="Kahvaltı 07-10 arası.",
+                   tools=[{"name": "oda", "description": "oda bilgisi", "url": "https://crm.example.com/room"}])
+        cfg.update(over)
+        u, c = self.call(**cfg)
+        return u, c, prompts
+
+    def test_conversation_answers_then_transfers(self):
+        self.stt.texts = ["kahvaltı saat kaçta", "bir de havlu lazım"]
+        u, c, prompts = self.conversation_call([
+            {"action": "reply", "say": "Kahvaltı yedi ile on arası."},
+            {"action": "transfer", "intent": "towels", "say": "Havlunuz geliyor."}])
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.assertTrue(c.wait_prompts(2))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(c.prompts(), [self.value(hotel_config()["greeting"]), self.value("Kahvaltı yedi ile on arası."),
+                                       self.value("Havlunuz geliyor.")])
+        self.assertEqual(self.result(u), "towels")                  # the dialplan goes to the request's destination
+        data = self.details(u)[1]
+        self.assertEqual([m["role"] for m in data["conversation"]], ["caller", "assistant", "caller", "assistant"])
+        self.assertIn("Caller: kahvaltı saat kaçta", prompts[1])
+        self.assertIn("You: Kahvaltı yedi ile on arası.", prompts[1])
+
+    def test_conversation_lookup_and_goodbye(self):
+        from unittest import mock
+        self.stt.texts = ["oda 12 temizlendi mi"]
+        asked = []
+        with mock.patch("aipbx_ai.calls.fetch_values", side_effect=lambda url: asked.append(url) or {"temiz": "evet"}):
+            u, c, prompts = self.conversation_call([
+                {"action": "lookup", "tool": "oda", "query": "12"},
+                {"action": "end", "say": "Odanız temiz. İyi günler."}])
+            self.assertTrue(c.wait_prompts(1))
+            c.speak(0.8)
+            self.wait_done(c)
+        self.assertEqual(self.result(u), "_end")                    # goodbye: the dialplan hangs up
+        self.assertIn("caller=101", asked[0])
+        self.assertTrue(asked[0].endswith("&q=12"))
+        self.assertIn('oda("12") -> {"temiz": "evet"}', prompts[1])
+
+    def test_conversation_model_failure_goes_to_the_destination(self):
+        self.stt.texts = ["merhaba"]
+        u, c, _ = self.conversation_call([cloud_llm_error()])
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(self.result(u), "none")
+        self.assertEqual(self.details(u)[1]["result"], "not_understood")
+
+    def test_conversation_needs_a_cloud_model(self):
+        self.assertEqual(self.put_app(conversation=True)[0], 400)
 
     def test_dtmf_after_speech_keeps_the_utterance(self):
         self.stt.texts = ["havlu"]

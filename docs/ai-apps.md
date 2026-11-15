@@ -96,6 +96,34 @@ kept by the AI service for 24 hours (the request list keeps the text). Technical
 [Local AI models → Voice requests](local-ai.md#voice-requests-voice_requests).
 
 
+### Conversation
+
+With **Conversation (several turns)** a voice-requests application talks with the caller instead of
+taking one request. It needs a cloud language model under **Understanding** (*AI → Cloud
+services*). Each turn the model gets:
+
+- the **instructions and company facts** written for the application (who you are, opening
+  hours, prices, rules) — it says nothing that is not there or in a lookup answer;
+- the **requests** it may hand the call to (their names and examples);
+- the **lookups**: up to 5 addresses of your own system, one per line
+  `name | what it answers | https://address`. The assistant asks them with GET and the same
+  parameters as announcement lookups (`caller`, `did`, `app`) plus `q` = what it looks up, and reads
+  the JSON answer (at most two lookups per turn). Only addresses on the internet: the service runs on
+  the PBX and does not ask its own network;
+- the conversation so far.
+
+It then answers aloud (and listens again), hands the call to a request — or to the application's
+destination when it cannot help, the caller asks for a person, or it is unsure — or says goodbye
+and hangs up. Barge-in, if on, works for its answers too. After **At most (turns)** without an end,
+or when the model cannot be reached or is over its [monthly limit](cloud-ai.md#monthly-limits), the
+call goes to the application's destination; over the limit the application works as single
+requests by keywords until the next month.
+
+What the caller says, the facts above and the lookup answers go to the cloud provider: say so in
+the greeting or in the [call announcement](privacy.md) where the law asks for it. The request log
+keeps what the caller said; the whole conversation, the answers too, is in the call's record of the
+AI service (`GET /v1/calls/<uuid>`).
+
 ## Routing by speech
 
 A switchboard that listens: "Hello, which department would you like to speak to?" — the caller

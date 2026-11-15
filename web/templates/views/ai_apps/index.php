@@ -128,6 +128,16 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                 <div class="form-group"><label class="u-check-label-6 u-mt-32">
                     <input type="checkbox" name="barge_in" id="ai_barge" value="1" class="u-accent"> <?php echo t('ai_apps.field_barge_in'); ?></label>
                     <small class="u-hint u-fs-11"><?php echo t('ai_apps.barge_in_help'); ?></small></div>
+                <div class="form-group"><label class="u-check-label-6 u-mt-32">
+                    <input type="checkbox" name="conversation" id="ai_conv" value="1" class="u-accent"> <?php echo t('ai_apps.field_conversation'); ?></label>
+                    <small class="u-hint u-fs-11"><?php echo t('ai_apps.conversation_help'); ?></small></div>
+                <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_max_turns'); ?></label>
+                    <input type="number" name="max_turns" id="ai_turns" class="form-control" min="2" max="12" value="6"></div>
+                <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_instructions'); ?></label>
+                    <textarea name="instructions" id="ai_instructions" class="form-control" rows="4" maxlength="4000" placeholder="<?php echo $h(t('ai_apps.instructions_placeholder')); ?>"></textarea></div>
+                <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_tools'); ?></label>
+                    <textarea name="tools" id="ai_tools" class="form-control u-mono" rows="3" placeholder="order | <?php echo $h(t('ai_apps.tools_example')); ?> | https://crm.example.com/aipbx/order"></textarea>
+                    <small class="u-hint u-fs-11"><?php echo t('ai_apps.tools_help'); ?></small></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_understand'); ?></label>
                     <select name="understand" id="ai_understand" class="form-control">
                         <option value="auto"><?php echo t('ai_apps.understand_auto'); ?></option>
@@ -215,6 +225,9 @@ function aiAppEdit(a) {
     f('ai_greeting', c.greeting || ''); f('ai_retry', c.retry || ''); f('ai_nu', c.not_understood || '');
     f('ai_listen', c.listen_seconds || 7); f('ai_retries', c.retries == null ? 1 : c.retries); f('ai_threshold', c.threshold == null ? 0.5 : c.threshold);
     document.getElementById('ai_barge').checked = !!c.barge_in;
+    document.getElementById('ai_conv').checked = !!c.conversation;
+    f('ai_turns', c.max_turns || 6); f('ai_instructions', c.instructions || '');
+    f('ai_tools', (c.tools || []).map(t => t.name + ' | ' + t.description + ' | ' + t.url).join('\n'));
     const st = document.getElementById('ai_stt');
     if (c.stt_model && ![...st.options].some(o => o.value === c.stt_model)) st.add(new Option(c.stt_model, c.stt_model));
     st.value = c.stt_model || 'engine:tr';

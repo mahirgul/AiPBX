@@ -243,9 +243,50 @@ class AiAppService
             'retries' => max(0, min(2, (int) ($d['retries'] ?? 1))),
             'barge_in' => !empty($d['barge_in']),
             'threshold' => max(0.0, min(1.0, round((float) ($d['threshold'] ?? 0.5), 2))),
-            'understand' => self::validUnderstand((string) ($d['understand'] ?? 'auto')),
+            'understand' => $understand = self::validUnderstand((string) ($d['understand'] ?? 'auto')),
             'intents' => $intents,
-        ];
+        ] + self::validateConversation($d, $understand);
+    }
+
+    /**
+     * Conversation mode: several turns with the cloud language model (ai/aipbx_ai/conversation.py).
+     * Lookups: one per line, "name | what it answers | https://address".
+     */
+    public static function validateConversation(array $d, string $understand): array
+    {
+        if (empty($d['conversation'])) {
+            return ['conversation' => false];
+        }
+        if (!str_starts_with($understand, 'cloud:')) {
+            throw new \Exception(t('ai_apps.err_conversation_cloud'));
+        }
+        $instructions = trim((string) ($d['instructions'] ?? ''));
+        if (mb_strlen($instructions) > 4000) {
+            throw new \Exception(sprintf(t('ai_apps.err_text'), 4000));
+        }
+        $tools = [];
+        foreach (preg_split('/\R/', (string) ($d['tools'] ?? '')) ?: [] as $line) {
+            if (trim($line) === '') {
+                continue;
+            }
+            $parts = array_map('trim', explode('|', $line));
+            $name = strtolower($parts[0]);
+            $url = (string) ($parts[2] ?? '');
+            // The AI service asks only addresses on the internet (no own network: it runs on the PBX).
+            $host = trim((string) parse_url($url, PHP_URL_HOST), '[]');
+            $ownNetwork = $host === '' || strcasecmp($host, 'localhost') === 0 || (filter_var($host, FILTER_VALIDATE_IP)
+                && !filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE));
+            if (count($parts) !== 3 || $ownNetwork || !preg_match('/^[a-z0-9_]{1,30}$/', $name) || $parts[1] === '' || mb_strlen($parts[1]) > 300
+                || !preg_match('#^https?://[^\s|]+$#', $url) || strlen($url) > 500 || isset($tools[$name])) {
+                throw new \Exception(sprintf(t('ai_apps.err_tool'), mb_substr($line, 0, 60)));
+            }
+            $tools[$name] = ['name' => $name, 'description' => $parts[1], 'url' => $url];
+        }
+        if (count($tools) > 5) {
+            throw new \Exception(sprintf(t('ai_apps.err_tool'), '> 5'));
+        }
+        return ['conversation' => true, 'instructions' => $instructions,
+            'max_turns' => max(2, min(12, (int) ($d['max_turns'] ?? 6))), 'tools' => array_values($tools)];
     }
 
     /**
@@ -413,6 +454,11 @@ class AiAppService
             } else {
                 $understand = 'auto';
             }
+        }
+        // A conversation needs the cloud model: over its limit the application answers one request, by keywords.
+        if (!empty($c['conversation']) && isset($extra['llm_cloud'])) {
+            $extra += ['conversation' => true, 'instructions' => (string) ($c['instructions'] ?? ''),
+                'max_turns' => (int) ($c['max_turns'] ?? 6), 'tools' => $c['tools'] ?? []];
         }
         return $extra + [
             'type' => 'voice_requests',

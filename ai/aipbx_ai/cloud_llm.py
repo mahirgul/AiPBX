@@ -211,6 +211,11 @@ def _answer_text(cfg, text, post):
         raise CloudLlmError("no answer") from None
 
 
+def answer_text(cfg, text, post=_post):
+    """The model's raw answer to one instruction; CloudLlmError when unusable."""
+    return _answer_text(cfg, text, post)
+
+
 def classify(cfg, transcript, intents, post=_post):
     """{"intent": id or None, "confidence": 0..1}; CloudLlmError when unusable."""
     raw = _answer_text(cfg, prompt(transcript, intents), post)

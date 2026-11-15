@@ -143,6 +143,11 @@ function buildVoiceRequestsContext(array $a, string $key): string {
             $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"{$iid}\"]?req_{$iid})\n";
         }
     }
+    $conversation = $key !== '' && !empty(AiAppService::config($a)['conversation']);
+    if ($conversation) {
+        // The conversation said goodbye: nothing more to do.
+        $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"_end\"]?conv_end)\n";
+    }
     $c .= " same => n(fallback),NoOp(AI application {$id}: not understood or not available \${AI_INTENT})\n";
     $c .= buildDestinationLines((string) $a['dest_type'], (string) $a['dest_id']) . "\n";
     $c .= " same => n,Hangup()\n";
@@ -152,6 +157,10 @@ function buildVoiceRequestsContext(array $a, string $key): string {
         if (($i['dest_type'] ?? '') !== '') {
             $c .= buildDestinationLines((string) $i['dest_type'], (string) $i['dest_id']) . "\n";
         }
+        $c .= " same => n,Hangup()\n";
+    }
+    if ($conversation) {
+        $c .= " same => n(conv_end),NoOp(AI application {$id}: conversation ended)\n";
         $c .= " same => n,Hangup()\n";
     }
     return $c . "\n";
