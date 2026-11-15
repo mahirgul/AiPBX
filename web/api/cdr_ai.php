@@ -46,6 +46,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $lang = in_array($sysLang, ['tr', 'de', 'en'], true) ? $sysLang : 'tr';
     }
     $item = CdrAiService::forCdr($id, $lang, !empty($_POST['force']));
+    if ($item !== null) {
+        // The words of a recorded call were read out (maybe by a cloud service): who, which call, which engine.
+        writeAuditLog(null, 'cdr', $id, 'Call record: ' . $cdr['caller_num'] . ' transcribed (' . $item['engine'] . ')', 'create', $user['id'] ?? null);
+    }
     echo json_encode([
         'ok' => $item !== null,
         'item' => $item,

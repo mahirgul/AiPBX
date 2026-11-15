@@ -11,6 +11,16 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.79.2
+
+### 🐛 Fixes
+
+- **Masked SIP `.pcap` slice in diagnostic bundles (`conf/sbin/aipbx-diag`):** when SIP capture files are enabled, `aipbx-diag` now slices matching packets from the recording window (`±60 s`, up to `50 MB`), masks credentials, digest responses, and 7+ digit phone numbers inside UDP SIP payloads, recalculates IPv4/IPv6 and UDP lengths, and embeds `sip.pcap` into the ZIP archive (`scripts/test_aipbx_diag.py`).
+- **SIP capture file start/end timestamps (`SipCaptureService`):** reads the first packet's UTC timestamp from `.pcap` files instead of relying solely on the server-local filename timestamp, and sorts capture files by filename.
+- **Unified SIP capture settings location (`Troubleshooting → SIP capture settings`):** removed the duplicate Signaling tab from `PBX settings` (`/asterisk-settings`), updated links on `Reports → Call quality` (`/call-quality`) to point to `/sip-capture-settings`, and synced `docs/signaling.md`, `docs/call-quality.md`, `docs/README.md`, and all 23 translations.
+- **CDR AI transcription audit & recording retention purge (`cdr_ai.php`, `CdrAiService`, `PrivacyDataSubjectHelper`):** logs an audit entry when a recorded call is transcribed, deletes `cdr_ai` transcripts alongside expired call recordings during retention purge, and removes redundant runtime `ensureTable()` DDL.
+- **AI voice-agent roadmap (`docs/roadmap.md`):** recorded completed Phase 1 (`v1.79.0` / `v1.79.1`) items and planned Phase 2 & Phase 3 milestones.
+
 ## 1.79.1
 
 ### 🐛 Fixes

@@ -50,5 +50,53 @@ class MaskTest(unittest.TestCase):
                 diag.main(argv)
 
 
+
+class CaptureSliceTest(unittest.TestCase):
+    """The recording's SIP messages from the files aipbx-signaling writes, masked."""
+
+    def setUp(self):
+        import tempfile
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'signaling'))
+        from aipbx_signaling.pcap import PcapWriter
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        diag.CAPTURE_DIR = self.tmp.name
+        w = PcapWriter(self.tmp.name)
+        w.configure(True, 10, 2048)
+        invite = ('INVITE sip:05321112233@pbx SIP/2.0\r\nFrom: <sip:1001@pbx>;tag=a\r\n'
+                  'Authorization: Digest username="1001", response="0123456789abcdef"\r\n\r\n').encode()
+        self.t0 = 1794686914
+        for ts, src in ((self.t0 - 3600, ('10.0.0.5', 5060)), (self.t0, ('10.0.0.5', 5060)), (self.t0 + 5, ('2001:db8::5', 5062))):
+            w.write({'ts': ts, '_payload': invite, '_src': src, '_dst': ('10.0.0.1', 5060)})
+        w.close()
+
+    def packets(self, pcap):
+        import struct
+        out, pos = [], 24
+        while pos < len(pcap):
+            _s, _u, incl, _o = struct.unpack('<IIII', pcap[pos:pos + 16])
+            out.append(pcap[pos + 16:pos + 16 + incl])
+            pos += 16 + incl
+        return out
+
+    def test_only_the_recording_time_masked_with_right_lengths(self):
+        import struct
+        pcap = diag.capture_slice(self.t0, self.t0 + 10)
+        pkts = self.packets(pcap)
+        self.assertEqual(len(pkts), 2)  # the one an hour before is left out
+        for pkt in pkts:
+            head = (pkt[0] & 0x0F) * 4 if pkt[0] >> 4 == 4 else 40
+            sip = pkt[head + 8:]
+            self.assertIn(b'sip:053211xxxxx@pbx', sip)
+            self.assertIn(b'response="***"', sip)
+            self.assertNotIn(b'0123456789abcdef', sip)
+            self.assertEqual(struct.unpack('!H', pkt[head + 4:head + 6])[0], 8 + len(sip))
+            ip_len = struct.unpack('!H', pkt[2:4])[0] if head == 20 else 40 + struct.unpack('!H', pkt[4:6])[0]
+            self.assertEqual(ip_len, len(pkt))
+
+    def test_nothing_without_capture_files(self):
+        diag.CAPTURE_DIR = os.path.join(self.tmp.name, 'none')
+        self.assertIsNone(diag.capture_slice(self.t0, self.t0 + 10))
+
 if __name__ == '__main__':
     unittest.main()

@@ -48,7 +48,6 @@ class AsteriskSettingsController extends BaseController
             'ring_sound_options' => $ring_sound_options,
             'active_codecs' => $active_codecs,
             'active_wired_codecs' => $active_wired_codecs,
-            'signaling_status' => AsteriskSettingsService::signalingStatus(),
             'vm_settings' => VoicemailPolicy::settings(),
             'vm_weak_pins' => VoicemailPolicy::weakPinCount(),
             'system_timezone' => RegionSettingsService::systemTimezone(),

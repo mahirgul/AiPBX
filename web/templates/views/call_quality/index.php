@@ -15,7 +15,7 @@ $badge = fn(string $level) => ['poor' => 'badge-danger', 'fair' => 'badge-warnin
     <div class="u-p-0-4-8">
         <?php if (!$status['capture']): ?>
             <p class="u-warning"><strong><?php echo t('call_quality.capture_off'); ?></strong>
-                <a href="/asterisk-settings"><?php echo t('call_quality.capture_off_link'); ?> →</a></p>
+                <a href="/sip-capture-settings"><?php echo t('call_quality.capture_off_link'); ?> →</a></p>
         <?php elseif ($status['last_rtcp'] === null): ?>
             <p class="u-warning"><?php echo t('call_quality.no_reports'); ?></p>
         <?php else: ?>

@@ -78,10 +78,6 @@ class AsteriskSettingsService {
             'amd_between_words_silence'   => '50',
             'amd_maximum_number_of_words' => '2',
             'amd_silence_threshold'       => '256',
-
-            // Signaling capture (SIP ladder + RTCP quality) into the local daemon: off by default.
-            'signaling_capture'        => '0',
-            'signaling_retention_days' => '30',
             'status_prompt_busy'       => '0',
             'status_prompt_noanswer'   => '0',
             'status_prompt_unavail'    => '0',
@@ -107,17 +103,6 @@ class AsteriskSettingsService {
             // 10-Minute SIP Debug
             'sip_debug_until' => '0',
         ];
-    }
-
-    /** Rows captured in the last 24 hours and the newest one, for the settings page. */
-    public static function signalingStatus(): array
-    {
-        try {
-            $r = getDB()->query('SELECT COUNT(*) AS n, MAX(ts) AS last FROM pbx_signaling_events WHERE ts >= NOW() - INTERVAL 1 DAY')->fetch(PDO::FETCH_ASSOC);
-            return ['rows' => (int) ($r['n'] ?? 0), 'last' => $r['last'] ?? null];
-        } catch (\Throwable $e) {
-            return ['rows' => 0, 'last' => null];
-        }
     }
 
     /**
@@ -239,8 +224,6 @@ class AsteriskSettingsService {
             'status_prompt_busy'       => (($post['status_prompt_busy'] ?? '0') === '1') ? '1' : '0',
             'status_prompt_noanswer'   => (($post['status_prompt_noanswer'] ?? '0') === '1') ? '1' : '0',
             'status_prompt_unavail'    => (($post['status_prompt_unavail'] ?? '0') === '1') ? '1' : '0',
-            'signaling_capture'        => (($post['signaling_capture'] ?? '0') === '1') ? '1' : '0',
-            'signaling_retention_days' => (string)max(1, min(3650, intval($post['signaling_retention_days'] ?? 30))),
 
             // SIP Timers & Max-Forwards
             'pjsip_max_forwards' => (string)max(1, min(255, intval($post['pjsip_max_forwards'] ?? 70))),
@@ -260,7 +243,6 @@ class AsteriskSettingsService {
             // Failed Registration Threshold
             'failed_reg_threshold' => (string)max(1, min(1000, intval($post['failed_reg_threshold'] ?? 10))),
         ];
-        $signaling_changed = getSystemSetting('signaling_capture', '0') !== $new_settings['signaling_capture'];
         require_once __DIR__ . '/VoicemailPolicy.php';
         $new_settings += VoicemailPolicy::fromPost($post);
 
@@ -356,15 +338,6 @@ class AsteriskSettingsService {
         markPendingSync('rtp', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('udptl', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('voicemail', 'system_setting', 'general', $label, 'update', $uid);
-
-        // Capture on/off only reloads res_hep (no call is touched), so it is applied now.
-        if ($signaling_changed) {
-            try {
-                syncSignalingCapture();
-            } catch (\Throwable $e) {
-                return ['success' => false, 'error' => t('srv_asterisk.saved') . ' ' . $e->getMessage()];
-            }
-        }
 
         try {
             $lang_changed = syncDefaultLanguage($new_settings['system_default_language']);

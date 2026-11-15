@@ -120,7 +120,9 @@ final class SipCaptureServiceTest extends TestCase
         $closed = 'sip-20261114-110000_20261114-115959.pcap';
         try {
             file_put_contents($dir . '/' . $open, 'x');
-            file_put_contents($dir . '/' . $closed, 'xy');
+            // The name is server-local time; the first packet (here 3 hours off the name) decides.
+            $first = (new \DateTime('2026-11-14 11:00:00'))->getTimestamp() + 10800;
+            file_put_contents($dir . '/' . $closed, pack('VvvlVVV', 0xA1B2C3D4, 2, 4, 0, 0, 65535, 101) . pack('VVVV', $first, 0, 0, 0));
             file_put_contents($dir . '/ignore.pcap', 'z');
 
             $files = SipCaptureService::files($dir);
@@ -129,6 +131,8 @@ final class SipCaptureServiceTest extends TestCase
             $this->assertTrue($files[0]['open']);
             $this->assertSame($closed, $files[1]['name']);
             $this->assertFalse($files[1]['open']);
+            $this->assertSame($first, $files[1]['start']);
+            $this->assertSame($first + 3599, $files[1]['end']);
 
             $this->assertSame($dir . '/' . $open, SipCaptureService::path($open, $dir));
 

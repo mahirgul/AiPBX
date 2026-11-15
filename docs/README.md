@@ -100,7 +100,7 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 | 🧠 [Local AI models (Plugin)](local-ai.md) | `ai-models` | AI models on the PBX itself (EMA Lightning Turkish TTS): the runtime, downloading models, the `aipbx-ai` service and its API |
 | 🎛️ [AI applications (Plugin)](ai-apps.md) | `ai-apps` | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | ✨ [Dialplan editor / AI assistant (Community plugin, @shido6)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, and the Echo box that answers questions from this server's own data |
-| 📡 [Signaling capture](signaling.md) | PBX settings → Signaling, Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
+| 📡 [Signaling capture](signaling.md) | Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
 | 📮 [Voicemail](voicemail.md) | PBX settings → Voicemail | Mailboxes, listening (\*97/\*98, portal, apps, e-mail), message limits and PIN rules |
 | 📈 [Call quality](call-quality.md) | Troubleshooting → Call quality | Packet loss in both directions and jitter per trunk and extension from RTCP; a health check alarms when audio is lost |
 

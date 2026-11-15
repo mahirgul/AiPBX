@@ -89,14 +89,27 @@ final class SipCaptureService
             if (!preg_match(self::NAME, basename($path), $m)) {
                 continue;
             }
-            $start = self::stampToTime($m[1]);
+            // The name is in the server's local time, which may not be the portal's time zone:
+            // the first packet gives the real start, the name only the length of the file.
             $open = empty($m[2]);
+            $start = self::firstPacketTime($path) ?? self::stampToTime($m[1]);
             $out[] = ['name' => basename($path), 'start' => $start,
-                'end' => $open ? (int) @filemtime($path) : self::stampToTime($m[2]),
+                'end' => $open ? (int) @filemtime($path) : $start + self::stampToTime($m[2]) - self::stampToTime($m[1]),
                 'size' => (int) @filesize($path), 'open' => $open];
         }
-        usort($out, fn($a, $b) => $b['start'] <=> $a['start']);
+        usort($out, fn($a, $b) => strcmp($b['name'], $a['name'])); // the names sort by time
         return $out;
+    }
+
+    private static function firstPacketTime(string $path): ?int
+    {
+        $fh = @fopen($path, 'rb');
+        if (!$fh) {
+            return null;
+        }
+        $head = (string) fread($fh, 28);
+        fclose($fh);
+        return strlen($head) === 28 && unpack('V', $head)[1] === 0xA1B2C3D4 ? unpack('V', $head, 24)[1] : null;
     }
 
     private static function stampToTime(string $stamp): int

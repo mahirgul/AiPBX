@@ -59,6 +59,31 @@ final class PrivacyServiceTest extends TestCase
         $this->assertNotEmpty(PrivacyService::settings()['last_purge_at']);
     }
 
+    /** A transcript is the recording written down: it is deleted with the recording, not with the CDR. */
+    public function testExpiredRecordingTakesItsTranscriptAlong(): void
+    {
+        $db = getDB();
+        $ids = [];
+        foreach (['old' => 200, 'new' => 1] as $tag => $days) {
+            $db->prepare("INSERT INTO asteriskcdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid, userfield)
+                VALUES (NOW() - INTERVAL ? DAY, '', '05051234567', '100', 'from-internal-pbx', 'PJSIP/tr1-01', 'PJSIP/100-01', 'Dial', 'PJSIP/100', 42, 45, 'ANSWERED', ?, ?, '')")
+                ->execute([$days, "test-ret-ai-$tag", "test-ret-ai-$tag"]);
+            $ids[$tag] = (int) $db->lastInsertId();
+            $db->prepare("INSERT INTO cdr_ai (cdr_id, call_id, transcript) VALUES (?, ?, 'hello')")->execute([$ids[$tag], "test-ret-ai-$tag"]);
+        }
+        try {
+            PrivacyService::saveRetention(['csrf_token' => 'priv', 'retention_enabled' => '1', 'ret_recordings_days' => '90',
+                'ret_voicemail_days' => '0', 'ret_fax_days' => '0', 'ret_chat_days' => '0', 'ret_cdr_days' => '0', 'ret_cdr_action' => 'anonymize']);
+            PrivacyService::runRetentionPurge();
+            $left = $db->query("SELECT call_id FROM cdr_ai WHERE call_id LIKE 'test-ret-ai-%'")->fetchAll(PDO::FETCH_COLUMN);
+            $this->assertSame(['test-ret-ai-new'], $left);
+            $this->assertSame(2, (int) $db->query("SELECT COUNT(*) FROM asteriskcdr WHERE linkedid LIKE 'test-ret-ai-%'")->fetchColumn());
+        } finally {
+            $db->exec("DELETE FROM cdr_ai WHERE call_id LIKE 'test-ret-ai-%'");
+            $db->exec("DELETE FROM asteriskcdr WHERE linkedid LIKE 'test-ret-ai-%'");
+        }
+    }
+
     public function testApplyGlobalJurisdictionPresetsAndPeriodicBeep(): void
     {
         $res = PrivacyService::applyProfile(['csrf_token' => 'priv', 'jurisdiction_profile' => 'us_two_party']);

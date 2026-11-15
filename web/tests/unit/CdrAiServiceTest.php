@@ -18,7 +18,6 @@ final class CdrAiServiceTest extends TestCase
             "SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%'"
         )->fetchAll(PDO::FETCH_KEY_PAIR);
         $db->exec("DELETE FROM asteriskcdr WHERE linkedid LIKE 'test-cdr-ai-%'");
-        CdrAiService::ensureTable();
         $db->exec("DELETE FROM cdr_ai WHERE call_id LIKE 'test-cdr-ai-%'");
         $_SESSION['user_id'] = null;
     }

@@ -17,30 +17,6 @@ require_once __DIR__ . '/RecordingStorage.php';
 class CdrAiService
 {
     private const LANG_NAMES = ['tr' => 'Turkish', 'de' => 'German', 'en' => 'English'];
-    private static bool $tableReady = false;
-
-    public static function ensureTable(): void
-    {
-        if (self::$tableReady) {
-            return;
-        }
-        try {
-            getDB()->exec(
-                'CREATE TABLE IF NOT EXISTS cdr_ai (
-                    cdr_id INT UNSIGNED NOT NULL PRIMARY KEY,
-                    call_id VARCHAR(64) NOT NULL DEFAULT "",
-                    transcript TEXT NULL,
-                    summary VARCHAR(500) NOT NULL DEFAULT "",
-                    engine VARCHAR(100) NOT NULL DEFAULT "",
-                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    KEY idx_cdr_ai_call_id (call_id)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
-            );
-            self::$tableReady = true;
-        } catch (\Throwable $e) {
-            // Tests or restricted DB users rely on existing table from migrations.
-        }
-    }
 
     /** @return array{cdr_id: int, call_id: string, transcript: string, summary: string, engine: string, created_at: string}|null */
     public static function find(int $cdrId): ?array
@@ -199,7 +175,6 @@ class CdrAiService
      */
     public static function forCdr(int $cdrId, string $lang = 'tr', bool $force = false, ?string $wavOverride = null): ?array
     {
-        self::ensureTable();
         if (!$force) {
             $done = self::find($cdrId);
             if ($done !== null) {

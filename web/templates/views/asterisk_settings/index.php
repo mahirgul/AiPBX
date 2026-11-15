@@ -30,9 +30,6 @@
         <button type="button" class="settings-tab-btn" data-tab="voicemail" onclick="switchSettingsTab('voicemail', this)">
             <i class="fas fa-voicemail"></i> <?php echo t('asterisk_settings.tab_voicemail'); ?>
         </button>
-        <button type="button" class="settings-tab-btn" data-tab="signaling" onclick="switchSettingsTab('signaling', this)">
-            <i class="fas fa-satellite-dish"></i> <?php echo t('asterisk_settings.tab_signaling'); ?>
-        </button>
         <button type="button" class="settings-tab-btn" data-tab="tuning" onclick="switchSettingsTab('tuning', this)">
             <i class="fas fa-sliders-h"></i> <?php echo t('asterisk_settings.tab_tuning'); ?>
         </button>
@@ -584,35 +581,6 @@
                     <option value="1" <?php echo !empty($vm_settings['vm_pin_not_extension']) ? 'selected' : ''; ?>><?php echo t('asterisk_settings.vm_rule_on'); ?></option>
                     <option value="0" <?php echo empty($vm_settings['vm_pin_not_extension']) ? 'selected' : ''; ?>><?php echo t('asterisk_settings.vm_rule_off'); ?></option>
                 </select>
-            </div>
-        </div>
-    </div>
-    </div>
-
-    <!-- SECTION: signaling capture (SIP ladder + RTCP quality, local only) -->
-    <div id="tab_signaling" class="settings-tab-pane" style="display: none;">
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <i class="fas fa-satellite-dish u-primary"></i> <?php echo t('asterisk_settings.signaling_title'); ?>
-            </div>
-        </div>
-        <?php echo uiHelpBoxOpen('asteriskSettingsHelpBox', t('asterisk_settings.info_title')); ?>
-            <p><?php echo t('asterisk_settings.signaling_help'); ?></p>
-<?php echo uiHelpBoxClose(); ?>
-        <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-220-1fr u-gap-16">
-            <div class="form-group">
-                <label class="form-label"><?php echo t('asterisk_settings.field_signaling_capture'); ?></label>
-                <select name="signaling_capture" class="form-control">
-                    <option value="0" <?php echo ($s['signaling_capture'] ?? '0') !== '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.signaling_off'); ?></option>
-                    <option value="1" <?php echo ($s['signaling_capture'] ?? '0') === '1' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.signaling_on'); ?></option>
-                </select>
-                <small class="u-hint"><?php echo htmlspecialchars(sprintf(t('asterisk_settings.signaling_status'), (int) ($signaling_status['rows'] ?? 0), (string) ($signaling_status['last'] ?? '—'))); ?></small>
-            </div>
-            <div class="form-group">
-                <label class="form-label"><?php echo t('asterisk_settings.field_signaling_retention'); ?></label>
-                <input type="number" name="signaling_retention_days" class="form-control" value="<?php echo htmlspecialchars($s['signaling_retention_days'] ?? '30'); ?>" min="1" max="3650" required>
-                <small class="u-hint"><?php echo t('asterisk_settings.signaling_retention_help'); ?></small>
             </div>
         </div>
     </div>

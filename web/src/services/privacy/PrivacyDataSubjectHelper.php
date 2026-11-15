@@ -44,6 +44,11 @@ final class PrivacyDataSubjectHelper
                     }
                 }
             }
+            // A transcript is the recording written down: it goes with the recording.
+            try {
+                $db->prepare("DELETE FROM cdr_ai WHERE cdr_id IN (SELECT id FROM asteriskcdr WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY))")->execute([$recDays]);
+            } catch (\Throwable $e) {
+            }
             try {
                 $stS3 = $db->prepare("SELECT DISTINCT userfield FROM asteriskcdr WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY) AND userfield LIKE 's3:%'");
                 $stS3->execute([$recDays]);

@@ -429,7 +429,7 @@ engine and the speech-to-text try panel (microphone or file) *(done in 1.9.4)*; 
 measurements; (g) Whisper and text-embedding engines, with the AI applications. Every engine is
 measured on the CI VM (speed, memory, quality) before it is recommended.
 
-**Cloud AI services** *(first version in 1.9.5: accounts, test, usage, cloud speech to text, engine per job)*. A separate page *AI → Cloud services*: provider accounts in one place
+**Cloud AI services** *(first version in 1.9.5: accounts, test, usage, cloud speech to text, engine per job; Cloud TTS and monthly quota limits completed in 1.79.0/1.79.1)*. A separate page *AI → Cloud services*: provider accounts in one place
 (API keys encrypted, connection test), each with what it can do — speech, speech-to-text,
 understanding (language models), embeddings — for example Google AI Studio (Gemini, **Gemma**),
 OpenAI, Azure Speech, Google Cloud Speech, ElevenLabs, Deepgram, Groq, OpenRouter. The keys of
@@ -437,8 +437,8 @@ today's *Cloud TTS* page move there; that page stays as the announcement maker.
 
 **An engine per job.** For each job (speech per language, speech-to-text, understanding) the
 administrator picks local or cloud from one list, with an optional fallback (cloud unreachable or
-over its limit → local). The AI applications use these choices, so switching from local to cloud
-needs no other change. Paid services get a usage counter and a monthly limit; choosing a cloud
+over its limit → local). The AI applications use these choices *(done in 1.79.0, UI stabilized in 1.79.1)*, so switching from local to cloud
+needs no other change. Paid services get a usage counter and monthly quota limits (`limit_stt_min`, `limit_tts_chars`, `limit_llm_tokens` with 80% warning / 100% exceeded badges and automatic local fallback — *done in 1.79.0*); choosing a cloud
 engine shows that audio and text are sent to that provider (privacy, KVKK/GDPR).
 
 ### Ideas from voice-agent products (plan only, 2026-10-10)
@@ -450,10 +450,28 @@ asking the panel questions; critical promises are spoken by the system, not the 
 and **talku.ai** (inbound voice agents as a service, attached to an existing PBX through a SIP
 address, ~650 ms response, n8n/Zapier, priced per minute). For AiPBX this suggests, in order:
 (1) a destination "external AI assistant (SIP)" so any such service can take calls while
-recording and CDR stay here; (2) transcripts of call recordings in the CDR, searchable;
+recording and CDR stay here; (2) transcripts of call recordings in the CDR, searchable *(done in 1.79.0 via `cdr_ai`)*;
 (3) an own assistant (cloud language model, local Turkish voice, allowed actions only, hand-over
 to a person when unsure); (4) appointments with a calendar and outbound confirmation calls;
-(5) several assistants with hand-over. Not scheduled yet.
+(5) several assistants with hand-over.
+
+### AI voice-agent phases (updated 2026-11-15)
+
+Structured implementation phases for AiPBX AI (`ai-apps`, Cloud AI, CDR AI, and voice agents):
+
+**Phase 1 — Quick wins *(done in 1.79.0 & 1.79.1)*:**
+1. **Cloud TTS + automatic local fallback for AI Applications (`/ai-apps`):** Cloud TTS with disk cache and seamless fallback to local voices (`Piper`/`Kokoro`/`EMA`) when cloud is unavailable or slow *(done)*.
+2. **Monthly quota limits, budget alerts, and cost control:** Per-provider monthly quotas (`limit_stt_min`, `limit_tts_chars`, `limit_llm_tokens`), 80% warning / 100% exceeded badges, and automatic fallback to local engines when limits are reached *(done)*.
+3. **Call recording transcription & searchable CDR:** `cdr_ai` storage, `CdrAiService`, `/api/cdr_ai.php`, single-sentence call summaries, and searchable transcripts inside `/cdrs` *(done)*.
+
+**Phase 2 — Medium term (Next-generation voice assistant — next up):**
+4. **External AI voice agent destination (`External AI Assistant SIP / WebSocket`):** New routing destination for IVRs and inbound rules to bridge calls to external voice agents (LiveKit, Pipecat, Ultravox, OpenAI Realtime SIP, etc.) while keeping CDR, call recordings, and limits inside AiPBX.
+5. **Multi-turn dialogue + tool calling:** Upgrade single-turn `voice_requests` flows (ask → listen → match intent) to session-memory conversations capable of invoking CRM/calendar/REST API endpoints mid-call and speaking the results.
+6. **Streaming STT and barge-in:** Reduce turn latency (`0.8 s` end-of-speech silence wait) via streaming STT (Deepgram / OpenAI Realtime / streaming Vosk) and `AudioSocket` barge-in so caller speech interrupts TTS playback immediately.
+
+**Phase 3 — Advanced (Call center automation):**
+7. **Outbound AI campaigns (`auto-dialer` + `ai-apps`):** Combine appointment confirmations, payment/balance notifications, and survey calls with the existing auto-dialer.
+8. **Automated Quality Assurance (Auto-QA) and assistant hand-over:** Automatically score completed calls for script adherence, sentiment, and resolution inside the `/cc` supervisor panel, and support multi-specialist assistant hand-over with conversation summary transfer.
 
 ## 6. iOS app parity — done
 

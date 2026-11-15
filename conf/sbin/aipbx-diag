@@ -21,6 +21,7 @@ import glob
 import json
 import os
 import re
+import struct
 import subprocess
 import sys
 import time
@@ -32,6 +33,8 @@ LOG = '/var/log/asterisk/aipbx-diag.log'
 TIMER = 'aipbx-diag-stop'
 KEEP_DAYS = 7
 MAX_LOG = 200 * 1024 * 1024  # what is read of the Asterisk log at most
+CAPTURE_DIR = '/var/lib/aipbx/sip-capture'  # SIP traffic files of aipbx-signaling
+MAX_PCAP = 50 * 1024 * 1024  # what goes into the zip at most
 
 
 class Refused(Exception):
@@ -83,6 +86,59 @@ def _mask_number(m):
     if len(digits) == 10 and digits[0] == '1' and 1_400_000_000 < int(digits) < 2_200_000_000:
         return m.group(0)
     return m.group(1) + m.group(2) + 'xxxxx'
+
+
+def mask_pcap_packet(pkt):
+    """A raw IPv4/IPv6 + UDP packet with its SIP message masked; the lengths are fixed up."""
+    v = pkt[0] >> 4 if pkt else 0
+    if v == 4:
+        head = (pkt[0] & 0x0F) * 4
+    elif v == 6:
+        head = 40
+    else:
+        return None
+    if len(pkt) < head + 8:
+        return None
+    sip = mask(pkt[head + 8:].decode('latin-1')).encode('latin-1')
+    udp_len = 8 + len(sip)
+    ip = bytearray(pkt[:head])
+    if v == 4:
+        struct.pack_into('!H', ip, 2, head + udp_len)
+    else:
+        struct.pack_into('!H', ip, 4, udp_len)
+    return bytes(ip) + pkt[head:head + 4] + struct.pack('!HH', udp_len, 0) + sip
+
+
+def capture_slice(start, end):
+    """The SIP traffic of the recording from the capture files as one masked pcap, or None."""
+    out, size = [], 0
+    for f in sorted(glob.glob(os.path.join(CAPTURE_DIR, 'sip-*.pcap'))):
+        try:
+            if os.path.getmtime(f) < start - 60:
+                continue
+            with open(f, 'rb') as fh:
+                header = fh.read(24)
+                if len(header) < 24 or struct.unpack('<I', header[:4])[0] != 0xA1B2C3D4:
+                    continue
+                while size < MAX_PCAP:
+                    rec = fh.read(16)
+                    if len(rec) < 16:
+                        break
+                    sec, usec, incl, _orig = struct.unpack('<IIII', rec)
+                    pkt = fh.read(incl)
+                    if len(pkt) < incl:
+                        break
+                    if not start - 60 <= sec <= end + 60:
+                        continue
+                    masked = mask_pcap_packet(pkt)
+                    if masked is not None:
+                        out.append(struct.pack('<IIII', sec, usec, len(masked), len(masked)) + masked)
+                        size += 16 + len(masked)
+        except OSError:
+            continue
+    if not out:
+        return None
+    return struct.pack('<IHHiIII', 0xA1B2C3D4, 2, 4, 0, 0, 65535, 101) + b''.join(out)
 
 
 def mask(text):
@@ -148,7 +204,8 @@ def build_zip(start, end, minutes):
         'state.txt       phones, trunks, queues, channels, version\n'
         'selftest.txt    aipbx-selftest\n'
         'errors.txt      last error lines of Asterisk, the portal and the AiPBX services\n'
-        'config/         the Asterisk files AiPBX generates\n\n'
+        'config/         the Asterisk files AiPBX generates\n'
+        'sip.pcap        the SIP messages of that time for Wireshark (when SIP traffic files are on)\n\n'
         'Passwords, digest answers, keys and tokens are removed. Phone numbers of 7 digits or\n'
         'more lose their last 5 digits; extensions stay readable. No recordings, voicemail or faxes.\n')
 
@@ -198,6 +255,9 @@ def build_zip(start, end, minutes):
     with zipfile.ZipFile(tmp, 'w', zipfile.ZIP_DEFLATED) as z:
         for fname, text in files.items():
             z.writestr(fname, mask(text))
+        pcap = capture_slice(start, end)
+        if pcap:
+            z.writestr('sip.pcap', pcap)
     os.chmod(tmp, 0o640)
     try:
         import grp

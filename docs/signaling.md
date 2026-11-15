@@ -1,7 +1,7 @@
 # Signaling capture
 
 > Built by Gregory Merriweather ([@shido6](https://github.com/shido6)). Part of AiPBX itself since 1.50.8:
-> **PBX settings → Signaling** (and **Troubleshooting → SIP capture settings**). Until then it was switched by the bundled `signaling-capture` plugin, which
+> **Troubleshooting → SIP capture settings** (until 1.79 a Signaling tab of PBX settings). Until then it was switched by the bundled `signaling-capture` plugin, which
 > pointed Asterisk at a port nothing listened on; the update turns capture on when that plugin was on and
 > removes it.
 
@@ -12,8 +12,8 @@ be captured, kept on this server and read by the dialplan editor's Echo box,
 Capture is opt-in and off by default, so a normal installation captures
 nothing and pays no overhead.
 
-**Turning it on:** PBX settings → **Signaling** → Capture **On**, Save. It takes effect at once (only
-`res_hep` is reloaded; calls are not touched). The same tab sets how many days the messages are kept
+**Turning it on:** Troubleshooting → **SIP capture settings** → Capture **On**, Save. It takes effect at once (only
+`res_hep` is reloaded; calls are not touched). The same page sets how many days the messages are kept
 and shows how many arrived in the last 24 hours.
 
 Nothing on this path can affect a call. The capture is a UDP datagram that
@@ -48,7 +48,7 @@ come from `sys_settings` (re-read every 30 seconds; defaults when absent):
 
 | setting                    | meaning                                 |
 |----------------------------|-----------------------------------------|
-| `signaling_retention_days` | delete events older than this (1–3650; PBX settings → Signaling / SIP capture settings) |
+| `signaling_retention_days` | delete events older than this (1–3650; Troubleshooting → SIP capture settings) |
 | `sip_capture_files`        | write raw HEP SIP `.pcap` files (`0`/`1`; Troubleshooting → SIP capture settings) |
 | `sip_capture_days`         | delete `.pcap` files older than this (1–10 days) |
 | `sip_capture_max_mb`       | disk budget for `.pcap` files (100–51200 MB; oldest deleted first) |
