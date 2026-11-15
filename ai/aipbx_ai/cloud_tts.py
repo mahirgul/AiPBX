@@ -17,8 +17,9 @@ import xml.sax.saxutils
 from array import array
 
 from .cloud_llm import assert_public_url
+from .cloud_stt import _is_local_http
 
-PROVIDERS = ("openai", "azure", "elevenlabs", "google")
+PROVIDERS = ("openai", "azure", "elevenlabs", "google", "openai_compat")
 TIMEOUT = 10
 MAX_RESPONSE_BYTES = 16 * 1024 * 1024
 ALLOW_PRIVATE_URLS = False
@@ -51,7 +52,11 @@ def validate(cfg):
     raw_key = cfg.get("api_key")
     if raw_key is None:
         raw_key = cfg.get("key")
-    if not isinstance(raw_key, str) or any(c in raw_key for c in "\r\n") or not raw_key.strip() or len(raw_key.strip()) > 400:
+    keyless = provider == "openai_compat"
+    if raw_key is None and keyless:
+        raw_key = ""
+    if not isinstance(raw_key, str) or any(c in raw_key for c in "\r\n") or len(raw_key.strip()) > 400 \
+            or (not keyless and not raw_key.strip()):
         raise ValueError("tts_cloud.api_key is missing")
     out = {"provider": provider, "api_key": raw_key.strip()}
 
@@ -93,6 +98,19 @@ def validate(cfg):
         except ValueError:
             raise ValueError("tts_cloud.endpoint is invalid") from None
         out["endpoint"] = clean_ep
+
+    if provider == "openai_compat":
+        base_url = cfg.get("base_url") or ""
+        if not isinstance(base_url, str) or len(base_url.strip()) > 200 or not _BASE_URL.match(base_url.strip().rstrip("/")):
+            raise ValueError("tts_cloud.base_url is invalid")
+        clean_base = base_url.strip().rstrip("/")
+        try:
+            assert_public_url(clean_base, resolve=False, allow_private=True, allow_loopback=True)
+        except ValueError:
+            raise ValueError("tts_cloud.base_url is invalid") from None
+        if urllib.parse.urlsplit(clean_base).scheme == "http" and not (ALLOW_PRIVATE_URLS or _is_local_http(clean_base)):
+            raise ValueError("tts_cloud.base_url is invalid")
+        out["base_url"] = clean_base
 
     return out
 
@@ -140,6 +158,30 @@ def _resample_8k(pcm: bytes, from_rate: int) -> bytes:
     return out.tobytes()
 
 
+def _wav_to_pcm_8k(raw: bytes) -> bytes:
+    """Decodes a RIFF WAV payload into 8 kHz 16-bit LE mono PCM."""
+    try:
+        with wave.open(io.BytesIO(raw), "rb") as w:
+            rate = w.getframerate()
+            channels = w.getnchannels()
+            width = w.getsampwidth()
+            frames = w.readframes(w.getnframes())
+        if width != 2:
+            raise CloudTtsError("unsupported WAV width")
+        if channels > 1:
+            samples = array("h")
+            samples.frombytes(frames[:len(frames) - (len(frames) % (2 * channels))])
+            if sys.byteorder != "little":
+                samples.byteswap()
+            mono = array("h", (samples[i] for i in range(0, len(samples), channels)))
+            if sys.byteorder != "little":
+                mono.byteswap()
+            frames = mono.tobytes()
+        return _resample_8k(frames, rate)
+    except wave.Error:
+        raise CloudTtsError("invalid WAV") from None
+
+
 def _decode_google_audio(raw_json: bytes) -> bytes:
     try:
         data = json.loads(raw_json.decode("utf-8"))
@@ -149,26 +191,7 @@ def _decode_google_audio(raw_json: bytes) -> bytes:
         raise CloudTtsError("invalid response") from None
 
     if raw.startswith(b"RIFF"):
-        try:
-            with wave.open(io.BytesIO(raw), "rb") as w:
-                rate = w.getframerate()
-                channels = w.getnchannels()
-                width = w.getsampwidth()
-                frames = w.readframes(w.getnframes())
-            if width != 2:
-                raise CloudTtsError("unsupported WAV width")
-            if channels > 1:
-                samples = array("h")
-                samples.frombytes(frames[:len(frames) - (len(frames) % (2 * channels))])
-                if sys.byteorder != "little":
-                    samples.byteswap()
-                mono = array("h", (samples[i] for i in range(0, len(samples), channels)))
-                if sys.byteorder != "little":
-                    mono.byteswap()
-                frames = mono.tobytes()
-            return _resample_8k(frames, rate)
-        except wave.Error:
-            raise CloudTtsError("invalid WAV") from None
+        return _wav_to_pcm_8k(raw)
     return _resample_8k(raw, 8000)
 
 
@@ -200,6 +223,29 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
         }
         raw = post("https://api.openai.com/v1/audio/speech", headers, json.dumps(body).encode("utf-8"))
         return _resample_8k(raw, 24000)
+
+    if provider == "openai_compat":
+        base = (cfg.get("base_url") or "").rstrip("/")
+        body = {
+            "model": cfg.get("model") or "tts-1",
+            "voice": cfg.get("voice") or "alloy",
+            "input": text,
+            "response_format": "wav",
+        }
+        if abs(speed_val - 1.0) > 1e-4:
+            body["speed"] = max(0.25, min(4.0, round(speed_val, 2)))
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": "aipbx-ai",
+        }
+        if key:
+            headers["Authorization"] = f"Bearer {key}"
+        url = f"{base}/audio/speech"
+        if request is not None:
+            raw = request(url, headers, json.dumps(body).encode("utf-8"))
+        else:
+            raw = _http_post(url, headers, json.dumps(body).encode("utf-8"), allow_private=True)
+        return _wav_to_pcm_8k(raw) if raw.startswith(b"RIFF") else _resample_8k(raw, 24000)
 
     if provider == "azure":
         region = cfg["region"]

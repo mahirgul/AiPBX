@@ -1012,6 +1012,25 @@ class VoiceRequestsCall:
             q, listener, started, digits, reason = pre
         else:
             q, listener, started, digits, reason = queue.Queue(), Listener(cfg["listen_seconds"]), time.monotonic(), [], None
+        dg_stream = None
+        if cfg.get("stt_model") == "cloud:deepgram":
+            sc = cfg.get("stt_cloud") or {}
+            if sc.get("api_key"):
+                try:
+                    from .deepgram_stream import DeepgramStream
+                    dg_stream = DeepgramStream(
+                        sc["api_key"],
+                        lang=sc.get("lang") or cfg.get("language") or "tr",
+                        sample_rate=SAMPLE_RATE,
+                    )
+                    dg_stream.connect()
+                    if listener.frames:
+                        dg_stream.send_audio(b"".join(listener.frames))
+                except Exception as e:  # noqa: BLE001 - fall back cleanly to REST/local STT
+                    log.debug("call app=%d: deepgram stream unavailable (%s)", session.app, type(e).__name__)
+                    if dg_stream is not None:
+                        dg_stream.close()
+                    dg_stream = None
         wall_limit = started + cfg["listen_seconds"] + 2.0   # Asterisk stopped sending audio
         session.listen_q = q
         try:
@@ -1035,9 +1054,14 @@ class VoiceRequestsCall:
                     digits.append(data)
                     reason = "dtmf"
                 else:
+                    if dg_stream is not None:
+                        dg_stream.send_audio(data)
                     reason = listener.feed(data, at)
         finally:
             session.listen_q = None
+            if (reason is None or not listener.heard) and dg_stream is not None:
+                dg_stream.close()
+                dg_stream = None
         ended = time.monotonic()
         attempt = {"reason": reason, "transcript": "", "intent": None, "score": 0.0, "second": 0.0,
                    "scores": {}, "dtmf": "".join(digits), "listened_seconds": round(ended - started, 2),
@@ -1047,7 +1071,14 @@ class VoiceRequestsCall:
             self.audio = pcm
             self.speech_end = listener.last_loud_time
             attempt["speech_seconds"] = round(len(pcm) / 2 / SAMPLE_RATE, 2)
-            text, attempt["stt_ms"] = self.transcribe(pcm)
+            text = ""
+            if dg_stream is not None:
+                t0 = time.monotonic()
+                text = dg_stream.finish(timeout=1.5)
+                if text:
+                    attempt["stt_ms"] = int((time.monotonic() - t0) * 1000)
+            if not text:
+                text, attempt["stt_ms"] = self.transcribe(pcm)
             attempt["transcript"] = text
             if text:
                 m = self.understand(text, cfg)

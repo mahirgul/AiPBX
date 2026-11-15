@@ -91,6 +91,10 @@ class CloudTtsTest(unittest.TestCase):
             cloud_tts.validate({"provider": "azure", "key": "az-key", "region": "westeurope"}),
             {"provider": "azure", "api_key": "az-key", "region": "westeurope"},
         )
+        self.assertEqual(
+            cloud_tts.validate({"provider": "openai_compat", "base_url": "http://192.168.1.50:8880/v1/", "model": "kokoro", "voice": "af_heart"}),
+            {"provider": "openai_compat", "api_key": "", "model": "kokoro", "voice": "af_heart", "base_url": "http://192.168.1.50:8880/v1"},
+        )
         for bad in (
             None,
             {"provider": "unknown", "api_key": "sk-123"},
@@ -99,6 +103,8 @@ class CloudTtsTest(unittest.TestCase):
             {"provider": "azure", "api_key": "az-key"},
             {"provider": "azure", "api_key": "az-key", "region": "../bad"},
             {"provider": "elevenlabs", "api_key": "el-key", "endpoint": "http://127.0.0.1:8080"},
+            {"provider": "openai_compat", "base_url": ""},
+            {"provider": "openai_compat", "base_url": "http://tts.example.com/v1"},
         ):
             with self.assertRaises(ValueError):
                 cloud_tts.validate(bad)
@@ -146,6 +152,19 @@ class CloudTtsTest(unittest.TestCase):
             self.assertEqual(g_body["voice"]["languageCode"], "tr-TR")
             self.assertEqual(g_body["audioConfig"]["audioEncoding"], "LINEAR16")
             self.assertEqual(g_body["audioConfig"]["sampleRateHertz"], 8000)
+
+            pcm_compat = cloud_tts.synthesize(
+                {"provider": "openai_compat", "base_url": "http://127.0.0.1:8880/v1", "model": "nefes-0.5", "voice": "tr_1"},
+                "Merhaba",
+                lang="tr",
+                request=lambda u, h, b: seen.append((u, h, b)) or _wav_8k(800),
+            )
+            self.assertEqual(len(pcm_compat), 1600)
+            self.assertEqual(seen[-1][0], "http://127.0.0.1:8880/v1/audio/speech")
+            self.assertNotIn("Authorization", seen[-1][1])
+            compat_body = json.loads(seen[-1][2].decode())
+            self.assertEqual(compat_body["response_format"], "wav")
+            self.assertEqual(compat_body["model"], "nefes-0.5")
 
     def test_appstore_prompt_uses_cloud_tts_and_falls_back_to_local(self):
         backends = {}

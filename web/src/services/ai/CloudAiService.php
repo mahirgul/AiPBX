@@ -105,10 +105,12 @@ class CloudAiService
                                     ['key' => 'base_url', 'label' => 'Endpoint', 'secret' => false, 'optional' => true,
                                      'default' => self::QWEN_ENDPOINT]],
                        'url' => 'https://modelstudio.console.alibabacloud.com/', 'free' => true],
-            'openai_compat' => ['title' => 'OpenAI-compatible (Cloud or Remote Server)', 'caps' => ['stt', 'llm', 'embed'],
+            'openai_compat' => ['title' => 'OpenAI-compatible (Cloud or Remote Server)', 'caps' => ['stt', 'llm', 'embed', 'tts'],
                                 'fields' => [['key' => 'base_url', 'label' => 'Base URL (…/v1)', 'secret' => false],
                                              ['key' => 'model', 'label' => 'LLM Model', 'secret' => false],
                                              ['key' => 'stt_model', 'label' => 'STT / Whisper Model', 'secret' => false, 'optional' => true, 'default' => 'whisper-1'],
+                                             ['key' => 'tts_model', 'label' => 'TTS Model', 'secret' => false, 'optional' => true, 'default' => 'tts-1'],
+                                             ['key' => 'tts_voice', 'label' => 'TTS Voice', 'secret' => false, 'optional' => true, 'default' => 'alloy'],
                                              ['key' => 'api_key', 'label' => 'API key', 'secret' => true, 'optional' => true]],
                                 'url' => 'https://platform.openai.com/docs/api-reference/chat', 'free' => false],
         ];

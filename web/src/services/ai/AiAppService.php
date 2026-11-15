@@ -396,6 +396,17 @@ class AiAppService
                 $out[$k] = (string) $pc[$k];
             }
         }
+        if ($provider === 'openai_compat') {
+            $out['base_url'] = (string) ($pc['base_url'] ?? '');
+            $ttsModel = trim((string) ($pc['tts_model'] ?? ''));
+            if ($ttsModel !== '') {
+                $out['model'] = $ttsModel;
+            }
+            $ttsVoice = trim((string) ($pc['tts_voice'] ?? ''));
+            if ($ttsVoice !== '') {
+                $out['voice'] = $ttsVoice;
+            }
+        }
         return $out;
     }
 
