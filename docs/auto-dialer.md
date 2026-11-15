@@ -25,7 +25,7 @@ Disabling the plugin keeps both tables and their campaign history intact; uninst
    - Configures the 8 parameters passed to Asterisk's `AMD(initial_silence,greeting,after_greeting_silence,total_analysis_time,min_word_length,between_words_silence,maximum_number_of_words,silence_threshold)` application (defaults: `2500,1500,800,5000,100,50,2,256`).
 2. 🤖 **Per-Campaign AMD Toggle & Machine Behavior:**
    - Each campaign can enable or disable AMD independently.
-   - 🧑 When `AMDSTATUS` is **`HUMAN`** (or `NOTSURE`), the call is transferred to the campaign's chosen destination (**Call Queue**, **IVR**, **Extension**, **Ring Group**, **Announcement**, or **AI Application**).
+   - 🧑 When `AMDSTATUS` is **`HUMAN`** (or `NOTSURE`), the call is transferred to the campaign's chosen destination (**Call Queue**, **IVR**, **Extension**, **Ring Group**, **Announcement**, **AI Application** or **External AI Agent**).
    - 📼 When `AMDSTATUS` is **`MACHINE`**, the campaign either:
      - 📴 **Hangs up immediately (`hangup`)**, or
      - 🔊 **Waits for the voicemail beep (`WaitForSilence`) and plays a selected custom sound (`play_sound`)** before hanging up.
@@ -39,6 +39,22 @@ When a campaign's target destination is a **Call Queue (`queue`)** and **Queue F
 - 🧮 It counts logged-in, unpaused, idle (`Not in use`) agents and subtracts any callers already waiting in that queue.
 - 🛡️ Concurrency is automatically capped to the number of free agents so customers are never called when no agent is available to talk to them.
 
+
+## AI campaigns
+
+*(plugin 1.2.0)* With an **AI Application** or an **External AI Agent** ([External AI agents](ai-agents.md))
+as the destination, the AI talks with the person called: an appointment confirmation, a payment
+reminder, a short survey.
+
+- The AI sees the **person called** as the caller: an AI application's lookup address gets their
+  number (`caller=`) and can answer with their name, appointment or balance; an external agent gets
+  it as `X-AiPBX-Caller`.
+- What a voice-requests application understood is stored as the number's result: `AI:<request id>`
+  (for example `AI:confirm`), `AI:none` when it understood nothing, `AI:ended` when a
+  [conversation](ai-apps.md#conversation) said goodbye. It shows in the number list and the export.
+
+Apply the PBX configuration after updating the plugin, so the dialplan carries the number to the
+answered leg.
 
 ## Active calls and callback correlation
 

@@ -470,7 +470,7 @@ Structured implementation phases for AiPBX AI (`ai-apps`, Cloud AI, CDR AI, and 
 6. **Streaming STT and barge-in** *(barge-in done after 1.79.3, a setting per voice-requests application; streaming STT not yet)*: Reduce turn latency (`0.8 s` end-of-speech silence wait) via streaming STT (Deepgram / OpenAI Realtime / streaming Vosk) and `AudioSocket` barge-in so caller speech interrupts TTS playback immediately.
 
 **Phase 3 — Advanced (Call center automation):**
-7. **Outbound AI campaigns (`auto-dialer` + `ai-apps`):** Combine appointment confirmations, payment/balance notifications, and survey calls with the existing auto-dialer.
+7. **Outbound AI campaigns (`auto-dialer` + `ai-apps`)** *(done: auto-dialer plugin 1.2.0, [auto-dialer.md](auto-dialer.md#ai-campaigns))*: Combine appointment confirmations, payment/balance notifications, and survey calls with the existing auto-dialer.
 8. **Automated Quality Assurance (Auto-QA) and assistant hand-over:** Automatically score completed calls for script adherence, sentiment, and resolution inside the `/cc` supervisor panel, and support multi-specialist assistant hand-over with conversation summary transfer.
 
 ## 6. iOS app parity — done
