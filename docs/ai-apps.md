@@ -46,7 +46,10 @@ phone and says "could I get two more towels?".
 
 1. **Greeting** ("Good evening, reception here. How can I help you?") read by a voice model.
 2. **Listening:** until the caller stops speaking (about 0.8 s of silence) or at most the set number
-   of seconds. Pressing a key also ends listening.
+   of seconds. Pressing a key also ends listening. With **Callers may talk over the greeting**
+   (barge-in) the greeting and the "say it again" prompt stop as soon as the caller has talked for
+   0.2 s or pressed a key, and what they said — from its first syllable — is the request. Leave it
+   off on lines with echo (some analogue or GSM gateways): the echo of the prompt would stop it.
 3. **Speech to text** with a local model (Vosk or Whisper, see [Local AI models](local-ai.md)), the
    engine set for the language under *AI → Cloud services*, or a cloud provider directly (OpenAI,
    Groq, Deepgram, Azure, ElevenLabs, Google AI — those with a key saved there). The cloud key is

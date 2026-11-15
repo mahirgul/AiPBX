@@ -3081,6 +3081,8 @@ return [
     'ai_apps.field_stt' => 'Speech to text',
     'ai_apps.stt_engine' => '%s (engine for the language)',
     'ai_apps.field_listen' => 'Listen for at most (seconds)',
+    'ai_apps.field_barge_in' => 'Callers may talk over the greeting',
+    'ai_apps.barge_in_help' => 'The greeting and the "say it again" prompt stop when the caller talks or presses a key, and what they say is the request. Leave it off on lines with echo: the echo would stop the prompt.',
     'ai_apps.field_retries' => 'Ask again (times)',
     'ai_apps.field_threshold' => 'Certainty needed',
     'ai_apps.threshold_help' => '0–1; below it the caller is asked again and then passed on. 0.5: the keywords decide; about 0.3 lets the example sentences help too.',

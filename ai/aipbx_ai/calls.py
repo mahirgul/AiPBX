@@ -67,6 +67,7 @@ from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
+from .voice_requests import CALIBRATION_FRAMES, PRE_ROLL_FRAMES
 from .voice_requests import AppStore, Listener, ResultStore, pick_local_fallback
 
 log = logging.getLogger("aipbx_ai.calls")
@@ -78,6 +79,7 @@ FRAME_BYTES = 320            # 20 ms of 8 kHz 16-bit mono
 FRAME_SECONDS = 0.02
 LEAD_SECONDS = 0.06          # how far ahead of real time we may send
 TAIL_SECONDS = 0.2           # after the last frame, before "terminate"
+BARGE_FRAMES = 10            # 200 ms of speech over a prompt stop it (barge_in)
 SILENCE_FRAME = b"\x00" * FRAME_BYTES
 NO_FRAMES_GAP = 0.2          # listening: after this long without inbound frames, count silence
 
@@ -831,8 +833,10 @@ class VoiceRequestsCall:
     the matched intent, or not_understood -> result saved -> terminate (0x00).
 
     The reader thread keeps reading the caller's frames all the time; while we
-    listen they go to session.listen_q (the frames that arrive while a prompt
-    plays are dropped: no barge-in). Transcription runs in its own thread.
+    listen they go to session.listen_q. The frames that arrive while a prompt
+    plays are dropped, unless the application allows barge-in: then the
+    greeting and the retry prompt stop when the caller talks or presses a key,
+    and listening goes on with what they said. Transcription runs in its own thread.
     The result is saved before the terminate message, so the dialplan finds it
     as soon as AudioSocket() returns.
     """
@@ -919,6 +923,60 @@ class VoiceRequestsCall:
                 return False
         return not self.gone()
 
+    def play_interruptible(self, pcm):
+        """Plays a prompt the caller may talk over (barge_in).
+
+        (False, None): the caller hung up. (True, None): it played out.
+        (True, pre): the caller talked or pressed a key; the prompt stopped and
+        `pre` is what listen() goes on with: the queue, a Listener fed with the
+        audio before and since the speech, the digits, a stop reason or None.
+        """
+        if not self.config.get("barge_in") or not pcm:
+            return self.play(pcm), None
+        session = self.session
+        q = queue.Queue()
+        probe = Listener(3600)          # only its speech detection is used here
+        cur = {"pcm": pcm, "pos": 0, "sent": threading.Event(), "started": None, "ends": None}
+        handed_over = False
+        session.listen_q = q
+        with self._mu:
+            self._current = cur
+        try:
+            while True:
+                if self.gone():
+                    return False, None
+                if cur["ends"] is not None and time.monotonic() >= cur["ends"]:
+                    return True, None
+                try:
+                    kind, at, data = q.get(timeout=0.02)
+                except queue.Empty:
+                    continue
+                if kind == "audio":
+                    probe.feed(data, at)
+                    onset = None if probe.start is None else probe.start + PRE_ROLL_FRAMES
+                    if onset is None or probe.last_loud is None or probe.last_loud - onset < BARGE_FRAMES:
+                        continue
+                with self._mu:
+                    if self._current is cur:
+                        self._current = None
+                started = time.monotonic()
+                listener = Listener(self.config["listen_seconds"])
+                reason = None
+                if kind == "dtmf":
+                    digits, reason = [data], "dtmf"
+                else:
+                    digits = []
+                    # The quiet before the speech first: it sets the noise floor, as at the start of listening.
+                    seed = probe.frames[max(0, probe.start - CALIBRATION_FRAMES):]
+                    started -= len(seed) * FRAME_SECONDS
+                    reason = listener.feed(b"".join(seed), at)
+                log.info("call app=%d: barge-in (%s)", session.app, kind)
+                handed_over = True
+                return True, (q, listener, started, digits, reason)
+        finally:
+            if not handed_over:
+                session.listen_q = None
+
     def prompt(self, key):
         """The prompt's audio; b"" when it cannot be made (the call goes on without it)."""
         s = self.session
@@ -930,16 +988,17 @@ class VoiceRequestsCall:
 
     # ---- audio in -------------------------------------------------------
 
-    def listen(self):
-        """One attempt: the attempt dict, or None when the caller hung up."""
+    def listen(self, pre=None):
+        """One attempt: the attempt dict, or None when the caller hung up.
+
+        `pre`: what play_interruptible() heard over a prompt, to go on with."""
         session, reader, cfg = self.session, self.reader, self.config
-        q = queue.Queue()
-        listener = Listener(cfg["listen_seconds"])
-        digits = []
-        started = time.monotonic()
+        if pre is not None:
+            q, listener, started, digits, reason = pre
+        else:
+            q, listener, started, digits, reason = queue.Queue(), Listener(cfg["listen_seconds"]), time.monotonic(), [], None
         wall_limit = started + cfg["listen_seconds"] + 2.0   # Asterisk stopped sending audio
         session.listen_q = q
-        reason = None
         try:
             while reason is None:
                 if self.gone():
@@ -1068,10 +1127,12 @@ class VoiceRequestsCall:
     def _run(self):
         session, cfg = self.session, self.config
         try:
-            if not self.play(session.pcm):
+            played, pre = self.play_interruptible(session.pcm)
+            if not played:
                 return self.save("hangup")
             for n in range(cfg["retries"] + 1):
-                attempt = self.listen()
+                attempt = self.listen(pre)
+                pre = None
                 if attempt is None:
                     return self.save("hangup")
                 self.attempts.append(attempt)
@@ -1080,8 +1141,10 @@ class VoiceRequestsCall:
                     self.matched = next(i for i in cfg["intents"] if i["id"] == attempt["intent"])
                     session.intent = self.matched["id"]
                     break
-                if n < cfg["retries"] and not self.play(self.prompt("retry")):
-                    return self.save("hangup")
+                if n < cfg["retries"]:
+                    played, pre = self.play_interruptible(self.prompt("retry"))
+                    if not played:
+                        return self.save("hangup")
             if self.matched:
                 result = "matched"
                 pcm = self.prompt("reply:" + self.matched["id"])

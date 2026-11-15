@@ -467,7 +467,7 @@ Structured implementation phases for AiPBX AI (`ai-apps`, Cloud AI, CDR AI, and 
 **Phase 2 — Medium term (Next-generation voice assistant — next up):**
 4. **External AI voice agent destination (`External AI Assistant SIP / WebSocket`)** *(SIP done after 1.79.3: AI → External agents, [ai-agents.md](ai-agents.md); WebSocket not yet)*: New routing destination for IVRs and inbound rules to bridge calls to external voice agents (LiveKit, Pipecat, Ultravox, OpenAI Realtime SIP, etc.) while keeping CDR, call recordings, and limits inside AiPBX.
 5. **Multi-turn dialogue + tool calling:** Upgrade single-turn `voice_requests` flows (ask → listen → match intent) to session-memory conversations capable of invoking CRM/calendar/REST API endpoints mid-call and speaking the results.
-6. **Streaming STT and barge-in:** Reduce turn latency (`0.8 s` end-of-speech silence wait) via streaming STT (Deepgram / OpenAI Realtime / streaming Vosk) and `AudioSocket` barge-in so caller speech interrupts TTS playback immediately.
+6. **Streaming STT and barge-in** *(barge-in done after 1.79.3, a setting per voice-requests application; streaming STT not yet)*: Reduce turn latency (`0.8 s` end-of-speech silence wait) via streaming STT (Deepgram / OpenAI Realtime / streaming Vosk) and `AudioSocket` barge-in so caller speech interrupts TTS playback immediately.
 
 **Phase 3 — Advanced (Call center automation):**
 7. **Outbound AI campaigns (`auto-dialer` + `ai-apps`):** Combine appointment confirmations, payment/balance notifications, and survey calls with the existing auto-dialer.

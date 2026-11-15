@@ -577,6 +577,57 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual((data["dtmf"], data["attempts"][0]["reason"], data["result"]), ("5", "dtmf", "silence"))
         self.assertEqual(self.result(u), "none")
 
+    # ---- barge-in -----------------------------------------------------------
+
+    def long_prompts(self):
+        global PROMPT_SECONDS
+        old, PROMPT_SECONDS = PROMPT_SECONDS, 3.0
+        self.addCleanup(lambda: globals().__setitem__("PROMPT_SECONDS", old))
+
+    def greeting_seconds(self, c):
+        audio = c.received()
+        values = struct.unpack("<%dh" % (len(audio) // 2), audio)
+        return values.count(self.value(hotel_config()["greeting"])) / 8000
+
+    def test_barge_in_speech_stops_the_greeting(self):
+        self.long_prompts()
+        self.stt.texts = ["havlu lütfen"]
+        u, c = self.call(barge_in=True, retries=0)
+        self.assertTrue(self.wait(lambda: len(c.received()) > 8000 * 2 * 0.5))   # half a second of greeting
+        c.speak(1.0)
+        self.wait_done(c)
+        self.assertLess(self.greeting_seconds(c), 2.5)
+        self.assertEqual(self.result(u), "towels")
+        data = self.details(u)[1]
+        self.assertEqual(data["attempts"][0]["reason"], "speech")
+        wav = wave.open(io.BytesIO(self.stt.calls[0]))
+        self.assertGreaterEqual(wav.getnframes(), 8000 * 0.9)     # the start of what they said is kept
+
+    def test_barge_in_key_stops_the_greeting(self):
+        self.long_prompts()
+        u, c = self.call(barge_in=True, retries=0)
+        self.assertTrue(self.wait(lambda: len(c.received()) > 8000 * 2 * 0.5))
+        c.dtmf("2")
+        self.wait_done(c)
+        self.assertLess(self.greeting_seconds(c), 2.5)
+        data = self.details(u)[1]
+        self.assertEqual((data["dtmf"], data["attempts"][0]["reason"]), ("2", "dtmf"))
+
+    def test_barge_in_is_on_only_when_asked(self):
+        from aipbx_ai.voice_requests import validate_config
+        self.assertFalse(validate_config(hotel_config(), self.manager)["barge_in"])
+        self.assertFalse(validate_config(hotel_config(barge_in="yes"), self.manager)["barge_in"])
+        self.assertTrue(validate_config(hotel_config(barge_in=True), self.manager)["barge_in"])
+
+    def test_without_barge_in_the_greeting_plays_out(self):
+        self.long_prompts()
+        u, c = self.call(retries=0, listen_seconds=2)
+        self.assertTrue(self.wait(lambda: len(c.received()) > 8000 * 2 * 0.5))
+        c.speak(1.0)                                  # over the greeting: not heard
+        self.wait_done(c, timeout=20)
+        self.assertGreaterEqual(self.greeting_seconds(c), 2.9)
+        self.assertEqual(self.details(u)[1]["attempts"][0]["reason"], "silence")
+
     def test_dtmf_after_speech_keeps_the_utterance(self):
         self.stt.texts = ["havlu"]
         u, c = self.call(retries=0)

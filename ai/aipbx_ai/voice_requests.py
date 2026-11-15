@@ -169,6 +169,10 @@ def validate_config(data, manager=None):
         "listen_seconds": _number(data, "listen_seconds", LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT, integer=True),
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
         "threshold": _number(data, "threshold", 0.0, 1.0, THRESHOLD_DEFAULT),
+        # The caller may talk over the greeting and the "say it again" prompt:
+        # the prompt stops and what they say is the request. Off by default, as
+        # a line with echo would stop the prompt by itself.
+        "barge_in": data.get("barge_in") is True,
         # How the request is recognised: "auto" = keywords plus the local
         # sentence-meaning model when one runs; "keywords" = keywords and
         # letters only; "cloud" = a cloud language model (llm_cloud), falling

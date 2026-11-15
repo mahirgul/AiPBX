@@ -139,6 +139,9 @@ final class AiAppServiceTest extends TestCase
         $this->assertSame('voice_requests', $cfg['type']);
         $this->assertSame('vosk-tr-small', $cfg['stt_model']);
         $this->assertSame(['id', 'name', 'keywords', 'examples', 'reply'], array_keys($cfg['intents'][0]));
+        $this->assertFalse($cfg['barge_in']);
+        $barge = AiAppService::serviceConfig(['id' => 9, 'title' => 'Resepsiyon'] + AiAppService::validate(self::requestsForm() + ['barge_in' => '1']));
+        $this->assertTrue($barge['barge_in']);
     }
 
     public function testPushAppsPutsAndDeletes(): void

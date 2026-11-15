@@ -125,6 +125,9 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                     <input type="number" name="listen_seconds" id="ai_listen" class="form-control" min="2" max="15" value="7"></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_retries'); ?></label>
                     <input type="number" name="retries" id="ai_retries" class="form-control" min="0" max="2" value="1"></div>
+                <div class="form-group"><label class="u-check-label-6 u-mt-32">
+                    <input type="checkbox" name="barge_in" id="ai_barge" value="1" class="u-accent"> <?php echo t('ai_apps.field_barge_in'); ?></label>
+                    <small class="u-hint u-fs-11"><?php echo t('ai_apps.barge_in_help'); ?></small></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_understand'); ?></label>
                     <select name="understand" id="ai_understand" class="form-control">
                         <option value="auto"><?php echo t('ai_apps.understand_auto'); ?></option>
@@ -211,6 +214,7 @@ function aiAppEdit(a) {
     const c = a.config ? (typeof a.config === 'string' ? JSON.parse(a.config) : a.config) : {};
     f('ai_greeting', c.greeting || ''); f('ai_retry', c.retry || ''); f('ai_nu', c.not_understood || '');
     f('ai_listen', c.listen_seconds || 7); f('ai_retries', c.retries == null ? 1 : c.retries); f('ai_threshold', c.threshold == null ? 0.5 : c.threshold);
+    document.getElementById('ai_barge').checked = !!c.barge_in;
     const st = document.getElementById('ai_stt');
     if (c.stt_model && ![...st.options].some(o => o.value === c.stt_model)) st.add(new Option(c.stt_model, c.stt_model));
     st.value = c.stt_model || 'engine:tr';
