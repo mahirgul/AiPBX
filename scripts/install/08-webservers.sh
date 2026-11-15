@@ -435,6 +435,7 @@ install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-vpn" /usr/local/sb
 # The zips are read by the portal for the download: group www-data, nothing else.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-diag" /usr/local/sbin/aipbx-diag
 install -d -o root -g www-data -m 0750 /var/lib/aipbx/diag
+chown -R root:www-data /var/lib/aipbx/diag  # after the chown -R of 04-directories.sh
 # The server's own address (Network settings); a change on trial goes back at a reboot.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-netcfg" /usr/local/sbin/aipbx-netcfg
 cat > /etc/systemd/system/aipbx-netcfg-boot.service << 'NETCFGUNIT'
@@ -488,6 +489,8 @@ if [ -d "$INSTALL_DIR/signaling" ]; then
     # SIP traffic files: written by the daemon (asterisk), read by the portal
     # (www-data is in the asterisk group), nobody else.
     install -d -o asterisk -g asterisk -m 0750 /var/lib/aipbx/sip-capture
+    # 04-directories.sh hands all of /var/lib/aipbx to www-data: give the files back.
+    chown -R asterisk:asterisk /var/lib/aipbx/sip-capture
     if [ -d /etc/systemd/system ] && command -v systemctl >/dev/null 2>&1; then
         install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-signaling.service" /etc/systemd/system/aipbx-signaling.service
         systemctl daemon-reload >/dev/null 2>&1 || true
