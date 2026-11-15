@@ -168,6 +168,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   language, played before answering so trunk calls are not billed
 - **PBX tuning** — jitter buffer, SIP timers, a 10-minute SIP debug switch, log rotation and a night
   restart window used only when an update replaced libraries and no call is up ([docs](docs/pbx-tuning.md))
+- **Troubleshooting menu** — **SIP traffic** (`.pcap` capture files from `aipbx-signaling`, Call-ID dialog list, interactive SVG call-flow ladder diagram, and **Live SIP** stream), **Problem recording** (`aipbx-diag`: one-click masked diagnostic `.zip` with SIP logs, CDRs, queue events and PBX state), live **Registrations** (desk phones, browsers, mobile apps and trunks with RTT), **Call quality** (RTCP packet loss & jitter) and **Phone logs** ([docs](docs/troubleshooting.md))
 - **Feature codes** — `*81`/`*80` queue login/logout, `*72` call forward, `*60` DND, `*43` intercom,
   `*90`/`*91`/`*92` spy/whisper/barge, `*97`/`*98` voicemail
 - **In-band disconnect supervision** — disconnect-tone detection for analog/legacy trunks
@@ -191,6 +192,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **SIP over TLS on port 443 (v1.71+)** — for desk phones on networks that let TLS out only on 443: the same 443 port serves the portal, TURN and these phones. nginx tells them apart by the region's own SIP server name (`sip1.example.com` beside the portal's name) or, without one, by the phones' addresses; Asterisk accepts the name and Let's Encrypt puts it on the one certificate. One switch on the region; see [docs/phones.md](docs/phones.md#sip-over-tls-on-port-443)
 - **Automated SCCP-to-SIP Firmware Switching** — model-by-model firmware migration pipeline that moves Cisco 7900 phones from proprietary SCCP to Cisco SIP firmware upon restart, with server-side `.loads` manifest validation before deployment
 - **Phonebook and LDAP directory for desk phones (v1.77.1+)** — shared company contacts (*Provisioning → Phonebook*, CSV import) served with the extensions over a read-only LDAP phonebook (389 StartTLS / 636 LDAPS): phones search by name and show the caller's name; the [`ldap-sync`](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/ldap-sync) plugin brings people from Active Directory or OpenLDAP; see [docs/phonebook.md](docs/phonebook.md)
+- **Yealink OpenVPN package (v1.77.2+)** — one-click `.tar` download (`vpn.cnf` + `keys/`) on *Network → VPN Server* for Yealink phones to upload under *Network → Advanced → VPN* ([docs](docs/vpn.md#yealink-phones))
 
 ### 📠 Fax
 - **Inbound/outbound fax** — T.38 and G.711 (res_fax + SpanDSP)
@@ -322,7 +324,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   Apache kept in Ubuntu's systemd sandbox with only the paths the portal needs opened
 
 ### 🌍 Multi-language & Mobile-Ready Portal
-- **23 interface languages** including Turkish 🇹🇷 and English 🇬🇧 (5,000+ keys per language; a text not yet translated shows in English)
+- **23 interface languages** including Turkish 🇹🇷 and English 🇬🇧 (6,300+ keys per language; a text not yet translated shows in English)
 - **Universal Live Filtering & Pagination** across all multi-record tables (extensions, trunks, routes, system users, audit log, call reports) and responsive mobile drawer/table layout
 
 ---
@@ -348,6 +350,7 @@ AiPBX/
 ├── plugins/                # 🔌 Bundled plugins: official (auto-dialer, ms-teams, web-widgets, ai-*, …) and community
 ├── ai/                     # 🤖 Local & cloud AI service (aipbx-ai, Python)
 ├── chat/                   # 💬 Go WebSocket chat service (aipbx-chat)
+├── signaling/              # 📡 HEPv3 SIP/RTCP signaling & .pcap capture daemon (aipbx-signaling, Python)
 ├── conf/                   # ⚙️ Configuration & services
 │   ├── asterisk/           # ☎️ Asterisk base configuration
 │   ├── sbin/               # 🔐 aipbx-priv (root helper), aipbx-update (updater)
@@ -398,7 +401,6 @@ AiPBX follows a transparent, phased engineering roadmap. For the complete specif
 - **✅ Wave 2 (Delivered in v1.50.11):** Sandboxed scheduled background tasks (`systemd-run`), encrypted external database integrations, IVR caller lookup steps, PBX fine-tuning & Asterisk night restarts.
 - **🚀 Wave 3 (In Active Development & Planning):**
   - **Several customers on one server:** one Incus/LXD container per customer running the normal install, managed from a super-admin page. One AiPBX in a container [works today](docs/incus-lxd.md).
-  - **Group Voice Conferences from Instant Chat:** WebRTC conference rooms dynamically bridged from mobile and web chat groups.
   - **Remote GPU Speech Engines:** Offloaded high-fidelity neural TTS engines on dedicated GPU compute instances.
 
 ---

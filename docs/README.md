@@ -43,7 +43,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📒 [Phonebook](phonebook.md) | Shared company contacts, LDAP phonebook for desk phones (name search, caller name), contacts from Active Directory / OpenLDAP with the `ldap-sync` plugin |
 | 🔵 [Cisco 7900 / 8800 series](cisco-callmanager.md) | Cisco's enterprise phones (CallManager firmware): the `SEP<MAC>.cnf.xml` AiPBX writes, the firmware, the usecallmanager.nz Asterisk patch and the shared files you provide |
 | 🖧 [Network settings](network-settings.md) | The server's network cards, and moving every address after an IP change in one step |
-| 🔐 [VPN server and client](vpn.md) | WireGuard or OpenVPN: let phones and laptops reach the PBX through a tunnel, and connect the PBX to another network by uploading a profile |
+| 🔐 [VPN server and client](vpn.md) | WireGuard or OpenVPN: let phones and laptops reach the PBX through a tunnel (including Yealink OpenVPN `.tar` packages with `vpn.cnf` + keys), and connect the PBX to another network by uploading a profile |
 | 🛡️ [Reverse proxy setup](reverse-proxy.md) | Deploying behind Nginx, Caddy, Traefik, HAProxy, Apache; WebRTC WebSocket proxying, trusted proxies, and SIP/RTP bypass |
 | 📡 [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server, an NTP server and phone logs (syslog) by IP or MAC |
 | 🩺 [Health checks](health.md) | The server watches itself (services, trunks, disk, certificate, backup …), alarm e-mails, the daily summary with yesterday's calls, `aipbx-selftest` |
@@ -65,7 +65,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | Page | What it covers |
 |------|----------------|
 | 👥 [Users & roles](users-and-roles.md) | Adding users and invitations, the `admin` account, built-in roles, permissions, *My Phone* |
-| 🛡️ [Security](security.md) | Firewall (common and per-card rules), fail2ban, the `aipbx-priv` root helper, Apache sandbox |
+| 🛡️ [Security](security.md) | Firewall (common and per-card rules), the **Sign-in** page (**Security → Sign-in**: sign-in check, sign-in alerts, SSO-only), fail2ban, the `aipbx-priv` root helper, Apache sandbox |
 | 🔒 [Privileged job state](root-state-paths.md) | Root-owned status, network rollback data and validated upload snapshots |
 | 📜 [Privileged job logs](root-log-paths.md) | Root log ownership, portal read access and rotation |
 | 🖧 [Network ports & firewall](network-ports.md) | Complete matrix of all TCP/UDP ports, public vs LAN scopes, NAT guidelines, UFW/firewalld/iptables recipes |
@@ -77,7 +77,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 🗄️ [File storage](file-storage.md) | Chat attachments on the local disk or in an S3-compatible bucket (AWS S3, MinIO, Wasabi, Backblaze B2), moving existing files |
 | 🔑 [REST API v1 & outbound webhooks](rest-api-v1.md) | Stateless `/api/v1/*` endpoints, OpenAPI 3.1 spec, Bearer API keys (`apbx_...`), scopes, IP allowlists, and HMAC-SHA256 signed webhooks |
 | ⏱️ [Scheduled tasks](scheduled-tasks.md) | Sandboxed background shell, PHP and Python scripts on a cron schedule (`aipbx-task`, systemd-run), run history, bell alarms |
-| 🛠️ [Troubleshooting](troubleshooting.md) | The Troubleshooting menu (problem recording, registrations), changes not applied, calls hung up, sounds not found, SIP captures |
+| 🛠️ [Troubleshooting](troubleshooting.md) | The Troubleshooting menu (SIP traffic `.pcap`/calls/ladder/live, problem recording, registrations, call quality, phone logs), changes not applied, calls hung up, sounds not found |
 
 ## 🔌 Plugins
 
@@ -100,9 +100,9 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 | 🧠 [Local AI models (Plugin)](local-ai.md) | `ai-models` | AI models on the PBX itself (EMA Lightning Turkish TTS): the runtime, downloading models, the `aipbx-ai` service and its API |
 | 🎛️ [AI applications (Plugin)](ai-apps.md) | `ai-apps` | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | ✨ [Dialplan editor / AI assistant (Community plugin, @shido6)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, and the Echo box that answers questions from this server's own data |
-| 📡 [Signaling capture](signaling.md) | PBX settings → Signaling | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, and retention (off by default) |
+| 📡 [Signaling capture](signaling.md) | PBX settings → Signaling, Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
 | 📮 [Voicemail](voicemail.md) | PBX settings → Voicemail | Mailboxes, listening (\*97/\*98, portal, apps, e-mail), message limits and PIN rules |
-| 📈 [Call quality](call-quality.md) | Reports → Call quality | Packet loss in both directions and jitter per trunk and extension from RTCP; a health check alarms when audio is lost |
+| 📈 [Call quality](call-quality.md) | Troubleshooting → Call quality | Packet loss in both directions and jitter per trunk and extension from RTCP; a health check alarms when audio is lost |
 
 ## 📱 Mobile apps
 

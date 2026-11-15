@@ -7,6 +7,8 @@
 - **Help:** every page explains itself behind the **?** button in its title bar.
 - **Light or dark:** the theme button at the bottom of the menu. **System → Appearance** sets the
   default theme (sign-in page and users who have not chosen) and can use one theme for everyone.
+  The company logo (light and dark), favicon, and brand colour configured on **System → Appearance**
+  are also provided to the mobile apps (`ping.php`).
 - **Try it first:** [aipbx.bid/demo](https://aipbx.bid/demo/) shows every page with made-up data.
 
 ## The dashboard
