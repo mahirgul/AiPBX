@@ -7,7 +7,9 @@ PASS="${SHOWCASE_PASS:-$(openssl rand -hex 12)}"
 lxc file push seed.php aipbx-showcase/root/seed.php
 # Back to the fresh install's database (kept from the first run), then the made-up company.
 lxc exec aipbx-showcase --env PASS="$PASS" -- bash -c '[ -f /root/before-seed.sql ] || mysqldump --single-transaction asterisk > /root/before-seed.sql
-  mysql -e "DROP DATABASE asterisk; CREATE DATABASE asterisk" && mysql asterisk < /root/before-seed.sql && php /root/seed.php; H=$(php -r "echo password_hash(getenv(\"PASS\"), PASSWORD_DEFAULT);"); mysql asterisk -e "UPDATE sys_users SET password_hash=\"$H\", must_reset_password=0 WHERE username=\"admin\"; DELETE FROM sys_notices; DELETE FROM sys_pending_sync"'
+  systemctl stop aipbx-signaling aipbx-webhook-worker >/dev/null 2>&1 || true
+  mysql -e "DROP DATABASE asterisk; CREATE DATABASE asterisk" && mysql asterisk < /root/before-seed.sql && php /root/seed.php; H=$(php -r "echo password_hash(getenv(\"PASS\"), PASSWORD_DEFAULT);"); mysql asterisk -e "UPDATE sys_users SET password_hash=\"$H\", must_reset_password=0 WHERE username=\"admin\"; DELETE FROM sys_notices; DELETE FROM sys_pending_sync"
+  systemctl start aipbx-webhook-worker aipbx-signaling >/dev/null 2>&1 || true'
 # No health alarms in the bell while the pages are read.
 lxc exec aipbx-showcase -- sed -i 's#^\(\* \* \* \* \* root /usr/local/bin/aipbx_health.php\)#\# \1#' /etc/cron.d/aipbx
 lxc exec aipbx-showcase -- mysql -e "DELETE FROM asterisk.sys_notices"

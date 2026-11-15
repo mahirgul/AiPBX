@@ -196,8 +196,8 @@ foreach ($phones as $i => [$mac, $model, $ext]) {
     $ins('pbx_phone_fetch_log', [['phone_id' => $i + 1, 'mac' => str_replace(':', '', $mac), 'file' => str_replace(':', '', $mac) . '.cfg', 'result' => 'ok', 'ip' => '192.0.2.' . (31 + $i), 'user_agent' => 'phone', 'created_at' => $ago(600 + $i * 3600)]]);
 }
 
-// --- call history: 45 calls over 6 days ---
-$exts = array_column($people, 0);
+// --- call history: 45 calls over 6 days plus dedicated activity for 1000 (/my-phone) ---
+$exts = array_merge(['1000'], array_column($people, 0));
 $outside = ['+15550142', '+15550155', '+15550163', '+15550171', '+447700900123', '+447700900456', '+15550188', '+15550120'];
 $cdr = [];
 $today = max(1800, $now - strtotime('today'));
@@ -219,6 +219,21 @@ for ($i = 0; $i < 45; $i++) {
     $u = sprintf('%d.%d', $t, $i);
     $cdr[] = ['calldate' => date('Y-m-d H:i:s', $t), 'clid' => "\"{$src}\" <{$src}>", 'src' => $src, 'dst' => $dst, 'did' => $did, 'dcontext' => $ctx,
         'channel' => "PJSIP/{$src}-0000" . dechex($i), 'dstchannel' => "PJSIP/{$dst}-0001" . dechex($i), 'lastapp' => 'Dial', 'lastdata' => "PJSIP/{$dst}",
+        'duration' => $dur, 'billsec' => $bill, 'disposition' => $disp, 'amaflags' => 3, 'uniqueid' => $u, 'linkedid' => $u];
+}
+$demo1000 = [
+    ['+15550142', '1000', 'from-trunk', '+15550100', 'ANSWERED', 185, 179, 900],
+    ['1000', '05550155', 'from-internal', '', 'ANSWERED', 242, 234, 2100],
+    ['1002', '1000', 'from-internal', '', 'ANSWERED', 95, 90, 3800],
+    ['+447700900123', '1000', 'from-trunk', '+447700900100', 'NO ANSWER', 24, 0, 5400],
+    ['1000', '1004', 'from-internal', '', 'ANSWERED', 140, 134, 86400 + 1800],
+    ['1000', '05550163', 'from-internal', '', 'ANSWERED', 310, 302, 86400 * 2 + 1200],
+];
+foreach ($demo1000 as $idx => [$src, $dst, $ctx, $did, $disp, $dur, $bill, $age]) {
+    $t = $now - $age;
+    $u = sprintf('%d.%d', $t, 45 + $idx);
+    $cdr[] = ['calldate' => date('Y-m-d H:i:s', $t), 'clid' => "\"{$src}\" <{$src}>", 'src' => $src, 'dst' => $dst, 'did' => $did, 'dcontext' => $ctx,
+        'channel' => "PJSIP/{$src}-0000" . dechex(45 + $idx), 'dstchannel' => "PJSIP/{$dst}-0001" . dechex(45 + $idx), 'lastapp' => 'Dial', 'lastdata' => "PJSIP/{$dst}",
         'duration' => $dur, 'billsec' => $bill, 'disposition' => $disp, 'amaflags' => 3, 'uniqueid' => $u, 'linkedid' => $u];
 }
 $ins('asteriskcdr', $cdr);
@@ -318,21 +333,421 @@ foreach ([['admin', 'success', 600], ['ext1004', 'success', 4000], ['ext1002', '
     $ins('sys_login_logs', [['ip_address' => '198.51.100.' . rand(2, 250), 'username' => $u, 'status' => $st, 'user_agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/130.0', 'created_at' => $ago($sec)]]);
 }
 
+// --- phonebook (/phonebook) ---
+$ins('phonebook_contacts', [
+    ['source' => 'manual', 'external_id' => null, 'display_name' => 'Acme Freight Dispatch', 'first_name' => 'Claire', 'last_name' => 'Mercer', 'company' => 'Acme Freight', 'phone_work' => '+15550142', 'phone_mobile' => '+15550143', 'phone_other' => '', 'email' => 'dispatch@acmefreight.example'],
+    ['source' => 'manual', 'external_id' => null, 'display_name' => 'Bluebird Retail Purchasing', 'first_name' => 'Marcus', 'last_name' => 'Vance', 'company' => 'Bluebird Retail', 'phone_work' => '+15550155', 'phone_mobile' => '', 'phone_other' => '+15550156', 'email' => 'purchasing@bluebird.example'],
+    ['source' => 'manual', 'external_id' => null, 'display_name' => 'Kestrel Foods Logistics', 'first_name' => 'Hannah', 'last_name' => 'Brooks', 'company' => 'Kestrel Foods', 'phone_work' => '+447700900123', 'phone_mobile' => '+447700900124', 'phone_other' => '', 'email' => 'h.brooks@kestrel.example'],
+    ['source' => 'manual', 'external_id' => null, 'display_name' => 'Orchid Labs Support', 'first_name' => 'Kenji', 'last_name' => 'Takahashi', 'company' => 'Orchid Labs', 'phone_work' => '+15550163', 'phone_mobile' => '+15550164', 'phone_other' => '', 'email' => 'support@orchidlabs.example'],
+    ['source' => 'ldap-sync', 'external_id' => 'ldap-emp-901', 'display_name' => 'Martin Lindholm (Warehouse)', 'first_name' => 'Martin', 'last_name' => 'Lindholm', 'company' => 'Northwind Logistics', 'phone_work' => '+15550171', 'phone_mobile' => '+15550172', 'phone_other' => '', 'email' => 'martin.lindholm@northwind.example'],
+    ['source' => 'ldap-sync', 'external_id' => 'ldap-emp-902', 'display_name' => 'Elena Novak (Customs)', 'first_name' => 'Elena', 'last_name' => 'Novak', 'company' => 'Northwind Logistics', 'phone_work' => '+447700900456', 'phone_mobile' => '+447700900457', 'phone_other' => '', 'email' => 'elena.novak@northwind.example'],
+]);
+PhonebookService::saveLdapSettings(true, false);
+
+// --- signaling, call quality & SIP pcaps ---
+setSystemSetting('signaling_capture', '1');
+setSystemSetting('sip_capture_files', '1');
+setSystemSetting('sip_capture_days', '10');
+setSystemSetting('sip_capture_max_mb', '2048');
+setSystemSetting('signaling_retention_days', '30');
+
+$sigEvents = [
+    [$ago(2800), 'call-1002-01@northwind.example', 'INVITE', 'sip', 'UDP', '203.0.113.20:5060', '192.0.2.1:5060', 'sip:+15550142@203.0.113.20', 'sip:+15550102@192.0.2.1', '102 INVITE', '', 'INVITE sip:+15550102@192.0.2.1:5060 SIP/2.0', 'INVITE sip:+15550102@192.0.2.1:5060 SIP/2.0 | From: +15550142 | To: +15550102'],
+    [$ago(2800), 'call-1002-01@northwind.example', 'INVITE', 'sip', 'UDP', '192.0.2.1:5060', '192.0.2.32:5060', 'sip:+15550142@192.0.2.1', 'sip:1002@192.0.2.32', '102 INVITE', '', 'INVITE sip:1002@192.0.2.32:5060 SIP/2.0', 'INVITE sip:1002@192.0.2.32:5060 SIP/2.0 | From: +15550142 | To: 1002'],
+    [$ago(2798), 'call-1002-01@northwind.example', 'INVITE', 'sip', 'UDP', '192.0.2.32:5060', '192.0.2.1:5060', 'sip:+15550142@192.0.2.1', 'sip:1002@192.0.2.32', '102 INVITE', '180', 'SIP/2.0 180 Ringing', 'SIP/2.0 180 Ringing | Call-ID: call-1002-01@northwind.example'],
+    [$ago(2794), 'call-1002-01@northwind.example', 'INVITE', 'sip', 'UDP', '192.0.2.32:5060', '192.0.2.1:5060', 'sip:+15550142@192.0.2.1', 'sip:1002@192.0.2.32', '102 INVITE', '200', 'SIP/2.0 200 OK', 'SIP/2.0 200 OK | Call-ID: call-1002-01@northwind.example'],
+    [$ago(2794), 'call-1002-01@northwind.example', 'ACK', 'sip', 'UDP', '203.0.113.20:5060', '192.0.2.1:5060', 'sip:+15550142@203.0.113.20', 'sip:+15550102@192.0.2.1', '102 ACK', '', 'ACK sip:+15550102@192.0.2.1:5060 SIP/2.0', 'ACK sip:+15550102@192.0.2.1:5060 SIP/2.0'],
+    [$ago(2610), 'call-1002-01@northwind.example', 'BYE', 'sip', 'UDP', '192.0.2.32:5060', '192.0.2.1:5060', 'sip:+15550142@192.0.2.1', 'sip:1002@192.0.2.32', '103 BYE', '', 'BYE sip:+15550142@192.0.2.1:5060 SIP/2.0', 'BYE sip:+15550142@192.0.2.1:5060 SIP/2.0'],
+    [$ago(1900), 'call-1003-02@northwind.example', 'INVITE', 'sip', 'UDP', '192.0.2.33:5060', '192.0.2.1:5060', 'sip:1003@pbx.northwind.example', 'sip:+15550163@pbx.northwind.example', '201 INVITE', '', 'INVITE sip:+15550163@pbx.northwind.example SIP/2.0', 'INVITE sip:+15550163@pbx.northwind.example SIP/2.0'],
+    [$ago(1900), 'call-1003-02@northwind.example', 'INVITE', 'sip', 'TLS', '192.0.2.1:5061', '198.51.100.40:5061', 'sip:+15550100@pbx.northwind.example', 'sip:+15550163@sbc.carrier-two.example', '201 INVITE', '', 'INVITE sip:+15550163@sbc.carrier-two.example SIP/2.0', 'INVITE sip:+15550163@sbc.carrier-two.example SIP/2.0'],
+    [$ago(1897), 'call-1003-02@northwind.example', 'INVITE', 'sip', 'TLS', '198.51.100.40:5061', '192.0.2.1:5061', 'sip:+15550100@pbx.northwind.example', 'sip:+15550163@sbc.carrier-two.example', '201 INVITE', '183', 'SIP/2.0 183 Session Progress', 'SIP/2.0 183 Session Progress'],
+    [$ago(1892), 'call-1003-02@northwind.example', 'INVITE', 'sip', 'TLS', '198.51.100.40:5061', '192.0.2.1:5061', 'sip:+15550100@pbx.northwind.example', 'sip:+15550163@sbc.carrier-two.example', '201 INVITE', '200', 'SIP/2.0 200 OK', 'SIP/2.0 200 OK'],
+    [$ago(1650), 'call-1003-02@northwind.example', 'BYE', 'sip', 'UDP', '192.0.2.33:5060', '192.0.2.1:5060', 'sip:1003@pbx.northwind.example', 'sip:+15550163@pbx.northwind.example', '202 BYE', '', 'BYE sip:+15550163@pbx.northwind.example SIP/2.0', 'BYE sip:+15550163@pbx.northwind.example SIP/2.0'],
+    [$ago(600), 'reg-1001@northwind.example', 'REGISTER', 'sip', 'UDP', '192.0.2.31:5060', '192.0.2.1:5060', 'sip:1001-sip@pbx.northwind.example', 'sip:1001-sip@pbx.northwind.example', '41 REGISTER', '', 'REGISTER sip:pbx.northwind.example SIP/2.0', 'REGISTER sip:pbx.northwind.example SIP/2.0'],
+    [$ago(600), 'reg-1001@northwind.example', 'REGISTER', 'sip', 'UDP', '192.0.2.1:5060', '192.0.2.31:5060', 'sip:1001-sip@pbx.northwind.example', 'sip:1001-sip@pbx.northwind.example', '41 REGISTER', '200', 'SIP/2.0 200 OK', 'SIP/2.0 200 OK | Expires: 3600'],
+];
+$rtcpEvents = [
+    [$ago(2700), 'cq-carrier-01@northwind.example', '192.0.2.1:10401', '203.0.113.20:18201', '0x11a0c001', 0, 1, 24],
+    [$ago(2650), 'cq-carrier-01@northwind.example', '203.0.113.20:18201', '192.0.2.1:10401', '0x11a0c002', 1, 0, 32],
+    [$ago(1700), 'cq-sbc-02@northwind.example', '192.0.2.1:10421', '198.51.100.40:21001', '0x22b0d001', 42, 19, 196],
+    [$ago(1660), 'cq-sbc-02@northwind.example', '198.51.100.40:21001', '192.0.2.1:10421', '0x22b0d002', 6, 3, 64],
+    [$ago(3500), 'cq-1001-03@northwind.example', '192.0.2.1:10441', '192.0.2.31:11781', '0x33c0e001', 0, 0, 18],
+    [$ago(1100), 'cq-1002-04@northwind.example', '192.0.2.32:11821', '192.0.2.1:10461', '0x44d0f001', 9, 6, 88],
+    [$ago(950), 'cq-1002-04@northwind.example', '192.0.2.1:10461', '192.0.2.32:11821', '0x44d0f002', 2, 2, 44],
+    [$ago(5200), 'cq-1003-05@northwind.example', '192.0.2.1:10481', '192.0.2.33:11901', '0x55e01001', 0, 0, 14],
+];
+$sigRows = [];
+foreach ($sigEvents as $e) {
+    $sigRows[] = ['ts' => $e[0], 'call_id' => $e[1], 'method' => $e[2], 'proto' => $e[3], 'transport' => $e[4],
+        'src' => $e[5], 'dst' => $e[6], 'from_uri' => $e[7], 'to_uri' => $e[8], 'cseq' => $e[9], 'status_code' => $e[10],
+        'first_line' => $e[11], 'line' => $e[12], 'capture_id' => 'pbx-showcase', 'rtcp_ssrc' => '',
+        'rtcp_lost' => null, 'rtcp_fraction_lost' => null, 'rtcp_jitter' => null];
+}
+foreach ($rtcpEvents as $r) {
+    $sigRows[] = ['ts' => $r[0], 'call_id' => $r[1], 'method' => 'RTCP', 'proto' => 'rtcp', 'transport' => 'UDP',
+        'src' => $r[2], 'dst' => $r[3], 'from_uri' => '', 'to_uri' => '', 'cseq' => '', 'status_code' => '',
+        'first_line' => 'RTCP SR/RR', 'line' => "RTCP ssrc={$r[4]} lost={$r[5]} frac={$r[6]} jitter={$r[7]}",
+        'capture_id' => 'pbx-showcase', 'rtcp_ssrc' => $r[4], 'rtcp_lost' => $r[5], 'rtcp_fraction_lost' => $r[6], 'rtcp_jitter' => $r[7]];
+}
+$ins('pbx_signaling_events', $sigRows);
+$maxSigId = (string) ((int) $db->query('SELECT COALESCE(MAX(id), 0) FROM pbx_signaling_events')->fetchColumn());
+setSystemSetting('call_quality_watermark', $maxSigId);
+setSystemSetting('call_quality_last_pass', json_encode(['at' => $now - 30, 'reports' => count($rtcpEvents), 'legs' => 5, 'named' => 5, 'alerts' => 2]));
+
+$ins('pbx_call_quality_legs', [
+    ['call_id' => 'cq-carrier-01@northwind.example', 'first_ts' => $ago(2760), 'last_ts' => $ago(2400), 'leg_type' => 'trunk', 'leg_name' => 'carrier_main', 'peer' => '203.0.113.20', 'reports_in' => 14, 'reports_out' => 14, 'bad_in' => 0, 'bad_out' => 0, 'loss_in_max' => 0.39, 'loss_out_max' => 0.00, 'loss_in_sum' => 1.17, 'loss_out_sum' => 0.00, 'jitter_in_max' => 32, 'jitter_out_max' => 24, 'level' => 'good'],
+    ['call_id' => 'cq-sbc-02@northwind.example', 'first_ts' => $ago(1800), 'last_ts' => $ago(1400), 'leg_type' => 'trunk', 'leg_name' => 'sbc_tls', 'peer' => '198.51.100.40', 'reports_in' => 18, 'reports_out' => 16, 'bad_in' => 3, 'bad_out' => 0, 'loss_in_max' => 7.42, 'loss_out_max' => 1.17, 'loss_in_sum' => 28.50, 'loss_out_sum' => 4.68, 'jitter_in_max' => 196, 'jitter_out_max' => 64, 'level' => 'poor'],
+    ['call_id' => 'cq-1001-03@northwind.example', 'first_ts' => $ago(3600), 'last_ts' => $ago(3300), 'leg_type' => 'extension', 'leg_name' => '1001', 'peer' => '192.0.2.31', 'reports_in' => 12, 'reports_out' => 12, 'bad_in' => 0, 'bad_out' => 0, 'loss_in_max' => 0.00, 'loss_out_max' => 0.39, 'loss_in_sum' => 0.00, 'loss_out_sum' => 0.78, 'jitter_in_max' => 18, 'jitter_out_max' => 22, 'level' => 'good'],
+    ['call_id' => 'cq-1002-04@northwind.example', 'first_ts' => $ago(1200), 'last_ts' => $ago(900), 'leg_type' => 'extension', 'leg_name' => '1002', 'peer' => '192.0.2.32', 'reports_in' => 16, 'reports_out' => 15, 'bad_in' => 0, 'bad_out' => 1, 'loss_in_max' => 0.78, 'loss_out_max' => 2.34, 'loss_in_sum' => 2.34, 'loss_out_sum' => 8.58, 'jitter_in_max' => 44, 'jitter_out_max' => 88, 'level' => 'fair'],
+    ['call_id' => 'cq-1003-05@northwind.example', 'first_ts' => $ago(5400), 'last_ts' => $ago(5100), 'leg_type' => 'extension', 'leg_name' => '1003', 'peer' => '192.0.2.33', 'reports_in' => 10, 'reports_out' => 10, 'bad_in' => 0, 'bad_out' => 0, 'loss_in_max' => 0.00, 'loss_out_max' => 0.00, 'loss_in_sum' => 0.00, 'loss_out_sum' => 0.00, 'jitter_in_max' => 14, 'jitter_out_max' => 16, 'level' => 'good'],
+]);
+
+$sipDir = '/var/lib/aipbx/sip-capture';
+@mkdir($sipDir, 0750, true);
+@chown($sipDir, 'asterisk');
+@chgrp($sipDir, 'www-data');
+@chmod($sipDir, 0750);
+foreach (glob($sipDir . '/sip-*.pcap') ?: [] as $oldPcap) {
+    @unlink($oldPcap);
+}
+$pcapHeader = pack('VvvVVVV', 0xa1b2c3d4, 2, 4, 0, 0, 65535, 101);
+$pcapRec = static function (int $sec, int $usec, string $srcIp, int $srcPort, string $dstIp, int $dstPort, string $sip): string {
+    $udp = pack('nnnn', $srcPort, $dstPort, 8 + strlen($sip), 0) . $sip;
+    $ip = pack('CCnnnCCn', 0x45, 0, 20 + strlen($udp), 1, 0, 64, 17, 0) . inet_pton($srcIp) . inet_pton($dstIp) . $udp;
+    return pack('VVVV', $sec, $usec, strlen($ip), strlen($ip)) . $ip;
+};
+$sipMsg = static fn(string $first, array $hdrs, string $body = ''): string =>
+    $first . "\r\n" . implode("\r\n", $hdrs) . "\r\nContent-Length: " . strlen($body) . "\r\n\r\n" . $body;
+
+$sdpAcme = "v=0\r\no=carrier 1201 1201 IN IP4 203.0.113.20\r\ns=-\r\nc=IN IP4 203.0.113.20\r\nt=0 0\r\nm=audio 18200 RTP/AVP 0 8 101\r\n";
+$sdpPbx = "v=0\r\no=Asterisk 1202 1202 IN IP4 192.0.2.1\r\ns=-\r\nc=IN IP4 192.0.2.1\r\nt=0 0\r\nm=audio 10400 RTP/AVP 9 8 0 101\r\n";
+$sdpPhone = "v=0\r\no=1002 1203 1203 IN IP4 192.0.2.32\r\ns=-\r\nc=IN IP4 192.0.2.32\r\nt=0 0\r\nm=audio 11820 RTP/AVP 8 0 101\r\n";
+
+$t0 = $now - 7200;
+$closedBytes = $pcapHeader
+    . $pcapRec($t0, 100000, '192.0.2.31', 5060, '192.0.2.1', 5060, $sipMsg('REGISTER sip:pbx.northwind.example SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.31:5060;branch=z9hG4bK-reg0',
+        'From: "Anna Weber" <sip:1001-sip@pbx.northwind.example>;tag=r0a',
+        'To: <sip:1001-sip@pbx.northwind.example>',
+        'Call-ID: reg-1005@northwind.example',
+        'CSeq: 12 REGISTER',
+        'User-Agent: Yealink SIP-T54W 96.86.0.145',
+    ]))
+    . $pcapRec($t0, 145000, '192.0.2.1', 5060, '192.0.2.31', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.31:5060;branch=z9hG4bK-reg0',
+        'From: "Anna Weber" <sip:1001-sip@pbx.northwind.example>;tag=r0a',
+        'To: <sip:1001-sip@pbx.northwind.example>;tag=pbx0',
+        'Call-ID: reg-1005@northwind.example',
+        'CSeq: 12 REGISTER',
+        'Expires: 3600',
+    ]))
+    . $pcapRec($t0 + 400, 10000, '192.0.2.31', 5060, '192.0.2.1', 5060, $sipMsg('INVITE sip:1004@pbx.northwind.example SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.31:5060;branch=z9hG4bK-c00',
+        'From: "Anna Weber" <sip:1001@pbx.northwind.example>;tag=c00a',
+        'To: <sip:1004@pbx.northwind.example>',
+        'Call-ID: call-1001-00@northwind.example',
+        'CSeq: 1 INVITE',
+        'User-Agent: Yealink SIP-T54W 96.86.0.145',
+    ]))
+    . $pcapRec($t0 + 402, 200000, '192.0.2.1', 5060, '192.0.2.31', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.31:5060;branch=z9hG4bK-c00',
+        'From: "Anna Weber" <sip:1001@pbx.northwind.example>;tag=c00a',
+        'To: <sip:1004@pbx.northwind.example>;tag=c00b',
+        'Call-ID: call-1001-00@northwind.example',
+        'CSeq: 1 INVITE',
+    ]));
+file_put_contents($sipDir . '/sip-20261114-090000_20261114-120000.pcap', $closedBytes);
+@chown($sipDir . '/sip-20261114-090000_20261114-120000.pcap', 'asterisk');
+@chgrp($sipDir . '/sip-20261114-090000_20261114-120000.pcap', 'www-data');
+@chmod($sipDir . '/sip-20261114-090000_20261114-120000.pcap', 0640);
+
+$t1 = $now - 2800;
+$c1 = 'call-1002-01@northwind.example';
+$c2 = 'call-1003-02@northwind.example';
+$r1 = 'reg-1001@northwind.example';
+$openBytes = $pcapHeader
+    // Dialog 1: 3-column call-1002-01@northwind.example (203.0.113.20:5060 -> 192.0.2.1:5060 -> 192.0.2.32:5060)
+    . $pcapRec($t1, 10000, '203.0.113.20', 5060, '192.0.2.1', 5060, $sipMsg('INVITE sip:+15550102@192.0.2.1:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 203.0.113.20:5060;branch=z9hG4bK-tr1',
+        'From: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        'To: <sip:+15550102@192.0.2.1>',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+        'Contact: <sip:+15550142@203.0.113.20:5060>',
+        'User-Agent: CarrierOne-SBC/4.2',
+        'Content-Type: application/sdp',
+    ], $sdpAcme))
+    . $pcapRec($t1, 25000, '192.0.2.1', 5060, '203.0.113.20', 5060, $sipMsg('SIP/2.0 100 Trying', [
+        'Via: SIP/2.0/UDP 203.0.113.20:5060;branch=z9hG4bK-tr1',
+        'From: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        'To: <sip:+15550102@192.0.2.1>',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+        'Server: AiPBX/22.0',
+    ]))
+    . $pcapRec($t1, 60000, '192.0.2.1', 5060, '192.0.2.32', 5060, $sipMsg('INVITE sip:1002@192.0.2.32:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-pbx1',
+        'From: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        'To: <sip:1002@192.0.2.32>',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+        'Contact: <sip:+15550142@192.0.2.1:5060>',
+        'User-Agent: AiPBX/22.0',
+        'Content-Type: application/sdp',
+    ], $sdpPbx))
+    . $pcapRec($t1, 80000, '192.0.2.32', 5060, '192.0.2.1', 5060, $sipMsg('SIP/2.0 100 Trying', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-pbx1',
+        'From: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        'To: <sip:1002@192.0.2.32>',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+    ]))
+    . $pcapRec($t1 + 1, 150000, '192.0.2.32', 5060, '192.0.2.1', 5060, $sipMsg('SIP/2.0 180 Ringing', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-pbx1',
+        'From: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        'To: <sip:1002@192.0.2.32>;tag=yl46u',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+        'User-Agent: Yealink SIP-T46U 108.86.0.45',
+    ]))
+    . $pcapRec($t1 + 1, 165000, '192.0.2.1', 5060, '203.0.113.20', 5060, $sipMsg('SIP/2.0 180 Ringing', [
+        'Via: SIP/2.0/UDP 203.0.113.20:5060;branch=z9hG4bK-tr1',
+        'From: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        'To: <sip:+15550102@192.0.2.1>;tag=pbx200',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+    ]))
+    . $pcapRec($t1 + 6, 40000, '192.0.2.32', 5060, '192.0.2.1', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-pbx1',
+        'From: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        'To: <sip:1002@192.0.2.32>;tag=yl46u',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+        'Contact: <sip:1002@192.0.2.32:5060>',
+        'User-Agent: Yealink SIP-T46U 108.86.0.45',
+        'Content-Type: application/sdp',
+    ], $sdpPhone))
+    . $pcapRec($t1 + 6, 55000, '192.0.2.1', 5060, '203.0.113.20', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 203.0.113.20:5060;branch=z9hG4bK-tr1',
+        'From: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        'To: <sip:+15550102@192.0.2.1>;tag=pbx200',
+        "Call-ID: {$c1}",
+        'CSeq: 102 INVITE',
+        'Contact: <sip:+15550102@192.0.2.1:5060>',
+        'Content-Type: application/sdp',
+    ], $sdpPbx))
+    . $pcapRec($t1 + 6, 90000, '203.0.113.20', 5060, '192.0.2.1', 5060, $sipMsg('ACK sip:+15550102@192.0.2.1:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 203.0.113.20:5060;branch=z9hG4bK-ack1',
+        'From: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        'To: <sip:+15550102@192.0.2.1>;tag=pbx200',
+        "Call-ID: {$c1}",
+        'CSeq: 102 ACK',
+    ]))
+    . $pcapRec($t1 + 6, 98000, '192.0.2.1', 5060, '192.0.2.32', 5060, $sipMsg('ACK sip:1002@192.0.2.32:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-ack2',
+        'From: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        'To: <sip:1002@192.0.2.32>;tag=yl46u',
+        "Call-ID: {$c1}",
+        'CSeq: 102 ACK',
+    ]))
+    . $pcapRec($t1 + 190, 20000, '192.0.2.32', 5060, '192.0.2.1', 5060, $sipMsg('BYE sip:+15550142@192.0.2.1:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.32:5060;branch=z9hG4bK-bye1',
+        'From: <sip:1002@192.0.2.32>;tag=yl46u',
+        'To: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        "Call-ID: {$c1}",
+        'CSeq: 103 BYE',
+    ]))
+    . $pcapRec($t1 + 190, 32000, '192.0.2.1', 5060, '192.0.2.32', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.32:5060;branch=z9hG4bK-bye1',
+        'From: <sip:1002@192.0.2.32>;tag=yl46u',
+        'To: "Acme Freight" <sip:+15550142@192.0.2.1>;tag=pbx100',
+        "Call-ID: {$c1}",
+        'CSeq: 103 BYE',
+    ]))
+    . $pcapRec($t1 + 190, 45000, '192.0.2.1', 5060, '203.0.113.20', 5060, $sipMsg('BYE sip:+15550142@203.0.113.20:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-bye2',
+        'From: <sip:+15550102@192.0.2.1>;tag=pbx200',
+        'To: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        "Call-ID: {$c1}",
+        'CSeq: 103 BYE',
+    ]))
+    . $pcapRec($t1 + 190, 70000, '203.0.113.20', 5060, '192.0.2.1', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.1:5060;branch=z9hG4bK-bye2',
+        'From: <sip:+15550102@192.0.2.1>;tag=pbx200',
+        'To: "Acme Freight" <sip:+15550142@203.0.113.20>;tag=tr100',
+        "Call-ID: {$c1}",
+        'CSeq: 103 BYE',
+    ]))
+    // Dialog 2: outbound call-1003-02@northwind.example
+    . $pcapRec($t1 + 900, 10000, '192.0.2.33', 5060, '192.0.2.1', 5060, $sipMsg('INVITE sip:+15550163@192.0.2.1:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.33:5060;branch=z9hG4bK-out1',
+        'From: "John Carter" <sip:1003@192.0.2.1>;tag=jc1',
+        'To: <sip:+15550163@192.0.2.1>',
+        "Call-ID: {$c2}",
+        'CSeq: 201 INVITE',
+        'User-Agent: Grandstream GXP2160 1.0.11.64',
+    ]))
+    . $pcapRec($t1 + 900, 22000, '192.0.2.1', 5060, '192.0.2.33', 5060, $sipMsg('SIP/2.0 100 Trying', [
+        'Via: SIP/2.0/UDP 192.0.2.33:5060;branch=z9hG4bK-out1',
+        'From: "John Carter" <sip:1003@192.0.2.1>;tag=jc1',
+        'To: <sip:+15550163@192.0.2.1>',
+        "Call-ID: {$c2}",
+        'CSeq: 201 INVITE',
+    ]))
+    . $pcapRec($t1 + 900, 45000, '192.0.2.1', 5061, '198.51.100.40', 5061, $sipMsg('INVITE sip:+15550163@198.51.100.40:5061 SIP/2.0', [
+        'Via: SIP/2.0/TLS 192.0.2.1:5061;branch=z9hG4bK-sbc1',
+        'From: "Northwind" <sip:+15550100@192.0.2.1>;tag=nw1',
+        'To: <sip:+15550163@198.51.100.40>',
+        "Call-ID: {$c2}",
+        'CSeq: 201 INVITE',
+        'User-Agent: AiPBX/22.0',
+    ]))
+    . $pcapRec($t1 + 903, 120000, '198.51.100.40', 5061, '192.0.2.1', 5061, $sipMsg('SIP/2.0 183 Session Progress', [
+        'Via: SIP/2.0/TLS 192.0.2.1:5061;branch=z9hG4bK-sbc1',
+        'From: "Northwind" <sip:+15550100@192.0.2.1>;tag=nw1',
+        'To: <sip:+15550163@198.51.100.40>;tag=sbc9',
+        "Call-ID: {$c2}",
+        'CSeq: 201 INVITE',
+    ]))
+    . $pcapRec($t1 + 908, 300000, '192.0.2.1', 5060, '192.0.2.33', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.33:5060;branch=z9hG4bK-out1',
+        'From: "John Carter" <sip:1003@192.0.2.1>;tag=jc1',
+        'To: <sip:+15550163@192.0.2.1>;tag=pbx3',
+        "Call-ID: {$c2}",
+        'CSeq: 201 INVITE',
+    ]))
+    . $pcapRec($t1 + 908, 340000, '192.0.2.33', 5060, '192.0.2.1', 5060, $sipMsg('ACK sip:+15550163@192.0.2.1:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.33:5060;branch=z9hG4bK-outack',
+        'From: "John Carter" <sip:1003@192.0.2.1>;tag=jc1',
+        'To: <sip:+15550163@192.0.2.1>;tag=pbx3',
+        "Call-ID: {$c2}",
+        'CSeq: 201 ACK',
+    ]))
+    . $pcapRec($t1 + 1150, 50000, '192.0.2.33', 5060, '192.0.2.1', 5060, $sipMsg('BYE sip:+15550163@192.0.2.1:5060 SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.33:5060;branch=z9hG4bK-outbye',
+        'From: "John Carter" <sip:1003@192.0.2.1>;tag=jc1',
+        'To: <sip:+15550163@192.0.2.1>;tag=pbx3',
+        "Call-ID: {$c2}",
+        'CSeq: 202 BYE',
+    ]))
+    . $pcapRec($t1 + 1150, 75000, '192.0.2.1', 5060, '192.0.2.33', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.33:5060;branch=z9hG4bK-outbye',
+        'From: "John Carter" <sip:1003@192.0.2.1>;tag=jc1',
+        'To: <sip:+15550163@192.0.2.1>;tag=pbx3',
+        "Call-ID: {$c2}",
+        'CSeq: 202 BYE',
+    ]))
+    // Dialog 3: registration reg-1001@northwind.example
+    . $pcapRec($t1 + 2200, 10000, '192.0.2.31', 5060, '192.0.2.1', 5060, $sipMsg('REGISTER sip:pbx.northwind.example SIP/2.0', [
+        'Via: SIP/2.0/UDP 192.0.2.31:5060;branch=z9hG4bK-reg1',
+        'From: "Anna Weber" <sip:1001-sip@pbx.northwind.example>;tag=r1a',
+        'To: <sip:1001-sip@pbx.northwind.example>',
+        "Call-ID: {$r1}",
+        'CSeq: 41 REGISTER',
+        'User-Agent: Yealink SIP-T54W 96.86.0.145',
+    ]))
+    . $pcapRec($t1 + 2200, 30000, '192.0.2.1', 5060, '192.0.2.31', 5060, $sipMsg('SIP/2.0 200 OK', [
+        'Via: SIP/2.0/UDP 192.0.2.31:5060;branch=z9hG4bK-reg1',
+        'From: "Anna Weber" <sip:1001-sip@pbx.northwind.example>;tag=r1a',
+        'To: <sip:1001-sip@pbx.northwind.example>;tag=pbxreg',
+        "Call-ID: {$r1}",
+        'CSeq: 41 REGISTER',
+        'Expires: 3600',
+    ]));
+file_put_contents($sipDir . '/sip-20261114-120000.pcap', $openBytes);
+@chown($sipDir . '/sip-20261114-120000.pcap', 'asterisk');
+@chgrp($sipDir . '/sip-20261114-120000.pcap', 'www-data');
+@chmod($sipDir . '/sip-20261114-120000.pcap', 0640);
+
+// --- problem recording (/problem-recording) ---
+$diagDir = '/var/lib/aipbx/diag';
+@mkdir($diagDir, 0750, true);
+@chown($diagDir, 'root');
+@chgrp($diagDir, 'www-data');
+@chmod($diagDir, 0750);
+foreach ([
+    ['aipbx-diag-20261114-091522.zip', $now - 3600],
+    ['aipbx-diag-20261113-164210.zip', $now - 86400],
+] as [$zipName, $mtime]) {
+    $zipPath = $diagDir . '/' . $zipName;
+    $zip = new ZipArchive();
+    if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === true) {
+        $zip->addFromString('state.txt', "AiPBX diagnostic bundle (demo)\nHost: pbx.northwind.example\nAsterisk: 22.0\nDatabase: ok\n");
+        $zip->addFromString('selftest.txt', "selftest: ALL PASS\ndisk_free: 42%\nsip_capture: active\n");
+        $zip->close();
+        @chown($zipPath, 'root');
+        @chgrp($zipPath, 'www-data');
+        @chmod($zipPath, 0640);
+        @touch($zipPath, $mtime);
+    }
+}
+
+// --- registrations (/registrations): AstDB contacts ---
+@exec('asterisk -rx "database deltree registrar/contact" 2>/dev/null');
+$regContacts = [
+    ['1000-webrtc', 'sip:1000-webrtc@198.51.100.14:54312;transport=WS', 'AiPBX WebPhone / Chrome 131'],
+    ['1001-sip', 'sip:1001-sip@192.0.2.31:5060;transport=UDP', 'Yealink SIP-T54W 96.86.0.145'],
+    ['1001-mob-webrtc', 'sip:1001-mob-webrtc@198.51.100.21:55104;transport=WS', 'AiPBX Mobile / iOS 18.1'],
+    ['1002-sip', 'sip:1002-sip@192.0.2.32:5060;transport=UDP', 'Yealink SIP-T46U 108.86.0.45'],
+    ['1002-webrtc', 'sip:1002-webrtc@198.51.100.22:55210;transport=WS', 'AiPBX WebPhone / Chrome 131'],
+    ['1003-sip', 'sip:1003-sip@192.0.2.33:5060;transport=UDP', 'Grandstream GXP2160 1.0.11.64'],
+    ['1004-sip', 'sip:1004-sip@192.0.2.34:5060;transport=TCP', 'Fanvil X5U 2.4.12'],
+    ['1004-mob-webrtc', 'sip:1004-mob-webrtc@198.51.100.24:55318;transport=WS', 'AiPBX Mobile / Android 15'],
+    ['1005-sip', 'sip:1005-sip@192.0.2.35:5060;transport=TLS', 'snom D785 10.1.141.12'],
+    ['1006-webrtc', 'sip:1006-webrtc@198.51.100.26:55402;transport=WS', 'AiPBX WebPhone / Firefox 132'],
+    ['1007-mob-webrtc', 'sip:1007-mob-webrtc@198.51.100.27:55490;transport=WS', 'AiPBX Mobile / iOS 18.1'],
+];
+$expTime = (string) ($now + 3200);
+foreach ($regContacts as [$ep, $uri, $ua]) {
+    $hash = substr(md5($ep), 0, 10);
+    $json = json_encode(['endpoint' => $ep, 'uri' => $uri, 'user_agent' => $ua, 'expiration_time' => $expTime], JSON_UNESCAPED_SLASHES);
+    $cliVal = '"' . str_replace(['\\', '"'], ['\\\\', '\\"'], (string) $json) . '"';
+    @exec('asterisk -rx ' . escapeshellarg("database put registrar/contact \"{$ep};@{$hash}\" {$cliVal}") . ' 2>/dev/null');
+}
+
+// --- other tables: AI TTS history, web widget sessions, advanced config ---
+$ins('ai_tts_history', [
+    ['provider' => 'openai', 'voice' => 'alloy', 'language' => 'en', 'speed' => 1.00, 'text' => 'Welcome to Northwind Logistics. Please press 1 for Sales or 2 for Support.', 'chars' => 73, 'bytes' => 48200, 'duration_ms' => 4600, 'announcement' => 'custom/welcome', 'created_by' => 1, 'created_at' => $ago(86400 * 2)],
+    ['provider' => 'elevenlabs', 'voice' => 'Rachel', 'language' => 'en', 'speed' => 0.95, 'text' => 'All representatives are currently assisting other callers. Please hold.', 'chars' => 71, 'bytes' => 45900, 'duration_ms' => 4200, 'announcement' => 'custom/busy', 'created_by' => 1, 'created_at' => $ago(86400)],
+    ['provider' => 'google', 'voice' => 'de-DE-Wavenet-C', 'language' => 'de', 'speed' => 1.00, 'text' => 'Willkommen bei Northwind Logistics. Unsere Geschäftszeiten sind Montag bis Freitag.', 'chars' => 83, 'bytes' => 52100, 'duration_ms' => 5100, 'announcement' => 'custom/menu-de', 'created_by' => 1, 'created_at' => $ago(14400)],
+]);
+$ins('pbx_web_widget_sessions', [
+    ['widget_id' => 1, 'kind' => 'call', 'token' => bin2hex(random_bytes(16)), 'result' => 'claimed', 'ip' => '198.51.100.41', 'origin' => 'https://www.northwind.example', 'user_agent' => 'Mozilla/5.0 Chrome/131.0', 'caller_name' => 'Acme Freight', 'caller_number' => '+15550142', 'created_at' => $ago(5400), 'claimed_at' => $ago(5390)],
+    ['widget_id' => 1, 'kind' => 'callback', 'token' => null, 'result' => 'callback', 'ip' => '198.51.100.42', 'origin' => 'https://www.northwind.example', 'user_agent' => 'Mozilla/5.0 Safari/18.0', 'caller_name' => 'Bluebird Retail', 'caller_number' => '+15550155', 'created_at' => $ago(3600), 'claimed_at' => $ago(3540)],
+    ['widget_id' => 2, 'kind' => 'call', 'token' => bin2hex(random_bytes(16)), 'result' => 'issued', 'ip' => '203.0.113.88', 'origin' => 'https://shop.northwind.example', 'user_agent' => 'Mozilla/5.0 Firefox/132.0', 'caller_name' => 'Kestrel Foods', 'caller_number' => '+447700900123', 'created_at' => $ago(1200), 'claimed_at' => null],
+    ['widget_id' => 3, 'kind' => 'call', 'token' => null, 'result' => 'denied_origin', 'ip' => '192.0.2.77', 'origin' => 'https://untrusted.example', 'user_agent' => 'curl/8.5.0', 'caller_name' => '', 'caller_number' => '', 'created_at' => $ago(900), 'claimed_at' => null],
+]);
+$ins('pbx_advanced_pjsip', [
+    ['config_file' => 'pjsip', 'target' => 'object', 'object_type' => 'endpoint', 'object_name' => '1001-sip', 'options' => "force_rport=yes\nrewrite_contact=yes\nrtp_symmetric=yes", 'note' => 'NAT traversal for desk phone 1001', 'is_active' => 1, 'created_at' => $ago(86400 * 3)],
+    ['config_file' => 'pjsip', 'target' => 'trunks', 'object_type' => 'endpoint', 'object_name' => '', 'options' => "tos_audio=ef\ncos_audio=5", 'note' => 'QoS DSCP EF markings for carrier trunks', 'is_active' => 1, 'created_at' => $ago(86400 * 2)],
+    ['config_file' => 'voicemail', 'target' => 'object', 'object_type' => '', 'object_name' => 'general', 'options' => 'tz=european', 'note' => '24-hour European timezone in greetings', 'is_active' => 1, 'created_at' => $ago(86400)],
+]);
+
 // --- plugins: a few official ones on, and the SMS plugin with conversations ---
-foreach (['web-widgets', 'auto-dialer', 'ai-apps', 'ai-tts', 'ai-cloud'] as $slug) {
+foreach (['web-widgets', 'auto-dialer', 'ai-apps', 'ai-tts', 'ai-cloud', 'ai-models', 'ms-teams', 'google-auth'] as $slug) {
     PluginManager::enable($slug, 't');
 }
+$ins('plg_autodial_campaigns', [
+    ['name' => 'Q4 Freight Renewals', 'status' => 'running', 'caller_id' => '+15550100', 'max_concurrent' => 3, 'queue_free_agent_pacing' => 1, 'max_retries' => 2, 'retry_interval_sec' => 300, 'amd_enabled' => 1, 'amd_machine_action' => 'hangup', 'amd_machine_sound' => '', 'dest_type' => 'queue', 'dest_id' => '1'],
+    ['name' => 'Winter Schedule Notice', 'status' => 'paused', 'caller_id' => '+15550101', 'max_concurrent' => 2, 'queue_free_agent_pacing' => 1, 'max_retries' => 1, 'retry_interval_sec' => 600, 'amd_enabled' => 1, 'amd_machine_action' => 'hangup', 'amd_machine_sound' => '', 'dest_type' => 'ivr', 'dest_id' => '1'],
+]);
+$ins('plg_autodial_numbers', [
+    ['campaign_id' => 1, 'phone_number' => '+15550142', 'contact_name' => 'Acme Freight', 'status' => 'completed', 'attempts' => 1, 'call_result' => 'answered', 'amd_status' => 'HUMAN', 'duration' => 145, 'last_attempt_at' => $ago(5400)],
+    ['campaign_id' => 1, 'phone_number' => '+15550155', 'contact_name' => 'Bluebird Retail', 'status' => 'pending', 'attempts' => 0, 'call_result' => '', 'amd_status' => '', 'duration' => 0, 'last_attempt_at' => null],
+    ['campaign_id' => 2, 'phone_number' => '+447700900123', 'contact_name' => 'Kestrel Foods', 'status' => 'pending', 'attempts' => 0, 'call_result' => '', 'amd_status' => '', 'duration' => 0, 'last_attempt_at' => null],
+]);
 echo "seeded\n";
 
 // --- community plugins from the catalog: SMS with a few conversations ---
 setSystemSetting('plugins_community_catalog', '1');
 $check(PluginManager::installFromCatalog('sms', 't'), 'sms plugin');
 $check(PluginManager::installFromCatalog('provider-templates', 't'), 'provider-templates plugin');
+@exec('chown -R www-data:www-data ' . escapeshellarg(PluginManager::customDir()) . ' && chmod -R u+rwX,g+rX,o-rwx ' . escapeshellarg(PluginManager::customDir()));
 require_once PluginManager::customDir() . '/sms/lib/Sms.php';
 PluginManager::setSetting('sms', 'twilio_account_sid', 'AC0000000000000000000000000000demo');
 PluginManager::setSetting('sms', 'twilio_auth_token', 'demo', true);
-Sms::saveNumber(0, '+15550100', 'twilio', 'Main', [$uid['1001'], $uid['1004']]);
-Sms::saveNumber(0, '+15550102', 'twilio', 'Sales', [$uid['1002'], $uid['1003']]);
+Sms::saveNumber(0, '+15550100', 'twilio', 'Main', [$uid['1000'] ?? 1, $uid['1001'], $uid['1004']]);
+Sms::saveNumber(0, '+15550102', 'twilio', 'Sales', [$uid['1000'] ?? 1, $uid['1002'], $uid['1003']]);
 $sms = [[1, '+15550142', 'in', 'Hi, is my order 4471 shipped yet?', 7200], [1, '+15550142', 'out', 'Yes! It left the warehouse this morning, tracking: NW-4471-US.', 7000],
     [1, '+15550142', 'in', 'Great, thank you 🙏', 6900], [1, '+15550155', 'in', 'Can you call me back about the invoice?', 3600],
     [1, '+447700900123', 'in', 'Delivery window tomorrow 9-12 works for us.', 1500], [1, '+447700900123', 'out', 'Booked. See you tomorrow.', 1400],

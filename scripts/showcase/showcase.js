@@ -79,17 +79,18 @@
     // --- answers instead of the server ---
     function answer(method, url) {
         const u = new URL(url, location.href);
+        const path = u.pathname.replace(/^\/demo\/[a-z]+/, '') || '/';
         const action = u.searchParams.get('action');
-        if (live[u.pathname]) return live[u.pathname]();
+        if (live[path]) return live[path]();
         if (action && live[action]) {
-            const recorded = API[`GET ${u.pathname}${u.search}`];
+            const recorded = API[`GET ${path}${u.search}`];
             return live[action](recorded ? JSON.parse(recorded) : {});
         }
-        if (/sip_credentials|qr_code|passkey/.test(u.pathname)) return { success: false };
-        if (u.pathname === '/api/notices.php') return { success: true, count: 0, open: [], recent: [] };
-        const key = `${method} ${u.pathname}${u.search}`;
+        if (/sip_credentials|qr_code|passkey/.test(path)) return { success: false };
+        if (path === '/api/notices.php') return { success: true, count: 0, open: [], recent: [] };
+        const key = `${method} ${path}${u.search}`;
         if (API[key]) return API[key];
-        const prefix = `${method} ${u.pathname}`;
+        const prefix = `${method} ${path}`;
         const near = Object.keys(API).find((k) => k === prefix || k.startsWith(prefix + '?'));
         if (near) return API[near];
         return { success: true, data: [], items: [], rows: [] };
@@ -97,6 +98,7 @@
     const own = (url, method) => {
         const u = new URL(url, location.href);
         if (u.origin !== location.origin) return false;
+        if (u.searchParams.has('poll')) return true;
         // The demo's own files (pages fetched by the page router, scripts, styles) are real.
         return !(method === 'GET' && u.pathname.startsWith('/demo/') && !u.pathname.includes('/api/'));
     };

@@ -4,7 +4,7 @@
 // under /demo/<lang>/. The result needs no PHP, database or Asterisk: showcase.js answers the API
 // calls from the recorded answers and makes the live views move.
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync, mkdtempSync } from 'node:fs';
+import { mkdirSync, writeFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 
@@ -88,12 +88,26 @@ const save = (lang, p, html) => {
 };
 
 for (const lang of langs) {
+    rmSync(join(out, lang), { recursive: true, force: true });
     const cookie = await login();
     await get(`/set-language?lang=${lang}`, cookie);
     const dash = await get('/dashboard', cookie);
     const fromMenu = [...dash.matchAll(/href="(\/[a-z0-9][a-z0-9/_-]*(\?[^"]*)?)"/g)].map((m) => m[1])
-        .filter((p) => !/^\/(api|logout|set-language|assets|auth|integrations\/google|uploads)/.test(p));
-    const pages = [...new Set(['/dashboard', ...fromMenu, '/my-phone', '/chat', '/apps/sms?n=1&peer=%2B15550142', '/plugins/sms', '/plugins/provider-templates'])];
+        .filter((p) => !/^\/(api\/|logout|set-language|assets|auth|integrations\/google|uploads)/.test(p));
+    const pages = [...new Set([
+        '/dashboard',
+        ...fromMenu,
+        '/my-phone',
+        '/chat',
+        '/apps/sms?n=1&peer=%2B15550142',
+        '/plugins/sms',
+        '/plugins/provider-templates',
+        '/mail-templates',
+        '/phone-keys?user=2',
+        '/ivr-data-steps',
+        '/sip-calls?file=sip-20261114-120000.pcap',
+        '/sip-call?file=sip-20261114-120000.pcap&id=call-1002-01%40northwind.example',
+    ])];
     segments = [...new Set([...pages.map((p) => p.split(/[/?]/)[1]), 'assets', 'apps', 'plugins', 'dashboard'])].filter(Boolean).sort((a, b) => b.length - a.length);
     console.log(lang, pages.length, 'pages');
     const browser = await chrome();
