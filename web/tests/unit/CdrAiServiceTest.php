@@ -159,4 +159,26 @@ final class CdrAiServiceTest extends TestCase
         $db->exec("DELETE FROM cdr_ai WHERE cdr_id IN (" . implode(',', $ids) . ")");
     }
 
+
+    public function testQualityByAgent(): void
+    {
+        $db = getDB();
+        $ids = [];
+        foreach ([[90, 1, 'positive'], [60, 0, 'negative'], [null, null, '']] as $i => [$score, $resolved, $mood]) {
+            $db->prepare(
+                "INSERT INTO asteriskcdr (calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid, userfield)
+                 VALUES (NOW(), '', '0505', '100', 'from-internal-pbx', 'PJSIP/tr1-01', 'PJSIP/100-01', 'Dial', 'PJSIP/100', 42, 45, 'ANSWERED', ?, ?, '')"
+            )->execute(["test-cdr-ai-a{$i}", "test-cdr-ai-a{$i}"]);
+            $ids[] = $id = (int) $db->lastInsertId();
+            $db->prepare("INSERT INTO cdr_ai (cdr_id, call_id, transcript, qa_score, qa_resolved, qa_sentiment) VALUES (?, ?, 'x', ?, ?, ?)")
+               ->execute([$id, "test-cdr-ai-a{$i}", $score, $resolved, $mood]);
+        }
+        $ext = (string) $db->query('SELECT agent_extension FROM cdrs WHERE id = ' . $ids[0])->fetchColumn();
+        $row = array_values(array_filter(CdrAiService::qaByAgent(date('Y-m-d 00:00:00')), fn($r) => $r['extension'] === $ext))[0] ?? null;
+        $this->assertNotNull($row, 'agent row');
+        $this->assertSame([2, 75, 50, 1], [$row['calls'], $row['avg'], $row['resolved_pct'], $row['negative']]);   // the unreviewed call is not counted
+        $this->assertSame([], array_filter(CdrAiService::qaByAgent(date('Y-m-d H:i:s', time() + 3600)), fn($r) => $r['extension'] === $ext));
+        $db->exec('DELETE FROM cdr_ai WHERE cdr_id IN (' . implode(',', $ids) . ')');
+    }
+
 }

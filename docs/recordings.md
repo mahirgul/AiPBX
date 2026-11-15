@@ -74,6 +74,8 @@ the company name; asks for the customer number; offers a solution or a callback 
 transcript is also scored by the cloud language model of the language: **0–100** against the
 criteria, the caller's **mood** (positive, neutral, negative), **resolved** or not, and one sentence
 why. The score shows as a badge in the call list (green from 80, amber from 60) and in the player.
+The call-center board (`/cc-board`) adds **Call quality by agent** for the chosen queue and period:
+reviewed calls, average score, the share resolved and the unhappy callers of each agent.
 
 **Review new recorded calls automatically** (off by default) has `cdr_qa.php` (every 10 minutes)
 transcribe and score the answered, recorded calls of the last day that have no transcript yet,

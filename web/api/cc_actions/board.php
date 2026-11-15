@@ -1,6 +1,7 @@
 <?php
 // Call-center board (wallboard) statistics action: get_board_stats
 if (!defined('CC_DISPATCH_ACTIVE')) { http_response_code(403); exit; }
+require_once dirname(__DIR__, 2) . '/src/services/CdrAiService.php';
 
 if ($action === 'get_board_stats') {
     $queue_filter = preg_replace('/[^a-zA-Z0-9_-]/', '', $_GET['queue'] ?? 'ALL');
@@ -137,6 +138,8 @@ if ($action === 'get_board_stats') {
         'answered_rate' => $answered_rate,
         'missed_rate' => $missed_rate,
         'abandon_rate' => $abandon_rate,
+        // Call quality review per agent (AI → Cloud services → Call quality review), same queue and range.
+        'qa_agents' => CdrAiService::qaByAgent($since, $queue_filter !== 'ALL' ? $queue_filter : ''),
     ]);
     exit;
 }

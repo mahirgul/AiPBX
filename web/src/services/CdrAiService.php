@@ -330,6 +330,36 @@ class CdrAiService
     }
 
     /**
+     * The reviewed calls of each agent since a time (the call-center board): how many,
+     * the average score, how many were resolved of those that say, how many callers
+     * were unhappy. Best average first.
+     *
+     * @return list<array{extension: string, name: string, calls: int, avg: int, resolved_pct: ?int, negative: int}>
+     */
+    public static function qaByAgent(string $since, string $queue = ''): array
+    {
+        $sql = "SELECT c.agent_extension AS ext, MAX(c.agent_name) AS name, COUNT(*) AS n, AVG(a.qa_score) AS avg_score,
+                       SUM(a.qa_resolved = 1) AS resolved, SUM(a.qa_resolved IS NOT NULL) AS judged, SUM(a.qa_sentiment = 'negative') AS negative
+                FROM cdr_ai a JOIN cdrs c ON c.id = a.cdr_id
+                WHERE a.qa_score IS NOT NULL AND c.start_time >= ? AND c.agent_extension != ''"
+            . ($queue !== '' ? ' AND c.queue_name = ?' : '')
+            . ' GROUP BY c.agent_extension ORDER BY avg_score DESC, n DESC LIMIT 100';
+        try {
+            $st = getDB()->prepare($sql);
+            $st->execute($queue !== '' ? [$since, $queue] : [$since]);
+            $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            return [];          // before the migration
+        }
+        return array_map(fn($r) => [
+            'extension' => (string) $r['ext'], 'name' => (string) ($r['name'] ?? ''), 'calls' => (int) $r['n'],
+            'avg' => (int) round((float) $r['avg_score']),
+            'resolved_pct' => (int) $r['judged'] > 0 ? (int) round(100 * (int) $r['resolved'] / (int) $r['judged']) : null,
+            'negative' => (int) $r['negative'],
+        ], $rows);
+    }
+
+    /**
      * Automatic review (bin/cdr_qa.php, every 10 minutes): recorded, answered calls of the
      * last day that have no transcript yet, newest first, until the daily maximum.
      *

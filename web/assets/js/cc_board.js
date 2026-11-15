@@ -67,6 +67,7 @@ function loadAllBoardData() {
             if (misRateEl) misRateEl.innerText = data.missed_rate;
             const abRateEl = document.getElementById('board-abandon-rate');
             if (abRateEl) abRateEl.innerText = data.abandon_rate;
+            renderBoardQa(data.qa_agents || []);
         })
         .catch(() => {});
 
@@ -289,3 +290,33 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
     document.addEventListener('DOMContentLoaded', initUnifiedBoardPage);
 }
 document.addEventListener('spa:pageLoaded', initUnifiedBoardPage);
+
+/** Call quality review per agent: the card stays hidden while no call was reviewed. */
+function renderBoardQa(rows) {
+    const card = document.getElementById('board-qa-card');
+    const tbody = document.getElementById('board-qa-tbody');
+    if (!card || !tbody) return;
+    card.style.display = rows.length ? '' : 'none';
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+        const tr = document.createElement('tr');
+        const badge = r.avg >= 80 ? 'badge-success' : (r.avg >= 60 ? 'badge-warning' : 'badge-danger');
+        [r.extension, r.name, String(r.calls)].forEach(v => {
+            const td = document.createElement('td');
+            td.textContent = v;
+            tr.appendChild(td);
+        });
+        const avg = document.createElement('td');
+        const b = document.createElement('span');
+        b.className = 'badge ' + badge;
+        b.textContent = String(r.avg);
+        avg.appendChild(b);
+        tr.appendChild(avg);
+        [r.resolved_pct === null ? '—' : '%' + r.resolved_pct, String(r.negative)].forEach(v => {
+            const td = document.createElement('td');
+            td.textContent = v;
+            tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+    });
+}

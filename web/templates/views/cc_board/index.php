@@ -163,6 +163,25 @@
                     <?php echo uiTableClose(); ?>
         </div>
     </div>
+
+    <!-- SECTION 3: call quality review per agent (shown when there are reviewed calls) -->
+    <div class="card u-mb-0" id="board-qa-card" style="display: none;">
+        <div class="card-header u-d-flex u-ai-center u-jc-space-between u-border-bottom-1-solid-border-color u-p-16-16">
+            <div class="card-title u-d-flex u-ai-center u-gap-8">
+                <i class="fas fa-clipboard-check u-primary"></i>
+                <span><?php echo t('cc_board.qa_title'); ?></span>
+            </div>
+        </div>
+        <?php echo uiTableOpen([
+            t('cc_supervisor.col_extension'),
+            t('cc_supervisor.col_agent_name'),
+            t('cc_board.qa_calls'),
+            t('cc_board.qa_avg'),
+            t('cc_board.qa_resolved'),
+            t('cc_board.qa_negative'),
+        ], ['body_id' => 'board-qa-tbody', 'frame' => 'u-maxh-420 u-overflow-y-auto']); ?>
+        <?php echo uiTableClose(); ?>
+    </div>
 </div>
 
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/cc_board.css'); ?>">
