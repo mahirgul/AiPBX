@@ -305,7 +305,10 @@ $filter_url = function (array $override) {
                                 </span>
                             </td>
                             <td class="u-maxw-220">
-                                <?php $ai_row = $cdr_ai[(int) ($c['id'] ?? 0)] ?? null; ?>
+                                <?php $ai_row = $cdr_ai[(int) ($c['id'] ?? 0)] ?? null;
+                                if ($ai_row !== null && ($ai_row['transcript'] ?? '') === '') {
+                                    $ai_row = null;    // an automatic review that found nothing to transcribe
+                                } ?>
                                 <?php if (!empty($c['note_disposition']) || !empty($c['note_text']) || !empty($c['note_customer_name']) || !empty($ai_row)): ?>
                                     <?php if (!empty($c['note_disposition'])): ?>
                                         <span class="badge badge-info u-fs-10"><?php echo htmlspecialchars($c['note_disposition']); ?></span>
@@ -322,7 +325,7 @@ $filter_url = function (array $override) {
                                         $ai_preview = trim((string) (($ai_row['summary'] ?? '') !== '' ? $ai_row['summary'] : ($ai_row['transcript'] ?? ''))); ?>
                                         <?php if ($ai_preview !== ''): ?>
                                             <div class="u-fs-11 u-muted u-mt-4 u-white-space-normal u-overflow-wrap-anywhere" title="<?php echo htmlspecialchars((string) ($ai_row['transcript'] ?? $ai_preview)); ?>">
-                                                <span class="badge badge-info u-fs-10 u-mr-4">AI</span><?php echo htmlspecialchars(mb_strlen($ai_preview) > 70 ? mb_substr($ai_preview, 0, 70) . '…' : $ai_preview); ?>
+                                                <span class="badge badge-info u-fs-10 u-mr-4">AI</span><?php if (isset($ai_row['qa_score'])): $qs = (int) $ai_row['qa_score']; ?><span class="badge <?php echo $qs >= 80 ? 'badge-success' : ($qs >= 60 ? 'badge-warning' : 'badge-danger'); ?> u-fs-10 u-mr-4" title="<?php echo htmlspecialchars((string) ($ai_row['qa_notes'] ?? '')); ?>"><?php echo htmlspecialchars(t('cdr_reports.qa_score')) . ' ' . $qs; ?></span><?php endif; ?><?php echo htmlspecialchars(mb_strlen($ai_preview) > 70 ? mb_substr($ai_preview, 0, 70) . '…' : $ai_preview); ?>
                                             </div>
                                         <?php endif; ?>
                                     <?php endif; ?>

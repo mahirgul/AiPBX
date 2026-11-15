@@ -66,12 +66,16 @@
                  data-label-summary="<?php echo htmlspecialchars(t('cdr_reports.ai_summary'), ENT_QUOTES); ?>"
                  data-label-transcript="<?php echo htmlspecialchars(t('cdr_reports.ai_transcript'), ENT_QUOTES); ?>"
                  data-label-empty="<?php echo htmlspecialchars(t('cdr_reports.ai_empty'), ENT_QUOTES); ?>"
-                 data-label-failed="<?php echo htmlspecialchars(t('cdr_reports.ai_failed'), ENT_QUOTES); ?>">
+                 data-label-failed="<?php echo htmlspecialchars(t('cdr_reports.ai_failed'), ENT_QUOTES); ?>"
+                 data-label-qa="<?php echo htmlspecialchars(t('cdr_reports.qa_score'), ENT_QUOTES); ?>"
+                 data-label-qa-labels="<?php echo htmlspecialchars(json_encode(['resolved' => t('cdr_reports.qa_resolved'), 'unresolved' => t('cdr_reports.qa_unresolved'),
+                     'positive' => t('cdr_reports.qa_sentiment_positive'), 'neutral' => t('cdr_reports.qa_sentiment_neutral'), 'negative' => t('cdr_reports.qa_sentiment_negative')]), ENT_QUOTES); ?>">
                 <div class="u-d-flex u-jc-space-between u-ai-center u-gap-8">
                     <span class="u-fs-12 u-fw-700 u-text-main"><i class="fas fa-wand-magic-sparkles u-primary"></i> <?php echo htmlspecialchars(t('cdr_reports.ai_transcript')); ?></span>
                     <button type="button" class="btn btn-secondary btn-sm" id="cdrAudioAiBtn" onclick="transcribeCdrAudio()"><?php echo htmlspecialchars(t('cdr_reports.ai_transcribe')); ?></button>
                 </div>
                 <div id="cdrAudioAiSummary" class="u-fs-12 u-text-main u-fw-600 u-mt-8" style="display: none;"></div>
+                <div id="cdrAudioAiQa" class="u-fs-12 u-text-main u-mt-8" style="display: none;"></div>
                 <div id="cdrAudioAiText" class="u-fs-12 u-muted u-mt-8 u-white-space-normal u-overflow-wrap-anywhere"></div>
             </div>
         </div>

@@ -87,6 +87,7 @@ function renderCdrAudioAi(item, errorMsg) {
         return;
     }
     if (!item || (!item.transcript && !item.summary)) {
+        renderCdrAudioQa(box, null);
         btn.textContent = box.dataset.labelTranscribe || 'Transcribe';
         sumEl.style.display = 'none';
         txtEl.textContent = box.dataset.labelEmpty || '';
@@ -100,6 +101,24 @@ function renderCdrAudioAi(item, errorMsg) {
         sumEl.style.display = 'none';
     }
     txtEl.textContent = item.transcript || '';
+    renderCdrAudioQa(box, item);
+}
+
+/** The quality review of the call: score, mood, resolved, why. */
+function renderCdrAudioQa(box, item) {
+    const qaEl = document.getElementById('cdrAudioAiQa');
+    if (!qaEl) return;
+    if (!item || item.qa_score === null || item.qa_score === undefined) {
+        qaEl.style.display = 'none';
+        return;
+    }
+    let labels = {};
+    try { labels = JSON.parse(box.dataset.labelQaLabels || '{}'); } catch (e) { labels = {}; }
+    const parts = [(box.dataset.labelQa || 'Quality') + ': ' + item.qa_score + '/100'];
+    if (item.qa_sentiment) parts.push(labels[item.qa_sentiment] || item.qa_sentiment);
+    if (item.qa_resolved === true || item.qa_resolved === false) parts.push(labels[item.qa_resolved ? 'resolved' : 'unresolved']);
+    qaEl.textContent = parts.join(' · ') + (item.qa_notes ? ' — ' + item.qa_notes : '');
+    qaEl.style.display = '';
 }
 
 function loadCdrAudioAi(cdrId) {

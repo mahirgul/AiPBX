@@ -66,3 +66,18 @@ The text is kept in `cdr_ai` and the CDR search finds calls by what was said. Ma
 numbers and ids applies when a privacy preset asks for it ([Privacy](privacy.md)). A transcript is
 deleted with its recording: by the recording retention, the deletion of the call record and the
 right to erasure.
+
+## Quality review
+
+With **criteria** written under *AI → Cloud services → Call quality review* (for example "greets with
+the company name; asks for the customer number; offers a solution or a callback time"), every
+transcript is also scored by the cloud language model of the language: **0–100** against the
+criteria, the caller's **mood** (positive, neutral, negative), **resolved** or not, and one sentence
+why. The score shows as a badge in the call list (green from 80, amber from 60) and in the player.
+
+**Review new recorded calls automatically** (off by default) has `cdr_qa.php` (every 10 minutes)
+transcribe and score the answered, recorded calls of the last day that have no transcript yet,
+newest first, up to **At most (calls a day)**. A call that cannot be transcribed is tried once.
+Everything here goes to the cloud providers set for speech to text and the language model, and
+counts against their [monthly limits](cloud-ai.md#monthly-limits); the cross-border lock of
+[Privacy](privacy.md) stops it.

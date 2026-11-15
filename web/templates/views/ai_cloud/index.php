@@ -69,6 +69,25 @@ $configured = array_column(array_filter($providers, fn($p) => $p['configured']),
     </form>
 </div>
 
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-clipboard-check u-primary"></i> <?php echo t('ai_cloud.qa_title'); ?></div>
+    </div>
+    <form method="POST" class="u-card-pad">
+        <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
+        <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_cloud.qa_help'); ?></p>
+        <div class="form-group"><label class="form-label"><?php echo t('ai_cloud.qa_criteria'); ?></label>
+            <textarea name="qa_criteria" class="form-control" rows="4" maxlength="3000" placeholder="<?php echo $h(t('ai_cloud.qa_criteria_placeholder')); ?>"><?php echo $h($qa['criteria']); ?></textarea></div>
+        <div class="u-grid-2">
+            <div class="form-group"><label class="u-check-label-6 u-mt-32">
+                <input type="checkbox" class="u-accent" name="qa_auto" value="1" <?php echo $qa['auto'] ? 'checked' : ''; ?>> <?php echo t('ai_cloud.qa_auto'); ?></label></div>
+            <div class="form-group"><label class="form-label"><?php echo t('ai_cloud.qa_daily_max'); ?></label>
+                <input type="number" name="qa_daily_max" class="form-control" min="1" max="1000" value="<?php echo (int) $qa['daily_max']; ?>"></div>
+        </div>
+        <button type="submit" name="save_qa" value="1" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+    </form>
+</div>
+
 <div class="u-grid-2 u-gap-16">
 <?php foreach ($providers as $p): ?>
     <form method="POST" autocomplete="off" enctype="multipart/form-data" class="card u-mb-0 u-p-16">

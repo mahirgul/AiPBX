@@ -53,6 +53,11 @@ engine is that provider falls back to a ready local model of the same language (
 speech; a language model has no local fallback, so the feature works without it — e.g. no call
 summary). Without a local model the job simply does not run.
 
+## Call quality review
+
+Criteria for scoring recorded calls, and the automatic review with its daily maximum: see
+[Call recordings → Quality review](recordings.md#quality-review).
+
 ## Trying
 
 *AI → Local models → Try: speech to text* lists the configured cloud providers next to the local
