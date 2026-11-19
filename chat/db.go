@@ -228,9 +228,13 @@ func GetContacts(currentExt string) ([]Contact, error) {
 	var contacts []Contact
 	for rows.Next() {
 		var c Contact
-		if err := rows.Scan(&c.Extension, &c.FullName, &c.Role, &c.UnreadCount); err == nil {
-			contacts = append(contacts, c)
+		if err := rows.Scan(&c.Extension, &c.FullName, &c.Role, &c.UnreadCount); err != nil {
+			return nil, err
 		}
+		contacts = append(contacts, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return contacts, nil
 }
@@ -242,7 +246,7 @@ func GetConversations(ext string) ([]Conversation, error) {
 		       COALESCE(c.last_message_text, ''), c.last_message_at, c.created_at,
 		       (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext != p.extension AND m.is_deleted = 0) AS unread_count,
 		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT p2.extension FROM chat_participants p2 WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_ext,
-		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT COALESCE(u.full_name, u.username, p2.extension) FROM chat_participants p2 JOIN sys_users u ON u.extension = p2.extension WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_name,
+		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT COALESCE(u.full_name, u.username, p2.extension) FROM chat_participants p2 LEFT JOIN sys_users u ON u.id = (SELECT su.id FROM sys_users su WHERE su.extension = p2.extension AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1) WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_name,
 		       (SELECT COUNT(*) FROM chat_participants cp WHERE cp.conversation_id = c.id AND cp.left_at IS NULL) AS member_count,
 		       COALESCE(p.role, 'member') AS my_role
 		FROM chat_conversations c
@@ -268,14 +272,18 @@ func GetConversations(ext string) ([]Conversation, error) {
 			&cv.UnreadCount, &cv.TargetExt, &cv.TargetName,
 			&cv.MemberCount, &cv.MyRole,
 		)
-		if err == nil {
-			cv.CreatedAt = fmtTime(createdAt)
-			if lastMsgAt.Valid {
-				tStr := fmtTime(lastMsgAt.Time)
-				cv.LastMessageAt = &tStr
-			}
-			convs = append(convs, cv)
+		if err != nil {
+			return nil, err
 		}
+		cv.CreatedAt = fmtTime(createdAt)
+		if lastMsgAt.Valid {
+			tStr := fmtTime(lastMsgAt.Time)
+			cv.LastMessageAt = &tStr
+		}
+		convs = append(convs, cv)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return convs, nil
 }
@@ -415,7 +423,10 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			       COALESCE(m.file_name, ''), m.file_size, COALESCE(m.mime_type, ''),
 			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at, m.is_deleted
 			FROM chat_messages m
-			LEFT JOIN sys_users u ON u.extension = m.sender_ext
+			LEFT JOIN sys_users u ON u.id = (
+                SELECT su.id FROM sys_users su WHERE su.extension = m.sender_ext
+                    AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1
+            )
 			WHERE m.conversation_id = ? AND m.id < ?
 			ORDER BY m.id DESC
 			LIMIT ?
@@ -428,7 +439,10 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			       COALESCE(m.file_name, ''), m.file_size, COALESCE(m.mime_type, ''),
 			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at, m.is_deleted
 			FROM chat_messages m
-			LEFT JOIN sys_users u ON u.extension = m.sender_ext
+			LEFT JOIN sys_users u ON u.id = (
+                SELECT su.id FROM sys_users su WHERE su.extension = m.sender_ext
+                    AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1
+            )
 			WHERE m.conversation_id = ?
 			ORDER BY m.id DESC
 			LIMIT ?
@@ -451,10 +465,14 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			&m.FileName, &m.FileSize, &m.MimeType,
 			&m.SystemEvent, &m.SystemMeta, &createdAt, &m.IsDeleted,
 		)
-		if err == nil {
-			m.CreatedAt = fmtTime(createdAt)
-			list = append(list, m)
+		if err != nil {
+			return nil, err
 		}
+		m.CreatedAt = fmtTime(createdAt)
+		list = append(list, m)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	// Reverse to chronological order (oldest to newest)
@@ -634,9 +652,13 @@ func GetParticipants(convID int) ([]string, error) {
 	var exts []string
 	for rows.Next() {
 		var ext string
-		if err := rows.Scan(&ext); err == nil {
-			exts = append(exts, ext)
+		if err := rows.Scan(&ext); err != nil {
+			return nil, err
 		}
+		exts = append(exts, ext)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return exts, nil
 }
@@ -888,7 +910,10 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 		SELECT p.extension, COALESCE(u.full_name, u.username, p.extension) AS full_name,
 		       COALESCE(p.role, 'member') AS role, p.joined_at
 		FROM chat_participants p
-		LEFT JOIN sys_users u ON u.extension = p.extension
+		LEFT JOIN sys_users u ON u.id = (
+                SELECT su.id FROM sys_users su WHERE su.extension = p.extension
+                    AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1
+            )
 		WHERE p.conversation_id = ? AND p.left_at IS NULL
 		ORDER BY (p.role = 'admin') DESC, p.joined_at ASC
 	`, convID)
@@ -901,13 +926,17 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 	for rows.Next() {
 		var pt Participant
 		var joinedAt time.Time
-		if err := rows.Scan(&pt.Extension, &pt.FullName, &pt.Role, &joinedAt); err == nil {
-			pt.JoinedAt = fmtTime(joinedAt)
-			if pt.Extension == requesterExt {
-				conv.MyRole = pt.Role
-			}
-			parts = append(parts, pt)
+		if err := rows.Scan(&pt.Extension, &pt.FullName, &pt.Role, &joinedAt); err != nil {
+			return nil, err
 		}
+		pt.JoinedAt = fmtTime(joinedAt)
+		if pt.Extension == requesterExt {
+			conv.MyRole = pt.Role
+		}
+		parts = append(parts, pt)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	conv.Participants = parts
 	conv.MemberCount = len(parts)

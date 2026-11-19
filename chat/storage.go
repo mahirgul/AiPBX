@@ -188,6 +188,10 @@ func (st *Storage) Primary() Store {
 func (st *Storage) stores() (Store, Store) {
 	st.mu.Lock()
 	defer st.mu.Unlock()
+	return st.storesLocked()
+}
+
+func (st *Storage) storesLocked() (Store, Store) {
 	if st.primary != nil && time.Since(st.loadedAt) < storageSettingsTTL {
 		return st.primary, st.fallback
 	}

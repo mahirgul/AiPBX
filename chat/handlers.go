@@ -767,16 +767,20 @@ func (s *Server) HandleUpdateGroup(w http.ResponseWriter, r *http.Request, user 
 		s.hub.removeUnusedAttachment(cur.AvatarURL)
 	}
 
-	conv, _ := GetConversationByID(body.ConversationID)
+	conv, err := GetConversationByID(body.ConversationID)
+	if err != nil {
+		writeActionError(w, "Could not read the updated group", err)
+		return
+	}
 	participants, _ := GetParticipants(body.ConversationID)
 
 	updatePayload, _ := json.Marshal(map[string]interface{}{
 		"event": "group_updated",
 		"data": map[string]interface{}{
 			"conversation_id": body.ConversationID,
-			"title":           body.Title,
-			"avatar_url":      body.AvatarURL,
-			"description":     body.Description,
+			"title":           conv.Title,
+			"avatar_url":      conv.AvatarURL,
+			"description":     conv.Description,
 		},
 	})
 	sysMsgPayload, _ := json.Marshal(map[string]interface{}{
@@ -1084,19 +1088,13 @@ func (s *Server) HandleDeleteGroup(w http.ResponseWriter, r *http.Request, user 
 	})
 }
 
-// internalRequestAllowed verifies a direct local loopback request and, when a
-// server secret key is configured, the X-AiPBX-Internal HMAC token.
+// internalRequestAllowed requires both local loopback and the internal HMAC token.
 func (s *Server) internalRequestAllowed(r *http.Request) bool {
-	if !localInternalRequest(r) {
+	if !localInternalRequest(r) || s.cfg == nil || s.cfg.SecretKey == "" {
 		return false
 	}
-	if s.cfg != nil && s.cfg.SecretKey != "" {
-		tok := r.Header.Get("X-AiPBX-Internal")
-		if !hmac.Equal([]byte(tok), []byte(internalToken(s.cfg.SecretKey))) {
-			return false
-		}
-	}
-	return true
+	tok := r.Header.Get("X-AiPBX-Internal")
+	return hmac.Equal([]byte(tok), []byte(internalToken(s.cfg.SecretKey)))
 }
 
 // internalNotifyEvents: what the PBX may push to the apps over this endpoint.

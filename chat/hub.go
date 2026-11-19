@@ -130,11 +130,10 @@ func (h *Hub) SetActive(c *Client, active bool) {
 	if before && !after {
 		h.lastSeen[ext] = time.Now()
 	}
-	seen := h.lastSeenLocked(ext)
-	h.mu.Unlock()
 	if before != after {
-		h.broadcastPresence(ext, after, seen)
+		h.broadcastPresenceLocked(ext, after, h.lastSeenLocked(ext))
 	}
+	h.mu.Unlock()
 }
 
 // deliverPending marks everything sent to ext so far as delivered (ext just
@@ -198,13 +197,8 @@ func (h *Hub) Run() {
 				}
 			}
 			remaining := len(h.clients[ext])
-			h.mu.Unlock()
-
-			log.Printf("[WS] Client connected: %s (%s) [Total devices for ext: %d]",
-				client.user.FullName, ext, remaining)
-
 			if !before && after {
-				h.broadcastPresence(ext, true, "")
+				h.broadcastPresenceLocked(ext, true, "")
 			}
 
 			// Sent even when the list is empty: the client uses the snapshot as
@@ -221,6 +215,9 @@ func (h *Hub) Run() {
 			case client.send <- snapshotMsg:
 			default:
 			}
+			h.mu.Unlock()
+			log.Printf("[WS] Client connected: %s (%s) [Total devices for ext: %d]",
+				client.user.FullName, ext, remaining)
 			go h.deliverPending(ext)
 
 		case client := <-h.unregister:
@@ -237,10 +234,7 @@ func (h *Hub) Run() {
 					}
 					if before && !h.activeLocked(ext) {
 						h.lastSeen[ext] = time.Now()
-						seen := h.lastSeenLocked(ext)
-						h.mu.Unlock()
-						h.broadcastPresence(ext, false, seen)
-						continue
+						h.broadcastPresenceLocked(ext, false, h.lastSeenLocked(ext))
 					}
 				}
 			}
@@ -267,7 +261,7 @@ func (h *Hub) GetOnlineExtensions() []string {
 	return list
 }
 
-func (h *Hub) broadcastPresence(ext string, isOnline bool, lastSeen string) {
+func (h *Hub) broadcastPresenceLocked(ext string, isOnline bool, lastSeen string) {
 	payload := map[string]interface{}{
 		"event":     "presence",
 		"extension": ext,
@@ -277,12 +271,16 @@ func (h *Hub) broadcastPresence(ext string, isOnline bool, lastSeen string) {
 		payload["last_seen"] = lastSeen
 	}
 	msg, _ := json.Marshal(payload)
-	h.BroadcastToAll(msg)
+	h.broadcastToAllLocked(msg)
 }
 
 func (h *Hub) BroadcastToAll(msg []byte) {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+	h.broadcastToAllLocked(msg)
+}
+
+func (h *Hub) broadcastToAllLocked(msg []byte) {
 	for _, devMap := range h.clients {
 		for c := range devMap {
 			select {

@@ -151,11 +151,13 @@ func (st *Storage) localFiles() ([]string, error) {
 // Each file is removed from the disk only once the bucket holds it with the
 // same size; a failed file stays on the disk (and is still served from there).
 func (st *Storage) StartMigration() (migrationState, error) {
-	dst := st.Primary()
-	if dst == Store(st.Local) {
-		return st.Status(), errors.New("S3 storage is not active")
-	}
 	st.mu.Lock()
+	dst, _ := st.storesLocked()
+	if dst == Store(st.Local) {
+		state := st.migration
+		st.mu.Unlock()
+		return state, errors.New("S3 storage is not active")
+	}
 	if st.migration.Running {
 		state := st.migration
 		st.mu.Unlock()
@@ -163,8 +165,9 @@ func (st *Storage) StartMigration() (migrationState, error) {
 	}
 	keys, err := st.localFiles()
 	if err != nil {
+		state := st.migration
 		st.mu.Unlock()
-		return st.migration, err
+		return state, err
 	}
 	st.migration = migrationState{Running: true, Total: len(keys), Started: time.Now().UTC().Format(time.RFC3339)}
 	state := st.migration

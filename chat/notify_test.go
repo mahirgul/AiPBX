@@ -19,11 +19,13 @@ func notifyRequest(body, remote string, proxied bool) *http.Request {
 
 func TestInternalNotifyReachesTheExtensionsDevices(t *testing.T) {
 	h := NewHub()
-	srv := NewServer(&Config{}, h)
+	srv := NewServer(&Config{SecretKey: "chat-secret"}, h)
 	c := newTestClient(h, "1001", false)
 
 	rr := httptest.NewRecorder()
-	srv.HandleInternalNotify(rr, notifyRequest(`{"extension":"1001","event":"voicemail","data":{"caller":"0532","duration":42,"new_count":2}}`, "127.0.0.1:5555", false))
+	req := notifyRequest(`{"extension":"1001","event":"voicemail","data":{"caller":"0532","duration":42,"new_count":2}}`, "127.0.0.1:5555", false)
+	req.Header.Set("X-AiPBX-Internal", internalToken("chat-secret"))
+	srv.HandleInternalNotify(rr, req)
 	if rr.Code != http.StatusOK || !strings.Contains(rr.Body.String(), `"delivered":true`) {
 		t.Fatalf("expected delivery, got %d %s", rr.Code, rr.Body.String())
 	}
@@ -37,7 +39,7 @@ func TestInternalNotifyReachesTheExtensionsDevices(t *testing.T) {
 }
 
 func TestInternalNotifyIsLocalAndWhitelisted(t *testing.T) {
-	srv := NewServer(&Config{}, NewHub())
+	srv := NewServer(&Config{SecretKey: "chat-secret"}, NewHub())
 	cases := []struct {
 		name, body, remote string
 		proxied            bool
@@ -50,7 +52,9 @@ func TestInternalNotifyIsLocalAndWhitelisted(t *testing.T) {
 	}
 	for _, tc := range cases {
 		rr := httptest.NewRecorder()
-		srv.HandleInternalNotify(rr, notifyRequest(tc.body, tc.remote, tc.proxied))
+		req := notifyRequest(tc.body, tc.remote, tc.proxied)
+		req.Header.Set("X-AiPBX-Internal", internalToken("chat-secret"))
+		srv.HandleInternalNotify(rr, req)
 		if rr.Code != tc.want {
 			t.Errorf("%s: got %d, want %d", tc.name, rr.Code, tc.want)
 		}
