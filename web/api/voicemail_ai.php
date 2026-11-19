@@ -4,7 +4,7 @@
  * bin/voicemail_notify.php), which run as the asterisk user and cannot read
  * the AI keys: they ask here, on this server only, signed (X-AiPBX-Internal,
  * VoicemailAiService::internalToken). Answers {"transcript", "summary"} of the
- * newest INBOX message of the mailbox, or {} when there is none.
+ * requested queue job or newest INBOX message of the mailbox, or {} when unavailable.
  */
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../src/services/VoicemailAiService.php';
@@ -19,5 +19,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !$local
     exit;
 }
 $mailbox = preg_replace('/[^0-9]/', '', (string) ($_POST['mailbox'] ?? ''));
-$r = $mailbox !== '' ? VoicemailAiService::forNewest($mailbox) : null;
+$jobId = max(0, (int) ($_POST['job_id'] ?? 0));
+$r = $mailbox !== '' ? VoicemailAiService::forNewest($mailbox, $jobId) : null;
 echo json_encode($r ?? new stdClass(), JSON_UNESCAPED_UNICODE);

@@ -59,6 +59,28 @@ final class PrivacyServiceTest extends TestCase
         $this->assertNotEmpty(PrivacyService::settings()['last_purge_at']);
     }
 
+    public function testRetentionScrubsOldSurveyCallersAndKeepsScores(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO queue_survey_results (queue_name, caller, score, uniqueid, created_at)
+                VALUES ('zz-retention', '+15550100001', 4, 'survey-ret-old', NOW() - INTERVAL 3 DAY),
+                       ('zz-retention', '+15550100002', 5, 'survey-ret-new', NOW())");
+            PrivacyDataSubjectHelper::runRetentionPurge([
+                'ret_recordings_days' => 0, 'ret_voicemail_days' => 0, 'ret_fax_days' => 0,
+                'ret_chat_days' => 0, 'ret_cdr_days' => 1, 'ret_cdr_action' => 'delete',
+            ], static function (): void {});
+            $old = $db->query("SELECT caller, score FROM queue_survey_results WHERE uniqueid = 'survey-ret-old'")->fetch(PDO::FETCH_ASSOC);
+            $this->assertSame('', $old['caller']);
+            $this->assertSame(4, (int) $old['score']);
+            $this->assertSame('+15550100002', $db->query("SELECT caller FROM queue_survey_results
+                WHERE uniqueid = 'survey-ret-new'")->fetchColumn());
+        } finally {
+            $db->rollBack();
+        }
+    }
+
     /** A transcript is the recording written down: it is deleted with the recording, not with the CDR. */
     public function testExpiredRecordingTakesItsTranscriptAlong(): void
     {

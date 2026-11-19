@@ -154,6 +154,11 @@ final class PrivacyDataSubjectHelper
         $cdrDays = (int)$cfg['ret_cdr_days'];
         if ($cdrDays > 0) {
             try {
+                $stmt = $db->prepare("UPDATE queue_survey_results SET caller = '' WHERE caller <> '' AND created_at < DATE_SUB(NOW(), INTERVAL ? DAY)");
+                $stmt->execute([$cdrDays]);
+            } catch (\Throwable $e) {
+            }
+            try {
                 $stmtAi = $db->prepare("DELETE FROM cdr_ai WHERE cdr_id IN (SELECT id FROM asteriskcdr WHERE calldate < DATE_SUB(NOW(), INTERVAL ? DAY))");
                 $stmtAi->execute([$cdrDays]);
             } catch (\Throwable $e) {
@@ -447,6 +452,11 @@ final class PrivacyDataSubjectHelper
         }
 
         $anonCdrs = 0;
+        try {
+            $stmt = $db->prepare("UPDATE queue_survey_results SET caller = '' WHERE caller = ? OR caller LIKE ?");
+            $stmt->execute([$clean, $like]);
+        } catch (\Throwable $e) {
+        }
         try {
             $stmtAi = $db->prepare(
                 "DELETE FROM cdr_ai WHERE cdr_id IN (
