@@ -50,6 +50,14 @@
                             <td><span class="badge badge-info"><i class="fas fa-server"></i> <?php echo htmlspecialchars($t['trunk_name']); ?></span></td>
                             <td class="u-strong">
                                 <?php echo htmlspecialchars($t['title']); ?>
+                                <?php if (!empty($trunk_usage[$t['trunk_name']])):
+                                    $u = $trunk_usage[$t['trunk_name']];
+                                    $u_badge = ['over' => 'badge-danger', 'warn' => 'badge-warning', 'ok' => 'badge-success'][$u['state']] ?? 'badge-secondary';
+                                ?>
+                                    <span class="badge <?php echo $u_badge; ?> u-fs-10 u-ml-4" title="<?php echo htmlspecialchars(sprintf(t('trunks.month_usage_t'), $u['minutes'], number_format($u['cost'], 2))); ?>">
+                                        <i class="fas fa-hourglass-half"></i> <?php echo (int) $u['minutes']; ?> <?php echo htmlspecialchars(t('trunks.month_min_short')); ?><?php echo $u['state'] !== 'none' ? ' · %' . (int) $u['percent'] : ''; ?>
+                                    </span>
+                                <?php endif; ?>
                                 <?php if (!empty($t['did_trim_digits'])): ?>
                                     <span class="badge badge-warning u-fs-10 u-ml-4" title="<?php echo htmlspecialchars(sprintf(t('trunks.did_trim_t'), intval($t['did_trim_digits']))); ?>">
                                         <i class="fas fa-cut"></i> -<?php echo intval($t['did_trim_digits']); ?>
@@ -184,24 +192,20 @@
 
                 <!-- TAB 2: authentication & registration (auth & registration) -->
                 <div id="trunk_tab_auth" class="trunk-tab-pane" style="display: none;">
-                    <div class="form-group u-mb-16 u-bg-bg-card u-p-12 u-bd-1-solid-border-color u-r-8">
-                        <label class="form-label u-check-label u-mb-0">
-                            <input type="checkbox" name="registration_enabled" id="modal_registration_enabled" value="1" class="u-check">
-                            <span class="u-fw-600"><?php echo t('trunks.field_registration_enabled'); ?></span>
-                        </label>
-                        <small class="u-hint u-fs-11"><?php echo t('trunks.register_hint'); ?></small>
-                    </div>
+                    <input type="hidden" name="connection_mode" id="modal_connection_mode" value="ip">
+                    <input type="hidden" name="registration_enabled" id="modal_registration_enabled" value="0">
 
                     <div class="form-group">
                         <label class="form-label form-label-help">
                             <span><?php echo t('trunks.field_connection_mode'); ?></span>
                             <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('trunks.connection_mode_help'); ?></span></span>
                         </label>
-                        <select name="connection_mode" id="modal_connection_mode" class="form-control">
+                        <select id="modal_sip_auth_mode" class="form-control" onchange="syncTrunkAuthMode()">
                             <option value="ip"><?php echo t('trunks.connection_mode_ip'); ?></option>
+                            <option value="outbound"><?php echo t('trunks.connection_mode_outbound'); ?></option>
                             <option value="register"><?php echo t('trunks.connection_mode_register'); ?></option>
                         </select>
-                        <small class="u-warning u-mt-8" style="display: block;">
+                        <small id="trunk_register_warning" class="u-warning u-mt-8" style="display: none;">
                             <i class="fas fa-triangle-exclamation"></i> <?php echo t('trunks.connection_mode_warning'); ?>
                         </small>
                     </div>
@@ -218,7 +222,7 @@
                         </div>
                     </div>
 
-                    <div class="u-grid-2 u-mt-12">
+                    <div id="trunk_outbound_reg_fields" class="u-grid-2 u-mt-12" style="display: none;">
                         <div class="form-group">
                             <label class="form-label"><?php echo t('trunks.field_registration_expiration'); ?></label>
                             <input type="number" name="registration_expiration" id="modal_registration_expiration" class="form-control" value="3600" min="30" max="86400">
@@ -433,6 +437,37 @@
                             <input type="number" name="max_calls_per_minute" id="modal_max_calls_per_minute" class="form-control" value="0" min="0" max="10000">
                             <small class="u-hint"><?php echo t('trunks.max_calls_per_minute_help'); ?></small>
                         </div>
+                    </div>
+
+                    <!-- Monthly minutes / cost limit (TrunkUsageService) -->
+                    <div class="u-mt-16 u-bg-bg-card u-p-16 u-bd-1-solid-border-color u-r-8">
+                        <h4 class="u-fs-13 u-fw-700 u-mb-12 u-d-flex u-ai-center u-gap-8 u-text-main">
+                            <i class="fas fa-hourglass-half u-primary"></i> <?php echo t('trunks.section_monthly'); ?>
+                        </h4>
+                        <p class="u-hint"><?php echo t('trunks.monthly_help'); ?></p>
+                        <div class="u-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="modal_monthly_minutes_limit"><?php echo t('trunks.field_monthly_minutes'); ?></label>
+                                <input type="number" name="monthly_minutes_limit" id="modal_monthly_minutes_limit" class="form-control" value="0" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="modal_monthly_warn_percent"><?php echo t('trunks.field_monthly_warn'); ?></label>
+                                <input type="number" name="monthly_warn_percent" id="modal_monthly_warn_percent" class="form-control" value="80" min="1" max="100">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="modal_monthly_cost_per_minute"><?php echo t('trunks.field_monthly_price'); ?></label>
+                                <input type="number" name="monthly_cost_per_minute" id="modal_monthly_cost_per_minute" class="form-control" value="0" min="0" step="0.0001">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="modal_monthly_cost_limit"><?php echo t('trunks.field_monthly_cost'); ?></label>
+                                <input type="number" name="monthly_cost_limit" id="modal_monthly_cost_limit" class="form-control" value="0" min="0" step="0.01">
+                            </div>
+                        </div>
+                        <label class="form-label u-check-label">
+                            <input type="hidden" name="monthly_block" value="0">
+                            <input type="checkbox" name="monthly_block" id="modal_monthly_block" value="1" checked class="u-check">
+                            <span><?php echo t('trunks.field_monthly_block'); ?></span>
+                        </label>
                     </div>
 
                     <!-- Inbound call & DID normalization / transit route -->

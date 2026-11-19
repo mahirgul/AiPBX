@@ -266,7 +266,7 @@ final class HealthChecks
      */
     private static function trunkLimits(): array
     {
-        $limited = (int) getDB()->query('SELECT COUNT(*) FROM pbx_trunks WHERE is_active = 1 AND (max_channels > 0 OR max_calls_per_minute > 0)')->fetchColumn();
+        $limited = (int) getDB()->query('SELECT COUNT(*) FROM pbx_trunks WHERE is_active = 1 AND (max_channels > 0 OR max_calls_per_minute > 0 OR monthly_minutes_limit > 0 OR monthly_cost_limit > 0)')->fetchColumn();
         if ($limited === 0) {
             return ['off', t('health.msg_trunk_limits_none')];
         }
@@ -282,7 +282,7 @@ final class HealthChecks
             return ['info', t('health.msg_trunk_limits_unread')];
         }
         $refused = [];
-        if (preg_match_all('#^/trunkblock/(\S+)\s*:\s*(\d+):(\d+):(channels|rate):(\d+)\s*$#m', $astdb, $m, PREG_SET_ORDER)) {
+        if (preg_match_all('#^/trunkblock/(\S+)\s*:\s*(\d+):(\d+):(channels|rate|monthly):(\d+)\s*$#m', $astdb, $m, PREG_SET_ORDER)) {
             foreach ($m as [, $trunk, $first, $count, $reason, $last]) {
                 if ($now - (int) $last < 900) {
                     $refused[] = sprintf(t('health.msg_trunk_limits_refused'), $trunk, (int) $count,

@@ -10,7 +10,7 @@ managed on **Trunks**; the edit dialog is split into tabs.
 | Caller ID | Outbound caller ID, From user/domain, send name, PAI / RPID headers |
 | Media & Fax | DTMF mode, T.38 options, fax detection |
 | Network & NAT | Qualify interval, direct media, RTP symmetric, rewrite contact, force rport, session timers, 100rel (PRACK) |
-| Routing | Context, max concurrent channels, max calls per minute, inbound DID normalization, transit routing, outbound caller ID normalization, carrier dialled number format |
+| Routing | Context, max concurrent channels, max calls per minute, monthly minutes / cost limit, inbound DID normalization, transit routing, outbound caller ID normalization, carrier dialled number format |
 | Advanced | Extra PJSIP parameters, one per line |
 
 ## Identification
@@ -96,6 +96,26 @@ its calls-per-minute limit since 15:00"), shown in the alert bell and e-mailed l
 The per-minute count is kept in Asterisk's database and is approximate when many calls start in the
 same instant; it is meant as a brake, not for billing. A per-minute limit a little above the busiest real minute stops a call loop between two PBXes (one
 once made 6 000 calls an hour on one trunk) and toll fraud through a stolen account early.
+
+### Monthly minutes and cost
+
+**Routing → Monthly minutes / cost limit** sets a limit for outbound calls in a calendar month, for a carrier
+package or a budget:
+
+| Field | Meaning |
+| --- | --- |
+| Minutes per month | 0 = none |
+| Price per minute | Used for the cost and the cost limit; the currency is yours |
+| Cost per month | 0 = none; counts only with a price |
+| Warn at (%) | The alert bell (and its e-mail) says when the trunk reaches this part of a limit |
+| Refuse outbound calls at the limit | On: from the limit until the 1st of next month, outbound calls through the trunk count as congestion and the next trunk of the route is tried. Off: only the warning |
+
+The month is counted from the call records once a minute: answered calls that went out through the trunk,
+each rounded up to whole minutes. Calls in progress count when they end, so a busy trunk can pass its limit by
+a few minutes. Inbound calls do not count. Emergency routes are never refused. The trunk list shows the minutes
+used this month and the share of the limit. Refused calls also appear in the *Trunk limits* health check.
+
+The minutes of a deleted trunk are kept for its month, so a new trunk with the same name does not start the month at zero.
 
 ## Transit routing
 

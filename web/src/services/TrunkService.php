@@ -105,7 +105,14 @@ class TrunkService {
                 );
             }
 
-            $registration_enabled = isset($data['registration_enabled']) ? intval($data['registration_enabled']) : 0;
+            $registration_enabled = ($connection_mode === 'register')
+                ? 0
+                : (isset($data['registration_enabled']) ? intval($data['registration_enabled']) : 0);
+            if ($registration_enabled === 1 && ($auth_username === '' || $auth_password === '')) {
+                throw new \Exception(
+                    t('srv_trunk.err_register_auth')
+                );
+            }
             $registration_expiration = intval($data['registration_expiration'] ?? 3600) ?: 3600;
             if ($registration_expiration < 30 || $registration_expiration > 86400) {
                 $registration_expiration = 3600;
@@ -192,6 +199,11 @@ class TrunkService {
             $outbound_route_group = max(1, intval($data['outbound_route_group'] ?? 1));
             $max_channels = max(0, intval($data['max_channels'] ?? 0));
             $max_calls_per_minute = max(0, min(10000, intval($data['max_calls_per_minute'] ?? 0)));
+            $monthly_minutes_limit = max(0, min(10000000, intval($data['monthly_minutes_limit'] ?? 0)));
+            $monthly_cost_per_minute = max(0, min(1000, round((float) str_replace(',', '.', (string) ($data['monthly_cost_per_minute'] ?? 0)), 4)));
+            $monthly_cost_limit = max(0, min(100000000, round((float) str_replace(',', '.', (string) ($data['monthly_cost_limit'] ?? 0)), 2)));
+            $monthly_warn_percent = max(1, min(100, intval($data['monthly_warn_percent'] ?? 80)));
+            $monthly_block = isset($data['monthly_block']) ? intval($data['monthly_block']) : 0;
             $cid_keep_last = max(0, min(20, intval($data['cid_keep_last'] ?? 0)));
             $cid_prepend = preg_replace('/[^0-9+]/', '', trim($data['cid_prepend'] ?? ''));
             $cid_prepend = substr($cid_prepend, 0, 30);
@@ -266,6 +278,11 @@ class TrunkService {
                 'outbound_route_group' => $outbound_route_group,
                 'max_channels' => $max_channels,
                 'max_calls_per_minute' => $max_calls_per_minute,
+                'monthly_minutes_limit' => $monthly_minutes_limit,
+                'monthly_cost_per_minute' => $monthly_cost_per_minute,
+                'monthly_cost_limit' => $monthly_cost_limit,
+                'monthly_warn_percent' => $monthly_warn_percent,
+                'monthly_block' => $monthly_block ? 1 : 0,
                 'cid_keep_last' => $cid_keep_last,
                 'cid_prepend' => $cid_prepend !== '' ? $cid_prepend : null,
                 'carrier_strip_prefix' => $carrier_strip_prefix !== '' ? $carrier_strip_prefix : null,

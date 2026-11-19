@@ -29,6 +29,19 @@ function switchTrunkTab(tabKey, btn) {
     }
 }
 
+function syncTrunkAuthMode() {
+    const mode = document.getElementById('modal_sip_auth_mode')?.value || 'ip';
+    const connEl = document.getElementById('modal_connection_mode');
+    const regEl = document.getElementById('modal_registration_enabled');
+    const outFields = document.getElementById('trunk_outbound_reg_fields');
+    const regWarn = document.getElementById('trunk_register_warning');
+
+    if (connEl) connEl.value = (mode === 'register') ? 'register' : 'ip';
+    if (regEl) regEl.value = (mode === 'outbound') ? '1' : '0';
+    if (outFields) outFields.style.display = (mode === 'outbound') ? '' : 'none';
+    if (regWarn) regWarn.style.display = (mode === 'register') ? 'block' : 'none';
+}
+
 function openCreateTrunkModal() {
     const title = document.getElementById('trunkModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.trunks.new_title') + '';
@@ -50,9 +63,9 @@ function openCreateTrunkModal() {
     if (actEl) actEl.checked = true;
 
     // Tab 2: Auth & Registration
-    const regEl = document.getElementById('modal_registration_enabled');
-    if (regEl) regEl.checked = false;
-    document.getElementById('modal_connection_mode').value = 'ip';
+    const modeSel = document.getElementById('modal_sip_auth_mode');
+    if (modeSel) modeSel.value = 'ip';
+    if (typeof syncTrunkAuthMode === 'function') syncTrunkAuthMode();
     document.getElementById('modal_auth_username').value = '';
     document.getElementById('modal_auth_password').value = '';
     document.getElementById('modal_registration_expiration').value = 3600;
@@ -90,6 +103,11 @@ function openCreateTrunkModal() {
     document.getElementById('modal_context').value = 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = 0;
     document.getElementById('modal_max_calls_per_minute').value = 0;
+    document.getElementById('modal_monthly_minutes_limit').value = 0;
+    document.getElementById('modal_monthly_warn_percent').value = 80;
+    document.getElementById('modal_monthly_cost_per_minute').value = 0;
+    document.getElementById('modal_monthly_cost_limit').value = 0;
+    document.getElementById('modal_monthly_block').checked = true;
     document.getElementById('modal_custom_pjsip_params').value = '';
     document.getElementById('modal_custom_sip_headers').value = '';
     document.getElementById('modal_did_trim_digits').value = 0;
@@ -139,9 +157,13 @@ function openEditTrunkModal(item) {
     if (actEl) actEl.checked = (item.is_active == 1);
 
     // Tab 2: Auth & Registration
-    const regEl = document.getElementById('modal_registration_enabled');
-    if (regEl) regEl.checked = (item.registration_enabled == 1);
-    document.getElementById('modal_connection_mode').value = item.connection_mode || 'ip';
+    const modeSel = document.getElementById('modal_sip_auth_mode');
+    if (modeSel) {
+        modeSel.value = (item.connection_mode === 'register')
+            ? 'register'
+            : ((item.registration_enabled == 1) ? 'outbound' : 'ip');
+    }
+    if (typeof syncTrunkAuthMode === 'function') syncTrunkAuthMode();
     document.getElementById('modal_auth_username').value = item.auth_username || '';
     document.getElementById('modal_auth_password').value = item.auth_password || '';
     document.getElementById('modal_registration_expiration').value = item.registration_expiration || 3600;
@@ -177,6 +199,11 @@ function openEditTrunkModal(item) {
     document.getElementById('modal_context').value = item.context || 'from-trunk-inbound';
     document.getElementById('modal_max_channels').value = item.max_channels || 0;
     document.getElementById('modal_max_calls_per_minute').value = item.max_calls_per_minute || 0;
+    document.getElementById('modal_monthly_minutes_limit').value = item.monthly_minutes_limit || 0;
+    document.getElementById('modal_monthly_warn_percent').value = item.monthly_warn_percent || 80;
+    document.getElementById('modal_monthly_cost_per_minute').value = parseFloat(item.monthly_cost_per_minute || 0);
+    document.getElementById('modal_monthly_cost_limit').value = parseFloat(item.monthly_cost_limit || 0);
+    document.getElementById('modal_monthly_block').checked = item.monthly_block === undefined || parseInt(item.monthly_block) === 1;
     document.getElementById('modal_custom_pjsip_params').value = item.custom_pjsip_params || '';
     document.getElementById('modal_custom_sip_headers').value = item.custom_sip_headers || '';
     document.getElementById('modal_did_trim_digits').value = item.did_trim_digits !== undefined ? item.did_trim_digits : 0;

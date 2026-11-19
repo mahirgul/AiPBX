@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/../services/TrunkUsageService.php';
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/DialplanRuleService.php';
 
@@ -38,6 +39,7 @@ class TrunkController extends BaseController
             'trunks' => $trunks,
             'trunk_statuses' => $trunk_statuses,
             'e164Countries' => $e164Countries,
+            'trunk_usage' => TrunkUsageService::overview(),
         ], ['title' => $page_title] + $notices);
     }
 }

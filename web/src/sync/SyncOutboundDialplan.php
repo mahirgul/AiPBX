@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/services/TrunkService.php';
 require_once dirname(__DIR__) . '/services/PrivacyService.php';
+require_once dirname(__DIR__) . '/services/TrunkUsageService.php';
 /**
  * Sync Outbound Routes Dialplan (/etc/asterisk/pbx/extensions_outbound.conf)
  */
@@ -26,6 +27,11 @@ function __syncOutboundDialplanBody() {
     $trunk_cid_norm = [];
     $trunk_carrier_norm = [];
     $trunk_headers = [];
+    $trunk_monthly = [];
+    foreach (getDB()->query("SELECT * FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tm) {
+        // Monthly limit that refuses calls (TrunkUsageService sets astdb trunkmonth/<trunk>).
+        $trunk_monthly[$tm['trunk_name']] = TrunkUsageService::limited($tm) && !empty($tm['monthly_block']);
+    }
     foreach (getDB()->query("SELECT trunk_name, max_channels, max_calls_per_minute, cid_keep_last, cid_prepend, carrier_strip_prefix, carrier_add_prefix, carrier_e164_country, custom_sip_headers FROM pbx_trunks")->fetchAll(PDO::FETCH_ASSOC) as $tl) {
         $trunk_limits[$tl['trunk_name']] = intval($tl['max_channels']);
         $trunk_rates[$tl['trunk_name']] = intval($tl['max_calls_per_minute'] ?? 0);
@@ -177,13 +183,13 @@ function __syncOutboundDialplanBody() {
             // Same as inbound: the privacy opt-out (an inbound call forwarded out keeps
             // it) is honoured, and the recording beep setting applies. Outbound
             // recording itself can be switched off (Privacy page).
-            if ($record_outbound) {
-                $conf .= " same => n,GotoIf(\$[\"\${AIPBX_FAX}\" = \"1\" | \"\${PRIVACY_NO_RECORD}\" = \"1\"]?norec)\n";
-                $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$dial_num}.wav)\n";
-                $conf .= " same => n,MixMonitor(\${REC_FILE}" . PrivacyService::mixMonitorOptionSuffix() . ")\n";
-                $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
-                $conf .= " same => n(norec),NoOp()\n";
-            }
+            // A user's own choice (endpoint set_var AIPBX_REC_POLICY) wins over the system setting.
+            $policySkip = $record_outbound ? '"${AIPBX_REC_POLICY}" = "never"' : '"${AIPBX_REC_POLICY}" != "always"';
+            $conf .= " same => n,GotoIf(\$[\"\${AIPBX_FAX}\" = \"1\" | \"\${PRIVACY_NO_RECORD}\" = \"1\" | {$policySkip}]?norec)\n";
+            $conf .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/outbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$dial_num}.wav)\n";
+            $conf .= " same => n,MixMonitor(\${REC_FILE}" . PrivacyService::mixMonitorOptionSuffix() . ")\n";
+            $conf .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
+            $conf .= " same => n(norec),NoOp()\n";
             $conf .= " same => n,Set(CHANNEL(accountcode)=\${CALLERID(num)})\n";
 
             // Try in order: when a trunk returns CHANUNAVAIL/CONGESTION, move on to the next.
@@ -217,9 +223,11 @@ function __syncOutboundDialplanBody() {
                 // or says why the call is refused.
                 $limit = intval($t['max_channels'] ?? 0);
                 $rate = intval($trunk_rates[$t['trunk_name']] ?? 0);
-                $limited = $limit > 0 || $rate > 0;
+                // An emergency route is never held back by a monthly limit.
+                $monthly = !$is_emergency && !empty($trunk_monthly[$t['trunk_name']]);
+                $limited = $limit > 0 || $rate > 0 || $monthly;
                 if ($limited) {
-                    $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$t['trunk_name']},{$limit},{$rate},trunk))\n";
+                    $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$t['trunk_name']},{$limit},{$rate},trunk" . ($monthly ? ',1' : '') . "))\n";
                     $conf .= " same => n,GotoIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?trunkfull{$step})\n";
                 }
                 // Per-trunk carrier dialed number normalization
@@ -275,14 +283,16 @@ function __syncOutboundDialplanBody() {
             // a fresh install had unlimited, unchecked outbound calling.
             $limit = intval($trunk_limits[$fallback_trunk] ?? 0);
             $rate = intval($trunk_rates[$fallback_trunk] ?? 0);
+            $monthly = !empty($trunk_monthly[$fallback_trunk]);
+            $limited = $limit > 0 || $rate > 0 || $monthly;
             $hp = preg_quote($fallback_trunk, '/');
             foreach (['_NXXXXXX' => 'Fallback Outbound Call', '_05XXXXXXXXX' => 'Fallback Mobile Outbound Call'] as $fbPattern => $fbLabel) {
                 $conf .= "exten => {$fbPattern},1,NoOp({$fbLabel})\n";
                 $conf .= " same => n,Set(CDR(direction)=outbound)\n";
                 $conf .= dialPermissionCheckLines();
                 $conf .= " same => n,GotoIf(\$[\"\${CF_HOPS}\" = \"\" & \${REGEX(\"^PJSIP/{$hp}-[0-9a-f]+\$\" \${CHANNEL(name)})}]?refused)\n";
-                if ($limit > 0 || $rate > 0) {
-                    $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$fallback_trunk},{$limit},{$rate},trunk))\n";
+                if ($limited) {
+                    $conf .= " same => n,Gosub(sub-trunk-limit,s,1({$fallback_trunk},{$limit},{$rate},trunk" . ($monthly ? ',1' : '') . "))\n";
                     $conf .= " same => n,GotoIf(\$[\"\${TRUNK_LIMIT}\" != \"\"]?refused)\n";
                 }
                 $conf .= " same => n,Set(AIPBX_DIAL_TARGET=\${EXTEN})\n";
