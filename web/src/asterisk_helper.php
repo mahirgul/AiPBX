@@ -85,7 +85,9 @@ class AsteriskHelper {
      * `asterisk -rx` output share the same check as execCLI().
      */
     public static function looksLikeCliFailure($output) {
-        return (bool) preg_match('/no such command|not found|unable to|error|failed|invalid|usage:/i', (string) $output);
+        // "You don't have permissions to run ...": a command the CLI allow-list refuses for this user
+        // (cli_permissions.conf) did nothing and must not count as done.
+        return (bool) preg_match("/no such command|not found|unable to|error|failed|invalid|usage:|don't have permissions to run/i", (string) $output);
     }
 
     /**
