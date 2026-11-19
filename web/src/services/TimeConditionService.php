@@ -50,6 +50,10 @@ class TimeConditionService {
             ) ?? '');
             assertInternalNumberAvailable($internal_number, 'time_condition', $tc_id);
 
+            $timezone = trim((string) ($data['timezone'] ?? ''));
+            if ($timezone !== '' && !in_array($timezone, \DateTimeZone::listIdentifiers(), true)) {
+                throw new \Exception(t('srv_tc.err_timezone'));
+            }
 
             $is_new = ($tc_id <= 0);
             $id = DBHelper::save('pbx_time_conditions', [
@@ -62,6 +66,7 @@ class TimeConditionService {
                 'nomatch_dest_id' => $nomatch_dest_id,
                 'rules_json' => $rules_json,
                 'internal_number' => $internal_number !== '' ? $internal_number : null,
+                'timezone' => $timezone !== '' ? $timezone : null,
                 'is_active' => $is_active
             ]);
 
@@ -113,6 +118,8 @@ class TimeConditionService {
             $holidays_raw = trim($data['holidays'] ?? '');
             $holidays_arr = array_filter(array_map('trim', explode(',', $holidays_raw)));
             $holidays_json = !empty($holidays_arr) ? json_encode(array_values($holidays_arr)) : null;
+            require_once __DIR__ . '/HolidayCalendarService.php';
+            $calendar_ids = HolidayCalendarService::idCsv($data['holiday_calendars'] ?? []);
 
             if (strlen($time_start) == 5) $time_start .= ':00';
             if (strlen($time_end) == 5) $time_end .= ':00';
@@ -121,14 +128,14 @@ class TimeConditionService {
 
             $db = getDB();
             if ($tg_id > 0) {
-                $stmt = $db->prepare("UPDATE pbx_time_groups SET title = ?, time_start = ?, time_end = ?, days_of_week = ?, holidays_json = ?, is_active = ? WHERE id = ?");
-                $stmt->execute([$title, $time_start, $time_end, $days, $holidays_json, $is_active, $tg_id]);
+                $stmt = $db->prepare("UPDATE pbx_time_groups SET title = ?, time_start = ?, time_end = ?, days_of_week = ?, holidays_json = ?, holiday_calendar_ids = ?, is_active = ? WHERE id = ?");
+                $stmt->execute([$title, $time_start, $time_end, $days, $holidays_json, $calendar_ids, $is_active, $tg_id]);
                 $msg = sprintf(t('srv_tc.group_updated'), $title);
                 $group_id = $tg_id;
                 $group_action = 'update';
             } else {
-                $stmt = $db->prepare("INSERT INTO pbx_time_groups (title, time_start, time_end, days_of_week, holidays_json, is_active) VALUES (?, ?, ?, ?, ?, ?)");
-                $stmt->execute([$title, $time_start, $time_end, $days, $holidays_json, $is_active]);
+                $stmt = $db->prepare("INSERT INTO pbx_time_groups (title, time_start, time_end, days_of_week, holidays_json, holiday_calendar_ids, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                $stmt->execute([$title, $time_start, $time_end, $days, $holidays_json, $calendar_ids, $is_active]);
                 $msg = sprintf(t('srv_tc.group_added'), $title);
                 $group_id = $db->lastInsertId();
                 $group_action = 'create';

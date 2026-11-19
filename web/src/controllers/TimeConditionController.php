@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../helpers.php';
+require_once __DIR__ . '/../services/HolidayCalendarService.php';
 
 use PBX\Destinations\DestinationRegistry;
 
@@ -9,7 +10,7 @@ use PBX\Destinations\DestinationRegistry;
  * time_conditions.js.
  * Logic: TimeConditionRepository, TimeConditionService.
  * POST actions: delete_time_condition, delete_time_group, save_time_condition, save_time_group,
- * toggle_status, toggle_tg_status.
+ * toggle_status, toggle_tg_status, save_holiday_calendar, delete_holiday_calendar.
  * Admins only.
  */
 class TimeConditionController extends BaseController
@@ -25,6 +26,8 @@ class TimeConditionController extends BaseController
             'save_time_group' => fn() => TimeConditionService::saveTimeGroup($_POST),
             'toggle_tg_status' => fn() => PBXHelper::toggleStatus('pbx_time_groups', $_POST['tg_id'] ?? 0, static::csrfToken()),
             'delete_time_group' => fn() => TimeConditionService::deleteTimeGroup($_POST['tg_id'] ?? 0, static::csrfToken()),
+            'save_holiday_calendar' => fn() => HolidayCalendarService::save($_POST, $_FILES['ics_file'] ?? null),
+            'delete_holiday_calendar' => fn() => HolidayCalendarService::delete((int) ($_POST['hc_id'] ?? 0), static::csrfToken()),
         ]);
 
         $tcs = TimeConditionRepository::allWithGroupInfo();
@@ -40,6 +43,7 @@ class TimeConditionController extends BaseController
             'tg_map' => $tg_map,
             'modules' => $modules,
             'day_names' => $day_names,
+            'holiday_calendars' => HolidayCalendarService::all(),
         ], ['title' => $page_title] + $notices);
     }
 }

@@ -27,6 +27,8 @@ function openCreateTcModal() {
     document.getElementById('modal_title').value = '';
     var inEl = document.getElementById('modal_internal_number');
     if (inEl) inEl.value = '';
+    var tzEl = document.getElementById('modal_timezone');
+    if (tzEl) tzEl.value = '';
 
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = true;
@@ -56,6 +58,8 @@ function openEditTcModal(tc) {
     document.getElementById('modal_title').value = tc.title || '';
     var inEl = document.getElementById('modal_internal_number');
     if (inEl) inEl.value = (tc.internal_number || '');
+    var tzEl = document.getElementById('modal_timezone');
+    if (tzEl) tzEl.value = (tc.timezone || '');
 
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = (parseInt(tc.is_active) === 1);
@@ -187,6 +191,7 @@ function openCreateTgModal() {
     document.getElementById('modal_tg_holidays').value = '';
     const actCb = document.getElementById('modal_tg_is_active');
     if (actCb) actCb.checked = true;
+    tgSetHolidayCalendars('');
 
     for (let i = 1; i <= 7; i++) {
         const chk = document.getElementById('day_chk_' + i);
@@ -221,6 +226,7 @@ function openEditTgModal(tg) {
         }
     }
     document.getElementById('modal_tg_holidays').value = hStr;
+    tgSetHolidayCalendars(tg.holiday_calendar_ids || '');
 
     const daysArr = (tg.days_of_week || '1,2,3,4,5').split(',');
     for (let i = 1; i <= 7; i++) {
@@ -237,4 +243,24 @@ function openEditTgModal(tg) {
 
 function closeTgModal() {
     UIHelper.closeOverlayModal('tgModal');
+}
+
+/** Time group modal: tick the holiday calendars the group uses ("1,3"). */
+function tgSetHolidayCalendars(csv) {
+    const ids = String(csv || '').split(',').filter(Boolean);
+    document.querySelectorAll('.tg-holiday-cal').forEach(cb => { cb.checked = ids.includes(cb.value); });
+}
+
+/** Holiday calendar modal: null opens an empty one. */
+function openHcModal(hc) {
+    document.getElementById('modal_hc_id').value = hc ? hc.id : '0';
+    document.getElementById('modal_hc_name').value = hc ? (hc.name || '') : '';
+    document.getElementById('modal_hc_url').value = hc ? (hc.ics_url || '') : '';
+    document.getElementById('modal_hc_dates').value = hc ? (hc.dates_text || '') : '';
+    document.getElementById('modal_hc_file').value = '';
+    UIHelper.openOverlayModal('hcModal');
+}
+
+function closeHcModal() {
+    UIHelper.closeOverlayModal('hcModal');
 }

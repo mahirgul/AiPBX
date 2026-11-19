@@ -1,4 +1,5 @@
-<?php use PBX\Destinations\DestinationRegistry; ?>
+<?php use PBX\Destinations\DestinationRegistry;
+$h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); ?>
 
 <!-- Tabs Header -->
 <div class="card tabbed-page">
@@ -9,6 +10,9 @@
     </button>
     <button class="tc-tab-btn" id="tab-btn-tgs" onclick="switchTcTab('tgs')">
         <i class="fas fa-calendar-alt"></i> <?php echo t('tc.tab_groups'); ?> (<?php echo count($time_groups); ?>)
+    </button>
+    <button class="tc-tab-btn" id="tab-btn-hcs" onclick="switchTcTab('hcs')">
+        <i class="fas fa-umbrella-beach"></i> <?php echo $h(t('holidays.tab')); ?> (<?php echo count($holiday_calendars); ?>)
     </button>
 </div>
 
@@ -65,7 +69,12 @@
                         ?>
                             <tr>
                                 <td class="col-hide-mobile text-muted u-fs-12">#<?php echo $tc['id']; ?></td>
-                                <td class="u-strong"><?php echo htmlspecialchars($tc['title']); ?></td>
+                                <td class="u-strong">
+                                    <?php echo htmlspecialchars($tc['title']); ?>
+                                    <?php if (!empty($tc['timezone'])): ?>
+                                        <div><span class="badge badge-secondary u-fs-10"><i class="fas fa-globe"></i> <?php echo htmlspecialchars((string)$tc['timezone']); ?></span></div>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="col-hide-mobile">
                                     <?php echo !empty($tc['internal_number'])
                                         ? '<span class="badge badge-info">' . htmlspecialchars($tc['internal_number']) . '</span>'
@@ -172,6 +181,58 @@
                 <?php echo uiTableClose(); ?>
     </div>
 </div>
+<!-- TAB 3: holiday calendars -->
+<div class="tc-tab-pane" id="tab-pane-hcs" style="display: none;">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <i class="fas fa-umbrella-beach u-primary"></i> <?php echo $h(t('holidays.title')); ?>
+            </div>
+            <div class="u-flex-gap">
+                <?php if (hasModulePermission('time_conditions', 'edit')): ?>
+                    <button class="btn btn-icon btn-primary btn-sm" onclick="openHcModal(null)" title="<?php echo $h(t('common.add_new')); ?>">
+                        <i class="fas fa-plus-circle"></i>
+                    </button>
+                <?php endif; ?>
+            </div>
+        </div>
+        <p class="u-hint"><?php echo $h(t('holidays.help')); ?></p>
+
+        <?php echo uiTableOpen([
+            t('holidays.col_name'),
+            t('holidays.col_days'),
+            ['label' => t('holidays.col_next'), 'class' => 'col-hide-mobile'],
+            ['label' => t('holidays.col_source'), 'class' => 'col-hide-mobile'],
+            ['label' => t('tc.col_actions'), 'class' => 'text-right'],
+        ]); ?>
+            <?php if (empty($holiday_calendars)): ?>
+                <?php echo uiTableEmptyRow(5, t('holidays.empty'), 'fa-umbrella-beach'); ?>
+            <?php else: ?>
+                <?php foreach ($holiday_calendars as $hc): ?>
+                    <tr>
+                        <td class="u-strong"><?php echo $h($hc['name']); ?></td>
+                        <td><span class="badge badge-info"><?php echo count($hc['dates']); ?></span></td>
+                        <td class="col-hide-mobile"><?php echo $h($hc['next'] !== '' ? $hc['next'] : '-'); ?></td>
+                        <td class="col-hide-mobile">
+                            <?php if (!empty($hc['ics_url'])): ?>
+                                <span class="badge badge-secondary"><i class="fas fa-link"></i> <?php echo $h(t('holidays.source_url')); ?></span>
+                                <small class="u-muted"><?php echo $h((string) ($hc['fetched_at'] ?? '')); ?></small>
+                                <?php if (!empty($hc['fetch_error'])): ?>
+                                    <br><small class="u-danger"><?php echo $h($hc['fetch_error']); ?></small>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span class="badge badge-secondary"><?php echo $h(t('holidays.source_manual')); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-right">
+                            <?php echo uiRowActions(['id' => $hc['id'], 'name' => $hc['name'], 'ics_url' => (string) ($hc['ics_url'] ?? ''), 'dates_text' => $hc['dates_text']], 'openHcModal', 'hc_id', 'delete_holiday_calendar', sprintf(t('holidays.confirm_delete'), $hc['name'])); ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        <?php echo uiTableClose(); ?>
+    </div>
+</div>
 </div>
 
 <!-- Modal 1: Create / Edit Time Condition -->
@@ -198,6 +259,17 @@
                            class="form-control" inputmode="numeric" pattern="[0-9]{2,6}" maxlength="6"
                            placeholder="<?php echo t('common.eg'); ?> 1010">
                     <small class="u-hint"><?php echo t('internal_number.help'); ?></small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('tc.field_timezone'); ?></label>
+                    <select name="timezone" id="modal_timezone" class="form-control">
+                        <option value=""><?php echo t('tc.timezone_server'); ?> (<?php echo htmlspecialchars(date_default_timezone_get()); ?>)</option>
+                        <?php foreach (\DateTimeZone::listIdentifiers() as $tzId): ?>
+                            <option value="<?php echo htmlspecialchars($tzId); ?>"><?php echo htmlspecialchars($tzId); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="u-hint"><?php echo t('tc.timezone_help'); ?></small>
                 </div>
 
                 <div class="form-group u-mt-10 u-mb-15">
@@ -298,6 +370,18 @@
                     <small class="u-hint"><?php echo t('tc.holidays_help'); ?></small>
                 </div>
 
+                <?php if (!empty($holiday_calendars)): ?>
+                <div class="form-group">
+                    <label class="form-label"><?php echo $h(t('holidays.field_calendars')); ?></label>
+                    <?php foreach ($holiday_calendars as $hc): ?>
+                        <label class="u-check-label">
+                            <input type="checkbox" name="holiday_calendars[]" value="<?php echo (int) $hc['id']; ?>" class="u-check tg-holiday-cal">
+                            <span><?php echo $h($hc['name']); ?> <small class="u-muted">(<?php echo count($hc['dates']); ?>)</small></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <?php endif; ?>
+
                 <div class="form-group u-mt-10">
                     <label class="form-label u-check-label">
                         <input type="checkbox" name="is_active" id="modal_tg_is_active" value="1" checked class="u-check">
@@ -306,6 +390,41 @@
                 </div>
 
                 <?php echo uiModalFooter('closeTgModal()'); ?>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="hcModal">
+    <div class="modal-card u-maxw-540 u-maxh-90vh u-overflow-y-auto">
+        <div class="modal-header">
+            <h3 class="u-title" id="hcModalTitle"><i class="fas fa-umbrella-beach u-primary"></i> <?php echo $h(t('holidays.title')); ?></h3>
+            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeHcModal()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" autocomplete="off" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                <input type="hidden" name="save_holiday_calendar" value="1">
+                <input type="hidden" name="hc_id" id="modal_hc_id" value="0">
+                <div class="form-group">
+                    <label class="form-label" for="modal_hc_name"><?php echo $h(t('holidays.field_name')); ?></label>
+                    <input type="text" name="name" id="modal_hc_name" class="form-control" required maxlength="100" placeholder="<?php echo $h(t('holidays.name_ph')); ?>">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="modal_hc_url"><?php echo $h(t('holidays.field_url')); ?></label>
+                    <input type="url" name="ics_url" id="modal_hc_url" class="form-control" maxlength="500" placeholder="https://example.com/holidays.ics">
+                    <small class="u-hint"><?php echo $h(t('holidays.url_help')); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="modal_hc_dates"><?php echo $h(t('holidays.field_dates')); ?></label>
+                    <textarea name="dates" id="modal_hc_dates" class="form-control u-mono" rows="8" placeholder="2026-01-01 New Year&#10;2026-12-24..2026-12-26 Christmas"></textarea>
+                    <small class="u-hint"><?php echo $h(t('holidays.dates_help')); ?></small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="modal_hc_file"><?php echo $h(t('holidays.field_file')); ?></label>
+                    <input type="file" name="ics_file" id="modal_hc_file" class="form-control" accept=".ics,text/calendar">
+                </div>
+                <?php echo uiModalFooter('closeHcModal()'); ?>
             </form>
         </div>
     </div>
