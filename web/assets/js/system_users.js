@@ -1,6 +1,18 @@
 /**
  * System Users Client Module
  */
+/** Ticks the extra roles of a user; the main role cannot be an extra one as well. */
+function setUserExtraRoles(roles) {
+    const main = document.getElementById('modal_role').value;
+    document.querySelectorAll('#modal_extra_roles input[type="checkbox"]').forEach(cb => {
+        cb.checked = roles.includes(cb.value) && cb.value !== main;
+        cb.disabled = cb.value === main;
+    });
+}
+document.addEventListener('change', e => {
+    if (e.target && e.target.id === 'modal_role') setUserExtraRoles([...document.querySelectorAll('#modal_extra_roles input:checked')].map(cb => cb.value));
+});
+
 function openCreateUserModal() {
     document.getElementById('userModalTitle').innerHTML = '<i class="fas fa-user-plus" style="color: var(--primary);"></i> ' + __('js.users.new_title') + '';
     document.getElementById('modal_user_id').value = '0';
@@ -13,7 +25,9 @@ function openCreateUserModal() {
     document.getElementById('modal_full_name').value = '';
     document.getElementById('modal_email').value = '';
     document.getElementById('modal_role').value = 'user';
-    document.getElementById('modal_extension').value = '';
+    setUserExtraRoles([]);
+    const extEl = document.getElementById('modal_extension');
+    extEl.value = extEl.dataset.suggest || '';
     if (document.getElementById('modal_sip_password')) document.getElementById('modal_sip_password').value = '';
     if (document.getElementById('modal_cid_internal')) document.getElementById('modal_cid_internal').value = '';
     if (document.getElementById('modal_cid_external')) document.getElementById('modal_cid_external').value = '';
@@ -48,6 +62,7 @@ function openEditUserModal(u) {
     document.getElementById('modal_full_name').value = u.full_name || '';
     document.getElementById('modal_email').value = u.email || '';
     document.getElementById('modal_role').value = u.role || 'user';
+    setUserExtraRoles(String(u.extra_roles || '').split(',').filter(Boolean));
     document.getElementById('modal_extension').value = u.extension || '';
     if (document.getElementById('modal_sip_password')) document.getElementById('modal_sip_password').value = u.sip_password || '';
     if (document.getElementById('modal_cid_internal')) document.getElementById('modal_cid_internal').value = u.cid_internal || '';

@@ -124,8 +124,12 @@ class RoleService {
             return ['error' => t('srv_role.err_system_delete')];
         }
 
-        $count_stmt = $db->prepare("SELECT COUNT(*) FROM sys_users WHERE role = ?");
-        $count_stmt->execute([$role_key]);
+        $count_stmt = $db->prepare(
+            "SELECT COUNT(*) FROM sys_users u
+             WHERE u.role = ?
+                OR EXISTS (SELECT 1 FROM sys_user_roles ur WHERE ur.user_id = u.id AND ur.role_key = ?)"
+        );
+        $count_stmt->execute([$role_key, $role_key]);
         $in_use = (int)$count_stmt->fetchColumn();
         if ($in_use > 0) {
             return ['error' => sprintf(t('srv_role.err_in_use'), $in_use)];

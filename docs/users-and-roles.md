@@ -47,6 +47,12 @@ access / edit / delete* permissions.
 Some pages are admin-only regardless of the permission matrix: roles, system users, firewall, fail2ban,
 mail settings and system update.
 
+### Extra roles
+
+A user can have **extra roles** next to the main one (**System Users → edit → Extra roles**). Their permissions are
+added to the main role's: an agent who also sends faxes, an administrator who also takes queue calls. The main role
+decides the start page and the welcome card.
+
 ## Queue agents and callbacks
 
 An agent needs an extension and an assignment on the queue's agents tab. Administrators and queue

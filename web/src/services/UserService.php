@@ -23,6 +23,21 @@ class UserService {
         return implode('-', $groups);
     }
 
+    /** Replaces a user's extra roles; unknown roles and the main role itself are left out. */
+    public static function saveExtraRoles(int $userId, string $mainRole, array $roles): void
+    {
+        $db = getDB();
+        $known = $db->query('SELECT role_key FROM sys_roles')->fetchAll(PDO::FETCH_COLUMN);
+        $roles = array_values(array_unique(array_filter(array_map('strval', $roles),
+            fn($r) => $r !== $mainRole && in_array($r, $known, true))));
+        $db->prepare('DELETE FROM sys_user_roles WHERE user_id = ?')->execute([$userId]);
+        $ins = $db->prepare('INSERT INTO sys_user_roles (user_id, role_key) VALUES (?, ?)');
+        foreach ($roles as $r) {
+            $ins->execute([$userId, $r]);
+        }
+        writeAuditLog(null, 'user_account', $userId, 'Extra roles: ' . ($roles !== [] ? implode(', ', $roles) : '-'), 'update', $_SESSION['user_id'] ?? null);
+    }
+
     public static function saveUser($data) {
         $generated_password = '';
         $res = PBXHelper::handleAction($data['csrf_token'] ?? '', function() use ($data, &$generated_password) {
@@ -201,6 +216,12 @@ class UserService {
                         $msg .= ' (' . sprintf(t('srv_user.invite_failed'), ($inviteRes['error'] ?? '')) . ')';
                     }
                 }
+            }
+
+            // Extra roles add their permissions to the main one (sys_user_roles); only when the form
+            // sends the list, so the API and imports leave a user's extra roles alone.
+            if (!empty($data['extra_roles_sent'])) {
+                self::saveExtraRoles((int) $user_id, $role, (array) ($data['extra_roles'] ?? []));
             }
 
             $uid = $_SESSION['user_id'] ?? null;

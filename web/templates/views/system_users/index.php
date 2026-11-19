@@ -181,6 +181,10 @@
                                 <span class="role-badge <?php echo $role_class; ?>">
                                     <?php echo $role_label; ?>
                                 </span>
+                                <?php $role_names = $role_names ?? array_column($all_roles ?? [], 'role_name', 'role_key'); ?>
+                                <?php foreach (array_filter(explode(',', (string) ($u['extra_roles'] ?? ''))) as $xr): ?>
+                                    <span class="badge badge-secondary u-fs-11" title="<?php echo htmlspecialchars(t('system_users.field_extra_roles')); ?>">+ <?php echo htmlspecialchars($role_names[$xr] ?? $xr); ?></span>
+                                <?php endforeach; ?>
                             </td>
                             <td>
                                 <?php if (!empty($u['extension'])): ?>
@@ -271,7 +275,7 @@
                 </div>
                 <div class="form-group">
                     <label class="form-label"><?php echo t('system_users.field_extension'); ?></label>
-                        <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('common.eg'); ?> 3001">
+                        <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('common.eg'); ?> 3001" data-suggest="<?php echo htmlspecialchars($next_extension ?? ''); ?>">
                         <small class="u-muted u-fs-11"><?php echo t('system_users.extension_help'); ?></small>
                 </div>
 
@@ -300,6 +304,20 @@
                             <option value="<?php echo htmlspecialchars($r_item['role_key']); ?>"><?php echo htmlspecialchars($r_item['role_name']); ?> (<?php echo htmlspecialchars($r_item['role_key']); ?>)</option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label"><?php echo t('system_users.field_extra_roles'); ?></label>
+                    <input type="hidden" name="extra_roles_sent" value="1">
+                    <div class="u-d-flex u-wrap u-gap-12" id="modal_extra_roles">
+                        <?php foreach ($all_roles as $r_item): ?>
+                            <label class="u-d-flex u-ai-center u-gap-6 u-pointer u-fs-13">
+                                <input type="checkbox" name="extra_roles[]" value="<?php echo htmlspecialchars($r_item['role_key']); ?>">
+                                <span><?php echo htmlspecialchars($r_item['role_name']); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <small class="u-muted u-fs-11"><?php echo t('system_users.extra_roles_help'); ?></small>
                 </div>
 
                 <div class="form-group">

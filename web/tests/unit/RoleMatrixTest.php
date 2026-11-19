@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/src/core/BaseRepository.php';
 require_once dirname(__DIR__, 2) . '/src/repositories/RoleRepository.php';
+require_once dirname(__DIR__, 2) . '/src/services/RoleService.php';
 require_once dirname(__DIR__, 2) . '/auth.php';
 
 /**
@@ -81,7 +82,8 @@ final class RoleMatrixTest extends TestCase
         preg_match_all("#'href' => '([^']+)'#", (string) file_get_contents(self::ROOT . '/templates/sidebar_menu.php'), $m);
         $this->assertNotEmpty($m[1]);
         foreach ($m[1] as $href) {
-            $this->assertArrayHasKey($href, $routes, "sidebar link {$href} has no route");
+            $path = (string) (parse_url($href, PHP_URL_PATH) ?: $href);
+            $this->assertArrayHasKey($path, $routes, "sidebar link {$href} has no route");
         }
     }
 
@@ -125,5 +127,60 @@ final class RoleMatrixTest extends TestCase
             $this->assertFalse(hasModulePermission($module, 'view'), $module);
         }
         $_SESSION['user_role'] = $prev;
+    }
+
+    public function testGroupSlugsAndTroubleshootingRoleKeysExist(): void
+    {
+        $slugs = RoleRepository::groupSlugs();
+        $this->assertArrayHasKey('Troubleshooting', $slugs);
+        $this->assertSame('troubleshooting', $slugs['Troubleshooting']);
+        foreach (RoleRepository::modulesDefinition() as $m) {
+            $this->assertArrayHasKey($m['group'], $slugs, "Missing group slug for {$m['group']}");
+        }
+        $en = require self::ROOT . '/lang/en.php';
+        $tr = require self::ROOT . '/lang/tr.php';
+        foreach (['roles.group_troubleshooting', 'roles.module_troubleshooting', 'roles.module_call_modifiers'] as $key) {
+            $this->assertArrayHasKey($key, $en);
+            $this->assertArrayHasKey($key, $tr);
+        }
+    }
+
+    public function testExtraRolesInSysUserRolesAreCountedAndBlockDeletion(): void
+    {
+        $db = getDB();
+        $roleKey = 'zz_extra_role_test';
+        $username = 'zz_extra_role_user';
+        $prevCsrf = $_SESSION['csrf_token'] ?? null;
+        $_SESSION['csrf_token'] = 'role_test_csrf';
+
+        $db->prepare("DELETE FROM sys_users WHERE username = ?")->execute([$username]);
+        $db->prepare("DELETE FROM sys_roles WHERE role_key = ?")->execute([$roleKey]);
+
+        try {
+            $db->prepare("INSERT INTO sys_roles (role_key, role_name, description, is_system) VALUES (?, 'Extra Test Role', 'desc', 0)")
+                ->execute([$roleKey]);
+            $roleId = (int) $db->lastInsertId();
+
+            $db->prepare("INSERT INTO sys_users (username, password_hash, full_name, email, role, is_active, is_device, token_epoch) VALUES (?, '', 'Extra User', 'extra@example.com', 'user', 1, 0, 0)")
+                ->execute([$username]);
+            $userId = (int) $db->lastInsertId();
+
+            $db->prepare("INSERT INTO sys_user_roles (user_id, role_key) VALUES (?, ?)")->execute([$userId, $roleKey]);
+
+            $rows = array_column(RoleRepository::allWithUserCount(), null, 'role_key');
+            $this->assertArrayHasKey($roleKey, $rows);
+            $this->assertSame(1, (int) $rows[$roleKey]['user_count']);
+
+            $del = RoleService::deleteRole(['role_id' => $roleId, 'csrf_token' => 'role_test_csrf']);
+            $this->assertArrayHasKey('error', $del, 'must block deleting a role assigned via sys_user_roles');
+        } finally {
+            $db->prepare("DELETE FROM sys_users WHERE username = ?")->execute([$username]);
+            $db->prepare("DELETE FROM sys_roles WHERE role_key = ?")->execute([$roleKey]);
+            if ($prevCsrf === null) {
+                unset($_SESSION['csrf_token']);
+            } else {
+                $_SESSION['csrf_token'] = $prevCsrf;
+            }
+        }
     }
 }

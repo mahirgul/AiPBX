@@ -135,8 +135,10 @@ class SystemUserController extends BaseController
         $sys_roles_full = SystemUserRepository::allRolesFull();
 
         $page_title = t('system_users.title');
+        require_once __DIR__ . '/../internal_numbers.php';
         static::renderPage('system_users/index', [
             'users' => $users,
+            'next_extension' => nextFreeExtension(),
             'all_roles' => $all_roles,
             'sys_roles_full' => $sys_roles_full,
             'generated_password' => $generated_password,
