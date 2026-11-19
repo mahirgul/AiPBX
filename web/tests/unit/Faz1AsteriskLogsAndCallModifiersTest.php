@@ -58,6 +58,12 @@ final class Faz1AsteriskLogsAndCallModifiersTest extends TestCase
     public function testCallModifierSaveAndDialplanGeneration(): void
     {
         $_SESSION['csrf_token'] = 'test_csrf_cm';
+        // A language counts once its sound folder has files; CI has no Asterisk sounds.
+        $langDir = dirname(SOUNDS_CUSTOM_DIR) . '/en';
+        @mkdir($langDir, 0755, true);
+        if (!glob($langDir . '/*')) {
+            touch($langDir . '/beep.wav');
+        }
 
         $saveLang = CallModifierService::saveModifier([
             'csrf_token' => 'test_csrf_cm',
