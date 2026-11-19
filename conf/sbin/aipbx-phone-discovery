@@ -37,6 +37,6 @@ fi
 PYTHONPATH="$INSTALL_DIR/engine"
 export PYTHONPATH
 cd "$INSTALL_DIR/engine" || exit 0
-/usr/bin/python3 -m aipbx_engine once || true
+/usr/bin/python3 -m aipbx_engine once || exit $?
 
 exec /usr/bin/php "$INSTALL_DIR/web/bin/aipbx_phone_discovery.php" provision

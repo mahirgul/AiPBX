@@ -804,8 +804,13 @@ def stop_unit(name):
 
 def start_unit(name, changed):
     """Restarts only what changed: an update or a reload must not drop running calls."""
-    subprocess.run(['systemctl', 'enable', unit(name)], capture_output=True, timeout=60)
-    subprocess.run(['systemctl', 'restart' if changed or not is_active(name) else 'start', unit(name)], capture_output=True, timeout=60)
+    service = unit(name)
+    action = 'restart' if changed or not is_active(name) else 'start'
+    for operation in ('enable', action):
+        result = subprocess.run(['systemctl', operation, service], capture_output=True, text=True, timeout=60)
+        if result.returncode:
+            detail = result.stderr.strip()
+            raise Refused(f'systemctl {operation} {service} failed: {detail or result.returncode}')
 
 
 def render_server(state):
