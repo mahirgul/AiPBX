@@ -131,6 +131,20 @@ final class CatchAllPatternTest extends TestCase
         return (int) $db->lastInsertId();
     }
 
+    public function testInboundCallsAskTheAddressBookForTheNameBeforeCnam(): void
+    {
+        syncInboundDialplan();
+        $conf = $this->read('extensions_inbound.conf');
+        $this->assertStringContainsString('[sub-phonebook-name]', $conf);
+        $this->assertStringContainsString('${CURL(http://127.0.0.1/api/phonebook_name.php?num=${URIENCODE(${CALLERID(num)})})}', $conf);
+        $this->assertStringContainsString('GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:5})}" = "NAME:"]?set:done)', $conf, 'an error page is no name');
+        $this->assertStringContainsString('Set(CALLERID(name)=${PB_ANSWER:5})', $conf);
+        $trunk = substr($conf, (int) strpos($conf, '[from-trunk-' . Fixtures::TRUNK_NAME . ']'));
+        $this->assertLessThan(strpos($trunk, 'sub-cnam-lookup'), strpos($trunk, 'Gosub(sub-phonebook-name,s,1)'), 'before the CNAM plugin');
+        $this->assertSame(substr_count($conf, 'sub-cnam-lookup,s,1)}]?sub-cnam-lookup'), substr_count($conf, 'Gosub(sub-phonebook-name,s,1)'),
+            'wherever CNAM is asked (DID, no DID, the hang-up tone wrapper), the address book is asked first');
+    }
+
     private function read(string $file): string
     {
         $path = ASTERISK_PBX_DIR . '/' . $file;

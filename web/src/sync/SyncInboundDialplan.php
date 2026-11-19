@@ -158,6 +158,7 @@ function __syncInboundDialplanBody() {
             // The caller's number first, so the blacklist sees the same form as everything after it.
             $same .= inboundNormLines($normRules, $t_name, 'caller');
             $same .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
+            $same .= " same => n,Gosub(sub-phonebook-name,s,1)\n";
             $same .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
 
             if ($is_busy_tone_wrapper) {
@@ -193,6 +194,7 @@ function __syncInboundDialplanBody() {
             }
             $conf .= inboundNormLines($normRules, $t_name, 'caller');
             $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
+            $conf .= " same => n,Gosub(sub-phonebook-name,s,1)\n";
             $conf .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
             if ($is_busy_tone_wrapper) {
                 $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
@@ -327,10 +329,30 @@ function __syncInboundDialplanBody() {
     // the IVR or queue. The context names keep the Turkish words because trunks
     // store "from-trunk-kapanma-tonu" as their context in the database.
     // ------------------------------------------------------------------
+    // The caller's name from the address book (Dashboard -> Address Book), before the CNAM
+    // plugin: phones, queues and the apps show it. Fail-open: a slow or missing answer
+    // (one second at most) leaves the name the trunk sent.
+    $conf .= "; --- Caller name from the address book ---\n";
+    $conf .= "[sub-phonebook-name]\n";
+    $conf .= 'exten => s,1,GotoIf($[${LEN(${FILTER(0-9,${CALLERID(num)})})} < 5]?done)' . "\n";
+    $conf .= " same => n,Set(CURLOPT(conntimeout)=1)\n";
+    $conf .= " same => n,Set(CURLOPT(httptimeout)=1)\n";
+    $conf .= ' same => n,Set(PB_ANSWER=${CURL(http://127.0.0.1/api/phonebook_name.php?num=${URIENCODE(${CALLERID(num)})})})' . "\n";
+    // The prefix is required: an HTTP error page must never become a caller name.
+    // FILTER strips quotes/punctuation from the slice so JSON/HTML errors cannot break $[...].
+    // Its own Set line: a comma or bracket in a name would split an ExecIf().
+    $conf .= ' same => n,GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:5})}" = "NAME:"]?set:done)' . "\n";
+    $conf .= ' same => n(set),Set(CALLERID(name)=${PB_ANSWER:5})' . "\n";
+    // Restore default timeouts so downstream CURL() calls (e.g. sub-cnam-lookup) are not clamped to 1s.
+    $conf .= " same => n(done),Set(CURLOPT(conntimeout)=5)\n";
+    $conf .= " same => n,Set(CURLOPT(httptimeout)=5)\n";
+    $conf .= " same => n,Return()\n\n";
+
     $conf .= "; --- Inbound route wrapper with hang-up tone detection ---\n";
     $conf .= "[from-trunk-kapanma-tonu]\n";
     $conf .= "exten => _X.,1,NoOp(Hangup tone detector active - DID \${EXTEN})\n";
     $conf .= " same => n,Gosub(sub-inbound-blacklist,s,1)\n";
+    $conf .= " same => n,Gosub(sub-phonebook-name,s,1)\n";
     $conf .= " same => n,GosubIf(\$[\${DIALPLAN_EXISTS(sub-cnam-lookup,s,1)}]?sub-cnam-lookup,s,1)\n";
     $conf .= " same => n,Set(TONE_DETECT(0,,brg(kapanma-tonu,s,1))=)\n";
     $conf .= " same => n,Goto(from-trunk-inbound,\${EXTEN},1)\n\n";
@@ -347,8 +369,10 @@ function __syncInboundDialplanBody() {
 /**
  * [sub-trunk-limit]: channels (inbound "trunkin" and outbound "trunk" groups
  * together) and calls per minute of one trunk. ARG1 trunk, ARG2 max channels,
- * ARG3 calls per minute (0 = none), ARG4 group of this call. TRUNK_LIMIT is
- * empty when the call may go on, "channels" or "rate" when it is refused; a
+ * ARG3 calls per minute (0 = none), ARG4 group of this call, ARG5 1 when the
+ * trunk has a monthly limit that refuses calls (astdb trunkmonth/<trunk> = over,
+ * set by TrunkUsageService). TRUNK_LIMIT is empty when the call may go on,
+ * "monthly", "channels" or "rate" when it is refused; a
  * refused call leaves the group and is counted in astdb trunkblock/<trunk>
  * ("first:count:reason:last", a 15-minute window) for the health check
  * "Trunk limits". The minute counter is astdb trunkrate/<trunk>.
@@ -358,6 +382,7 @@ function trunkLimitSubroutine(): string
     return "[sub-trunk-limit]\n"
         . "exten => s,1,Set(TRUNK_LIMIT=)\n"
         . " same => n,Set(GROUP(\${ARG4})=\${ARG1})\n"
+        . " same => n,GotoIf(\$[\"\${ARG5}\" = \"1\" & \"\${DB(trunkmonth/\${ARG1})}\" = \"over\"]?month)\n"
         . " same => n,GotoIf(\$[0\${ARG2} = 0]?rate)\n"
         . " same => n,GotoIf(\$[\${GROUP_COUNT(\${ARG1}@trunk)} + \${GROUP_COUNT(\${ARG1}@trunkin)} > \${ARG2}]?full)\n"
         . " same => n(rate),GotoIf(\$[0\${ARG3} = 0]?ok)\n"
@@ -367,6 +392,8 @@ function trunkLimitSubroutine(): string
         . " same => n,Set(DB(trunkrate/\${ARG1})=\${min}:\${cnt})\n"
         . " same => n,GotoIf(\$[\${cnt} > \${ARG3}]?over)\n"
         . " same => n(ok),Return()\n"
+        . " same => n(month),Set(TRUNK_LIMIT=monthly)\n"
+        . " same => n,Goto(refused)\n"
         . " same => n(full),Set(TRUNK_LIMIT=channels)\n"
         . " same => n,Goto(refused)\n"
         . " same => n(over),Set(TRUNK_LIMIT=rate)\n"

@@ -32,6 +32,8 @@
 
 ### ⚡ Dialplan Hook (`sub-cnam-lookup`)
 
+The core asks the [address book](phonebook.md) first (`sub-phonebook-name`): a caller found there already has a name when the hook runs.
+
 AiPBX core calls the hook when it exists; the enabled plugin generates the subroutine in
 `extensions_plugin_cnam.conf`. Its lookup uses `?num=`, HTTP Basic credentials (`cnam` and a per-installation token), and
 `CURLOPT(conntimeout)` / `CURLOPT(httptimeout)` set to two seconds. The `CURLOPT(userpwd)` credentials are cleared after

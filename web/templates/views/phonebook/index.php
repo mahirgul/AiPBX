@@ -1,6 +1,7 @@
 <?php
 $can_edit = $canEdit ?? false;
 $can_delete = $canDelete ?? false;
+$can_admin = $canAdmin ?? false;
 $ldap = $ldap ?? ['enabled' => false, 'anonymous' => false, 'password' => ''];
 $host = ($host ?? '') !== '' ? $host : 'pbx.example.com';
 $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_manual') : $s;
@@ -41,21 +42,23 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     <?php echo uiTableOpen([
         t('phonebook.col_name'),
         ['label' => t('phonebook.col_company'), 'class' => 'col-hide-mobile'],
-        t('phonebook.col_work'),
-        ['label' => t('phonebook.col_mobile'), 'class' => 'col-hide-mobile'],
+        t('phonebook.col_numbers'),
         ['label' => t('phonebook.col_email'), 'class' => 'col-hide-mobile'],
         ['label' => t('phonebook.col_source'), 'class' => 'col-hide-mobile'],
         ['label' => t('common.actions'), 'class' => 'text-right'],
     ], ['id' => 'phonebookTable']); ?>
         <?php if (empty($contacts)): ?>
-            <?php echo uiTableEmptyRow(7, t('phonebook.empty'), 'fa-address-book'); ?>
+            <?php echo uiTableEmptyRow(6, t('phonebook.empty'), 'fa-address-book'); ?>
         <?php else: ?>
             <?php foreach ($contacts as $c): $manual = ($c['source'] ?? '') === 'manual'; ?>
                 <tr>
                     <td><?php echo htmlspecialchars((string) $c['display_name']); ?></td>
                     <td class="col-hide-mobile"><?php echo htmlspecialchars((string) $c['company']); ?></td>
-                    <td><code><?php echo htmlspecialchars((string) ($c['phone_work'] ?: $c['phone_other'])); ?></code></td>
-                    <td class="col-hide-mobile"><code><?php echo htmlspecialchars((string) $c['phone_mobile']); ?></code></td>
+                    <td>
+                        <?php foreach ($c['numbers'] ?? [] as $n): ?>
+                            <div class="u-fs-12"><span class="text-muted"><?php echo htmlspecialchars(t('phonebook.label_' . $n['label'])); ?>:</span> <code><?php echo htmlspecialchars($n['number']); ?></code></div>
+                        <?php endforeach; ?>
+                    </td>
                     <td class="col-hide-mobile u-fs-12"><?php echo htmlspecialchars((string) $c['email']); ?></td>
                     <td class="col-hide-mobile"><span class="badge badge-secondary"><?php echo htmlspecialchars($sourceLabel((string) $c['source'])); ?></span></td>
                     <td class="text-right">
@@ -79,6 +82,26 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     <?php echo uiTableClose(); ?>
 </div>
 
+<?php if ($can_admin): ?>
+<div class="card u-mt-16">
+    <?php echo uiPageHeader('fa-equals', t('phonebook.match_title')); ?>
+    <p class="u-fs-13"><?php echo t('phonebook.match_desc'); ?></p>
+    <form method="POST" class="u-d-flex u-ai-center u-gap-8 u-wrap">
+        <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+        <input type="hidden" name="action" value="match_digits">
+        <select name="caller_match_digits" class="form-control form-control-sm u-w-auto" <?php echo $can_admin ? '' : 'disabled'; ?>>
+            <?php foreach (PhonebookService::MATCH_DIGITS as $d): ?>
+                <option value="<?php echo $d; ?>" <?php echo $d === ($matchDigits ?? 10) ? 'selected' : ''; ?>><?php echo $d === 0 ? t('phonebook.match_whole') : sprintf(t('phonebook.match_last'), $d); ?></option>
+            <?php endforeach; ?>
+        </select>
+        <label class="u-check-label u-fs-13">
+            <input type="checkbox" name="auto_save_callers" value="1" class="u-check" <?php echo !empty($autoSave) ? 'checked' : ''; ?>>
+            <span><?php echo t('phonebook.auto_save_callers'); ?></span>
+        </label>
+        <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+    </form>
+</div>
+
 <div class="card u-mt-16">
     <?php echo uiPageHeader('fa-server', t('phonebook.ldap_title')); ?>
     <p class="u-fs-13"><?php echo t('phonebook.ldap_desc'); ?></p>
@@ -88,25 +111,25 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
         <input type="hidden" name="action" value="ldap_settings">
         <div class="form-group">
             <label class="form-label u-check-label">
-                <input type="checkbox" name="enabled" value="1" class="u-check" <?php echo $ldap['enabled'] ? 'checked' : ''; ?> <?php echo $can_edit ? '' : 'disabled'; ?>>
+                <input type="checkbox" name="enabled" value="1" class="u-check" <?php echo $ldap['enabled'] ? 'checked' : ''; ?> <?php echo $can_admin ? '' : 'disabled'; ?>>
                 <span class="u-fw-600"><?php echo t('phonebook.ldap_enabled'); ?></span>
             </label>
         </div>
         <div class="form-group">
             <label class="form-label u-check-label">
-                <input type="checkbox" name="anonymous" value="1" class="u-check" <?php echo $ldap['anonymous'] ? 'checked' : ''; ?> <?php echo $can_edit ? '' : 'disabled'; ?>>
+                <input type="checkbox" name="anonymous" value="1" class="u-check" <?php echo $ldap['anonymous'] ? 'checked' : ''; ?> <?php echo $can_admin ? '' : 'disabled'; ?>>
                 <span><?php echo t('phonebook.ldap_anonymous'); ?></span>
             </label>
         </div>
         <?php if ($ldap['password'] !== ''): ?>
             <div class="form-group">
                 <label class="form-label u-check-label">
-                    <input type="checkbox" name="new_password" value="1" class="u-check" <?php echo $can_edit ? '' : 'disabled'; ?>>
+                    <input type="checkbox" name="new_password" value="1" class="u-check" <?php echo $can_admin ? '' : 'disabled'; ?>>
                     <span><?php echo t('phonebook.ldap_new_password'); ?></span>
                 </label>
             </div>
         <?php endif; ?>
-        <?php if ($can_edit): ?>
+        <?php if ($can_admin): ?>
             <button type="submit" class="btn btn-primary btn-sm"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
         <?php endif; ?>
     </form>
@@ -125,7 +148,7 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
                 t('phonebook.ldap_port') => '389 (LDAP, StartTLS) / 636 (LDAPS)',
                 t('phonebook.ldap_base') => PhonebookService::BASE_DN,
                 t('phonebook.ldap_user') => PhonebookService::BIND_DN,
-                t('phonebook.ldap_password') => $can_edit ? $ldap['password'] : ($ldap['password'] !== '' ? '••••••••' : ''),
+                t('phonebook.ldap_password') => $can_admin ? $ldap['password'] : ($ldap['password'] !== '' ? '••••••••' : ''),
                 t('phonebook.ldap_name_filter') => '(|(cn=%*)(sn=%*))',
                 t('phonebook.ldap_number_filter') => '(|(telephoneNumber=%)(mobile=%)(homePhone=%))',
                 t('phonebook.ldap_name_attr') => 'cn',
@@ -137,6 +160,7 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
         <p class="u-fs-12 text-muted u-mt-10"><i class="fas fa-shield-alt"></i> <?php echo t('phonebook.ldap_firewall'); ?></p>
     <?php endif; ?>
 </div>
+<?php endif; ?>
 
 <?php if ($can_edit): ?>
 <div class="modal-overlay" id="phonebookModal">
@@ -146,20 +170,35 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
             <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('phonebookModal')"><i class="fas fa-times"></i></button>
         </div>
         <div class="modal-body">
-            <form method="POST" autocomplete="off">
+            <form method="POST" action="/phonebook" autocomplete="off">
                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                 <input type="hidden" name="action" value="save_contact">
                 <input type="hidden" name="contact_id" id="pb_id" value="">
                 <?php foreach ([
                     'display_name' => t('phonebook.col_name'), 'first_name' => t('phonebook.first_name'), 'last_name' => t('phonebook.last_name'),
-                    'company' => t('phonebook.col_company'), 'phone_work' => t('phonebook.col_work'), 'phone_mobile' => t('phonebook.col_mobile'),
-                    'phone_other' => t('phonebook.col_other'), 'email' => t('phonebook.col_email'),
+                    'company' => t('phonebook.col_company'), 'email' => t('phonebook.col_email'),
                 ] as $f => $label): ?>
                     <div class="form-group u-mt-10">
                         <label class="form-label" for="pb_<?php echo $f; ?>"><?php echo $label; ?></label>
-                        <input type="<?php echo $f === 'email' ? 'email' : (str_starts_with($f, 'phone_') ? 'tel' : 'text'); ?>" name="<?php echo $f; ?>" id="pb_<?php echo $f; ?>" class="form-control">
+                        <input type="<?php echo $f === 'email' ? 'email' : 'text'; ?>" name="<?php echo $f; ?>" id="pb_<?php echo $f; ?>" class="form-control">
                     </div>
                 <?php endforeach; ?>
+                <div class="form-group u-mt-10">
+                    <label class="form-label"><?php echo t('phonebook.col_numbers'); ?></label>
+                    <div id="pb_numbers"></div>
+                    <template id="pb_number_row">
+                        <div class="u-d-flex u-gap-8 u-mb-8 pb-number-row">
+                            <select name="numbers_label[]" class="form-control u-w-140">
+                                <?php foreach (PhonebookService::LABELS as $l): ?>
+                                    <option value="<?php echo $l; ?>"><?php echo htmlspecialchars(t('phonebook.label_' . $l)); ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <input type="tel" name="numbers_value[]" class="form-control" maxlength="40">
+                            <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="phonebookRemoveNumber(this)" title="<?php echo t('common.delete'); ?>"><i class="fas fa-times"></i></button>
+                        </div>
+                    </template>
+                    <button type="button" class="btn btn-secondary btn-sm" id="pb_add_number" onclick="phonebookAddNumber('', '')" data-max="<?php echo PhonebookService::MAX_NUMBERS; ?>"><i class="fas fa-plus"></i> <?php echo t('phonebook.add_number'); ?></button>
+                </div>
                 <small class="u-hint u-fs-11"><?php echo t('phonebook.form_hint'); ?></small>
                 <?php echo uiModalFooter("UIHelper.closeOverlayModal('phonebookModal')"); ?>
             </form>
@@ -187,13 +226,9 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     </div>
 </div>
 
-<script>
-function openPhonebookModal(c) {
-    const fields = <?php echo json_encode(PhonebookService::FIELDS); ?>;
-    document.getElementById('pb_id').value = c ? c.id : '';
-    fields.forEach(f => { document.getElementById('pb_' + f).value = c ? (c[f] || '') : ''; });
-    document.getElementById('phonebookModalTitle').lastChild.textContent = ' ' + (c ? <?php echo json_encode(t('phonebook.edit_contact')); ?> : <?php echo json_encode(t('phonebook.new_contact')); ?>);
-    UIHelper.openOverlayModal('phonebookModal');
-}
-</script>
+<script>window.PHONEBOOK = <?php echo json_encode([
+    'fields' => array_values(array_diff(PhonebookService::FIELDS, ['phone_work', 'phone_mobile', 'phone_other'])),
+    'add' => (string) ($prefill ?? ''),
+], JSON_HEX_TAG | JSON_HEX_AMP); ?>;</script>
+<script src="<?php echo asset('/assets/js/phonebook.js'); ?>"></script>
 <?php endif; ?>

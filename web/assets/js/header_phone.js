@@ -68,6 +68,7 @@ var headerSipRegistered = window.headerSipRegistered || false;
 var headerIsOnHold = false;
 var headerCallInProgress = false;
 var _headerCallRinging = false;
+var _headerCallerCardSeq = 0;
 var selectedAutocompleteIndex = -1;
 
 // The ring/ringback tone can be chosen in the admin panel (PBX Settings);
@@ -183,6 +184,7 @@ function handleHeaderBreakChange(reason) {
 
 var _syncHeaderBreakStatusInFlight = false;
 function syncHeaderBreakStatus() {
+    if (!window.IS_CC_AGENT || !document.getElementById("header-break-select")) return;
     // The 15 s polling loop did not check whether the previous request had
     // finished — on a slow network responses could come back out of order and
     // old data could overwrite new data (a low-impact but real race
@@ -251,6 +253,27 @@ function headerPhoneClear() {
 // =========================================================================
 // 3. JSSIP WEBRTC CORE INITIALIZATION
 // =========================================================================
+
+/**
+ * The user's extension was changed and applied: register again with the new one,
+ * without reloading the page. A call in progress is left alone; the move waits for its end.
+ */
+function headerPhoneFollowExtension(ext) {
+    if (!ext || ext === window.CURRENT_USER_EXT) return;
+    if (headerJsSipSession && !headerJsSipSession.isEnded()) {
+        setTimeout(() => headerPhoneFollowExtension(ext), 5000);
+        return;
+    }
+    window.CURRENT_USER_EXT = ext;
+    if (headerJsSipUA) {
+        try { headerJsSipUA.stop(); } catch (e) {}
+        headerJsSipUA = null;
+    }
+    headerSipRegistered = false;
+    window.HEADER_WEBRTC_INITIALIZED = false;
+    updateHeaderPhoneStatus("connecting", "var(--warning)");
+    initHeaderWebRTCPhone();
+}
 
 function initHeaderWebRTCPhone() {
     if (window.HEADER_WEBRTC_INITIALIZED || headerSipRegistered) {
@@ -366,6 +389,8 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
         };
 
         headerJsSipUA = new JsSIP.UA(configuration);
+        // A UA stopped by headerPhoneFollowExtension() still reports its end; only the current one counts.
+        const thisUA = headerJsSipUA;
 
         // Connection Lifecycle Events
         headerJsSipUA.on("connecting", () => {
@@ -376,6 +401,7 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
         });
 
         headerJsSipUA.on("disconnected", () => {
+            if (thisUA !== headerJsSipUA) return;
             headerSipRegistered = false;
             updateHeaderPhoneStatus("offline", "var(--danger)");
         });
@@ -389,11 +415,13 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
         });
 
         headerJsSipUA.on("unregistered", () => {
+            if (thisUA !== headerJsSipUA) return;
             headerSipRegistered = false;
             updateHeaderPhoneStatus("offline", "var(--danger)");
         });
 
         headerJsSipUA.on("registrationFailed", (e) => {
+            if (thisUA !== headerJsSipUA) return;
             headerSipRegistered = false;
             console.warn("JsSIP Registration Failed:", e.cause);
             updateHeaderPhoneStatus("offline", "var(--danger)");
@@ -409,6 +437,8 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
 
             if (session.direction === "incoming") {
                 _headerCallRinging = true;
+                _headerCallerCardSeq += 1;
+                const cardSeq = _headerCallerCardSeq;
                 const remoteId = session.remote_identity ? (session.remote_identity.display_name || session.remote_identity.uri.user) : __('js.phone.incoming_call');
                 window.CURRENT_INCOMING_CALLER = remoteId;
                 updateHeaderPhoneStatus("incoming", "var(--warning)", remoteId);
@@ -421,6 +451,7 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
                 const answerVideoBtn = document.getElementById("header-answer-video-btn");
                 if (answerVideoBtn) answerVideoBtn.style.display = isVideo ? "" : "none";
                 showIncomingCallBanner(remoteId, isVideo);
+                headerCallerCard(session.remote_identity ? session.remote_identity.uri.user : '', remoteId, cardSeq);
             } else {
                 updateHeaderPhoneStatus("calling", "var(--warning)");
             }
@@ -1026,6 +1057,7 @@ function showIncomingCallBanner(caller, isVideo) {
             <div style="flex: 1; overflow: hidden;">
                 <div style="font-size: 11px; font-weight: 700; color: var(--warning, #f59e0b); text-transform: uppercase; letter-spacing: 0.5px;">${isVideo ? '<i class="fas fa-video"></i> ' + __("js.phone.incoming_video") : __("js.phone.st_incoming")}</div>
                 <div style="font-size: 16px; font-weight: 700; color: var(--text-main, #1e293b); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">${safeCaller}</div>
+                <div id="incomingCallContact" class="u-fs-12 u-muted"></div>
             </div>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 4px;">
@@ -1043,7 +1075,40 @@ function showIncomingCallBanner(caller, isVideo) {
     banner.style.display = "flex";
 }
 
+/**
+ * The caller card: the number, the company and a link to the address book under the name
+ * on the ringing banner (outside numbers only; the PBX already put the contact's name in
+ * the caller ID).
+ */
+function headerCallerCard(number, shown, seq) {
+    const digits = String(number || '').replace(/\D/g, '');
+    if (digits.length < 5) return;
+    fetch('/api/contact_lookup.php?number=' + encodeURIComponent(number), { credentials: 'same-origin' })
+        .then(r => r.ok ? r.json() : null)
+        .then(res => {
+            const el = document.getElementById('incomingCallContact');
+            if (!res || !el || seq !== _headerCallerCardSeq || window.CURRENT_INCOMING_CALLER !== shown) return; // that call is over
+            const c = res.contact;
+            const parts = [];
+            if (c && c.display_name && !String(shown || '').includes(c.display_name)) {
+                parts.push(escapeHtml(c.display_name));
+            }
+            parts.push(escapeHtml(number));
+            if (c && c.company && !String(shown || '').includes(c.company)) parts.push(escapeHtml(c.company));
+            let link = '';
+            if (c && res.can_access !== false) {
+                link = `<a href="/phonebook" class="u-fs-11"><i class="fas fa-address-book"></i> ${__('js.phone.contact_open')}</a>`;
+            } else if (!c && res.can_add) {
+                link = `<a href="/phonebook?add=${encodeURIComponent(number)}" class="u-fs-11"><i class="fas fa-user-plus"></i> ${__('js.phone.contact_save')}</a>`;
+            }
+            el.innerHTML = parts.join(' · ') + (link ? ' &nbsp; ' + link : '');
+        })
+        .catch(() => {});
+}
+
 function hideIncomingCallBanner() {
+    _headerCallerCardSeq += 1;
+    window.CURRENT_INCOMING_CALLER = null;
     const banner = document.getElementById("globalIncomingCallBanner");
     if (banner) {
         banner.style.display = "none";
@@ -1482,8 +1547,10 @@ document.addEventListener("visibilitychange", () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     updateHeaderPhoneModeUI();
-    syncHeaderBreakStatus();
-    setInterval(syncHeaderBreakStatus, 15000);
+    if (window.IS_CC_AGENT) {
+        syncHeaderBreakStatus();
+        setInterval(syncHeaderBreakStatus, 15000);
+    }
     initHeaderWebRTCPhone();
     applyRingVolume();
     applySavedSpeakerDevice();

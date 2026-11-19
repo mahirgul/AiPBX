@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/CdrReportService.php';
 require_once __DIR__ . '/../services/CdrAiService.php';
 require_once __DIR__ . '/../services/ReportExport.php';
+require_once __DIR__ . '/../services/PhonebookService.php';
 
 /**
  * Reports page (/cdr-reports).
@@ -19,7 +20,7 @@ class CdrReportController extends BaseController
         }
 
         $user = getCurrentUser();
-        $role = $_SESSION['user_role'] ?? 'user';
+        $role = userEffectiveRole();
         $user_ext = $user['extension'] ?? '';
 
         // Permission checks
@@ -154,6 +155,13 @@ class CdrReportController extends BaseController
             ],
             'view_mode' => $view_mode,
             'cdrs' => $cdrs,
+            // Address book names of the outside numbers on this page, in one query.
+            'phonebook_names' => hasModulePermission('phonebook', 'view')
+                ? PhonebookService::namesFor(array_merge(
+                    array_map(fn($c) => (string) ($c['flow']['caller_number'] ?? $c['caller_num'] ?? ''), $cdrs),
+                    array_map(fn($c) => (string) ($c['flow']['dialed_number'] ?? ''), $cdrs)))
+                : [],
+            'can_add_contact' => hasModulePermission('phonebook', 'access') && hasModulePermission('phonebook', 'edit'),
             'cdr_ai' => CdrAiService::forCdrIds(array_map('intval', array_column($cdrs, 'id'))),
             'stat_total_ring' => $stat_total_ring,
             'stat_avg_talk' => $stat_avg_talk,

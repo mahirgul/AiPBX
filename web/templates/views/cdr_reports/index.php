@@ -7,6 +7,15 @@ $dir_meta = [
     CdrCallAnalyzer::TRANSIT => ['fa-shuffle', 'var(--purple)', t('cdr_reports.dir_transit')],
 ];
 $grouped_mode = ($view_mode ?? 'grouped') === 'grouped';
+$phonebook_names = $phonebook_names ?? [];
+// "Save to address book" next to the outside party of a call that is not in it yet.
+$contactButton = function (string $number, string $name, string $direction, string $side) use ($can_add_contact): string {
+    $outside = ($side === 'in' && $direction === CdrCallAnalyzer::INBOUND) || ($side === 'out' && $direction === CdrCallAnalyzer::OUTBOUND);
+    if (empty($can_add_contact) || $name !== '' || !$outside || strlen(preg_replace('/\D/', '', $number) ?? '') < 5) {
+        return '';
+    }
+    return ' <a href="/phonebook?add=' . rawurlencode($number) . '" class="u-fs-11 u-muted" title="' . htmlspecialchars(t('phonebook.save_from_call')) . '"><i class="fas fa-user-plus"></i></a>';
+};
 $filter_url = function (array $override) {
     $q = array_merge($_GET, $override);
     unset($q['page']);
@@ -234,8 +243,11 @@ $filter_url = function (array $override) {
                                 <?php endif; ?>
                             </td>
                             <td>
-                                <div class="u-fw-700 u-primary"><?php echo htmlspecialchars($f['caller_number'] ?? $c['caller_num']); ?></div>
-                                <?php if (!empty($f['caller_name'])): ?>
+                                <?php $callerNum = (string) ($f['caller_number'] ?? $c['caller_num']); $bookName = $phonebook_names[$callerNum] ?? ''; ?>
+                                <div class="u-fw-700 u-primary"><?php echo htmlspecialchars($callerNum); ?><?php echo $contactButton($callerNum, $bookName, $f['direction'] ?? '', 'in'); ?></div>
+                                <?php if ($bookName !== ''): ?>
+                                    <small class="u-fs-11" style="display: block;"><i class="fas fa-address-book u-muted"></i> <?php echo htmlspecialchars($bookName); ?></small>
+                                <?php elseif (!empty($f['caller_name'])): ?>
                                     <small class="u-muted u-fs-11" style="display: block;"><?php echo htmlspecialchars($f['caller_name']); ?></small>
                                 <?php endif; ?>
                                 <?php if (!empty($f['in_trunk'])): ?>
@@ -245,7 +257,10 @@ $filter_url = function (array $override) {
                             <td>
                                 <?php $dialed = $f['dialed_number'] ?? ''; ?>
                                 <?php if ($dialed !== ''): ?>
-                                    <div class="u-fw-700"><?php echo htmlspecialchars($dialed); ?></div>
+                                    <div class="u-fw-700"><?php echo htmlspecialchars($dialed); ?><?php echo $contactButton($dialed, $phonebook_names[$dialed] ?? '', $f['direction'] ?? '', 'out'); ?></div>
+                                    <?php if (!empty($phonebook_names[$dialed])): ?>
+                                        <small class="u-fs-11" style="display: block;"><i class="fas fa-address-book u-muted"></i> <?php echo htmlspecialchars($phonebook_names[$dialed]); ?></small>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                                 <?php $routeLabel = CdrReportRepository::formatRouteLabel($c['route'] ?? $c['queue_name'] ?? ''); ?>
                                 <?php if ($routeLabel !== ''): ?>

@@ -9,13 +9,13 @@ final class PhonebookServiceTest extends TestCase
     protected function setUp(): void
     {
         getDB()->exec("DELETE FROM phonebook_contacts WHERE source IN ('manual', 'test-sync')");
-        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ldap_server_%'");
+        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ldap_server_%' OR setting_key = 'caller_match_digits'");
     }
 
     public static function tearDownAfterClass(): void
     {
         getDB()->exec("DELETE FROM phonebook_contacts WHERE source IN ('manual', 'test-sync')");
-        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ldap_server_%'");
+        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ldap_server_%' OR setting_key = 'caller_match_digits'");
     }
 
     public function testAContactNeedsANameAndANumberAndIsCleaned(): void
@@ -97,5 +97,135 @@ final class PhonebookServiceTest extends TestCase
         $this->assertSame($s['password'], PhonebookService::ldapSettings()['password'], 'saving keeps the password');
         PhonebookService::saveLdapSettings(true, false, true);
         $this->assertNotSame($s['password'], PhonebookService::ldapSettings()['password']);
+    }
+
+    public function testAContactKeepsManyLabelledNumbersAndPhonesSeeThreeOfThem(): void
+    {
+        [$id, $err] = PhonebookService::store(0, [
+            'display_name' => 'Ayse Demir',
+            'numbers_label' => ['work', 'mobile', 'work2', 'home', 'fax', 'bogus'],
+            'numbers_value' => ['0212 555 12 34', '+90 532 111 22 33', '0212 555 12 35', '0216 444 00 00', '0212 555 12 99', '0532 111 22 33'],
+        ]);
+        $this->assertSame('', $err);
+        $c = PhonebookService::find($id);
+        $this->assertCount(6, $c['numbers'], 'the same number in another spelling is still another row');
+        $this->assertSame('other', $c['numbers'][5]['label'], 'an unknown label becomes other');
+        $this->assertSame('0212 555 12 34', $c['phone_work']);
+        $this->assertSame('+90 532 111 22 33', $c['phone_mobile']);
+        $this->assertSame('0212 555 12 35', $c['phone_other'], 'the first number not shown yet');
+    }
+
+    public function testACallerIsFoundInAnySpelling(): void
+    {
+        [$id] = PhonebookService::store(0, ['display_name' => 'Kemal', 'numbers' => [['label' => 'mobile', 'number' => '+90 532 111 22 33']]]);
+        foreach (['05321112233', '00905321112233', '+905321112233', '5321112233'] as $n) {
+            $this->assertSame($id, (int) (PhonebookService::findByNumber($n)['id'] ?? 0), $n);
+        }
+        $this->assertNull(PhonebookService::findByNumber('05321112234'));
+        $this->assertSame(['0532 111 22 33' => 'Kemal'], PhonebookService::namesFor(['0532 111 22 33', '999']));
+
+        // Seven digits: a number from another area code now matches too.
+        $this->assertTrue(PhonebookService::saveMatchDigits(7));
+        $this->assertSame($id, (int) (PhonebookService::findByNumber('0212 111 22 33')['id'] ?? 0));
+        $this->assertTrue(PhonebookService::saveMatchDigits(0));
+        $this->assertNull(PhonebookService::findByNumber('05321112233'), 'the whole number: 0 532... is not +90 532...');
+        $this->assertNotNull(PhonebookService::findByNumber('0090 532 111 22 33'));
+        $this->assertFalse(PhonebookService::saveMatchDigits(3));
+
+        // 40-digit whole-number match_key must fit VARCHAR(40) and cap longer inputs cleanly.
+        $forty = str_repeat('1234567890', 4);
+        $fifty = $forty . '9999999999';
+        $this->assertSame(40, strlen(PhonebookService::matchKey($fifty, 0)));
+        [$longId, $longErr] = PhonebookService::store(0, ['display_name' => 'Long Number', 'phone_work' => $forty]);
+        $this->assertSame('', $longErr);
+        $this->assertSame($longId, (int) (PhonebookService::findByNumber($forty)['id'] ?? 0));
+    }
+
+    public function testRowsAPluginWritesAreIndexedToo(): void
+    {
+        $db = getDB();
+        $db->exec("INSERT INTO phonebook_contacts (source, external_id, display_name, phone_mobile) VALUES ('test-sync', 'x2', 'From AD', '0532 999 88 77')");
+        $this->assertSame('From AD', PhonebookService::findByNumber('+90 532 999 88 77')['display_name'] ?? null);
+        $db->exec("UPDATE phonebook_contacts SET phone_mobile = '0532 999 88 66', updated_at = NOW() + INTERVAL 1 SECOND WHERE external_id = 'x2'");
+        $this->assertNull(PhonebookService::findByNumber('05329998877'), 'the plugin changed the number');
+        $this->assertNotNull(PhonebookService::findByNumber('05329998866'));
+
+        // Calling syncNumbers() again when nothing changed must not loop/re-index.
+        $before = (string) $db->query("SELECT numbers_indexed_at FROM phonebook_contacts WHERE external_id = 'x2'")->fetchColumn();
+        PhonebookService::syncNumbers();
+        $after = (string) $db->query("SELECT numbers_indexed_at FROM phonebook_contacts WHERE external_id = 'x2'")->fetchColumn();
+        $this->assertSame($before, $after);
+
+        // find() indexes an unindexed plugin row for that single contact.
+        $db->exec("INSERT INTO phonebook_contacts (source, external_id, display_name, phone_work) VALUES ('test-sync', 'x3', 'Single Find AD', '0212 888 77 66')");
+        $singleId = (int) $db->lastInsertId();
+        $found = PhonebookService::find($singleId);
+        $this->assertNotNull($found);
+        $this->assertCount(1, $found['numbers']);
+        $this->assertSame('0212 888 77 66', $found['numbers'][0]['number']);
+    }
+
+    public function testAnExternalIdUpdatesInsteadOfAddingTwice(): void
+    {
+        [$a] = PhonebookService::store(0, ['display_name' => 'CRM One', 'external_id' => 'crm-7', 'phone_work' => '0212 000 00 01']);
+        [$b] = PhonebookService::store(0, ['display_name' => 'CRM One Ltd', 'external_id' => 'crm-7', 'phone_work' => '0212 000 00 02']);
+        $this->assertSame($a, $b);
+        $this->assertSame('CRM One Ltd', PhonebookService::find($a)['display_name']);
+        [$rows, $total] = PhonebookService::search('0212 000 00 02', 10, 0);
+        $this->assertSame(1, $total);
+        $this->assertSame($a, (int) $rows[0]['id']);
+        $this->assertSame(0, PhonebookService::search('0212 000 00 01', 10, 0)[1], 'the old number is gone');
+    }
+
+    public function testTheCallerIdNameCarriesNothingADialplanCouldTrip(): void
+    {
+        $this->assertSame('Ayse - ACME Ltd', PhonebookService::callerIdName(['display_name' => 'Ayse', 'company' => 'ACME Ltd']));
+        $this->assertSame('ACME', PhonebookService::callerIdName(['display_name' => 'ACME', 'company' => 'ACME']));
+        $this->assertSame('BadName f', PhonebookService::callerIdName(['display_name' => "Bad\"<Name>\\; \${f}:(),?\n", 'company' => '']));
+        $this->assertSame(60, mb_strlen(PhonebookService::callerIdName(['display_name' => str_repeat('ş', 80)])));
+    }
+
+    public function testPhonebookNameEndpointRejectsProxyHeadersStripsNewlinesAndSkipsSession(): void
+    {
+        PhonebookService::store(0, ['display_name' => "Ayse\r\n", 'company' => 'ACME', 'phone_mobile' => '0532 111 22 33']);
+        $envFile = dirname(__DIR__) . '/.env.test';
+        $endpoint = dirname(__DIR__, 2) . '/api/phonebook_name.php';
+
+        $run = static function (array $server, string $num) use ($envFile, $endpoint): array {
+            $code = '<?php
+foreach (file(' . var_export($envFile, true) . ', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+    $line = trim($line);
+    if ($line !== "" && $line[0] !== "#" && strpos($line, "=") !== false) putenv($line);
+}
+$_SERVER = array_merge($_SERVER, ' . var_export($server, true) . ');
+$_GET["num"] = ' . var_export($num, true) . ';
+register_shutdown_function(static function () {
+    echo "\n__META__:" . json_encode(["status" => http_response_code() ?: 200, "session" => session_status()]);
+});
+require ' . var_export($endpoint, true) . ';';
+            $proc = proc_open('php', [0 => ['pipe', 'r'], 1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
+            fwrite($pipes[0], $code);
+            fclose($pipes[0]);
+            $out = (string) stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+            fclose($pipes[2]);
+            proc_close($proc);
+            [$body, $metaRaw] = explode("\n__META__:", $out, 2);
+            return ['body' => $body, 'meta' => json_decode($metaRaw, true)];
+        };
+
+        $ok = $run(['REMOTE_ADDR' => '127.0.0.1'], '+905321112233');
+        $this->assertSame(200, $ok['meta']['status']);
+        $this->assertSame(PHP_SESSION_NONE, $ok['meta']['session']);
+        $this->assertSame('NAME:Ayse - ACME', $ok['body'], 'no trailing newline and CR/LF stripped');
+
+        $miss = $run(['REMOTE_ADDR' => '127.0.0.1'], '05320000000');
+        $this->assertSame('NONE', $miss['body']);
+
+        foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_X_FORWARDED_HOST', 'HTTP_FORWARDED', 'HTTP_X_REAL_IP', 'HTTP_X_FORWARDED_PROTO'] as $hdr) {
+            $blocked = $run(['REMOTE_ADDR' => '127.0.0.1', $hdr => '10.0.0.1'], '+905321112233');
+            $this->assertSame(403, $blocked['meta']['status'], $hdr);
+            $this->assertSame('NONE', $blocked['body'], $hdr);
+        }
     }
 }
