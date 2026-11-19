@@ -11,6 +11,46 @@ If the local AI service is not running, the voice is not ready, or the applicati
 as many calls as its limit, the call goes straight to the destination: it is never lost.
 Changes take effect with **Apply**, like other PBX settings.
 
+## Built-in AI Agent
+
+Open **AI → AI Agent** to create a conversational agent. Choose the conversation,
+STT and TTS models from the existing Local AI and Cloud AI services, a knowledge
+collection, and a fallback destination. Give the agent an optional internal
+number for direct calls, or select **AI Agent** as the destination of an inbound
+route. Apply the changes. Callers may interrupt the agent while it speaks by default.
+
+Keep ordinary product and service information in the collection's regular TXT
+documents. To let the model transfer calls, upload one active
+[`agent-tools.txt`](../plugins/ai-knowledge/guides/examples/agent-tools.txt) to the
+same collection. Each `call_transfer` definition maps a target ID and a usage
+description to an existing extension, queue or ring group. Use the extension
+number, queue name or ring group ID respectively. Apply after updating this file.
+The same file accepts `http_lookup | name | description | https://…` for
+an AI Apps HTTP lookup, and `get_db_value | query ID | description | database ID
+| public or verified | SELECT …` for an inline database lookup. A centrally
+registered query uses `get_db_value | query ID`. Use `db_connection | 2` to
+expose the active queries saved for connection ID 2. See [Saved
+queries](external-databases.md#saved-queries) for setup. Keep
+credentials in the connection settings. Tool definitions are read as
+configuration and excluded from document search and embeddings.
+
+Use optional `greeting | …` lines in the file as alternatives to the agent's
+default greeting. The greetings support `{caller_name}`. Add up to five `waiting | …`
+lines to vary what callers hear during slow lookups. The agent plays one short
+phrase per turn only if the lookup is still running after about 700 ms. With
+barge-in enabled, the caller can interrupt it and continue with a new question.
+
+Turn on **Automatic announcements** to let the conversation model write both
+sentences. An optional `tone | …` line tells it how formal or warm to be. It
+receives the caller's display name when available and the example sentences
+from the file. The prepared greeting remains available if model generation is
+slow or fails.
+
+The model chooses when to answer, ask another question, consult the collection,
+call `call_transfer`, or say goodbye and `end_call`. The PBX runs the configured
+fallback when the selected services are unavailable or when no target fits.
+The built-in agent is available independently of the AI Applications plugin.
+
 ## Announcement with values
 
 A text read to the caller by a voice model of this server
@@ -19,7 +59,7 @@ A text read to the caller by a voice model of this server
 | Value | Comes from |
 |-------|-----------|
 | `{caller_number}` | the caller's number |
-| `{caller_name}` | the caller's name (from the trunk or the phone book) |
+| `{caller_name}` | the caller's display name from the shared phonebook |
 | `{did}` | the number that was called |
 | any other `{name}` | the **lookup address** |
 
@@ -129,6 +169,39 @@ What the caller says, the facts above and the lookup answers go to the cloud pro
 the greeting or in the [call announcement](privacy.md) where the law asks for it. The request log
 keeps what the caller said; the whole conversation, the answers too, is in the call's record of the
 AI service (`GET /v1/calls/<uuid>`).
+
+### Database lookups
+
+Create read-only accounts for the databases and add the connections in **Database
+Connections**. In the AI application's **Database lookups** field, register one
+query per line. Replace the example connection IDs and table and column names with
+those of your databases.
+
+```text
+query1 | Read one billing value | 1 | verified | SELECT payment_status FROM invoices WHERE customer_id = :var_verified_customer_id AND invoice_no = :var_fatura_no LIMIT 1
+query2 | Read one technical value | 2 | verified | SELECT ticket_status FROM service_tickets WHERE customer_id = :var_verified_customer_id AND ticket_no = :var_kayit_no LIMIT 1
+```
+
+The model calls `get_db_value` with the saved query ID and its parameters. It
+receives only the first column of the first row. Set **public** only for values
+any caller may hear. For **verified** queries, a trusted upstream verification
+flow must set the Asterisk channel variable `AIPBX_VERIFIED_CUSTOMER_ID` before
+entering the application. Use that variable in the SQL ownership predicate.
+Without a verified ID the query returns `verification_required`. Caller ID and
+the display name do not verify identity.
+
+Upload [the Turkish example TXT](../plugins/ai-knowledge/guides/ornek-muhasebe-teknik.txt)
+to a knowledge collection, index it, and choose that collection in the application.
+Ask the assistant in its instructions to consult the collection for billing and
+technical routing rules before choosing a query.
+
+### Personalized greetings
+
+The greeting supports `{caller_name}` (or `$name`), `{caller_number}` and `{did}`.
+For example, `Merhaba {caller_name}, size nasıl yardımcı olabilirim?` looks up
+the number in the shared phonebook. The voice engine reads its UTF-8 display
+name and skips it when there is no match. In conversation mode the same name
+is sent to the model as call context.
 
 ## Routing by speech
 

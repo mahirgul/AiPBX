@@ -8,7 +8,7 @@ class AiAppModule implements PBXDestinationInterface {
 
     public function getOptions(): array {
         try {
-            $stmt = \getDB()->query("SELECT id, title AS name FROM pbx_ai_apps WHERE is_active = 1 ORDER BY title ASC");
+            $stmt = \getDB()->query("SELECT id, title AS name FROM pbx_ai_apps WHERE is_active = 1 AND app_type <> 'builtin_agent' ORDER BY title ASC");
             return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
             return [];   // before the migration
