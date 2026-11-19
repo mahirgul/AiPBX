@@ -11,6 +11,64 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.80.0
+
+A large release: the CRM layer (address book, live call events, Connections, Odoo), modular AI, and many PBX features.
+
+### ✨ New
+
+- **CRM and integrations:**
+  - **Address book** with up to 12 labelled numbers per contact, caller names in call reports, "save to address book", and optional saving of unknown callers ([docs/phonebook.md](docs/phonebook.md)).
+  - **Caller name:** the address book name is set on inbound calls before they ring, so desk phones show it. The web phone shows a caller card.
+  - **Live call events** (`call.ringing`, `call.offered`, `call.answered`, `call.completed`), `recording.ready` and `call.ai_completed` for webhooks, from the new `aipbx-call-events` service.
+  - **REST API:** `/api/v1/contacts` (with lookup and `external_id`), `/api/v1/recordings/{id}`, a CDR cursor (`after_id`), and repeat-safe originate (`client_request_id`) ([docs/rest-api-v1.md](docs/rest-api-v1.md)).
+  - **Integration → Connections:** one outside system per connection, with its own API key and signed webhook, handed over as a one-time pack ([docs/connections.md](docs/connections.md)).
+  - **Odoo connector:** a separate LGPL-3 module for Odoo 17/18/19 (repository `AiPBX-Odoo`). n8n recipes for HubSpot, Zoho, Pipedrive and Bitrix24 ([docs/crm-integrations.md](docs/crm-integrations.md)).
+- **AI:**
+  - Modular AI with local and cloud settings, the PBX assistant (`ai-assistant` 2.0.0) and its knowledge base.
+  - A default AI agent and a pre-queue AI hand-over that gives the agent a summary.
+  - Several accounts per cloud provider.
+  - **AI Agent** (AI → AI Agent): a built-in voice agent with your knowledge collection. It can transfer calls and look up data over HTTP or in an external database, and the caller can interrupt it ([docs/ai-apps.md](docs/ai-apps.md#built-in-ai-agent)).
+  - A durable AI job queue with retries, now used by voicemail and call analysis.
+  - ([docs/ai-settings.md](docs/ai-settings.md), [docs/assistant.md](docs/assistant.md))
+- **PBX:**
+  - **Holiday calendars:** typed in, imported from an `.ics` file, or read daily from an `.ics` address; time groups pick them ([docs/time-conditions.md](docs/time-conditions.md)).
+  - **Follow Me:** up to 5 numbers per extension, one after the other or all together. "Press 1 to accept" keeps a mobile's voicemail from taking the call ([docs/extensions.md](docs/extensions.md#follow-me)).
+  - **Trunk monthly minutes / cost limit:** a warning, then refusing or only warning; emergency routes are never refused ([docs/trunks.md](docs/trunks.md#monthly-minutes-and-cost)).
+  - **Queues:** several periodic announcements (in turn or random), skill levels, and an after-call 1–5 survey ([docs/queues.md](docs/queues.md)).
+  - **Call parking** with numbered slots ([docs/parking.md](docs/parking.md)) and **call modifiers** (set language, caller name prefix) ([docs/call-modifiers.md](docs/call-modifiers.md)).
+  - **Custom configs:** your own `*_custom.conf` per Asterisk file, reloaded at once ([docs/advanced-config.md](docs/advanced-config.md#custom-configuration-files)).
+  - Per-extension prompt language and recording policy, queue recording from the answer or from entering the queue, and a time zone per time condition.
+  - **Apply changes at once**, an option on Pending Changes.
+  - **Dynamic Routing** (the former IVR data steps): route a call by a value from a database, an HTTP service, a template or an AGI script, with rules (exact, prefix, range), a caller name from the answer, and "dial the value as an extension" ([docs/dynamic-routing.md](docs/dynamic-routing.md)).
+  - **AGI scripts:** write Python, PHP or Bash AGI scripts in the portal, with versions and a test; they run sandboxed through the new `aipbx-agi` service ([docs/agi-scripts.md](docs/agi-scripts.md)).
+  - **External databases:** an optional **Allow writing** per connection (otherwise read-only), and saved queries that Dynamic Routing and the AI Agent can share ([docs/external-databases.md](docs/external-databases.md)). Plugins can use the connections through `PluginData` ([docs/plugin-development.md](docs/plugin-development.md)).
+- **Users:** extra roles next to the main one; a welcome card by role.
+- **System:**
+  - Unattended installation and several domain names on Certificates.
+  - **Troubleshooting:** problem recording (with an optional RTP capture) and an Asterisk log viewer ([docs/troubleshooting.md](docs/troubleshooting.md)).
+  - The release script requires green CI.
+
+### 🐛 Fixes
+
+- **API:** originate refuses an unknown or inactive extension (no calls between two outside numbers). An invalid IP allowlist entry no longer allows everyone.
+- **Problem recording:** masks secrets in every file, and works again when run twice and with the RTP capture.
+- **AI jobs:** a cancelled or taken-over job cannot be completed by its old worker. The cloud quota no longer counts a reservation twice. A Deepgram stream that ends early falls back to full-audio transcription.
+- **Webhooks:** a queued delivery is claimed first, so two workers never send it twice.
+- **Apply:** a change edited while Apply runs stays pending. Configurations written as several files (queues, widgets, AI agents, parking) roll back together.
+- **Trunks:** the minutes of a deleted trunk still count for its month.
+- **Knowledge base:** re-indexing swaps the model and the chunks together; a document switched off and on keeps its chunks.
+- **Chat:** messages are no longer listed twice; presence changes are sent in order; read errors are reported.
+- **Install:** the combined DTLS certificate file with its key is created readable by its owner only.
+
+### ⚙️ Upgrade
+
+Run the update as usual (`sudo aipbx-update`); the database migrations and the installer steps run by themselves. The update:
+- adds the `aipbx-call-events` service and the AI job worker cron;
+- adds the `aipbx-agi` service (FastAGI on 127.0.0.1 only);
+- loads Asterisk's `res_parking` module (parking stays off until switched on);
+- adds the `*_custom.conf` includes to the Asterisk files.
+
 ## 1.79.5
 
 ### ✨ New
