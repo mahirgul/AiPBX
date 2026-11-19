@@ -1,21 +1,88 @@
 # Auto dialer & AMD campaigns (Plugin)
 
-> 🔌 **Plugin (`auto-dialer`)**: Community plugin (AiPBX 1.72.12+) from the community catalog. Install and enable it under **Integration → Plugin Catalog** (see [Plugin system & developer guide](plugin-development.md)).
+> 🔌 **Plugin (`auto-dialer`)**: Community plugin (AiPBX 1.80+) from the community catalog. Install and enable it under **Integration → Plugin Catalog** (see [Plugin system & developer guide](plugin-development.md)).
 
-**Integration → Auto Dialer & AMD Campaigns** (`/plugins/auto-dialer`) runs automated outbound calling campaigns with Asterisk **Answering Machine Detection (`AMD()`)**, queue free-agent pacing, optional voicemail audio drop, and real-time call result tracking.
+**Call Center → Auto Dialer & AMD Campaigns** (`/plugins/auto-dialer`) runs automated outbound calling campaigns with Asterisk **Answering Machine Detection (`AMD()`)**, queue free-agent pacing, optional voicemail audio drop, and real-time call result tracking.
 
 ---
 
 ## 🗄️ Database Tables (`plg_` Sandbox)
 
-When the `auto-dialer` plugin is enabled, `PluginManager` automatically applies [`plugins/auto-dialer/schema.sql`](https://github.com/mahirgul/aipbx-plugins/blob/main/plugins/community/auto-dialer/schema.sql) and creates two isolated `plg_*` tables:
+When the `auto-dialer` plugin is enabled, `PluginManager` automatically applies [`plugins/auto-dialer/schema.sql`](https://github.com/mahirgul/aipbx-plugins/blob/main/plugins/community/auto-dialer/schema.sql) and creates four isolated `plg_*` tables:
 
 | Table | Purpose |
 |---|---|
 | 📋 `plg_autodial_campaigns` | Campaign configuration (name, status, caller ID, max concurrency, queue free-agent pacing flag, retry count/interval, AMD on/off, machine action `hangup` or `play_sound`, target destination type & ID) |
 | 📞 `plg_autodial_numbers` | Phone numbers and per-call results (`status`, `attempts`, `call_result`, `amd_status` [`HUMAN`/`MACHINE`/`NOTSURE`/`BYPASSED`], `amd_cause`, `duration`, `uniqueid`, `last_attempt_at`, `next_attempt_at`) |
+| ⚙️ `plg_autodial_campaign_ext` | Number source (list or database query, refresh), managers (users, roles), webhook and write-back of a campaign |
+| 🔑 `plg_autodial_number_ext` | Per number: duplicate key (`external_id` or number), agent, whether its result was delivered and any write-back error |
 
-Disabling the plugin keeps both tables and their campaign history intact; uninstalling the plugin drops its `plg_*` tables.
+Disabling the plugin keeps the tables and their campaign history intact; uninstalling the plugin drops its `plg_*` tables.
+
+---
+
+## 📇 Numbers from a database, managers and results (1.3.0, AiPBX 1.80+)
+
+The plugin is under **Call Center** in the menu.
+
+### Who manages a campaign
+
+- **Who chooses:** whoever creates a campaign chooses who manages it: users, roles, or both. Change
+  it later in the campaign's **Source, managers and results**.
+- **Where managers work:** under **Apps → Campaigns** (`/apps/auto-dialer`). They see only their
+  campaigns and can:
+  - start and pause them;
+  - add numbers and retry failed ones;
+  - read the source again;
+  - download the results.
+- **What only administrators do:** see every campaign, create and delete campaigns.
+
+### Numbers from a list or a database
+
+- **List / CSV** works as before.
+- **External database:** choose a connection from **Integration → Database Connections**
+  ([external-databases.md](external-databases.md)) and a query. Columns, any case:
+  - `phone`, or the first column;
+  - `name`;
+  - `external_id`;
+  - `notes`.
+  `:campaign` in the query is the campaign's id.
+
+  ```sql
+  SELECT phone, name, id AS external_id FROM leads WHERE called_at IS NULL AND region = 'west'
+  ```
+- **When it is read:** when the campaign starts, and with **Read again while running** every N
+  minutes. **Read the source now** reads it at once.
+- **Duplicates:** a row whose `external_id` is already in the campaign is skipped (its number, when
+  there is no id), so reading again adds only new rows.
+- **Errors:** the last read and its error show above the numbers.
+
+The plugin never sees the connection's host, user or password. It asks for the `external_db.read`
+and `external_db.write` permissions, which the plugin page shows.
+
+### Results
+
+Every finished number (completed or failed after its last try) is delivered once:
+
+1. **In the campaign:** status, attempts, result, AMD, the agent who took the call, duration and time.
+   The CSV download has all of them, with `external_id`.
+2. **Webhook** `autodial.result` (on by default): to **Integration → Connections**, n8n or a CRM. Its
+   data has `result`, `attempts`, `duration`, `amd`, `agent`, `called_at`, `campaign`,
+   `campaign_name`, `phone`, `name`, `external_id` and `number_id`.
+3. **Write-back (optional):** on a connection with **Allow writing**, one `INSERT` or `UPDATE` you
+   write:
+
+   ```sql
+   UPDATE leads SET result = :result, attempts = :attempts, called_at = :called_at, agent = :agent
+   WHERE id = :external_id
+   ```
+
+   - **Variables:** `:result :attempts :duration :amd :agent :called_at :campaign :phone :name
+     :external_id`, plus `:date` and `:time`.
+   - **If it fails:** the number shows **Write-back failed** with the reason. It is not retried on
+     every tick; **Retry failed numbers** calls the number again and reports its new result.
+
+Numbers added before 1.3.0 are not reported, so an upgrade sends no old results.
 
 ---
 
