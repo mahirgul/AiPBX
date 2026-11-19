@@ -41,6 +41,7 @@ class AiAgentsController extends BaseController
         static::renderPage('ai_agents/index', [
             'agents' => AiAgentService::all(),
             'edit' => $edit,
+            'privacy_blocked' => function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1',
             'modules' => DestinationRegistry::getModuleList(),
             'csrf_token' => getCSRFToken(),
         ], ['title' => t('ai_agents.title')] + $notices);

@@ -52,18 +52,20 @@ import json
 import logging
 import math
 import queue
+import random
 import re
 import socket
 import struct
 import threading
 import time
+import unicodedata
 import urllib.error
 import urllib.parse
 import urllib.request
 import uuid
 from collections import deque
 
-from . import cloud_llm, conversation
+from . import cloud_llm, conversation, gateway, secret_refs
 from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
@@ -81,6 +83,8 @@ FRAME_SECONDS = 0.02
 LEAD_SECONDS = 0.06          # how far ahead of real time we may send
 TAIL_SECONDS = 0.2           # after the last frame, before "terminate"
 BARGE_FRAMES = 10            # 200 ms of speech over a prompt stop it (barge_in)
+LOOKUP_PROMPT_DELAY = 0.7     # let fast lookups finish without playing a waiting phrase
+AUTOMATIC_GREETING_TIMEOUT = 3.0
 SILENCE_FRAME = b"\x00" * FRAME_BYTES
 NO_FRAMES_GAP = 0.2          # listening: after this long without inbound frames, count silence
 
@@ -100,6 +104,7 @@ LOOKUP_MAX_BYTES = 64 * 1024
 ALLOW_PRIVATE_LOOKUP = False
 
 SESSION_TTL = 30.0           # a prepared call nobody connects to expires
+MAX_CALL_SECONDS = 300.0     # live call duration ceiling
 FINISHED_KEEP = 50
 FINISHED_SECONDS = 600
 
@@ -149,6 +154,13 @@ def render(template, values):
     text = re.sub(r"[ \t]+([,.;:!?])", r"\1", text)   # "borcunuz , ..." after a removed value
     text = re.sub(r"\s+", " ", text).strip()
     return text, missing
+
+
+def display_name(text):
+    """Preserve letters and accents in a phonebook name without control characters."""
+    name = unicodedata.normalize("NFC", " ".join(text.split()))
+    name = "".join(c for c in name if unicodedata.category(c)[0] in "LMN" or c in " .'-’‐‑–")
+    return name[:150].strip() if any(c.isalpha() for c in name) else ""
 
 
 def clean_values(data):
@@ -313,12 +325,15 @@ class CallSession:
     def __init__(self, app, model, caller, did, uniqueid, kind=ANNOUNCEMENT):
         self.uuid = str(uuid.uuid4())
         self.context = ""              # a conversation: the summary handed over by the assistant before
+        self.verified_customer = ""    # trusted dialplan value, never determined from the transcript
         self.kind = kind
         self.app = app
         self.model = model
         self.caller = caller
+        self.caller_name = ""
         self.did = did
         self.uniqueid = uniqueid
+        self.linkedid = ""
         self.state = PREPARED
         self.created = time.monotonic()
         self.started = time.time()
@@ -344,6 +359,7 @@ class CallSession:
         self.listen_q = None           # a queue while listening: ("audio"|"dtmf", time, data)
         self.intent = None
         self.transcript = None
+        self.max_call_seconds = None
 
     def audio_in(self, kind, payload):
         self.inbound_bytes += len(payload)
@@ -376,7 +392,7 @@ class CallSession:
 class CallRegistry:
     """Prepared and live calls, the last finished ones, and /v1/calls/start."""
 
-    def __init__(self, manager, token, ttl=SESSION_TTL, max_live=MAX_LIVE, data_dir=None):
+    def __init__(self, manager, token, ttl=SESSION_TTL, max_live=MAX_LIVE, data_dir=None, max_call_seconds=MAX_CALL_SECONDS):
         self.manager = manager
         self.key = dialplan_key(token).encode()
         self.apps = AppStore(manager, data_dir)
@@ -384,6 +400,8 @@ class CallRegistry:
         self._next_cleanup = 0.0
         self.ttl = ttl
         self.max_live = max_live
+        self.max_call_seconds = float(max_call_seconds)
+        self._draining = False
         self._mu = threading.Lock()
         self._live = {}                # uuid -> CallSession (prepared or playing)
         self._finished = deque(maxlen=FINISHED_KEEP)
@@ -473,7 +491,7 @@ class CallRegistry:
 
     def _start_voice_requests(self, form):
         """A call of a pushed voice_requests application: the greeting is made ready."""
-        unknown = set(form) - set(_FIELDS)
+        unknown = set(form) - set(_FIELDS) - {"context", "verified_customer", "caller_name", "linkedid"}
         if unknown:
             log.info("call: ignoring unknown fields %s", ",".join(sorted(unknown))[:100])
         app = _int_field(form, "app", 1, APP_MAX)
@@ -481,6 +499,8 @@ class CallRegistry:
         config, version = self.apps.get(app)
         if config is None:
             raise Refused("no text and no voice_requests config for this application")
+        if config.get("local_chat_app", app) != app:
+            raise Refused("unexpected local model reference")
         for name, kind in (("tts_model", "tts"), ("stt_model", "stt")):
             model = config[name]
             if model.startswith("cloud:"):       # a cloud provider: nothing to load here
@@ -497,12 +517,23 @@ class CallRegistry:
                               _id_field(form, "did", _ID_FIELD, MAX_ID_FIELD),
                               _id_field(form, "uniqueid", _UNIQUEID, MAX_UNIQUEID), kind=VOICE_REQUESTS)
         session.config, session.version = config, version
+        if form.get("linkedid"):
+            session.linkedid = _id_field(form, "linkedid", _UNIQUEID, MAX_UNIQUEID)
         # Handed over by another assistant of a conversation: its summary (SyncAiApps.php sends AI_SUMMARY).
         session.context = re.sub(r"[\x00-\x1f\x7f]", " ", form.get("context", ""))[:500].strip()
+        customer = form.get("verified_customer", "")
+        if re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", customer):
+            session.verified_customer = customer
         self._reserve(session, limit)
         try:
+            session.caller_name = display_name(secret_refs.caller_name(session.caller))
             try:
-                session.pcm = self.apps.prompt(app, version, config, "greeting")
+                template = random.choice(config["greetings"]) if config.get("greetings") else config["greeting"]
+                greeting = self.apps.greeting_text({"greeting": template}, session.caller_name, session.caller, session.did)
+                if greeting == self.apps.greeting_text(config):
+                    session.pcm = self.apps.prompt(app, version, config, "greeting")
+                else:
+                    session.pcm = self.apps.speech(app, config, greeting)
             except NotReady:
                 raise Refused(f"model {config['tts_model']} is not ready") from None
             except ServiceBusy:
@@ -512,7 +543,7 @@ class CallRegistry:
                 raise Refused(f"synthesis failed: {type(e).__name__}") from None
             if not session.pcm:
                 raise Refused("synthesis returned no audio")
-            session.chars = len(config["greeting"])
+            session.chars = len(greeting)
             session.audio_seconds = len(session.pcm) / 2 / SAMPLE_RATE
             session.prepare_ms = int((time.monotonic() - session.created) * 1000)
         except BaseException:
@@ -531,7 +562,7 @@ class CallRegistry:
             return ""
         if result.get("result") == "ended":
             return "_end"              # conversation said goodbye: the dialplan hangs up
-        return result.get("intent") or "none"
+        return result.get("route_id") or result.get("intent") or "none"
 
     def summary_for_dialplan(self, call_uuid, key):
         """GET /v1/calls/<uuid>/summary: what a conversation handed over, or ""."""
@@ -540,13 +571,23 @@ class CallRegistry:
         result = self.results.get(call_uuid)
         return (result or {}).get("summary") or ""
 
+    def drain(self, enabled=True):
+        """When draining, new calls are refused while active calls finish."""
+        with self._mu:
+            self._draining = bool(enabled)
+            return {"draining": self._draining, "active": len(self._live)}
+
     def _reserve(self, session, limit):
         with self._mu:
+            if self._draining:
+                raise Refused("draining")
             if len(self._live) >= self.max_live:
                 raise Refused(f"service busy: {self.max_live} live calls")
             n = sum(1 for s in self._live.values() if s.app == session.app)
             if n >= limit:
                 raise Refused(f"application has {n} live calls (max {limit})")
+            if not session.max_call_seconds:
+                session.max_call_seconds = self.max_call_seconds
             self._live[session.uuid] = session
 
     def _prepare_text(self, session, text, fallback, lookup):
@@ -560,6 +601,8 @@ class CallRegistry:
                 failed = True
                 session.lookup = f"failed: {e}"
                 log.info("call app=%d: lookup failed (%s)", session.app, e)
+        if "{caller_name}" in text or "{caller_name}" in fallback:
+            values["caller_name"] = display_name(secret_refs.caller_name(session.caller))
         spoken, missing = render(text, values)
         if (failed or missing) and fallback:
             spoken, _ = render(fallback, values)
@@ -607,8 +650,13 @@ class CallRegistry:
         with self._mu:
             expired = [s for s in self._live.values()
                        if s.state == PREPARED and now - s.created > self.ttl]
+            timed_out = [s for s in self._live.values()
+                         if s.state == PLAYING and s.connected is not None
+                         and now - s.connected > (s.max_call_seconds or self.max_call_seconds)]
         for s in expired:
             self.finish(s, "expired")
+        for s in timed_out:
+            self.finish(s, "timeout")
 
     def _sweep_loop(self):
         while not self._stop.wait(1.0):
@@ -633,7 +681,7 @@ class CallRegistry:
             per_app[str(s.app)] = per_app.get(str(s.app), 0) + 1
         calls = [s.describe() for s in sorted(live, key=lambda s: s.created)]
         calls += [s.describe() for s in reversed(finished)]
-        return {"calls": calls, "per_app": per_app}
+        return {"calls": calls, "per_app": per_app, "draining": self._draining, "active": len(live)}
 
     def live_count(self, app=None):
         with self._mu:
@@ -839,6 +887,11 @@ class AudioSocketServer:
             return "hangup" if session.sent_bytes else "error"
 
 
+class LookupInterrupted(Exception):
+    def __init__(self, pre):
+        self.pre = pre
+
+
 class VoiceRequestsCall:
     """One voice_requests call on its AudioSocket connection.
 
@@ -867,6 +920,9 @@ class VoiceRequestsCall:
         self.speech_end = None         # monotonic arrival of the last loud frame of the last attempt
         self.history = []              # conversation mode: (role, text)
         self.summary = ""              # conversation mode: handed over with a transfer
+        self.waiting_spoken = False
+        self.automatic_waiting_pcm = b""
+        self.automatic_waiting_key = ""
         self._mu = threading.Lock()
         self._current = None           # the prompt being sent by the pump
         self._stop_pump = threading.Event()
@@ -916,7 +972,8 @@ class VoiceRequestsCall:
             self._broken.set()
 
     def gone(self):
-        return self.reader.gone.is_set() or self._broken.is_set()
+        # DONE: the sweeper ended the call (max call time); the turn stops and the socket closes.
+        return self.reader.gone.is_set() or self._broken.is_set() or self.session.state == DONE
 
     def play(self, pcm, mark_reply=False):
         """Plays PCM in real time; True when it has played out, False when the peer is gone."""
@@ -1012,6 +1069,9 @@ class VoiceRequestsCall:
             q, listener, started, digits, reason = pre
         else:
             q, listener, started, digits, reason = queue.Queue(), Listener(cfg["listen_seconds"]), time.monotonic(), [], None
+        # Collect the caller's audio before the Deepgram connection is made: opening it
+        # may take up to its connect timeout, and audio not queued by then was lost.
+        session.listen_q = q
         dg_stream = None
         if cfg.get("stt_model") == "cloud:deepgram":
             sc = cfg.get("stt_cloud") or {}
@@ -1032,7 +1092,6 @@ class VoiceRequestsCall:
                         dg_stream.close()
                     dg_stream = None
         wall_limit = started + cfg["listen_seconds"] + 2.0   # Asterisk stopped sending audio
-        session.listen_q = q
         try:
             while reason is None:
                 if self.gone():
@@ -1230,19 +1289,106 @@ class VoiceRequestsCall:
 
     def lookup(self, tool, query):
         """One of the application's lookups, as the text the model reads; ValueError on failure."""
+        phrases = self.config.get("waiting_phrases", [])
+        if self.waiting_spoken:
+            return self.resolve_lookup(tool, query)
         s = self.session
+        clips = [self.registry.apps.cached(s.app, s.version, f"waiting:{i}") for i in range(len(phrases))]
+        clips = [pcm for pcm in clips if pcm]
+        preferred = self.automatic_waiting_pcm
+        if self.automatic_waiting_key:
+            preferred = self.registry.apps.cached(s.app, s.version, self.automatic_waiting_key) or preferred
+        if preferred:
+            clips = [preferred]
+        if not clips:
+            return self.resolve_lookup(tool, query)
+
+        done = queue.Queue(maxsize=1)
+
+        def run():
+            try:
+                done.put((self.resolve_lookup(tool, query), None))
+            except Exception as exc:
+                done.put((None, exc))
+
+        threading.Thread(target=run, name="agent-lookup", daemon=True).start()
+        try:
+            result, error = done.get(timeout=LOOKUP_PROMPT_DELAY)
+        except queue.Empty:
+            self.waiting_spoken = True
+            log.info("call app=%d: playing a lookup waiting phrase", s.app)
+            played, pre = self.play_interruptible(random.choice(clips))
+            if not played or pre is not None:
+                raise LookupInterrupted(pre)
+            result, error = done.get()
+        if error is not None:
+            raise error
+        return result
+
+    def resolve_lookup(self, tool, query):
+        s = self.session
+        if tool == conversation.KNOWLEDGE_TOOL and self.config.get("knowledge"):
+            return secret_refs.knowledge(s.app, query)
+        if tool == conversation.DB_TOOL and self.config.get("db_queries"):
+            result = secret_refs.db_value(s.app, query, s.verified_customer, {
+                "caller_id": s.caller, "caller_name": s.caller_name, "did": s.did,
+                "uniqueid": s.uniqueid, "linkedid": s.linkedid, "lang": self.config.get("language") or "",
+            })
+            if self.config.get("builtin_agent") and json.loads(result)["status"] == "unavailable":
+                raise ValueError("database lookup unavailable")
+            return result
         t = next(t for t in self.config["tools"] if t["name"] == tool)
         url = lookup_url(t["url"], s.caller, s.did, s.app)
         url += ("&" if "?" in url else "?") + urllib.parse.urlencode({"q": query})
         return json.dumps(fetch_values(url), ensure_ascii=False)
 
+    def opening_audio(self, cfg, complete):
+        if not cfg.get("automatic_announcements"):
+            return self.session.pcm
+        result = queue.Queue(maxsize=1)
+        expires = time.monotonic() + AUTOMATIC_GREETING_TIMEOUT
+
+        def prepare():
+            try:
+                prompt = conversation.announcements_prompt(cfg)
+                raw = complete(prompt) if complete else cloud_llm.answer_text(cfg["llm_cloud"], prompt)
+                greeting, waiting = conversation.parse_announcements(raw)
+                name = cfg.get("caller_name", "").split()
+                if name and name[0].casefold() not in greeting.casefold():
+                    greeting = ""
+                if time.monotonic() < expires:
+                    result.put((self.speak(greeting) if greeting else b"", waiting))
+            except Exception:  # an unavailable model leaves the prepared greeting in place
+                result.put((b"", ""))
+
+        threading.Thread(target=prepare, name="agent-greeting", daemon=True).start()
+        try:
+            pcm, waiting = result.get(timeout=AUTOMATIC_GREETING_TIMEOUT)
+        except queue.Empty:
+            return self.session.pcm
+        if waiting:
+            options = cfg.get("waiting_phrases", [])
+            if waiting in options:
+                self.automatic_waiting_key = f"waiting:{options.index(waiting)}"
+            else:
+                def prepare_waiting():
+                    self.automatic_waiting_pcm = self.speak(waiting)
+
+                threading.Thread(target=prepare_waiting, name="agent-waiting-prompt", daemon=True).start()
+        if pcm:
+            log.info("call app=%d: automatic greeting ready", self.session.app)
+        return pcm or self.session.pcm
+
     def _converse(self):
         """greeting -> (listen -> model step -> answer)* -> transfer, goodbye or the application's destination."""
         session, cfg = self.session, self.config
+        if session.caller_name:
+            cfg = {**cfg, "caller_name": session.caller_name}
         lang = cfg.get("language") or "tr"
         if session.context:
             self.history.append(("context", session.context))
-        played, pre = self.play_interruptible(session.pcm)
+        complete = self.local_completion if cfg.get("local_chat_app") else None
+        played, pre = self.play_interruptible(self.opening_audio(cfg, complete))
         if not played:
             return self.save("hangup")
         quiet = 0
@@ -1266,9 +1412,15 @@ class VoiceRequestsCall:
             quiet = 0
             session.transcript = text
             self.history.append(("caller", text))
+            self.waiting_spoken = False
             started = time.monotonic()
             try:
-                step = conversation.next_step(cfg, self.history, lang, self.lookup)
+                step = conversation.next_step(cfg, self.history, lang, self.lookup, complete=complete)
+            except LookupInterrupted as interrupted:
+                if interrupted.pre is None:
+                    return self.save("hangup")
+                pre = interrupted.pre
+                continue
             except cloud_llm.CloudLlmError as e:
                 log.warning("call app=%d: conversation model failed (%s): to the destination", session.app, e)
                 break
@@ -1277,22 +1429,39 @@ class VoiceRequestsCall:
                      int((time.monotonic() - started) * 1000))
             if step["action"] == "reply":
                 self.history.append(("assistant", step["say"]))
-                played, pre = self.play_interruptible(self.speak(step["say"]))
+                pcm = self.speak(step["say"])
+                if cfg.get("builtin_agent") and not pcm:
+                    break
+                played, pre = self.play_interruptible(pcm)
                 if not played:
                     return self.save("hangup")
                 continue
             if step["say"]:
                 self.history.append(("assistant", step["say"]))
             if step["action"] == "end":
-                return self._finish(self.speak(step["say"]), "ended")
+                pcm = self.speak(step["say"])
+                if cfg.get("builtin_agent") and not pcm:
+                    break
+                return self._finish(pcm, "ended")
             self.summary = step.get("summary", "")
             if step["intent"]:
+                pcm = self.speak(step["say"])
+                if cfg.get("builtin_agent") and step["say"] and not pcm:
+                    break
                 self.matched = next(i for i in cfg["intents"] if i["id"] == step["intent"])
                 session.intent = self.matched["id"]
-                return self._finish(self.speak(step["say"]) or self.prompt("reply:" + session.intent), "matched")
+                return self._finish(pcm or self.prompt("reply:" + session.intent), "matched")
             return self._finish(self.speak(step["say"]) or self.prompt("not_understood"), "not_understood")
         heard = any(a["speech_seconds"] for a in self.attempts)
         return self._finish(self.prompt("not_understood"), "not_understood" if heard else "silence")
+
+    def local_completion(self, text):
+        try:
+            connection = {**secret_refs.local_chat(self.session.app), "json_output": True}
+            result, _ = gateway.chat(connection, text, 384, time.monotonic() + 15, self.registry.manager)
+            return result
+        except Exception as exc:  # provider errors go to the call's fallback
+            raise cloud_llm.CloudLlmError("local model unavailable") from exc
 
     saved = False
 
@@ -1304,7 +1473,7 @@ class VoiceRequestsCall:
         if self.reply_started is not None and self.speech_end is not None:
             timings["speech_end_to_reply_ms"] = int((self.reply_started - self.speech_end) * 1000)
         record = {
-            "uuid": s.uuid, "type": VOICE_REQUESTS, "app": s.app, "caller": s.caller, "did": s.did,
+            "uuid": s.uuid, "type": VOICE_REQUESTS, "app": s.app, "caller": s.caller, "caller_name": s.caller_name, "did": s.did,
             "uniqueid": s.uniqueid, "started": int(s.started), "ended": int(time.time()),
             "intent": intent["id"] if intent else None,
             "intent_name": (intent["name"] or intent["id"]) if intent else None,
@@ -1315,6 +1484,8 @@ class VoiceRequestsCall:
         }
         if self.history:
             record["conversation"] = [{"role": r, "text": t} for r, t in self.history]
+        if intent and intent.get("route_id"):
+            record["route_id"] = intent["route_id"]
         if self.summary:
             record["summary"] = self.summary
         self.registry.results.save(record, self.audio)

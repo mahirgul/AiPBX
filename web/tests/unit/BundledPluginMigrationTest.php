@@ -7,93 +7,58 @@ final class BundledPluginMigrationTest extends TestCase
 {
     public function testTransitionPackageInstallsThroughPluginManager(): void
     {
-        $dir=sys_get_temp_dir().'/aipbx-upload-voicemail-'.bin2hex(random_bytes(6));
+        $dir=sys_get_temp_dir().'/aipbx-upload-dialer-'.bin2hex(random_bytes(6));
         $previous=getenv('AIPBX_CUSTOM_PLUGINS_DIR');
         putenv('AIPBX_CUSTOM_PLUGINS_DIR='.$dir);
         $_SESSION['csrf_token']='move-test';$_SESSION['role']='admin';$_SESSION['user_role']='admin';$_SESSION['user_id']=1;
         $db=getDB();$db->beginTransaction();
         try {
-            $zip=dirname(__DIR__,3).'/conf/plugin-transitions/ai-voicemail-1.1.0.zip';
+            $db->exec("DELETE FROM sys_plugins WHERE slug='auto-dialer'");
+            $zip=dirname(__DIR__,3).'/conf/plugin-transitions/auto-dialer-1.1.0.zip';
             $result=PluginManager::installFromZip(['error'=>UPLOAD_ERR_OK,'tmp_name'=>$zip,'size'=>filesize($zip)],'move-test');
             $this->assertTrue($result['success'],json_encode($result));
-            $p=PluginManager::getPlugin('ai-voicemail');
+            $p=PluginManager::getPlugin('auto-dialer');
             $this->assertSame('custom',$p['source']);
-            $this->assertSame('community',$p['type']);
             $this->assertSame('1.1.0',$p['version']);
-            PluginManager::setSetting('ai-voicemail','api_key','');
-            PluginManager::deliverEventToPlugin('ai-voicemail','voicemail.transcribed',[
-                'event_id'=>'uploaded-plugin','data'=>['extension'=>'101','summary'=>'Uploaded plugin works']]);
-            $key=hash('sha256','101:uploaded-plugin');
-            $this->assertSame('Uploaded plugin works',PluginManager::kvGet('ai-voicemail','summaries',$key)['value']['summary']);
         } finally {
             if ($db->inTransaction()) { $db->rollBack(); }
             putenv($previous===false?'AIPBX_CUSTOM_PLUGINS_DIR':'AIPBX_CUSTOM_PLUGINS_DIR='.$previous);PluginManager::resetCache();
-            foreach (['admin/page.php','events/handler.php','plugin.json'] as $f) { if(is_file($dir.'/ai-voicemail/'.$f)){unlink($dir.'/ai-voicemail/'.$f);} }
-            foreach (['/ai-voicemail/admin','/ai-voicemail/events','/ai-voicemail',''] as $d) { if(is_dir($dir.$d)){rmdir($dir.$d);} }
+            if (is_dir($dir)) {
+                $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+                foreach ($it as $item) { $item->isDir() ? @rmdir($item->getPathname()) : @unlink($item->getPathname()); }
+                @rmdir($dir);
+            }
         }
     }
 
-    public function testAssistantMigrationPreservesTokenDraftsAndHistory(): void
+    public function testCommunityAssistantIsReplacedByTheOfficialPbxAssistant(): void
     {
-        $db=getDB();$dir=sys_get_temp_dir().'/aipbx-assistant-transition-'.bin2hex(random_bytes(6));mkdir($dir,0700);
+        $db=getDB();$dir=sys_get_temp_dir().'/aipbx-assistant-retire-'.bin2hex(random_bytes(6));
+        mkdir($dir.'/ai-assistant/lib',0700,true);
+        file_put_contents($dir.'/ai-assistant/plugin.json','{"slug":"ai-assistant","version":"1.1.0"}');
+        file_put_contents($dir.'/ai-assistant/lib/AssistantApi.php','<?php');
         $db->beginTransaction();
         try {
-            $db->exec("DELETE FROM sys_plugins WHERE slug='ai-assistant'");
-            BundledPluginMigrationService::migrateAssistant($db,$dir);
-            $this->assertDirectoryDoesNotExist($dir.'/ai-assistant');
-            $token=ApiTokenService::issuePluginToken('ai-assistant','Migration test',['pbx:read']);
-            PluginManager::setSetting('ai-assistant','_worker_api_token',$token,true);
-            PluginManager::setSetting('ai-assistant','api_key','migration-secret',true);
-            PluginManager::kvSet('ai-assistant','drafts','move-test',['method'=>'GET','path'=>'/api/v1/queues']);
-            PluginManager::kvSet('ai-assistant','history','move-test',['status_code'=>200]);
-            foreach([0,1] as $enabled) {
-                $db->prepare("INSERT INTO sys_plugins (slug,name,version,source,enabled) VALUES ('ai-assistant','Assistant','1.0.0','official',?) ON DUPLICATE KEY UPDATE source='official',enabled=VALUES(enabled)")->execute([$enabled]);
-                BundledPluginMigrationService::migrateAssistant($db,$dir);PluginManager::resetCache();
-                $row=PluginManager::installedMap()['ai-assistant'];
-                $this->assertSame('custom',$row['source']);$this->assertSame($enabled,(int)$row['enabled']);
-                $this->assertSame($token,PluginManager::getSetting('ai-assistant','_worker_api_token'));
-                $this->assertSame('migration-secret',PluginManager::getSetting('ai-assistant','api_key'));
-                $this->assertSame('/api/v1/queues',PluginManager::kvGet('ai-assistant','drafts','move-test')['value']['path']);
-                $this->assertSame(200,PluginManager::kvGet('ai-assistant','history','move-test')['value']['status_code']);
-                $q=$db->prepare('SELECT is_active,scopes_json FROM sys_api_tokens WHERE token_hash=?');$q->execute([hash('sha256',$token)]);
-                $tokenRow=$q->fetch(PDO::FETCH_ASSOC);$this->assertSame(1,(int)$tokenRow['is_active']);
-                $scopes=json_decode($tokenRow['scopes_json'],true);
-                $this->assertContains('queues:read',$scopes);$this->assertNotContains('queues:write',$scopes);
+            foreach ([0, 1] as $enabled) {
+                $db->prepare("INSERT INTO sys_plugins (slug,name,version,source,enabled) VALUES ('ai-assistant','AI Assistant','1.1.0','custom',?) ON DUPLICATE KEY UPDATE source='custom',name='AI Assistant',enabled=VALUES(enabled)")->execute([$enabled]);
+                $token=ApiTokenService::issuePluginToken('ai-assistant','Community assistant',['pbx:read']);
+                PluginManager::setSetting('ai-assistant','_worker_api_token',$token,true);
+                PluginManager::kvSet('ai-assistant','drafts','d1',['path'=>'/api/v1/queues']);
+                BundledPluginMigrationService::retireCommunityAssistant($db,$dir);
+                BundledPluginMigrationService::retireCommunityAssistant($db,$dir);   // a second run changes nothing
+                PluginManager::resetCache();
+                $this->assertDirectoryDoesNotExist($dir.'/ai-assistant');
+                $row=$db->query("SELECT source,name,version,enabled FROM sys_plugins WHERE slug='ai-assistant'")->fetch(PDO::FETCH_ASSOC);
+                $this->assertSame(['source'=>'official','name'=>'PBX Assistant','version'=>'2.0.0','enabled'=>$enabled],
+                    ['source'=>$row['source'],'name'=>$row['name'],'version'=>$row['version'],'enabled'=>(int)$row['enabled']]);
+                $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_api_tokens WHERE plugin_slug='ai-assistant' AND is_active=1")->fetchColumn());
+                $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_plugin_settings WHERE plugin_slug='ai-assistant'")->fetchColumn());
+                $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_plugin_kv WHERE plugin_slug='ai-assistant'")->fetchColumn());
+                $this->assertSame('official',PluginManager::getPlugin('ai-assistant')['source'] ?? null, 'the bundled manifest is the one found');
+                mkdir($dir.'/ai-assistant',0700);file_put_contents($dir.'/ai-assistant/plugin.json','{}');
             }
-            BundledPluginMigrationService::migrateAssistant($db,$dir);
         } finally {
             $db->rollBack();PluginManager::resetCache();
-            $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
-            foreach($it as $f){if($f->isDir()){rmdir($f->getPathname());}else{unlink($f->getPathname());}}rmdir($dir);
-        }
-    }
-
-    public function testAssistantPackageUsesHostIssuedApiToken(): void
-    {
-        $dir=sys_get_temp_dir().'/aipbx-assistant-upload-'.bin2hex(random_bytes(6));
-        $previous=getenv('AIPBX_CUSTOM_PLUGINS_DIR');putenv('AIPBX_CUSTOM_PLUGINS_DIR='.$dir);
-        $_SESSION=['csrf_token'=>'move-test','role'=>'admin','user_role'=>'admin','user_id'=>1];
-        $db=getDB();$db->beginTransaction();
-        try {
-            $zip=dirname(__DIR__,3).'/conf/plugin-transitions/ai-assistant-1.1.0.zip';
-            $result=PluginManager::installFromZip(['error'=>UPLOAD_ERR_OK,'tmp_name'=>$zip,'size'=>filesize($zip)],'move-test');
-            $this->assertTrue($result['success'],json_encode($result));
-            $this->assertSame('custom',PluginManager::getPlugin('ai-assistant')['source']);
-            require $dir.'/ai-assistant/lib/AssistantApi.php';
-            $requests=[];AssistantApi::$http=static function($method,$url,$headers,$body) use (&$requests): array {
-                $requests[]=[$method,$url,$headers];return [200,'{"success":true}'];
-            };
-            $this->assertSame(200,AssistantApi::execute('GET','/api/v1/queues')['status_code']);
-            $token=PluginManager::getSetting('ai-assistant','_worker_api_token');$this->assertNotSame('',$token);
-            $q=$db->prepare('SELECT scopes_json FROM sys_api_tokens WHERE token_hash=?');$q->execute([hash('sha256',$token)]);
-            $this->assertContains('queues:write',json_decode($q->fetchColumn(),true));
-            $this->assertContains('Authorization: Bearer '.$token,$requests[0][2]);
-            PluginManager::disable('ai-assistant','move-test');
-            $this->assertSame(403,AssistantApi::execute('GET','/api/v1/queues')['status_code']);
-            $this->assertCount(1,$requests);
-        } finally {
-            AssistantApi::$http=null;
-            $db->rollBack();putenv($previous===false?'AIPBX_CUSTOM_PLUGINS_DIR':'AIPBX_CUSTOM_PLUGINS_DIR='.$previous);PluginManager::resetCache();
             $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::CHILD_FIRST);
             foreach($it as $f){if($f->isDir()){rmdir($f->getPathname());}else{unlink($f->getPathname());}}rmdir($dir);
         }

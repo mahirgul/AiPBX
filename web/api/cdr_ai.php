@@ -7,7 +7,7 @@ requireLogin();
 header('Content-Type: application/json; charset=utf-8');
 
 $user = getCurrentUser();
-$role = $_SESSION['user_role'] ?? 'user';
+$role = userEffectiveRole();
 
 $id = (int) ($_GET['id'] ?? $_POST['id'] ?? 0);
 if ($id <= 0) {
@@ -41,11 +41,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     session_write_close();
     $lang = (string) ($_POST['lang'] ?? '');
-    if (!in_array($lang, ['tr', 'de', 'en'], true)) {
-        $sysLang = strtolower(substr((string) getSystemSetting('default_lang', 'tr'), 0, 2));
-        $lang = in_array($sysLang, ['tr', 'de', 'en'], true) ? $sysLang : 'tr';
+    if (!isset(CloudAiService::languages()[$lang])) {
+        $lang = CloudAiService::language((string) getSystemSetting('default_lang', 'tr'));
     }
-    $item = CdrAiService::forCdr($id, $lang, !empty($_POST['force']));
+    $force = !empty($_POST['force']);
+    require_once __DIR__ . '/../src/services/ai/AiJobService.php';
+    $jobId = CdrAiService::enqueue((string) $id, ['lang' => $lang, 'force' => $force, 'source' => 'manual']);
+    $job = AiJobService::claimById($jobId, 'web-cdr:' . getmypid(), 180);
+    $item = null;
+    if ($job !== null) {
+        $leaseOwner = (string) ($job['lease_owner'] ?? '');
+        try {
+            $result = CdrAiService::processJob($job);
+            AiJobService::complete($jobId, $result, $leaseOwner);
+        } catch (\Throwable $e) {
+            AiJobService::fail($jobId, $e->getMessage(), false, $leaseOwner);
+        }
+        $item = CdrAiService::forCdr($id, $lang, false);
+    } else {
+        $item = CdrAiService::forCdr($id, $lang, $force);
+    }
     if ($item !== null) {
         // The words of a recorded call were read out (maybe by a cloud service): who, which call, which engine.
         writeAuditLog(null, 'cdr', $id, 'Call record: ' . $cdr['caller_num'] . ' transcribed (' . $item['engine'] . ')', 'create', $user['id'] ?? null);

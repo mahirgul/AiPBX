@@ -1,0 +1,94 @@
+AiPBX Kısa Kullanım Rehberi (PBX Asistan için)
+
+S: Bir ayarı değiştirdim, neden hemen çalışmıyor?
+C: Santral ayarları önce Sistem → Bekleyenler listesine düşer. Değişikliğin Asterisk'e geçmesi için o sayfada Uygula'ya basın. Uygulama başarısız olursa değişiklik listede kalır.
+
+S: Yeni dahili nasıl eklenir?
+C: Santral → Dahililer sayfasında Ekle'ye basın, numarayı, adı ve e-postayı girin, kaydedin ve Bekleyenler'den uygulayın. Kullanıcı ile dahili tek kayıttır. SIP parolası portal parolasından ayrıdır; telefon, softphone, web telefonu ve mobil uygulama bu parolayı kullanır.
+
+S: Bir telefonu nasıl tanımlarım?
+C: Tanımlama → Telefonlar sayfasından telefonu MAC adresiyle ekleyip dahiliye bağlayın. Telefon dosyasını santralden alır. Telefon kayıt olmuyorsa Sorun Giderme → Kayıtlar ve SIP trafiği sayfalarına bakın.
+
+S: Çağrı yönlendirmeyi nasıl açarım?
+C: Telefondan *72 ve hedef numara ile yönlendirme açılır, *73 ile kapatılır. Yönetici Asistan'a "101'i 203'e yönlendir" yazarak da yapabilir; Asistan önce önizleme gösterir, onay verince uygular ve geri alınabilir.
+
+S: Rahatsız etmeyi (DND) nasıl açarım?
+C: Telefondan *78 tuşlayın; aynı kod tekrar tuşlanınca kapanır.
+
+S: Sesli mesajlarımı nasıl dinlerim?
+C: Kendi dahilinizden *97 tuşlayın. Başka bir telefondan sesli posta girişi için *98 kullanılır. Sesli mesaj ayarı dahilinin kendi sayfasındadır.
+
+S: Çalan bir çağrıyı başka telefondan nasıl alırım?
+C: Gruptaki çalan çağrıyı almak için *20, belirli bir dahilinin çalan çağrısını almak için *21 ve dahili numarası.
+
+S: Özellik kodlarının listesi nerede?
+C: Santral → Özellik Kodları sayfasında tüm kodlar ve hangi rollerin kullanabileceği yazar. Santral → Aktif Kodlar sayfası şu an açık olan yönlendirme ve DND gibi durumları gösterir.
+
+S: Dış hat (trunk) nasıl eklenir?
+C: Dış Hat → Dış Hatlar sayfasında operatör bilgilerini girin. Gelen çağrılar için Dış Hat → Gelen Rota, giden çağrılar için Dış Hat → Giden Rota tanımlanır. Numara biçimi düzeltmeleri Gelen Çağrı Normalizasyonu ve Arama Normalleştirme sayfalarındadır.
+
+S: Gelen çağrıyı nereye yönlendireceğimi nasıl belirlerim?
+C: Dış Hat → Gelen Rota sayfasında arayan numara (DID) için hedef seçilir: dahili, çalma grubu, kuyruk, IVR, zaman planı, konferans, anons veya AI uygulaması.
+
+S: Sesli menü (IVR) nasıl yapılır?
+C: Santral → IVR Menü sayfasında karşılama sesini ve her tuşun hedefini seçin. Sesler Santral → Sesler sayfasından yüklenir ya da AI Uygulamaları → TTS Stüdyosu ile metinden üretilir.
+
+S: Mesai saati dışında farklı karşılama nasıl yapılır?
+C: Santral → Zaman Planı sayfasında saatleri tanımlayın ve mesai içi ile dışı için ayrı hedef seçin. Gelen rotayı bu zaman planına yönlendirin.
+
+S: Birden fazla telefonun aynı anda çalması için ne kullanırım?
+C: Santral → Çalma Grupları. Sırayla dağıtım, bekleme müziği ve temsilci yönetimi gerekiyorsa Santral → Kuyruklar kullanılır.
+
+S: Kuyruğa temsilci nasıl girer, mola nasıl verilir?
+C: Temsilci *81 ve kuyruk numarası ile kuyruğa girer, *80 ve kuyruk numarası ile çıkar. Mola için *22 ve mola numarası, moladan dönmek için *23. Çağrı Merkezi → Temsilci sayfasından da yapılabilir.
+
+S: Çağrı merkezini canlı nasıl izlerim?
+C: Çağrı Merkezi → Pano bekleyen çağrıları, temsilcileri ve kaliteyi gösterir. Raporlar için Kuyruk Rapor Merkezi, Mola Raporu ve Kuyruk Logu sayfaları vardır. Yöneticiler *90 ile dinleyebilir, *91 ile fısıldayabilir, *92 ile görüşmeye katılabilir.
+
+S: Çağrı kayıtlarını ve raporları nerede görürüm?
+C: Panel → Raporlar sayfasında çağrı geçmişi, süreler ve kayıtlar bulunur. Kayıtlı çağrılar oradan dinlenebilir; Çağrı Analizi açıksa yazıya dökülmüş metin ve kalite puanı da görünür.
+
+S: Konferans odasına nasıl girilir?
+C: Santral → Konferans Odaları sayfasında oda tanımlanır. Telefondan #9 ve oda numarası ile girilir. Görüntülü toplantılar için Santral → Görüntülü Konferanslar kullanılır.
+
+S: Faks nasıl gönderilir ve alınır?
+C: Faks → Faks Gönder sayfasından PDF yükleyip gönderin. Gelen fakslar Faks → Gelen Faks, gönderilenler Faks → Giden Faks sayfasındadır. Faks numaraları Faks → Faks Birimleri, kapak ve e-posta ayarları Faks → Faks Ayarları sayfasındadır.
+
+S: Arayan numarayı engellemek için ne yapmalıyım?
+C: Dış Hat → Kara Liste / Spam sayfasına numarayı ekleyin.
+
+S: Bir dahilinin dışarıyı aramasını nasıl kısıtlarım?
+C: Dış Hat → Arama Yetkileri sayfasında hangi dahilinin hangi numaraları arayabileceği belirlenir.
+
+S: Yapay zekâ ile telefona cevap veren bir asistan nasıl kurulur?
+C: AI Uygulamaları → Uygulamalar sayfasında bir uygulama oluşturun: bilgiyi okuyan anons, arayanın isteğini anlayıp yönlendiren sesli talep, sesle yönlendirme ya da bulut dil modeliyle konuşma modu. Sonra uygulamayı gelen rotada hedef olarak seçin.
+
+S: Yerel ya da bulut AI modelleri nereden ayarlanır?
+C: AI Ayarları → Yerel AI sunucunun kendisinde çalışan küçük modelleri (Ollama, Piper sesleri, Whisper ve Vosk) yönetir. AI Ayarları → Bulut servisleri OpenAI, Gemini, Claude, Azure, ElevenLabs gibi sağlayıcıları bağlar. Her iş için varsayılan model Bağlantılar sekmesinden seçilir.
+
+S: Sesli mesajlar yazıya dökülebilir mi?
+C: Evet. AI Ayarları → Sesli Mesaj AI sayfasında yazıya dökme ve özet açılır; metin e-postada ve uygulamada görünür.
+
+S: PBX Asistan'ın cevap verdiği belgeleri nasıl değiştiririm?
+C: AI Ayarları → Bilgi Tabanı sayfasında koleksiyonlar vardır. Asistan, kullanıcının dili için işaretlenmiş koleksiyondan cevap verir. Kendi dilinizde yeni bir koleksiyon açıp "Asistan dili" alanını seçerek TXT belgeler yükleyebilirsiniz.
+
+S: Yedek nasıl alınır ve sistem nasıl güncellenir?
+C: Sistem → Yedekleme ve Geri Yükleme sayfasından yedek alınır ve geri yüklenir. Sistem → Sistem Güncelleme sayfası yeni sürümü gösterir; güncellemeden önce tam yedek otomatik alınır.
+
+S: Sistem sağlıklı mı, nasıl kontrol ederim?
+C: Sistem → Sağlık kontrolü sayfası diski, servisleri ve dış hatları kontrol eder. Bir sorunu kaydetmek için Sorun Giderme → Sorun kaydı sayfasında kaydı başlatın, sorunu tekrarlayın, durdurun ve maskelenmiş zip dosyasını indirin.
+
+S: Ses kalitesi kötü ya da tek taraflı ses var, ne yapmalıyım?
+C: Sorun Giderme → Çağrı kalitesi sayfası çağrı başına kayıp ve gecikmeyi gösterir. SIP trafiği sayfasında çağrının mesaj akışı (ladder diyagramı) görülür. Tek taraflı ses çoğunlukla NAT veya güvenlik duvarı ayarındandır; Sistem → Santral Ayarı ve Güvenlik → Firewall sayfalarına bakın.
+
+S: Kullanıcıların yetkilerini nasıl ayarlarım?
+C: Sistem → Kullanıcılar sayfasında kullanıcıya rol verin. Sistem → Roller sayfasında her rolün hangi sayfaları görebileceği ve değiştirebileceği belirlenir.
+
+S: Giriş güvenliği ve tek oturum açma (SSO) nerede?
+C: Güvenlik → Giriş sayfasında giriş kontrolü ve uyarılar bulunur. Google, OIDC ve SAML ile giriş Entegrasyon → Eklenti Kataloğu'ndaki eklentilerle açılır. Yapılan işlemlerin kaydı Güvenlik → Denetim sayfasındadır.
+
+S: Başka bir yazılımla nasıl entegre olurum?
+C: Entegrasyon → REST API Anahtarları ile API erişimi verilir. Entegrasyon → Webhooklar sayfasında çağrı, faks ve sesli mesaj olayları başka bir adrese gönderilir. Entegrasyon → Veritabanı Bağlantıları ile IVR içinde dış veritabanından sorgu yapılabilir.
+
+S: Her sayfanın ayrıntılı açıklaması nerede?
+C: Her sayfanın başlığındaki ? düğmesi o sayfayı anlatır. Sistemin tamamı için Sistem → Yardım (sistem rehberi) sayfasına bakın.

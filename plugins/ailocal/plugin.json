@@ -1,0 +1,32 @@
+{
+    "slug": "ailocal",
+    "name": "Local AI",
+    "name_i18n": {
+        "tr": "Yerel AI",
+        "en": "Local AI"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "category": "ai",
+    "icon": "fas fa-microchip",
+    "icon_style": "color: var(--purple);",
+    "description": "Local AI models, Ollama / local runtime connections, and local inference testing.",
+    "description_i18n": {
+        "tr": "Yerel AI modelleri, Ollama / yerel runtime bağlantıları ve yerel çıkarım denemesi.",
+        "en": "Local AI models, Ollama / local runtime connections, and local inference testing."
+    },
+    "scopes": [
+        "calls:read",
+        "sounds:write"
+    ],
+    "hooks": {
+        "ai_provider": true,
+        "tts_provider": true,
+        "admin_page": {
+            "route": "/ai-local",
+            "group": "ai"
+        }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
+}

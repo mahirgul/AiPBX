@@ -34,9 +34,26 @@ function __syncAiAppsBody() {
         require_once dirname(__DIR__) . '/core/PluginManager.php';
         $installed = PluginManager::installedMap();
         if (isset($installed['ai-apps']) && empty($installed['ai-apps']['enabled'])) {
-            $apps = [];
+            $apps = array_values(array_filter($apps, static fn (array $a): bool => $a['app_type'] === AiAppService::BUILTIN_AGENT));
         }
     }
+    foreach ($apps as &$app) {
+        if ($app['app_type'] === AiAppService::BUILTIN_AGENT && PluginManager::isEnabled('ai-knowledge')) {
+            require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
+            $collectionId = (int) (AiAppService::config($app)['knowledge_collection'] ?? 0);
+            $app['agent_has_knowledge'] = $collectionId > 0 && AiKnowledgeService::collection($collectionId) !== null;
+            if (!$app['agent_has_knowledge']) {
+                continue;
+            }
+            try {
+                $app['agent_tools'] = BuiltinAiAgentService::toolsForCollection($collectionId);
+            } catch (Exception $e) {
+                $app['agent_has_knowledge'] = false;
+                error_log('AI agent ' . (int) $app['id'] . ': invalid tool definitions');
+            }
+        }
+    }
+    unset($app);
     pushAiAppConfigs($apps);
     return writeConfWithRollback('extensions_ai_apps.conf', buildAiAppsDialplan($apps, AiAppService::dialplanKey()), function () {
         AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_ai_apps'));
@@ -53,7 +70,11 @@ function pushAiAppConfigs(array $apps): void {
         $wanted = [];
         foreach ($apps as $a) {
             if (AiAppService::listens((string) ($a['app_type'] ?? ''))) {
-                $wanted[(int) $a['id']] = AiAppService::serviceConfig($a);
+                $config = AiAppService::serviceConfig($a);
+                if ($a['app_type'] !== AiAppService::BUILTIN_AGENT
+                    || ($config['tts_model'] !== '' && $config['stt_model'] !== '' && !empty($config['conversation']) && !empty($config['knowledge']))) {
+                    $wanted[(int) $a['id']] = $config;
+                }
             }
         }
         LocalAiService::pushApps($wanted);
@@ -79,7 +100,7 @@ function buildAiAppsDialplan(array $apps, string $key): string {
         }
         $id = (int) $a['id'];
         $name = dialplanText((string) $a['title']);
-        $model = AiAppService::resolveModel((string) $a['model_id']);
+        $model = AiAppService::resolveTaskBinding($id, 'tts', (string) $a['model_id'], 'tr', !AiAppService::isPrivacyCloudBlocked() && AiAppService::isScopeEnabled('cloud'));
         $speed = number_format(max(0.5, min(2.0, (float) $a['speed'])), 2, '.', '');
         $max = max(1, min(50, (int) $a['max_concurrent']));
         $post = 'app=' . $id
@@ -113,6 +134,19 @@ function buildAiAppsDialplan(array $apps, string $key): string {
     if ($apps === []) {
         $conf .= "; No active AI applications\n";
     }
+
+    // Resume contexts for queues that have a Pre-Queue AI representative assigned.
+    try {
+        $preQueues = getDB()->query('SELECT id FROM pbx_queues WHERE is_active = 1 AND pre_queue_ai_app_id IS NOT NULL AND pre_queue_ai_app_id > 0 ORDER BY id ASC')->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($preQueues as $pq) {
+            $qid = (int) $pq['id'];
+            $conf .= "[aipbx-queue-resume-{$qid}]\n";
+            $conf .= "exten => s,1,NoOp(Resuming queue {$qid} after Pre-Queue AI handover)\n";
+            $conf .= buildDestinationLines('queue', (string) $qid) . "\n";
+            $conf .= " same => n,Hangup()\n\n";
+        }
+    } catch (\Throwable $e) {
+    }
     return $conf;
 }
 
@@ -121,17 +155,31 @@ function buildVoiceRequestsContext(array $a, string $key): string {
     $id = (int) $a['id'];
     $name = dialplanText((string) $a['title']);
     $max = max(1, min(50, (int) $a['max_concurrent']));
-    $intents = AiAppService::config($a)['intents'] ?? [];
+    $builtin = ($a['app_type'] ?? '') === AiAppService::BUILTIN_AGENT;
+    $intents = $builtin ? ($a['agent_tools']['intents'] ?? []) : (AiAppService::config($a)['intents'] ?? []);
+    $svcCfg = AiAppService::serviceConfig($a);
+    $voiceReady = ($svcCfg['tts_model'] ?? '') !== '' && ($svcCfg['stt_model'] ?? '') !== '';
+    if ($builtin) {
+        $voiceReady = $voiceReady && !empty($svcCfg['conversation']) && !empty($svcCfg['knowledge']);
+    }
     $post = 'app=' . $id . '&key=' . $key . '&max=' . $max
         . '&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}'
         // What an assistant before this one handed over (a conversation's summary).
         . '&context=${URIENCODE(${AI_SUMMARY})}';
+    if (!empty($svcCfg['db_queries'])) {
+        $post .= '&linkedid=${URIENCODE(${CHANNEL(linkedid)})}';
+        $post .= '&verified_customer=${URIENCODE(${AIPBX_VERIFIED_CUSTOMER_ID})}';
+    }
 
     $c = "; --- AI application {$id}: {$name} (voice requests) ---\n";
     $c .= "[aipbx-ai-app-{$id}]\n";
     $c .= "exten => s,1,NoOp(AI application {$id}: {$name})\n";
     $c .= " same => n,Answer()\n";
-    if ($key !== '') {
+    if ($builtin) {
+        $c .= " same => n,GotoIf(\$[\"\${AI_AGENT_VISITED_{$id}}\" = \"1\"]?reentry)\n";
+        $c .= " same => n,Set(__AI_AGENT_VISITED_{$id}=1)\n";
+    }
+    if ($key !== '' && $voiceReady) {
         $c .= " same => n,Set(CURLOPT(httptimeout)=5)\n";
         $c .= " same => n,Set(AI_CALL=\${CURL(" . AI_APP_SERVICE_URL . ",{$post})})\n";
         $c .= " same => n,GotoIf(\$[\"\${LEN(\${AI_CALL})}\" != \"36\"]?fallback)\n";
@@ -141,11 +189,10 @@ function buildVoiceRequestsContext(array $a, string $key): string {
             // Its summary goes with the call: to the next assistant (above) and into the request log.
             $c .= " same => n,Set(__AI_SUMMARY=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/summary?key={$key})})\n";
         }
-        // Request log and e-mail in the background; the caller name reaches the shell URI-encoded only.
-        // URIENCODE leaves ' ( ) alone, and the shell broke on them: filter the name first.
-        $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} \${URIENCODE(\${FILTER(A-Za-z0-9 ._,\${CALLERID(name)})})} >/dev/null 2>&1 &)\n";
+        // The request worker reads the resolved name from the AI call result.
+        $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} >/dev/null 2>&1 &)\n";
         foreach ($intents as $i) {
-            $iid = preg_replace('/[^a-z0-9_]/', '', (string) $i['id']);
+            $iid = preg_replace('/[^a-z0-9_]/', '', (string) ($i['route_id'] ?? $i['id']));
             $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"{$iid}\"]?req_{$iid})\n";
         }
     }
@@ -155,10 +202,13 @@ function buildVoiceRequestsContext(array $a, string $key): string {
         $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"_end\"]?conv_end)\n";
     }
     $c .= " same => n(fallback),NoOp(AI application {$id}: not understood or not available \${AI_INTENT})\n";
+    if (!$builtin) {
+        $c .= " same => n,GotoIf(\$[\"\${AIPBX_PRE_QUEUE_Q}\" != \"\"]?aipbx-queue-resume-\${AIPBX_PRE_QUEUE_Q},s,1)\n";
+    }
     $c .= buildDestinationLines((string) $a['dest_type'], (string) $a['dest_id']) . "\n";
     $c .= " same => n,Hangup()\n";
     foreach ($key !== '' ? $intents : [] as $i) {
-        $iid = preg_replace('/[^a-z0-9_]/', '', (string) $i['id']);
+        $iid = preg_replace('/[^a-z0-9_]/', '', (string) ($i['route_id'] ?? $i['id']));
         $c .= " same => n(req_{$iid}),NoOp(AI application {$id}: request " . dialplanText((string) $i['name']) . ")\n";
         if (($i['dest_type'] ?? '') !== '') {
             $c .= buildDestinationLines((string) $i['dest_type'], (string) $i['dest_id']) . "\n";
@@ -167,6 +217,10 @@ function buildVoiceRequestsContext(array $a, string $key): string {
     }
     if ($conversation) {
         $c .= " same => n(conv_end),NoOp(AI application {$id}: conversation ended)\n";
+        $c .= " same => n,Hangup()\n";
+    }
+    if ($builtin) {
+        $c .= " same => n(reentry),GotoIf(\$[\"\${AIPBX_PRE_QUEUE_Q}\" != \"\"]?aipbx-queue-resume-\${AIPBX_PRE_QUEUE_Q},s,1)\n";
         $c .= " same => n,Hangup()\n";
     }
     return $c . "\n";

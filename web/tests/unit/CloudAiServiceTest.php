@@ -16,7 +16,7 @@ final class CloudAiServiceTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->before = getDB()->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
+        $this->before = getDB()->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%' OR setting_key LIKE 'ai_use.%' OR setting_key = 'ai_languages' OR setting_key = 'ai_cloud_accounts' OR setting_key LIKE 'ai_cloud_cache.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
         $_SESSION['user_id'] = null;
     }
 
@@ -26,7 +26,7 @@ final class CloudAiServiceTest extends TestCase
         $ref = new ReflectionProperty(LocalAiService::class, 'modelsCache');
         $ref->setValue(null, null);
         $db = getDB();
-        $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%'");
+        $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%' OR setting_key LIKE 'ai_engine.%' OR setting_key LIKE 'ai_limit.%' OR setting_key LIKE 'ai_use.%' OR setting_key = 'ai_languages' OR setting_key = 'ai_cloud_accounts' OR setting_key LIKE 'ai_cloud_cache.%'");
         $st = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
         foreach ($this->before as $k => $v) {
             $st->execute([$k, $v]);
@@ -46,6 +46,69 @@ final class CloudAiServiceTest extends TestCase
     {
         $pcm = str_repeat("\0\0", (int) ($seconds * $rate));
         return 'RIFF' . pack('V', 36 + strlen($pcm)) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, $rate, $rate * 2, 2, 16) . 'data' . pack('V', strlen($pcm)) . $pcm;
+    }
+
+    public function testLanguagesCanBeAddedAndDeleted(): void
+    {
+        getDB()->exec("DELETE FROM sys_settings WHERE setting_key = 'ai_languages'");
+        $this->assertSame(['tr', 'de', 'en'], array_keys(CloudAiService::languages()), 'built-in list until changed');
+        $this->assertSame('tr', CloudAiService::language('xx'), 'unknown: the first language');
+        $this->assertSame('de', CloudAiService::language('de-AT'));
+
+        CloudAiService::addLanguage(['lang_code' => 'fr', 'lang_locale' => 'fr-CA', 'lang_name' => 'French']);
+        $this->assertSame(['locale' => 'fr-CA', 'name' => 'French'], CloudAiService::languages()['fr']);
+        $this->assertSame('French', CloudAiService::languageName('fr'));
+        $jobs = array_filter(CloudAiService::jobs(), fn($j) => $j['lang'] === 'fr');
+        $this->assertSame(['tts', 'stt', 'llm'], array_column(array_values($jobs), 'job'), 'every job gets a row for the new language');
+
+        foreach ([['lang_code' => 'FR1', 'lang_name' => 'x'], ['lang_code' => 'fr', 'lang_name' => 'Again'],
+                  ['lang_code' => 'it', 'lang_locale' => 'fr-FR', 'lang_name' => 'Italian'], ['lang_code' => 'it', 'lang_name' => '<b>']] as $bad) {
+            try {
+                CloudAiService::addLanguage($bad);
+                $this->fail('accepted: ' . json_encode($bad));
+            } catch (CloudAiException $e) {
+                $this->addToAssertionCount(1);
+            }
+        }
+
+        getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+            ->execute(['ai_engine.stt.fr', 'cloud:groq']);
+        CloudAiService::deleteLanguage('fr');
+        $this->assertArrayNotHasKey('fr', CloudAiService::languages());
+        $this->assertSame('', (string) getSystemSetting('ai_engine.stt.fr', ''), 'its engines go with it');
+    }
+
+    public function testAzureSpeechToTextUsesTheLocaleOfAnAddedLanguage(): void
+    {
+        CloudAiService::addLanguage(['lang_code' => 'pt', 'lang_locale' => 'pt-BR', 'lang_name' => 'Portuguese']);
+        CloudAiService::save('azure', ['api_key' => 'az-key-123', 'region' => 'westeurope']);
+        $this->fake(['DisplayText' => 'Olá']);
+        $this->assertSame('Olá', CloudAiService::stt('azure', self::wav(1), 'pt')['text']);
+        $this->assertStringContainsString('language=pt-BR', $this->calls[0]['url']);
+    }
+
+    public function testAFeatureCanUseItsOwnService(): void
+    {
+        CloudAiService::save('groq', ['api_key' => 'gsk-test-key']);
+        CloudAiService::save('openai', ['api_key' => 'sk-test-key']);
+        getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
+            ->execute(['ai_engine.stt.tr', 'cloud:openai']);
+        $this->assertSame('cloud:openai', CloudAiService::engineFor('vm_stt', 'tr'), 'by language until chosen');
+
+        CloudAiService::saveFeatureEngines(['use_vm_stt' => 'cloud:groq', 'use_cdr_llm' => '']);
+        $this->assertSame('cloud:groq', CloudAiService::engineFor('vm_stt', 'tr'));
+        $this->assertSame('cloud:openai', CloudAiService::engineFor('cdr_stt', 'tr'), 'other features unchanged');
+
+        foreach ([['use_vm_stt' => 'cloud:polly'], ['use_qa_llm' => 'local:ema-lightning'], ['use_vm_llm' => 'cloud:../x']] as $bad) {
+            try {
+                CloudAiService::saveFeatureEngines($bad);
+                $this->fail('accepted: ' . json_encode($bad));
+            } catch (CloudAiException $e) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        CloudAiService::save('groq', ['clear' => '1']);
+        $this->assertSame('cloud:openai', CloudAiService::engineFor('vm_stt', 'tr'), 'a removed account falls back to the language engine');
     }
 
     public function testWavSeconds(): void
@@ -86,6 +149,66 @@ final class CloudAiServiceTest extends TestCase
     {
         $this->expectException(CloudAiException::class);
         CloudAiService::stt('openrouter', self::wav(1), 'tr');
+    }
+
+    public function testSeveralAccountsOfOneProvider(): void
+    {
+        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key = 'ai_cloud_accounts'");
+        $first = CloudAiService::addAccount('openai', 'Sales', ['api_key' => 'sk-first-1234567890']);
+        $second = CloudAiService::addAccount('openai', 'Support', ['api_key' => 'sk-second-1234567890']);
+        $this->assertSame(['openai', 'openai_b'], [$first, $second], 'the first keeps the id engine choices know');
+        $this->assertSame('openai', CloudAiService::typeOf($second));
+        $this->assertSame('Support', CloudAiService::provider($second)['title']);
+        $this->assertSame('OpenAI', CloudAiService::provider($second)['provider_title']);
+        $this->assertSame('sk-second-1234567890', CloudAiService::config($second)['api_key']);
+        $this->assertSame('sk-first-1234567890', CloudAiService::config($first)['api_key']);
+        $this->assertContains($second, CloudAiService::withCap('llm'));
+        // The AI service is told the provider, not the account.
+        $this->assertSame('openai', CloudAiService::llmSettings($second)['provider']);
+        $this->assertSame('OpenAiTts', (new ReflectionClass(AiTtsService::providerClass($second)))->getShortName());
+
+        // Unsaved form fields are not an account: a failed save leaves nothing behind.
+        try {
+            CloudAiService::addAccount('openai_compat', 'Bad', ['base_url' => 'ftp://x', 'model' => 'm']);
+            $this->fail('expected a refusal');
+        } catch (CloudAiException $e) {
+            $this->assertArrayNotHasKey('openai_compat', CloudAiService::accounts());
+        }
+
+        CloudAiService::setEnabled($second, false);
+        $this->assertFalse(CloudAiService::configured($second), 'switched off');
+        $this->assertNotContains($second, CloudAiService::withCap('llm'));
+        $this->assertArrayHasKey($second, CloudAiService::accounts(), 'still listed, its settings kept');
+        CloudAiService::setEnabled($second, true);
+        $this->assertTrue(CloudAiService::configured($second));
+
+        CloudAiService::deleteAccount($second);
+        $this->assertArrayNotHasKey($second, CloudAiService::accounts());
+        $this->assertSame('sk-first-1234567890', CloudAiService::config($first)['api_key'], 'the other account keeps its key');
+        CloudAiService::deleteAccount($first);
+        $this->assertArrayNotHasKey('openai', CloudAiService::accounts());
+        $this->assertFalse(CloudAiService::configured('openai'));
+        $this->assertSame('openai', CloudAiService::addAccount('openai', '', ['api_key' => 'sk-again-1234567890']), 'a deleted type id is free again');
+        $this->assertSame('OpenAI', CloudAiService::label('openai'));
+        $this->assertSame(['openai'], array_keys(array_filter(json_decode((string) getSystemSetting('ai_cloud_accounts', '{}'), true), fn($a) => $a['type'] === 'openai')), 'no mark left by a deletion');
+
+        // Local Ollama works on its defaults alone: deleted, it must not come back by itself.
+        $this->assertArrayHasKey('ollama', CloudAiService::accounts());
+        CloudAiService::deleteAccount('ollama');
+        $this->assertArrayNotHasKey('ollama', CloudAiService::accounts());
+        $this->assertFalse(CloudAiService::configured('ollama'));
+        $this->assertSame('ollama', CloudAiService::addAccount('ollama', '', []));
+        $this->assertTrue(CloudAiService::configured('ollama'));
+    }
+
+    public function testAnAccountStoredBeforeTheListIsTheProvidersOwn(): void
+    {
+        getDB()->exec("DELETE FROM sys_settings WHERE setting_key = 'ai_cloud_accounts'");
+        CloudAiService::save('deepgram', ['api_key' => 'dg-old-1234567890']);
+        $this->assertSame(['type' => 'deepgram', 'name' => '', 'enabled' => true], CloudAiService::accounts()['deepgram']);
+        $this->assertContains('deepgram', CloudAiService::withCap('stt'));
+        $this->expectException(CloudAiException::class);
+        CloudAiService::typeOf('deepgram_b');
     }
 
     public function testEnginesAreValidated(): void
@@ -164,33 +287,17 @@ final class CloudAiServiceTest extends TestCase
     public function testTypedValuesReachTheTestCallBeforeBeingSaved(): void
     {
         CloudAiService::save('openai_compat', ['base_url' => 'https://saved.example/v1', 'model' => 'saved-model']);
-        $this->fake(['choices' => [['message' => ['content' => 'OK']]]]);
-
-        // Everything typed but not yet saved is what the Test button exercises.
-        CloudAiService::test('openai_compat', [
-            'base_url' => 'https://typed.example/v1/',
-            'model'    => 'typed/model-1',
-            'api_key'  => 'typed-key-123',
+        $c = CloudAiService::gatewayConfig('openai_compat', [
+            'base_url' => 'https://typed.example/v1/', 'model' => 'typed/model-1', 'api_key' => 'typed-key-123',
         ]);
-        $c = end($this->calls);
         $this->assertSame('https://typed.example/v1/chat/completions', $c['url']);
-        $this->assertSame('Bearer typed-key-123', $c['headers']['Authorization']);
-        $this->assertSame('typed/model-1', json_decode($c['body'], true)['model']);
-
-        // Blank fields fall back to the stored account (a later Test without
-        // the key in the field must not pretend the account has no key).
-        CloudAiService::test('openai_compat', []);
-        $c = end($this->calls);
-        $this->assertSame('https://saved.example/v1/chat/completions', $c['url']);
-        $this->assertArrayNotHasKey('Authorization', $c['headers']);
-
-        // A typed bad address is refused exactly as Save refuses it.
-        try {
-            CloudAiService::test('openai_compat', ['base_url' => 'javascript:alert(1)']);
-            $this->fail('invalid typed base_url must be refused');
-        } catch (CloudAiException $e) {
-            $this->assertSame(t('ai_cloud.err_base_url'), $e->getMessage());
-        }
+        $this->assertSame('typed-key-123', $c['api_key']);
+        $this->assertSame('typed/model-1', $c['model']);
+        $saved = CloudAiService::gatewayConfig('openai_compat');
+        $this->assertSame('https://saved.example/v1/chat/completions', $saved['url']);
+        $this->assertSame('', $saved['api_key']);
+        $this->expectException(CloudAiException::class);
+        CloudAiService::gatewayConfig('openai_compat', ['base_url' => 'javascript:alert(1)']);
     }
 
     public function testMonthlyQuotaLimitsWarningExceededAndFallback(): void

@@ -1,0 +1,7 @@
+#!/bin/sh
+# The gateway always runs; optional local inference uses the installed ML venv.
+set -eu
+if [ -x /opt/aipbx-ai/venv/bin/python ] && [ -f /opt/aipbx-ai/venv/.aipbx-requirements ]; then
+    exec /opt/aipbx-ai/venv/bin/python -m aipbx_ai
+fi
+exec /usr/bin/python3 -m aipbx_ai

@@ -29,6 +29,8 @@ import os
 import shutil
 import unicodedata
 import urllib.request
+
+from . import hf
 from pathlib import Path
 
 REPO_URL = "https://huggingface.co/"
@@ -130,7 +132,7 @@ class EmbeddingBackend:
             url = f"{REPO_URL}{src['repo']}/resolve/{src['revision']}/{info['path']}"
             req = urllib.request.Request(url, headers={"User-Agent": "aipbx-ai"})
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
+                with hf.open_download(req.full_url, token=getattr(self, "download_token", None)) as resp, open(part, "wb") as out:
                     while block := resp.read(1 << 16):
                         out.write(block)
                         done += len(block)
@@ -167,6 +169,8 @@ class EmbeddingBackend:
         on every call of an application, so vectors are cached by text; the
         model manager runs one job at a time, so no lock is needed here."""
         np = self.np
+        if not texts:
+            return np.empty((0, 0), dtype=np.float32)
         missing = [t for t in dict.fromkeys(texts) if t not in self._cache]
         if missing:
             encs = [self.tokenizer.tokenize(PREFIX + t) for t in missing]

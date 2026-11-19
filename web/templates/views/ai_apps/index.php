@@ -5,23 +5,40 @@ use PBX\Destinations\DestinationRegistry;
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $labelCache = [];
 $voiceTitles = array_column($voices, 'title', 'id');
+$voiceTitles['local_default'] = t('ai_selector.local_default', 'Local Default');
+$voiceTitles['cloud_default'] = t('ai_selector.cloud_default', 'Cloud Default');
 foreach ($cloud_tts ?? [] as $ct) {
     $voiceTitles['cloud:' . $ct['id']] = $ct['title'];
 }
-$engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' . $l));
+$aiLangs = CloudAiService::languages();
+$engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), $aiLangs[$l]['name']);
 ?>
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-robot', t('ai_apps.title'), 'aiAppsHelpBox'); ?>
 <?php echo uiPageHeaderActions(); ?>
 
+            <button type="button" class="btn btn-secondary btn-sm" onclick='aiAppEdit(<?php echo $h(json_encode(AiAppService::defaultAgentPreset(), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP)); ?>)'><i class="fas fa-magic"></i> <?php echo t('ai_apps.btn_default_agent'); ?></button>
             <button type="button" class="btn btn-primary btn-sm" onclick="aiAppEdit(null)"><i class="fas fa-plus"></i> <?php echo t('ai_apps.btn_new'); ?></button>
 <?php echo uiPageHeaderClose(); ?>
     <?php echo uiHelpBoxOpen('aiAppsHelpBox', t('ai_apps.help_title')); ?>
         <?php echo t('ai_apps.help_body'); ?>
 <?php echo uiHelpBoxClose(); ?>
     <?php if (!$service_ok): ?>
-        <p class="u-warning u-p-0-20"><i class="fas fa-triangle-exclamation"></i> <?php echo t('ai_apps.service_down'); ?> <a href="/ai-models"><?php echo t('sidebar.item_ai_models'); ?></a></p>
+        <p class="u-warning u-p-0-20"><i class="fas fa-triangle-exclamation"></i> <?php echo t('ai_apps.service_down'); ?> <a href="/ai-local"><?php echo t('sidebar.item_ai_local', 'Local AI'); ?></a></p>
     <?php endif; ?>
+    <?php if (!empty($privacy_blocked)): ?>
+        <div class="alert alert-warning u-mt-12 u-mb-20 u-fs-12"><i class="fas fa-shield-alt"></i> <?php echo $h(t('ai_apps.privacy_cloud_blocked_notice', 'Cross-border cloud AI data transfer lock is active: cloud models are disabled and apps use local fallback or route to their destination.')); ?></div>
+    <?php endif; ?>
+</div>
+
+<div id="aiAppTabs">
+<?php echo uiTabs([
+    'definitions' => ['label' => t('ai_apps.tab_definitions'), 'icon' => 'fa-robot'],
+    'requests' => ['label' => t('ai_apps.requests_title'), 'icon' => 'fa-list-check'],
+], 'definitions'); ?>
+
+<div data-tab-pane="definitions" role="tabpanel">
+<div class="card">
     <?php echo uiTableOpen([
         t('ai_apps.col_title'),
         t('ai_apps.col_number'),
@@ -73,8 +90,10 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                 <small class="u-hint u-fs-11"><?php echo t('ai_apps.number_help'); ?></small></div>
             <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_voice'); ?></label>
                 <select name="model_id" id="ai_model" class="form-control">
+                    <?php if (!empty($local_enabled)): ?><option value="local_default"><?php echo $h(t('ai_selector.local_default', 'Local Default')); ?></option><?php endif; ?>
+                    <?php if (!empty($cloud_enabled)): ?><option value="cloud_default"><?php echo $h(t('ai_selector.cloud_default', 'Cloud Default')); ?></option><?php endif; ?>
                     <optgroup label="<?php echo $h(t('ai_apps.voice_engines')); ?>">
-                        <?php foreach (['tr', 'de', 'en'] as $l): ?><option value="engine:<?php echo $l; ?>"><?php echo $h($engineTitle($l)); ?></option><?php endforeach; ?>
+                        <?php foreach (array_keys($aiLangs) as $l): ?><option value="engine:<?php echo $h($l); ?>"><?php echo $h($engineTitle($l)); ?></option><?php endforeach; ?>
                     </optgroup>
                     <?php if ($voices): ?><optgroup label="<?php echo $h(t('ai_cloud.engine_local')); ?>">
                         <?php foreach ($voices as $v): ?><option value="<?php echo $h($v['id']); ?>"><?php echo $h($v['title'] . ' (' . implode(', ', (array) ($v['languages'] ?? [])) . ')'); ?></option><?php endforeach; ?>
@@ -99,7 +118,8 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
         </div>
         <div class="ai-only-voice_requests">
             <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_greeting'); ?></label>
-                <textarea name="greeting" id="ai_greeting" class="form-control" rows="2" maxlength="1000" placeholder="<?php echo $h(t('ai_apps.greeting_placeholder')); ?>"></textarea></div>
+                <textarea name="greeting" id="ai_greeting" class="form-control" rows="2" maxlength="1000" placeholder="<?php echo $h(t('ai_apps.greeting_placeholder')); ?>" aria-describedby="aiGreetingHelp"></textarea>
+                <small class="u-hint u-fs-11" id="aiGreetingHelp"><?php echo $h(t('ai_apps.greeting_variables')); ?></small></div>
             <div class="u-grid-2">
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_retry'); ?></label>
                     <input type="text" name="retry_text" id="ai_retry" class="form-control" maxlength="1000" placeholder="<?php echo $h(t('ai_apps.retry_placeholder')); ?>"></div>
@@ -107,8 +127,10 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                     <input type="text" name="not_understood_text" id="ai_nu" class="form-control" maxlength="1000" placeholder="<?php echo $h(t('ai_apps.not_understood_placeholder')); ?>"></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_stt'); ?></label>
                     <select name="stt_model" id="ai_stt" class="form-control">
+                        <?php if (!empty($local_enabled)): ?><option value="local_default"><?php echo $h(t('ai_selector.local_default', 'Local Default')); ?></option><?php endif; ?>
+                        <?php if (!empty($cloud_enabled)): ?><option value="cloud_default"><?php echo $h(t('ai_selector.cloud_default', 'Cloud Default')); ?></option><?php endif; ?>
                         <optgroup label="<?php echo $h(t('ai_apps.voice_engines')); ?>">
-                            <?php foreach (['tr', 'de', 'en'] as $l): ?><option value="engine:<?php echo $l; ?>"><?php echo $h(sprintf(t('ai_apps.stt_engine'), t('ai_cloud.lang_' . $l))); ?></option><?php endforeach; ?>
+                            <?php foreach ($aiLangs as $l => $lang): ?><option value="engine:<?php echo $h($l); ?>"><?php echo $h(sprintf(t('ai_apps.stt_engine'), $lang['name'])); ?></option><?php endforeach; ?>
                         </optgroup>
                         <?php if ($stt_models): ?><optgroup label="<?php echo $h(t('ai_cloud.engine_local')); ?>">
                             <?php foreach ($stt_models as $m): ?><option value="<?php echo $h($m['id']); ?>"><?php echo $h($m['title']); ?></option><?php endforeach; ?>
@@ -118,7 +140,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                         </optgroup><?php endif; ?>
                     </select>
                     <select name="stt_lang" id="ai_stt_lang" class="form-control u-mt-4" title="<?php echo $h(t('ai_models.stt_lang')); ?>">
-                        <option value="tr">Türkçe</option><option value="de">Deutsch</option><option value="en">English</option>
+                        <?php foreach ($aiLangs as $l => $lang): ?><option value="<?php echo $h($l); ?>"><?php echo $h($lang['name']); ?></option><?php endforeach; ?>
                     </select>
                     <small class="u-hint u-fs-11"><?php echo t('ai_apps.stt_cloud_help'); ?></small></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_listen'); ?></label>
@@ -138,10 +160,33 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_tools'); ?></label>
                     <textarea name="tools" id="ai_tools" class="form-control u-mono" rows="3" placeholder="order | <?php echo $h(t('ai_apps.tools_example')); ?> | https://crm.example.com/aipbx/order"></textarea>
                     <small class="u-hint u-fs-11"><?php echo t('ai_apps.tools_help'); ?></small></div>
+                <div class="form-group">
+                    <label class="form-label" for="ai_db_lookups"><?php echo t('ai_apps.field_db_lookups'); ?></label>
+                    <textarea name="db_lookups" id="ai_db_lookups" class="form-control u-mono" rows="4" aria-describedby="aiDbLookupHelp"></textarea>
+                    <small class="u-hint u-fs-11" id="aiDbLookupHelp"><?php echo $h(t('ai_apps.db_lookup_help')); ?>
+                        <a href="/external-dbs"><?php echo $h(t('sidebar.item_external_dbs')); ?></a>
+                    </small>
+                    <?php if (!empty($lookup_databases)): ?>
+                        <ul class="u-fs-11">
+                            <?php foreach ($lookup_databases as $db): ?>
+                                <li><?php echo (int) $db['id']; ?> — <?php echo $h($db['name']); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    <?php endif; ?>
+                </div>
+                <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_knowledge'); ?></label>
+                    <select name="knowledge_collection" id="ai_knowledge" class="form-control">
+                        <option value="0"><?php echo t('ai_apps.knowledge_none'); ?></option>
+                        <?php foreach ($knowledge_collections ?? [] as $kc): ?>
+                        <option value="<?php echo (int) $kc['id']; ?>"><?php echo $h($kc['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="u-hint u-fs-11"><?php echo t('ai_apps.knowledge_help'); ?></small></div>
                 <div class="form-group"><label class="form-label"><?php echo t('ai_apps.field_understand'); ?></label>
                     <select name="understand" id="ai_understand" class="form-control">
                         <option value="auto"><?php echo t('ai_apps.understand_auto'); ?></option>
                         <option value="keywords"><?php echo t('ai_apps.understand_keywords'); ?></option>
+                        <?php if (!empty($cloud_enabled)): ?><option value="cloud_default"><?php echo $h(t('ai_selector.cloud_default', 'Cloud Default')); ?></option><?php endif; ?>
                         <?php foreach ($cloud_llm as $p): ?><option value="cloud:<?php echo $h($p['id']); ?>"><?php echo $h(sprintf(t('ai_apps.understand_cloud'), $p['title'])); ?></option><?php endforeach; ?>
                     </select>
                     <small class="u-hint u-fs-11"><?php echo t('ai_apps.understand_help'); ?></small></div>
@@ -151,7 +196,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
             </div>
             <label class="form-label"><span class="ai-only-requests"><?php echo t('ai_apps.field_intents'); ?></span><span class="ai-only-routing"><?php echo t('ai_apps.field_routes'); ?></span></label>
             <p class="u-muted u-fs-11 u-mt-0"><span class="ai-only-requests"><?php echo t('ai_apps.intents_help'); ?></span><span class="ai-only-routing"><?php echo t('ai_apps.routes_help'); ?></span></p>
-            <p class="u-fs-11 u-mt-0 <?php echo $meaning_ready ? 'u-success' : 'u-muted'; ?>"><i class="fas fa-brain"></i> <?php echo t($meaning_ready ? 'ai_apps.meaning_on' : 'ai_apps.meaning_off'); ?> <?php if (!$meaning_ready): ?><a href="/ai-models"><?php echo t('sidebar.item_ai_models'); ?></a><?php endif; ?></p>
+            <p class="u-fs-11 u-mt-0 <?php echo $meaning_ready ? 'u-success' : 'u-muted'; ?>"><i class="fas fa-brain"></i> <?php echo t($meaning_ready ? 'ai_apps.meaning_on' : 'ai_apps.meaning_off'); ?> <?php if (!$meaning_ready): ?><a href="/ai-local"><?php echo t('sidebar.item_ai_local', 'Local AI'); ?></a><?php endif; ?></p>
             <div id="ai_intents"></div>
             <button type="button" class="btn btn-secondary btn-sm u-mb-10" onclick="aiIntentAdd()"><i class="fas fa-plus"></i> <?php echo t('ai_apps.btn_add_intent'); ?></button>
         </div>
@@ -174,10 +219,9 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
         </div>
     </form>
 </div>
+</div>
 
-<?php if ($requests): ?>
-<div class="card">
-    <div class="card-header"><div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('ai_apps.requests_title'); ?></div></div>
+<div class="card" data-tab-pane="requests" role="tabpanel" hidden>
     <?php echo uiTableOpen([
         t('ai_apps.col_time'),
         t('ai_apps.col_caller'),
@@ -186,6 +230,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
         '',
         t('ai_apps.col_handled'),
     ], ['frame' => 'u-card-pad']); ?>
+            <?php if (!$requests): ?><tr><td colspan="6" class="u-muted"><?php echo $h(t('common.no_records')); ?></td></tr><?php endif; ?>
             <?php foreach ($requests as $r): ?>
                 <tr>
                     <td class="u-fs-12 u-nowrap"><?php echo $h(date('d.m H:i', strtotime($r['created_at']))); ?></td>
@@ -199,7 +244,7 @@ $engineTitle = fn($l) => sprintf(t('ai_apps.voice_engine'), t('ai_cloud.lang_' .
             <?php endforeach; ?>
             <?php echo uiTableClose(); ?>
 </div>
-<?php endif; ?>
+</div>
 
 <script src="<?php echo asset('/assets/js/destinations_helper.js'); ?>"></script>
 <script>
@@ -211,6 +256,8 @@ var AI_T = <?php echo json_encode(['name' => t('ai_apps.intent_name'), 'keywords
     'requests_greeting' => t('ai_apps.greeting_placeholder')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG); ?>;
 var aiIntentSeq = 0;
 function aiAppEdit(a) {
+    const definitions = document.querySelector('#aiAppTabs [data-tab="definitions"]');
+    if (definitions && definitions.getAttribute('aria-selected') !== 'true') UIHelper.selectTab(definitions);
     const f = (id, v) => { const el = document.getElementById(id); if (el.type === 'checkbox') el.checked = !!Number(v); else el.value = v; };
     a = a || { id: 0, title: '', internal_number: '', model_id: 'engine:tr', speed: '1', text_template: '', lookup_url: '', fallback_text: '', dest_type: 'hangup', dest_id: '', max_concurrent: 4, is_active: 1 };
     f('ai_id', a.id); f('ai_title', a.title); f('ai_number', a.internal_number || ''); f('ai_speed', a.speed);
@@ -227,7 +274,9 @@ function aiAppEdit(a) {
     document.getElementById('ai_barge').checked = !!c.barge_in;
     document.getElementById('ai_conv').checked = !!c.conversation;
     f('ai_turns', c.max_turns || 6); f('ai_instructions', c.instructions || '');
+    f('ai_knowledge', c.knowledge_collection || 0);
     f('ai_tools', (c.tools || []).map(t => t.name + ' | ' + t.description + ' | ' + t.url).join('\n'));
+    f('ai_db_lookups', (c.db_lookups || []).map(q => q.saved ? q.id : [q.id, q.description, q.db_id, q.access, q.sql].join(' | ')).join('\n'));
     const st = document.getElementById('ai_stt');
     if (c.stt_model && ![...st.options].some(o => o.value === c.stt_model)) st.add(new Option(c.stt_model, c.stt_model));
     st.value = c.stt_model || 'engine:tr';

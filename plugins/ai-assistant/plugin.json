@@ -1,0 +1,27 @@
+{
+    "slug": "ai-assistant",
+    "name": "PBX Assistant",
+    "name_i18n": {
+        "tr": "PBX Asistan",
+        "en": "PBX Assistant"
+    },
+    "version": "2.0.0",
+    "author": "AiPBX Official Team",
+    "category": "ai",
+    "icon": "fas fa-wand-magic-sparkles",
+    "icon_style": "color: var(--primary);",
+    "description": "Experimental. Chat with the PBX: plain-language changes with a preview and undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base.",
+    "description_i18n": {
+        "tr": "Deneysel. Santralle sohbet: önizleme ve geri alma ile doğal dilde değişiklik, salt okunur raporlar, sayfa ve ayar kısa yolları, Bilgi Tabanı'ndan cevaplar.",
+        "en": "Experimental. Chat with the PBX: plain-language changes with a preview and undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base."
+    },
+    "experimental": true,
+    "hooks": {
+        "admin_page": {
+            "route": "/ai-assistant",
+            "group": "ai"
+        }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
+}

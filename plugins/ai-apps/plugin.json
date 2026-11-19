@@ -1,9 +1,9 @@
 {
     "slug": "ai-apps",
-    "name": "AI Voice Applications (Conversational IVR Bots)",
+    "name": "AI Voice Apps",
     "name_i18n": {
-        "tr": "AI Sesli Uygulamalar (Akıllı Karşılama Botları)",
-        "en": "AI Voice Applications (Conversational IVR Bots)"
+        "tr": "AI Sesli Uygulamalar",
+        "en": "AI Voice Apps"
     },
     "version": "1.2.0",
     "author": "AiPBX Official Team",

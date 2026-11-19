@@ -16,6 +16,7 @@ require_once dirname(__DIR__) . '/helpers.php';
 require_once dirname(__DIR__) . '/priv_helper.php';
 require_once dirname(__DIR__) . '/audit_log.php';
 require_once __DIR__ . '/tts/TtsProviders.php';
+require_once __DIR__ . '/ai/OllamaService.php';
 
 final class LocalAiException extends RuntimeException
 {
@@ -127,6 +128,37 @@ class LocalAiService
         writeAuditLog('ai_models', 'runtime', 0, 'Local AI runtime and models', 'delete', $_SESSION['user_id'] ?? null);
     }
 
+    /** Ollama is a separate runtime; installing it never downloads a model. */
+    public static function ollamaRuntime(): array
+    {
+        $res = PrivHelper::run(['ai', 'ollama-status']);
+        return self::parseRuntime($res['success'] ? $res['output'] : '');
+    }
+
+    public static function installOllama(): void
+    {
+        $res = PrivHelper::run(['ai', 'ollama-install']);
+        if (!$res['success']) {
+            throw new LocalAiException(sprintf(t('ai_models.err_runtime'), $res['output']));
+        }
+        writeAuditLog('ai_settings', 'runtime', 0, 'Ollama runtime', 'install', $_SESSION['user_id'] ?? null);
+    }
+
+    /** A running local LLM; errors remain local and never trigger a cloud fallback. */
+    public static function chat(string $id, string $prompt, int $maxTokens = 300): string
+    {
+        self::requireId($id);
+        if (str_starts_with($id, 'ollama-')) {
+            try {
+                return OllamaService::chat($id, $prompt, $maxTokens);
+            } catch (TtsException $e) {
+                throw new LocalAiException($e->getMessage());
+            }
+        }
+        $d = self::callJson('POST', '/v1/chat', ['model' => $id, 'prompt' => $prompt, 'max_tokens' => $maxTokens], 180);
+        return (string) ($d['text'] ?? '');
+    }
+
     // ------------------------------------------------------------ service
 
     /** @return array<string, mixed>|null null when the service does not answer */
@@ -211,7 +243,7 @@ class LocalAiService
 
     public static function validId(string $id): bool
     {
-        return (bool) preg_match('/^[a-z0-9][a-z0-9-]{1,40}$/', $id);
+        return !str_contains($id, '..') && (bool) preg_match('/^[a-z0-9][a-z0-9._-]{1,63}$/', $id);
     }
 
     private static function requireId(string $id): void
@@ -257,10 +289,136 @@ class LocalAiService
         return (string) ($d['id'] ?? '');
     }
 
+    /** Normalizes and validates a Hugging Face repo slug or https://huggingface.co URL. */
+    public static function normalizeHfRepo(string $repoOrUrl): string
+    {
+        $s = trim($repoOrUrl);
+        if ($s === '') {
+            throw new LocalAiException(t('ai_models.err_hf_repo'));
+        }
+        if (str_contains($s, '://')) {
+            $p = parse_url($s);
+            if (!is_array($p) || ($p['scheme'] ?? '') !== 'https' || strtolower((string) ($p['host'] ?? '')) !== 'huggingface.co') {
+                throw new LocalAiException(t('ai_models.err_hf_url'));
+            }
+            $parts = array_values(array_filter(explode('/', (string) ($p['path'] ?? '')), fn($x) => $x !== ''));
+            if (count($parts) < 2) {
+                throw new LocalAiException(t('ai_models.err_hf_repo'));
+            }
+            $s = $parts[0] . '/' . $parts[1];
+        }
+        $s = trim($s, '/');
+        if (str_contains($s, '..') || !preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]*\/[A-Za-z0-9][A-Za-z0-9._-]*$/', $s)) {
+            throw new LocalAiException(t('ai_models.err_hf_repo'));
+        }
+        return $s;
+    }
+
+    /**
+     * Searches Hugging Face Hub models via the local AI service.
+     * @return list<array<string, mixed>>
+     */
+    private const HF_TOKEN_SETTING = 'ai_hf_token';
+
+    /** The Hugging Face access token saved on the Local AI page (encrypted), '' when none. */
+    public static function hfToken(): string
+    {
+        require_once dirname(__DIR__) . '/secret_box.php';
+        $raw = function_exists('getSystemSetting') ? (string) getSystemSetting(self::HF_TOKEN_SETTING, '') : '';
+        return $raw === '' ? '' : (string) SecretBox::decrypt($raw);
+    }
+
+    /** Saves (or with '' removes) the token used for gated and private Hugging Face models. */
+    public static function saveHfToken(string $token): void
+    {
+        require_once dirname(__DIR__) . '/secret_box.php';
+        $token = trim($token);
+        if ($token !== '' && !preg_match('/^hf_[A-Za-z0-9]{20,100}$/', $token)) {
+            throw new LocalAiException(t('ai_local.hf_token_invalid'));
+        }
+        setSystemSetting(self::HF_TOKEN_SETTING, $token === '' ? '' : SecretBox::encrypt($token));
+        writeAuditLog('ai_models', 'settings', 'hf_token', $token === '' ? 'Hugging Face token removed' : 'Hugging Face token saved', 'update', $_SESSION['user_id'] ?? null);
+    }
+
+    public static function hfSearch(string $query, string $kind = '', string $token = ''): array
+    {
+        $token = trim($token) !== '' ? $token : self::hfToken();
+        $payload = ['query' => mb_substr(trim($query), 0, 120)];
+        if (in_array($kind, ['tts', 'stt', 'embedding', 'llm'], true)) {
+            $payload['kind'] = $kind;
+        }
+        if (trim($token) !== '') {
+            $payload['token'] = trim($token);
+        }
+        $d = self::callJson('POST', '/v1/hf/search', $payload, 30);
+        return array_values(array_filter((array) ($d['models'] ?? []), 'is_array'));
+    }
+
+    /**
+     * Inspects a Hugging Face repository (pinned revision, format, SHA-256, license).
+     * @return array<string, mixed>
+     */
+    public static function hfInspect(string $repoOrUrl, string $revision = '', string $token = ''): array
+    {
+        $token = trim($token) !== '' ? $token : self::hfToken();
+        $repo = self::normalizeHfRepo($repoOrUrl);
+        $payload = ['repo' => $repo];
+        $rev = trim($revision);
+        if ($rev !== '') {
+            if (str_contains($rev, '..') || !preg_match('/^[A-Za-z0-9._-]{1,64}$/', $rev)) {
+                throw new LocalAiException(t('ai_models.err_hf_repo'));
+            }
+            $payload['revision'] = $rev;
+        }
+        if (trim($token) !== '') {
+            $payload['token'] = trim($token);
+        }
+        $d = self::callJson('POST', '/v1/hf/inspect', $payload, 30);
+        return is_array($d['info'] ?? null) ? $d['info'] : [];
+    }
+
+    /** Adds a validated Hugging Face model (license accepted) and starts its download. */
+    public static function addHuggingFaceModel(string $repoOrUrl, string $revision, bool $acceptLicense, string $language = '', string $token = ''): string
+    {
+        $token = trim($token) !== '' ? $token : self::hfToken();
+        $repo = self::normalizeHfRepo($repoOrUrl);
+        if (!$acceptLicense) {
+            throw new LocalAiException(t('ai_models.err_license'));
+        }
+        $payload = ['engine' => 'huggingface', 'repo' => $repo, 'accept_license' => true];
+        $rev = trim($revision);
+        if ($rev !== '') {
+            if (str_contains($rev, '..') || !preg_match('/^[A-Za-z0-9._-]{1,64}$/', $rev)) {
+                throw new LocalAiException(t('ai_models.err_hf_repo'));
+            }
+            $payload['revision'] = $rev;
+        }
+        $lang = trim($language);
+        if ($lang !== '' && preg_match('/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})?$/', $lang)) {
+            $payload['language'] = $lang;
+        }
+        if (trim($token) !== '') {
+            $payload['token'] = trim($token);
+        }
+        $d = self::callJson('POST', '/v1/models/add', $payload, 60);
+        self::$modelsCache = null;
+        writeAuditLog('ai_models', 'model', $repo, 'Hugging Face model ' . $repo . ' added (licence accepted)', 'install', $_SESSION['user_id'] ?? null);
+        return (string) ($d['id'] ?? '');
+    }
+
     /** Loads a downloaded model into memory (it stays running after restarts). */
     public static function runModel(string $id): void
     {
         self::requireId($id);
+        if (str_starts_with($id, 'ollama-')) {
+            try {
+                OllamaService::run($id, true);
+                writeAuditLog('ai_settings', 'model', $id, 'Local Ollama model', 'update', $_SESSION['user_id'] ?? null);
+                return;
+            } catch (TtsException $e) {
+                throw new LocalAiException($e->getMessage());
+            }
+        }
         self::callJson('POST', '/v1/models/' . $id . '/run', [], 10);
         self::$modelsCache = null;
         writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' started', 'update', $_SESSION['user_id'] ?? null);
@@ -270,14 +428,41 @@ class LocalAiService
     public static function stopModel(string $id): void
     {
         self::requireId($id);
+        if (str_starts_with($id, 'ollama-')) {
+            try {
+                OllamaService::run($id, false);
+                writeAuditLog('ai_settings', 'model', $id, 'Local Ollama model', 'update', $_SESSION['user_id'] ?? null);
+                return;
+            } catch (TtsException $e) {
+                throw new LocalAiException($e->getMessage());
+            }
+        }
         self::callJson('POST', '/v1/models/' . $id . '/stop', [], 60);
         self::$modelsCache = null;
         writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' stopped', 'update', $_SESSION['user_id'] ?? null);
     }
 
+    /** Stops a running download; the service deletes the partial files. */
+    public static function cancelDownload(string $id): void
+    {
+        self::requireId($id);
+        self::callJson('POST', '/v1/models/' . $id . '/cancel', [], 10);
+        self::$modelsCache = null;
+        writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id . ' download cancelled', 'update', $_SESSION['user_id'] ?? null);
+    }
+
     public static function removeModel(string $id): void
     {
         self::requireId($id);
+        if (str_starts_with($id, 'ollama-')) {
+            try {
+                OllamaService::remove($id);
+                writeAuditLog('ai_settings', 'model', $id, 'Local Ollama model', 'update', $_SESSION['user_id'] ?? null);
+                return;
+            } catch (TtsException $e) {
+                throw new LocalAiException($e->getMessage());
+            }
+        }
         self::callJson('POST', '/v1/models/' . $id . '/remove', [], 30);
         self::$modelsCache = null;
         writeAuditLog('ai_models', 'model', $id, 'Local model ' . $id, 'delete', $_SESSION['user_id'] ?? null);
@@ -356,6 +541,17 @@ class LocalAiService
         }
     }
 
+    /**
+     * Enables or disables draining on the local AI live-call service:
+     * when draining, new calls are refused while active calls finish naturally.
+     *
+     * @return array<string, mixed>
+     */
+    public static function drainCalls(bool $drain = true): array
+    {
+        return self::callJson('POST', '/v1/calls/drain', ['drain' => $drain], 3);
+    }
+
     /** The caller's recording of a voice-requests call ('' when the service no longer has it). */
     public static function callAudio(string $uuid): string
     {
@@ -392,8 +588,9 @@ class LocalAiService
         $health = $runtime['state'] === 'installed' ? self::health() : null;
         return [
             'runtime' => $runtime,
+            'ollama' => self::ollamaRuntime(),
             'service' => $health,
-            'models' => $health !== null ? self::models() : [],
+            'models' => array_merge($health !== null ? self::models() : [], OllamaService::models()),
             'disk' => $health !== null ? self::disk() : null,
         ];
     }

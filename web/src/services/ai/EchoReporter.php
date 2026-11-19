@@ -77,13 +77,27 @@ class EchoReporter
                               GROUP BY status_code ORDER BY seen DESC LIMIT 6",
             'labels'      => ['echo.lbl_code', 'echo.lbl_seen'],
         ],
+        'extension.forwarding' => [
+            'title_key'   => 'echo.q_extension_forwarding',
+            'sql'         => '',
+            'labels'      => [
+                'echo.lbl_extension',
+                'echo.lbl_name',
+                'echo.lbl_forward_always',
+                'echo.lbl_forward_busy',
+                'echo.lbl_forward_noanswer',
+                'echo.lbl_dnd',
+            ],
+        ],
     ];
 
     /**
-     * Ask. @return array{query:string, title:string, rows:array, askable:string,
-     *                   narration:?string}
+     * Ask. @return array{query:string, title:string, rows:array, labels:array,
+     *                   askable:string, narration:?string}
+     *
+     * @param array{is_admin?:bool, extension?:?string}|null $scope
      */
-    public static function ask(string $question): array
+    public static function ask(string $question, ?array $scope = null): array
     {
         $query = self::match($question);
         if ($query === null) {
@@ -96,7 +110,7 @@ class EchoReporter
                 'narration' => null,
             ];
         }
-        $rows = self::run($query);
+        $rows = self::run($query, $question, $scope);
         return [
             'query'     => $query,
             'title'     => t(self::QUERIES[$query]['title_key']),
@@ -117,47 +131,133 @@ class EchoReporter
     }
 
     /** Question → one of the fixed queries, EN/TR keyword match, or null. */
-    private static function match(string $question): ?string
+    public static function match(string $question): ?string
     {
         $q = mb_strtolower(trim($question));
         $has = static fn(string $haystack, array $words): bool =>
             (bool) preg_match('/\b(?:' . implode('|', $words) . ')\b/u', $haystack);
 
-        if ($has($q, ['signaling|siphon|capture|yakalama'])) {
-            return $has($q, ['error|fail|problem|problem|hata|red|deny']) ? 'signaling.errors' : 'signaling.count';
+        if ($has($q, ['signaling', 'siphon', 'capture', 'yakalama'])) {
+            return $has($q, ['error', 'fail', 'problem', 'hata', 'red', 'deny']) ? 'signaling.errors' : 'signaling.count';
         }
-        if ($has($q, ['hour|last hour|saat'])) {
+        if ($has($q, ['forward', 'forwarding', 'forwarded', 'yonlendir', 'yönlendir', 'yonlendirilmis', 'yönlendirilmiş', 'nereye', 'dnd', 'rahatsiz', 'rahatsız'])) {
+            return 'extension.forwarding';
+        }
+        if ($has($q, ['hour', 'last hour', 'saat'])) {
             return 'calls.hour';
         }
-        if ($has($q, ['top|busiest|busiest caller|most'])) {
+        if ($has($q, ['top', 'busiest', 'busiest caller', 'most'])) {
             return 'calls.top';
         }
-        if ($has($q, ['no answer|failed|not connected|cevapsiz|cevapsız|arayan|yeni arayan'])) {
+        if ($has($q, ['no answer', 'failed', 'not connected', 'cevapsiz', 'cevapsız', 'arayan', 'yeni arayan'])) {
             return 'noanswer.hour';
         }
-        if ($has($q, ['answer|answered|cevap|cevaplanan'])) {
+        if ($has($q, ['answer', 'answered', 'cevap', 'cevaplanan'])) {
             return 'answered.rate';
         }
-        if ($has($q, ['today|calls today|bugun|bugün|arama|calls'])) {
+        if ($has($q, ['today', 'calls today', 'bugun', 'bugün', 'arama', 'calls'])) {
             return 'calls.today';
         }
         return null;
     }
 
-    /** Run one fixed query with the test/prod guard the portal uses. */
-    private static function run(string $query): array
+    /** Run one fixed query with optional non-admin user-scoping. */
+    private static function run(string $query, string $question = '', ?array $scope = null): array
     {
+        $isAdmin = $scope === null || !empty($scope['is_admin']);
+        $ownExt = trim((string) ($scope['extension'] ?? ''));
+
+        if ($query === 'extension.forwarding') {
+            return self::runExtensionForwarding($question, $isAdmin, $ownExt);
+        }
+
         $sql = self::QUERIES[$query]['sql'] ?? null;
-        if ($sql === null) {
+        if ($sql === null || $sql === '') {
             return [];
         }
+
+        if (!$isAdmin) {
+            if (str_starts_with($query, 'signaling.')) {
+                return [];
+            }
+            if ($ownExt === '') {
+                return [];
+            }
+            $params = [$ownExt, $ownExt];
+            if (str_contains($sql, 'GROUP BY')) {
+                $sql = str_replace('GROUP BY', 'AND (caller_num = ? OR did = ?) GROUP BY', $sql);
+            } elseif (str_contains($sql, 'ORDER BY')) {
+                $sql = str_replace('ORDER BY', 'AND (caller_num = ? OR did = ?) ORDER BY', $sql);
+            } else {
+                $sql .= ' AND (caller_num = ? OR did = ?)';
+            }
+        } else {
+            $params = [];
+        }
+
         try {
             $st = getDB()->prepare($sql);
-            $st->execute();
+            $st->execute($params);
             return $st->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable $e) {
             // An empty answer is the honest failure of a report page that
             // cannot read its table — not an exception across the API.
+            return [];
+        }
+    }
+
+    /** Read-only extension forwarding & DND status (scoped to own extension for non-admins). */
+    private static function runExtensionForwarding(string $question, bool $isAdmin, string $ownExt): array
+    {
+        $requestedExt = '';
+        if (preg_match('/\b(\d{2,6})\b/', $question, $m)) {
+            $requestedExt = $m[1];
+        }
+
+        if (!$isAdmin) {
+            if ($ownExt === '') {
+                return [];
+            }
+            if ($requestedExt !== '' && $requestedExt !== $ownExt) {
+                return [];
+            }
+            $requestedExt = $ownExt;
+        }
+
+        try {
+            if ($requestedExt !== '') {
+                $st = getDB()->prepare(
+                    "SELECT extension, full_name,
+                            COALESCE(call_forward_number, '') AS call_forward_number,
+                            COALESCE(cf_busy_number, '') AS cf_busy_number,
+                            COALESCE(cf_noanswer_number, '') AS cf_noanswer_number,
+                            COALESCE(dnd_enabled, 0) AS dnd_enabled
+                     FROM sys_users
+                     WHERE extension = ? AND is_active = 1
+                     LIMIT 1"
+                );
+                $st->execute([$requestedExt]);
+                return $st->fetchAll(PDO::FETCH_ASSOC);
+            }
+
+            $st = getDB()->prepare(
+                "SELECT extension, full_name,
+                        COALESCE(call_forward_number, '') AS call_forward_number,
+                        COALESCE(cf_busy_number, '') AS cf_busy_number,
+                        COALESCE(cf_noanswer_number, '') AS cf_noanswer_number,
+                        COALESCE(dnd_enabled, 0) AS dnd_enabled
+                 FROM sys_users
+                 WHERE is_active = 1
+                   AND (COALESCE(call_forward_number, '') <> ''
+                     OR COALESCE(cf_busy_number, '') <> ''
+                     OR COALESCE(cf_noanswer_number, '') <> ''
+                     OR COALESCE(dnd_enabled, 0) = 1)
+                 ORDER BY extension ASC
+                 LIMIT 20"
+            );
+            $st->execute();
+            return $st->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
             return [];
         }
     }

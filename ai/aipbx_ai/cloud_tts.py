@@ -16,7 +16,8 @@ import wave
 import xml.sax.saxutils
 from array import array
 
-from .cloud_llm import assert_public_url
+from . import langs
+from .cloud_llm import _NoRedirect, assert_public_url
 from .cloud_stt import _is_local_http
 
 PROVIDERS = ("openai", "azure", "elevenlabs", "google", "openai_compat")
@@ -29,7 +30,6 @@ _MODEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$")
 _VOICE = re.compile(r"^[^\s\r\n]{1,120}$")
 _BASE_URL = re.compile(r"^https?://[^\s/?#@]+(/[^\s?#]*)?$")
 
-_LANG_CODES = {"tr": "tr-TR", "de": "de-DE", "en": "en-US"}
 _AZURE_VOICES = {
     "tr": "tr-TR-EmelNeural",
     "de": "de-DE-KatjaNeural",
@@ -46,6 +46,9 @@ def validate(cfg):
     """Normalised tts_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
         raise ValueError("tts_cloud must be an object")
+    if 'secret_ref' in cfg:
+        from .secret_refs import validate_reference
+        return validate_reference(cfg, "tts")
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("tts_cloud.provider is not supported")
@@ -62,9 +65,8 @@ def validate(cfg):
 
     lang = cfg.get("lang")
     if lang is not None and lang != "":
-        if not isinstance(lang, str) or lang.strip().lower()[:2] not in _LANG_CODES:
-            raise ValueError("tts_cloud.lang must be tr, de or en")
-        out["lang"] = lang.strip().lower()[:2]
+        out["lang"] = langs.code(lang, "tts_cloud.lang")
+        out["locale"] = langs.locale(out["lang"], cfg.get("locale"))
 
     region = cfg.get("region")
     if provider == "azure":
@@ -115,11 +117,14 @@ def validate(cfg):
     return out
 
 
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}), _NoRedirect)
+
+
 def _http_post(url, headers, body, allow_private=ALLOW_PRIVATE_URLS):
     assert_public_url(url, resolve=True, allow_private=allow_private, allow_loopback=allow_private)
     req = urllib.request.Request(url, data=body, headers=dict(headers), method="POST")
     try:
-        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        with _OPENER.open(req, timeout=TIMEOUT) as resp:
             return resp.read(MAX_RESPONSE_BYTES)
     except urllib.error.HTTPError as e:
         e.close()
@@ -199,11 +204,15 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
     """Synthesises `text` using a cloud TTS provider; returns 8 kHz 16-bit LE mono PCM."""
     if not text or not str(text).strip():
         return b""
+    from .secret_refs import resolve
+    cfg = resolve(cfg)
     provider = cfg["provider"]
     key = (cfg.get("api_key") or cfg.get("key") or "").strip()
-    lang_code = (lang or cfg.get("lang") or "tr").strip().lower()[:2]
-    if lang_code not in _LANG_CODES:
+    try:
+        lang_code = langs.code(lang or cfg.get("lang") or "tr")
+    except ValueError:
         lang_code = "tr"
+    loc = cfg.get("locale") if cfg.get("lang") == lang_code and cfg.get("locale") else langs.locale(lang_code)
     speed_val = float(speed)
     post = request or _http_post
 
@@ -249,8 +258,10 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
 
     if provider == "azure":
         region = cfg["region"]
-        xml_lang = _LANG_CODES[lang_code]
-        voice = cfg.get("voice") or _AZURE_VOICES[lang_code]
+        xml_lang = loc
+        voice = cfg.get("voice") or _AZURE_VOICES.get(lang_code)
+        if not voice:
+            raise CloudTtsError(f"Azure: choose a voice for {loc} in the account settings")
         escaped_text = xml.sax.saxutils.escape(text)
         escaped_voice = xml.sax.saxutils.escape(voice, {"'": "&apos;", '"': "&quot;"})
         inner = escaped_text
@@ -286,7 +297,7 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
     if provider == "google":
         voice = cfg.get("voice") or ""
         parts = voice.split("-") if voice else []
-        g_lang = "-".join(parts[:2]) if len(parts) >= 2 else _LANG_CODES[lang_code]
+        g_lang = "-".join(parts[:2]) if len(parts) >= 2 else loc
         voice_obj = {"languageCode": g_lang}
         if voice:
             voice_obj["name"] = voice

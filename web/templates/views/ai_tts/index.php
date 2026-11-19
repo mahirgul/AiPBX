@@ -1,6 +1,8 @@
 <?php
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
-$configured = array_values(array_filter($providers, fn($p) => $p['configured']));
+$localEnabled = class_exists('PluginManager') ? PluginManager::isEnabled('ailocal') : true;
+$cloudEnabled = class_exists('PluginManager') ? PluginManager::isEnabled('aicloud') : true;
+$configured = array_values(array_filter($providers, fn($p) => $p['configured'] && ((!empty($p['local']) && $localEnabled) || (empty($p['local']) && $cloudEnabled))));
 $titles = array_column($providers, 'title', 'id');
 $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms / 1000), 60), (int) round($ms / 1000) % 60);
 ?>
@@ -13,50 +15,12 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
         <?php echo t('ai_tts.help_body'); ?>
 <?php echo uiHelpBoxClose(); ?>
 
-    <div class="u-d-flex u-gap-4 u-border-bottom-1-solid-border-color u-mb-16">
-        <?php foreach (['speak' => ['fa-microphone-lines', t('ai_tts.tab_speak')], 'providers' => ['fa-key', t('ai_tts.tab_providers')]] as $tk => [$ic, $label]): ?>
-            <a href="/ai-tts<?php echo $tk === 'providers' ? '?tab=providers' : ''; ?>" style="padding: 10px 14px; font-size: 13px; font-weight: 600; text-decoration: none; border-bottom: 2px solid <?php echo $tab === $tk ? 'var(--primary)' : 'transparent'; ?>; color: <?php echo $tab === $tk ? 'var(--primary)' : 'var(--text-muted)'; ?>;">
-                <i class="fas <?php echo $ic; ?>"></i> <?php echo $label; ?>
-            </a>
-        <?php endforeach; ?>
-    </div>
-
-<?php if ($tab === 'providers'): ?>
-    <p class="u-muted u-fs-12 u-mt-0"><?php echo t('ai_tts.providers_text'); ?></p>
-    <p class="u-fs-12"><i class="fas fa-key u-primary"></i> <?php echo t('ai_tts.keys_moved'); ?>
-        <?php if (hasModulePermission('ai_cloud', 'view')): ?><a href="/ai-cloud"><?php echo t('sidebar.item_ai_cloud'); ?></a><?php endif; ?></p>
-    <div class="u-grid-2 u-gap-16">
-    <?php foreach ($providers as $p): ?>
-        <?php if (!empty($p['local'])): ?>
-        <div class="card u-mb-0 u-p-16">
-            <div class="u-flex-between u-mb-10">
-                <div class="u-strong"><i class="fas fa-server u-primary"></i> <?php echo $h($p['title']); ?></div>
-                <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.local_ready' : 'ai_tts.not_configured'); ?></span>
-            </div>
-            <div class="u-muted u-fs-12 u-mb-10"><?php echo t('ai_tts.local_hint'); ?></div>
-            <?php if (hasModulePermission('ai_models', 'view')): ?>
-                <a href="/ai-models" class="btn btn-secondary btn-sm"><i class="fas fa-microchip"></i> <?php echo t('sidebar.item_ai_models'); ?></a>
-            <?php endif; ?>
-        </div>
-        <?php continue; endif; ?>
-        <div class="card u-mb-0 u-p-16">
-            <div class="u-flex-between u-mb-10">
-                <div class="u-strong"><i class="fas fa-cloud u-primary"></i> <?php echo $h($p['title']); ?></div>
-                <span class="badge <?php echo $p['configured'] ? 'badge-success' : 'badge-secondary'; ?> u-fs-11"><?php echo t($p['configured'] ? 'ai_tts.configured' : 'ai_tts.not_configured'); ?></span>
-            </div>
-            <div class="u-muted u-fs-11 u-mb-10"><?php echo sprintf(t('ai_tts.provider_hint_' . $p['id']), number_format($p['max_chars'], 0, ',', '.')); ?></div>
-            <?php if ($p['configured'] && $can_edit): ?>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="ttsTest(<?php echo jsArg($p['id']); ?>, this)"><i class="fas fa-plug-circle-check"></i> <?php echo t('ai_tts.btn_test'); ?></button>
-            <?php endif; ?>
-        </div>
-    <?php endforeach; ?>
-    </div>
-
-<?php else: ?>
     <?php if (!$configured): ?>
         <div class="u-muted u-text-center u-p-24">
             <i class="fas fa-key u-fs-28 u-mb-8" style="display: block;"></i>
-            <?php echo t('ai_tts.no_provider'); ?> <a href="/ai-tts?tab=providers"><?php echo t('ai_tts.tab_providers'); ?></a>
+            <?php echo t('ai_tts.no_provider'); ?>
+            <?php if (hasModulePermission('ai_local', 'view')): ?> <a href="/ai-local"><?php echo t('ai_local.title', 'Local AI'); ?></a><?php endif; ?>
+            <?php if (hasModulePermission('ai_cloud', 'view')): ?> · <a href="/ai-cloud"><?php echo t('ai_cloud.title', 'Cloud AI'); ?></a><?php endif; ?>
         </div>
     <?php else: ?>
         <div class="u-gtc-minmax-0-1fr-minmax-0-2fr u-gap-16" id="ttsForm" style="display: grid;">
@@ -64,6 +28,12 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
                 <div class="form-group">
                     <label class="form-label"><?php echo t('ai_tts.field_provider'); ?></label>
                     <select id="ttsProvider" class="form-control">
+                        <?php if ($localEnabled && class_exists('AiBindingService') && AiBindingService::resolve('panel_default', 'tts', getUserLanguage(), 'local') !== null): ?>
+                            <option value="local_default" data-max="1000"><?php echo $h(t('ai_selector.local_default', 'Local default')); ?></option>
+                        <?php endif; ?>
+                        <?php if ($cloudEnabled && class_exists('AiBindingService') && AiBindingService::resolve('panel_default', 'tts', getUserLanguage(), 'cloud') !== null): ?>
+                            <option value="cloud_default" data-max="4000"><?php echo $h(t('ai_selector.cloud_default', 'Cloud default')); ?></option>
+                        <?php endif; ?>
                         <?php foreach ($configured as $p): ?>
                             <option value="<?php echo $h($p['id']); ?>" data-max="<?php echo (int) $p['max_chars']; ?>"><?php echo $h($p['title']); ?></option>
                         <?php endforeach; ?>
@@ -147,7 +117,6 @@ $dur = fn($ms) => $ms === null ? '-' : sprintf('%d:%02d', intdiv((int) round($ms
                 </tr>
             <?php endforeach; ?>
             <?php echo uiTableClose(); ?>
-<?php endif; ?>
 </div>
 
 <script>

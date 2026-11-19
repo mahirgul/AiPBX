@@ -17,10 +17,14 @@ require_once dirname(__DIR__, 2) . '/asterisk_sync.php';
 require_once dirname(__DIR__, 2) . '/internal_numbers.php';
 require_once dirname(__DIR__) . '/LocalAiService.php';
 require_once dirname(__DIR__) . '/ai/CloudAiService.php';
+require_once dirname(__DIR__) . '/ai/AiBindingService.php';
+require_once __DIR__ . '/AiAppDbLookup.php';
+require_once dirname(__DIR__, 2) . '/core/PluginManager.php';
 require_once dirname(__DIR__, 3) . '/modules/destinations/DestinationRegistry.php';
 
 class AiAppService
 {
+    public const BUILTIN_AGENT = 'builtin_agent';
     public const TYPES = ['announcement', 'voice_requests', 'speech_routing'];
     public const CLOUD_TTS_PROVIDERS = ['openai', 'azure', 'elevenlabs', 'google'];
 
@@ -31,20 +35,20 @@ class AiAppService
      */
     public static function listens(string $type): bool
     {
-        return $type === 'voice_requests' || $type === 'speech_routing';
+        return $type === 'voice_requests' || $type === 'speech_routing' || $type === self::BUILTIN_AGENT;
     }
     public const MAX_INTENTS = 30;
     public const MAX_TEXT = 2000;
     /** Placeholders Asterisk fills itself (the rest come from the lookup URL). */
     public const DIALPLAN_VALUES = [
         'caller_number' => '${CALLERID(num)}',
-        'caller_name' => '${CALLERID(name)}',
         'did' => '${CDR(did)}',
     ];
 
-    public static function all(): array
+    public static function all(bool $builtin = false): array
     {
-        return getDB()->query('SELECT * FROM pbx_ai_apps ORDER BY title ASC')->fetchAll(PDO::FETCH_ASSOC);
+        $where = $builtin ? "app_type = 'builtin_agent'" : "app_type <> 'builtin_agent'";
+        return getDB()->query("SELECT * FROM pbx_ai_apps WHERE $where ORDER BY title ASC")->fetchAll(PDO::FETCH_ASSOC);
     }
 
     public static function get(int $id): ?array
@@ -54,6 +58,31 @@ class AiAppService
         return $st->fetch(PDO::FETCH_ASSOC) ?: null;
     }
 
+    public static function isPrivacyCloudBlocked(): bool
+    {
+        return function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1';
+    }
+
+    public static function isScopeEnabled(string $scope): bool
+    {
+        if ($scope === 'cloud' && self::isPrivacyCloudBlocked()) {
+            return false;
+        }
+        $slug = $scope === 'local' ? 'ailocal' : ($scope === 'cloud' ? 'aicloud' : '');
+        if ($slug === '') {
+            return false;
+        }
+        $pm = dirname(__DIR__, 2) . '/core/PluginManager.php';
+        if (is_file($pm)) {
+            require_once $pm;
+            $installed = PluginManager::installedMap();
+            if (isset($installed[$slug])) {
+                return !empty($installed[$slug]['enabled']);
+            }
+        }
+        return true;
+    }
+
     /** Local voice models that can speak for an application (downloaded or running). */
     public static function voiceModels(): array
     {
@@ -61,25 +90,31 @@ class AiAppService
             fn($m) => ($m['kind'] ?? '') === 'tts' && in_array($m['state'] ?? '', ['ready', 'installed', 'loading'], true)));
     }
 
-    /** @return array<string, string> validated row */
-    public static function validate(array $d, int $id = 0): array
+    /** @return array<string, string|null> validated row */
+    public static function validate(array $d, int $id = 0, bool $builtin = false): array
     {
         $title = trim((string) ($d['title'] ?? ''));
         if ($title === '' || mb_strlen($title) > 100) {
             throw new \Exception(t('ai_apps.err_title'));
         }
         $type = (string) ($d['app_type'] ?? 'announcement');
-        if (!in_array($type, self::TYPES, true)) {
+        if ($builtin ? $type !== self::BUILTIN_AGENT : !in_array($type, self::TYPES, true)) {
             throw new \Exception(t('ai_apps.err_type'));
         }
         $model = (string) ($d['model_id'] ?? '');
-        if (!preg_match('/^(engine:(tr|de|en)|cloud:[a-z_]{2,20}|[a-z0-9][a-z0-9._-]{1,63})$/', $model)
-            || (str_starts_with($model, 'cloud:') && !in_array(substr($model, 6), self::CLOUD_TTS_PROVIDERS, true))) {
-            throw new \Exception(t('ai_apps.err_model'));
+        if (!in_array($model, ['local_default', 'cloud_default'], true)) {
+            $bareModel = str_starts_with($model, 'local:') ? substr($model, 6) : $model;
+            if (!preg_match('/^(engine:[a-z]{2,3}|cloud:[a-z_]{2,20}|[a-z0-9][a-z0-9._-]{1,63})$/', $bareModel)
+                || (str_starts_with($model, 'engine:') && !isset(CloudAiService::languages()[substr($model, 7)]))
+                || (str_starts_with($model, 'cloud:') && !self::isCloudTtsAccount(substr($model, 6)))) {
+                throw new \Exception(t('ai_apps.err_model'));
+            }
         }
         $text = trim((string) ($d['text_template'] ?? ''));
         $config = null;
-        if (self::listens($type)) {
+        if ($builtin) {
+            $config = $d['agent_config'];
+        } elseif (self::listens($type)) {
             $config = self::validateRequests($d);
             if ($type === 'speech_routing') {
                 foreach ($config['intents'] as &$intent) {
@@ -106,7 +141,7 @@ class AiAppService
         if (!preg_match('/^[a-z_]{2,30}$/', $destType) || mb_strlen($destId) > 64) {
             throw new \Exception(t('ai_apps.err_dest'));
         }
-        if ($destType === 'ai_app' && (int) $destId === $id && $id > 0) {
+        if (in_array($destType, ['ai_app', 'builtin_ai_agent'], true) && (int) $destId === $id && $id > 0) {
             throw new \Exception(t('ai_apps.err_dest_self'));
         }
         $number = internalNumberSanitize($d['internal_number'] ?? '');
@@ -121,12 +156,12 @@ class AiAppService
         ];
     }
 
-    public static function save(array $d): int
+    public static function save(array $d, bool $builtin = false): int
     {
         $id = (int) ($d['id'] ?? 0);
-        $v = self::validate($d, $id);
+        $v = self::validate($d, $id, $builtin);
         $old = $id > 0 ? self::get($id) : null;
-        if ($id > 0 && $old === null) {
+        if ($id > 0 && ($old === null || ($old['app_type'] === self::BUILTIN_AGENT) !== $builtin)) {
             throw new \Exception(t('ai_apps.err_not_found'));
         }
         if ($v['internal_number'] !== '') {
@@ -145,6 +180,7 @@ class AiAppService
                ->execute($vals);
             $id = (int) $db->lastInsertId();
         }
+        self::syncBindings($id, $v['model_id'], $v['config'] !== null ? (json_decode($v['config'], true) ?: []) : []);
         $uid = $_SESSION['user_id'] ?? null;
         markPendingSync('ai_apps', 'ai_app', $id, 'AI application: ' . $v['title'], $old ? 'update' : 'create', $uid);
         if (($old['internal_number'] ?? '') !== ($v['internal_number'] !== '' ? $v['internal_number'] : null)) {
@@ -153,18 +189,28 @@ class AiAppService
         return $id;
     }
 
-    public static function delete(int $id): void
+    public static function delete(int $id, bool $builtin = false): void
     {
         $app = self::get($id);
         if ($app === null) {
             return;
         }
+        if (($app['app_type'] === self::BUILTIN_AGENT) !== $builtin) {
+            throw new InvalidArgumentException(t('ai_apps.err_not_found'));
+        }
         $sid = (string) $id;
         $refs = \PBX\Destinations\DestinationRegistry::usageCount('ai_app', $sid);
+        if ($builtin) {
+            $refs += \PBX\Destinations\DestinationRegistry::usageCount('builtin_ai_agent', $sid);
+        }
         if ($refs > 0) {
             throw new InvalidArgumentException(t('srv_tc.err_in_use'));
         }
         getDB()->prepare('DELETE FROM pbx_ai_apps WHERE id = ?')->execute([$id]);
+        try {
+            getDB()->prepare("DELETE FROM ai_bindings WHERE feature = 'ai_app' AND scope_ref = ?")->execute(['app:' . $id]);
+        } catch (\Throwable $e) {
+        }
         $uid = $_SESSION['user_id'] ?? null;
         markPendingSync('ai_apps', 'ai_app', $id, 'AI application: ' . $app['title'], 'delete', $uid);
         if (!empty($app['internal_number'])) {
@@ -187,11 +233,15 @@ class AiAppService
             return $v;
         };
         $stt = (string) ($d['stt_model'] ?? '');
-        if (!preg_match('/^(engine:(tr|de|en)|cloud:[a-z_]{2,20}|[a-z0-9][a-z0-9._-]{1,63})$/', $stt)
-            || (str_starts_with($stt, 'cloud:') && !in_array(substr($stt, 6), CloudAiService::withCap('stt'), true))) {
-            throw new \Exception(t('ai_apps.err_stt'));
+        if (!in_array($stt, ['local_default', 'cloud_default'], true)) {
+            $bareStt = str_starts_with($stt, 'local:') ? substr($stt, 6) : $stt;
+            if (!preg_match('/^(engine:[a-z]{2,3}|cloud:[a-z_]{2,20}|[a-z0-9][a-z0-9._-]{1,63})$/', $bareStt)
+                || (str_starts_with($stt, 'engine:') && !isset(CloudAiService::languages()[substr($stt, 7)]))
+                || (str_starts_with($stt, 'cloud:') && !in_array(substr($stt, 6), CloudAiService::withCap('stt'), true))) {
+                throw new \Exception(t('ai_apps.err_stt'));
+            }
         }
-        $sttLang = in_array($d['stt_lang'] ?? '', ['tr', 'de', 'en'], true) ? $d['stt_lang'] : 'tr';
+        $sttLang = CloudAiService::language((string) ($d['stt_lang'] ?? ''));
         $intents = [];
         $seen = [];
         foreach ((array) ($d['intents'] ?? []) as $row) {
@@ -257,15 +307,35 @@ class AiAppService
         if (empty($d['conversation'])) {
             return ['conversation' => false];
         }
-        if (!str_starts_with($understand, 'cloud:')) {
+        if (!str_starts_with($understand, 'cloud:') && $understand !== 'cloud_default') {
             throw new \Exception(t('ai_apps.err_conversation_cloud'));
         }
         $instructions = trim((string) ($d['instructions'] ?? ''));
         if (mb_strlen($instructions) > 4000) {
             throw new \Exception(sprintf(t('ai_apps.err_text'), 4000));
         }
+        $tools = self::parseHttpTools((string) ($d['tools'] ?? ''));
+        // A knowledge base collection (ai-knowledge): the built-in lookup "knowledge".
+        $knowledge = (int) ($d['knowledge_collection'] ?? 0);
+        if ($knowledge > 0) {
+            require_once __DIR__ . '/AiKnowledgeService.php';
+            if (AiKnowledgeService::collection($knowledge) === null || isset($tools['knowledge'])) {
+                throw new \Exception(t('ai_apps.err_knowledge'));
+            }
+        }
+        $dbLookups = AiAppDbLookup::parse((string) ($d['db_lookups'] ?? ''));
+        if ($dbLookups && isset($tools['get_db_value'])) {
+            throw new InvalidArgumentException(sprintf(t('ai_apps.err_tool'), 'get_db_value'));
+        }
+        return ['conversation' => true, 'instructions' => $instructions,
+            'max_turns' => max(2, min(12, (int) ($d['max_turns'] ?? 6))), 'tools' => array_values($tools),
+            'knowledge_collection' => max(0, $knowledge), 'db_lookups' => $dbLookups];
+    }
+
+    public static function parseHttpTools(string $input): array
+    {
         $tools = [];
-        foreach (preg_split('/\R/', (string) ($d['tools'] ?? '')) ?: [] as $line) {
+        foreach (preg_split('/\R/', $input) ?: [] as $line) {
             if (trim($line) === '') {
                 continue;
             }
@@ -285,8 +355,7 @@ class AiAppService
         if (count($tools) > 5) {
             throw new \Exception(sprintf(t('ai_apps.err_tool'), '> 5'));
         }
-        return ['conversation' => true, 'instructions' => $instructions,
-            'max_turns' => max(2, min(12, (int) ($d['max_turns'] ?? 6))), 'tools' => array_values($tools)];
+        return $tools;
     }
 
     /**
@@ -297,13 +366,131 @@ class AiAppService
      */
     public static function validUnderstand(string $u): string
     {
-        if ($u === 'auto' || $u === 'keywords') {
+        if ($u === 'auto' || $u === 'keywords' || $u === 'local_default' || $u === 'cloud_default') {
             return $u;
         }
         if (str_starts_with($u, 'cloud:') && in_array(substr($u, 6), CloudAiService::withCap('llm'), true)) {
             return $u;
         }
         throw new \Exception(t('ai_apps.err_understand'));
+    }
+
+    /**
+     * Persists per-app TTS/STT/LLM bindings into `ai_bindings` so
+     * `AiBindingService::dependenciesForScope()` tracks every AI app.
+     *
+     * @param array<string, mixed> $config
+     */
+    public static function syncBindings(int $appId, string $ttsModel, array $config): void
+    {
+        if ($appId <= 0) {
+            return;
+        }
+        $scopeRef = 'app:' . $appId;
+        $map = static function (string $val, string $task): array {
+            if ($val === '' || $val === 'keywords' || $val === 'auto') {
+                return ['off', null];
+            }
+            if ($val === 'local_default' || $val === 'cloud_default') {
+                return [$val, null];
+            }
+            if (str_starts_with($val, 'engine:')) {
+                $lang = substr($val, 7);
+                $e = CloudAiService::engine($task === 'tts' ? 'tts' : 'stt', $lang);
+                if (str_starts_with($e, 'cloud:')) {
+                    return ['explicit', $e];
+                }
+                if (str_starts_with($e, 'local:')) {
+                    return ['explicit', $e];
+                }
+                return ['local_default', null];
+            }
+            if (str_starts_with($val, 'cloud:') || str_starts_with($val, 'local:')) {
+                return ['explicit', $val];
+            }
+            return ['explicit', 'local:' . $val];
+        };
+        try {
+            [$ttsMode, $ttsRef] = $map($ttsModel, 'tts');
+            AiBindingService::saveBinding('ai_app', 'tts', $ttsMode, $ttsRef, 'default', $scopeRef);
+
+            $sttVal = (string) ($config['stt_model'] ?? '');
+            [$sttMode, $sttRef] = $map($sttVal, 'stt');
+            AiBindingService::saveBinding('ai_app', 'stt', $sttMode, $sttRef, 'default', $scopeRef);
+
+            $llmVal = (string) ($config['understand'] ?? '');
+            [$llmMode, $llmRef] = $map($llmVal, 'llm');
+            AiBindingService::saveBinding('ai_app', 'llm', $llmMode, $llmRef, 'default', $scopeRef);
+        } catch (\Throwable $e) {
+            // Best effort if ai_bindings table is not migrated yet.
+        }
+    }
+
+    /**
+     * Resolves a task ('tts', 'stt', 'llm') for an app using `local_default`,
+     * `cloud_default`, `engine:<lang>`, `cloud:<provider>`, `local:<id>`, or
+     * bare `<id>`, enforcing `ailocal`/`aicloud` and `privacy_block_cloud_ai`.
+     * Never silently falls back from local to cloud.
+     */
+    public static function resolveTaskBinding(int $appId, string $task, string $rawValue, string $lang = 'tr', bool $allowCloud = true): string
+    {
+        $scopeRef = $appId > 0 ? ('app:' . $appId) : '';
+        if ($rawValue === 'local_default' || $rawValue === 'cloud_default') {
+            $scope = $rawValue === 'local_default' ? 'local' : 'cloud';
+            if (!self::isScopeEnabled($scope) || ($scope === 'cloud' && !$allowCloud)) {
+                return '';
+            }
+            $ref = AiBindingService::resolve('ai_app', $task, $lang, $scopeRef !== '' ? $scopeRef : 'global');
+            if ($ref === null) {
+                $pb = AiBindingService::resolve('panel_default', $task, $lang, $scope);
+                if ($pb === null) {
+                    $pb = AiBindingService::resolve('panel_default', $task, 'default', $scope);
+                }
+                $ref = $pb;
+            }
+            if ($ref !== null) {
+                if (str_starts_with($ref, 'local:')) {
+                    return substr($ref, 6);
+                }
+                if (str_starts_with($ref, 'cloud:') && $scope === 'cloud') {
+                    return $ref;
+                }
+            }
+            return $scope === 'local' && $task !== 'llm' ? self::localFallbackModel($task, $lang) : '';
+        }
+
+        if (str_starts_with($rawValue, 'local:')) {
+            return self::isScopeEnabled('local') ? substr($rawValue, 6) : '';
+        }
+        if (str_starts_with($rawValue, 'cloud:')) {
+            $prov = substr($rawValue, 6);
+            if ($allowCloud && self::isScopeEnabled('cloud')) {
+                if ($task === 'tts' ? self::isCloudTtsReady($prov) : !CloudAiService::overLimit($prov, $task)) {
+                    return $rawValue;
+                }
+            }
+            return ($task === 'tts' || $task === 'stt') && self::isScopeEnabled('local')
+                ? self::localFallbackModel($task, $lang)
+                : '';
+        }
+        if (str_starts_with($rawValue, 'engine:')) {
+            $lang = substr($rawValue, 7);
+            $e = CloudAiService::engine($task === 'tts' ? 'tts' : 'stt', $lang);
+            if (str_starts_with($e, 'local:')) {
+                return self::isScopeEnabled('local') ? substr($e, 6) : '';
+            }
+            if ($allowCloud && str_starts_with($e, 'cloud:') && self::isScopeEnabled('cloud')) {
+                $prov = substr($e, 6);
+                if ($task === 'tts' ? self::isCloudTtsReady($prov) : !CloudAiService::overLimit($prov, $task)) {
+                    return $e;
+                }
+            }
+            return self::isScopeEnabled('local') && $task !== 'llm' ? self::localFallbackModel($task, $lang) : '';
+        }
+        if ($rawValue === '' || $rawValue === 'auto' || $rawValue === 'keywords') {
+            return $rawValue;
+        }
+        return self::isScopeEnabled('local') ? $rawValue : '';
     }
 
     private static function slug(string $name): string
@@ -323,21 +510,7 @@ class AiAppService
     /** The speech-to-text model a voice-requests application uses now. */
     public static function resolveSttModel(string $model, string $lang = 'tr'): string
     {
-        if (str_starts_with($model, 'engine:')) {
-            $lang = substr($model, 7);
-            $e = CloudAiService::engine('stt', $lang);
-            if (str_starts_with($e, 'local:')) {
-                return substr($e, 6);
-            }
-            if (str_starts_with($e, 'cloud:')) {
-                return $e;
-            }
-            return self::localFallbackModel('stt', $lang);
-        }
-        if (str_starts_with($model, 'cloud:') && CloudAiService::overLimit(substr($model, 6), 'stt')) {
-            return self::localFallbackModel('stt', $lang);
-        }
-        return $model;
+        return self::resolveTaskBinding(0, 'stt', $model, $lang, !self::isPrivacyCloudBlocked());
     }
 
     /** Picks the best ready/installed local model of kind ("tts" or "stt") for $lang. */
@@ -371,12 +544,29 @@ class AiAppService
         return '';
     }
 
+    /** Whether a cloud account's provider can speak in a call (CLOUD_TTS_PROVIDERS). */
+    public static function isCloudTtsAccount(string $account): bool
+    {
+        return in_array(CloudAiService::typeIfKnown($account), self::CLOUD_TTS_PROVIDERS, true);
+    }
+
+    /**
+     * Accounts a voice application can speak with: configured, and Google Cloud only with an
+     * API key (the service account works on the TTS page only). @return list<string>
+     */
+    public static function cloudTtsAccounts(): array
+    {
+        return array_values(array_filter(array_keys(CloudAiService::accounts()), fn($id) => self::isCloudTtsAccount($id)
+            && CloudAiService::configured($id)
+            && (CloudAiService::typeOf($id) !== 'google' || trim((string) (CloudAiService::config($id)['api_key'] ?? '')) !== '')));
+    }
+
     public static function isCloudTtsReady(string $provider): bool
     {
-        if (!in_array($provider, self::CLOUD_TTS_PROVIDERS, true) || !CloudAiService::configured($provider)) {
+        if (self::isPrivacyCloudBlocked() || !self::isScopeEnabled('cloud')) {
             return false;
         }
-        if ($provider === 'google' && trim((string) (CloudAiService::config('google')['api_key'] ?? '')) === '') {
+        if (!in_array($provider, self::cloudTtsAccounts(), true)) {
             return false;
         }
         return !CloudAiService::overLimit($provider, 'tts');
@@ -386,17 +576,21 @@ class AiAppService
     private static function cloudTtsPayload(string $provider, string $lang): array
     {
         $pc = CloudAiService::config($provider);
+        $type = CloudAiService::typeOf($provider);
         $out = [
-            'provider' => $provider,
+            // The AI service talks to the provider by type; the account only chose the key.
+            'provider' => $type,
             'api_key' => (string) ($pc['api_key'] ?? ''),
             'lang' => $lang,
+            'locale' => CloudAiService::languageLocale($lang),
+            'lang_name' => CloudAiService::languageName($lang),
         ];
         foreach (['region', 'model', 'voice'] as $k) {
             if (!empty($pc[$k])) {
                 $out[$k] = (string) $pc[$k];
             }
         }
-        if ($provider === 'openai_compat') {
+        if ($type === 'openai_compat') {
             $out['base_url'] = (string) ($pc['base_url'] ?? '');
             $ttsModel = trim((string) ($pc['tts_model'] ?? ''));
             if ($ttsModel !== '') {
@@ -415,10 +609,12 @@ class AiAppService
     {
         $pc = CloudAiService::config($provider);
         $out = [
-            'provider' => $provider,
+            'provider' => CloudAiService::typeOf($provider),
             'api_key' => (string) ($pc['api_key'] ?? ''),
             'region' => (string) ($pc['region'] ?? ''),
             'lang' => $lang,
+            'locale' => CloudAiService::languageLocale($lang),
+            'lang_name' => CloudAiService::languageName($lang),
         ];
         if (!empty($pc['base_url'])) {
             $out['base_url'] = (string) $pc['base_url'];
@@ -430,16 +626,22 @@ class AiAppService
     }
 
     /** What PUT /v1/apps/<id> sends to the local AI service. */
-    public static function serviceConfig(array $app): array
+    public static function serviceConfig(array $app, bool $resolveCredentials = false): array
     {
         $c = self::config($app);
-        $lang = in_array($c['stt_lang'] ?? '', ['tr', 'de', 'en'], true)
+        $builtin = ($app['app_type'] ?? '') === self::BUILTIN_AGENT;
+        if ($builtin) {
+            $c = ($app['agent_tools'] ?? []) + $c;
+        }
+        $appId = (int) ($app['id'] ?? 0);
+        $cloudAllowed = !self::isPrivacyCloudBlocked() && self::isScopeEnabled('cloud');
+        $lang = CloudAiService::language(isset(CloudAiService::languages()[$c['stt_lang'] ?? ''])
             ? (string) $c['stt_lang']
-            : (str_starts_with((string) ($app['model_id'] ?? ''), 'engine:') ? substr((string) $app['model_id'], 7) : 'tr');
-        $tts = self::resolveModel((string) $app['model_id'], true, $lang);
-        $stt = self::resolveSttModel((string) ($c['stt_model'] ?? ''), $lang);
+            : (str_starts_with((string) ($app['model_id'] ?? ''), 'engine:') ? substr((string) $app['model_id'], 7) : ''));
+        $tts = self::resolveTaskBinding($appId, 'tts', (string) $app['model_id'], $lang, $cloudAllowed);
+        $stt = self::resolveTaskBinding($appId, 'stt', (string) ($c['stt_model'] ?? ''), $lang, $cloudAllowed);
         $extra = [];
-        if (str_starts_with($tts, 'cloud:')) {
+        if ($cloudAllowed && str_starts_with($tts, 'cloud:')) {
             // The service calls the provider itself: it gets the key with the settings.
             $extra['tts_cloud'] = self::cloudTtsPayload(substr($tts, 6), $lang);
             $ttsFallback = self::localFallbackModel('tts', $lang);
@@ -447,17 +649,21 @@ class AiAppService
                 $extra['tts_fallback'] = $ttsFallback;
             }
         }
-        if (str_starts_with($stt, 'cloud:')) {
+        if ($cloudAllowed && str_starts_with($stt, 'cloud:')) {
             // The service calls the provider itself: it gets the key with the settings
             // (kept 0600 by the service, never returned by its API).
-            $extra['stt_cloud'] = self::cloudSttPayload(substr($stt, 6), (string) ($c['stt_lang'] ?? 'tr'));
+            $extra['stt_cloud'] = self::cloudSttPayload(substr($stt, 6), $lang);
             $sttFallback = self::localFallbackModel('stt', $lang);
             if ($sttFallback !== '') {
                 $extra['stt_fallback'] = $sttFallback;
             }
         }
-        $understand = (string) ($c['understand'] ?? 'auto');
-        if (str_starts_with($understand, 'cloud:')) {
+        $understandRaw = (string) ($c['understand'] ?? 'auto');
+        $understand = self::resolveTaskBinding($appId, 'llm', $understandRaw, $lang, $cloudAllowed);
+        if ($understand === '' && ($understandRaw === 'cloud_default' || str_starts_with($understandRaw, 'cloud:'))) {
+            $understand = 'auto';
+        }
+        if ($cloudAllowed && str_starts_with($understand, 'cloud:')) {
             $prov = substr($understand, 6);
             if (!CloudAiService::overLimit($prov, 'llm')) {
                 // The service asks the provider itself: it gets the key with the settings.
@@ -465,17 +671,44 @@ class AiAppService
             } else {
                 $understand = 'auto';
             }
+        } elseif (!$cloudAllowed && str_starts_with($understand, 'cloud:')) {
+            $understand = 'auto';
         }
-        // A conversation needs the cloud model: over its limit the application answers one request, by keywords.
-        if (!empty($c['conversation']) && isset($extra['llm_cloud'])) {
+        if ($builtin && $understand !== '' && str_starts_with($understandRaw, 'local:')) {
+            $extra['local_chat_app'] = $appId;
+            $understand = 'local';
+        }
+        if (!empty($c['conversation']) && (isset($extra['llm_cloud']) || isset($extra['local_chat_app']))) {
             $extra += ['conversation' => true, 'instructions' => (string) ($c['instructions'] ?? ''),
-                'max_turns' => (int) ($c['max_turns'] ?? 6), 'tools' => $c['tools'] ?? []];
+                'max_turns' => (int) ($c['max_turns'] ?? 6), 'tools' => $c['tools'] ?? [],
+                'knowledge' => ($app['agent_has_knowledge'] ?? ((int) ($c['knowledge_collection'] ?? 0) > 0))
+                    && PluginManager::isEnabled('ai-knowledge'),
+                'db_queries' => AiAppDbLookup::metadata($c['db_lookups'] ?? [])];
+        }
+        if ($builtin) {
+            $extra['builtin_agent'] = true;
+            $extra['automatic_announcements'] = !empty($c['automatic_announcements']);
+            $extra['announcement_tone'] = (string) ($c['announcement_tone'] ?? '');
+            $extra['greetings'] = $c['greetings'] ?? [];
+            $extra['waiting_phrases'] = $c['waiting_phrases'] ?? [];
+        }
+        if (!$resolveCredentials) {
+            foreach (['tts', 'stt', 'llm'] as $task) {
+                $key = $task . '_cloud';
+                if (isset($extra[$key])) {
+                    $provider = (string) ($extra[$key]['provider'] ?? '');
+                    $extra[$key] = ['provider' => $provider,
+                        'secret_ref' => 'app:' . (int) $app['id'] . ':' . $task . ':' . $provider];
+                }
+            }
         }
         return $extra + [
             'type' => 'voice_requests',
             'tts_model' => $tts,
             'stt_model' => $stt,
             'language' => $lang,
+            'language_name' => CloudAiService::languageName($lang),
+            'language_locale' => CloudAiService::languageLocale($lang),
             'speed' => (float) $app['speed'],
             'greeting' => (string) ($c['greeting'] ?? ''),
             'retry' => (string) ($c['retry'] ?? ''),
@@ -485,8 +718,8 @@ class AiAppService
             'barge_in' => !empty($c['barge_in']),
             'threshold' => (float) ($c['threshold'] ?? 0.5),
             'understand' => str_starts_with($understand, 'cloud:') ? 'cloud' : $understand,
-            'intents' => array_map(fn($i) => ['id' => $i['id'], 'name' => $i['name'], 'keywords' => $i['keywords'],
-                                               'examples' => $i['examples'], 'reply' => $i['reply']], $c['intents'] ?? []),
+            'intents' => array_map(fn ($i) => array_intersect_key($i,
+                array_flip(['id', 'name', 'keywords', 'examples', 'reply', 'route_id'])), $c['intents'] ?? []),
         ];
     }
 
@@ -495,7 +728,8 @@ class AiAppService
     public static function requests(int $limit = 100, bool $openOnly = false): array
     {
         $sql = 'SELECT r.*, a.title AS app_title FROM ai_requests r LEFT JOIN pbx_ai_apps a ON a.id = r.app_id'
-            . ($openOnly ? ' WHERE r.handled_at IS NULL' : '') . ' ORDER BY r.id DESC LIMIT ' . max(1, min(500, $limit));
+            . " WHERE (a.app_type IS NULL OR a.app_type <> 'builtin_agent')"
+            . ($openOnly ? ' AND r.handled_at IS NULL' : '') . ' ORDER BY r.id DESC LIMIT ' . max(1, min(500, $limit));
         return getDB()->query($sql)->fetchAll(PDO::FETCH_ASSOC);
     }
 
@@ -505,27 +739,47 @@ class AiAppService
             ->execute([$handled ? ($_SESSION['user_id'] ?? null) : null, $id]);
     }
 
-    /** The voice model an application uses now ("engine:<lang>" follows AI → Cloud services). */
+    /** The voice model an application uses now ("engine:<lang>" / "local_default" / "cloud_default"). */
     public static function resolveModel(string $model, bool $allowCloud = false, string $lang = 'tr'): string
     {
-        if (str_starts_with($model, 'engine:')) {
-            $lang = substr($model, 7);
-            $e = CloudAiService::engine('tts', $lang);
-            if (str_starts_with($e, 'local:')) {
-                return substr($e, 6);
-            }
-            if ($allowCloud && str_starts_with($e, 'cloud:') && self::isCloudTtsReady(substr($e, 6))) {
-                return $e;
-            }
-            return self::localFallbackModel('tts', $lang);
-        }
-        if (str_starts_with($model, 'cloud:')) {
-            if ($allowCloud && self::isCloudTtsReady(substr($model, 6))) {
-                return $model;
-            }
-            return self::localFallbackModel('tts', $lang);
-        }
-        return $model;
+        return self::resolveTaskBinding(0, 'tts', $model, $lang, $allowCloud && !self::isPrivacyCloudBlocked());
+    }
+
+    /**
+     * Pre-filled template for a multi-call conversational AI representative
+     * (used by the "Default AI Agent" preset on /ai-apps and Pre-Queue handovers).
+     *
+     * @param array<string, mixed> $override
+     * @return array<string, mixed>
+     */
+    public static function defaultAgentPreset(array $override = []): array
+    {
+        $cfg = [
+            'conversation' => true,
+            'barge_in' => true,
+            'max_turns' => 8,
+            'instructions' => t('ai_apps.default_agent_instructions'),
+            'intents' => [],
+            'tools' => [],
+            'knowledge_collection_id' => 0,
+        ];
+        $preset = [
+            'id' => 0,
+            'title' => t('ai_apps.default_agent_title'),
+            'app_type' => 'voice_requests',
+            'internal_number' => '',
+            'model_id' => 'local_default',
+            'speed' => 1.0,
+            'max_concurrent' => 5,
+            'text_template' => t('ai_apps.default_agent_greeting'),
+            'fallback_text' => '',
+            'lookup_url' => '',
+            'dest_type' => 'hangup',
+            'dest_id' => '',
+            'is_active' => 1,
+            'config' => json_encode($cfg, JSON_UNESCAPED_UNICODE),
+        ];
+        return array_merge($preset, $override);
     }
 
     /** The shared secret of /v1/calls/start (the dialplan cannot read the API token). */

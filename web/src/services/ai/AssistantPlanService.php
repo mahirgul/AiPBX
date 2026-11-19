@@ -40,6 +40,9 @@ class AssistantPlanService
             case 'extension.forward':
                 self::applyForward($arguments);
                 break;
+            case 'extension.dnd':
+                self::applyDnd($arguments);
+                break;
             case 'extension.voicemail':
                 self::applyVoicemail($arguments);
                 break;
@@ -160,7 +163,7 @@ class AssistantPlanService
         if ($ext === null) {
             return null;
         }
-        $st = getDB()->prepare('SELECT id, call_forward_number, dnd_enabled, voicemail_enabled, full_name FROM sys_users WHERE extension = ?');
+        $st = getDB()->prepare('SELECT id, call_forward_number, cf_busy_number, cf_noanswer_number, dnd_enabled, voicemail_enabled, full_name FROM sys_users WHERE extension = ?');
         $st->execute([(string) $ext]);
         $u = $st->fetch(PDO::FETCH_ASSOC);
         if (!$u) {
@@ -170,12 +173,31 @@ class AssistantPlanService
         // and an action with no undo state (rename, ...) records nothing, so
         // the UI never offers an Undo that cannot work.
         if ($action === 'extension.forward') {
+            $cond = (string) ($a['condition'] ?? 'always');
+            $col = match ($cond) {
+                'busy'     => 'cf_busy_number',
+                'noanswer' => 'cf_noanswer_number',
+                default    => 'call_forward_number',
+            };
+            $args = [
+                'extension' => $a['extension'],
+                'target'    => (string) ($u[$col] ?? ''),
+                'enabled'   => trim((string) ($u[$col] ?? '')) !== '',
+            ];
+            if ($cond !== 'always') {
+                $args['condition'] = $cond;
+            }
             return [
                 'action'    => 'extension.forward',
+                'arguments' => $args,
+            ];
+        }
+        if ($action === 'extension.dnd') {
+            return [
+                'action'    => 'extension.dnd',
                 'arguments' => [
                     'extension' => $a['extension'],
-                    'target'    => (string) ($u['call_forward_number'] ?? ''),
-                    'enabled'   => trim((string) ($u['call_forward_number'] ?? '')) !== '',
+                    'enabled'   => (int) ($u['dnd_enabled'] ?? 0) === 1,
                 ],
             ];
         }
@@ -202,10 +224,34 @@ class AssistantPlanService
         if (!$uid) {
             throw new RuntimeException(t('ai_assistant.err_missing', ['field' => 'extension']));
         }
-        getDB()->prepare('UPDATE sys_users SET call_forward_number = ? WHERE id = ?')
+        $cond = (string) ($a['condition'] ?? 'always');
+        $col = match ($cond) {
+            'busy'     => 'cf_busy_number',
+            'noanswer' => 'cf_noanswer_number',
+            default    => 'call_forward_number',
+        };
+        getDB()->prepare("UPDATE sys_users SET {$col} = ? WHERE id = ?")
             ->execute([$a['enabled'] ? (string) $a['target'] : null, (int) $uid]);
+        $label = $cond === 'always' ? 'forward ' : "forward ({$cond}) ";
         markPendingSync('extensions', 'extension', (string) $a['extension'],
-            'Assistant: forward ' . $a['extension'] . ($a['enabled'] ? ' to ' . $a['target'] : ' off'),
+            'Assistant: ' . $label . $a['extension'] . ($a['enabled'] ? ' to ' . $a['target'] : ' off'),
+            'update', $_SESSION['user_id'] ?? null);
+        markPendingSync('general_dialplan', 'general_dialplan', 'dialplan',
+            'Assistant: extension dialplan (' . $a['extension'] . ')', 'update', $_SESSION['user_id'] ?? null);
+    }
+
+    private static function applyDnd(array $a): void
+    {
+        $st = getDB()->prepare('SELECT id FROM sys_users WHERE extension = ?');
+        $st->execute([(string) $a['extension']]);
+        $uid = $st->fetchColumn();
+        if (!$uid) {
+            throw new RuntimeException(t('ai_assistant.err_missing', ['field' => 'extension']));
+        }
+        getDB()->prepare('UPDATE sys_users SET dnd_enabled = ? WHERE id = ?')
+            ->execute([$a['enabled'] ? 1 : 0, (int) $uid]);
+        markPendingSync('extensions', 'extension', (string) $a['extension'],
+            'Assistant: DND ' . $a['extension'] . ($a['enabled'] ? ' on' : ' off'),
             'update', $_SESSION['user_id'] ?? null);
         markPendingSync('general_dialplan', 'general_dialplan', 'dialplan',
             'Assistant: extension dialplan (' . $a['extension'] . ')', 'update', $_SESSION['user_id'] ?? null);
@@ -381,6 +427,7 @@ class AssistantPlanService
     {
         switch ($action) {
             case 'extension.forward':    self::applyForward($a); return;
+            case 'extension.dnd':        self::applyDnd($a); return;
             case 'extension.voicemail':  self::applyVoicemail($a); return;
             case 'ringgroup.timeout':
             case 'ringgroup.members':    self::applyRingGroup($a); return;
@@ -431,6 +478,7 @@ class AssistantPlanService
 
     /** Actions undoable via rollback(): action → the action that reverses it. */
     private const UNDO = [
+        'extension.dnd'       => 'extension.dnd',
         'extension.forward'   => 'extension.forward',
         'extension.voicemail' => 'extension.voicemail',
         'ringgroup.timeout'   => 'ringgroup.timeout',
@@ -443,6 +491,8 @@ class AssistantPlanService
     private static function summary(string $action, array $a): string
     {
         switch ($action) {
+            case 'extension.dnd':
+                return 'DND ' . ($a['enabled'] ? 'on' : 'off') . ' for ' . $a['extension'];
             case 'extension.forward':
                 return $a['enabled']
                     ? 'Forward ' . $a['extension'] . ' → ' . $a['target']

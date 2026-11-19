@@ -4,11 +4,10 @@
 # ============================================================================
 step "11. Local AI Service"
 
-# AI → Local models (roadmap 5): AI models that run on this server, served by
-# aipbx-ai on 127.0.0.1:8790. Only the code and the unit are installed here;
-# the Python runtime with ONNX Runtime (~160 MB; most PBXs never use it) is created
-# by `aipbx-ai-setup install` when the admin asks for it, and only then is the
-# service enabled.
+# Install the standard-library gateway for every installation. Local inference
+# dependencies remain opt-in through aipbx-ai-setup; cloud-only installs need no venv.
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-ollama-setup" /usr/local/sbin/aipbx-ollama-setup
+install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-ai-run" /usr/local/sbin/aipbx-ai-run
 AI_BASE=/opt/aipbx-ai
 AI_VENV="$AI_BASE/venv"
 if ! id -u aipbx-ai >/dev/null 2>&1; then
@@ -38,16 +37,15 @@ chmod 640 /etc/aipbx/ai.token
 cat > /etc/systemd/system/aipbx-ai.service << 'AIUNIT'
 [Unit]
 Description=AiPBX local AI models (AI -> Local models)
-After=network-online.target
-Wants=network-online.target
-ConditionPathExists=/opt/aipbx-ai/venv/bin/python
+After=network-online.target aipbx-ai-resolver.service
+Wants=network-online.target aipbx-ai-resolver.service
 
 [Service]
 Type=simple
 User=aipbx-ai
 Group=aipbx-ai
 WorkingDirectory=/opt/aipbx-ai/app
-ExecStart=/opt/aipbx-ai/venv/bin/python -m aipbx_ai
+ExecStart=/usr/local/sbin/aipbx-ai-run
 LoadCredential=token:/etc/aipbx/ai.token
 Environment=HOME=/var/lib/aipbx-ai AIPBX_AI_DATA=/var/lib/aipbx-ai
 Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
@@ -76,7 +74,41 @@ UMask=0022
 [Install]
 WantedBy=multi-user.target
 AIUNIT
+cat > /etc/systemd/system/aipbx-ai-resolver.service << 'RESOLVER'
+[Unit]
+Description=AiPBX scoped AI credential resolver
+After=mariadb.service
+
+[Service]
+Type=simple
+User=www-data
+Group=aipbx-ai
+SupplementaryGroups=www-data asterisk
+WorkingDirectory=/opt/aipbx-ai/app
+ExecStart=/usr/bin/python3 -m aipbx_ai.credential_broker
+RuntimeDirectory=aipbx-ai-resolver
+RuntimeDirectoryMode=0750
+UMask=0007
+Environment=PYTHONDONTWRITEBYTECODE=1
+Restart=on-failure
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictNamespaces=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=128M
+
+[Install]
+WantedBy=multi-user.target
+RESOLVER
 systemctl daemon-reload
+systemctl enable --now aipbx-ai-resolver.service >/dev/null 2>&1
+systemctl restart aipbx-ai-resolver.service
 
 # READY_MARK: written by aipbx-ai-setup once the venv is complete.
 AI_READY_MARK="$AI_VENV/.aipbx-requirements"
@@ -101,7 +133,9 @@ if [[ -f "$AI_READY_MARK" ]]; then
     fi
     ok "Local AI service updated"
 else
-    ok "Local AI service installed (off — install the runtime on AI → Local models)"
+    systemctl enable aipbx-ai.service >/dev/null 2>&1
+    systemctl restart aipbx-ai.service
+    ok "AI gateway active (local ML runtime optional)"
 fi
 
 # ============================================================================

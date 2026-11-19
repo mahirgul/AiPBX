@@ -1,209 +1,100 @@
 <?php
-/** @var array $changes  recent applied changes (AssistantPlanService::recent) */
-/** @var string $echo_askable what Echo can answer */
 /** @var string $csrf */
+/** @var bool $is_admin */
+/** @var bool $can_change */
+/** @var bool $has_extension */
+/** @var array $suggestions */
+/** @var string $echo_askable */
+/** @var array{active_calls:int, registered_phones:int, warnings:int} $status_badges */
+/** @var bool $show_dashboard_link */
+
 $texts = [];
 foreach ([
-    'title', 'intro', 'placeholder', 'ask', 'working', 'preview_title', 'preview_apply', 'preview_discard',
-    'applied', 'undo', 'undo_done', 'echo_title', 'echo_placeholder', 'echo_ask', 'echo_askable',
-    'changes_title', 'no_changes', 'col_when', 'col_request', 'col_change', 'col_status', 'col_source',
-    'status_applied', 'status_rolled_back', 'err_generic', 'risk_low', 'risk_medium', 'narration',
+    'title', 'welcome_heading', 'placeholder', 'ask', 'thinking', 'new_chat',
+    'go_dashboard', 'badge_active_calls', 'badge_registered',
+    'badge_warnings', 'preview_title', 'preview_apply', 'preview_discard', 'applied',
+    'cancelled', 'undo', 'undo_done', 'err_generic', 'risk_low', 'risk_medium',
+    'echo_askable', 'unknown_intro', 'nav_intro', 'no_extension_notice', 'knowledge_sources',
 ] as $k) {
     $texts[$k] = t('assistant.' . $k);
 }
+$texts['no_settings_results'] = t('help.no_results');
 ?>
-<style>
-  .assistant-chat { max-width: 860px; }
-  .assistant-preview { border-left: 3px solid var(--primary); background: rgba(0, 0, 0, 0.03); border-radius: 0 8px 8px 0; padding: 12px 16px; margin: 10px 0; }
-  .assistant-log td { vertical-align: top; }
-</style>
-<div class="card">
-    <?php echo uiPageHeader('fa-wand-magic-sparkles', t('assistant.title'), 'assistantHelpBox'); ?>
-<?php echo uiHelpBoxOpen('assistantHelpBox', t('common.module_guide')); ?><?php echo t('assistant.intro'); ?><?php echo uiHelpBoxClose(); ?>
-    
 
-    <div class="assistant-chat u-card-pad">
-        <div class="u-flex-gap u-d-flex u-gap-8">
-            <input type="text" id="asst-request" class="form-control u-flex-1"
-                   placeholder="<?php echo t('assistant.placeholder'); ?>"
-                   onkeydown="if(event.key==='Enter') assistantPlan();">
-            <button type="button" class="btn btn-primary" id="asst-ask-btn" onclick="assistantPlan()">
-                <?php echo t('assistant.ask'); ?>
-            </button>
+<div class="assistant-shell">
+  <section class="assistant-main is-welcome" id="asst-main">
+    <div class="u-d-flex u-jc-flex-end u-w-100p u-mb-8">
+      <button type="button" class="btn btn-secondary btn-sm" id="asst-new-chat">
+        <i class="fas fa-plus" aria-hidden="true"></i> <?php echo htmlspecialchars($texts['new_chat']); ?>
+      </button>
+    </div>
+    <div class="assistant-welcome-head">
+      <div class="assistant-welcome-logo"><i class="fas fa-wand-magic-sparkles"></i></div>
+      <h1 class="assistant-welcome-title"><?php echo htmlspecialchars($texts['welcome_heading']); ?> <?php echo uiExperimentalBadge(); ?></h1>
+    </div>
+
+    <?php if ($is_admin): ?>
+      <div class="assistant-badges">
+        <span class="assistant-badge">
+          <i class="fas fa-phone u-primary"></i>
+          <?php echo htmlspecialchars($texts['badge_active_calls']); ?>: <strong><?php echo (int) $status_badges['active_calls']; ?></strong>
+        </span>
+        <span class="assistant-badge">
+          <i class="fas fa-circle-check u-success"></i>
+          <?php echo htmlspecialchars($texts['badge_registered']); ?>: <strong><?php echo (int) $status_badges['registered_phones']; ?></strong>
+        </span>
+        <span class="assistant-badge">
+          <i class="fas fa-triangle-exclamation u-warning"></i>
+          <?php echo htmlspecialchars($texts['badge_warnings']); ?>: <strong><?php echo (int) $status_badges['warnings']; ?></strong>
+        </span>
+      </div>
+    <?php endif; ?>
+
+    <div class="assistant-messages" id="asst-messages"></div>
+
+    <div class="assistant-composer">
+      <div class="assistant-input-wrap">
+        <input type="text" id="asst-input" autocomplete="off"
+               placeholder="<?php echo htmlspecialchars($texts['placeholder']); ?>">
+        <button type="button" class="btn btn-primary" id="asst-send">
+          <i class="fas fa-paper-plane"></i> <?php echo htmlspecialchars($texts['ask']); ?>
+        </button>
+      </div>
+
+      <?php if (!$is_admin && !$has_extension && $can_change): ?>
+        <div class="u-fs-12 u-muted u-mt-6"><?php echo htmlspecialchars($texts['no_extension_notice']); ?></div>
+      <?php endif; ?>
+
+      <div class="assistant-suggestions" id="asst-suggestions">
+        <?php foreach ($suggestions as $s): ?>
+          <button type="button" class="assistant-suggestion" data-suggestion="<?php echo htmlspecialchars((string) $s); ?>">
+            <?php echo htmlspecialchars((string) $s); ?>
+          </button>
+        <?php endforeach; ?>
+      </div>
+
+      <?php if ($show_dashboard_link || !empty($is_admin)): ?>
+        <div class="assistant-footer-links">
+          <?php if ($show_dashboard_link): ?>
+            <a href="/dashboard" class="u-muted"><i class="fas fa-tachometer-alt"></i> <?php echo htmlspecialchars($texts['go_dashboard']); ?></a>
+          <?php endif; ?>
+          <?php if (!empty($is_admin)): ?>
+            <a href="/ai-assistant" class="u-muted u-ml-8"><i class="fas fa-sliders"></i> <?php echo htmlspecialchars(t('common.settings', 'Settings')); ?></a>
+          <?php endif; ?>
         </div>
-        <div id="asst-state" class="u-fs-12 u-muted u-mt-6"></div>
-        <div id="asst-preview"></div>
+      <?php endif; ?>
     </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-database u-primary"></i> <?php echo t('assistant.echo_title'); ?></div>
-    </div>
-    <div class="assistant-chat u-card-pad">
-        <div class="u-flex-gap u-d-flex u-gap-8">
-            <input type="text" id="echo-q" class="form-control u-flex-1"
-                   placeholder="<?php echo t('assistant.echo_placeholder'); ?>"
-                   onkeydown="if(event.key==='Enter') echoAsk();">
-            <button type="button" class="btn btn-secondary" onclick="echoAsk()"><?php echo t('assistant.echo_ask'); ?></button>
-        </div>
-        <div class="u-fs-12 u-muted u-mt-6"><?php echo t('assistant.echo_askable'); ?>: <?php echo htmlspecialchars($echo_askable); ?></div>
-        <div id="echo-out" class="u-mt-10"></div>
-    </div>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('assistant.changes_title'); ?></div>
-    </div>
-    <div class="u-card-pad">
-        <?php echo uiTableOpen([
-            t('assistant.col_when'),
-            t('assistant.col_request'),
-            t('assistant.col_change'),
-            t('assistant.col_status'),
-            t('assistant.col_source'),
-            '',
-        ], ['id' => 'asst-changes', 'class' => 'assistant-log']); ?>
-            <?php if (!$changes): ?>
-                <tr><td colspan="6" class="u-muted"><?php echo t('assistant.no_changes'); ?></td></tr>
-            <?php endif; ?>
-            <?php foreach ($changes as $c): ?>
-                <tr>
-                    <td class="u-fs-12"><?php echo htmlspecialchars((string) $c['ts']); ?></td>
-                    <td class="u-fs-12"><?php echo htmlspecialchars(mb_substr((string) $c['request'], 0, 60)); ?></td>
-                    <td><?php echo htmlspecialchars((string) $c['summary']); ?></td>
-                    <td class="u-fs-12">
-                        <?php if (!empty($c['rolled_back']) || $c['status'] === 'rolled_back'): ?>
-                            <?php echo t('assistant.status_rolled_back'); ?>
-                        <?php else: ?>
-                            <?php echo t('assistant.status_applied'); ?>
-                        <?php endif; ?>
-                    </td>
-                    <td class="u-fs-12 u-muted"><?php echo htmlspecialchars((string) $c['source']); ?></td>
-                    <td class="text-right">
-                        <?php if (empty($c['rolled_back']) && $c['status'] !== 'rolled_back'): ?>
-                            <button type="button" class="btn btn-secondary u-fs-12" onclick="assistantUndo(<?php echo (int) $c['id']; ?>, this)">
-                                <?php echo t('assistant.undo'); ?>
-                            </button>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-            <?php endforeach; ?>
-            <?php echo uiTableClose(); ?>
-    </div>
+  </section>
 </div>
 
 <script>
-var ASST = <?php echo json_encode($texts, JSON_UNESCAPED_UNICODE); ?>;
-var CSRF = <?php echo json_encode($csrf); ?>;
-
-function asstPost(action, data, onDone) {
-  data.append('action', action);
-  data.append('csrf_token', CSRF);
-  fetch('/api/assistant.php', { method: 'POST', body: data, credentials: 'same-origin' })
-    .then(r => r.json())
-    .then(onDone)
-    .catch(() => { document.getElementById('asst-state').textContent = ASST.err_generic; });
-}
-
-function assistantPlan() {
-  const input = document.getElementById('asst-request');
-  const request = input.value.trim();
-  if (!request) return;
-  const state = document.getElementById('asst-state');
-  state.textContent = ASST.working;
-  document.getElementById('asst-preview').innerHTML = '';
-  const fd = new FormData();
-  fd.append('request', request);
-  asstPost('plan', fd, (r) => {
-    if (!r.success || !r.plan || !r.plan.ok) {
-      state.textContent = (r.plan && r.plan.message_key && window.t) ? window.t(r.plan.message_key, r.plan.message_params) : (r.error || ASST.err_generic);
-      return;
-    }
-    state.textContent = '';
-    assistantShowPreview(r);
-  });
-}
-
-function asstEsc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function assistantShowPreview(r) {
-  const p = r.plan;
-  const args = Object.entries(p.arguments || {})
-    .map(([k, v]) => k + ': ' + (Array.isArray(v) ? v.join(', ') : String(v)))
-    .join(' · ');
-  const risk = p.risk === 'medium' ? ' (' + ASST.risk_medium + ')' : (p.risk === 'low' ? '' : ' (' + p.risk + ')');
-  const box = document.getElementById('asst-preview');
-  box.innerHTML =
-    '<div class="assistant-preview">' +
-      '<div class="u-strong">' + asstEsc(window.t ? window.t(p.title_key) : p.title_key) + asstEsc(risk) + '</div>' +
-      '<div class="u-fs-12 u-muted u-mt-6">' + asstEsc(args) + '</div>' +
-      '<div class="u-flex-gap u-mt-10 u-d-flex u-gap-8">' +
-        '<button type="button" class="btn btn-primary" id="asst-apply">' + ASST.preview_apply + '</button>' +
-        '<button type="button" class="btn btn-secondary" id="asst-discard">' + ASST.preview_discard + '</button>' +
-      '</div>' +
-    '</div>';
-  document.getElementById('asst-apply').onclick = () => assistantApply(r);
-  document.getElementById('asst-discard').onclick = () => { box.innerHTML = ''; };
-}
-
-function assistantApply(r) {
-  const state = document.getElementById('asst-state');
-  state.textContent = ASST.working;
-  const fd = new FormData();
-  fd.append('request', r.request || '');
-  fd.append('change_action', r.plan.action);
-  fd.append('arguments', JSON.stringify(r.plan.arguments));
-  asstPost('apply', fd, (res) => {
-    if (!res.success) {
-      state.textContent = res.error || ASST.err_generic;
-      return;
-    }
-    state.textContent = '';
-    const box = document.getElementById('asst-preview');
-    box.innerHTML = '<div class="assistant-preview u-strong">' + asstEsc(res.summary || ASST.applied) +
-      (res.undoable ? ' <button type="button" class="btn btn-secondary u-fs-12" onclick="assistantUndo(' + res.id + ', this)">' + ASST.undo + '</button>' : '') +
-      '</div>';
-    setTimeout(() => location.reload(), 1200);
-  });
-}
-
-function assistantUndo(id, btn) {
-  if (btn) btn.disabled = true;
-  const fd = new FormData();
-  fd.append('id', String(id));
-  asstPost('rollback', fd, (r) => {
-    if (!r.success) {
-      if (btn) btn.disabled = false;
-      document.getElementById('asst-state').textContent = r.error || ASST.err_generic;
-      return;
-    }
-    if (btn) btn.parentElement.innerHTML = ASST.undo_done;
-  });
-}
-
-function echoAsk() {
-  const q = document.getElementById('echo-q').value.trim();
-  if (!q) return;
-  const out = document.getElementById('echo-out');
-  out.innerHTML = '<span class="u-muted">' + ASST.working + '</span>';
-  const fd = new FormData();
-  fd.append('question', q);
-  asstPost('echo', fd, (r) => {
-    if (!r.success) { out.innerHTML = '<span class="u-muted">' + asstEsc(r.error || ASST.err_generic) + '</span>'; return; }
-    if (r.askable) { out.innerHTML = '<div class="assistant-preview">' + asstEsc(r.askable) + '</div>'; return; }
-    let html = '<div class="assistant-preview"><div class="u-strong">' + asstEsc(r.title) + '</div>';
-    if (r.rows && r.rows.length) {
-      html += '<?php echo uiTableOpen([]); ?>';
-      for (const row of r.rows) {
-        html += '<tr>' + Object.values(row).map(v => '<td>' + asstEsc(typeof v === "number" ? (Math.round(v * 10) / 10) : v) + '</td>').join('') + '</tr>';
-      }
-      html += '<?php echo uiTableClose(); ?>';
-    }
-    if (r.narration) {
-      html += '<p class="u-mt-10">' + asstEsc(r.narration) + '</p>';
-    }
-    out.innerHTML = html + '</div>';
-  });
-}
+window.ASST_CONFIG = {
+  csrf: <?php echo json_encode($csrf, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  texts: <?php echo json_encode($texts, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  echoAskable: <?php echo json_encode($echo_askable, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  canChange: <?php echo json_encode((bool) $can_change, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  initialQuery: <?php echo json_encode((string) ($initial_query ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>,
+  settingsMatches: <?php echo json_encode($settings_matches ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>
+};
 </script>
+<script src="<?php echo asset('/assets/js/assistant.js'); ?>"></script>

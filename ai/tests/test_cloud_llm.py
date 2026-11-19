@@ -1,6 +1,7 @@
 """Cloud language model as the understanding of voice requests (no network)."""
 import json
 import unittest
+from unittest.mock import patch
 
 from aipbx_ai import cloud_llm
 
@@ -53,9 +54,18 @@ class CloudLlmTest(unittest.TestCase):
         g = cloud_llm.validate({"provider": "google_ai", "api_key": "AIza-test-123456"})
         cloud_llm.classify(g, "arıza var", INTENTS, post=fake('{"intent": "destek"}', seen))
         url, headers, body = seen[0]
-        self.assertIn("gemini-2.5-flash:generateContent", url)
+        self.assertIn("gemini-3.5-flash-lite:generateContent", url)
         self.assertEqual(headers["x-goog-api-key"], "AIza-test-123456")
         self.assertEqual(body["generationConfig"]["responseMimeType"], "application/json")
+
+    def test_resolved_credential_uses_provider_default_model(self):
+        ref = {"provider": "google_ai", "secret_ref": "app:1:llm:google_ai"}
+        credential = {"provider": "google_ai", "api_key": "AIza-test-123456"}
+        seen = []
+        with patch("aipbx_ai.secret_refs.resolve", return_value=credential):
+            result = cloud_llm.classify(ref, "arıza var", INTENTS, post=fake('{"intent": "destek"}', seen))
+        self.assertEqual(result["intent"], "destek")
+        self.assertIn("gemini-3.5-flash-lite:generateContent", seen[0][0])
 
     def test_validate(self):
         self.assertEqual(cloud_llm.validate({"provider": "groq", "api_key": " gsk_1234567890 "})["model"],
@@ -98,6 +108,33 @@ class CloudLlmTest(unittest.TestCase):
         self.assertIn("examples: cihazım çalışmıyor", p)
         self.assertIn('"none"', p)
         json.dumps(p)
+
+    def test_claude_mistral_cohere_request_shapes(self):
+        seen = []
+
+        def fake(answer):
+            def p(url, headers, body):
+                seen.append((url, headers, body))
+                return answer
+            return p
+
+        c = cloud_llm.validate({"provider": "claude", "api_key": "sk-ant-12345678"})
+        r = cloud_llm.classify(c, "destek", INTENTS, post=fake({"content": [{"text": '{"intent":"destek","confidence":0.95}'}]}, ))
+        self.assertEqual(r["intent"], "destek")
+        self.assertEqual(seen[-1][0], "https://api.anthropic.com/v1/messages")
+        self.assertEqual(seen[-1][1]["x-api-key"], "sk-ant-12345678")
+        self.assertEqual(seen[-1][1]["anthropic-version"], "2023-06-01")
+
+        m = cloud_llm.validate({"provider": "mistral", "api_key": "mis-12345678"})
+        r2 = cloud_llm.classify(m, "destek", INTENTS, post=fake({"choices": [{"message": {"content": '{"intent":"destek","confidence":0.9}'}}]}))
+        self.assertEqual(r2["intent"], "destek")
+        self.assertEqual(seen[-1][0], "https://api.mistral.ai/v1/chat/completions")
+        self.assertEqual(seen[-1][2]["response_format"]["type"], "json_object")
+
+        co = cloud_llm.validate({"provider": "cohere", "api_key": "coh-12345678"})
+        r3 = cloud_llm.classify(co, "destek", INTENTS, post=fake({"choices": [{"message": {"content": '{"intent":"destek","confidence":0.85}'}}]}))
+        self.assertEqual(r3["intent"], "destek")
+        self.assertEqual(seen[-1][0], "https://api.cohere.com/compatibility/v1/chat/completions")
 
 
 if __name__ == "__main__":

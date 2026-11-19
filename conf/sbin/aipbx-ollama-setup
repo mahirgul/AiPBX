@@ -1,0 +1,110 @@
+#!/bin/bash
+# Local Ollama setup, invoked only through the fixed aipbx-priv whitelist.
+set -Eeuo pipefail
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+[[ $EUID -eq 0 && $# -eq 1 ]] || exit 64
+case "$1" in install|status) ;; *) exit 64 ;; esac
+STATE_DIR=/var/lib/aipbx-ollama
+STATE="$STATE_DIR/runtime.json"
+UNIT=aipbx-ollama-setup.service
+if [[ "$1" == status ]]; then
+    running=0; active=0; installed=0
+    systemctl is-active --quiet "$UNIT" && running=1
+    systemctl is-active --quiet ollama.service && active=1
+    command -v ollama >/dev/null && installed=1
+    exec python3 - "$STATE" "$running" "$active" "$installed" <<'STATUS'
+import json, sys
+path, running, active, installed = sys.argv[1:]
+try:
+    with open(path) as f:
+        state = json.load(f)
+except (OSError, ValueError):
+    state = {}
+if running == "1":
+    state.update(state="installing")
+elif active == "1":
+    state.update(state="installed", step="", error=None)
+elif state.get("state") == "installing":
+    state.update(state="failed", error="Ollama setup was interrupted")
+elif installed == "1":
+    state.update(state="failed", error="Ollama service is stopped; run setup to start it")
+elif state.get("state") != "failed":
+    state.update(state="absent")
+print(json.dumps(state))
+STATUS
+fi
+install -d -o root -g root -m 0755 "$STATE_DIR"
+exec 9>/run/aipbx-ollama-setup.lock
+flock -n 9 || exit 1
+STARTED="$(date +%s)"
+STEP=prepare
+WORK_DIR="$(mktemp -d /tmp/aipbx-ollama.XXXXXX)"
+state() {
+    python3 - "$STATE" "$1" "$STEP" "$STARTED" "${2:-}" <<'STATE'
+import json, os, sys, tempfile, time
+path, state, step, started, error = sys.argv[1:]
+fd, tmp = tempfile.mkstemp(dir=os.path.dirname(path), prefix=".runtime-")
+with os.fdopen(fd, "w") as f:
+    json.dump(dict(state=state, step=step, started=int(started),
+                   finished=None if state == "installing" else int(time.time()), error=error or None), f)
+os.chmod(tmp, 0o644)
+os.replace(tmp, path)
+STATE
+}
+cleanup() { rm -rf -- "$WORK_DIR"; }
+trap cleanup EXIT
+trap 'state failed "Ollama setup failed at $STEP; see journalctl -u aipbx-ollama-setup"' ERR
+state installing
+if ! command -v ollama >/dev/null; then
+    case "$(uname -m)" in x86_64) ARCH=amd64 ;; aarch64|arm64) ARCH=arm64 ;; *) false ;; esac
+    STEP=download; state installing
+    command -v zstd >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout=120 install -y -qq zstd
+    # Official Linux archive, following the Ollama manual installation guide.
+    curl --fail --silent --show-error --location --proto '=https' --proto-redir '=https' \
+        --connect-timeout 20 --max-time 1800 --retry 2 \
+        "https://ollama.com/download/ollama-linux-${ARCH}.tar.zst" -o "$WORK_DIR/ollama.tar.zst"
+    STEP=extract; state installing
+    tar --zstd --no-same-owner -xf "$WORK_DIR/ollama.tar.zst" -C /usr/local
+fi
+STEP=service; state installing
+if ! id -u ollama >/dev/null 2>&1; then
+    useradd --system --home-dir /usr/share/ollama --create-home --shell /usr/sbin/nologin --user-group ollama
+fi
+# Retain an existing service; only create the standard one on a fresh host.
+if ! systemctl cat ollama.service >/dev/null 2>&1; then
+    OLLAMA_BIN="$(command -v ollama)"
+    cat > /etc/systemd/system/ollama.service <<UNITFILE
+[Unit]
+Description=Ollama local language models
+After=network-online.target
+Wants=network-online.target
+[Service]
+ExecStart=$OLLAMA_BIN serve
+User=ollama
+Group=ollama
+Restart=on-failure
+RestartSec=3
+[Install]
+WantedBy=multi-user.target
+UNITFILE
+fi
+install -d -o root -g root -m 0755 /etc/systemd/system/ollama.service.d
+cat > /etc/systemd/system/ollama.service.d/aipbx-local.conf <<'LOCAL'
+[Service]
+Environment="OLLAMA_HOST=127.0.0.1:11434"
+Environment="OLLAMA_NO_CLOUD=1"
+Nice=5
+CPUWeight=50
+LOCAL
+systemctl daemon-reload
+systemctl enable ollama.service
+systemctl restart ollama.service
+STEP=check; state installing
+# Wait up to 30 seconds for the local API, without blocking a portal request.
+for attempt in {1..30}; do
+    if curl --fail --silent --noproxy '*' --max-time 2 http://127.0.0.1:11434/api/version >/dev/null; then
+        STEP=ready; state installed; exit 0
+    fi
+    sleep 1
+done
+false

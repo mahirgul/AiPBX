@@ -268,7 +268,7 @@ final class AssistantPlannerTest extends TestCase
         // A guard against adding an action whose fields no validator accepts.
         $arguments = [
             'extension' => '101', 'target' => '203', 'enabled' => true,
-            'name' => 'Front desk', 'group' => 4, 'queue' => 7,
+            'condition' => 'always', 'name' => 'Front desk', 'group' => 4, 'queue' => 7,
             'extensions' => ['101'], 'seconds' => 15, 'title' => 'Hours',
             'open' => '09:00', 'close' => '17:00', 'days' => ['mon'],
             'text' => 'Hello and welcome.',
@@ -306,4 +306,114 @@ final class AssistantPlannerTest extends TestCase
         $this->assertFalse($plan['ok']);
         $this->assertSame(0, $calls);
     }
+
+    public function testFormattedPhoneNumbersAreExtractedAsSingleTarget(): void
+    {
+        $en = AssistantPlanner::fromRules('forward 101 to +49 170 1234567', $this->context());
+        $this->assertTrue($en['ok']);
+        $this->assertSame('extension.forward', $en['action']);
+        $this->assertSame('101', $en['arguments']['extension']);
+        $this->assertSame('+491701234567', $en['arguments']['target']);
+        $this->assertTrue($en['arguments']['enabled']);
+
+        $tr = AssistantPlanner::fromRules('101 dahilisini 0 537 990 23 52 numarasına yönlendir', $this->context());
+        $this->assertTrue($tr['ok']);
+        $this->assertSame('101', $tr['arguments']['extension']);
+        $this->assertSame('05379902352', $tr['arguments']['target']);
+
+        $parens = AssistantPlanner::fromRules('forward 101 to +1 (555) 123-4567', $this->context());
+        $this->assertTrue($parens['ok']);
+        $this->assertSame('+15551234567', $parens['arguments']['target']);
+    }
+
+    public function testTurnOffForwardingInTurkishAndEnglish(): void
+    {
+        foreach ([
+            '101 yönlendirmeyi kapat',
+            '101 yönlendirmeyi iptal et',
+            '101 yönlendirmeyi kaldır',
+            'forward off 101',
+            'cancel forwarding for 101',
+        ] as $cmd) {
+            $plan = AssistantPlanner::fromRules($cmd, $this->context());
+            $this->assertNotNull($plan, $cmd);
+            $this->assertTrue($plan['ok'], $cmd);
+            $this->assertSame('extension.forward', $plan['action'], $cmd);
+            $this->assertSame('101', $plan['arguments']['extension'], $cmd);
+            $this->assertFalse($plan['arguments']['enabled'], $cmd);
+        }
+
+        // Enabling forward without a target is still refused.
+        $missing = AssistantPlanner::build('extension.forward', ['extension' => '101', 'enabled' => true], $this->context(), 'model');
+        $this->assertFalse($missing['ok']);
+        $this->assertSame('ai_assistant.err_missing', $missing['message_key']);
+    }
+
+    public function testDoNotDisturbRulesInTurkishAndEnglish(): void
+    {
+        $trOn = AssistantPlanner::fromRules('101 rahatsız etmeyin aç', $this->context());
+        $this->assertTrue($trOn['ok']);
+        $this->assertSame('extension.dnd', $trOn['action']);
+        $this->assertSame('101', $trOn['arguments']['extension']);
+        $this->assertTrue($trOn['arguments']['enabled']);
+
+        $trOff = AssistantPlanner::fromRules('101 rahatsız etmeyin kapat', $this->context());
+        $this->assertTrue($trOff['ok']);
+        $this->assertFalse($trOff['arguments']['enabled']);
+
+        $enOn = AssistantPlanner::fromRules('enable dnd for 101', $this->context());
+        $this->assertTrue($enOn['ok']);
+        $this->assertTrue($enOn['arguments']['enabled']);
+
+        $enOff = AssistantPlanner::fromRules('turn off dnd for 101', $this->context());
+        $this->assertTrue($enOff['ok']);
+        $this->assertFalse($enOff['arguments']['enabled']);
+    }
+
+    public function testConditionalForwardingBusyAndNoAnswer(): void
+    {
+        $trBusy = AssistantPlanner::fromRules('101 meşgulse 202 numarasına yönlendir', $this->context());
+        $this->assertTrue($trBusy['ok']);
+        $this->assertSame('extension.forward', $trBusy['action']);
+        $this->assertSame('busy', $trBusy['arguments']['condition']);
+        $this->assertSame('202', $trBusy['arguments']['target']);
+
+        $trNoAns = AssistantPlanner::fromRules('101 cevap vermezse 202 numarasına yönlendir', $this->context());
+        $this->assertTrue($trNoAns['ok']);
+        $this->assertSame('noanswer', $trNoAns['arguments']['condition']);
+
+        $enBusy = AssistantPlanner::fromRules('if busy forward 101 to 202', $this->context());
+        $this->assertTrue($enBusy['ok']);
+        $this->assertSame('busy', $enBusy['arguments']['condition']);
+
+        $enNoAns = AssistantPlanner::fromRules('if no answer forward 101 to 202', $this->context());
+        $this->assertTrue($enNoAns['ok']);
+        $this->assertSame('noanswer', $enNoAns['arguments']['condition']);
+    }
+
+    public function testExtensionRenameRulesInTurkishAndEnglish(): void
+    {
+        $tr = AssistantPlanner::fromRules("101'in adı Ayşe Yılmaz", $this->context());
+        $this->assertTrue($tr['ok']);
+        $this->assertSame('extension.rename', $tr['action']);
+        $this->assertSame('101', $tr['arguments']['extension']);
+        $this->assertSame('Ayşe Yılmaz', $tr['arguments']['name']);
+
+        $en = AssistantPlanner::fromRules('rename 101 to Ayşe Yılmaz', $this->context());
+        $this->assertTrue($en['ok']);
+        $this->assertSame('extension.rename', $en['action']);
+        $this->assertSame('Ayşe Yılmaz', $en['arguments']['name']);
+    }
+
+    public function testDndStatusQuestionNeverBecomesAChange(): void
+    {
+        $ctx = AssistantPlanner::context([['extension' => '19000', 'name' => 'Test']], [], []);
+        foreach (['19000 rahatsız etmeyin açık mı?', 'what is the DND status of 19000?', 'is DND on for 19000?', '19000 DND kapalı mı?'] as $question) {
+            $this->assertNull(AssistantPlanner::fromRules($question, $ctx), $question);
+        }
+        foreach (['19000 rahatsız etmeyin aç', 'enable DND for 19000'] as $question) {
+            $this->assertTrue(AssistantPlanner::fromRules($question, $ctx)['arguments']['enabled']);
+        }
+    }
+
 }

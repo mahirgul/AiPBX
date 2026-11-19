@@ -33,7 +33,7 @@ from array import array
 from collections import OrderedDict
 from pathlib import Path
 
-from . import cloud_llm, cloud_stt, cloud_tts, conversation
+from . import cloud_llm, cloud_stt, cloud_tts, conversation, langs
 from .models import READY, UnknownModel
 
 log = logging.getLogger("aipbx_ai.voice_requests")
@@ -149,7 +149,7 @@ def _model(data, name, kind, manager):
     return value
 
 
-UNDERSTAND = ("auto", "keywords", "cloud")
+UNDERSTAND = ("auto", "keywords", "cloud", "local")
 
 
 def validate_config(data, manager=None):
@@ -179,6 +179,25 @@ def validate_config(data, manager=None):
         # back to "auto" when it does not answer.
         "understand": data.get("understand") if data.get("understand") in UNDERSTAND else "auto",
     }
+    builtin = data.get("builtin_agent") is True
+    if builtin:
+        config["builtin_agent"] = True
+        if data.get("conversation") is not True or data.get("knowledge") is not True:
+            raise ConfigError("a built-in voice agent needs conversation and a knowledge base")
+        config["automatic_announcements"] = data.get("automatic_announcements") is True
+        config["announcement_tone"] = _text(data, "announcement_tone")
+        for key, limit in (("greetings", 250), ("waiting_phrases", 120)):
+            phrases = data.get(key, [])
+            if not isinstance(phrases, list) or len(phrases) > 5:
+                raise ConfigError(f"{key}: at most five phrases")
+            config[key] = [_text({"phrase": phrase}, "phrase", required=True) for phrase in phrases]
+            if any(len(phrase) > limit for phrase in config[key]):
+                raise ConfigError(f"{key}: at most {limit} characters per phrase")
+    if config["understand"] == "local":
+        ref = data.get("local_chat_app")
+        if not builtin or type(ref) is not int or not 1 <= ref <= APP_MAX:
+            raise ConfigError("invalid local chat reference")
+        config["local_chat_app"] = ref
     if config["understand"] == "cloud":
         try:
             config["llm_cloud"] = cloud_llm.validate(data.get("llm_cloud"))
@@ -198,8 +217,13 @@ def validate_config(data, manager=None):
             raise ConfigError(str(e)) from None
         if config["tts_cloud"]["provider"] != config["tts_model"][6:]:
             raise ConfigError("tts_cloud.provider does not match tts_model")
-    if isinstance(data.get("language"), str) and data["language"] in ("tr", "de", "en"):
-        config["language"] = data["language"]
+    if data.get("language") not in (None, ""):
+        try:
+            config["language"] = langs.code(data["language"], "language")
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        config["language_name"] = langs.name(config["language"], data.get("language_name"))
+        config["language_locale"] = langs.locale(config["language"], data.get("language_locale"))
     for fb_key, kind in (("tts_fallback", "tts"), ("stt_fallback", "stt")):
         fb_val = data.get(fb_key)
         if isinstance(fb_val, str) and fb_val.strip():
@@ -207,7 +231,7 @@ def validate_config(data, manager=None):
                 raise ConfigError(f"{fb_key} must be a local model")
             config[fb_key] = _model({fb_key: fb_val.strip()}, fb_key, kind, manager)
     intents = data.get("intents")
-    if not isinstance(intents, list) or not intents:
+    if not isinstance(intents, list) or (not intents and not builtin):
         raise ConfigError("intents must be a non-empty list")
     if len(intents) > MAX_INTENTS:
         raise ConfigError(f"at most {MAX_INTENTS} intents")
@@ -228,14 +252,19 @@ def validate_config(data, manager=None):
         item = {"id": intent_id, "name": _text(intent, "name", where=where),
                 "keywords": _words(intent, "keywords", where), "examples": _words(intent, "examples", where),
                 "reply": _text(intent, "reply", where=where)}
-        if not item["keywords"] and not item["examples"]:
+        if builtin:
+            route_id = intent.get("route_id")
+            if not isinstance(route_id, str) or not re.fullmatch(r"[a-f0-9]{16}", route_id):
+                raise ConfigError(f"{where}invalid dialplan route")
+            item["route_id"] = route_id
+        if not builtin and not item["keywords"] and not item["examples"]:
             raise ConfigError(f"{where}needs at least one keyword or example")
         out.append(item)
     config["intents"] = out
     # Conversation: several turns with the cloud language model (conversation.py).
     if data.get("conversation") is True:
-        if config["understand"] != "cloud" or not config.get("llm_cloud"):
-            raise ConfigError("a conversation needs a cloud language model (understand: cloud)")
+        if not config.get("llm_cloud") and not config.get("local_chat_app"):
+            raise ConfigError("a conversation needs a language model")
         try:
             config.update(conversation.validate(
                 data, lambda url: cloud_llm.assert_public_url(url, resolve=False)))
@@ -319,7 +348,12 @@ class AppStore:
             if not path.stem.isdigit() or not 1 <= int(path.stem) <= APP_MAX:
                 continue
             try:
-                config = validate_config(json.loads(path.read_text(encoding="utf-8")), None)
+                from .secret_refs import reference_config
+                stored = json.loads(path.read_text(encoding="utf-8"))
+                safe = reference_config(int(path.stem), stored)
+                config = validate_config(safe, None)
+                if safe != stored:
+                    _atomic_write(path, json.dumps(config, ensure_ascii=False).encode("utf-8"))
             except (OSError, ValueError) as e:
                 log.warning("app config %s ignored: %s", path.name, e)
                 continue
@@ -331,6 +365,9 @@ class AppStore:
             log.info("loaded %d voice_requests app config(s)", len(self._apps))
 
     def put(self, app_id, data):
+        if self.dir is not None:
+            from .secret_refs import reference_config
+            data = reference_config(app_id, data)
         config = validate_config(data, self.manager)
         encoded = json.dumps(config, ensure_ascii=False, indent=1).encode("utf-8")
         with self._mu:
@@ -373,6 +410,8 @@ class AppStore:
 
     @staticmethod
     def prompt_text(config, key):
+        if key.startswith("waiting:"):
+            return config["waiting_phrases"][int(key[8:])]
         if key.startswith("reply:"):
             intent_id = key[6:]
             return next((i["reply"] for i in config["intents"] if i["id"] == intent_id), "")
@@ -380,7 +419,18 @@ class AppStore:
 
     @staticmethod
     def prompt_keys(config):
-        return ["greeting", "retry", "not_understood"] + ["reply:" + i["id"] for i in config["intents"]]
+        waiting = [f"waiting:{i}" for i in range(len(config.get("waiting_phrases", [])))]
+        return ["greeting", *waiting, "retry", "not_understood"] + ["reply:" + i["id"] for i in config["intents"]]
+
+    @staticmethod
+    def greeting_text(config, caller_name="", caller_number="", did=""):
+        values = {"{caller_name}": caller_name, "$name": caller_name, "{caller_number}": caller_number, "{did}": did}
+
+        def fill(match):
+            value = values[match[2]]
+            return match[1] + value if value else ""
+
+        return re.sub(r"( *)(\{caller_name\}|\$name\b|\{caller_number\}|\{did\})", fill, config["greeting"]).strip()
 
     def cached(self, app_id, version, key):
         with self._mu:
@@ -393,7 +443,8 @@ class AppStore:
         pcm = self.cached(app_id, version, key)
         if pcm is not None:
             return pcm
-        pcm = self.speech(app_id, config, self.prompt_text(config, key))
+        text = self.greeting_text(config) if key == "greeting" else self.prompt_text(config, key)
+        pcm = self.speech(app_id, config, text)
         with self._mu:
             if self._version.get(app_id) == version:
                 self._cache[(app_id, version, key)] = pcm

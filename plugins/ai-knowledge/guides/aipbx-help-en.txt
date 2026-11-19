@@ -1,0 +1,94 @@
+AiPBX Quick Guide (for the PBX Assistant)
+
+Q: I changed a setting, why does it not work yet?
+A: PBX changes first go to System → Pending. Press Apply there to write them to Asterisk. If applying fails, the change stays on the list.
+
+Q: How do I add an extension?
+A: On PBX → Extensions press Add, enter the number, name and e-mail, save, then apply it from Pending. A user and an extension are one record. The SIP password is separate from the portal password; desk phones, softphones, the web phone and the mobile apps use it.
+
+Q: How do I set up a desk phone?
+A: Add the phone by its MAC address on Provisioning → Phones and link it to an extension; the phone fetches its file from the PBX. If it does not register, look at Troubleshooting → Registrations and SIP traffic.
+
+Q: How do I forward my calls?
+A: Dial *72 and the target number on the phone to forward, *73 to cancel. An administrator can also type "forward 101 to 203" in the PBX Assistant; it shows a preview, applies it after you confirm, and can undo it.
+
+Q: How do I turn on Do Not Disturb?
+A: Dial *78 on the phone; the same code turns it off again.
+
+Q: How do I listen to my voicemail?
+A: Dial *97 from your own extension. From another phone use *98 to enter a mailbox. Voicemail settings are on the extension's own page.
+
+Q: How do I answer a call ringing on another phone?
+A: *20 picks up a call ringing in your group; *21 followed by an extension picks up that extension's call.
+
+Q: Where is the list of feature codes?
+A: PBX → Feature Codes lists every code and the roles allowed to use it. PBX → Active Codes shows what is switched on right now, such as forwarding and DND.
+
+Q: How do I add a trunk?
+A: Enter the carrier details on Trunk → Trunks. Define Trunk → Inbound for incoming calls and Trunk → Outbound for outgoing calls. Number format fixes are on Inbound Call Normalization and Outbound Call Normalization.
+
+Q: How do I choose where an incoming call goes?
+A: On Trunk → Inbound pick a destination for the called number (DID): an extension, ring group, queue, IVR, time plan, conference, announcement or AI application.
+
+Q: How do I build a voice menu (IVR)?
+A: On PBX → IVR choose the greeting and a destination for each key. Upload sounds on PBX → Sounds, or create them from text with AI Apps → TTS Studio.
+
+Q: How do I play a different greeting outside office hours?
+A: Define the hours on PBX → Time Plan with one destination for open and one for closed hours, then point the inbound route at the time plan.
+
+Q: How do I ring several phones at once?
+A: Use PBX → Ring Groups. For ordered distribution, hold music and agents use PBX → Queues.
+
+Q: How does an agent join a queue or take a break?
+A: Dial *81 and the queue number to join, *80 and the queue number to leave. *22 and a break number starts a break, *23 ends it. Call Center → Agent does the same on screen.
+
+Q: How do I watch the call center live?
+A: Call Center → Wallboard shows waiting calls, agents and call quality. Reports are on Queue Report Centre, Break Report and Queue Log. Supervisors can listen with *90, whisper with *91 and barge in with *92.
+
+Q: Where are call records and reports?
+A: Panel → Reports holds the call history, durations and recordings. Recorded calls can be played there; with Call Analysis on, the transcript and quality score are shown too.
+
+Q: How do I join a conference room?
+A: Rooms are defined on PBX → Conference Rooms. Dial #9 and the room number to join. For video meetings use PBX → Video Meetings.
+
+Q: How do I send and receive faxes?
+A: Upload a PDF on Fax → Send Fax. Received faxes are on Fax → Inbound Fax, sent ones on Fax → Outbound Fax. Fax numbers are on Fax → Fax Units; cover page and e-mail settings on Fax → Fax Settings.
+
+Q: How do I block a caller?
+A: Add the number on Trunk → Blacklist / Spam.
+
+Q: How do I limit which numbers an extension may call?
+A: Trunk → Calling Permissions sets which extension may dial which numbers.
+
+Q: How do I set up an AI that answers the phone?
+A: Create an application on AI Apps → Applications: an announcement that reads values, voice requests that understand what the caller wants and route the call, routing by speech, or conversation mode with a cloud language model. Then choose the application as the destination of an inbound route.
+
+Q: Where do I set up local or cloud AI models?
+A: AI Settings → Local AI manages small models that run on this server (Ollama, Piper voices, Whisper and Vosk). AI Settings → Cloud services connects providers such as OpenAI, Gemini, Claude, Azure and ElevenLabs. The default model for each job is chosen on the Connections tab.
+
+Q: Can voicemail be turned into text?
+A: Yes. Turn on transcription and summaries on AI Settings → Voicemail AI; the text appears in the e-mail and in the apps.
+
+Q: How do I change the documents the PBX Assistant answers from?
+A: AI Settings → Knowledge Base holds the collections. The Assistant answers from the collection marked for the user's language. Create a collection for your language, choose its Assistant language, and upload TXT documents.
+
+Q: How do I back up and update the system?
+A: System → Backup & Restore takes and restores backups. System → System Update shows a new release; a full backup is taken automatically before an update.
+
+Q: How do I check that the system is healthy?
+A: System → Health checks looks at the disk, the services and the trunks. To capture a problem, start Troubleshooting → Problem recording, repeat the problem, stop it and download the masked zip file.
+
+Q: Call quality is bad or audio goes one way only. What now?
+A: Troubleshooting → Call quality shows loss and delay per call. SIP traffic shows the message flow of a call as a ladder diagram. One-way audio is usually NAT or firewall; check System → PBX Settings and Security → Firewall.
+
+Q: How do I set user permissions?
+A: Give the user a role on System → Users. System → Roles sets which pages each role may see and change.
+
+Q: Where are sign-in security and single sign-on?
+A: Security → Sign-in holds the sign-in check and alerts. Google, OIDC and SAML sign-in come as plugins from Integration → Plugin Catalog. Security → Audit records what was done.
+
+Q: How do I connect other software?
+A: Integration → REST API Keys gives API access. Integration → Webhooks sends call, fax and voicemail events to another address. Integration → Database Connections lets an IVR query an external database.
+
+Q: Where is each page explained in detail?
+A: The ? button in every page title explains that page. For the whole system see System → Help (system guide).

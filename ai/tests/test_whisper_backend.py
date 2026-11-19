@@ -11,6 +11,8 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
+import urllib.request
 import wave
 from pathlib import Path
 from types import SimpleNamespace
@@ -46,8 +48,11 @@ class WhisperDownloadTest(unittest.TestCase):
         self.orig = whisper_backend.REPO_URL
         whisper_backend.REPO_URL = (root / "hf").as_uri() + "/"
         self.data = root / "data"
+        self.download_patch = mock.patch.object(whisper_backend.hf, "open_download", side_effect=lambda url, token=None: urllib.request.urlopen(url))
+        self.download_patch.start()
 
     def tearDown(self):
+        self.download_patch.stop()
         whisper_backend.REPO_URL = self.orig
         self.tmp.cleanup()
 

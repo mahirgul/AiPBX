@@ -85,6 +85,7 @@ class DeepgramStream:
         self._state_lock = threading.Lock()
         self._finals: list[str] = []
         self._done = threading.Event()
+        self._completed = False
         self._reader: threading.Thread | None = None
 
     def connect(self) -> None:
@@ -104,9 +105,12 @@ class DeepgramStream:
         ).decode("ascii")
 
         raw_sock = socket.create_connection(("api.deepgram.com", 443), timeout=self.connect_timeout)
-        ctx = ssl.create_default_context()
-        sock = ctx.wrap_socket(raw_sock, server_hostname="api.deepgram.com")
-        sock.settimeout(self.connect_timeout)
+        try:
+            ctx = ssl.create_default_context()
+            sock = ctx.wrap_socket(raw_sock, server_hostname="api.deepgram.com")
+        except BaseException:
+            raw_sock.close()
+            raise
 
         req = (
             f"GET /v1/listen?{qs} HTTP/1.1\r\n"
@@ -118,32 +122,34 @@ class DeepgramStream:
             f"Authorization: Token {self.api_key}\r\n"
             f"User-Agent: aipbx-ai\r\n\r\n"
         ).encode("ascii")
-        sock.sendall(req)
+        try:
+            sock.settimeout(self.connect_timeout)
+            sock.sendall(req)
 
-        hdr_buf = bytearray()
-        while b"\r\n\r\n" not in hdr_buf:
-            chunk = sock.recv(1024)
-            if not chunk or len(hdr_buf) > 16384:
-                sock.close()
-                raise ConnectionError("websocket handshake failed")
-            hdr_buf.extend(chunk)
-        head, rest = bytes(hdr_buf).split(b"\r\n\r\n", 1)
-        lines = head.decode("latin1").split("\r\n")
-        if not lines or " 101 " not in lines[0]:
+            hdr_buf = bytearray()
+            while b"\r\n\r\n" not in hdr_buf:
+                chunk = sock.recv(1024)
+                if not chunk or len(hdr_buf) > 16384:
+                    raise ConnectionError("websocket handshake failed")
+                hdr_buf.extend(chunk)
+            head, rest = bytes(hdr_buf).split(b"\r\n\r\n", 1)
+            lines = head.decode("latin1").split("\r\n")
+            if not lines or " 101 " not in lines[0]:
+                raise ConnectionError(f"websocket rejected: {lines[0] if lines else 'empty'}")
+            headers = {}
+            for line in lines[1:]:
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    headers[k.strip().lower()] = v.strip()
+            if headers.get("sec-websocket-accept") != expected_accept:
+                raise ConnectionError("invalid sec-websocket-accept")
+            if rest:
+                # Deepgram does not send frames before audio, but keep socket clean.
+                pass
+            sock.settimeout(5.0)
+        except BaseException:
             sock.close()
-            raise ConnectionError(f"websocket rejected: {lines[0] if lines else 'empty'}")
-        headers = {}
-        for line in lines[1:]:
-            if ":" in line:
-                k, v = line.split(":", 1)
-                headers[k.strip().lower()] = v.strip()
-        if headers.get("sec-websocket-accept") != expected_accept:
-            sock.close()
-            raise ConnectionError("invalid sec-websocket-accept")
-        if rest:
-            # Deepgram does not send frames before audio, but keep socket clean.
-            pass
-        sock.settimeout(5.0)
+            raise
         self._sock = sock
         self._reader = threading.Thread(target=self._reader_loop, name="dg-ws-read", daemon=True)
         self._reader.start()
@@ -152,8 +158,8 @@ class DeepgramStream:
         frag = bytearray()
         frag_opcode = 0
         try:
-            while self._sock is not None:
-                fin, opcode, payload = _read_ws_frame(self._sock)
+            while (sock := self._sock) is not None:
+                fin, opcode, payload = _read_ws_frame(sock)
                 if opcode == 0x8:  # Close
                     break
                 if opcode == 0x9:  # Ping -> Pong
@@ -170,9 +176,14 @@ class DeepgramStream:
                     continue
                 if frag_opcode == 0x1:
                     self._handle_message(frag.decode("utf-8", errors="replace"))
+                    if self._completed:
+                        break
         except (OSError, EOFError, ValueError):
-            pass
+            if not self._completed:
+                self.failed = True
         finally:
+            if not self._completed:
+                self.failed = True
             self._done.set()
 
     def _handle_message(self, raw_text: str) -> None:
@@ -181,6 +192,7 @@ class DeepgramStream:
         except json.JSONDecodeError:
             return
         if msg.get("type") == "Metadata":
+            self._completed = True
             self._done.set()
             return
         if msg.get("type") != "Results":
@@ -211,9 +223,10 @@ class DeepgramStream:
     def finish(self, timeout: float = 1.5) -> str:
         if self._sock is not None and not self.failed:
             self._send_raw(_ws_frame(0x1, b'{"type":"CloseStream"}'))
-            self._done.wait(timeout=timeout)
+            if not self._done.wait(timeout=timeout) or not self._completed:
+                self.failed = True
         self.close()
-        if self.failed:
+        if self.failed or not self._completed:
             return ""
         with self._state_lock:
             return " ".join(self._finals).strip()

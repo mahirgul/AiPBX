@@ -18,10 +18,10 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from .cloud_llm import ALLOW_PRIVATE_URLS, _BASE_URL, _MODEL, assert_public_url
+from . import langs
+from .cloud_llm import ALLOW_PRIVATE_URLS, DEFAULT_MODELS, ENDPOINTS, _BASE_URL, _MODEL, assert_public_url
 
 PROVIDERS = ("openai", "groq", "deepgram", "azure", "elevenlabs", "google_ai", "openai_compat")
-LANGS = {"tr": ("tr-TR", "Turkish"), "de": ("de-DE", "German"), "en": ("en-US", "English")}
 TIMEOUT = 15
 _REGION = re.compile(r"^[a-z0-9]{3,30}$")
 
@@ -45,6 +45,9 @@ def validate(cfg):
     """Normalised stt_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
         raise ValueError("stt_cloud must be an object")
+    if 'secret_ref' in cfg:
+        from .secret_refs import validate_reference
+        return validate_reference(cfg, "stt")
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("stt_cloud.provider is not supported")
@@ -53,13 +56,12 @@ def validate(cfg):
     if not isinstance(key, str) or any(c in key for c in "\r\n") or len(key.strip()) > 400 \
             or (not keyless and len(key.strip()) < 8):
         raise ValueError("stt_cloud.api_key is missing")
-    lang = cfg.get("lang", "tr")
-    if lang not in LANGS:
-        raise ValueError("stt_cloud.lang must be tr, de or en")
+    lang = langs.code(cfg.get("lang", "tr"), "stt_cloud.lang")
     region = cfg.get("region") or "westeurope"
     if provider == "azure" and not (isinstance(region, str) and _REGION.match(region)):
         raise ValueError("stt_cloud.region is not valid")
-    out = {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region}
+    out = {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region,
+           "locale": langs.locale(lang, cfg.get("locale")), "lang_name": langs.name(lang, cfg.get("lang_name"))}
     if provider == "openai_compat":
         base_url = cfg.get("base_url") or ""
         model = cfg.get("model") or "whisper-1"
@@ -113,6 +115,8 @@ def _multipart(fields, wav):
 
 def transcribe(cfg, wav, request=_request):
     """Text of a WAV (16-bit, any of the usual rates) with the configured provider."""
+    from .secret_refs import resolve
+    cfg = resolve(cfg)
     p, key, lang = cfg["provider"], cfg["api_key"], cfg["lang"]
     if p in ("openai", "groq", "openai_compat"):
         if p == "openai":
@@ -142,7 +146,7 @@ def transcribe(cfg, wav, request=_request):
             return ""
     if p == "azure":
         d = request(f"https://{cfg['region']}.stt.speech.microsoft.com/speech/recognition/conversation/cognitiveservices/v1"
-                    f"?format=simple&language={LANGS[lang][0]}",
+                    f"?format=simple&language={cfg.get('locale') or langs.locale(lang)}",
                     {"Ocp-Apim-Subscription-Key": key, "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000"}, wav)
         return str(d.get("DisplayText") or "").strip()
     if p == "elevenlabs":
@@ -150,12 +154,12 @@ def transcribe(cfg, wav, request=_request):
         d = request("https://api.elevenlabs.io/v1/speech-to-text", {"xi-api-key": key, "Content-Type": ctype}, body)
         return str(d.get("text") or "").strip()
     if p == "google_ai":
-        prompt = (f"Transcribe this telephone audio word for word in {LANGS[lang][1]}. "
+        prompt = (f"Transcribe this telephone audio word for word in {cfg.get('lang_name') or langs.name(lang)}. "
                   "Output only the transcript, nothing else. If nothing is said, output nothing.")
         req = {"contents": [{"parts": [{"text": prompt},
                                        {"inline_data": {"mime_type": "audio/wav", "data": base64.b64encode(wav).decode()}}]}],
                "generationConfig": {"temperature": 0}}
-        d = request("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+        d = request(ENDPOINTS[p].format(model=DEFAULT_MODELS[p]),
                     {"x-goog-api-key": key, "Content-Type": "application/json"}, json.dumps(req).encode())
         try:
             return str(d["candidates"][0]["content"]["parts"][0]["text"] or "").strip()

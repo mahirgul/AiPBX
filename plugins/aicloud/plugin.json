@@ -1,0 +1,32 @@
+{
+    "slug": "aicloud",
+    "name": "Cloud AI",
+    "name_i18n": {
+        "tr": "Bulut AI",
+        "en": "Cloud AI"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "category": "ai",
+    "icon": "fas fa-cloud",
+    "icon_style": "color: var(--primary);",
+    "description": "Cloud AI provider accounts, models, usage limits, and cloud inference testing.",
+    "description_i18n": {
+        "tr": "Bulut AI sağlayıcı hesapları, modelleri, kullanım sınırları ve bulut çıkarım denemesi.",
+        "en": "Cloud AI provider accounts, models, usage limits, and cloud inference testing."
+    },
+    "scopes": [
+        "calls:read",
+        "sounds:write"
+    ],
+    "hooks": {
+        "ai_provider": true,
+        "tts_provider": true,
+        "admin_page": {
+            "route": "/ai-cloud",
+            "group": "ai"
+        }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
+}

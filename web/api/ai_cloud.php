@@ -9,7 +9,7 @@ require_once __DIR__ . '/../src/services/ai/CloudAiService.php';
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
 
-if (($_SESSION['user_role'] ?? '') !== 'admin') {
+if (!userHasRole('admin')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;
@@ -22,14 +22,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !verifyCSRFToken($_POST['csrf_token
 session_write_close();
 
 try {
-    if (($_POST['action'] ?? '') !== 'test') {
+    $action = (string) ($_POST['action'] ?? '');
+    $id = (string) ($_POST['provider'] ?? '');
+    if (!in_array($action, ['test', 'discover'], true)) {
         throw new CloudAiException('Unknown action');
     }
-    $id = (string) ($_POST['provider'] ?? '');
     if (!CloudAiService::configured($id, $_POST)) {
         throw new CloudAiException(t('ai_tts.not_configured'));
     }
-    echo json_encode(['success' => true, 'message' => CloudAiService::test($id, $_POST)], JSON_UNESCAPED_UNICODE);
+    if ($action === 'discover') {
+        $res = CloudAiService::discoverModels($id, $_POST, !empty($_POST['refresh']));
+        echo json_encode(['success' => true, 'models' => $res['models'], 'cached' => $res['cached']], JSON_UNESCAPED_UNICODE);
+    } else {
+        echo json_encode(['success' => true, 'message' => CloudAiService::test($id, $_POST)], JSON_UNESCAPED_UNICODE);
+    }
 } catch (\Throwable $e) {
-    echo json_encode(['success' => false, 'error' => mb_substr($e->getMessage(), 0, 300)], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'error' => mb_substr($e instanceof AiGatewayException ? $e->userMessage() : $e->getMessage(), 0, 300)], JSON_UNESCAPED_UNICODE);
 }

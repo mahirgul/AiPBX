@@ -38,12 +38,61 @@ class AiTtsService
     /** @return class-string<TtsProvider> */
     public static function providerClass(string $id): string
     {
+        $type = $id;
+        if ($id !== 'local') {
+            // A cloud account ("openai_b") speaks with its provider's class.
+            require_once __DIR__ . '/ai/CloudAiService.php';
+            try {
+                $type = CloudAiService::typeOf($id);
+            } catch (\Throwable $e) {
+                throw new TtsException('unknown provider: ' . $id);
+            }
+        }
         foreach (self::PROVIDERS as $cls) {
-            if ($cls::id() === $id) {
+            if ($cls::id() === $type) {
                 return $cls;
             }
         }
         throw new TtsException('unknown provider: ' . $id);
+    }
+
+    /**
+     * Faz 3: Resolves a binding mode/ref ('local_default', 'cloud_default', 'local:...', 'cloud:...',
+     * or raw provider id) into a concrete AiTtsService provider id and enforces ailocal/aicloud policy.
+     */
+    public static function resolveProvider(string $selection, string $language = 'default'): string
+    {
+        $sel = trim($selection);
+        if ($sel === 'local_default' || $sel === 'cloud_default') {
+            require_once __DIR__ . '/ai/AiBindingService.php';
+            $scope = $sel === 'local_default' ? 'local' : 'cloud';
+            $resolved = AiBindingService::resolve('panel_default', 'tts', $language !== '' && $language !== '*' ? $language : 'default', $scope);
+            if ($resolved === null) {
+                throw new TtsException(t('ai_tts.no_provider'));
+            }
+            $sel = $resolved;
+        }
+        if (str_starts_with($sel, 'local:')) {
+            $sel = 'local';
+        } elseif (str_starts_with($sel, 'cloud:')) {
+            $sel = substr($sel, 6);
+        }
+
+        $cls = self::providerClass($sel);
+        $pm = dirname(__DIR__) . '/core/PluginManager.php';
+        if (is_file($pm)) {
+            require_once $pm;
+            if ($cls::local() && !PluginManager::isEnabled('ailocal')) {
+                throw new TtsException(t('ai_local.plugin_disabled', 'Local AI plugin is disabled.'));
+            }
+            if (!$cls::local() && !PluginManager::isEnabled('aicloud')) {
+                throw new TtsException(t('ai_cloud.plugin_disabled', 'Cloud AI plugin is disabled.'));
+            }
+        }
+        if (!$cls::local() && function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1') {
+            throw new TtsException(t('ai_gateway.error_privacy'));
+        }
+        return $sel;
     }
 
     /** Decrypted settings of a provider (server side only). */
@@ -91,9 +140,20 @@ class AiTtsService
      */
     public static function providersForPage(): array
     {
+        require_once __DIR__ . '/ai/CloudAiService.php';
+        // The local voice, then every cloud account whose provider speaks (two OpenAI accounts are two entries).
+        $ids = ['local' => LocalTts::title()];
+        foreach (CloudAiService::accounts() as $accountId => $a) {
+            foreach (self::PROVIDERS as $cls) {
+                if (!$cls::local() && $cls::id() === $a['type']) {
+                    $ids[$accountId] = CloudAiService::label($accountId);
+                }
+            }
+        }
         $out = [];
-        foreach (self::PROVIDERS as $cls) {
-            $cfg = self::config($cls::id());
+        foreach ($ids as $id => $title) {
+            $cls = self::providerClass($id);
+            $cfg = self::config($id);
             $fields = [];
             foreach ($cls::fields() as $f) {
                 $v = $cfg[$f['key']] ?? '';
@@ -101,7 +161,8 @@ class AiTtsService
                 $masked = !empty($f['json']) ? (string) (json_decode($v, true)['client_email'] ?? '') : SecretBox::mask($v);
                 $fields[] = $f + ['value' => $f['secret'] ? '' : $v, 'masked' => $f['secret'] ? $masked : ''];
             }
-            $out[] = ['id' => $cls::id(), 'title' => $cls::title(), 'local' => $cls::local(), 'configured' => (new $cls($cfg))->configured(), 'fields' => $fields, 'max_chars' => $cls::maxChars()];
+            $configured = (new $cls($cfg))->configured() && ($cls::local() || CloudAiService::configured($id));
+            $out[] = ['id' => $id, 'title' => $title, 'local' => $cls::local(), 'configured' => $configured, 'fields' => $fields, 'max_chars' => $cls::maxChars()];
         }
         return $out;
     }
@@ -234,6 +295,7 @@ class AiTtsService
             throw new TtsException(t('ai_tts.err_voice'));
         }
         $speed = max(0.5, min(2.0, round($speed, 2)));
+        $provider = self::resolveProvider($provider, $language);
         $client = self::client($provider);
         $cls = self::providerClass($provider);
         if (!$cls::local()) {
@@ -283,7 +345,7 @@ class AiTtsService
 
     private static function scopedUserId(): ?int
     {
-        $role = $_SESSION['user_role'] ?? '';
+        $role = userEffectiveRole();
         if ($role === 'admin') {
             return null;
         }

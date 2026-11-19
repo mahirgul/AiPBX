@@ -101,10 +101,12 @@ step() { STEP="$1"; log "== $1"; runtime installing "$1"; }
 if [[ "$ACTION" == remove ]]; then
     log "== remove"
     runtime installing remove
-    systemctl disable --now "$UNIT" >>"$LOG_FILE" 2>&1 || true
+    systemctl stop "$UNIT" >>"$LOG_FILE" 2>&1 || true
     rm -rf "$VENV" "$DATA_DIR/hf" "$DATA_DIR/cache" "$DATA_DIR/models"
     runtime absent ""
-    log "runtime removed"
+    systemctl enable "$UNIT" >>"$LOG_FILE" 2>&1 || true
+    systemctl start "$UNIT" >>"$LOG_FILE" 2>&1 || true
+    log "local runtime removed; lightweight gateway active"
     exit 0
 fi
 

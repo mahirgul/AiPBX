@@ -26,20 +26,27 @@ def hotel(**over):
 class CloudSttTest(unittest.TestCase):
     def test_validate(self):
         self.assertEqual(cloud_stt.validate({"provider": "groq", "api_key": KEY + " ", "lang": "de"}),
-                         {"provider": "groq", "api_key": KEY, "lang": "de", "region": "westeurope"})
+                         {"provider": "groq", "api_key": KEY, "lang": "de", "region": "westeurope",
+                      "locale": "de-DE", "lang_name": "German"})
+        # Any language the administrator added: its locale and name come with it.
+        self.assertEqual(cloud_stt.validate({"provider": "groq", "api_key": KEY, "lang": "fr", "locale": "fr-CA",
+                                             "lang_name": "French"})["locale"], "fr-CA")
+        self.assertEqual(cloud_stt.validate({"provider": "groq", "api_key": KEY, "lang": "fr"})["lang_name"], "fr")
         self.assertEqual(cloud_stt.validate({"provider": "openai_compat", "api_key": KEY, "lang": "en",
                                              "base_url": "https://api.example.com/v1", "model": "whisper-custom"}),
                          {"provider": "openai_compat", "api_key": KEY, "lang": "en", "region": "westeurope",
+                          "locale": "en-US", "lang_name": "English",
                           "base_url": "https://api.example.com/v1", "model": "whisper-custom"})
         self.assertEqual(cloud_stt.validate({"provider": "openai_compat", "api_key": "", "lang": "en",
                                              "base_url": "http://10.0.0.5:8000/v1", "model": "whisper-local"}),
                          {"provider": "openai_compat", "api_key": "", "lang": "en", "region": "westeurope",
+                          "locale": "en-US", "lang_name": "English",
                           "base_url": "http://10.0.0.5:8000/v1", "model": "whisper-local"})
         self.assertEqual(cloud_stt.validate({"provider": "openai_compat", "lang": "en",
                                              "base_url": "http://127.0.0.1:8000/v1"})["base_url"],
                          "http://127.0.0.1:8000/v1")
         for bad in (None, {"provider": "x", "api_key": KEY}, {"provider": "groq", "api_key": "short"},
-                    {"provider": "groq", "api_key": KEY, "lang": "fr"}, {"provider": "groq", "api_key": KEY + "\nX"},
+                    {"provider": "groq", "api_key": KEY, "lang": "french"}, {"provider": "groq", "api_key": KEY + "\nX"},
                     {"provider": "azure", "api_key": KEY, "region": "../x"},
                     {"provider": "openai_compat", "api_key": KEY, "base_url": "http://insecure.com"},
                     {"provider": "openai_compat", "api_key": KEY, "base_url": "not-a-url"},
@@ -70,6 +77,7 @@ class CloudSttTest(unittest.TestCase):
         out = cloud_stt.transcribe({"provider": "google_ai", "api_key": KEY, "lang": "tr"}, wav,
                                    fake({"candidates": [{"content": {"parts": [{"text": "klima çalışmıyor"}]}}]}))
         self.assertEqual(out, "klima çalışmıyor")
+        self.assertIn("gemini-3.5-flash-lite:generateContent", calls[-1][0])
         self.assertIn("Turkish", json.loads(calls[-1][2])["contents"][0]["parts"][0]["text"])
         self.assertEqual(cloud_stt.transcribe(
             {"provider": "openai_compat", "api_key": KEY, "lang": "en", "base_url": "https://api.example.com/v1", "model": "whisper-custom"},
@@ -100,7 +108,8 @@ class CloudSttTest(unittest.TestCase):
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
             self.assertNotIn(KEY, json.dumps(store.list()))
             again = voice_requests.AppStore(None, tmp)
-            self.assertEqual(again.get(5)[0]["stt_cloud"]["api_key"], KEY)
+            self.assertNotIn("api_key", again.get(5)[0]["stt_cloud"])
+            self.assertEqual(again.get(5)[0]["stt_cloud"]["secret_ref"], "app:5:stt:deepgram")
 
 
 if __name__ == "__main__":

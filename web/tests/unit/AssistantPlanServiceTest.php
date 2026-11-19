@@ -22,7 +22,7 @@ final class AssistantPlanServiceTest extends TestCase
     protected function setUp(): void
     {
         Fixtures::load();
-        getDB()->exec('DELETE FROM sys_users WHERE username LIKE "ext1__" OR username LIKE "ext2__" OR username LIKE "ext2___"');
+        getDB()->exec('DELETE FROM sys_users WHERE username LIKE "ext1__" OR username LIKE "ext2__" OR username LIKE "ext2___" OR username LIKE "asst\_%"');
         getDB()->exec("DELETE FROM pbx_ai_changes");
     }
 
@@ -246,4 +246,20 @@ final class AssistantPlanServiceTest extends TestCase
                 ->execute([$orig['timeout'], $orig['members_json'], $orig['static_members_json'], $orig['supervisors_json'], $qid]);
         }
     }
+
+    public function testDndAppliesAndUndoRestoresWithoutChangingForwarding(): void
+    {
+        $db = getDB();
+        $db->exec("DELETE FROM sys_users WHERE username = 'ext19009'");
+        $id = $this->extension('19009');
+        getDB()->prepare('UPDATE sys_users SET call_forward_number = ? WHERE id = ?')->execute(['203', $id]);
+        $plan = ['ok' => true, 'action' => 'extension.dnd', 'source' => 'rules',
+                 'arguments' => ['extension' => '19009', 'enabled' => true]];
+        $change = AssistantPlanService::apply($plan, 'enable DND for 19009');
+        $this->assertSame(1, (int) getDB()->query("SELECT dnd_enabled FROM sys_users WHERE id = $id")->fetchColumn());
+        AssistantPlanService::rollback($change);
+        $this->assertSame(0, (int) getDB()->query("SELECT dnd_enabled FROM sys_users WHERE id = $id")->fetchColumn());
+        $this->assertSame('203', getDB()->query("SELECT call_forward_number FROM sys_users WHERE id = $id")->fetchColumn());
+    }
+
 }

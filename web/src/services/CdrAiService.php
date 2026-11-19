@@ -3,20 +3,22 @@
  * CDR Call Recording AI: on-demand transcription, LLM summary, and search storage.
  *
  * Uses the configured STT engine (local Whisper/Vosk or cloud via VoicemailAiService)
- * and optional cloud LLM summary (CloudAiService::engine('llm', $lang)), storing
+ * and optional cloud LLM summary (CloudAiService::engineFor('cdr_llm', $lang)), storing
  * results once per cdr_id in the `cdr_ai` table.
  */
 
 require_once dirname(__DIR__) . '/db_helper.php';
 require_once dirname(__DIR__) . '/helpers.php';
+require_once dirname(__DIR__) . '/core/PluginManager.php';
 require_once __DIR__ . '/ai/CloudAiService.php';
-require_once __DIR__ . '/VoicemailAiService.php';
+require_once __DIR__ . '/ai/AiBindingService.php';
+require_once __DIR__ . '/ai/AiGateway.php';
+require_once __DIR__ . '/LocalAiService.php';
 require_once __DIR__ . '/PrivacyService.php';
 require_once __DIR__ . '/RecordingStorage.php';
 
 class CdrAiService
 {
-    private const LANG_NAMES = ['tr' => 'Turkish', 'de' => 'German', 'en' => 'English'];
 
     /** @return array{cdr_id: int, call_id: string, transcript: string, summary: string, engine: string, created_at: string}|null */
     public static function find(int $cdrId): ?array
@@ -169,6 +171,223 @@ class CdrAiService
         }
     }
 
+    public static function cdrExists(int $cdrId): bool
+    {
+        if ($cdrId <= 0) {
+            return false;
+        }
+        try {
+            $st = getDB()->prepare('SELECT 1 FROM cdrs WHERE id = ? LIMIT 1');
+            $st->execute([$cdrId]);
+            return (bool) $st->fetchColumn();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Resolves the model ref ('local:...' or 'cloud:...') for `ai_call_analysis` via AiBindingService.
+     * Falls back to legacy CloudAiService::engineFor() only when no `ai_bindings` row exists yet.
+     * Never silently falls back from local to cloud.
+     *
+     * @return array{0: ?string, 1: bool} [selection, fromBinding]
+     */
+    private static function resolveSelectionWithSource(string $task, string $lang = 'default', string $legacyFeature = ''): array
+    {
+        $lang = $lang !== '' ? $lang : 'default';
+        $hasRow = false;
+        try {
+            $st = getDB()->prepare(
+                'SELECT 1 FROM ai_bindings WHERE feature = ? AND scope_ref = ? AND task = ? AND language IN (?, ?) LIMIT 1'
+            );
+            $st->execute(['ai_call_analysis', 'global', $task, $lang, 'default']);
+            $hasRow = (bool) $st->fetchColumn();
+        } catch (\Throwable $e) {
+            $hasRow = false;
+        }
+
+        if ($hasRow) {
+            $resolved = AiBindingService::resolve('ai_call_analysis', $task, $lang, 'global');
+            return [$resolved !== null && $resolved !== '' ? $resolved : null, true];
+        }
+
+        if ($legacyFeature !== '') {
+            try {
+                $legacy = CloudAiService::engineFor($legacyFeature, $lang === 'default' ? 'tr' : $lang);
+                return [$legacy !== '' ? $legacy : null, false];
+            } catch (\Throwable $e) {
+                return [null, false];
+            }
+        }
+        return [null, false];
+    }
+
+    public static function resolveSelection(string $task, string $lang = 'default', string $legacyFeature = ''): ?string
+    {
+        return self::resolveSelectionWithSource($task, $lang, $legacyFeature)[0];
+    }
+
+    private static function scopePluginEnabled(string $scope): bool
+    {
+        $slug = $scope === 'local' ? 'ailocal' : 'aicloud';
+        try {
+            $st = getDB()->prepare('SELECT enabled FROM sys_plugins WHERE slug = ? LIMIT 1');
+            $st->execute([$slug]);
+            $row = $st->fetchColumn();
+            if ($row !== false) {
+                return (bool) $row;
+            }
+            $st2 = getDB()->query("SELECT enabled FROM sys_plugins WHERE slug = 'ai' LIMIT 1");
+            return (bool) $st2->fetchColumn();
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private static function cloudBlocked(): bool
+    {
+        return function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1';
+    }
+
+    private static function reserveQuotaIfAvailable(string $providerId, string $metric): bool
+    {
+        $jobSvc = __DIR__ . '/ai/AiJobService.php';
+        if (is_file($jobSvc)) {
+            require_once $jobSvc;
+            return AiJobService::checkAndReserveQuota($providerId, $metric, 1);
+        }
+        return !CloudAiService::overLimit($providerId, $metric);
+    }
+
+    /** @return array{0: string, 1: string} text and engine ref ('' when none) */
+    public static function transcribeAudio(string $wav, string $lang): array
+    {
+        [$selection, $fromBinding] = self::resolveSelectionWithSource('stt', $lang, 'cdr_stt');
+        if ($selection === null) {
+            return ['', ''];
+        }
+        try {
+            if (str_starts_with($selection, 'local:')) {
+                if ($fromBinding && !self::scopePluginEnabled('local')) {
+                    return ['', ''];
+                }
+                return [trim(LocalAiService::stt(substr($selection, 6), $wav)['text']), $selection];
+            }
+            if (str_starts_with($selection, 'cloud:')) {
+                $providerId = substr($selection, 6);
+                if (($fromBinding && !self::scopePluginEnabled('cloud')) || self::cloudBlocked()) {
+                    return ['', ''];
+                }
+                if (!self::reserveQuotaIfAvailable($providerId, 'stt')) {
+                    return ['', ''];
+                }
+                try {
+                    return [trim(CloudAiService::stt($providerId, $wav, $lang)['text']), $selection];
+                } catch (\Throwable $e) {
+                    require_once __DIR__ . '/ai/AiJobService.php';
+                    AiJobService::releaseReservedQuota($providerId, 'stt_seconds');
+                    throw $e;
+                }
+            }
+        } catch (\Throwable $e) {
+            error_log("cdr AI: speech to text ({$selection}) failed: " . $e->getMessage());
+        }
+        return ['', ''];
+    }
+
+    private static function runChat(string $selection, string $prompt, int $maxTokens, bool $enforcePlugin = true): string
+    {
+        if (str_starts_with($selection, 'local:')) {
+            if ($enforcePlugin && !self::scopePluginEnabled('local')) {
+                throw new \RuntimeException('Local AI plugin is disabled.');
+            }
+            return LocalAiService::chat(substr($selection, 6), $prompt, $maxTokens);
+        }
+        if (str_starts_with($selection, 'cloud:')) {
+            $providerId = substr($selection, 6);
+            $isLoopbackOllama = false;
+            if (CloudAiService::typeIfKnown($providerId) === 'ollama') {
+                $host = strtolower((string) parse_url((string) (CloudAiService::config($providerId)['base_url'] ?? ''), PHP_URL_HOST));
+                $isLoopbackOllama = in_array($host, ['127.0.0.1', 'localhost', '[::1]'], true);
+            }
+            $scope = $isLoopbackOllama ? 'local' : 'cloud';
+            if ($enforcePlugin && !self::scopePluginEnabled($scope)) {
+                throw new \RuntimeException('AI plugin is disabled.');
+            }
+            if ($scope === 'cloud' && self::cloudBlocked()) {
+                throw new \RuntimeException('Cloud AI is blocked by privacy settings.');
+            }
+            if ($scope === 'cloud' && !self::reserveQuotaIfAvailable($providerId, 'llm')) {
+                throw new \RuntimeException('Cloud AI quota exceeded.');
+            }
+            try {
+                return CloudAiService::chat($providerId, $prompt, $maxTokens, 25);
+            } catch (\Throwable $e) {
+                if ($scope === 'cloud') {
+                    require_once __DIR__ . '/ai/AiJobService.php';
+                    AiJobService::releaseReservedQuota($providerId, 'llm_tokens');
+                }
+                throw $e;
+            }
+        }
+        throw new \RuntimeException('Unsupported model selection.');
+    }
+
+    public static function enqueue(string $cdrId, array $payload = []): int
+    {
+        require_once __DIR__ . '/ai/AiJobService.php';
+        $id = (int) $cdrId;
+        if ($id <= 0) {
+            throw new \InvalidArgumentException('Invalid CDR ID');
+        }
+        $lang = (string) ($payload['lang'] ?? CloudAiService::language(strtolower(substr((string) getSystemSetting('default_lang', 'tr'), 0, 2))));
+        $bindingRef = self::resolveSelection('stt', $lang, 'cdr_stt');
+        return AiJobService::enqueue(
+            'ai_call_analysis',
+            'analyze',
+            'cdr',
+            (string) $id,
+            'cdr:' . $id,
+            $payload + ['cdr_id' => $id, 'lang' => $lang],
+            $bindingRef
+        );
+    }
+
+    /** @return array<string, mixed> */
+    public static function processJob(array $job): array
+    {
+        $payload = [];
+        if (isset($job['payload']) && is_array($job['payload'])) {
+            $payload = $job['payload'];
+        } elseif (!empty($job['payload_json']) && is_string($job['payload_json'])) {
+            $decoded = json_decode($job['payload_json'], true);
+            if (is_array($decoded)) {
+                $payload = $decoded;
+            }
+        }
+        $cdrId = (int) ($job['entity_id'] ?? ($payload['cdr_id'] ?? 0));
+        if ($cdrId <= 0 || !self::cdrExists($cdrId)) {
+            return ['status' => 'skipped', 'reason' => 'cdr_deleted', 'cdr_id' => $cdrId];
+        }
+        $jobId = (int) ($job['id'] ?? 0);
+        $leaseOwner = isset($job['lease_owner']) ? (string) $job['lease_owner'] : null;
+        if ($jobId > 0 && $leaseOwner !== null && $leaseOwner !== '') {
+            require_once __DIR__ . '/ai/AiJobService.php';
+            if (!AiJobService::isLeaseActive($jobId, $leaseOwner)) {
+                return ['status' => 'skipped', 'reason' => 'lease_lost', 'cdr_id' => $cdrId];
+            }
+        }
+        $lang = (string) ($payload['lang'] ?? CloudAiService::language(strtolower(substr((string) getSystemSetting('default_lang', 'tr'), 0, 2))));
+        $force = !empty($payload['force']);
+        $source = ($payload['source'] ?? 'manual') === 'auto' ? 'auto' : 'manual';
+        $res = self::forCdr($cdrId, $lang, $force, null, $source);
+        return [
+            'status' => $res !== null ? 'succeeded' : 'skipped',
+            'cdr_id' => $cdrId,
+            'has_transcript' => $res !== null && $res['transcript'] !== '',
+        ];
+    }
+
     /**
      * Returns stored transcript/summary for $cdrId, or creates it from the call recording.
      * @return array{cdr_id: int, call_id: string, transcript: string, summary: string, engine: string, created_at: string}|null
@@ -181,7 +400,7 @@ class CdrAiService
                 return $done;
             }
         }
-        $lang = array_key_exists($lang, self::LANG_NAMES) ? $lang : 'tr';
+        $lang = CloudAiService::language($lang);
         $cdr = self::resolveRecording($cdrId);
         if ($cdr === null && $wavOverride === null) {
             return null;
@@ -190,7 +409,7 @@ class CdrAiService
         if ($wav === null || $wav === '') {
             return null;
         }
-        [$text, $engine] = VoicemailAiService::transcribe($wav, $lang);
+        [$text, $engine] = self::transcribeAudio($wav, $lang);
         if ($text === '') {
             return null;
         }
@@ -201,6 +420,10 @@ class CdrAiService
         }
         $callId = mb_substr((string) ($cdr['call_id'] ?? ''), 0, 64);
         $qa = self::review($text, $lang);
+        if (!self::cdrExists($cdrId)) {
+            return null;
+        }
+        $stored = false;
         try {
             getDB()->prepare(
                 'INSERT INTO cdr_ai (cdr_id, call_id, transcript, summary, engine, qa_score, qa_sentiment, qa_resolved, qa_notes, source)
@@ -219,8 +442,12 @@ class CdrAiService
             )->execute([$cdrId, $callId, $text, mb_substr($summary, 0, 500), mb_substr($engine, 0, 100),
                 $qa['qa_score'] ?? null, $qa['qa_sentiment'] ?? '', isset($qa['qa_resolved']) ? (int) $qa['qa_resolved'] : null,
                 $qa['qa_notes'] ?? '', $source === 'auto' ? 'auto' : 'manual']);
+            $stored = true;
         } catch (\Throwable $e) {
             error_log('cdr AI: not stored: ' . $e->getMessage());
+        }
+        if ($stored) {
+            self::emitCompleted($cdrId, $text, $summary, $qa);
         }
         return self::find($cdrId) ?? [
             'cdr_id' => $cdrId,
@@ -232,20 +459,48 @@ class CdrAiService
         ];
     }
 
-    /** Short 1-2 sentence summary of a call transcript when a cloud LLM is configured. */
+    /**
+     * call.ai_completed for webhooks and connections (an Odoo app writes the summary on the
+     * contact): with the same linkedid as the live call events. Privacy redaction ran already.
+     */
+    private static function emitCompleted(int $cdrId, string $text, string $summary, ?array $qa): void
+    {
+        try {
+            require_once __DIR__ . '/WebhookService.php';
+            $st = getDB()->prepare('SELECT linkedid, call_id, caller_num, agent_extension FROM cdrs WHERE id = ?');
+            $st->execute([$cdrId]);
+            $c = $st->fetch(PDO::FETCH_ASSOC) ?: [];
+            WebhookService::emit('call.ai_completed', [
+                'cdr_id' => $cdrId,
+                'linkedid' => (string) ($c['linkedid'] ?? ''),
+                'caller' => (string) ($c['caller_num'] ?? ''),
+                'agent_extension' => (string) ($c['agent_extension'] ?? ''),
+                'summary' => $summary,
+                'transcript' => mb_substr($text, 0, 20000),
+                'qa_score' => $qa['qa_score'] ?? null,
+                'qa_sentiment' => (string) ($qa['qa_sentiment'] ?? ''),
+                'qa_resolved' => isset($qa['qa_resolved']) ? (bool) $qa['qa_resolved'] : null,
+                'qa_notes' => (string) ($qa['qa_notes'] ?? ''),
+            ]);
+        } catch (\Throwable $e) {
+            // An event must never cost the analysis.
+        }
+    }
+
+    /** Short 1-2 sentence summary of a call transcript when an LLM is configured. */
     public static function summarize(string $transcript, string $lang): string
     {
-        $engine = CloudAiService::engine('llm', $lang);
-        if (!str_starts_with($engine, 'cloud:')) {
+        [$engine, $fromBinding] = self::resolveSelectionWithSource('chat', $lang, 'cdr_llm');
+        if ($engine === null) {
             return '';
         }
-        $langName = self::LANG_NAMES[$lang] ?? 'Turkish';
+        $langName = CloudAiService::languageName($lang);
         $prompt = "This is the transcript of a recorded phone call at a company. It may contain speech recognition errors.\n\n"
             . 'Transcript: "' . str_replace('"', "'", mb_substr($transcript, 0, 8000)) . "\"\n\n"
             . "Write 1 or 2 concise sentences in {$langName} summarizing who spoke, the topic, and any concrete outcome, callback, or number. "
             . 'No introduction, no bullet points, no quotes. If nothing meaningful was said, return an empty line.';
         try {
-            $s = CloudAiService::chat(substr($engine, 6), $prompt, 180, 25);
+            $s = self::runChat($engine, $prompt, 180, $fromBinding);
             return mb_substr(trim(preg_replace('/\s+/', ' ', $s) ?? '', " \"'"), 0, 500);
         } catch (\Throwable $e) {
             error_log("cdr AI: summary ({$engine}) failed: " . $e->getMessage());
@@ -300,11 +555,11 @@ class CdrAiService
     public static function review(string $transcript, string $lang, ?callable $chat = null): ?array
     {
         $criteria = self::qaSettings()['criteria'];
-        $engine = CloudAiService::engine('llm', $lang);
-        if ($criteria === '' || trim($transcript) === '' || !str_starts_with($engine, 'cloud:')) {
+        [$engine, $fromBinding] = self::resolveSelectionWithSource('chat', $lang, 'qa_llm');
+        if ($criteria === '' || trim($transcript) === '' || $engine === null) {
             return null;
         }
-        $langName = self::LANG_NAMES[$lang] ?? 'Turkish';
+        $langName = CloudAiService::languageName($lang);
         $prompt = "You review a recorded phone call of a company. The transcript comes from speech recognition and may contain errors.\n\n"
             . "The company's criteria:\n" . $criteria . "\n\n"
             . 'Transcript: "' . str_replace('"', "'", mb_substr($transcript, 0, 8000)) . "\"\n\n"
@@ -312,7 +567,7 @@ class CdrAiService
             . '"sentiment": "positive|neutral|negative" (the caller), "resolved": true|false|null, '
             . "\"notes\": \"<one sentence in {$langName}: the main reason for the score>\"}";
         try {
-            $raw = $chat ? $chat($prompt) : CloudAiService::chat(substr($engine, 6), $prompt, 250, 25);
+            $raw = $chat ? $chat($prompt) : self::runChat($engine, $prompt, 250, $fromBinding);
         } catch (\Throwable $e) {
             error_log("cdr AI: review ({$engine}) failed: " . $e->getMessage());
             return null;
@@ -383,14 +638,32 @@ class CdrAiService
             ORDER BY c.id DESC LIMIT " . (int) $left);
         $st->execute();
         $lang = strtolower(substr((string) getSystemSetting('default_lang', 'tr'), 0, 2));
-        $lang = array_key_exists($lang, self::LANG_NAMES) ? $lang : 'tr';
+        $lang = CloudAiService::language($lang);
+        require_once __DIR__ . '/ai/AiJobService.php';
+        $workerId = 'cdr-qa:' . getmypid();
         $n = 0;
         foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $id) {
-            if (self::forCdr((int) $id, $lang, false, null, 'auto') !== null) {
+            $cdrId = (int) $id;
+            $jobId = self::enqueue((string) $cdrId, ['lang' => $lang, 'source' => 'auto']);
+            $job = AiJobService::claimById($jobId, $workerId, 180);
+            if ($job !== null) {
+                $leaseOwner = (string) ($job['lease_owner'] ?? '');
+                try {
+                    $result = self::processJob($job);
+                    AiJobService::complete($jobId, $result, $leaseOwner);
+                    $ok = ($result['status'] ?? '') === 'succeeded';
+                } catch (\Throwable $e) {
+                    AiJobService::fail($jobId, $e->getMessage(), true, $leaseOwner);
+                    $ok = false;
+                }
+            } else {
+                $ok = self::forCdr($cdrId, $lang, false, null, 'auto') !== null;
+            }
+            if ($ok) {
                 $n++;
             } else {
                 // Not transcribable (no audio, no engine): remembered so it is not tried every 10 minutes.
-                $db->prepare("INSERT IGNORE INTO cdr_ai (cdr_id, transcript, source) VALUES (?, '', 'auto')")->execute([(int) $id]);
+                $db->prepare("INSERT IGNORE INTO cdr_ai (cdr_id, transcript, source) VALUES (?, '', 'auto')")->execute([$cdrId]);
             }
         }
         return $n;

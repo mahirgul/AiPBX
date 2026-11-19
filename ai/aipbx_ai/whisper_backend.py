@@ -44,6 +44,8 @@ import re
 import shutil
 import threading
 import urllib.request
+
+from . import hf
 from pathlib import Path
 
 from .vosk_backend import pcm16_from_wav
@@ -209,7 +211,7 @@ class WhisperBackend:
             part = self.dir / (name + ".part")
             req = urllib.request.Request(base + name, headers={"User-Agent": "aipbx-ai"})
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
+                with hf.open_download(req.full_url, token=getattr(self, "download_token", None)) as resp, open(part, "wb") as out:
                     while block := resp.read(1 << 16):
                         out.write(block)
                         done += len(block)

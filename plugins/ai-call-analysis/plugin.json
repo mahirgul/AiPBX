@@ -1,0 +1,29 @@
+{
+    "slug": "ai-call-analysis",
+    "name": "Call Analysis",
+    "name_i18n": {
+        "tr": "Çağrı Analizi",
+        "en": "Call Analysis"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "category": "ai",
+    "icon": "fas fa-chart-line",
+    "icon_style": "color: var(--primary);",
+    "description": "Call recording transcription, AI summaries, and automatic quality review (Auto-QA).",
+    "description_i18n": {
+        "tr": "Çağrı kaydı metne dökümü, AI özetleri ve otomatik kalite değerlendirmesi (Auto-QA).",
+        "en": "Call recording transcription, AI summaries, and automatic quality review (Auto-QA)."
+    },
+    "scopes": [
+        "calls:read"
+    ],
+    "hooks": {
+        "admin_page": {
+            "route": "/ai-call-analysis",
+            "group": "ai"
+        }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
+}

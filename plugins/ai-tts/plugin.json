@@ -1,9 +1,9 @@
 {
     "slug": "ai-tts",
-    "name": "AI Text-to-Speech Announcement Studio",
+    "name": "AI TTS Studio",
     "name_i18n": {
-        "tr": "AI Seslendirme (TTS) ve Anons Stüdyosu",
-        "en": "AI Text-to-Speech Announcement Studio"
+        "tr": "AI TTS Stüdyosu",
+        "en": "AI TTS Studio"
     },
     "version": "1.2.0",
     "author": "AiPBX Official Team",

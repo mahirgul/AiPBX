@@ -116,7 +116,7 @@ statements; it is not a general plugin migration engine.
 ## 3. Hook Points
 
 ### A. Event Hook (`events/handler.php`)
-Triggered asynchronously by `aipbx-webhook-worker.service` whenever an event listed in `hooks.events` occurs (`call.started`, `call.answered`, `call.ended`, `call.missed`, `voicemail.created`, `fax.received`, `fax.sent`, `queue.CallEntered`, `queue.AgentConnect`, `queue.Abandon`, `config.sync_applied`).
+Triggered asynchronously by `aipbx-webhook-worker.service` when an event listed in `hooks.events` is emitted. Use the catalog in `WebhookService::SUPPORTED_EVENTS` and the [REST API event documentation](rest-api-v1.md#supported-events), for example `call.started`, `call.ended`, `call.missed`, `voicemail.created`, `fax.received`, `fax.sent`, `queue.caller_abandoned`, or `config.sync_applied`. `call.answered` and the old `queue.CallEntered` / `queue.AgentConnect` / `queue.Abandon` examples are not current catalog entries. Catalog membership alone does not guarantee every Asterisk call produces an event; verify the producer and payload for the intended scenario.
 
 Return a callable receiving `(string $eventName, array $envelope, array $settings)`:
 
@@ -168,6 +168,23 @@ $recent = PluginManager::kvList('my-crm-bridge', 'recent_calls', 20);
 </div>
 ```
 
+- **`admin_page.group`**: the sidebar group of the plugin's page: `integrations` (default), `ai`
+  (default for `"category": "ai"`), `security` or `call_center` (AiPBX 1.80+).
+
+### External databases (`PluginData`, AiPBX 1.80+)
+
+A plugin can use the connections saved under **Integrations → External Databases**. It names a
+connection by its id and never sees its host, user or password. Declare the scopes you need:
+
+- `"external_db.read"`: `PluginData::connections($slug)` lists the active connections (id, name, type),
+  and `PluginData::query($slug, $id, $sql, $values)` runs a `SELECT` and returns up to
+  `PluginData::MAX_ROWS` rows;
+- `"external_db.write"`: `PluginData::write($slug, $id, $sql, $values)` runs one `INSERT` or `UPDATE`
+  and returns the affected rows. The connection must also have **Allow writing**.
+
+`:name` in the SQL is always a bound parameter, filled from `$values`. Use
+`PluginData::writeProblem($sql, $allowedNames)` to check a statement before you save it.
+
 ### D. Other hooks
 
 - **`worker/tick.php`** (`"worker": true`): returns `function (string $slug, array $settings)`, called by
@@ -216,8 +233,9 @@ version it needs, instead of the plugin failing at its first missing hook.
 
 ### From the community catalog (AiPBX 1.72+)
 
-**Previously bundled plugins (1.73+).** `auto-dialer`, `ai-assistant` and `ai-voicemail` are maintained
-in the community repository. An upgrade moves an existing bundled copy into
+**Previously bundled plugins (1.73+).** `auto-dialer` and `ai-voicemail` are maintained
+in the community repository (`ai-assistant` is the official PBX Assistant again; an upgrade removes an
+installed community copy). An upgrade moves an existing bundled copy into
 `/var/lib/aipbx/plugins/<slug>/` using an offline transition package, preserving its state and
 settings; an existing uploaded copy is kept. Fresh installations do not enable them automatically.
 Subsequent updates come from the community catalog. Their supported minimum core version is

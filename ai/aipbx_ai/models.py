@@ -273,6 +273,10 @@ class DiskLimit(Exception):
     """Downloading the model would exceed the disk limit for models."""
 
 
+class Cancelled(Exception):
+    """The administrator cancelled the download."""
+
+
 class _Entry:
     def __init__(self, spec, backend):
         self.spec = spec
@@ -281,6 +285,7 @@ class _Entry:
         self.unloading = False
         self.progress = 0
         self.error = None
+        self.cancel = False      # set by cancel(): the next progress report stops the download
         self.job_lock = threading.Lock()   # one synthesis/benchmark at a time
         self.pending = 0                   # running + waiting jobs
         self.memory_mb = 0                 # growth of the process when it was loaded
@@ -451,7 +456,7 @@ class ModelManager:
             if download and self._reserved_disk_mb() + entry.spec.download_mb > self.disk_limit_mb:
                 raise DiskLimit(model_id)
             entry.state = DOWNLOADING if download else LOADING
-            entry.progress, entry.error = 0, None
+            entry.progress, entry.error, entry.cancel = 0, None, False
             state = entry.state
         self._set_stopped(model_id, False)
         self._spawn(entry, download)
@@ -479,12 +484,34 @@ class ModelManager:
                 state = self._state(entry)
         return state
 
-    def add(self, spec):
-        """Registers a model added by the administrator (catalogue search)."""
+    def cancel(self, model_id):
+        """Stops a running download; its partial files are deleted. Returns the state."""
+        entry = self._entry(model_id)
+        with self._mu:
+            if self._state(entry) != DOWNLOADING:
+                raise ModelBusy(model_id)
+            entry.cancel = True
+        return DOWNLOADING
+
+    def add(self, spec, download_token=None, *, persist=None):
+        """Registers a model. With persist, reserves and starts its installation."""
         with self._mu:
             if spec.id in self._entries:
                 raise ValueError(f"model {spec.id} exists")
-            self._entries[spec.id] = _Entry(spec, self._make(spec))
+            entry = _Entry(spec, self._make(spec))
+            entry.backend.download_token = download_token
+            if persist is not None:
+                download = not entry.backend.installed()
+                if download and self._reserved_disk_mb() + spec.download_mb > self.disk_limit_mb:
+                    raise DiskLimit(spec.id)
+                # A rejected installation must not publish a catalogue manifest.
+                persist(spec)
+                state = entry.state = DOWNLOADING if download else LOADING
+            self._entries[spec.id] = entry
+        if persist is not None:
+            self._set_stopped(spec.id, False)
+            self._spawn(entry, download)
+            return state
 
     def has(self, model_id):
         with self._mu:
@@ -502,8 +529,14 @@ class ModelManager:
             entry.unloading = True  # blocks a parallel install/remove meanwhile
         try:
             with entry.job_lock:    # a running job finishes before its files go
-                entry.backend.unload()
-                entry.backend.delete_files()
+                try:
+                    entry.backend.unload()
+                except (OSError, RuntimeError):
+                    log.exception("%s: unload failed during remove", model_id)
+                try:
+                    entry.backend.delete_files()
+                except (OSError, RuntimeError):
+                    log.exception("%s: files not deleted during remove", model_id)
         finally:
             with self._cond:
                 entry.state, entry.progress, entry.error, entry.memory_mb, entry.unloading = None, 0, None, 0, False
@@ -525,9 +558,16 @@ class ModelManager:
 
                 def progress(pct):
                     with self._mu:
+                        if entry.cancel:
+                            raise Cancelled(spec_id)
                         entry.progress = max(0, min(100, int(pct)))
-                entry.backend.download(progress)
+                try:
+                    entry.backend.download(progress)
+                finally:
+                    entry.backend.download_token = None
                 with self._mu:
+                    if entry.cancel:
+                        raise Cancelled(spec_id)
                     entry.state, entry.progress = LOADING, 100
             log.info("%s: loading", spec_id)
             started = time.monotonic()
@@ -538,12 +578,29 @@ class ModelManager:
                     entry.state = READY
                     entry.memory_mb = max(0, sysinfo.rss_mb() - before)
             log.info("%s: ready in %.1f s", spec_id, time.monotonic() - started)
+        except Cancelled:
+            log.info("%s: download cancelled", spec_id)
+            try:
+                entry.backend.delete_files()
+            except (OSError, RuntimeError):
+                log.exception("%s: partial files not deleted", spec_id)
+            with self._mu:
+                entry.state, entry.progress, entry.error = None, 0, None
+                if entry.spec.custom:       # its manifest went with its folder
+                    self._entries.pop(spec_id, None)
         except Exception as e:  # noqa: BLE001 - any failure becomes the "error" state
             log.exception("%s: install/load failed", spec_id)
             try:
                 entry.backend.unload()
             except Exception:  # noqa: BLE001
                 pass
+            with self._mu:
+                was_downloading = entry.state == DOWNLOADING
+            if was_downloading:
+                try:
+                    entry.backend.delete_files()
+                except (OSError, RuntimeError):
+                    log.exception("%s: partial files not deleted", spec_id)
             with self._mu:
                 entry.state, entry.error = ERROR, _short(e)
 
@@ -568,6 +625,11 @@ class ModelManager:
         finally:
             with self._mu:
                 entry.pending -= 1
+
+    def chat(self, model_id, prompt, max_tokens=300, timeout=None):
+        if timeout is None:
+            return self._run_job(model_id, "llm", lambda b: b.chat(prompt, max_tokens))
+        return self._run_job(model_id, "llm", lambda b: b.chat(prompt, max_tokens, timeout=timeout))
 
     def transcribe(self, model_id, wav):
         return self._run_job(model_id, "stt", lambda b: b.transcribe(wav))

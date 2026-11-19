@@ -33,6 +33,9 @@ $destPair = function (string $prefix, string $label, bool $optional) use ($edit,
     <?php echo uiHelpBoxOpen('aiAgentsHelpBox', t('ai_agents.help_title')); ?>
         <?php echo t('ai_agents.help_body'); ?>
 <?php echo uiHelpBoxClose(); ?>
+    <?php if (!empty($privacy_blocked)): ?>
+        <div class="alert alert-warning u-mt-12 u-mb-20 u-fs-12"><i class="fas fa-shield-alt"></i> <?php echo $h(t('ai_agents.privacy_cloud_blocked_notice', 'Cross-border cloud AI data transfer lock is active: external SIP agent calls are paused and routed to the handover or fallback destination.')); ?></div>
+    <?php endif; ?>
     <?php echo uiTableOpen([
         t('ai_agents.col_title'),
         t('ai_agents.col_address'),

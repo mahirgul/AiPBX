@@ -42,10 +42,19 @@ class AssistantPlanner
                 'extension' => 'extension',
                 'target' => 'target',
                 'enabled' => 'bool',
+                'condition' => 'forward_condition',
             ],
             // 'enabled' is required, not defaulted: "forward 101 to 203" must
-            // not be guessed into an on/off decision by a default.
-            'required' => ['extension', 'target', 'enabled'],
+            // not be guessed into an on/off decision by a default. 'target' is
+            // enforced in build() whenever enabled is true.
+            'required' => ['extension', 'enabled'],
+        ],
+        'extension.dnd' => [
+            'title_key' => 'ai_assistant.act_extension_dnd',
+            'module' => 'extensions',
+            'risk' => 'low',
+            'fields' => ['extension' => 'extension', 'enabled' => 'bool'],
+            'required' => ['extension', 'enabled'],
         ],
         'extension.voicemail' => [
             'title_key' => 'ai_assistant.act_extension_voicemail',
@@ -164,20 +173,78 @@ class AssistantPlanner
     {
         $text = self::normalise($request);
 
-        // "forward 101 to 202" / "101 numaralı dahiliyi 202'ye yönlendir".
-        // The numbers are taken in order rather than by the connector word:
-        // English puts "to" before the target ("to 202") and Turkish attaches
-        // a suffix after it ("202'ye"), so a pattern keyed on "to <number>"
-        // only ever worked in English. First number is the extension, and the
-        // target is the number after "to" when there is one, else the last.
-        if (preg_match('/\b(?:forward|divert|yonlendir|yönlendir)\b/u', $text)
-            && count($numbers = self::numbersIn($text)) >= 2) {
-            $after = preg_match('/\bto\s+(\d{2,})/u', $text, $m) ? $m[1] : null;
-            return self::build('extension.forward', [
-                'extension' => $numbers[0],
-                'target' => $after ?? $numbers[count($numbers) - 1],
-                'enabled' => true,
+        // 1a. Turn off forwarding: "19000 yönlendirmeyi kapat / iptal et / kaldır",
+        // "forward off 19000", "cancel forwarding for 19000". Checked before the
+        // 2-number forwarding rule because turning off needs only the extension.
+        $fwdOff = preg_match('/\b(?:off|disable|disabled|cancel|remove|clear|stop|kapat|kapali|kapalı|iptal|kaldir|kaldır|devre disi|devre dışı)\b/u', $text);
+        $fwdCond = null;
+        if (preg_match('/\b(?:busy|mesgul|meşgul|mesgulse|meşgulse)\b/u', $text)) {
+            $fwdCond = 'busy';
+        } elseif (preg_match('/\b(?:no answer|noanswer|unanswered|cevap vermez|cevap vermezse|yanit vermez|yanıt vermez|yanit vermezse|yanıt vermezse)\b/u', $text)) {
+            $fwdCond = 'noanswer';
+        }
+        if (preg_match('/\b(?:forward|forwarding|divert|yonlendir|yönlendir|yonlendirme|yönlendirme|yonlendirmeyi|yönlendirmeyi|yonlendirmesi|yönlendirmesi)\b/u', $text)) {
+            $numbers = self::numbersIn($text);
+            if ($fwdOff && count($numbers) >= 1) {
+                $args = ['extension' => $numbers[0], 'enabled' => false];
+                if ($fwdCond !== null) {
+                    $args['condition'] = $fwdCond;
+                }
+                return self::build('extension.forward', $args, $context, 'rules');
+            }
+            // 1b. "forward 101 to 202" / "forward 19000 to +49 170 1234567" /
+            // "101 numaralı dahiliyi 202'ye yönlendir".
+            if (!$fwdOff && count($numbers) >= 2) {
+                $after = null;
+                if (preg_match('/\bto\s+((?:\+\s*)?(?:\(\d{1,5}\)|\d+)(?:[\s\-\/.]+(?:\(\d{1,5}\)|\d+))*)/u', $text, $m)) {
+                    $cleaned = preg_replace('/[^0-9+]/', '', $m[1]);
+                    if (strlen(ltrim($cleaned, '+')) >= 2) {
+                        $after = $cleaned;
+                    }
+                }
+                $args = [
+                    'extension' => $numbers[0],
+                    'target' => $after ?? $numbers[count($numbers) - 1],
+                    'enabled' => true,
+                ];
+                if ($fwdCond !== null) {
+                    $args['condition'] = $fwdCond;
+                }
+                return self::build('extension.forward', $args, $context, 'rules');
+            }
+        }
+
+        // "19000 rahatsız etmeyin aç/kapat", "enable/disable dnd for 19000".
+        if (preg_match('/\b(?:dnd|do not disturb|rahatsiz etmeyin|rahatsız etmeyin|rahatsiz etme|rahatsız etme)\b/u', $text)
+            && preg_match('/\b(\d{2,6})\b/u', $text, $m)) {
+            if (preg_match('/\?|\b(?:status|durum|durumu|nedir|mi|mı|mu|mü)\b|^(?:is|are)\b/u', $text)) {
+                return null;
+            }
+            $off = preg_match('/\b(?:off|disable|disabled|kapat|kapali|kapalı|devre disi|devre dışı|kaldir|kaldır)\b/u', $text);
+            $on = preg_match('/\b(?:on|enable|enabled|activate|ac|aç|etkinleştir|etkinlestir)\b/u', $text);
+            // A status question is read-only; never infer an on command from missing 'off'.
+            if (!$on && !$off) {
+                return null;
+            }
+            return self::build('extension.dnd', [
+                'extension' => $m[1], 'enabled' => !$off,
             ], $context, 'rules');
+        }
+
+        // "19000'in adı Ayşe Yılmaz", "rename 19000 to Ayşe Yılmaz".
+        if (preg_match('/\b(?:rename|name|adi|adı|adini|adını|ismi|ismini)\b/u', $text)
+            && preg_match('/\b(\d{2,6})\b/u', $request, $em)) {
+            $newName = null;
+            if (preg_match('/["“](.+?)["”]/u', $request, $qm)) {
+                $newName = trim($qm[1]);
+            } elseif (preg_match('/\b(?:to|as|adi|adı|adini|adını|ismi|ismini)\s+(.+?)(?:\s+(?:yap|olsun))?$/iu', $request, $nm)) {
+                $newName = trim($nm[1]);
+            }
+            if ($newName !== null && $newName !== '') {
+                return self::build('extension.rename', [
+                    'extension' => $em[1], 'name' => $newName,
+                ], $context, 'rules');
+            }
         }
 
         // "turn on/off voicemail for 101" — the 2-6 digit bound is right here:
@@ -262,6 +329,20 @@ class AssistantPlanner
      * of range — is refused outright: a half-understood change to a phone
      * system is worse than no change.
      */
+    /** The model's short text answer ({"action":"reply"}), or null. */
+    public static function replyText($reply): ?string
+    {
+        if (!is_string($reply) || trim($reply) === '') {
+            return null;
+        }
+        $json = self::decodeObject($reply);
+        if (($json['action'] ?? '') !== 'reply' || !is_string($json['text'] ?? null)) {
+            return null;
+        }
+        $text = trim(preg_replace('/[\x00-\x08\x0b-\x1f\x7f]+/', ' ', $json['text']) ?? '');
+        return $text !== '' ? mb_substr($text, 0, 600) : null;
+    }
+
     public static function fromModelReply($reply, array $context): ?array
     {
         if (!is_string($reply) || trim($reply) === '') {
@@ -321,6 +402,9 @@ class AssistantPlanner
             }
             $clean[$field] = $result;
         }
+        if ($action === 'extension.forward' && !empty($clean['enabled']) && !array_key_exists('target', $clean)) {
+            return self::refuse('ai_assistant.err_missing', ['field' => 'target']);
+        }
         return [
             'ok' => true,
             'action' => $action,
@@ -356,6 +440,9 @@ class AssistantPlanner
                     return $ext;
                 }
                 return self::asNumber($value);
+
+            case 'forward_condition':
+                return is_string($value) && in_array($value, ['always', 'busy', 'noanswer'], true) ? $value : null;
 
             case 'extension_list':
                 if (!is_array($value)) {
@@ -436,7 +523,8 @@ class AssistantPlanner
      * arguments from a closed list. It is told plainly that it cannot change
      * anything, and that "none" is a valid answer.
      */
-    public static function prompt(string $request, array $context): string
+    /** @param string $userLanguage the user's own language by name ("Turkish"), for a short greeting no model can place */
+    public static function prompt(string $request, array $context, string $userLanguage = ''): string
     {
         $lines = [];
         foreach (self::ACTIONS as $action => $spec) {
@@ -464,7 +552,11 @@ class AssistantPlanner
             . $known . "\n\nActions:\n" . implode("\n", $lines)
             . "\n\nAnswer with one JSON object and nothing else:\n"
             . '{"action": "<one of the actions above>", "arguments": {...}}' . "\n"
-            . 'If the request does not match any action, answer {"action": "none"}.' . "\n\n"
+            . 'If it is a greeting or a question about using the phone system that no action covers, answer '
+            . '{"action": "reply", "text": "<one or two short sentences in the language of the request>"}. '
+            . ($userLanguage !== '' ? "The user's language is {$userLanguage}: use it unless the request is clearly in another language. " : '')
+            . 'In a reply never say that you changed something, and never make up numbers, names or settings.' . "\n"
+            . 'Otherwise, if the request does not match any action, answer {"action": "none"}.' . "\n\n"
             . "Request: " . $request;
     }
 
@@ -541,8 +633,32 @@ class AssistantPlanner
      */
     private static function numbersIn(string $text): array
     {
-        preg_match_all('/\d{2,}/', $text, $m);
-        return $m[0];
+        $pattern = '/(?<!\d)(?:\+\s*)?(?:\(\d{1,5}\)|\d{1,20})(?:[\s\-\/.]+(?:\(\d{1,5}\)|\d{1,20}))*(?!\d)/u';
+        if (!preg_match_all($pattern, $text, $m)) {
+            return [];
+        }
+        $out = [];
+        foreach ($m[0] as $raw) {
+            $raw = trim($raw);
+            // Keep two space-separated short numbers (e.g. "101 202") apart
+            // unless they look like a formatted phone number (+, 0..., (), -, /, or 3+ groups).
+            if (strpos($raw, ' ') !== false
+                && !preg_match('/^[+0(]|[\-\/.]/', $raw)
+                && count(preg_split('/\s+/', $raw)) < 3) {
+                foreach (preg_split('/\s+/', $raw) as $part) {
+                    $clean = preg_replace('/[^0-9+]/', '', $part);
+                    if (strlen(ltrim($clean, '+')) >= 2) {
+                        $out[] = $clean;
+                    }
+                }
+                continue;
+            }
+            $clean = preg_replace('/[^0-9+]/', '', $raw);
+            if (strlen(ltrim($clean, '+')) >= 2) {
+                $out[] = $clean;
+            }
+        }
+        return $out;
     }
 
     private static function asExtension($value): ?string

@@ -26,20 +26,50 @@ chooses, for each job and language, which engine AI features use: a local model 
 | Qwen (Alibaba Cloud Model Studio) | | | ✓ (qwen-plus, qwen-turbo, qwen-max …) | | ✓ (new accounts) |
 | OpenAI-compatible (own address) | | | ✓ (any service with the OpenAI chat API) | | — |
 
-Each card has the key fields, a link to get a key, a **Test** button (a cheap authenticated call
-that shows the provider's own error when the key is wrong) and this month's use: minutes of audio
-turned into text, characters spoken and language-model tokens (table `ai_cloud_usage`).
+**Services** lists the accounts that are set up: what each can do, this month's use (minutes of
+audio turned into text, characters spoken, language-model tokens; table `ai_cloud_usage`) and
+*Test* / *Edit* / *Delete*. **Add** opens the same form for a new account: choose the service,
+enter its fields (with a link to get a key) and its monthly limits. *Test* is a cheap authenticated
+call that shows the provider's own error when the key is wrong; in the open form it tests what is
+typed, before saving.
 
 Keys are stored encrypted in `sys_settings` as `ai_tts.<provider>.<field>` — the names the Cloud
-TTS page used before, so existing accounts keep working. The Cloud TTS page now only shows the
-status of its providers and links here; changing keys needs the admin role.
+TTS page used before, so existing accounts keep working. Accounts are set up only here; the Cloud
+TTS page uses the accounts that can speak.
+
+## Languages
+
+AI features work in the languages of this list: Turkish, German and English until it is changed.
+**Add language** takes the ISO 639 code (`fr`), the locale (`fr-FR`, `pt-BR`; empty = the code) and
+a name. The name is what language models are told to answer in ("French" or "Français" both work),
+the locale is what speech services such as Azure and Google are asked for. Every language gets its
+own rows in *Engine for each job*. A language that an AI application still uses cannot be deleted;
+deleting one also deletes its engine choices. Stored as `ai_languages` in `sys_settings` (at most
+30 languages).
 
 ## Engine for each job
 
-For speech, speech to text and the **language model** in Turkish, German and English, choose a
+For speech, speech to text and the **language model** in every language of the list, choose a
 running or downloaded local model or a configured cloud provider (`ai_engine.<job>.<lang>` in `sys_settings`, values
 `local:<model id>` or `cloud:<provider>`). AI features that come later (AI applications, voice
 requests) use these choices, so switching between local and cloud needs no other change.
+
+## Features
+
+One table turns the AI features on and chooses the service each one uses:
+
+| Feature | Job |
+|---------|-----|
+| Voicemail: write new messages down | speech to text |
+| Voicemail: one-sentence summary | language model |
+| Call recordings: transcript | speech to text |
+| Call recordings: summary | language model |
+| Call quality review | language model |
+
+*By language* (the default) uses the engine of the caller's language from the table above; or pick
+one local model or account for this feature only (`ai_use.<feature>`). A chosen account that is
+removed falls back to the engine of the language; one over its monthly limit falls back to a local
+model, as above.
 
 ## Monthly limits
 
@@ -85,10 +115,10 @@ card has a **Model** field; *Test* sends one tiny chat request, so a wrong model
 
 ## Voicemail as text
 
-*AI → Cloud services → Voicemail as text*: a new voicemail is written down with the
-**speech-to-text** engine of the PBX's prompt language (a small local model such as Vosk or
+*AI → Cloud services → Features*: a new voicemail is written down with the
+**speech-to-text** engine chosen for it, by default the one of the PBX's prompt language (a small local model such as Vosk or
 Whisper, or a cloud provider) and, if *summary* is ticked, summarised in one sentence by the
-**language model** of that language ("John Smith wants to move tomorrow's 10:00 meeting to Friday").
+**language model** chosen for the summary ("John Smith wants to move tomorrow's 10:00 meeting to Friday").
 
 - The **voicemail e-mail** gets both under the list of details: template variable `{ai_text}` of
   the *voicemail* template (*E-mail → Templates*; a changed template needs `{ai_text}` added).

@@ -109,10 +109,10 @@ class CloudTtsTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 cloud_tts.validate(bad)
 
-    def test_synthesize_all_providers_with_mocked_urlopen(self):
+    def test_synthesize_all_providers_with_mocked_opener(self):
         seen = []
 
-        def fake_urlopen(req, timeout=None):
+        def fake_open(req, timeout=None):
             seen.append((req.full_url, dict(req.header_items()), req.data))
             url = req.full_url
             if "openai.com" in url:
@@ -129,7 +129,7 @@ class CloudTtsTest(unittest.TestCase):
             raise AssertionError(f"unexpected URL {url}")
 
         with patch("aipbx_ai.cloud_tts.assert_public_url", side_effect=lambda u, **kw: u), \
-             patch("urllib.request.urlopen", side_effect=fake_urlopen):
+             patch.object(cloud_tts._OPENER, "open", side_effect=fake_open):
             pcm_oai = cloud_tts.synthesize({"provider": "openai", "api_key": "sk-oai"}, "Merhaba", lang="tr")
             self.assertEqual(len(pcm_oai) % 2, 0)
             self.assertAlmostEqual(len(pcm_oai), 1600, delta=64)
@@ -260,7 +260,12 @@ class CloudTtsTest(unittest.TestCase):
                 "greeting": "Buyurun",
                 "intents": [{"id": "towels", "name": "Havlu", "keywords": ["havlu"], "reply": "Geliyor"}],
             })
+            # Deepgram is unreachable: neither its stream nor its REST API answers.
+            def slow_refused(_self):
+                time.sleep(0.5)
+                raise OSError("network down")
             with patch("aipbx_ai.cloud_tts.synthesize", return_value=_pcm_samples(1600, 300)), \
+                 patch("aipbx_ai.deepgram_stream.DeepgramStream.connect", slow_refused), \
                  patch("aipbx_ai.cloud_stt.transcribe", side_effect=RuntimeError("network down")):
                 raw_form = urllib.parse.urlencode({"app": "1", "key": dialplan_key(token)}).encode()
                 call_uuid = reg.start(raw_form)

@@ -9,10 +9,35 @@ require_once __DIR__ . '/../../src/sync/SyncAiApps.php';
 /** AI → Applications: validation, text encoding for the dialplan, the generated contexts. */
 final class AiAppServiceTest extends TestCase
 {
+    /** @var array<string, int|false> */
+    private array $prevPlugins = [];
+
+    protected function setUp(): void
+    {
+        $db = getDB();
+        foreach (['ailocal', 'aicloud'] as $slug) {
+            $prev = $db->query("SELECT enabled FROM sys_plugins WHERE slug = '{$slug}'")->fetchColumn();
+            $this->prevPlugins[$slug] = $prev === false ? false : (int) $prev;
+            $db->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug = '{$slug}'");
+        }
+        if (class_exists('PluginManager')) {
+            PluginManager::resetCache();
+        }
+    }
+
     protected function tearDown(): void
     {
-        getDB()->exec("DELETE FROM pbx_ai_apps WHERE title LIKE 'Test app%'");
-        getDB()->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'ai_app'");
+        $db = getDB();
+        $db->exec("DELETE FROM pbx_ai_apps WHERE title LIKE 'Test app%'");
+        $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'ai_app'");
+        foreach ($this->prevPlugins as $slug => $prev) {
+            if ($prev !== false) {
+                $db->prepare("UPDATE sys_plugins SET enabled = ? WHERE slug = ?")->execute([$prev, $slug]);
+            }
+        }
+        if (class_exists('PluginManager')) {
+            PluginManager::resetCache();
+        }
     }
 
     private static function form(array $over = []): array
@@ -42,8 +67,8 @@ final class AiAppServiceTest extends TestCase
     {
         $enc = AiAppService::dialplanEncode('Sayın {caller_name}; borcunuz (1,5) {amount} $ liradır, {did}.');
         $this->assertStringNotContainsString(';', $enc);
-        $this->assertStringNotContainsString(',', str_replace(['${URIENCODE(${CALLERID(name)})}', '${URIENCODE(${CDR(did)})}'], '', $enc));
-        $this->assertStringContainsString('${URIENCODE(${CALLERID(name)})}', $enc);
+        $this->assertStringNotContainsString(',', str_replace('${URIENCODE(${CDR(did)})}', '', $enc));
+        $this->assertStringContainsString('%7Bcaller_name%7D', $enc);
         $this->assertStringContainsString('%7Bamount%7D', $enc);   // lookup values stay for the service
         $this->assertSame(1, substr_count($enc, '${URIENCODE(${CDR(did)})}'));
     }
@@ -130,7 +155,7 @@ final class AiAppServiceTest extends TestCase
         $this->assertStringNotContainsString('&text=', $conf);
         $this->assertStringContainsString('Set(AI_INTENT=${CURL(http://127.0.0.1:8790/v1/calls/${AI_CALL}/result?key=', $conf);
         $this->assertStringContainsString('System(/usr/local/bin/ai_request.php 9 ${FILTER(0-9a-f-,${AI_CALL})} ', $conf);
-        $this->assertStringContainsString('${URIENCODE(${FILTER(A-Za-z0-9 ._,${CALLERID(name)})})} >/dev/null 2>&1 &)', $conf);
+        $this->assertStringNotContainsString('CALLERID(name)', $conf);
         $this->assertStringContainsString('GotoIf($["${AI_INTENT}" = "havlu"]?req_havlu)', $conf);
         $this->assertStringContainsString('same => n(req_ariza),NoOp', $conf);
         $this->assertStringContainsString('same => n(fallback),NoOp', $conf);
@@ -200,7 +225,7 @@ final class AiAppServiceTest extends TestCase
         $this->assertSame(['GET /v1/apps', 'PUT /v1/apps/5', 'PUT /v1/apps/7', 'DELETE /v1/apps/3'], $calls);
     }
 
-    public function testCloudSpeechToTextGoesWithItsKey(): void
+    public function testCloudSpeechToTextUsesScopedCredentialReference(): void
     {
         $db = getDB();
         $before = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.deepgram.%'")->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -209,7 +234,7 @@ final class AiAppServiceTest extends TestCase
             $v = AiAppService::validate(self::requestsForm(['stt_model' => 'cloud:deepgram', 'stt_lang' => 'de']));
             $cfg = AiAppService::serviceConfig(['id' => 1, 'title' => 'x', 'model_id' => 'ema-lightning', 'speed' => '1'] + $v);
             $this->assertSame('cloud:deepgram', $cfg['stt_model']);
-            $this->assertSame(['provider' => 'deepgram', 'api_key' => 'dg-test-key-123', 'region' => '', 'lang' => 'de'], $cfg['stt_cloud']);
+            $this->assertSame(['provider' => 'deepgram', 'secret_ref' => 'app:1:stt:deepgram'], $cfg['stt_cloud']);
             $this->expectException(\Exception::class);
             AiAppService::validate(self::requestsForm(['stt_model' => 'cloud:openrouter']));   // no speech to text
         } finally {
@@ -248,7 +273,7 @@ final class AiAppServiceTest extends TestCase
             $cfg = AiAppService::serviceConfig(['id' => 2, 'title' => 'CloudApp', 'speed' => '1'] + $v);
             $this->assertSame('cloud:openai', $cfg['tts_model']);
             $this->assertSame('tr', $cfg['language']);
-            $this->assertSame(['provider' => 'openai', 'api_key' => 'sk-openai-test-123', 'lang' => 'tr', 'model' => 'gpt-4o-mini-tts'], $cfg['tts_cloud']);
+            $this->assertSame(['provider' => 'openai', 'secret_ref' => 'app:2:tts:openai'], $cfg['tts_cloud']);
             $this->assertSame('piper-tr-fahrettin', $cfg['tts_fallback']);
 
             // Announcement resolveModel($model) keeps $allowCloud = false and resolves to local.

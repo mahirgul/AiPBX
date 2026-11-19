@@ -44,7 +44,8 @@ if ($action === 'audio') {
 
 if ($action === 'voices') {
     try {
-        aiTtsJson(['success' => true, 'voices' => AiTtsService::voices((string) ($_GET['provider'] ?? ''), !empty($_GET['refresh']))]);
+        $prov = AiTtsService::resolveProvider((string) ($_GET['provider'] ?? ''));
+        aiTtsJson(['success' => true, 'voices' => AiTtsService::voices($prov, !empty($_GET['refresh']))]);
     } catch (\Throwable $e) {
         aiTtsJson(['success' => false, 'error' => $e->getMessage()]);
     }

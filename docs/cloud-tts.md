@@ -8,7 +8,7 @@ for IVRs, queues and time conditions — no recording studio, and every announce
 
 ## Providers
 
-Set up one or more providers on the **Providers** tab:
+Set up one or more providers under **AI → Cloud services → Services → Add** ([Cloud AI services](cloud-ai.md)):
 
 | Provider | Credentials |
 |----------|-------------|

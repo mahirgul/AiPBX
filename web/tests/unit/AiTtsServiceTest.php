@@ -13,6 +13,7 @@ final class AiTtsServiceTest extends TestCase
 {
     private static string $mp3 = '';
     private int $calls = 0;
+    private mixed $prevAicloud = false;
 
     public static function setUpBeforeClass(): void
     {
@@ -26,6 +27,14 @@ final class AiTtsServiceTest extends TestCase
     protected function setUp(): void
     {
         $db = getDB();
+        $this->prevAicloud = $db->query("SELECT enabled FROM sys_plugins WHERE slug = 'aicloud'")->fetchColumn();
+        $now = date('Y-m-d H:i:s');
+        $db->prepare("INSERT INTO sys_plugins (slug, name, version, source, enabled, worker_enabled, config_version, installed_at, updated_at)
+                      VALUES ('aicloud', 'Cloud AI', '1.0.0', 'official', 1, 0, 1, ?, ?)
+                      ON DUPLICATE KEY UPDATE enabled = 1")->execute([$now, $now]);
+        if (class_exists('PluginManager')) {
+            PluginManager::resetCache();
+        }
         $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%'");
         $db->exec("DELETE FROM ai_tts_history");
         $db->exec("DELETE FROM pbx_announcements WHERE audio_file LIKE 'custom/tts_test%'");
@@ -42,7 +51,16 @@ final class AiTtsServiceTest extends TestCase
     protected function tearDown(): void
     {
         TtsHttp::$transport = null;
-        getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%'");
+        $db = getDB();
+        $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.%'");
+        if ($this->prevAicloud === false) {
+            $db->exec("DELETE FROM sys_plugins WHERE slug = 'aicloud'");
+        } else {
+            $db->prepare("UPDATE sys_plugins SET enabled = ? WHERE slug = 'aicloud'")->execute([(int) $this->prevAicloud]);
+        }
+        if (class_exists('PluginManager')) {
+            PluginManager::resetCache();
+        }
     }
 
     public function testChunksStayWithinTheLimitAndKeepTheText(): void

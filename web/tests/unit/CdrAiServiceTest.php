@@ -78,7 +78,16 @@ final class CdrAiServiceTest extends TestCase
             return ['status' => 404, 'body' => '{}', 'type' => 'application/json'];
         };
 
+        $db->exec("INSERT INTO sys_webhooks (name, target_url, events_json, is_active) VALUES ('zz ai event', 'https://crm.example.com/h', '[\"call.ai_completed\"]', 1)");
+        $hookId = (int) $db->lastInsertId();
         $item = CdrAiService::forCdr($cdrId, 'tr', false, self::wav(1.0));
+        $queued = $db->query("SELECT payload_json FROM sys_webhook_queue WHERE webhook_id = {$hookId} AND event_name = 'call.ai_completed'")->fetchColumn();
+        $db->exec("DELETE FROM sys_webhook_queue WHERE webhook_id = {$hookId}");
+        $db->exec("DELETE FROM sys_webhooks WHERE id = {$hookId}");
+        $ev = json_decode((string) $queued, true)['data'] ?? [];
+        $this->assertSame('test-cdr-ai-1', $ev['linkedid'] ?? null, 'the same id as the live call events');
+        $this->assertSame('Müşteri klima arızası nedeniyle teknik servis talep etti.', $ev['summary'] ?? null);
+        $this->assertSame('Klima arızası için teknik servis istiyorum.', $ev['transcript'] ?? null);
         $this->assertNotNull($item);
         $this->assertSame($cdrId, $item['cdr_id']);
         $this->assertSame('Klima arızası için teknik servis istiyorum.', $item['transcript']);
@@ -174,10 +183,13 @@ final class CdrAiServiceTest extends TestCase
                ->execute([$id, "test-cdr-ai-a{$i}", $score, $resolved, $mood]);
         }
         $ext = (string) $db->query('SELECT agent_extension FROM cdrs WHERE id = ' . $ids[0])->fetchColumn();
-        $row = array_values(array_filter(CdrAiService::qaByAgent(date('Y-m-d 00:00:00')), fn($r) => $r['extension'] === $ext))[0] ?? null;
+        // The database's own day: it may run in UTC while PHP runs in local time (a few hours after midnight they differ).
+        $today = (string) $db->query("SELECT DATE_FORMAT(CURDATE(), '%Y-%m-%d 00:00:00')")->fetchColumn();
+        $row = array_values(array_filter(CdrAiService::qaByAgent($today), fn($r) => $r['extension'] === $ext))[0] ?? null;
         $this->assertNotNull($row, 'agent row');
         $this->assertSame([2, 75, 50, 1], [$row['calls'], $row['avg'], $row['resolved_pct'], $row['negative']]);   // the unreviewed call is not counted
-        $this->assertSame([], array_filter(CdrAiService::qaByAgent(date('Y-m-d H:i:s', time() + 3600)), fn($r) => $r['extension'] === $ext));
+        $later = (string) $db->query('SELECT NOW() + INTERVAL 1 HOUR')->fetchColumn();
+        $this->assertSame([], array_filter(CdrAiService::qaByAgent($later), fn($r) => $r['extension'] === $ext));
         $db->exec('DELETE FROM cdr_ai WHERE cdr_id IN (' . implode(',', $ids) . ')');
     }
 

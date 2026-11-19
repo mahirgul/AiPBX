@@ -6,4 +6,4 @@ require_once dirname(__DIR__) . '/src/core/PluginManager.php';
 require_once dirname(__DIR__) . '/src/services/BundledPluginMigrationService.php';
 BundledPluginMigrationService::migrateVoicemail(getDB(), PluginManager::customDir());
 BundledPluginMigrationService::migrateAutoDialer(getDB(), PluginManager::customDir());
-BundledPluginMigrationService::migrateAssistant(getDB(), PluginManager::customDir());
+BundledPluginMigrationService::retireCommunityAssistant(getDB(), PluginManager::customDir());

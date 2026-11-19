@@ -12,13 +12,19 @@ This directory contains the **official plugins** bundled with AiPBX. Community p
 
 | Slug | Category | Author | Description |
 |---|---|---|---|
-| [`google-auth`](./google-auth/plugin.json) | `integration` | AiPBX Official Team | Google Sign-In (OAuth 2.0) for web portal and mobile apps |
-| [`ms-teams`](./ms-teams/plugin.json) | `integration` | AiPBX Official Team | Microsoft Teams Direct Routing SBC trunking, PowerShell generator, and call webhooks |
-| [`web-widgets`](./web-widgets/plugin.json) | `integration` | AiPBX Official Team | Embeddable WebRTC click-to-call button, callback form, and downloadable WordPress plugin (`.zip`) |
-| [`ai-cloud`](./ai-cloud/plugin.json) | `ai` | AiPBX Official Team | Cloud & OpenAI-compatible AI provider connection manager |
-| [`ai-tts`](./ai-tts/plugin.json) | `ai` | AiPBX Official Team | AI Text-to-Speech studio for generating IVR and system announcements |
-| [`ai-apps`](./ai-apps/plugin.json) | `ai` | AiPBX Official Team | Conversational AI Voice Bots (`AudioSocket` / `ARI`) for inbound calls |
-| [`ai-models`](./ai-models/plugin.json) | `ai` | AiPBX Official Team | Lightweight local TTS & speech runtime manager |
+| [`google-auth`](./google-auth/plugin.json) | `integration` | AiPBX Official Team | Allow portal and mobile users to sign in with their corporate Google Workspace or Gmail accounts via OAuth 2.0 |
+| [`oidc-auth`](./oidc-auth/plugin.json) | `integration` | AiPBX Official Team | Enterprise Single Sign-On (SSO) via OpenID Connect (OIDC) with auto-provisioning for Keycloak, Microsoft Entra ID, Authentik, Okta, and Google Workspace |
+| [`saml-auth`](./saml-auth/plugin.json) | `integration` | AiPBX Official Team | Enterprise Single Sign-On (SSO) via SAML 2.0 with JIT auto-provisioning for Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, and ADFS |
+| [`ms-teams`](./ms-teams/plugin.json) | `integration` | AiPBX Official Team | Connect AiPBX as a Session Border Controller (SBC) for Microsoft Teams Direct Routing and send real-time call/fax/voicemail Adaptive Cards to Teams channels |
+| [`web-widgets`](./web-widgets/plugin.json) | `integration` | AiPBX Official Team | Embed click-to-call WebRTC audio buttons and callback forms on any website or WordPress site with origin allowlists and daily rate limits |
+| [`ailocal`](./ailocal/plugin.json) | `ai` | AiPBX Official Team | Local AI models, Ollama / local runtime connections, and local inference testing |
+| [`aicloud`](./aicloud/plugin.json) | `ai` | AiPBX Official Team | Cloud AI provider accounts, models, usage limits, and cloud inference testing |
+| [`ai-apps`](./ai-apps/plugin.json) | `ai` | AiPBX Official Team | Build voice-driven AI IVR applications that greet callers, transcribe speech via Cloud/OpenAI-compatible STT, query external HTTP webhooks, and route calls dynamically |
+| [`ai-tts`](./ai-tts/plugin.json) | `ai` | AiPBX Official Team | Synthesize natural IVR and queue announcements from text using Cloud TTS or lightweight local TTS engines and save directly to Asterisk sounds |
+| [`ai-voicemail`](./ai-voicemail/plugin.json) | `ai` | AiPBX Official Team | Automatic speech-to-text transcription and one-sentence summaries for voicemail messages |
+| [`ai-call-analysis`](./ai-call-analysis/plugin.json) | `ai` | AiPBX Official Team | Call recording transcription, AI summaries, and automatic quality review (Auto-QA) |
+| [`ai-knowledge`](./ai-knowledge/plugin.json) | `ai` | AiPBX Official Team | Upload TXT documents, index chunks via AI Gateway embeddings, and ground Assistant & Voice Apps answers with role-based access control |
+| [`ai-assistant`](./ai-assistant/plugin.json) | `ai` | AiPBX Official Team | Experimental. Chat with the PBX: plain-language changes with a preview and undo |
 
 ## Community Plugins (`type: "community"`)
 
@@ -54,8 +60,6 @@ Read the [Plugin Developer Guide](../docs/plugin-development.md), including its
 before adding or updating a plugin. It covers authentication, outbound HTTP, database and event contracts,
 call-path timeouts, compatibility, lifecycle and required test evidence.
 
-AI Voicemail is maintained in the [community plugin repository](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/ai-voicemail). Existing installations migrate automatically on upgrade; new installations install it from the community catalog.
-
 Auto-dialer is maintained in the [community plugin repository](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/auto-dialer); existing installations migrate on upgrade with their campaign data and enabled state preserved.
 
-AI Assistant by [Gregory Merriweather (shido6)](https://github.com/shido6) is maintained in the [community plugin repository](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/ai-assistant). Its console is `/plugins/ai-assistant`; the core `/assistant` dialplan editor remains a separate feature. Existing installations migrate with their settings, API token, drafts and history preserved.
+The PBX Assistant (`ai-assistant/`) is an official, experimental plugin: the chat at `/assistant`, its settings at `/ai-assistant`. An upgrade removes an older community copy of `ai-assistant`.

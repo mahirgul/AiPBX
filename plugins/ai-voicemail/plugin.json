@@ -1,0 +1,29 @@
+{
+    "slug": "ai-voicemail",
+    "name": "Voicemail AI",
+    "name_i18n": {
+        "tr": "Sesli Mesaj AI",
+        "en": "Voicemail AI"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "category": "ai",
+    "icon": "fas fa-voicemail",
+    "icon_style": "color: var(--purple);",
+    "description": "Automatic speech-to-text transcription and one-sentence summaries for voicemail messages.",
+    "description_i18n": {
+        "tr": "Sesli mesajlar için otomatik konuşmadan metne dönüştürme ve tek cümlelik özetleme.",
+        "en": "Automatic speech-to-text transcription and one-sentence summaries for voicemail messages."
+    },
+    "scopes": [
+        "voicemail:read"
+    ],
+    "hooks": {
+        "admin_page": {
+            "route": "/ai-voicemail",
+            "group": "ai"
+        }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
+}

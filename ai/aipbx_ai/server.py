@@ -58,7 +58,7 @@ def benchmark_text(languages):
             return text
     return BENCHMARK_TEXTS["en"]
 
-_MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop)$")
+_MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop|cancel)$")
 _APP = re.compile(r"^/v1/apps/([0-9]{1,7})$")
 _CALL = re.compile(r"^/v1/calls/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(/audio|/result|/summary)?$")
 MAX_APP_BODY = 4 * 1024 * 1024  # an app config: up to 30 intents x 61 texts of 1000 characters
@@ -237,6 +237,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._authorize()
                 raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
             self._authorize()
+            if method == "POST" and path == "/v1/gateway/execute":
+                from .gateway import execute
+                length = self.headers.get("Content-Length", "")
+                if not length.isdigit() or not 0 < int(length) <= MAX_BODY:
+                    raise ApiError(HTTPStatus.BAD_REQUEST, "invalid gateway request size")
+                result = execute(self.rfile.read(int(length)), manager=self.server.manager)
+                return self._json(HTTPStatus.OK, result)
             if method == "GET" and path == "/v1/apps":
                 return self._json(HTTPStatus.OK, {"apps": self.server.calls.apps.list()})
             app = _APP.match(path)
@@ -247,14 +254,23 @@ class Handler(BaseHTTPRequestHandler):
             if method == "GET" and path == "/v1/models":
                 return self._json(HTTPStatus.OK, {"models": self.server.manager.describe_all(),
                                                   "disk": self.server.manager.disk()})
+            if method == "POST" and path == "/v1/chat":
+                return self._chat(self._body())
             if method == "POST" and path == "/v1/tts":
                 return self._tts(self._body())
             if method == "POST" and path == "/v1/stt":
                 return self._stt()
             if method == "GET" and path == "/v1/calls":
                 return self._json(HTTPStatus.OK, self.server.calls.snapshot())
+            if method == "POST" and path == "/v1/calls/drain":
+                body = self._body()
+                return self._json(HTTPStatus.OK, self.server.calls.drain(bool(body.get("drain", True))))
             if method == "GET" and path == "/v1/catalog/piper":
                 return self._piper_catalog()
+            if method == "POST" and path == "/v1/hf/search":
+                return self._hf_search(self._body())
+            if method == "POST" and path == "/v1/hf/inspect":
+                return self._hf_inspect(self._body())
             if method == "POST" and path == "/v1/models/add":
                 return self._add_model(self._body())
             m = _MODEL_ACTION.match(path)
@@ -291,6 +307,7 @@ class Handler(BaseHTTPRequestHandler):
         total, available = sysinfo.ram_mb()
         return {
             "ok": True,
+            "gateway": {"protocol_version": 1, "operations": ["chat", "embed"]},
             "version": __version__,
             "python": platform.python_version(),
             "onnxruntime": sysinfo.runtime_version(),
@@ -298,6 +315,23 @@ class Handler(BaseHTTPRequestHandler):
             "ram": {"total_mb": total, "available_mb": available},
             "process": {"rss_mb": sysinfo.rss_mb(), "cpu_percent": self.server.cpu.percent()},
         }
+
+    def _chat(self, body):
+        model = body.get("model")
+        prompt = body.get("prompt")
+        if not isinstance(model, str) or not isinstance(prompt, str) or not prompt.strip() or len(prompt) > 32000:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "model and prompt are required (maximum 32000 characters)")
+        try:
+            max_tokens = max(1, min(2048, int(body.get("max_tokens", 300))))
+        except (TypeError, ValueError):   # null, an object, "abc"
+            raise ApiError(HTTPStatus.BAD_REQUEST, "invalid token limit") from None
+        try:
+            text = self.server.manager.chat(model, prompt, max_tokens)
+        except (NotReady, ServiceBusy):
+            raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "model not ready or busy") from None
+        except (WrongKind, ValueError):
+            raise ApiError(HTTPStatus.BAD_REQUEST, "invalid language model or token limit") from None
+        return self._json(HTTPStatus.OK, {"text": text})
 
     def _stt(self):
         """POST /v1/stt?model=<id>, body: a WAV file (Content-Type audio/wav), up to 60 s."""
@@ -345,38 +379,71 @@ class Handler(BaseHTTPRequestHandler):
             raise ApiError(HTTPStatus.BAD_GATEWAY, str(e)) from None
         return self._json(HTTPStatus.OK, {"voices": voices})
 
+    def _hf_search(self, body):
+        catalog = self.server.catalog
+        if catalog is None:
+            raise ApiError(HTTPStatus.NOT_FOUND, "not found")
+        query = str(body.get("query") or "")
+        kind = str(body.get("kind") or "")
+        token = body.get("token") if isinstance(body.get("token"), str) else None
+        try:
+            models = catalog.hf_search(query=query, kind=kind, token=token)
+        except CatalogError as e:
+            raise ApiError(HTTPStatus.BAD_GATEWAY, str(e)) from None
+        return self._json(HTTPStatus.OK, {"models": models})
+
+    def _hf_inspect(self, body):
+        catalog = self.server.catalog
+        if catalog is None:
+            raise ApiError(HTTPStatus.NOT_FOUND, "not found")
+        repo = body.get("repo")
+        revision = body.get("revision") if isinstance(body.get("revision"), str) else None
+        token = body.get("token") if isinstance(body.get("token"), str) else None
+        try:
+            info = catalog.hf_inspect(repo, revision=revision, token=token)
+        except CatalogError as e:
+            raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
+        return self._json(HTTPStatus.OK, {"info": info})
+
     def _add_model(self, body):
         catalog, manager = self.server.catalog, self.server.manager
         if catalog is None:
             raise ApiError(HTTPStatus.NOT_FOUND, "not found")
-        if body.get("engine") != "piper":
-            raise ApiError(HTTPStatus.BAD_REQUEST, "engine must be piper")
         if body.get("accept_license") is not True:
             raise ApiError(HTTPStatus.BAD_REQUEST, "the model license must be accepted (accept_license: true)")
-        key = body.get("key")
-        if isinstance(key, str) and catalog_model_id(key) in self._known_files().values():
-            raise ApiError(HTTPStatus.CONFLICT, "this voice is already in the list")
+        engine = body.get("engine")
+        if engine == "piper":
+            key = body.get("key")
+            if isinstance(key, str) and catalog_model_id(key) in self._known_files().values():
+                raise ApiError(HTTPStatus.CONFLICT, "this voice is already in the list")
+            try:
+                spec = catalog.piper_spec(key)
+            except CatalogError as e:
+                raise ApiError(HTTPStatus.BAD_REQUEST if str(e) == "unknown voice" else HTTPStatus.BAD_GATEWAY, str(e)) from None
+            known = self._known_files()
+            if any(path in known for path in spec.source["files"]) or manager.has(spec.id):
+                raise ApiError(HTTPStatus.CONFLICT, "this voice is already in the list")
+        elif engine == "huggingface":
+            repo = body.get("repo")
+            revision = body.get("revision") if isinstance(body.get("revision"), str) else None
+            language = body.get("language") if isinstance(body.get("language"), str) else None
+            token = body.get("token") if isinstance(body.get("token"), str) else None
+            try:
+                spec = catalog.hf_spec(repo, revision=revision, language=language, token=token)
+            except CatalogError as e:
+                raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
+            if manager.has(spec.id):
+                raise ApiError(HTTPStatus.CONFLICT, "this model is already in the list")
+        else:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "engine must be piper or huggingface")
         try:
-            spec = catalog.piper_spec(key)
-        except CatalogError as e:
-            raise ApiError(HTTPStatus.BAD_REQUEST if str(e) == "unknown voice" else HTTPStatus.BAD_GATEWAY, str(e)) from None
-        known = self._known_files()
-        if any(path in known for path in spec.source["files"]) or manager.has(spec.id):
-            raise ApiError(HTTPStatus.CONFLICT, "this voice is already in the list")
-        if manager.disk()["used_mb"] + spec.download_mb > manager.disk_limit_mb:
-            raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded")
-        catalog.save(spec)
-        try:
-            manager.add(spec)
+            state = manager.add(
+                spec, download_token=token if engine == "huggingface" else None,
+                persist=catalog.save,
+            )
         except ValueError as e:
             raise ApiError(HTTPStatus.CONFLICT, str(e)) from None
-        try:
-            state = manager.install(spec.id)
         except DiskLimit:
-            try:
-                manager.remove(spec.id)
-            except Exception:
-                pass
             raise ApiError(HTTPStatus.INSUFFICIENT_STORAGE, "the disk limit for models would be exceeded") from None
         return self._json(HTTPStatus.ACCEPTED, {"id": spec.id, "state": state})
 
@@ -402,6 +469,12 @@ class Handler(BaseHTTPRequestHandler):
             except ModelBusy:
                 raise ApiError(HTTPStatus.CONFLICT, "model is busy downloading or loading") from None
             return self._json(HTTPStatus.OK, {"state": state})
+        if action == "cancel":
+            try:
+                state = manager.cancel(model_id)
+            except ModelBusy:
+                raise ApiError(HTTPStatus.CONFLICT, "the model is not downloading") from None
+            return self._json(HTTPStatus.ACCEPTED, {"state": state})
         if action == "remove":
             try:
                 state = manager.remove(model_id)

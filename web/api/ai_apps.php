@@ -7,7 +7,7 @@
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/ai/AiAppService.php';
 
-if (($_SESSION['user_role'] ?? '') !== 'admin') {
+if (!userHasRole('admin')) {
     http_response_code(403);
     exit;
 }

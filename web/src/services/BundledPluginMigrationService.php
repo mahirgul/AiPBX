@@ -18,26 +18,36 @@ final class BundledPluginMigrationService
              'events/handler.php', 'public/handler.php', 'sync/Sync.php', 'worker/tick.php']);
     }
 
-    public static function migrateAssistant(PDO $db, string $customDir): void
+    /**
+     * The PBX Assistant is the official `ai-assistant` plugin (plugins/ai-assistant). An older
+     * installed `ai-assistant` from the community catalog is removed: its files, its settings and
+     * its API token. The enabled flag stays, so the Assistant stays on or off as it was.
+     */
+    public static function retireCommunityAssistant(PDO $db, string $customDir): void
     {
+        $target = rtrim($customDir, '/') . '/ai-assistant';
+        if (is_link($customDir) || is_link($target)) { throw new RuntimeException('Unsafe plugin directory'); }
+        if (is_dir($target)) {
+            self::removeTree($target);
+        }
         $q = $db->prepare("SELECT source FROM sys_plugins WHERE slug = 'ai-assistant'");
         $q->execute();
-        if ($q->fetchColumn() !== 'official') { return; }
-        // Queue APIs have their own scope. Retain token identity and do not exceed its old PBX rights.
-        $tokens = $db->query("SELECT id, scopes_json FROM sys_api_tokens WHERE plugin_slug = 'ai-assistant' AND is_active = 1");
-        foreach ($tokens->fetchAll(PDO::FETCH_ASSOC) as $token) {
-            $scopes = json_decode((string)$token['scopes_json'], true);
-            if (!is_array($scopes)) { continue; }
-            $queueScope = in_array('pbx:write', $scopes, true) ? 'queues:write' :
-                (in_array('pbx:read', $scopes, true) ? 'queues:read' : null);
-            if ($queueScope !== null && !in_array($queueScope, $scopes, true)) {
-                $scopes[] = $queueScope;
-                $db->prepare("UPDATE sys_api_tokens SET scopes_json = ? WHERE id = ? AND plugin_slug = 'ai-assistant'")
-                    ->execute([json_encode($scopes, JSON_THROW_ON_ERROR), (int)$token['id']]);
-            }
+        $source = $q->fetchColumn();
+        if ($source === false || $source === 'official') { return; }
+        $db->prepare("UPDATE sys_api_tokens SET is_active = 0 WHERE plugin_slug = 'ai-assistant'")->execute();
+        $db->prepare("DELETE FROM sys_plugin_settings WHERE plugin_slug = 'ai-assistant'")->execute();
+        $db->prepare("DELETE FROM sys_plugin_kv WHERE plugin_slug = 'ai-assistant'")->execute();
+        $db->prepare("UPDATE sys_plugins SET source = 'official', name = 'PBX Assistant', version = '2.0.0', updated_at = NOW() WHERE slug = 'ai-assistant'")
+            ->execute();
+    }
+
+    private static function removeTree(string $dir): void
+    {
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
+                     RecursiveIteratorIterator::CHILD_FIRST) as $f) {
+            $f->isDir() && !$f->isLink() ? rmdir($f->getPathname()) : unlink($f->getPathname());
         }
-        self::migrate($db, $customDir, 'ai-assistant', '607dd8b30e03803d8f0b94dcc705fdf5acb04dc94c7c7945eb264cbd6d44dc05',
-            ['plugin.json', 'admin/page.php', 'lib/AssistantApi.php']);
+        rmdir($dir);
     }
 
     private static function migrate(PDO $db, string $customDir, string $slug, string $checksum, array $files): void

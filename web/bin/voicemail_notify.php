@@ -53,12 +53,14 @@ function voicemailNotifySend(string $ext, int $newCount): void
     $caller = '';
     $duration = 0;
     $newest = 0;
+    $newestTxt = '';
     foreach (glob("/var/spool/asterisk/voicemail/default/{$ext}/INBOX/msg*.txt") ?: [] as $txt) {
         $m = (int) @filemtime($txt);
         if ($m < $newest) {
             continue;
         }
         $newest = $m;
+        $newestTxt = $txt;
         $info = @parse_ini_string((string) @file_get_contents($txt), false, INI_SCANNER_RAW) ?: [];
         $caller = trim((string) ($info['callerid'] ?? ''));
         $duration = (int) ($info['duration'] ?? 0);
@@ -72,13 +74,23 @@ function voicemailNotifySend(string $ext, int $newCount): void
     if (strcasecmp($caller, 'Unknown') === 0) {
         $caller = '';
     }
-    // Voicemail as text (AI -> Cloud services -> Voicemail): the e-mail has
-    // usually made it already; without an e-mail address it is made here.
+    // Voicemail as text (AI -> Cloud services -> Voicemail): run via ai_jobs queue
+    // so the job history and retry mechanism stay connected to real voicemail arrival.
     $text = '';
     $ai = null;
     try {
         require_once dirname(__DIR__) . '/src/services/VoicemailAiService.php';
-        $ai = VoicemailAiService::forNewest($ext);
+        $origtime = $newestTxt !== '' ? VoicemailAiService::origtime($newestTxt) : 0;
+        if ($origtime > 0 && VoicemailAiService::transcribeOn()) {
+            $jobId = VoicemailAiService::enqueue(0, [
+                'mailbox' => $ext,
+                'origtime' => $origtime,
+                'txt_path' => $newestTxt,
+            ]);
+            $ai = VoicemailAiService::forNewest($ext, $jobId);
+        } else {
+            $ai = VoicemailAiService::forNewest($ext);
+        }
         $text = (string) (($ai['summary'] ?? '') !== '' ? $ai['summary'] : mb_strimwidth((string) ($ai['transcript'] ?? ''), 0, 200, '…'));
     } catch (\Throwable $e) {
         $text = '';

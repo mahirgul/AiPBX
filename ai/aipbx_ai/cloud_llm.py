@@ -37,6 +37,9 @@ ENDPOINTS = {
     "groq": "https://api.groq.com/openai/v1/chat/completions",
     "openrouter": "https://openrouter.ai/api/v1/chat/completions",
     "google_ai": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+    "claude": "https://api.anthropic.com/v1/messages",
+    "mistral": "https://api.mistral.ai/v1/chat/completions",
+    "cohere": "https://api.cohere.com/compatibility/v1/chat/completions",
     "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
     "qwen": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
     "openai_compat": None,          # base_url + /chat/completions
@@ -46,13 +49,16 @@ DEFAULT_MODELS = {
     "openai": "gpt-4.1-mini",
     "groq": "llama-3.3-70b-versatile",
     "openrouter": "google/gemini-2.5-flash",
-    "google_ai": "gemini-2.5-flash",
+    "google_ai": "gemini-3.5-flash-lite",
+    "claude": "claude-sonnet-4-20250514",
+    "mistral": "mistral-small-latest",
+    "cohere": "command-a-03-2025",
     "nvidia": "meta/llama-3.3-70b-instruct",
     "qwen": "qwen-plus",
 }
 # Providers known to accept response_format {"type": "json_object"}; for the
 # others the prompt asks for JSON and the answer is searched for it.
-JSON_MODE = ("openai", "groq", "openrouter", "qwen")
+JSON_MODE = ("openai", "groq", "openrouter", "mistral", "qwen")
 # Providers whose address may be given (Qwen: international or mainland China).
 OWN_ADDRESS = ("qwen", "openai_compat")
 PROVIDERS = tuple(ENDPOINTS)
@@ -123,6 +129,9 @@ def validate(cfg):
     """Normalised llm_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
         raise ValueError("llm_cloud must be an object")
+    if 'secret_ref' in cfg:
+        from .secret_refs import validate_reference
+        return validate_reference(cfg, "llm")
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("llm_cloud.provider is not supported")
@@ -187,6 +196,11 @@ def _post(url, headers, body, allow_private=ALLOW_PRIVATE_URLS):
 
 
 def _answer_text(cfg, text, post):
+    from .secret_refs import resolve
+    try:
+        cfg = validate(resolve(cfg))
+    except ValueError:
+        raise CloudLlmError("credential unavailable") from None
     provider, model = cfg["provider"], cfg["model"]
     if provider == "google_ai":
         d = post(ENDPOINTS[provider].format(model=model), {"x-goog-api-key": cfg["api_key"]},
@@ -194,6 +208,14 @@ def _answer_text(cfg, text, post):
                   "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}})
         try:
             return d["candidates"][0]["content"]["parts"][0]["text"]
+        except (KeyError, IndexError, TypeError):
+            raise CloudLlmError("no answer") from None
+    if provider == "claude":
+        d = post(ENDPOINTS[provider], {"x-api-key": cfg["api_key"], "anthropic-version": "2023-06-01"},
+                 {"model": model, "max_tokens": 512, "temperature": 0,
+                  "messages": [{"role": "user", "content": text}]})
+        try:
+            return d["content"][0]["text"]
         except (KeyError, IndexError, TypeError):
             raise CloudLlmError("no answer") from None
     url = cfg["base_url"] + "/chat/completions" if cfg.get("base_url") else ENDPOINTS[provider]

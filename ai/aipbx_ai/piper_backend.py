@@ -12,6 +12,8 @@ import hashlib
 import os
 import shutil
 import urllib.request
+
+from . import hf
 from pathlib import Path
 
 REPO_URL = "https://huggingface.co/rhasspy/piper-voices/resolve/"
@@ -53,7 +55,8 @@ class PiperBackend:
         self.dir.mkdir(parents=True, exist_ok=True)
         total = max(1, self.spec.download_mb * 1024 * 1024)
         done = 0
-        base = REPO_URL + self.spec.source["revision"] + "/"
+        repo = self.spec.source.get("repo", "rhasspy/piper-voices")
+        base = f"https://huggingface.co/{repo}/resolve/{self.spec.source['revision']}/"
         for name, (remote, sha) in self._files().items():
             target = self.dir / name
             if target.is_file() and _sha256(target) == sha:
@@ -62,7 +65,7 @@ class PiperBackend:
             part = self.dir / (name + ".part")
             req = urllib.request.Request(base + remote, headers={"User-Agent": "aipbx-ai"})
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp, open(part, "wb") as out:
+                with hf.open_download(req.full_url, token=getattr(self, "download_token", None)) as resp, open(part, "wb") as out:
                     while block := resp.read(1 << 16):
                         out.write(block)
                         done += len(block)

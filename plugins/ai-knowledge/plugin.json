@@ -1,0 +1,29 @@
+{
+    "slug": "ai-knowledge",
+    "name": "Knowledge Base (TXT RAG)",
+    "name_i18n": {
+        "tr": "Bilgi Tabanı (TXT RAG)",
+        "en": "Knowledge Base (TXT RAG)"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "category": "ai",
+    "icon": "fas fa-book-open",
+    "icon_style": "color: var(--primary);",
+    "description": "Upload TXT documents, index chunks via AI Gateway embeddings, and ground Assistant & Voice Apps answers with role-based access control.",
+    "description_i18n": {
+        "tr": "TXT dokümanları yükleyin, AI Gateway embedding ile indeksleyin ve Asistan ile Sesli Uygulamaların kaynaklı yanıt vermesini sağlayın.",
+        "en": "Upload TXT documents, index chunks via AI Gateway embeddings, and ground Assistant & Voice Apps answers with role-based access control."
+    },
+    "scopes": [
+        "ai:read"
+    ],
+    "hooks": {
+        "admin_page": {
+            "route": "/ai-knowledge",
+            "group": "ai"
+        }
+    },
+    "type": "official",
+    "author_url": "https://github.com/mahirgul/AiPBX"
+}

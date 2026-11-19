@@ -1,6 +1,6 @@
-# Dialplan editor / AI assistant (Plugin)
+# PBX Assistant (Plugin, experimental)
 
-> **Plugin (`ai-assistant`)**: Community plugin by Gregory Merriweather ([@shido6](https://github.com/shido6)), bundled with AiPBX. Enable it under **Integration → Plugin Catalog** (see [Plugin system & developer guide](plugin-development.md)).
+> **Official plugin (`ai-assistant`), experimental.** Enable it under **Integration → Plugin Catalog**; its settings are on **AI Settings → PBX Assistant Settings** (`/ai-assistant`). The chat is **Panel → PBX Assistant** (`/assistant`). Its answers and behaviour may still change: check what it proposes before you apply it.
 
 The page at **AI → Dialplan editor** turns a plain-language sentence into a
 PBX change — with three hard rules that are not excuses, they are the design:
@@ -26,6 +26,7 @@ Without any AI configured (English and Turkish, rule-based, offline):
 |----------|--------|
 | forward 101 to 203 · 101'i 203'e yönlendir | Forward extension 101 → 203 |
 | turn off voicemail for 102 | Voicemail off for 102 |
+| enable dnd for 101 · 101 rahatsız etmeyin aç | Do not disturb on for 101 |
 | add 101 and 102 to the sales ring group | Ring group members |
 | ring group sales timeout 45 | Ring group ring time |
 | queue support timeout 30 | Queue ring time |
@@ -65,8 +66,18 @@ The page uses `api/assistant.php` (admin session + CSRF token):
 server-side — the browser's copy is a suggestion, the server's validation
 is what lands), `action=changes`, `action=rollback`, `action=echo`.
 
-## Separate community API assistant
+## Knowledge base and shortcuts
 
-The community [AI Assistant plugin](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/ai-assistant) by Gregory Merriweather (shido6) has its own console at `/plugins/ai-assistant` and previews REST API requests. It is separate from this core `/assistant` dialplan editor. The next upgrade migrates existing bundled copies without changing their enabled state, settings, API tokens, drafts or history; new installations install it from the community catalog.
+- **"How do I …" questions** are answered from the Knowledge Base collections chosen for the user's
+  language on **AI Settings → PBX Assistant Settings** (English ones when the language has none).
+  Two short guides ship with AiPBX, *AiPBX Help (English)* and *AiPBX Yardım (Türkçe)*; they can be
+  edited, switched off or replaced. A clear match in a guide is answered at once, without a model; the
+  answer lists its source.
+- **A page or setting name** (`pjsip`, `codec`, `fail2ban`) lists the pages where it is, with links that
+  open the page and highlight the setting. Only pages the user's role may see are listed.
+- **Greetings and general questions** go to the language model chosen for the Assistant, which may only
+  answer in a sentence or two and never claims to have changed anything.
 
-Legacy assistant tokens retain their values and expiry during migration. Tokens with PBX read/write rights gain the matching queue read/write scope required by the queue API; a read-only token does not gain queue write access.
+The former community `ai-assistant` plugin (an API console at `/plugins/ai-assistant`) has been replaced
+by this plugin: an upgrade removes an installed copy, its settings and its API token, and keeps the
+plugin on or off as it was.
