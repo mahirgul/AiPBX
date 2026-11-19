@@ -157,7 +157,43 @@ function internalNumberOwner(string $number, ?string $skipSource = null, int $sk
         }
     }
 
+    if ($skipSource !== 'parking') {
+        try {
+            $pk = $db->query("SELECT parkext, slot_start, slot_end FROM pbx_parking WHERE is_active = 1 ORDER BY id ASC LIMIT 1")->fetch(PDO::FETCH_ASSOC);
+            if ($pk) {
+                $parkext = internalNumberSanitize((string) $pk['parkext']);
+                $sStart = (int) $pk['slot_start'];
+                $sEnd = (int) $pk['slot_end'];
+                $numInt = ctype_digit($number) ? (int) $number : -1;
+                if ($number === $parkext || ($numInt >= $sStart && $numInt <= $sEnd && strlen($number) === strlen((string) $sStart))) {
+                    return sprintf(t('internal_number.parking', 'Call parking (%s / %d–%d)'), $parkext, $sStart, $sEnd);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Pre-migration safety.
+        }
+    }
+
     return null;
+}
+
+/**
+ * The number offered for a new extension: one above the highest extension,
+ * skipping numbers anything else uses. '' when there is no extension yet or no room.
+ */
+function nextFreeExtension(): string
+{
+    $max = (string) getDB()->query("SELECT extension FROM sys_users WHERE extension REGEXP '^[0-9]{3,6}$'
+                                    ORDER BY CAST(extension AS UNSIGNED) DESC LIMIT 1")->fetchColumn();
+    if ($max === '') {
+        return '';
+    }
+    for ($n = (int) $max + 1, $end = $n + 200; $n < $end && $n <= 999999; $n++) {
+        if (internalNumberOwner((string) $n) === null) {
+            return (string) $n;
+        }
+    }
+    return '';
 }
 
 /**

@@ -166,6 +166,19 @@ class AsteriskHelper {
     }
 
     /**
+     * Reload Call Parking configuration (/etc/asterisk/res_parking.conf)
+     */
+    public static function reloadParking() {
+        // An install from before parking still has "noload = res_parking.so" until its next
+        // update (and restart), and "module reload" of a module that is not loaded "succeeds".
+        $loaded = self::execCLI('module show like res_parking.so');
+        if (strpos((string) ($loaded['output'] ?? ''), 'res_parking.so') === false) {
+            return self::execCLI('module load res_parking.so');
+        }
+        return self::execCLI('module reload res_parking.so');
+    }
+
+    /**
      * Resolve the trunk to dial through when a specific outbound route isn't in play
      * (fax sending, the outbound dialplan's zero-routes-configured bootstrap fallback).
      * Reads the first active row from `pbx_trunks`. Returns null if no trunk is configured

@@ -35,6 +35,7 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
     $internal_dial_timeout = intval(getSystemSetting('pjsip_internal_dial_timeout', '30'));
 
     switch ($dest_type) {
+        case 'builtin_ai_agent':
         case 'ai_app':
             // AI → Applications: its own context answers, speaks and goes on (SyncAiApps.php).
             $lines[] = " same => n,Goto(aipbx-ai-app-" . (int) $dest_id . ",s,1)";
@@ -50,6 +51,33 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             $lines[] = " same => n,Goto(aipbx-ivr-data-" . (int) $dest_id . ",s,1)";
             break;
 
+        case 'call_modifier':
+            $stMod = $db->prepare('SELECT * FROM pbx_call_modifiers WHERE id = ? AND is_active = 1');
+            $stMod->execute([(int) $dest_id]);
+            $mod = $stMod->fetch(PDO::FETCH_ASSOC);
+            // $depth: a modifier that leads to itself (or a ring of them) must end.
+            if ($mod && $depth < 5) {
+                if (($mod['mod_type'] ?? '') === 'language') {
+                    $lang = (string) ($mod['mod_value'] ?? '');
+                    if (in_array($lang, getAvailableLanguages(), true)) {
+                        $lines[] = " same => n,Set(CHANNEL(language)={$lang})";
+                    }
+                } elseif (($mod['mod_type'] ?? '') === 'cid_prefix') {
+                    $prefix = dialplanText((string) ($mod['mod_value'] ?? ''));
+                    if ($prefix !== '') {
+                        $lines[] = " same => n,Set(CALLERID(name)={$prefix} \${CALLERID(name)})";
+                    }
+                }
+                $next = buildDestinationLines((string) $mod['dest_type'], (string) ($mod['dest_id'] ?? ''), $orig_did, $depth + 1);
+                if ($next !== '') {
+                    $lines[] = $next;
+                }
+            } else {
+                // Deleted or switched off: the call must not run on into whatever follows.
+                $lines[] = " same => n,Hangup()";
+            }
+            break;
+
         case 'queue':
             // 2026-08-19: queue timeout/fallback/recording settings are per queue (pbx_queues)
             // now, not global sys_settings — several queues can behave differently.
@@ -59,30 +87,48 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             $q_row->execute([$dest_id]);
             $q = $q_row->fetch();
             $q_name = $q['queue_name'] ?? (is_numeric($dest_id) ? 'queue_cc' : preg_replace('/[^a-zA-Z0-9_-]/', '', (string)$dest_id));
+            $qId = (int) ($q['id'] ?? 0);
+            $preAiId = (int) ($q['pre_queue_ai_app_id'] ?? 0);
+            if ($qId > 0 && $preAiId > 0) {
+                $aiActive = false;
+                try {
+                    $stAi = $db->prepare('SELECT 1 FROM pbx_ai_apps WHERE id = ? AND is_active = 1');
+                    $stAi->execute([$preAiId]);
+                    $aiActive = (bool) $stAi->fetchColumn();
+                } catch (\Throwable $e) {
+                }
+                if ($aiActive) {
+                    static $preq_seq = 0;
+                    $preqSkip = "preq_{$qId}_" . (++$preq_seq);
+                    $lines[] = " same => n,GotoIf(\$[\"\${AIPBX_PRE_QUEUE_DONE_{$qId}}\" = \"1\"]?{$preqSkip})";
+                    $lines[] = " same => n,Set(__AIPBX_PRE_QUEUE_DONE_{$qId}=1)";
+                    $lines[] = " same => n,Set(__AIPBX_PRE_QUEUE_Q={$qId})";
+                    $lines[] = " same => n,Goto(aipbx-ai-app-{$preAiId},s,1)";
+                    $lines[] = " same => n({$preqSkip}),NoOp(Pre-Queue AI completed for queue {$qId})";
+                }
+            }
 
-            if (!empty($q['record_enabled'] ?? 1)) {
-                // Unique per use: a time condition can send several branches to the
-                // same queue inside one extension, and a repeated label made the
-                // GotoIf below jump back to the first branch.
-                static $queue_label_seq = 0;
-                $skip_label = 'kayit_var_' . $q_name . '_' . (++$queue_label_seq);
+            $recordQueue = !empty($q['record_enabled'] ?? 1);
+            if ($recordQueue) {
+                // Queue's AGI hook runs on the CALLER only after an agent answers.
+                // Preparing a name here must not create a file or link an unanswered call to one.
                 $rec_format = in_array($q['record_format'] ?? '', QUEUE_RECORD_FORMATS, true) ? $q['record_format'] : 'wav';
-                // Do not start a second recording if one is ALREADY running.
-                //
-                // When the inbound route has "mandatory recording" ticked,
-                // MixMonitor starts there; starting another one here attaches
-                // two recorders to the same channel, produces two files and
-                // CDR(userfield) is overwritten by the second — clicking the
-                // recording in the panel played only the queue part.
-                // MixMonitor fills MIXMONITOR_FILENAME itself.
                 require_once __DIR__ . '/../services/PrivacyService.php';
-                $beepOpt = PrivacyService::mixMonitorOptionSuffix();
-                $lines[] = " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\"]?{$skip_label})";
-                $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\"]?{$skip_label})";
-                $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}.{$rec_format})";
-                $lines[] = " same => n,MixMonitor(\${REC_FILE}{$beepOpt})";
-                $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
-                $lines[] = " same => n({$skip_label}),NoOp(Queue recording: \${MIXMONITOR_FILENAME})";
+                $recordOptions = ltrim(PrivacyService::mixMonitorOptionSuffix(), ',');
+                $lines[] = " same => n,Set(AIPBX_QUEUE_REC_FILE=/var/spool/asterisk/monitor/inbound_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_\${UNIQUEID}.{$rec_format})";
+                $lines[] = " same => n,Set(AIPBX_QUEUE_REC_OPTIONS={$recordOptions})";
+                if (($q['record_mode'] ?? 'answer') === 'enter') {
+                    // From entering the queue (hold music included), as before 1.80. Not over a
+                    // recording the inbound route already runs, nor when the caller opted out.
+                    // The label is unique per use: a time condition can send several branches here.
+                    static $queue_label_seq = 0;
+                    $skip = 'queue_rec_' . (++$queue_label_seq);
+                    $lines[] = " same => n,GotoIf(\$[\"\${PRIVACY_NO_RECORD}\" = \"1\" | \"\${MIXMONITOR_FILENAME}\" != \"\"]?{$skip})";
+                    $lines[] = " same => n,MixMonitor(\${AIPBX_QUEUE_REC_FILE}" . ($recordOptions !== '' ? ",{$recordOptions}" : '') . ")";
+                    $lines[] = " same => n,Set(CDR(userfield)=\${MIXMONITOR_FILENAME})";
+                    $lines[] = " same => n({$skip}),NoOp(Queue recording: \${MIXMONITOR_FILENAME})";
+                    $recordQueue = false;   // no hook after the answer
+                }
             }
             // A language set on the queue itself overrides the language set so
             // far (inbound route/IVR) — queue hold prompts (announce-holdtime/
@@ -98,8 +144,28 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             $lines[] = " same => n,ExecIf(\$[\"\${CHANNEL(state)}\" != \"Up\"]?Answer())";
             // A member's own voicemail must not take the queue call (SKIP_VM, as for a secretary).
             $lines[] = " same => n,Set(__SKIP_VM=1)";
-            $lines[] = " same => n,Queue({$q_name},tT,,,{$queue_timeout})";
+            $join_file = FileHelper::sanitizeAudioPath((string) ($q['join_announce'] ?? ''));
+            if ($join_file !== '') {
+                $lines[] = " same => n,Playback({$join_file})";
+            }
+            $lines[] = " same => n,ExecIf(\$[\"\${AI_SUMMARY}\" != \"\"]?Set(AIPBX_AI_HANDOVER=\${FILTER(A-Za-z0-9 ._-:,\${AI_SUMMARY})}))";
+            $lines[] = " same => n,ExecIf(\$[\"\${AIPBX_AI_HANDOVER}\" != \"\"]?Set(CALLERID(name)=\${CALLERID(name)} | \${AIPBX_AI_HANDOVER:0:60}))";
+            $queueAgi = $recordQueue ? ",/usr/local/bin/queue_record.php" : '';
+            // After-call survey: with "c" the caller stays when the agent hangs up and is asked to rate.
+            $survey = !empty($q['survey_enabled']) ? FileHelper::sanitizeAudioPath((string) ($q['survey_announce'] ?? '')) : '';
+            if ($survey !== '') {
+                $lines[] = " same => n,Set(MEMBERINTERFACE=)";
+            }
+            $lines[] = " same => n,Queue({$q_name}," . ($survey !== '' ? 'tTc' : 'tT') . ",,,{$queue_timeout}{$queueAgi})";
             $lines[] = " same => n,Set(__SKIP_VM=0)";
+            if ($survey !== '') {
+                static $survey_label_seq = 0;
+                $nos = 'qsurvey_no_' . (++$survey_label_seq);
+                $lines[] = " same => n,GotoIf(\$[\"\${MEMBERINTERFACE}\" = \"\"]?{$nos})";
+                $lines[] = " same => n,Gosub(sub-queue-survey,s,1({$q_name},{$survey}))";
+                $lines[] = " same => n,Hangup()";
+                $lines[] = " same => n({$nos}),NoOp(Queue {$q_name}: not answered)";
+            }
             $lines = array_merge($lines, buildCallCenterFallbackLines($q['fallback_action'] ?? 'hangup', $q['fallback_target'] ?? ''));
             break;
 
