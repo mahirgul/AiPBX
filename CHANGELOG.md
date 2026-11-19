@@ -11,6 +11,20 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.80.1
+
+### 🐛 Fixes
+
+- **External databases:** PostgreSQL connections work. The installer did not install PHP's PostgreSQL driver, so every PostgreSQL connection failed with "could not find driver".
+- **Queues:** the after-call survey stores the caller's number with the score, so a privacy request or the retention job can clear it.
+- **AGI scripts:** the `aipbx-agi` service logs a script's real exit code. Before, every call logged "exited with -1" and real script errors were hidden.
+- **Asterisk commands:** a command the Asterisk CLI refuses for the portal ("You don't have permissions to run …") counts as failed instead of done.
+- **Plugins:** Auto Dialer 1.3.1 dials again (campaign calls start through AMI; before, numbers stayed in "dialing" and then failed without a call) and reports the agent's extension. Auto Dialer and Caller Name (CNAM) no longer log `ERROR func_curl.c: Unrecognized option: httpauth` on every call. Update them under **Settings → Plugins**.
+
+### ⚙️ Upgrade
+
+Run the update as usual (`sudo aipbx-update`). It installs the `php-pgsql` package and reloads the dialplan; Asterisk is not restarted.
+
 ## 1.80.0
 
 A large release: the CRM layer (address book, live call events, Connections, Odoo), modular AI, and many PBX features.
