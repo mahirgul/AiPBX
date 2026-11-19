@@ -30,6 +30,8 @@ PACKAGES=(
   php-zip
   php-ldap
   php-odbc
+  # External databases (Integration -> Database Connections) offer PostgreSQL too.
+  php-pgsql
   unixodbc
   odbc-mariadb
   composer
