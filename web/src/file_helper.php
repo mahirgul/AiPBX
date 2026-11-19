@@ -48,8 +48,11 @@ class FileHelper {
             return false;
         }
 
-        if ($owner) @chown($tmp_path, $owner);
-        if ($group) @chgrp($tmp_path, $group);
+        // Only root can give a file to another user; only a user or group this system has
+        // (a test or CI machine has no asterisk user).
+        if ($owner && function_exists('posix_geteuid') && posix_geteuid() === 0
+            && (is_int($owner) || posix_getpwnam($owner))) @chown($tmp_path, $owner);
+        if ($group && (is_int($group) || !function_exists('posix_getgrnam') || posix_getgrnam($group))) @chgrp($tmp_path, $group);
         if ($mode) @chmod($tmp_path, $mode);
 
         if (!@rename($tmp_path, $filepath)) {
