@@ -367,7 +367,7 @@ function __syncGeneralDialplanBody() {
     $conf .= "exten => s,1,Set(LOCAL(agent)=\${FILTER(0-9,\${CUT(MEMBERINTERFACE,@,1)})})\n";
     $conf .= " same => n,Read(QSCORE,\${ARG2},1,,2,6)\n";
     $conf .= " same => n,GotoIf(\$[\"\${FILTER(1-5,\${QSCORE})}\" = \"\"]?done)\n";
-    $conf .= " same => n,Set(LOCAL(r)=\${CURL(http://127.0.0.1/api/queue_survey.php?q=\${ARG1}&a=\${agent}&s=\${QSCORE}&u=\${UNIQUEID})})\n";
+    $conf .= " same => n,Set(LOCAL(r)=\${CURL(http://127.0.0.1/api/queue_survey.php?q=\${ARG1}&a=\${agent}&s=\${QSCORE}&u=\${UNIQUEID}&c=\${FILTER(0-9,\${CALLERID(num)})})})\n";
     $conf .= " same => n,Playback(auth-thankyou)\n";
     $conf .= " same => n(done),Return()\n\n";
 
