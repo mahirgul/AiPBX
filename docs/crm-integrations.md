@@ -5,7 +5,7 @@ signed webhook), the [live call events](rest-api-v1.md#live-call-events) and the
 
 | CRM | How |
 |---|---|
-| **Odoo 17 / 18 / 19** | The [AiPBX Connector app](https://github.com/mahirgul/AiPBX-Odoo): paste the connection pack, done. With the CRM app installed, calls also land on opportunities (AiPBX Connector - CRM installs by itself). |
+| **Odoo 17 / 18 / 19** | The AiPBX Connector app from the Odoo App Store ([AiPBX Connector](https://apps.odoo.com/apps/modules/19.0/aipbx_connector), [AiPBX Connector - CRM](https://apps.odoo.com/apps/modules/19.0/aipbx_connector_crm); [source](https://github.com/mahirgul/AiPBX-Odoo)): paste the connection pack, done. With the CRM app installed, calls also land on opportunities (AiPBX Connector - CRM installs by itself). |
 | HubSpot, Zoho CRM, Pipedrive, Bitrix24, Salesforce, … | A connection of kind **Other** pointing at a small receiver, usually an [n8n](https://n8n.io) (or Make / Zapier) workflow, that turns the events into the CRM's call records. |
 | Your own program | A connection of kind **Other** pointing at your receiver; see [the receiver below](#a-receiver-in-20-lines). |
 

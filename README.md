@@ -274,6 +274,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Generated PowerShell** setup scripts from your PBX configuration
 
 ### 🔌 REST API v1, Outbound Webhooks & Plugin System
+- **Odoo 17 / 18 / 19** — free **AiPBX Connector** on the Odoo App Store: click-to-call, caller pop-up, call history with recordings; [AiPBX Connector - CRM](https://apps.odoo.com/apps/modules/19.0/aipbx_connector_crm) puts calls on opportunities ([App Store](https://apps.odoo.com/apps/modules/19.0/aipbx_connector), [source](https://github.com/mahirgul/AiPBX-Odoo), [docs/crm-integrations.md](docs/crm-integrations.md))
 - **Stateless REST API (`/api/v1/*`) & OpenAPI 3.1** — 100+ endpoints covering extensions, trunks, inbound/outbound routes, queues, ring groups, IVRs, time conditions, conferences, dial permissions, call center, CDRs, recordings, voicemails, faxes, phones, sounds, AI, chat, system settings, and sync
 - **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
 - **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
