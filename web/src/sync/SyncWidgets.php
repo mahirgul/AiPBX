@@ -35,12 +35,11 @@ function __syncWidgetsBody() {
         }
     }
 
-    writeConfWithRollback('pjsip_widgets.conf', buildWidgetPjsipConf($widgets), function () {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP()], t('sync.ctx_widgets'));
-    }, t('sync.ctx_widgets'));
-
-    return writeConfWithRollback('extensions_widgets.conf', buildWidgetDialplan($widgets), function () {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadDialplan()], t('sync.ctx_widgets'));
+    return writeConfsWithRollback([
+        'pjsip_widgets.conf' => buildWidgetPjsipConf($widgets),
+        'extensions_widgets.conf' => buildWidgetDialplan($widgets),
+    ], function () {
+        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadPJSIP(), AsteriskHelper::reloadDialplan()], t('sync.ctx_widgets'));
     }, t('sync.ctx_widgets'));
 }
 
