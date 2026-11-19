@@ -26,6 +26,13 @@ class PendingSyncController extends BaseController
             NetworkSettingsService::queueReaddress();
         }
 
+        if (static::isPost() && isset($_POST['save_auto_apply']) && hasModulePermission('pending_sync', 'edit')) {
+            if (static::verifyCsrf()) {
+                setSystemSetting('pending_sync_auto_apply', !empty($_POST['auto_apply']) ? '1' : '0');
+                static::notifySuccess(t('pending_sync.auto_apply_saved'));
+            }
+        }
+
         if (static::isPost() && isset($_POST['apply'])) {
             if (!static::verifyCsrf()) {
                 static::notifyError(t('pending_sync.msg_csrf_error'));
@@ -64,6 +71,7 @@ class PendingSyncController extends BaseController
         static::renderPage('pending_sync/index', [
             'pending' => $pending,
             'domain_map' => PENDING_SYNC_DOMAIN_MAP,
+            'auto_apply' => getSystemSetting('pending_sync_auto_apply', '0') === '1',
         ], ['title' => $page_title]);
     }
 }

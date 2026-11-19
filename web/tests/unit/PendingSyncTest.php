@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/tests/Fixtures.php';
 require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
+require_once dirname(__DIR__, 2) . '/auth.php';
 
 /**
  * The contract of the deferred reload ("Apply" page) system.
@@ -29,6 +30,30 @@ final class PendingSyncTest extends TestCase
             "SELECT COUNT(*) FROM sys_pending_sync WHERE domain='trunks'"
         )->fetchColumn();
         $this->assertSame(1, $n);
+    }
+
+    public function testApplyAtOnceRunsOnceAfterASaveWhenSwitchedOn(): void
+    {
+        $_SESSION = ['user_id' => 1, 'user_role' => 'admin', 'user_username' => 'admin'];
+        $was = getSystemSetting('pending_sync_auto_apply', '0');
+        try {
+            setSystemSetting('pending_sync_auto_apply', '0');
+            markPendingSync('trunks', 'trunk', 1, 'Test Trunk', 'update', null);
+            $this->assertFalse(pendingSyncAutoApplyNow(), 'switched off');
+
+            setSystemSetting('pending_sync_auto_apply', '1');
+            $this->assertFalse(pendingSyncAutoApplyNow(), 'the flag of a save is used only once');
+            markPendingSync('trunks', 'trunk', 1, 'Test Trunk', 'update', null);
+            $this->assertTrue(pendingSyncAutoApplyNow());
+            $this->assertFalse(pendingSyncAutoApplyNow());
+
+            markPendingSync('readdress', 'server', 'x', 'New address', 'update', null);
+            markPendingSync('trunks', 'trunk', 1, 'Test Trunk', 'update', null);
+            $this->assertFalse(pendingSyncAutoApplyNow(), 'never with a server address change waiting');
+        } finally {
+            setSystemSetting('pending_sync_auto_apply', $was);
+            $_SESSION = [];
+        }
     }
 
     public function testMarkingTheSameRecordTwiceMakesNoDuplicate(): void

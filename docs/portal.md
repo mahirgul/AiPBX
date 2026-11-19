@@ -30,6 +30,10 @@ is listed on **Pending Changes** and reaches Asterisk only when you press **Appl
 A change stays in the pending list until it has really been written and loaded, so a failed Apply can
 simply be retried. Reloads do not drop calls.
 
+**Apply changes at once** (a switch on **Pending Changes**) skips the waiting: after every save the changes are
+written to Asterisk straight away. When applying fails, the change stays on the list. A change of the server's
+address always waits.
+
 When the server's IP address changed outside the portal (a new DHCP lease, a cloned VM), moving
 everything that still holds the old address also waits on **Pending Changes**, naming what it
 changes ([Network settings](network-settings.md)).

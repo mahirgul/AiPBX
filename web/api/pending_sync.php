@@ -10,7 +10,7 @@ header('Content-Type: application/json; charset=utf-8');
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
 if ($method === 'GET') {
-    if (!hasModulePermission('pending_sync', 'view') && ($_SESSION['user_role'] ?? '') !== 'admin') {
+    if (!hasModulePermission('pending_sync', 'view') && !userHasRole('admin')) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
         return;
@@ -32,7 +32,7 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
-    if (!hasModulePermission('pending_sync', 'edit') && ($_SESSION['user_role'] ?? '') !== 'admin') {
+    if (!hasModulePermission('pending_sync', 'edit') && !userHasRole('admin')) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
         return;
@@ -82,7 +82,8 @@ if ($method === 'POST') {
         'ok_count' => $ok_count,
         'fail_count' => 0,
         'message' => $msg,
-        'remaining_count' => 0
+        'remaining_count' => 0,
+        'user_extension' => currentUserExtension(),
     ]);
     return;
 }

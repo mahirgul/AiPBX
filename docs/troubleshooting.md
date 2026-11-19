@@ -9,7 +9,8 @@ Each is a page of its own; the health checks of the server stay under **System �
 |---|---|
 | **SIP traffic** | `.pcap` captures of Asterisk's HEP SIP messages, calls grouped by Call-ID, and a ladder diagram |
 | **Live SIP** | live stream of incoming/outgoing SIP messages from the current capture file |
-| **Problem recording** | one try of the problem as a masked zip to attach to a report |
+| **Problem recording** | one try of the problem as a masked zip (1–60 minutes, selectable logs/state/SIP/RTP) to attach to a report |
+| **Asterisk logs** | masked live-tail and search across `/var/log/asterisk` (`messages.log`, `security.log`, `queue_log`, etc.) |
 | **Registrations** | which phone, browser and app of each extension is registered, and the state of the trunks |
 | **Call quality** | packet loss and jitter of calls from RTCP ([Call quality](call-quality.md)) |
 | **Phone logs** | the syslog of desk phones ([Desk phones](phones.md)) |
@@ -21,8 +22,7 @@ Each is a page of its own; the health checks of the server stay under **System �
 
 ### Problem recording
 
-**Troubleshooting → Problem recording.** For a report about calls or phones. **Start recording** (it stops by itself after 5 to 30 minutes),
-repeat the problem, then **Stop and make the zip** and download it. The zip holds:
+**Troubleshooting → Problem recording.** For a report about calls or phones. Choose the duration (**1 to 60 minutes**) and which data to include (Asterisk logs, error/system logs, state & config, SIP `.pcap`, and optionally RTP media `.pcap` — note that RTP captures carry raw speech audio and should only be enabled when debugging audio/DTMF issues), click **Start recording**, repeat the problem, then click **Stop and make the zip** and download it. Depending on the selected options, the zip holds:
 
 | File | What |
 |---|---|
@@ -31,16 +31,16 @@ repeat the problem, then **Stop and make the zip** and download it. The zip hold
 | `queue_log.txt` | the queue events of that time |
 | `state.txt` | phones, trunks, registrations, transports, queues, channels, codecs, version |
 | `selftest.txt` | `aipbx-selftest` |
-| `errors.txt` | warnings of Asterisk and the AiPBX services, the last portal errors |
+| `errors.txt` | warnings of Asterisk and the AiPBX services, the last portal errors (safe system logs are opt-in and off by default) |
 | `config/` | the Asterisk files AiPBX generates (`/etc/asterisk/pbx`) |
-| `sip.pcap` | the SIP messages of that time from the [SIP traffic](#sip-traffic) files, for Wireshark (only when the files are on; 50 MB at most) |
+| `sip.pcap` | the SIP messages of that time from the [SIP traffic](#sip-traffic) files, for Wireshark (only when enabled; 50 MB at most) |
+| `rtp.pcap` | RTP media packets captured via `tcpdump` when RTP capture is explicitly enabled (sliced cleanly on packet boundaries) |
 
-Before the zip is written (`sip.pcap` included), passwords, digest answers, keys and tokens are replaced by `***`, and every
-number of 7 digits or more loses its last 5 digits (`05321112233` → `053211xxxxx`); extensions, times,
-addresses and Asterisk ids stay. No call recordings, voicemail or faxes. The recording uses its own log
-channel and leaves the PBX's verbose level as it is. Zips are kept for 7 days in `/var/lib/aipbx/diag`;
-starting, stopping and downloading are in the audit log. The work is done by `aipbx-diag` (root, through
-`aipbx-priv`).
+Before the zip is written (`sip.pcap` included), passwords, digest answers, `/provision/<token>` / `/meet/<token>` paths, `apbx_*` API tokens, `whsec_*` webhook secrets, `Authorization: Basic` headers, `PHPSESSID` cookies, and JSON secret fields are replaced by `***`, and every number of 7 digits or more loses its last 5 digits (`05321112233` → `053211xxxxx`); extensions, times, addresses and Asterisk ids stay. No stored call recordings, voicemail or faxes are included. The recording uses its own log channel and leaves the PBX's verbose level as it is. Zips are kept for 7 days in `/var/lib/aipbx/diag`; starting, stopping and downloading are in the audit log. The work is done by `aipbx-diag` (root, through `aipbx-priv`).
+
+### Asterisk logs
+
+**Troubleshooting → Asterisk logs** (administrators only) tails and searches `/var/log/asterisk` (`messages.log`, `security.log`, `queue_log`, `verbose`, `full`) directly from the portal with secrets (`Bearer`, `md5_cred`, `auth_pass`, `client_secret`, passwords) masked before search matching.
 
 ### Registrations
 
@@ -74,6 +74,18 @@ fixes it; run `install.sh --upgrade` if the override is missing.
 
 Usually an IVR/announcement sound is missing. Look for *"does not exist in any format"* in
 `/var/log/asterisk/messages.log` and see [Sounds](sounds.md#where-sounds-live).
+
+## Announcement or WAV upload fails
+
+When uploading an announcement or hold-music file under **PBX → Sounds** fails, the cause is usually directory ownership/permissions on `/var/lib/asterisk/sounds/custom` (or `www-data` missing the `asterisk` group / Apache not restarted after adding it), a missing `sox` binary, or a file larger than `upload_max_filesize` / `post_max_size`.
+
+Run this on the server to fix permissions and verify `www-data` can write and convert audio:
+
+```bash
+sudo usermod -aG asterisk www-data && sudo chown -R asterisk:asterisk /var/lib/asterisk/sounds/custom /var/lib/asterisk/moh && sudo chmod 2775 /var/lib/asterisk/sounds/custom && sudo find /var/lib/asterisk/sounds/custom -maxdepth 1 -type f -exec chmod 664 {} + && sudo find /var/lib/asterisk/moh -type d -exec chmod 2775 {} + && sudo find /var/lib/asterisk/moh -type f -exec chmod 664 {} + && sudo systemctl restart apache2 && sudo -u www-data test -w /var/lib/asterisk/sounds/custom && command -v sox >/dev/null && echo "OK"
+```
+
+If it still fails, start **Troubleshooting → Problem recording**, repeat the upload once, stop recording, and check `errors.txt` in the downloaded zip (portal PHP, web, file-write, and database errors are logged to Apache's error log and included there).
 
 ## Queue callbacks do not appear or stay pending
 
@@ -252,6 +264,42 @@ sudo aipbx-update
 The historical 1.50.2 fix ignores file-mode-only changes. If an older updater lists other files,
 save and inspect their changes before restoring anything; do not discard local work blindly.
 
+## Live call events, Connections & Webhooks (Odoo / CRM)
+
+- **No pop-ups or call records arriving in Odoo / CRM:**
+  1. Check that both background services are running:
+     ```bash
+     systemctl status aipbx-call-events aipbx-webhook-worker
+     journalctl -u aipbx-call-events -u aipbx-webhook-worker -n 50 --no-pager
+     ```
+  2. Test live AMI event parsing without daemonizing:
+     ```bash
+     sudo systemctl stop aipbx-call-events
+     sudo -u www-data php /opt/aipbx/web/bin/call_events.php --daemon --print
+     ```
+     Place one internal and one external call and verify `call.ringing`, `call.offered`, `call.answered`, `call.completed` appear, then start the service again (`sudo systemctl start aipbx-call-events`).
+  3. Under **Integration → Connections**, click **Test** on the connection to verify HMAC-SHA256 webhook delivery (`webhook.test`). Private/loopback/CGNAT targets (`100.64.0.0/10`, `10.0.0.0/8`, `192.168.0.0/16`, `127.0.0.0/8`) are blocked by SSRF protection unless `ALLOW_PRIVATE_WEBHOOKS=1` is set in `/etc/ai-pbx.env`.
+  4. If REST API calls (`POST /api/v1/calls/originate`, `/api/v1/contacts`, `/api/v1/recordings/{id}`) return `403`, verify the token's IP/CIDR allowlist and scopes under **Integration → Connections** or **REST API Keys**.
+
+## Phonebook caller name (`CALLERID(name)`) or web caller card missing
+
+- Verify local loopback lookup returns `NAME:<Display Name>` (not `NONE`):
+  ```bash
+  curl -s "http://127.0.0.1/api/phonebook_name.php?num=05321112233"
+  ```
+- If it returns `NONE`, check **Phonebook → Match digits** (`caller_match_digits`) and confirm the contact's number matches the last N digits.
+- If the web phone's caller banner does not link to `/phonebook`, confirm the user's role has **Phonebook** (`view` / `edit`) permission under **System → Roles**.
+
+## AI Assistant / Local AI / Gateway errors
+
+- Check service state and logs:
+  ```bash
+  systemctl status aipbx-ai
+  journalctl -u aipbx-ai -n 50 --no-pager
+  sudo aipbx-selftest
+  ```
+- If local models fail or time out, verify RAM/disk and Ollama/runtime status under **AI → Local models**; for cloud providers, verify the active account key and test button under **AI → Cloud AI**.
+
 ## Useful commands
 
 ```bash
@@ -259,5 +307,5 @@ asterisk -rx "pjsip show contacts"         # registered phones and trunk reachab
 asterisk -rx "pjsip show endpoint <name>"  # endpoint settings
 asterisk -rx "core show channels"          # active calls
 tail -f /var/log/asterisk/messages.log
-systemctl status asterisk apache2 nginx mariadb coturn aipbx-chat
+systemctl status asterisk apache2 nginx mariadb coturn aipbx-chat aipbx-call-events aipbx-webhook-worker aipbx-ai
 ```

@@ -6,19 +6,32 @@ $diag = $diag ?? ['running' => false, 'zips' => []];
 <div class="card">
     <?php echo uiPageHeader('fa-file-medical', t('diag.title')); ?>
     <p class="u-fs-13 u-muted"><?php echo t('diag.desc'); ?></p>
-    <form method="POST" class="u-d-flex u-ai-center u-gap-8 u-wrap">
+    <form method="POST">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
         <?php if (!empty($diag['running'])): ?>
-            <span class="badge badge-danger"><i class="fas fa-circle"></i> <?php echo $h(sprintf(t('diag.running_since'), date('H:i:s', (int) $diag['start']), (int) $diag['minutes'])); ?></span>
-            <button type="submit" name="diag_stop" value="1" class="btn btn-primary btn-sm"><i class="fas fa-stop"></i> <?php echo t('diag.stop'); ?></button>
+            <div class="u-d-flex u-ai-center u-gap-8 u-wrap">
+                <span class="badge badge-danger"><i class="fas fa-circle"></i> <?php echo $h(sprintf(t('diag.running_since'), date('H:i:s', (int) $diag['start']), (int) $diag['minutes'])); ?></span>
+                <button type="submit" name="diag_stop" value="1" class="btn btn-primary btn-sm"><i class="fas fa-stop"></i> <?php echo t('diag.stop'); ?></button>
+            </div>
         <?php else: ?>
-            <label class="u-fs-13" for="diag_minutes"><?php echo t('diag.minutes'); ?></label>
-            <select name="minutes" id="diag_minutes" class="form-control form-control-sm u-w-auto">
-                <?php foreach ([5, 10, 15, 30] as $m): ?>
-                    <option value="<?php echo $m; ?>" <?php echo $m === 15 ? 'selected' : ''; ?>><?php echo $m; ?></option>
-                <?php endforeach; ?>
-            </select>
-            <button type="submit" name="diag_start" value="1" class="btn btn-danger btn-sm"><i class="fas fa-circle"></i> <?php echo t('diag.start'); ?></button>
+            <?php $defaults = DiagService::defaultOptions(); ?>
+            <div class="u-d-flex u-ai-center u-gap-8 u-wrap u-mb-12">
+                <label class="u-fs-13" for="diag_minutes"><?php echo t('diag.minutes'); ?></label>
+                <input type="number" name="minutes" id="diag_minutes" min="1" max="60" value="15" class="form-control form-control-sm u-w-110">
+                <span class="u-fs-12 u-muted">(1–60)</span>
+                <button type="submit" name="diag_start" value="1" class="btn btn-danger btn-sm"><i class="fas fa-circle"></i> <?php echo t('diag.start'); ?></button>
+            </div>
+            <div class="u-p-12 u-r-8 u-bd-1-solid-border-color u-bg-bg-sidebar u-mb-12">
+                <div class="u-fs-12 u-fw-600 u-mb-8"><?php echo t('diag.options_title'); ?></div>
+                <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-260-1fr u-gap-8">
+                    <?php foreach (DiagService::OPT_KEYS as $optKey): ?>
+                        <label class="u-check-label u-fs-12">
+                            <input type="checkbox" name="opt_<?php echo $h($optKey); ?>" value="1" class="u-check" <?php echo !empty($defaults[$optKey]) ? 'checked' : ''; ?>>
+                            <span><?php echo t('diag.opt_' . $optKey); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
         <?php endif; ?>
     </form>
     <?php if (!empty($diag['zips'])): ?>

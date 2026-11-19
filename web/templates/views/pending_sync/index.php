@@ -16,6 +16,18 @@ $action_label_map = [
         <?php echo t('pending_sync.help_body'); ?>
 <?php echo uiHelpBoxClose(); ?>
 
+    <?php if (hasModulePermission('pending_sync', 'edit')): ?>
+        <form method="POST" autocomplete="off" class="u-mb-16">
+            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCSRFToken()); ?>">
+            <input type="hidden" name="save_auto_apply" value="1">
+            <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-fw-600">
+                <input type="checkbox" name="auto_apply" value="1"<?php echo !empty($auto_apply) ? ' checked' : ''; ?> onchange="this.form.requestSubmit()">
+                <span><?php echo htmlspecialchars(t('pending_sync.auto_apply')); ?></span>
+            </label>
+            <div class="u-muted u-fs-12"><?php echo htmlspecialchars(t('pending_sync.auto_apply_hint')); ?></div>
+        </form>
+    <?php endif; ?>
+
     <?php if ($total_count === 0): ?>
         <div class="u-ta-center u-muted u-p-40-20">
             <i class="fas fa-check-circle u-fs-40 u-mb-12 u-success" style="display: block;"></i>

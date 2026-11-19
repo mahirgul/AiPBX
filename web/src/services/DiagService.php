@@ -16,20 +16,40 @@ final class DiagService
     public const DIR = '/var/lib/aipbx/diag';
     private const NAME = '/^aipbx-diag-\d{8}-\d{6}\.zip$/';
 
-    /** @return array{running: bool, start: ?int, minutes: ?int, zips: list<array{name: string, size: int, mtime: int}>} */
+    /** @return array{running: bool, start: ?int, minutes: ?int, options: ?array<string, bool>, zips: list<array{name: string, size: int, mtime: int}>} */
     public static function status(): array
     {
         $res = PrivHelper::run(['diag', 'status']);
         $data = $res['success'] ? json_decode($res['output'], true) : null;
-        return is_array($data) ? $data + ['running' => false, 'start' => null, 'minutes' => null, 'zips' => []]
-            : ['running' => false, 'start' => null, 'minutes' => null, 'zips' => []];
+        return is_array($data) ? $data + ['running' => false, 'start' => null, 'minutes' => null, 'options' => null, 'zips' => []]
+            : ['running' => false, 'start' => null, 'minutes' => null, 'options' => null, 'zips' => []];
+    }
+
+    public const OPT_KEYS = [
+        'asterisk_log', 'sip_pcap', 'rtp_pcap', 'calls', 'queue_log',
+        'state', 'selftest', 'errors', 'sys_logs', 'config',
+    ];
+
+    /** @return array<string, bool> */
+    public static function defaultOptions(): array
+    {
+        $out = [];
+        foreach (self::OPT_KEYS as $k) {
+            $out[$k] = !in_array($k, ['rtp_pcap', 'sys_logs'], true);
+        }
+        return $out;
     }
 
     public static function start(array $data): array
     {
         return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
-            $minutes = max(1, min(30, (int) ($data['minutes'] ?? 15)));
-            self::helper(['start', 'minutes=' . $minutes]);
+            $minutes = max(1, min(60, (int) ($data['minutes'] ?? 15)));
+            $args = ['start', 'minutes=' . $minutes];
+            foreach (self::OPT_KEYS as $k) {
+                $val = !empty($data['opt_' . $k]) ? '1' : '0';
+                $args[] = $k . '=' . $val;
+            }
+            self::helper($args);
             writeAuditLog('system', 'diag', 'start', "Problem recording started ({$minutes} min at most)", 'create', $_SESSION['user_id'] ?? null);
             return sprintf(t('diag.started'), $minutes);
         });
