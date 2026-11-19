@@ -57,6 +57,11 @@ function __syncVoicemailBody() {
             @file_put_contents($main_vm_conf, $vm_content);
         }
         // The stock file ships sample mailboxes (1234, PIN 4242, in [default]):
+        $vm_content = @file_get_contents($main_vm_conf);
+        if ($vm_content !== false && strpos($vm_content, 'voicemail_custom.conf') === false) {
+            $vm_content = rtrim($vm_content) . "\n\n#tryinclude \"pbx/voicemail_custom.conf\"\n";
+            @file_put_contents($main_vm_conf, $vm_content);
+        }
         // anyone allowed the general voicemail code could log in to it.
         $vm_content = @file_get_contents($main_vm_conf);
         if ($vm_content !== false) {

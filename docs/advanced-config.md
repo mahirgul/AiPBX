@@ -106,3 +106,18 @@ If a generated file differs from what AiPBX last wrote, the next regeneration ke
 of each file. Move what you need to this page or to Custom Dialplan: the hand edit itself is replaced.
 
 Files generated before this feature have no record yet, so a hand edit is noticed from the second regeneration on.
+
+## Custom configuration files
+
+**PBX → Custom Configs** edits whole files of your own that Asterisk reads at the end of its main files: one
+`pbx/<file>_custom.conf` for extensions, pjsip, queues, music on hold, voicemail, features, confbridge, manager,
+cdr, logger, rtp, udptl, indications and res_parking. Choose the file, write it as Asterisk expects (with its
+`[sections]`) and press **Save & Reload**: the matching module is reloaded at once, and when Asterisk refuses the
+file the previous version is put back.
+
+Unlike the pages above, nothing is checked for you: what you write is used as it is, so this is for
+administrators who know Asterisk. Two things are refused: `#include`, `#tryinclude` and `#exec` lines, and a
+section named after the portal's own manager (AMI) login, without which call events and the web phone stop.
+
+In `rtp`, `voicemail` and `logger` Asterisk keeps the first value it reads, so a line here cannot replace a value
+the main file already has; use **Advanced Configuration** for those.

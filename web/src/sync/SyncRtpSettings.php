@@ -122,6 +122,7 @@ function buildRtpConf(): string
     }
 
     $conf .= "\n#tryinclude \"pbx/user_rtp.conf\"\n";
+    $conf .= "#tryinclude \"pbx/rtp_custom.conf\"\n";
     return $conf;
 }
 

@@ -33,6 +33,7 @@ function __syncUdptlSettingsBody()
     $conf .= "udptlfecentries={$fec_entries}\n";
     $conf .= "udptlfecspan={$fec_span}\n";
     $conf .= "\n#tryinclude \"pbx/user_udptl.conf\"\n";
+    $conf .= "#tryinclude \"pbx/udptl_custom.conf\"\n";
 
     $previous = is_readable(UDPTL_CONF_PATH) ? file_get_contents(UDPTL_CONF_PATH) : null;
 
