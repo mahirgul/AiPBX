@@ -235,6 +235,9 @@ while (true) {
     $pid = pcntl_fork();
     if ($pid === 0) {
         fclose($server);
+        // The parent ignores SIGCHLD so finished children are reaped by themselves; a child that
+        // kept that, could not wait for its script and proc_close() gave -1 for every call.
+        pcntl_signal(SIGCHLD, SIG_DFL);
         // Each child opens its own database connection.
         try {
             agiHandle($conn);
