@@ -1,273 +1,354 @@
 <?php
 /**
- * PBX -> IVR Data Steps (/ivr-data-steps)
- * Roadmap 2.3: IVR data lookup steps (database queries or HTTP requests).
+ * PBX -> Dynamic Routing (/dynamic-routing)
  *
  * @var list<array<string, mixed>> $steps
  * @var list<array<string, mixed>> $dbs
+ * @var array<string, string> $agi_choices
+ * @var list<array<string, mixed>> $announcements
+ * @var array $dest_modules
+ * @var list<string> $vars
  */
+use PBX\Destinations\DestinationRegistry;
+
+$h = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $csrf = getCSRFToken();
+$destCache = [];
+$sourceLabels = [
+    'database' => t('dynamic_routing.src_database'), 'http' => t('dynamic_routing.src_http'), 'agi' => t('dynamic_routing.src_agi'),
+    'saved_query' => t('external_dbs.tab_queries'),
+    'value' => t('dynamic_routing.src_value'), 'none' => t('dynamic_routing.src_none'),
+];
+$inputLabels = [
+    'dtmf' => t('dynamic_routing.in_dtmf'), 'caller_id' => t('dynamic_routing.in_caller_id'),
+    'did' => t('dynamic_routing.in_did'), 'variable' => t('dynamic_routing.in_variable'),
+];
+$destSelect = function (string $prefix) use ($h, $dest_modules): string {
+    $html = '<div class="u-d-grid u-gtc-1fr-1fr u-gap-8"><select name="' . $prefix . '_dest_type" id="dr_' . $prefix . '_dest_type" class="form-control" data-dest-target="dr_' . $prefix . '_dest_id">';
+    if ($prefix === 'busy') {
+        $html .= '<option value="">' . $h(t('dynamic_routing.busy_none')) . '</option>';
+    }
+    foreach ($dest_modules as $dm) {
+        $html .= '<option value="' . $h($dm->getKey()) . '">' . $h($dm->getName()) . '</option>';
+    }
+    return $html . '</select><select name="' . $prefix . '_dest_id" id="dr_' . $prefix . '_dest_id" class="form-control"></select></div>';
+};
+$soundOptions = function () use ($h, $announcements): string {
+    $html = '<option value="">' . $h(t('dynamic_routing.no_prompt')) . '</option>';
+    foreach ($announcements as $a) {
+        $html .= '<option value="' . $h($a['audio_file']) . '">' . $h($a['title']) . '</option>';
+    }
+    return $html;
+};
 ?>
-<div class="card u-mb-20">
-    <?php echo uiPageHeaderOpen('fa-database', htmlspecialchars(t('ivr_data.page_title', 'IVR Data Steps')), 'ivrDataStepsHelpBox'); ?>
-<span class="badge badge-secondary"><?php echo count($steps); ?></span>
-<?php echo uiPageHeaderActions(); ?>
-<a href="/ivrs" class="btn btn-icon btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('common.back', 'Back to IVRs')); ?>">
-                <i class="fas fa-arrow-left"></i>
-            </a>
-<button type="button" class="btn btn-primary btn-sm" onclick="showNewStepForm()">
-                <i class="fas fa-plus-circle"></i> <?php echo htmlspecialchars(t('ivr_data.btn_new', 'New Data Step')); ?>
-            </button>
-<?php echo uiPageHeaderClose(); ?>
+<div class="card">
+    <?php echo uiPageHeaderOpen('fa-route', t('dynamic_routing.title'), 'dynamicRoutingHelpBox'); ?>
+    <span class="badge badge-secondary"><?php echo count($steps); ?></span>
+    <?php echo uiPageHeaderActions(); ?>
+        <button type="button" class="btn btn-primary btn-sm" onclick="drOpen(null)">
+            <i class="fas fa-plus-circle"></i> <?php echo $h(t('common.add_new')); ?>
+        </button>
+    <?php echo uiPageHeaderClose(); ?>
+    <?php echo uiHelpBoxOpen('dynamicRoutingHelpBox', t('dynamic_routing.help_title')); ?>
+        <p class="u-m-0"><?php echo $h(t('dynamic_routing.help_body')); ?></p>
+    <?php echo uiHelpBoxClose(); ?>
 
-    <?php echo uiHelpBoxOpen('ivrDataStepsHelpBox', htmlspecialchars(t('ivr_data.help_title', 'Interactive Data Steps in IVRs'))); ?>
-        <p class="u-m-4-0-0"><?php echo htmlspecialchars(t('ivr_data.help_body', 'Run a fast database query or HTTP request during an incoming call to look up caller data. Results are stored in Asterisk channel variables, and calls branch seamlessly to Found, Not Found, or Timeout destinations.')); ?></p>
-<?php echo uiHelpBoxClose(); ?>
+    <?php echo uiTableOpen([
+        t('common.name'),
+        t('dynamic_routing.col_input'),
+        t('dynamic_routing.col_source'),
+        t('dynamic_routing.col_rules'),
+        t('common.status'),
+        ['label' => t('common.actions'), 'class' => 'text-right'],
+    ]); ?>
+        <?php if (empty($steps)): ?>
+            <?php echo uiTableEmptyRow(6, t('dynamic_routing.empty'), 'fa-route'); ?>
+        <?php else: ?>
+            <?php foreach ($steps as $s): ?>
+                <tr>
+                    <td>
+                        <strong><?php echo $h($s['name']); ?></strong>
+                        <?php if (!empty($s['description'])): ?>
+                            <div class="u-muted u-fs-11"><?php echo $h($s['description']); ?></div>
+                        <?php endif; ?>
+                    </td>
+                    <td><span class="badge badge-secondary"><?php echo $h($inputLabels[$s['input_source']] ?? $s['input_source']); ?></span></td>
+                    <td><span class="badge badge-info"><?php echo $h($sourceLabels[$s['data_source']] ?? $s['data_source']); ?></span></td>
+                    <td>
+                        <?php foreach (array_slice($s['rules'], 0, 3) as $r): ?>
+                            <span class="badge <?php echo $h(DestinationRegistry::badgeClassFor($r['dest_type'])); ?>">
+                                <?php echo $h($r['type'] === 'range' ? $r['value'] . '–' . $r['value2'] : ($r['type'] === 'prefix' ? $r['value'] . '…' : $r['value'])); ?>
+                                → <?php echo $h(DestinationRegistry::resolveLabel($r['dest_type'], $r['dest_id'], $destCache) ?? $r['dest_type']); ?>
+                            </span>
+                        <?php endforeach; ?>
+                        <?php if (count($s['rules']) > 3): ?>
+                            <span class="u-muted u-fs-11">+<?php echo count($s['rules']) - 3; ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td><?php echo uiStatusToggleForm($s['id'], $s['is_active'], 'id'); ?></td>
+                    <td class="text-right">
+                        <?php echo uiRowActions($s, 'drOpen', 'id', 'delete_step', t('ivr_data.confirm_delete')); ?>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    <?php echo uiTableClose(); ?>
+</div>
 
-    <!-- Create / Edit Form Box -->
-    <div id="stepFormBox" style="display: none; padding: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--card-bg, #fff);">
-        <h4 id="stepFormTitle" class="u-mt-0 u-mb-16">
-            <i class="fas fa-plus"></i> <?php echo htmlspecialchars(t('ivr_data.btn_new', 'New Data Step')); ?>
-        </h4>
-        <form method="POST" id="stepForm">
-            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
-            <input type="hidden" name="action" value="save_step">
-            <input type="hidden" name="id" id="step_id" value="">
+<div class="modal-overlay" id="drModal">
+    <div class="modal-card u-maxw-900">
+        <div class="modal-header">
+            <h3 class="u-title" id="drModalTitle"><i class="fas fa-route u-primary"></i> <?php echo $h(t('dynamic_routing.new_title')); ?></h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="drClose()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" autocomplete="off" id="drForm">
+                <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
+                <input type="hidden" name="save_step" value="1">
+                <input type="hidden" name="id" id="dr_id" value="">
 
-            <div class="u-grid-2 u-gap-16 u-mb-16">
-                <div>
-                    <label class="form-label" for="step_name"><strong><?php echo htmlspecialchars(t('ivr_data.name', 'Step Name')); ?> *</strong></label>
-                    <input type="text" name="name" id="step_name" class="form-control" required maxlength="100" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_name')); ?>">
-                </div>
-                <div>
-                    <label class="form-label" for="step_channel_var"><strong><?php echo htmlspecialchars(t('ivr_data.channel_var', 'Channel Variable Name')); ?> *</strong></label>
-                    <input type="text" name="channel_var_name" id="step_channel_var" class="form-control" required value="IVR_DATA_VAL" placeholder="IVR_DATA_VAL">
-                </div>
-            </div>
-
-            <div class="u-grid-2 u-gap-16 u-mb-16">
-                <div>
-                    <label class="form-label" for="step_input_source"><strong><?php echo htmlspecialchars(t('ivr_data.input_source', 'Input Source')); ?></strong></label>
-                    <select name="input_source" id="step_input_source" class="form-control" onchange="toggleInputFields(this.value)">
-                        <option value="dtmf"><?php echo htmlspecialchars(t('ivr_data.input_dtmf')); ?></option>
-                        <option value="caller_id"><?php echo htmlspecialchars(t('ivr_data.input_callerid')); ?></option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label" for="step_data_source"><strong><?php echo htmlspecialchars(t('ivr_data.data_source', 'Data Source')); ?></strong></label>
-                    <select name="data_source" id="step_data_source" class="form-control" onchange="toggleDataSourceFields(this.value)">
-                        <option value="database"><?php echo htmlspecialchars(t('ivr_data.source_db')); ?></option>
-                        <option value="http"><?php echo htmlspecialchars(t('ivr_data.source_http')); ?></option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- DTMF Specific Inputs -->
-            <div id="dtmfBox" class="u-grid-2 u-gap-16 u-mb-16">
-                <div>
-                    <label class="form-label" for="step_prompt"><strong><?php echo htmlspecialchars(t('ivr_data.prompt_audio', 'Audio Prompt (Optional)')); ?></strong></label>
-                    <input type="text" name="prompt_file" id="step_prompt" class="form-control" placeholder="custom/enter_customer_num">
-                </div>
-                <div>
-                    <label class="form-label"><strong><?php echo htmlspecialchars(t('ivr_data.dtmf_limits', 'Input Limits')); ?></strong></label>
-                    <div class="u-d-flex u-gap-8">
-                        <input type="number" name="max_digits" id="step_max_digits" class="form-control" value="10" min="1" max="30" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_max_digits')); ?>">
-                        <input type="number" name="input_timeout_sec" id="step_input_timeout" class="form-control" value="5" min="1" max="30" placeholder="<?php echo htmlspecialchars(t('ivr_data.ph_timeout')); ?>">
+                <div class="u-d-grid u-gtc-2fr-1fr u-gap-12">
+                    <div class="form-group">
+                        <label class="form-label" for="dr_name"><?php echo $h(t('common.name')); ?> *</label>
+                        <input type="text" name="name" id="dr_name" class="form-control" required maxlength="100">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="dr_channel_var"><?php echo $h(t('dynamic_routing.result_var')); ?></label>
+                        <input type="text" name="channel_var_name" id="dr_channel_var" class="form-control u-mono" maxlength="64" pattern="[A-Za-z0-9_]+">
                     </div>
                 </div>
-            </div>
+                <div class="form-group">
+                    <label class="form-label" for="dr_description"><?php echo $h(t('common.description')); ?></label>
+                    <input type="text" name="description" id="dr_description" class="form-control" maxlength="255">
+                </div>
 
-            <!-- Database Specific Inputs -->
-            <div id="dbSourceBox" class="u-mb-16">
-                <div class="u-mb-12">
-                    <label class="form-label" for="step_db_id"><strong><?php echo htmlspecialchars(t('ivr_data.external_db', 'Database Connection')); ?> *</strong></label>
-                    <select name="external_db_id" id="step_db_id" class="form-control">
-                        <option value="">— Select Database Connection —</option>
-                        <?php foreach ($dbs as $dbItem): ?>
-                            <option value="<?php echo (int)$dbItem['id']; ?>">
-                                <?php echo htmlspecialchars((string)$dbItem['name']); ?> (<?php echo htmlspecialchars((string)$dbItem['driver']); ?>: <?php echo htmlspecialchars((string)$dbItem['database_name']); ?>)
-                            </option>
+                <h4 class="u-fw-700 u-mt-16 u-mb-8"><i class="fas fa-keyboard u-primary"></i> 1. <?php echo $h(t('dynamic_routing.section_input')); ?></h4>
+                <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
+                    <div class="form-group">
+                        <label class="form-label" for="dr_input_source"><?php echo $h(t('dynamic_routing.input')); ?></label>
+                        <select name="input_source" id="dr_input_source" class="form-control" onchange="drToggle()">
+                            <?php foreach ($inputLabels as $k => $label): ?>
+                                <option value="<?php echo $h($k); ?>"><?php echo $h($label); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group" data-dr-input="variable">
+                        <label class="form-label" for="dr_input_var"><?php echo $h(t('dynamic_routing.input_var')); ?></label>
+                        <input type="text" name="input_var" id="dr_input_var" class="form-control u-mono" maxlength="64" placeholder="DR_VALUE">
+                        <small class="u-hint"><?php echo $h(t('dynamic_routing.input_var_hint')); ?></small>
+                    </div>
+                </div>
+                <div data-dr-input="dtmf">
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
+                        <div class="form-group">
+                            <label class="form-label" for="dr_prompt"><?php echo $h(t('dynamic_routing.prompt')); ?></label>
+                            <select name="prompt_file" id="dr_prompt" class="form-control"><?php echo $soundOptions(); ?></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dr_invalid_prompt"><?php echo $h(t('dynamic_routing.invalid_prompt')); ?></label>
+                            <select name="invalid_prompt" id="dr_invalid_prompt" class="form-control"><?php echo $soundOptions(); ?></select>
+                        </div>
+                    </div>
+                    <div class="u-d-grid u-gtc-repeat-4-1fr u-gap-12">
+                        <div class="form-group">
+                            <label class="form-label" for="dr_min_digits"><?php echo $h(t('dynamic_routing.min_digits')); ?></label>
+                            <input type="number" name="min_digits" id="dr_min_digits" class="form-control" min="1" max="30">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dr_max_digits"><?php echo $h(t('dynamic_routing.max_digits')); ?></label>
+                            <input type="number" name="max_digits" id="dr_max_digits" class="form-control" min="1" max="30">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dr_timeout"><?php echo $h(t('dynamic_routing.input_timeout')); ?></label>
+                            <input type="number" name="input_timeout_sec" id="dr_timeout" class="form-control" min="1" max="30">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dr_retries"><?php echo $h(t('dynamic_routing.retries')); ?></label>
+                            <input type="number" name="retries" id="dr_retries" class="form-control" min="0" max="5">
+                        </div>
+                    </div>
+                </div>
+
+                <h4 class="u-fw-700 u-mt-16 u-mb-8"><i class="fas fa-database u-primary"></i> 2. <?php echo $h(t('dynamic_routing.section_source')); ?></h4>
+                <div class="form-group">
+                    <label class="form-label" for="dr_source"><?php echo $h(t('dynamic_routing.source')); ?></label>
+                    <select name="data_source" id="dr_source" class="form-control" onchange="drToggle()">
+                        <?php foreach ($sourceLabels as $k => $label): ?>
+                            <option value="<?php echo $h($k); ?>"><?php echo $h($label); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
-                <div>
-                    <label class="form-label" for="step_query_sql"><strong><?php echo htmlspecialchars(t('ivr_data.query_sql', 'SQL Query (Read-Only SELECT)')); ?> *</strong></label>
-                    <textarea name="query_sql" id="step_query_sql" class="form-control u-mono" rows="3" placeholder="SELECT is_vip FROM customers WHERE phone = :input OR phone = :caller_id LIMIT 1"></textarea>
-                    <div class="u-muted u-fs-11 u-mt-4"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>:input</code>, <code>:caller_id</code></div>
-                </div>
-            </div>
-
-            <!-- HTTP Specific Inputs -->
-            <div class="u-mb-16" id="httpSourceBox" style="display: none;">
-                <div class="u-grid-2 u-gap-16">
-                    <div>
-                        <label class="form-label" for="step_http_url"><strong><?php echo htmlspecialchars(t('ivr_data.http_url', 'HTTP API URL')); ?> *</strong></label>
-                        <input type="url" name="http_url" id="step_http_url" class="form-control" placeholder="https://api.example.com/customers/lookup?phone={input}">
-                        <div class="u-muted u-fs-11 u-mt-4"><?php echo htmlspecialchars(t('ivr_data.placeholders')); ?> <code>{input}</code>, <code>{caller_id}</code></div>
+                <div data-dr-source="database">
+                    <div class="form-group">
+                        <label class="form-label" for="dr_db"><?php echo $h(t('dynamic_routing.db')); ?></label>
+                        <select name="external_db_id" id="dr_db" class="form-control">
+                            <option value=""><?php echo $h(t('dynamic_routing.db_pick')); ?></option>
+                            <?php foreach ($dbs as $d): ?>
+                                <option value="<?php echo (int) $d['id']; ?>"><?php echo $h($d['name'] . ' (' . $d['driver'] . ': ' . $d['database_name'] . ')'); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <?php if (!$dbs): ?><small class="u-hint"><a href="/external-dbs"><?php echo $h(t('dynamic_routing.db_none')); ?></a></small><?php endif; ?>
                     </div>
-                    <div>
-                        <label class="form-label" for="step_http_method"><strong><?php echo htmlspecialchars(t('ivr_data.http_method', 'HTTP Method')); ?></strong></label>
-                        <select name="http_method" id="step_http_method" class="form-control">
-                            <option value="GET">GET</option>
-                            <option value="POST"><?php echo htmlspecialchars(t('ivr_data.method_post')); ?></option>
+                    <div class="form-group">
+                        <label class="form-label" for="dr_sql"><?php echo $h(t('dynamic_routing.sql')); ?></label>
+                        <textarea name="query_sql" id="dr_sql" class="form-control u-mono" rows="3" placeholder="SELECT segment, name FROM customers WHERE phone = :caller_id LIMIT 1"></textarea>
+                        <small class="u-hint"><?php echo $h(t('dynamic_routing.sql_hint')); ?></small>
+                    </div>
+                </div>
+                <div class="form-group" data-dr-source="saved_query">
+                    <label class="form-label" for="dr_saved_query"><?php echo $h(t('external_dbs.query_key')); ?></label>
+                    <select id="dr_saved_query" name="saved_query_id" class="form-control">
+                        <option value=""><?php echo $h(t('external_dbs.query_select_public')); ?></option>
+                        <?php foreach ($saved_queries ?? [] as $query): ?>
+                            <option value="<?php echo (int) $query['id']; ?>"><?php echo $h($query['query_key'] . ' — ' . $query['description']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="u-hint"><a href="/external-dbs?tab=queries"><?php echo $h(t('external_dbs.tab_queries')); ?></a></small>
+                </div>
+                <div data-dr-source="http">
+                    <div class="u-d-grid u-gtc-2fr-1fr u-gap-12">
+                        <div class="form-group">
+                            <label class="form-label" for="dr_url">URL</label>
+                            <input type="text" name="http_url" id="dr_url" class="form-control u-mono" maxlength="500" placeholder="https://crm.example.com/api/lookup?phone={caller_id}">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dr_method"><?php echo $h(t('dynamic_routing.method')); ?></label>
+                            <select name="http_method" id="dr_method" class="form-control" onchange="drToggle()">
+                                <option value="GET">GET</option>
+                                <option value="POST">POST (JSON)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" data-dr-method="POST">
+                        <label class="form-label" for="dr_body"><?php echo $h(t('dynamic_routing.body')); ?></label>
+                        <textarea name="http_body" id="dr_body" class="form-control u-mono" rows="2" placeholder='{"phone": "{caller_id}", "digits": "{input}"}'></textarea>
+                        <small class="u-hint"><?php echo $h(t('dynamic_routing.body_hint')); ?></small>
+                    </div>
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
+                        <div class="form-group">
+                            <label class="form-label" for="dr_headers"><?php echo $h(t('dynamic_routing.headers')); ?></label>
+                            <textarea name="http_headers" id="dr_headers" class="form-control u-mono" rows="2" placeholder="Authorization: Bearer …"></textarea>
+                            <small class="u-hint"><?php echo $h(t('dynamic_routing.headers_hint')); ?></small>
+                            <label class="u-check-label u-fs-12 u-mt-4" id="dr_headers_clear_box">
+                                <input type="checkbox" name="http_headers_clear" value="1" class="u-check"> <?php echo $h(t('dynamic_routing.headers_clear')); ?>
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="dr_json_path"><?php echo $h(t('dynamic_routing.json_path')); ?></label>
+                            <input type="text" name="json_path" id="dr_json_path" class="form-control u-mono" maxlength="200" placeholder="data.customer.segment">
+                            <small class="u-hint"><?php echo $h(t('dynamic_routing.json_path_hint')); ?></small>
+                        </div>
+                    </div>
+                </div>
+                <div data-dr-source="agi" class="form-group">
+                    <label class="form-label" for="dr_agi"><?php echo $h(t('dynamic_routing.agi')); ?></label>
+                    <select name="agi_script" id="dr_agi" class="form-control">
+                        <option value=""><?php echo $h(t('dynamic_routing.agi_pick')); ?></option>
+                        <?php foreach ($agi_choices as $k => $label): ?>
+                            <option value="<?php echo $h($k); ?>"><?php echo $h($label); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="u-hint"><?php echo $h(t('dynamic_routing.agi_hint')); ?> <a href="/agi-scripts"><?php echo $h(t('agi_scripts.title')); ?></a></small>
+                </div>
+                <div data-dr-source="value" class="form-group">
+                    <label class="form-label" for="dr_value"><?php echo $h(t('dynamic_routing.value')); ?></label>
+                    <input type="text" name="value_template" id="dr_value" class="form-control u-mono" maxlength="255" placeholder="{var_CUSTOMER_TYPE}">
+                    <small class="u-hint"><?php echo $h(t('dynamic_routing.value_hint')); ?></small>
+                </div>
+                <div data-dr-source="database http" class="form-group">
+                    <label class="form-label" for="dr_prefix"><?php echo $h(t('dynamic_routing.var_prefix')); ?></label>
+                    <input type="text" name="var_prefix" id="dr_prefix" class="form-control u-mono u-maxw-240" maxlength="32" placeholder="DR_">
+                    <small class="u-hint"><?php echo $h(t('dynamic_routing.var_prefix_hint')); ?></small>
+                </div>
+                <?php $helpId = 'drVarsHelp'; require dirname(__DIR__, 2) . '/data_source_help.php'; ?>
+
+                <div class="u-bg-bg-body u-p-12 u-mt-12" id="drTestBox">
+                    <div class="u-fw-700 u-mb-8"><i class="fas fa-vial u-primary"></i> <?php echo $h(t('dynamic_routing.test')); ?></div>
+                    <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-150-1fr u-gap-8">
+                        <input type="text" class="form-control" data-dr-sample="input" placeholder="input">
+                        <input type="text" class="form-control" data-dr-sample="caller_id" placeholder="caller_id">
+                        <input type="text" class="form-control" data-dr-sample="did" placeholder="did">
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="drTest()"><i class="fas fa-play"></i> <?php echo $h(t('dynamic_routing.test_run')); ?></button>
+                    </div>
+                    <pre class="u-mono u-fs-11 u-mt-8 u-m-0" id="drTestOut" hidden></pre>
+                </div>
+
+                <h4 class="u-fw-700 u-mt-16 u-mb-8"><i class="fas fa-code-branch u-primary"></i> 3. <?php echo $h(t('dynamic_routing.section_rules')); ?></h4>
+                <p class="u-hint u-m-0 u-mb-8"><?php echo $h(t('dynamic_routing.rules_hint')); ?></p>
+                <div id="drRules"></div>
+                <button type="button" class="btn btn-secondary btn-sm u-mb-12" onclick="drAddRule()"><i class="fas fa-plus"></i> <?php echo $h(t('dynamic_routing.rule_add')); ?></button>
+
+                <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-check u-success"></i> <?php echo $h(t('dynamic_routing.dest_found')); ?></label>
+                        <?php echo $destSelect('found'); ?>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-times u-warning"></i> <?php echo $h(t('dynamic_routing.dest_not_found')); ?></label>
+                        <?php echo $destSelect('not_found'); ?>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-clock u-danger"></i> <?php echo $h(t('dynamic_routing.dest_timeout')); ?></label>
+                        <?php echo $destSelect('timeout'); ?>
+                    </div>
+                </div>
+
+                <h4 class="u-fw-700 u-mt-16 u-mb-8"><i class="fas fa-sliders u-primary"></i> 4. <?php echo $h(t('dynamic_routing.section_more')); ?></h4>
+                <div class="u-d-grid u-gtc-1fr-2fr u-gap-12">
+                    <div class="form-group">
+                        <label class="form-label" for="dr_name_mode"><?php echo $h(t('dynamic_routing.caller_name')); ?></label>
+                        <select name="caller_name_mode" id="dr_name_mode" class="form-control" onchange="drToggle()">
+                            <option value=""><?php echo $h(t('dynamic_routing.caller_name_keep')); ?></option>
+                            <option value="prefix"><?php echo $h(t('dynamic_routing.caller_name_prefix')); ?></option>
+                            <option value="replace"><?php echo $h(t('dynamic_routing.caller_name_replace')); ?></option>
                         </select>
                     </div>
-                </div>
-            </div>
-
-            <!-- Branches -->
-            <div style="margin-bottom: 16px; padding: 14px; background: var(--bg-subtle, rgba(2,132,199,0.04)); border: 1px solid var(--border-color); border-radius: var(--radius-sm, 6px);">
-                <div class="u-fw-700 u-mb-12"><i class="fas fa-code-branch u-primary"></i> <?php echo htmlspecialchars(t('ivr_data.branches', 'Call Routing Branches')); ?></div>
-                <div class="u-grid-3 u-gap-16">
-                    <div>
-                        <label class="form-label"><strong><i class="fas fa-check text-success"></i> <?php echo htmlspecialchars(t('ivr_data.branch_found', 'Found (Match)')); ?></strong></label>
-                        <input type="text" name="found_dest_type" id="step_found_dest_type" class="form-control form-control-sm u-mb-4" placeholder="dest_type (e.g. queue)">
-                        <input type="text" name="found_dest_id" id="step_found_dest_id" class="form-control form-control-sm" placeholder="dest_id (e.g. queue_cc)">
-                    </div>
-                    <div>
-                        <label class="form-label"><strong><i class="fas fa-times text-warning"></i> <?php echo htmlspecialchars(t('ivr_data.branch_not_found', 'Not Found')); ?></strong></label>
-                        <input type="text" name="not_found_dest_type" id="step_not_found_dest_type" class="form-control form-control-sm u-mb-4" placeholder="dest_type (e.g. ivr)">
-                        <input type="text" name="not_found_dest_id" id="step_not_found_dest_id" class="form-control form-control-sm" placeholder="dest_id">
-                    </div>
-                    <div>
-                        <label class="form-label"><strong><i class="fas fa-clock text-danger"></i> <?php echo htmlspecialchars(t('ivr_data.branch_timeout', 'Timeout / Error')); ?></strong></label>
-                        <input type="text" name="timeout_dest_type" id="step_timeout_dest_type" class="form-control form-control-sm u-mb-4" placeholder="dest_type (e.g. hangup)">
-                        <input type="text" name="timeout_dest_id" id="step_timeout_dest_id" class="form-control form-control-sm" placeholder="dest_id">
+                    <div class="form-group" data-dr-name="prefix replace">
+                        <label class="form-label" for="dr_name_tpl"><?php echo $h(t('dynamic_routing.caller_name_tpl')); ?></label>
+                        <input type="text" name="caller_name_template" id="dr_name_tpl" class="form-control" maxlength="100" placeholder="VIP – {NAME}">
+                        <small class="u-hint"><?php echo $h(t('dynamic_routing.caller_name_hint')); ?></small>
                     </div>
                 </div>
-            </div>
-
-            <div class="u-mb-16">
-                <label class="u-check-label u-fs-13">
-                    <input type="checkbox" name="is_active" id="step_active" value="1" checked class="u-accent">
-                    <?php echo htmlspecialchars(t('common.active', 'Active')); ?>
-                </label>
-            </div>
-
-            <div class="u-flex-gap u-jc-flex-end">
-                <button type="button" class="btn btn-secondary" onclick="document.getElementById('stepFormBox').style.display='none';">
-                    <?php echo htmlspecialchars(t('common.cancel', 'Cancel')); ?>
-                </button>
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-save"></i> <?php echo htmlspecialchars(t('common.save', 'Save Data Step')); ?>
-                </button>
-            </div>
-        </form>
+                <div class="form-group">
+                    <label class="u-check-label">
+                        <input type="checkbox" name="direct_extension" id="dr_direct" value="1" class="u-check" onchange="drToggle()">
+                        <span><?php echo $h(t('dynamic_routing.direct_extension')); ?></span>
+                    </label>
+                </div>
+                <div class="form-group" data-dr-direct="1">
+                    <label class="form-label"><?php echo $h(t('dynamic_routing.dest_busy')); ?></label>
+                    <?php echo $destSelect('busy'); ?>
+                </div>
+                <div class="form-group">
+                    <label class="u-check-label">
+                        <input type="hidden" name="is_active" value="0"><input type="checkbox" name="is_active" id="dr_active" value="1" class="u-check" checked>
+                        <span><?php echo $h(t('common.active')); ?></span>
+                    </label>
+                </div>
+                <?php echo uiModalFooter('drClose()'); ?>
+            </form>
+        </div>
     </div>
-
-    <!-- Steps Table -->
-    <?php echo uiTableOpen([
-        htmlspecialchars(t('ivr_data.name', 'Step')),
-        htmlspecialchars(t('ivr_data.input_source', 'Input')),
-        htmlspecialchars(t('ivr_data.data_source', 'Source')),
-        htmlspecialchars(t('ivr_data.channel_var', 'Variable')),
-        htmlspecialchars(t('common.status', 'Status')),
-        ['label' => htmlspecialchars(t('common.actions', 'Actions')), 'class' => 'text-right'],
-    ]); ?>
-                <?php if (empty($steps)): ?>
-                    <tr>
-                        <td colspan="6" class="text-center u-muted u-p-30">
-                            <i class="fas fa-database fa-2x u-mb-8 u-opacity-0-5" style="display: block;"></i>
-                            <?php echo htmlspecialchars(t('ivr_data.empty', 'No IVR data steps configured yet.')); ?>
-                        </td>
-                    </tr>
-                <?php else: ?>
-                    <?php foreach ($steps as $s): ?>
-                        <tr>
-                            <td>
-                                <strong><?php echo htmlspecialchars((string)$s['name']); ?></strong>
-                                <?php if (!empty($s['description'])): ?>
-                                    <div class="u-muted u-fs-11"><?php echo htmlspecialchars((string)$s['description']); ?></div>
-                                <?php endif; ?>
-                            </td>
-                            <td>
-                                <span class="badge badge-secondary u-fs-11"><?php echo htmlspecialchars((string)$s['input_source']); ?></span>
-                            </td>
-                            <td>
-                                <span class="badge badge-info u-fs-11"><?php echo htmlspecialchars((string)$s['data_source']); ?></span>
-                            </td>
-                            <td>
-                                <code><?php echo htmlspecialchars((string)$s['channel_var_name']); ?></code>
-                            </td>
-                            <td>
-                                <?php if (!empty($s['is_active'])): ?>
-                                    <span class="badge badge-success"><?php echo htmlspecialchars(t('common.active', 'Active')); ?></span>
-                                <?php else: ?>
-                                    <span class="badge badge-secondary"><?php echo htmlspecialchars(t('common.passive', 'Disabled')); ?></span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-right">
-                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick='editStep(<?php echo json_encode($s, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP); ?>)' title="<?php echo htmlspecialchars(t('common.edit', 'Edit')); ?>">
-                                    <i class="fas fa-pencil-alt"></i>
-                                </button>
-                                <form method="POST" class="u-d-inline" onsubmit="return confirm(<?php echo jsArg(t('ivr_data.confirm_delete', 'Are you sure you want to delete this data step?')); ?>);">
-                                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($csrf); ?>">
-                                    <input type="hidden" name="action" value="delete_step">
-                                    <input type="hidden" name="id" value="<?php echo (int)$s['id']; ?>">
-                                    <button type="submit" class="btn btn-icon btn-danger btn-sm" title="<?php echo htmlspecialchars(t('common.delete', 'Delete')); ?>">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            <?php echo uiTableClose(); ?>
 </div>
 
-<script>
-function toggleInputFields(val) {
-    document.getElementById('dtmfBox').style.display = (val === 'dtmf') ? 'grid' : 'none';
-}
+<template id="drRuleTpl">
+    <div class="u-d-grid u-gtc-repeat-auto-fit-minmax-150-1fr u-gap-8 u-mb-8" data-dr-rule>
+        <select class="form-control" data-f="type" onchange="drRuleToggle(this)">
+            <option value="exact"><?php echo $h(t('dynamic_routing.rule_exact')); ?></option>
+            <option value="prefix"><?php echo $h(t('dynamic_routing.rule_prefix')); ?></option>
+            <option value="range"><?php echo $h(t('dynamic_routing.rule_range')); ?></option>
+        </select>
+        <input type="text" class="form-control" data-f="value" maxlength="64" placeholder="<?php echo $h(t('dynamic_routing.rule_value')); ?>">
+        <input type="text" class="form-control" data-f="value2" maxlength="22" placeholder="<?php echo $h(t('dynamic_routing.rule_to')); ?>">
+        <select class="form-control" data-f="dest_type">
+            <?php foreach ($dest_modules as $dm): ?>
+                <option value="<?php echo $h($dm->getKey()); ?>"><?php echo $h($dm->getName()); ?></option>
+            <?php endforeach; ?>
+        </select>
+        <select class="form-control" data-f="dest_id"></select>
+        <button type="button" class="btn btn-icon btn-danger btn-sm" onclick="this.closest('[data-dr-rule]').remove()" title="<?php echo $h(t('common.delete')); ?>"><i class="fas fa-trash-alt"></i></button>
+    </div>
+</template>
 
-function toggleDataSourceFields(val) {
-    document.getElementById('dbSourceBox').style.display = (val === 'database') ? 'block' : 'none';
-    document.getElementById('httpSourceBox').style.display = (val === 'http') ? 'block' : 'none';
-}
-
-function showNewStepForm() {
-    document.getElementById('stepFormTitle').innerHTML = '<i class="fas fa-plus"></i> ' + <?php echo jsValue(t('ivr_data.btn_new', 'New Data Step')); ?>;
-    document.getElementById('stepForm').reset();
-    document.getElementById('step_id').value = '';
-    document.getElementById('step_channel_var').value = 'IVR_DATA_VAL';
-    document.getElementById('step_max_digits').value = '10';
-    document.getElementById('step_input_timeout').value = '5';
-    document.getElementById('step_found_dest_type').value = 'queue';
-    document.getElementById('step_not_found_dest_type').value = 'hangup';
-    document.getElementById('step_timeout_dest_type').value = 'hangup';
-    document.getElementById('step_active').checked = true;
-    toggleInputFields('dtmf');
-    toggleDataSourceFields('database');
-    document.getElementById('stepFormBox').style.display = 'block';
-    document.getElementById('stepFormBox').scrollIntoView({ behavior: 'smooth' });
-}
-
-function editStep(s) {
-    document.getElementById('stepFormTitle').innerHTML = '<i class="fas fa-pencil-alt"></i> ' + <?php echo jsValue(t('common.edit', 'Edit Data Step')); ?> + ': ' + escapeHtml(s.name || '');
-    document.getElementById('step_id').value = s.id;
-    document.getElementById('step_name').value = s.name || '';
-    document.getElementById('step_channel_var').value = s.channel_var_name || 'IVR_DATA_VAL';
-    document.getElementById('step_input_source').value = s.input_source || 'dtmf';
-    document.getElementById('step_data_source').value = s.data_source || 'database';
-    document.getElementById('step_prompt').value = s.prompt_file || '';
-    document.getElementById('step_max_digits').value = s.max_digits || 10;
-    document.getElementById('step_input_timeout').value = s.input_timeout_sec || 5;
-    document.getElementById('step_db_id').value = s.external_db_id || '';
-    document.getElementById('step_query_sql').value = s.query_sql || '';
-    document.getElementById('step_http_url').value = s.http_url || '';
-    document.getElementById('step_http_method').value = s.http_method || 'GET';
-    document.getElementById('step_found_dest_type').value = s.found_dest_type || 'queue';
-    document.getElementById('step_found_dest_id').value = s.found_dest_id || '';
-    document.getElementById('step_not_found_dest_type').value = s.not_found_dest_type || 'hangup';
-    document.getElementById('step_not_found_dest_id').value = s.not_found_dest_id || '';
-    document.getElementById('step_timeout_dest_type').value = s.timeout_dest_type || 'hangup';
-    document.getElementById('step_timeout_dest_id').value = s.timeout_dest_id || '';
-    document.getElementById('step_active').checked = parseInt(s.is_active) === 1;
-
-    toggleInputFields(s.input_source || 'dtmf');
-    toggleDataSourceFields(s.data_source || 'database');
-
-    document.getElementById('stepFormBox').style.display = 'block';
-    document.getElementById('stepFormBox').scrollIntoView({ behavior: 'smooth' });
-}
-</script>
+<script src="<?php echo asset('/assets/js/destinations_helper.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/dynamic_routing.js'); ?>"></script>

@@ -1,0 +1,24 @@
+[Unit]
+Description=AiPBX AGI scripts (FastAGI on 127.0.0.1:4573, scripts run sandboxed)
+After=network.target mariadb.service mysql.service
+ConditionPathExists=/var/www/html/bin/agi_server.php
+
+[Service]
+# Root only to start each script with systemd-run as aipbx-task, in the
+# sandbox of scheduled tasks; the scripts themselves never run as root.
+User=root
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+# Its scripts' working folders live beside the scheduled tasks' (agi-<id>).
+ReadWritePaths=/run /var/lib/aipbx-tasks
+RuntimeDirectory=aipbx-agi
+RuntimeDirectoryMode=0711
+ExecStart=/usr/bin/php /var/www/html/bin/agi_server.php
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

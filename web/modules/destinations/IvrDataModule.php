@@ -16,7 +16,7 @@ class IvrDataModule implements PBXDestinationInterface
 
     public function getName(): string
     {
-        return '📊 ' . \t('ivr_data.dest_name', 'IVR Data Step');
+        return '🔀 ' . \t('dynamic_routing.title');
     }
 
     public function getOptions(): array

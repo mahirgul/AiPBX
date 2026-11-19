@@ -49,21 +49,21 @@ final class SyncIvrDataStepsCoverageTest extends TestCase
         $conf = (string)file_get_contents($file);
 
         $this->assertStringContainsString("[aipbx-ivr-data-{$id}]", $conf);
-        $this->assertStringContainsString("exten => s,1,NoOp(Executing IVR Data Step ID {$id}: zz_cov_step_{$id})", $conf);
+        $this->assertStringContainsString("exten => s,1,NoOp(Dynamic Routing {$id}: zz_cov_step_{$id})", $conf);
         $this->assertStringContainsString('same => n,Answer()', $conf);
-        $this->assertStringContainsString('same => n,Read(IVR_INPUT,custom/acct_prompt,12,,,8)', $conf);
+        $this->assertStringContainsString('same => n(ask),Read(DR_INPUT,custom/acct_prompt,12,,,8)', $conf);
         $this->assertStringContainsString('same => n,Set(CURLOPT(httptimeout)=3)', $conf);
-        $this->assertStringContainsString("same => n,Set(LOOKUP_RAW=\${CURL(http://127.0.0.1/api/ivr_data_lookup.php?step_id={$id}&input=\${URIENCODE(\${IVR_INPUT})}&caller_id=\${URIENCODE(\${CALLERID(num)})})})", $conf);
-        $this->assertStringContainsString('same => n,Set(LOOKUP_STATUS=${CUT(LOOKUP_RAW,|,1)})', $conf);
-        $this->assertStringContainsString('same => n,Set(LOOKUP_VAL=${CUT(LOOKUP_RAW,|,2)})', $conf);
-        $this->assertStringContainsString('same => n,Set(ACCT_NUM=${LOOKUP_VAL})', $conf);
-        $this->assertStringContainsString('same => n,GotoIf($["${LOOKUP_STATUS}" = "found"]?found)', $conf);
-        $this->assertStringContainsString('same => n,GotoIf($["${LOOKUP_STATUS}" = "not_found"]?not_found)', $conf);
-        $this->assertStringContainsString('same => n,Goto(timeout)', $conf);
+        $this->assertStringContainsString("same => n,Set(DR_RAW=\${CURL(http://127.0.0.1/api/ivr_data_lookup.php?step_id={$id}&input=\${URIENCODE(\${DR_INPUT})}&caller_id=\${URIENCODE(\${CALLERID(num)})})})", $conf);
+        $this->assertStringContainsString('same => n,Set(DR_STATUS=${CUT(DR_RAW,|,1)})', $conf);
+        $this->assertStringContainsString('same => n,Set(DR_VALUE=${CUT(DR_RAW,|,2)})', $conf);
+        $this->assertStringContainsString('same => n,Set(ACCT_NUM=${DR_VALUE})', $conf);
+        $this->assertStringContainsString('same => n,GotoIf($["${DR_STATUS}" != "found"]?timeout)', $conf);
+        $this->assertStringContainsString('same => n,GotoIf($["${DR_STATUS}" = "not_found"]?not_found)', $conf);
+        $this->assertStringContainsString('same => n,GotoIf($["${DR_VALUE}" = ""]?not_found)', $conf);
 
-        $this->assertStringContainsString("same => n(found),NoOp(IVR Data Step {$id} Found: \${LOOKUP_VAL})", $conf);
-        $this->assertStringContainsString("same => n(not_found),NoOp(IVR Data Step {$id} Not Found)", $conf);
-        $this->assertStringContainsString("same => n(timeout),NoOp(IVR Data Step {$id} Timeout or Error)", $conf);
+        $this->assertStringContainsString("same => n(found),NoOp(Dynamic Routing {$id}: no rule for \${DR_VALUE})", $conf);
+        $this->assertStringContainsString("same => n(not_found),NoOp(Dynamic Routing {$id}: not found)", $conf);
+        $this->assertStringContainsString("same => n(timeout),NoOp(Dynamic Routing {$id}: no answer or error)", $conf);
     }
 
     public function testDtmfInputSourceWithoutPromptFile(): void
@@ -81,8 +81,8 @@ final class SyncIvrDataStepsCoverageTest extends TestCase
 
         $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_ivrdata.conf');
         $this->assertStringContainsString("[aipbx-ivr-data-{$id}]", $conf);
-        // Prompt is empty, so double comma: Read(IVR_INPUT,,10,,,5)
-        $this->assertStringContainsString('same => n,Read(IVR_INPUT,,10,,,5)', $conf);
+        // Prompt is empty, so double comma
+        $this->assertStringContainsString('same => n(ask),Read(DR_INPUT,,10,,,5)', $conf);
     }
 
     public function testCallerIdInputSource(): void
@@ -100,8 +100,8 @@ final class SyncIvrDataStepsCoverageTest extends TestCase
 
         $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_ivrdata.conf');
         $section = substr($conf, (int)strpos($conf, "[aipbx-ivr-data-{$id}]"));
-        $this->assertStringContainsString('same => n,Set(IVR_INPUT=${CALLERID(num)})', $section);
-        $this->assertStringNotContainsString('Read(IVR_INPUT', $section);
+        $this->assertStringContainsString('same => n,Set(DR_INPUT=${CALLERID(num)})', $section);
+        $this->assertStringNotContainsString('Read(DR_INPUT', $section);
     }
 
     public function testInactiveStepOmittedFromDialplan(): void
@@ -136,7 +136,7 @@ final class SyncIvrDataStepsCoverageTest extends TestCase
         syncIvrDataSteps();
 
         $conf = (string)file_get_contents(ASTERISK_PBX_DIR . '/extensions_ivrdata.conf');
-        $this->assertStringContainsString('same => n,Read(IVR_INPUT,,30,,,1)', $conf);
+        $this->assertStringContainsString('same => n(ask),Read(DR_INPUT,,30,,,1)', $conf);
     }
 
     public function testDialplanInjectionResistance(): void
@@ -164,6 +164,6 @@ final class SyncIvrDataStepsCoverageTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/^\[evil_ivr\]/m', $conf);
 
         // Variable name stripped of punctuation and parentheses
-        $this->assertStringContainsString('same => n,Set(VARSystemevil=${LOOKUP_VAL})', $conf);
+        $this->assertStringContainsString('same => n,Set(VARSystemevil=${DR_VALUE})', $conf);
     }
 }

@@ -83,11 +83,7 @@ class ScheduledTaskRunner
 
         $scriptType = (string) ($task['script_type'] ?? 'shell');
         $timeoutSec = max(5, min(3600, (int) ($task['timeout_sec'] ?? 300)));
-        $interpreter = match ($scriptType) {
-            'php' => '/usr/bin/php',
-            'python' => '/usr/bin/python3',
-            default => '/bin/bash',
-        };
+        $interpreter = self::interpreter($scriptType);
 
         $cmd = self::sandboxCommand($task, $runId, $dir, $scriptFile, $interpreter);
         [$exitCode, $output] = self::executeWithTimeout($cmd, $dir, (int) ($task['timeout_sec'] ?? 300) + 10);
@@ -179,8 +175,21 @@ class ScheduledTaskRunner
         }
     }
 
-    /** The systemd-run command line of one run (pure, so the sandbox is tested). */
-    public static function sandboxCommand(array $task, int $runId, string $dir, string $scriptFile, string $interpreter): string
+    /** The program that runs a script of this type (also for AGI scripts). */
+    public static function interpreter(string $scriptType): string
+    {
+        return match ($scriptType) {
+            'php' => '/usr/bin/php',
+            'python' => '/usr/bin/python3',
+            default => '/bin/bash',
+        };
+    }
+
+    /**
+     * The systemd-run command line of one run (pure, so the sandbox is tested).
+     * AGI scripts use it too, with their own unit name prefix.
+     */
+    public static function sandboxCommand(array $task, int $runId, string $dir, string $scriptFile, string $interpreter, string $unitPrefix = 'aipbx-task-'): string
     {
         $timeoutSec = max(5, min(3600, (int) ($task['timeout_sec'] ?? 300)));
         $memoryMb = max(32, min(4096, (int) ($task['memory_limit_mb'] ?? 256)));
@@ -200,7 +209,7 @@ class ScheduledTaskRunner
         if (empty($task['network_access'])) {
             $props[] = 'PrivateNetwork=yes';
         }
-        $cmd = 'systemd-run --wait --pipe --collect --quiet --unit=' . escapeshellarg('aipbx-task-' . (int) $task['id'] . '-' . $runId)
+        $cmd = 'systemd-run --wait --pipe --collect --quiet --unit=' . escapeshellarg($unitPrefix . (int) $task['id'] . '-' . $runId)
             . ' --uid=' . self::USER . ' --gid=' . self::USER . ' --working-directory=' . escapeshellarg($dir);
         foreach ($props as $p) {
             $cmd .= ' --property=' . escapeshellarg($p);

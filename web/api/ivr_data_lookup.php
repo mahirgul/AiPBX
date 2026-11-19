@@ -3,10 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Loopback API endpoint for Asterisk IVR Data Steps (Roadmap 2.3).
- * Called by Asterisk CURL() during call routing on loopback.
- * Returns: <status>|<value>
- * Status: 'found', 'not_found', 'timeout'
+ * Loopback endpoint of Dynamic Routing (database and URL sources).
+ * Called by Asterisk CURL() during a call.
+ * Returns: <status>|<value>|NAME=value|... (status: found, not_found, timeout)
  */
 // Asterisk on this server only; a request that came through a proxy is not it.
 $remote = $_SERVER['REMOTE_ADDR'] ?? '';
@@ -20,15 +19,18 @@ if (!in_array($remote, ['127.0.0.1', '::1'], true)
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/IvrDataStepService.php';
 
-$stepId = (int)($_REQUEST['step_id'] ?? 0);
-$input = trim((string)($_REQUEST['input'] ?? ''));
-$callerId = trim((string)($_REQUEST['caller_id'] ?? ''));
-
+$stepId = (int) ($_GET['step_id'] ?? 0);
 if ($stepId <= 0) {
     echo "not_found|\n";
     exit(0);
 }
 
-$res = IvrDataStepService::performLookup($stepId, $input, $callerId);
-echo $res['status'] . '|' . $res['val'] . "\n";
+// The variables the step's query or URL uses (SyncIvrDataSteps sends only those).
+$values = [];
+foreach ($_GET as $k => $v) {
+    if (is_string($k) && is_string($v) && $k !== 'step_id') {
+        $values[$k] = mb_substr(trim($v), 0, 256);
+    }
+}
+echo DataSourceService::encodeAnswer(IvrDataStepService::performLookup($stepId, $values));
 exit(0);

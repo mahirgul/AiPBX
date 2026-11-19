@@ -4,14 +4,24 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/ExternalDbService.php';
 require_once __DIR__ . '/WebhookService.php';
+require_once __DIR__ . '/DataSourceService.php';
+require_once __DIR__ . '/AgiScriptService.php';
 require_once __DIR__ . '/../repositories/IvrDataStepRepository.php';
 
 /**
- * Service for managing IVR Data Steps (Roadmap 2.3).
- * Queries an external database or HTTP endpoint during an IVR call and sets channel variables.
+ * Dynamic Routing steps (table pbx_ivr_data_steps; first built as the IVR data step).
+ *
+ * A step takes an input, asks a source (DataSourceService, an AGI script, a
+ * value or nothing) and routes by a list of rules. The dialplan is built by
+ * SyncIvrDataSteps; database and URL sources are asked through api/ivr_data_lookup.php.
  */
 class IvrDataStepService
 {
+    public const INPUTS = ['dtmf', 'caller_id', 'did', 'variable'];
+    public const SOURCES = ['database', 'saved_query', 'http', 'agi', 'value', 'none'];
+    public const RULE_TYPES = ['exact', 'prefix', 'range'];
+    public const MAX_RULES = 50;
+
     /**
      * @param array<string, mixed> $data
      * @return array{ok: bool, id?: int, errors: array<string, string>}
@@ -19,171 +29,225 @@ class IvrDataStepService
     public static function saveStep(array $data, ?int $userId = null): array
     {
         $errors = [];
-        $name = trim((string)($data['name'] ?? ''));
-        if ($name === '' || strlen($name) > 100) {
+        $id = !empty($data['id']) ? (int) $data['id'] : null;
+        $old = $id !== null ? IvrDataStepRepository::findById($id) : null;
+        $name = trim((string) ($data['name'] ?? ''));
+        if ($name === '' || mb_strlen($name) > 100) {
             $errors['name'] = t('ivr_data.err_name');
         }
-
-        $inputSource = (string)($data['input_source'] ?? 'dtmf');
-        if (!in_array($inputSource, ['dtmf', 'caller_id'], true)) {
+        $input = (string) ($data['input_source'] ?? 'dtmf');
+        if (!in_array($input, self::INPUTS, true)) {
             $errors['input_source'] = t('ivr_data.err_input');
         }
-
-        $dataSource = (string)($data['data_source'] ?? 'database');
-        if (!in_array($dataSource, ['database', 'http'], true)) {
+        $inputVar = trim((string) ($data['input_var'] ?? ''));
+        if ($input === 'variable' && !preg_match('/^[A-Za-z][A-Za-z0-9_]{0,63}$/', $inputVar)) {
+            $errors['input_var'] = t('ivr_data.err_var');
+        }
+        $source = (string) ($data['data_source'] ?? 'database');
+        if (!in_array($source, self::SOURCES, true)) {
             $errors['data_source'] = t('ivr_data.err_source');
         }
 
-        $dbId = !empty($data['external_db_id']) ? (int)$data['external_db_id'] : null;
-        $querySql = trim((string)($data['query_sql'] ?? ''));
-        if ($dataSource === 'database') {
-            if ($dbId === null || !ExternalDbRepository::exists($dbId)) {
-                $errors['external_db_id'] = t('ivr_data.err_db');
+        $httpMethod = strtoupper(trim((string) ($data['http_method'] ?? 'GET')));
+        // Headers carry tokens: an empty field on edit keeps the saved ones.
+        $headersText = trim((string) ($data['http_headers'] ?? ''));
+        $headersEnc = $headersText !== '' ? DataSourceService::sealHeaders($headersText)
+            : (empty($data['http_headers_clear']) ? (string) ($old['http_headers_enc'] ?? '') : '');
+        $ds = self::sourceOf([
+            'data_source' => $source, 'external_db_id' => $data['external_db_id'] ?? null,
+            'saved_query_id' => $data['saved_query_id'] ?? null,
+            'query_sql' => trim((string) ($data['query_sql'] ?? '')), 'http_url' => trim((string) ($data['http_url'] ?? '')),
+            'http_method' => $httpMethod, 'http_body' => (string) ($data['http_body'] ?? ''),
+            'json_path' => trim((string) ($data['json_path'] ?? '')), 'agi_script' => (string) ($data['agi_script'] ?? ''),
+            'value_template' => trim((string) ($data['value_template'] ?? '')),
+        ]);
+        if (in_array($source, ['database', 'http', 'value'], true)) {
+            $ds['headers'] = $headersText;
+            foreach (DataSourceService::validate($ds) as $field => $msg) {
+                $errors[['db_id' => 'external_db_id', 'sql' => 'query_sql', 'url' => 'http_url', 'method' => 'http_method',
+                    'headers' => 'http_headers', 'value' => 'value_template'][$field] ?? $field] = $msg;
             }
-            if ($querySql === '') {
-                $errors['query_sql'] = t('ivr_data.err_sql_empty');
-            } elseif (!preg_match('/^(SELECT|WITH)\b/i', $querySql)) {
-                $errors['query_sql'] = t('ivr_data.err_sql_select');
-            }
+        } elseif ($source === 'saved_query' && $ds['db_id'] < 1) {
+            $errors['saved_query_id'] = t('external_dbs.query_select_public');
+        } elseif ($source === 'agi' && AgiScriptService::dialplanTarget((string) $ds['agi']) === '') {
+            $errors['agi_script'] = t('data_source.err_agi');
         }
 
-        $httpUrl = trim((string)($data['http_url'] ?? ''));
-        $httpMethod = strtoupper(trim((string)($data['http_method'] ?? 'GET')));
-        if ($dataSource === 'http') {
-            if ($httpUrl === '') {
-                $errors['http_url'] = t('ivr_data.err_url');
-            } else {
-                try {
-                    // Check URL without placeholder template variables
-                    $testUrl = str_replace(['{input}', '{caller_id}'], ['123', '456'], $httpUrl);
-                    WebhookService::validateTargetUrl($testUrl);
-                } catch (\Throwable $e) {
-                    $errors['http_url'] = $e->getMessage();
-                }
-            }
-            if (!in_array($httpMethod, ['GET', 'POST'], true)) {
-                $errors['http_method'] = t('ivr_data.err_method');
-            }
-        }
-
-        $channelVar = trim((string)($data['channel_var_name'] ?? 'IVR_DATA_VAL'));
-        if ($channelVar === '' || !preg_match('/^[A-Za-z0-9_]{1,64}$/', $channelVar)) {
+        $channelVar = trim((string) ($data['channel_var_name'] ?? 'IVR_DATA_VAL'));
+        if (!preg_match('/^[A-Za-z0-9_]{1,64}$/', $channelVar)) {
             $errors['channel_var_name'] = t('ivr_data.err_var');
         }
-
-        if (!empty($errors)) {
+        $prefix = strtoupper(trim((string) ($data['var_prefix'] ?? '')));
+        if ($prefix !== '' && !preg_match('/^[A-Z][A-Z0-9_]{0,31}$/', $prefix)) {
+            $errors['var_prefix'] = t('ivr_data.err_var');
+        }
+        $nameMode = (string) ($data['caller_name_mode'] ?? '');
+        if (!in_array($nameMode, ['', 'prefix', 'replace'], true)) {
+            $nameMode = '';
+        }
+        try {
+            $rules = self::normalizeRules($data['rules'] ?? [], $id);
+        } catch (\InvalidArgumentException $e) {
+            $errors['rules'] = $e->getMessage();
+            $rules = [];
+        }
+        if ($errors) {
             return ['ok' => false, 'errors' => $errors];
         }
 
-        $id = !empty($data['id']) ? (int)$data['id'] : null;
-        $description = trim((string)($data['description'] ?? ''));
-        $promptFile = FileHelper::sanitizeAudioPath((string)($data['prompt_file'] ?? ''));
-        $maxDigits = max(1, min(30, (int)($data['max_digits'] ?? 10)));
-        $inputTimeout = max(1, min(30, (int)($data['input_timeout_sec'] ?? 5)));
-
-        $foundDestType = sanitizeDestType($data['found_dest_type'] ?? 'queue');
-        $foundDestId = toCleanAscii((string)($data['found_dest_id'] ?? ''));
-        $notFoundDestType = sanitizeDestType($data['not_found_dest_type'] ?? 'hangup');
-        $notFoundDestId = toCleanAscii((string)($data['not_found_dest_id'] ?? ''));
-        $timeoutDestType = sanitizeDestType($data['timeout_dest_type'] ?? 'hangup');
-        $timeoutDestId = toCleanAscii((string)($data['timeout_dest_id'] ?? ''));
-
-        // Prevent a step from pointing directly to itself (infinite dialplan loop)
-        if ($id !== null) {
-            if ($foundDestType === 'ivr_data' && (int)$foundDestId === $id) {
-                $foundDestType = 'hangup';
-                $foundDestId = '';
-            }
-            if ($notFoundDestType === 'ivr_data' && (int)$notFoundDestId === $id) {
-                $notFoundDestType = 'hangup';
-                $notFoundDestId = '';
-            }
-            if ($timeoutDestType === 'ivr_data' && (int)$timeoutDestId === $id) {
-                $timeoutDestType = 'hangup';
-                $timeoutDestId = '';
-            }
-        }
-        $isActive = isset($data['is_active']) ? (!empty($data['is_active']) ? 1 : 0) : 1;
+        $dest = fn (string $k, string $default): array => self::dest((string) ($data[$k . '_dest_type'] ?? $default), (string) ($data[$k . '_dest_id'] ?? ''), $id);
+        [$foundT, $foundI] = $dest('found', 'hangup');
+        [$nfT, $nfI] = $dest('not_found', 'hangup');
+        [$toT, $toI] = $dest('timeout', 'hangup');
+        [$busyT, $busyI] = ($data['busy_dest_type'] ?? '') === '' ? ['', ''] : $dest('busy', 'hangup');
+        $maxDigits = max(1, min(30, (int) ($data['max_digits'] ?? 10)));
+        $row = [
+            'name' => $name,
+            'description' => trim((string) ($data['description'] ?? '')),
+            'prompt_file' => FileHelper::sanitizeAudioPath((string) ($data['prompt_file'] ?? '')) ?: null,
+            'invalid_prompt' => FileHelper::sanitizeAudioPath((string) ($data['invalid_prompt'] ?? '')) ?: null,
+            'input_source' => $input,
+            'input_var' => $input === 'variable' ? $inputVar : null,
+            'max_digits' => $maxDigits,
+            'min_digits' => max(1, min($maxDigits, (int) ($data['min_digits'] ?? 1))),
+            'input_timeout_sec' => max(1, min(30, (int) ($data['input_timeout_sec'] ?? 5))),
+            'retries' => max(0, min(5, (int) ($data['retries'] ?? 0))),
+            'data_source' => $source,
+            'external_db_id' => $source === 'database' ? (int) $ds['db_id'] : null,
+            'saved_query_id' => $source === 'saved_query' ? (int) $data['saved_query_id'] : null,
+            'query_sql' => $source === 'database' ? $ds['sql'] : null,
+            'http_url' => $source === 'http' ? $ds['url'] : null,
+            'http_method' => $httpMethod === 'POST' ? 'POST' : 'GET',
+            'http_headers_enc' => $source === 'http' && $headersEnc !== '' ? $headersEnc : null,
+            'http_body' => $source === 'http' && trim($ds['body']) !== '' ? $ds['body'] : null,
+            'json_path' => $source === 'http' && $ds['json_path'] !== '' ? mb_substr($ds['json_path'], 0, 200) : null,
+            'agi_script' => $source === 'agi' ? $ds['agi'] : null,
+            'value_template' => $source === 'value' ? mb_substr($ds['value'], 0, 255) : null,
+            'channel_var_name' => $channelVar,
+            'var_prefix' => $prefix,
+            'rules_json' => $rules ? json_encode($rules, JSON_UNESCAPED_UNICODE) : null,
+            'caller_name_mode' => $nameMode,
+            'caller_name_template' => $nameMode !== '' ? mb_substr(trim((string) ($data['caller_name_template'] ?? '')), 0, 100) : null,
+            'direct_extension' => empty($data['direct_extension']) ? 0 : 1,
+            'busy_dest_type' => $busyT, 'busy_dest_id' => $busyI,
+            'found_dest_type' => $foundT, 'found_dest_id' => $foundI,
+            'not_found_dest_type' => $nfT, 'not_found_dest_id' => $nfI,
+            'timeout_dest_type' => $toT, 'timeout_dest_id' => $toI,
+            'is_active' => isset($data['is_active']) ? (empty($data['is_active']) ? 0 : 1) : 1,
+        ];
 
         $db = getDB();
-
         if ($id !== null) {
-            $stmt = $db->prepare(
-                'UPDATE pbx_ivr_data_steps
-                 SET name = ?, description = ?, prompt_file = ?, input_source = ?,
-                     max_digits = ?, input_timeout_sec = ?, data_source = ?,
-                     external_db_id = ?, query_sql = ?, http_url = ?, http_method = ?,
-                     channel_var_name = ?, found_dest_type = ?, found_dest_id = ?,
-                     not_found_dest_type = ?, not_found_dest_id = ?,
-                     timeout_dest_type = ?, timeout_dest_id = ?, is_active = ?, updated_at = NOW()
-                 WHERE id = ?'
-            );
-            $stmt->execute([
-                $name, $description, $promptFile ?: null, $inputSource,
-                $maxDigits, $inputTimeout, $dataSource,
-                $dbId, $querySql ?: null, $httpUrl ?: null, $httpMethod,
-                $channelVar, $foundDestType, $foundDestId,
-                $notFoundDestType, $notFoundDestId,
-                $timeoutDestType, $timeoutDestId, $isActive, $id
-            ]);
-
-            if (function_exists('markPendingSync')) {
-                markPendingSync('ivrs', 'ivr_data', $id, "IVR Data Step: {$name}", 'update', $userId);
-            }
-
-            return ['ok' => true, 'id' => $id, 'errors' => []];
+            $set = implode(', ', array_map(fn ($k) => "$k = ?", array_keys($row)));
+            $db->prepare("UPDATE pbx_ivr_data_steps SET $set, updated_at = NOW() WHERE id = ?")->execute([...array_values($row), $id]);
+        } else {
+            $row['created_by'] = $userId;
+            $db->prepare('INSERT INTO pbx_ivr_data_steps (' . implode(', ', array_keys($row)) . ', created_at, updated_at) VALUES ('
+                . implode(', ', array_fill(0, count($row), '?')) . ', NOW(), NOW())')->execute(array_values($row));
+            $id = (int) $db->lastInsertId();
         }
-
-        $stmt = $db->prepare(
-            'INSERT INTO pbx_ivr_data_steps
-             (name, description, prompt_file, input_source, max_digits, input_timeout_sec,
-              data_source, external_db_id, query_sql, http_url, http_method,
-              channel_var_name, found_dest_type, found_dest_id,
-              not_found_dest_type, not_found_dest_id,
-              timeout_dest_type, timeout_dest_id, is_active, created_at, updated_at, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)'
-        );
-        $stmt->execute([
-            $name, $description, $promptFile ?: null, $inputSource,
-            $maxDigits, $inputTimeout, $dataSource,
-            $dbId, $querySql ?: null, $httpUrl ?: null, $httpMethod,
-            $channelVar, $foundDestType, $foundDestId,
-            $notFoundDestType, $notFoundDestId,
-            $timeoutDestType, $timeoutDestId, $isActive, $userId
-        ]);
-        $newId = (int)$db->lastInsertId();
-
         if (function_exists('markPendingSync')) {
-            markPendingSync('ivrs', 'ivr_data', $newId, "IVR Data Step: {$name}", 'create', $userId);
+            markPendingSync('ivrs', 'ivr_data', $id, "Dynamic Routing: {$name}", $old ? 'update' : 'create', $userId);
         }
+        return ['ok' => true, 'id' => $id, 'errors' => []];
+    }
 
-        return ['ok' => true, 'id' => $newId, 'errors' => []];
+    /**
+     * A destination of the form; a step pointing straight at itself would loop, so it hangs up instead.
+     *
+     * @return array{0: string, 1: string}
+     */
+    private static function dest(string $type, string $destId, ?int $selfId): array
+    {
+        $type = sanitizeDestType($type);
+        $destId = toCleanAscii($destId);
+        if ($selfId !== null && $type === 'ivr_data' && (int) $destId === $selfId) {
+            return ['hangup', ''];
+        }
+        return [$type, $destId];
+    }
+
+    /**
+     * The rules of the form (value -> destination), in order. Values are kept to
+     * characters that are safe in the dialplan; a range needs two numbers.
+     *
+     * @param mixed $rules list of {type, value, value2, dest_type, dest_id}
+     * @return list<array{type: string, value: string, value2: string, dest_type: string, dest_id: string}>
+     */
+    public static function normalizeRules(mixed $rules, ?int $selfId = null): array
+    {
+        if (is_string($rules)) {
+            $rules = json_decode($rules, true);
+        }
+        $out = [];
+        foreach (is_array($rules) ? $rules : [] as $r) {
+            if (!is_array($r) || trim((string) ($r['value'] ?? '')) === '') {
+                continue;
+            }
+            $type = (string) ($r['type'] ?? 'exact');
+            if (!in_array($type, self::RULE_TYPES, true)) {
+                throw new \InvalidArgumentException(t('ivr_data.err_rule'));
+            }
+            $value = trim((string) $r['value']);
+            $value2 = trim((string) ($r['value2'] ?? ''));
+            $num = '/^-?\d{1,15}(\.\d{1,6})?$/';
+            if ($type === 'range' ? (!preg_match($num, $value) || !preg_match($num, $value2) || (float) $value > (float) $value2)
+                : !preg_match('/^[\p{L}\p{N} _.+@:\/#*-]{1,64}$/u', $value)) {
+                throw new \InvalidArgumentException(sprintf(t('ivr_data.err_rule_value'), $value));
+            }
+            [$dt, $di] = self::dest((string) ($r['dest_type'] ?? 'hangup'), (string) ($r['dest_id'] ?? ''), $selfId);
+            $out[] = ['type' => $type, 'value' => $value, 'value2' => $type === 'range' ? $value2 : '', 'dest_type' => $dt, 'dest_id' => $di];
+            if (count($out) > self::MAX_RULES) {
+                throw new \InvalidArgumentException(t('ivr_data.err_rule_count'));
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Saved rules; anything damaged is left out rather than written into the dialplan.
+     *
+     * @return list<array{type: string, value: string, value2: string, dest_type: string, dest_id: string}>
+     */
+    public static function decodeRules(string $json): array
+    {
+        try {
+            return self::normalizeRules($json);
+        } catch (\InvalidArgumentException $e) {
+            return [];
+        }
+    }
+
+    /**
+     * The DataSourceService settings of a step row.
+     *
+     * @param array<string, mixed> $step
+     * @return array<string, mixed>
+     */
+    public static function sourceOf(array $step): array
+    {
+        if (($step['data_source'] ?? '') === 'saved_query') {
+            require_once __DIR__ . '/ExternalDbQueryService.php';
+            return ExternalDbQueryService::ivrSource((int) ($step['saved_query_id'] ?? 0));
+        }
+        return [
+            'type' => (string) ($step['data_source'] ?? 'database'),
+            'db_id' => (int) ($step['external_db_id'] ?? 0),
+            'sql' => (string) ($step['query_sql'] ?? ''),
+            'url' => (string) ($step['http_url'] ?? ''),
+            'method' => (string) ($step['http_method'] ?? 'GET'),
+            'headers_enc' => (string) ($step['http_headers_enc'] ?? ''),
+            'body' => (string) ($step['http_body'] ?? ''),
+            'json_path' => (string) ($step['json_path'] ?? ''),
+            'agi' => (string) ($step['agi_script'] ?? ''),
+            'value' => (string) ($step['value_template'] ?? ''),
+        ];
     }
 
     /**
      * How many places route calls to this step (IVR keys, inbound routes, time
      * plans …): deleting it would leave them pointing at nothing.
      */
-    /**
-     * :input and :caller_id may each appear several times; native prepared
-     * statements (no emulation) refuse a repeated name (HY093), so every
-     * occurrence gets its own name. Only names in the query are bound.
-     *
-     * @return array{0: string, 1: array<string, string>}
-     */
-    public static function bindLookupParams(string $sql, string $input, string $callerId): array
-    {
-        $values = ['input' => $input, 'caller_id' => $callerId];
-        $params = [];
-        $n = 0;
-        $sql = (string) preg_replace_callback('/(?<!:):(input|caller_id)\b/', function (array $m) use (&$params, &$n, $values): string {
-            $name = ':p' . (++$n) . '_' . $m[1];
-            $params[$name] = $values[$m[1]];
-            return $name;
-        }, $sql);
-        return [$sql, $params];
-    }
-
     public static function usageCount(int $id): int
     {
         require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.php';
@@ -192,128 +256,44 @@ class IvrDataStepService
 
     public static function deleteStep(int $id): bool
     {
-        $db = getDB();
-        $stmt = $db->prepare('DELETE FROM pbx_ivr_data_steps WHERE id = ?');
+        $stmt = getDB()->prepare('DELETE FROM pbx_ivr_data_steps WHERE id = ?');
         $stmt->execute([$id]);
         $ok = $stmt->rowCount() > 0;
         if ($ok && function_exists('markPendingSync')) {
-            markPendingSync('ivrs', 'ivr_data', $id, "IVR Data Step #{$id}", 'delete', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'ivr_data', $id, "Dynamic Routing #{$id}", 'delete', $_SESSION['user_id'] ?? null);
         }
         return $ok;
     }
 
     public static function toggleActive(int $id, bool $isActive): bool
     {
-        $db = getDB();
-        $stmt = $db->prepare('UPDATE pbx_ivr_data_steps SET is_active = ?, updated_at = NOW() WHERE id = ?');
+        $stmt = getDB()->prepare('UPDATE pbx_ivr_data_steps SET is_active = ?, updated_at = NOW() WHERE id = ?');
         $stmt->execute([$isActive ? 1 : 0, $id]);
         $ok = $stmt->rowCount() > 0;
         if ($ok && function_exists('markPendingSync')) {
-            markPendingSync('ivrs', 'ivr_data', $id, "IVR Data Step #{$id} " . ($isActive ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('ivrs', 'ivr_data', $id, "Dynamic Routing #{$id} " . ($isActive ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
         }
         return $ok;
     }
 
     /**
-     * Executes the data lookup (called from Asterisk loopback API).
-     * Hard limit: 2.5 seconds.
+     * The lookup of a database or URL step during a call (api/ivr_data_lookup.php).
      *
-     * @return array{status: 'found'|'not_found'|'timeout', var: string, val: string}
+     * @param array<string, string> $values variables the dialplan sent (input, caller_id, var_X, ...)
+     * @return array{status: string, value: string, vars: array<string, string>, ms: int, error: string}
      */
-    public static function performLookup(int $stepId, string $input, string $callerId): array
+    public static function performLookup(int $stepId, array $values): array
     {
         $step = IvrDataStepRepository::findById($stepId);
-        if (!$step || empty($step['is_active'])) {
-            return ['status' => 'not_found', 'var' => 'IVR_DATA_VAL', 'val' => ''];
+        if (!$step || empty($step['is_active']) || !in_array($step['data_source'] ?? '', ['database', 'saved_query', 'http'], true)) {
+            return ['status' => 'not_found', 'value' => '', 'vars' => [], 'ms' => 0, 'error' => 'no such step'];
         }
-
-        $varName = (string)($step['channel_var_name'] ?? 'IVR_DATA_VAL');
-        if (($step['input_source'] ?? 'dtmf') === 'dtmf' && $input === '') {
-            return ['status' => 'timeout', 'var' => $varName, 'val' => ''];
+        $known = array_filter($values, fn ($k): bool => DataSourceService::isVar((string) $k), ARRAY_FILTER_USE_KEY);
+        $source = self::sourceOf($step);
+        if ($step['data_source'] === 'saved_query' &&
+            array_diff(DataSourceService::placeholders($source['sql'], true), ['date', 'time'], array_keys($known))) {
+            return ['status' => 'timeout', 'value' => '', 'vars' => [], 'ms' => 0, 'error' => 'missing saved query parameters'];
         }
-        $dataSource = (string)($step['data_source'] ?? 'database');
-
-        try {
-            if ($dataSource === 'database') {
-                $dbId = (int)($step['external_db_id'] ?? 0);
-                $sql = (string)($step['query_sql'] ?? '');
-
-                [$sql, $params] = self::bindLookupParams($sql, $input, $callerId);
-
-                $rows = ExternalDbService::executeQuery($dbId, $sql, $params);
-                if (!empty($rows)) {
-                    $firstRow = $rows[0];
-                    return ['status' => 'found', 'var' => $varName, 'val' => self::cleanValue((string) reset($firstRow))];
-                }
-                return ['status' => 'not_found', 'var' => $varName, 'val' => ''];
-            }
-
-            if ($dataSource === 'http') {
-                $rawUrl = (string)($step['http_url'] ?? '');
-                $url = str_replace(
-                    ['{input}', '{caller_id}'],
-                    [rawurlencode($input), rawurlencode($callerId)],
-                    $rawUrl
-                );
-
-                // SSRF check, with the checked address pinned for the request
-                $resolve = WebhookService::validatedResolve($url);
-
-                $method = (string)($step['http_method'] ?? 'GET');
-                $ch = curl_init();
-                curl_setopt_array($ch, [
-                    CURLOPT_URL => $url,
-                    CURLOPT_RETURNTRANSFER => true,
-                    CURLOPT_TIMEOUT_MS => 2500, // 2.5s hard limit
-                    CURLOPT_CONNECTTIMEOUT_MS => 1500,
-                    CURLOPT_FOLLOWLOCATION => false,
-                ]);
-                if ($resolve) {
-                    curl_setopt($ch, CURLOPT_RESOLVE, $resolve);
-                }
-
-                if ($method === 'POST') {
-                    curl_setopt($ch, CURLOPT_POST, true);
-                    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
-                        'input' => $input,
-                        'caller_id' => $callerId,
-                    ]));
-                    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-                }
-
-                $resp = curl_exec($ch);
-                $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-                if ($httpCode >= 200 && $httpCode < 300 && is_string($resp) && trim($resp) !== '') {
-                    $val = trim($resp);
-                    // If JSON was returned, try extracting 'value' or 'result'
-                    $json = json_decode($val, true);
-                    if (is_array($json)) {
-                        $val = (string)($json['value'] ?? $json['result'] ?? reset($json));
-                    }
-                    return ['status' => 'found', 'var' => $varName, 'val' => self::cleanValue($val)];
-                }
-
-                if ($httpCode === 404) {
-                    return ['status' => 'not_found', 'var' => $varName, 'val' => ''];
-                }
-
-                return ['status' => 'timeout', 'var' => $varName, 'val' => ''];
-            }
-
-            return ['status' => 'not_found', 'var' => $varName, 'val' => ''];
-        } catch (\Throwable $e) {
-            return ['status' => 'timeout', 'var' => $varName, 'val' => ''];
-        }
-    }
-
-    /**
-     * The answer goes into a channel variable through "status|value": no line
-     * breaks, no "|" and no control characters, at most 64 characters.
-     */
-    public static function cleanValue(string $val): string
-    {
-        $val = preg_replace('/[\x00-\x1F\x7F|]+/u', ' ', $val) ?? '';
-        return mb_substr(trim($val), 0, 64);
+        return DataSourceService::run($source, array_map('strval', $known));
     }
 }

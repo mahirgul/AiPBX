@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
+require_once dirname(__DIR__, 2) . '/src/services/IvrDataStepService.php';
+
 final class IvrDataStepTest extends TestCase
 {
     private ?int $stepId = null;
@@ -174,12 +176,12 @@ final class IvrDataStepTest extends TestCase
         $this->stepId = (int)$stepSave['id'];
 
         // Test matching input
-        $resFound = IvrDataStepService::performLookup($this->stepId, '', '1001');
+        $resFound = IvrDataStepService::performLookup($this->stepId, ['input' => '', 'caller_id' => '1001']);
         $this->assertSame('found', $resFound['status']);
-        $this->assertSame('1', (string)$resFound['val']);
+        $this->assertSame('1', (string)$resFound['value']);
 
         // Test non-matching input
-        $resNotFound = IvrDataStepService::performLookup($this->stepId, '', '9999');
+        $resNotFound = IvrDataStepService::performLookup($this->stepId, ['input' => '', 'caller_id' => '9999']);
         $this->assertSame('not_found', $resNotFound['status']);
     }
 
@@ -196,7 +198,7 @@ final class IvrDataStepTest extends TestCase
         $this->assertTrue($stepSave['ok']);
         $stepId = (int)$stepSave['id'];
 
-        $res = IvrDataStepService::performLookup($stepId, '', '1001');
+        $res = IvrDataStepService::performLookup($stepId, ['input' => '', 'caller_id' => '1001']);
         $this->assertSame('not_found', $res['status']);
 
         IvrDataStepService::deleteStep($stepId);
@@ -204,9 +206,9 @@ final class IvrDataStepTest extends TestCase
 
     public function testRepeatedLookupParametersWorkWithNativePrepares(): void
     {
-        [$sql, $params] = IvrDataStepService::bindLookupParams(
-            'SELECT :caller_id AS a, :caller_id AS b, :input AS c', '42', '05321234567');
-        $this->assertSame('SELECT :p1_caller_id AS a, :p2_caller_id AS b, :p3_input AS c', $sql);
+        [$sql, $params] = DataSourceService::bindSql(
+            'SELECT :caller_id AS a, :caller_id AS b, :input AS c', ['input' => '42', 'caller_id' => '05321234567']);
+        $this->assertSame('SELECT :p1 AS a, :p2 AS b, :p3 AS c', $sql);
 
         // The same as an external connection: no emulation, so a repeated name would be HY093.
         $pdo = getDB();

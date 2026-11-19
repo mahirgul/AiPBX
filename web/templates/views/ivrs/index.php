@@ -4,7 +4,7 @@
     <?php echo uiPageHeaderOpen('fa-microphone-alt', t('ivr.title'), 'ivrHelpBox'); ?>
 <?php echo uiPageHeaderActions(); ?>
 <?php if (hasModulePermission('external_dbs', 'access')): ?>
-            <a href="/ivr-data-steps" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('ivr_data.page_title')); ?>">
+            <a href="/dynamic-routing" class="btn btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('ivr_data.page_title')); ?>">
                 <i class="fas fa-database"></i> <?php echo htmlspecialchars(t('ivr_data.nav_button')); ?>
             </a>
             <?php endif; ?>
