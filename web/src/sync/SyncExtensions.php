@@ -126,7 +126,7 @@ function __syncAllExtensionsBody() {
     // Fax users (extension_type='fax') never register over SIP (an incoming
     // fax lands directly in [from-trunk-fax], an outgoing fax is sent with a
     // call file) — so NO PJSIP endpoint/AOR/auth is generated for them.
-    $users = $db->query("SELECT id, extension, full_name, sip_password, sip_auth_digest, sip_send_pai, cid_internal, cid_external, pickup_group, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
+    $users = $db->query("SELECT id, extension, full_name, sip_password, sip_auth_digest, sip_send_pai, cid_internal, cid_external, pickup_group, pbx_language, record_policy, role, outbound_group, permission_group_id, voicemail_enabled FROM sys_users WHERE extension IS NOT NULL AND extension != '' AND is_active = 1 AND extension_type = 'sip' ORDER BY extension ASC, id ASC")->fetchAll(PDO::FETCH_ASSOC);
 
     // Two `sys_users` rows can share one extension — an imported account plus one
     // re-created by hand, say. The loop below writes a full endpoint/auth/identify
@@ -276,6 +276,12 @@ function __syncAllExtensionsBody() {
         $ext = preg_replace('/[^0-9]/', '', (string)$u['extension']);
         if ($ext === '') continue;
         $name = toCleanAscii($u['full_name']);
+        // Prompts on this extension's own phones (voicemail menu, feature codes) in its language.
+        $lang_line = in_array((string) ($u['pbx_language'] ?? ''), getAvailableLanguages(), true) ? "language={$u['pbx_language']}\n" : '';
+        // The user's recording choice travels on their calls (outbound routes and calls to extensions read it).
+        if (in_array($u['record_policy'] ?? '', ['always', 'never'], true)) {
+            $lang_line .= "set_var=AIPBX_REC_POLICY={$u['record_policy']}\n";
+        }
 
         // Fetch settings from `sip` table (or fallback to sync)
         $sip_map = SIPHelper::getSettingsMap($ext);
@@ -366,6 +372,7 @@ function __syncAllExtensionsBody() {
         $conf .= "aors={$ext}-sip,{$ext}\n";
         $conf .= "context={$sip_context}\n";
         $conf .= "callerid={$callerid}\n";
+        $conf .= $lang_line;
         // On in the template; the extension's own setting can turn it off.
         if (isset($u['sip_send_pai']) && (int) $u['sip_send_pai'] === 0) {
             $conf .= "send_pai=no\n";
@@ -404,6 +411,7 @@ function __syncAllExtensionsBody() {
         $conf .= "aors={$ext}-webrtc\n";
         $conf .= "context={$web_context}\n";
         $conf .= "callerid={$callerid}\n";
+        $conf .= $lang_line;
         $conf .= $set_vars;
         $conf .= "set_var=AIPBX_CLIENT_TYPE=web\n";
         $conf .= $pickup_lines . "\n";
@@ -413,6 +421,7 @@ function __syncAllExtensionsBody() {
         $conf .= "aors={$ext}-mob-webrtc\n";
         $conf .= "context={$mob_context}\n";
         $conf .= "callerid={$callerid}\n";
+        $conf .= $lang_line;
         $conf .= $set_vars;
         $conf .= "set_var=AIPBX_CLIENT_TYPE=mobile\n";
         $conf .= $pickup_lines . "\n";

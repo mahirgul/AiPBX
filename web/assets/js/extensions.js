@@ -84,7 +84,8 @@ function openCreateExtensionModal() {
 
     document.getElementById('modal_user_id').value = '';
     document.getElementById('modal_full_name').value = '';
-    document.getElementById('modal_extension').value = '';
+    const extEl = document.getElementById('modal_extension');
+    extEl.value = extEl.dataset.suggest || '';
     document.getElementById('modal_extension_type').value = 'sip';
     const authEl = document.getElementById('modal_sip_auth_digest');
     if (authEl) authEl.value = '1';
@@ -109,8 +110,13 @@ function openCreateExtensionModal() {
     if (cfNoans) cfNoans.value = '';
     const cfTimeout = document.getElementById('modal_cf_noanswer_timeout');
     if (cfTimeout) cfTimeout.value = '20';
+    extSetFollowMe({});
     const pickupEl = document.getElementById('modal_pickup_group');
     if (pickupEl) pickupEl.value = '';
+    const pbxLangEl = document.getElementById('modal_pbx_language');
+    if (pbxLangEl) pbxLangEl.value = '';
+    const recPolicyEl = document.getElementById('modal_record_policy');
+    if (recPolicyEl) recPolicyEl.value = '';
 
     const permEl = document.getElementById('modal_permission_group_id');
     if (permEl) permEl.value = '1';
@@ -183,8 +189,13 @@ function openEditExtensionModal(item) {
     if (cfNoans) cfNoans.value = item.cf_noanswer_number || '';
     const cfTimeout = document.getElementById('modal_cf_noanswer_timeout');
     if (cfTimeout) cfTimeout.value = item.cf_noanswer_timeout || '20';
+    extSetFollowMe(item);
     const pickupEl = document.getElementById('modal_pickup_group');
     if (pickupEl) pickupEl.value = item.pickup_group || '';
+    const pbxLangEl = document.getElementById('modal_pbx_language');
+    if (pbxLangEl) pbxLangEl.value = item.pbx_language || '';
+    const recPolicyEl = document.getElementById('modal_record_policy');
+    if (recPolicyEl) recPolicyEl.value = item.record_policy || '';
 
     const permEl = document.getElementById('modal_permission_group_id');
     if (permEl) permEl.value = item.permission_group_id || '1';
@@ -247,3 +258,13 @@ function toggleRowPassword(btn) {
     }
 }
 
+
+/** Extension modal: the Follow Me fields of a user ({} for a new one). */
+function extSetFollowMe(item) {
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+    set('modal_followme_numbers', (item.followme_numbers || '').split(',').filter(Boolean).join(', '));
+    set('modal_followme_mode', item.followme_mode === 'parallel' ? 'parallel' : 'sequential');
+    set('modal_followme_ring_time', item.followme_ring_time || 20);
+    const c = document.getElementById('modal_followme_confirm');
+    if (c) c.checked = item.followme_confirm === undefined || parseInt(item.followme_confirm) === 1;
+}

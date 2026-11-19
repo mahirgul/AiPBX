@@ -35,6 +35,24 @@ The editor has five tabs: **Basic Settings**, **Call Routing & Forwarding**, **G
 | Active | Off: the extension cannot register or call, and the user cannot sign in. |
 | Device only (no portal user) | For a lobby, door or meeting-room phone or a shared line. The extension registers as a SIP phone and is an extension everywhere (ring groups, queues, BLF keys, inbound routes, provisioning, call records), but it is no person: it cannot sign in to the portal or the mobile app by any way, is not listed under System Users and does not appear in chat. Off by default. An administrator's or your own account cannot be made device only. A [line key](phones.md#key-layout) of a desk phone can carry such an extension next to the user's own. |
 
+### Follow Me
+
+**Call Routing & Forwarding → Follow Me** rings up to five more numbers for the extension: a mobile, an
+outside number or another extension. Users set their own on **My Phone**.
+
+| Order | What rings |
+| --- | --- |
+| One after the other (default) | The extension for its *No answer timeout*, then each number for *Ring each number*, in the order written. When nobody answers, the extension's own no-answer handling follows (forward on no answer, voicemail) |
+| All together | The extension and every number at once, for the *No answer timeout* |
+
+An unreachable extension (no phone registered) goes straight to the numbers. Do not disturb and Always forward
+come first; Forward on busy is unchanged.
+
+With **The answerer presses 1** on (default), the person who picks up hears "press 1 to accept the call". Anything
+else, such as a mobile's voicemail answering, hangs that number up and the call goes on. Outside numbers are
+dialled with the extension's own calling permissions and outbound routes. A number that is itself an extension
+with Follow Me does not start its own list (no loops).
+
 ### SIP settings
 
 For the extension's desk phone or softphone only; the web phone and the mobile apps keep their own.

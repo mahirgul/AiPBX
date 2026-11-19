@@ -32,7 +32,7 @@ $vmNa = (int)($details['vm_on_noanswer'] ?? 0);
 $vmBusy = (int)($details['vm_on_busy'] ?? 0);
 $vmUnavail = (int)($details['vm_on_unavail'] ?? 0);
 $vmAlways = (int)($details['vm_always'] ?? 0);
-$isFaxUser = (($_SESSION['user_role'] ?? '') === 'fax_user' || ($details['extension_type'] ?? '') === 'fax');
+$isFaxUser = (userHasRole('fax_user') || ($details['extension_type'] ?? '') === 'fax');
 if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
     $currentTab = 'history';
 }
@@ -118,6 +118,11 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                 </div>
                 <div class="u-flex-center">
                     <a href="/my-phone?tab=history" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('common.refresh'); ?>"><i class="fas fa-sync-alt"></i></a>
+                    <?php if (!$isFaxUser): ?>
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="openQrLoginModal()" title="<?php echo htmlspecialchars(t('my_phone.mobile_qr')); ?>">
+                        <i class="fas fa-qrcode"></i> <?php echo t('my_phone.show_qr'); ?>
+                    </button>
+                    <?php endif; ?>
                     <button type="button" class="btn btn-secondary btn-sm" onclick="switchMyPhoneTab('calls')" title="<?php echo htmlspecialchars(t('my_phone.tab_calls')); ?>">
                         <i class="fas fa-phone-alt"></i> <?php echo t('my_phone.tab_calls'); ?>
                     </button>
@@ -477,6 +482,37 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
                                 <?php echo t('my_phone.cf_noanswer_help'); ?>
                             </small>
                         </div>
+
+                        <!-- 4. Follow Me -->
+                        <?php $fmMode = ($details['followme_mode'] ?? '') === 'parallel' ? 'parallel' : 'sequential'; $fmRing = (int) ($details['followme_ring_time'] ?? 20); ?>
+                        <div class="form-group u-mb-0 u-mt-10">
+                            <label class="form-label u-fs-11-5 u-fw-600 u-d-flex u-ai-center u-jc-space-between u-mb-4">
+                                <span><i class="fas fa-people-arrows u-primary u-mr-4"></i> <?php echo t('extensions.followme_title'); ?></span>
+                                <?php if (!empty($details['followme_numbers'])): ?>
+                                    <span class="badge badge-info u-fs-10 u-p-2-8"><i class="fas fa-check"></i> <?php echo t('my_phone.active'); ?></span>
+                                <?php endif; ?>
+                            </label>
+                            <input type="text" name="followme_numbers" value="<?php echo htmlspecialchars(str_replace(',', ', ', (string) ($details['followme_numbers'] ?? ''))); ?>" class="form-control form-control-sm u-fs-12-5" placeholder="05321234567, 1005">
+                            <div class="u-flex-gap u-mt-6">
+                                <select name="followme_mode" class="form-control form-control-sm u-fs-12 u-flex-1">
+                                    <option value="sequential" <?php echo $fmMode === 'sequential' ? 'selected' : ''; ?>><?php echo t('extensions.followme_sequential'); ?></option>
+                                    <option value="parallel" <?php echo $fmMode === 'parallel' ? 'selected' : ''; ?>><?php echo t('extensions.followme_parallel'); ?></option>
+                                </select>
+                                <select name="followme_ring_time" class="form-control form-control-sm u-w-90 u-fs-12" title="<?php echo t('extensions.followme_ring_time'); ?>">
+                                    <?php foreach ([10, 15, 20, 25, 30, 45] as $s): ?>
+                                        <option value="<?php echo $s; ?>" <?php echo $fmRing === $s ? 'selected' : ''; ?>><?php echo $s; ?> <?php echo t('my_phone.sec'); ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-11 u-pointer u-mt-6">
+                                <input type="hidden" name="followme_confirm" value="0">
+                                <input type="checkbox" name="followme_confirm" value="1" class="u-accent" <?php echo !isset($details['followme_confirm']) || !empty($details['followme_confirm']) ? 'checked' : ''; ?>>
+                                <span><?php echo t('extensions.followme_confirm'); ?></span>
+                            </label>
+                            <small class="u-muted u-fs-11 u-mt-2" style="display: block;">
+                                <?php echo t('extensions.followme_numbers_help'); ?>
+                            </small>
+                        </div>
                     </div>
 
                     <?php if (hasModulePermission('my_phone', 'edit')): ?>
@@ -776,55 +812,6 @@ if ($isFaxUser && ($currentTab ?? '') === 'voicemail') {
         <?php endif; ?>
     <?php endif; ?>
     </div><!-- /tabbed-page: title, tabs and panes in one card (like Time Plan) -->
-
-<!-- Modal: quick mobile sign-in with a QR code -->
-<div class="modal-overlay" id="qrLoginModal" style="display: none;">
-    <div class="modal-card u-maxw-440 u-ta-center">
-        <div class="modal-header">
-            <div class="u-d-flex u-ai-center u-gap-10">
-                <div class="u-w-36 u-h-36 u-r-12 u-bg-rgba-37-99-235-0-12-2 u-primary u-d-flex u-ai-center u-jc-center u-fs-18">
-                    <i class="fas fa-qrcode"></i>
-                </div>
-                <div>
-                    <h3 class="u-fs-16 u-fw-700 u-m-0 u-ta-left"><?php echo t('my_phone.mobile_qr'); ?></h3>
-                    <small class="u-muted u-fs-11 u-ta-left" style="display: block;"><?php echo t('my_phone.lbl_extension'); ?>: <?php echo htmlspecialchars($ext); ?> (<?php echo htmlspecialchars($currentUser['full_name'] ?? ''); ?>)</small>
-                </div>
-            </div>
-            <button class="btn btn-icon btn-secondary btn-sm" onclick="closeQrLoginModal()" title="<?php echo t('common.close'); ?>">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="modal-body u-p-24-20">
-            <p class="u-fs-13 u-muted u-mb-20 u-lh-1-5">
-                <?php echo t('my_phone.qr_howto'); ?>
-            </p>
-
-            <div class="u-jc-center u-ai-center u-minh-240 u-bg-ffffff u-p-16 u-r-12 u-bd-1-solid-border-color u-box-shadow-0-4-12-rgba-0-0-0-0-06 u-m-0-auto u-maxw-250" id="qrCodeContainer" style="display: flex;">
-                <div id="qrLoadingSpinner" class="u-muted u-text-center">
-                    <i class="fas fa-spinner fa-spin u-fs-28 u-primary u-mb-8" style="display: block;"></i>
-                    <?php echo t('my_phone.qr_generating'); ?>
-                </div>
-                <div class="u-w-100" id="qrSvgWrapper" style="display: none;"></div>
-            </div>
-
-            <div class="u-mt-16 u-bg-rgba-16-185-129-0-15 u-bd-1-solid-rgba-16-185-129-0-4 u-r-8 u-p-12 u-c-059669 u-fw-600 u-fs-13" id="qrSuccessAlert" style="display: none;">
-                <i class="fas fa-check-circle u-mr-6"></i> <?php echo t('my_phone.qr_paired'); ?>: <span id="qrPairedDevice"></span>
-            </div>
-
-            <div id="qrCountdownContainer" class="u-mt-16 u-fs-12 u-muted u-d-flex u-ai-center u-jc-center u-gap-8">
-                <i class="fas fa-clock"></i> <?php echo t('my_phone.qr_remaining'); ?>: <strong id="qrCountdown" class="u-primary">10:00</strong>
-                <button type="button" class="btn btn-ghost btn-xs" onclick="generateNewQrCode()" title="<?php echo t('my_phone.qr_new'); ?>">
-                    <i class="fas fa-sync-alt"></i> <?php echo t('common.refresh'); ?>
-                </button>
-            </div>
-
-            <div class="u-mt-20 u-fs-12 u-muted u-bg-bg-input u-p-12-16 u-r-8 u-ta-left u-lh-1-5 u-bd-1-solid-border-color">
-                <i class="fas fa-shield-alt u-primary u-mr-4"></i>
-                <?php echo t('my_phone.qr_secure'); ?>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- WaveSurfer audio player modal (component shared with the CDR reports) -->
 <?php require dirname(__DIR__, 2) . '/cdr_audio_player.php'; ?>

@@ -75,7 +75,7 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $seq++;
     $lbl = ($labelPrefix !== '' ? $labelPrefix . '_' : '') . $ext . '_' . $seq;
 
-    $stmt = $db->prepare("SELECT dnd_enabled, call_forward_number, cf_busy_number, cf_noanswer_number, cf_noanswer_timeout, allowed_phone_mode, voicemail_enabled, vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always, permission_group_id, outbound_group FROM sys_users WHERE extension = ?");
+    $stmt = $db->prepare("SELECT record_policy, dnd_enabled, call_forward_number, cf_busy_number, cf_noanswer_number, cf_noanswer_timeout, allowed_phone_mode, voicemail_enabled, vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always, permission_group_id, outbound_group, followme_numbers, followme_mode, followme_ring_time, followme_confirm FROM sys_users WHERE extension = ?");
     $stmt->execute([$ext]);
     $u = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
@@ -94,6 +94,12 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
     $globalTimeout = intval(getSystemSetting('pjsip_internal_dial_timeout', '30')) ?: 30;
     $dialTimeout = ($cfNoAnswer !== '') ? $cfTimeout : $globalTimeout;
     $hasAnyCf = ($cfAlways !== '' || $cfBusy !== '' || $cfNoAnswer !== '');
+    // Follow Me: the extension (with the list, in parallel mode) rings for its no-answer time;
+    // in sequential mode each number of the list then rings for the Follow Me ring time.
+    $fm = followMeConfig($u, $cfContext);
+    if ($fm !== null) {
+        $dialTimeout = $cfTimeout;
+    }
 
     // 1. DND on: straight to Busy
     if ($dnd) {
@@ -141,6 +147,21 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
             'terminal' => true,
             'lines' => $lines
         ];
+    }
+
+    // 3.5 Recording by a user's choice ("always"): this extension's, or the calling user's
+    // (AIPBX_REC_POLICY from their endpoint). Never over one already running, nor when the
+    // caller opted out. Only written while some user records always.
+    if ($db->query("SELECT 1 FROM sys_users WHERE record_policy = 'always' LIMIT 1")->fetchColumn()) {
+        require_once __DIR__ . '/../services/PrivacyService.php';
+        $lines[] = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\" | \"\${PRIVACY_NO_RECORD}\" = \"1\" | \"\${AIPBX_FAX}\" = \"1\"]?rec_skip_{$lbl})";
+        if (($u['record_policy'] ?? '') !== 'always') {
+            $lines[] = " same => n,GotoIf(\$[\"\${AIPBX_REC_POLICY}\" != \"always\"]?rec_skip_{$lbl})";
+        }
+        $lines[] = " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/internal_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_to_{$ext}.wav)";
+        $lines[] = " same => n,MixMonitor(\${REC_FILE}" . PrivacyService::mixMonitorOptionSuffix() . ")";
+        $lines[] = " same => n,Set(CDR(userfield)=\${REC_FILE})";
+        $lines[] = " same => n(rec_skip_{$lbl}),NoOp()";
     }
 
     // 4. Dial the devices (SIP, WebRTC, mobile WebRTC) - filtered by the active phone modes
@@ -203,6 +224,14 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 
     $lines[] = " same => n,Set(DIAL_CONTACTS=\${C_SIP}\${IF(\$[\"\${C_SIP}\" != \"\" & \"\${C_WEB}\" != \"\"]?&)}\${C_WEB})";
     $lines[] = " same => n,Set(DIAL_CONTACTS=\${DIAL_CONTACTS}\${IF(\$[\"\${DIAL_CONTACTS}\" != \"\" & \"\${C_MOB}\" != \"\"]?&)}\${C_MOB})";
+    if ($fm !== null && $fm['mode'] === 'parallel') {
+        // The list rings with the extension's own devices (not when this call is itself a Follow Me leg).
+        $lines[] = " same => n,GotoIf(\$[\"\${FM_ACTIVE}\" = \"1\"]?fm_par_skip_{$lbl})";
+        array_push($lines, ...followMeVarLines($fm, $permGrp));
+        $legs = implode('&', $fm['legs']);
+        $lines[] = " same => n,Set(DIAL_CONTACTS=\${DIAL_CONTACTS}\${IF(\$[\"\${DIAL_CONTACTS}\" != \"\"]?&)}{$legs})";
+        $lines[] = " same => n(fm_par_skip_{$lbl}),NoOp()";
+    }
     $lines[] = " same => n,GotoIf(\$[\"\${DIAL_CONTACTS}\" = \"\"]?lbl_unavail_{$lbl})";
     if (($jb = rtrim(jitterBufferLine())) !== '') {
         $lines[] = $jb;
@@ -237,6 +266,9 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 
     // 7. No answer
     $lines[] = " same => n(lbl_noans_{$lbl}),NoOp(Extension {$ext} no answer - DIALSTATUS=\${DIALSTATUS})";
+    if ($fm !== null && $fm['mode'] === 'sequential') {
+        $lines[] = " same => n,Gosub(fm_seq_{$lbl})";
+    }
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Forward on no answer on - {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
@@ -256,6 +288,9 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
 
     // 8. Unreachable / offline
     $lines[] = " same => n(lbl_unavail_{$lbl}),NoOp(Extension {$ext} has no registered device or is unreachable)";
+    if ($fm !== null && $fm['mode'] === 'sequential') {
+        $lines[] = " same => n,Gosub(fm_seq_{$lbl})";
+    }
     if ($cfNoAnswer !== '') {
         $lines[] = " same => n,NoOp(Unreachable -> forward on no answer: {$ext} -> {$cfNoAnswer})";
         $lines[] = " same => n,GotoIf(\$[0\${CF_HOPS} > 3]?cf_loop_{$lbl})";
@@ -286,10 +321,73 @@ function buildExtensionDialLines(string $ext, PDO $db, string $labelPrefix = '')
         $lines[] = " same => n,Hangup(17)";
     }
 
+    // 10. Follow Me, one number after the other (reached by Gosub from no answer / unreachable).
+    // An answered leg ends the call here; otherwise the extension's own no-answer handling follows.
+    if ($fm !== null && $fm['mode'] === 'sequential') {
+        $lines[] = " same => n(fm_seq_{$lbl}),GotoIf(\$[\"\${FM_ACTIVE}\" = \"1\"]?fm_ret_{$lbl})";
+        array_push($lines, ...followMeVarLines($fm, $permGrp));
+        foreach ($fm['legs'] as $leg) {
+            $lines[] = " same => n,Dial({$leg},{$fm['ring']},t)";
+            $lines[] = " same => n,GotoIf(\$[\"\${DIALSTATUS}\" = \"ANSWER\"]?fm_end_{$lbl})";
+        }
+        $lines[] = " same => n(fm_ret_{$lbl}),Return()";
+        $lines[] = " same => n(fm_end_{$lbl}),Hangup()";
+    }
+
     return [
         'terminal' => false,
         'lines' => $lines
     ];
+}
+
+/**
+ * Follow Me of a user: the numbers to ring as Dial legs, or null when the list is empty.
+ * A number is dialled in the user's outbound context (permissions and routes apply); with
+ * confirm on, through [followme-confirm] so a voicemail cannot take the call.
+ *
+ * @return array{legs: list<string>, mode: string, ring: int, ctx: string}|null
+ */
+function followMeConfig(array $u, string $cfContext): ?array
+{
+    $numbers = [];
+    foreach (explode(',', (string) ($u['followme_numbers'] ?? '')) as $n) {
+        $n = (string) preg_replace('/[^0-9+]/', '', trim($n));
+        if ($n !== '' && preg_match('/^\+?[0-9]{2,20}$/', $n) && !in_array($n, $numbers, true)) {
+            $numbers[] = $n;
+        }
+    }
+    if (!$numbers) {
+        return null;
+    }
+    $confirm = !isset($u['followme_confirm']) || !empty($u['followme_confirm']);
+    $legs = array_map(static fn(string $n): string => $confirm ? "Local/{$n}@followme-confirm/n" : "Local/{$n}@{$cfContext}/n", array_slice($numbers, 0, 5));
+    $ring = (int) ($u['followme_ring_time'] ?? 20);
+    return [
+        'legs' => $legs,
+        'mode' => ($u['followme_mode'] ?? '') === 'parallel' ? 'parallel' : 'sequential',
+        'ring' => $ring >= 5 && $ring <= 120 ? $ring : 20,
+        'ctx' => $cfContext,
+    ];
+}
+
+/**
+ * Variables the Follow Me legs inherit: FM_ACTIVE stops a leg that reaches another extension
+ * from starting that one's Follow Me (no loops); FM_CTX / FM_RING are for [followme-confirm].
+ *
+ * @param array{legs: list<string>, mode: string, ring: int, ctx: string} $fm
+ * @return list<string>
+ */
+function followMeVarLines(array $fm, int $permGrp): array
+{
+    $lines = [
+        " same => n,Set(__FM_ACTIVE=1)",
+        " same => n,Set(__FM_CTX={$fm['ctx']})",
+        " same => n,Set(__FM_RING={$fm['ring']})",
+    ];
+    if ($permGrp > 0) {
+        $lines[] = " same => n,Set(__PERMISSION_GROUP_ID={$permGrp})";
+    }
+    return $lines;
 }
 
 /**

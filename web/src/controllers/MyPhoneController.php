@@ -33,7 +33,7 @@ class MyPhoneController extends BaseController
 
                 $currentExtDetails = MyPhoneRepository::getUserExtensionDetails($userId) ?: [];
                 $mode = $currentExtDetails['allowed_phone_mode'] ?? ($user['allowed_phone_mode'] ?? 'web');
-                if (($_SESSION['user_role'] ?? '') === 'admin') {
+                if (userHasRole('admin')) {
                     if (isset($_POST['phone_modes']) && is_array($_POST['phone_modes'])) {
                         $mode = formatPhoneModes($_POST['phone_modes']);
                     } elseif (isset($_POST['allowed_phone_modes']) && is_array($_POST['allowed_phone_modes'])) {
@@ -44,6 +44,12 @@ class MyPhoneController extends BaseController
                 }
 
                 MyPhoneRepository::updatePhoneSettings($userId, $dnd, $forwardAlways, $mode, $forwardBusy, $forwardNoAnswer, $noAnswerTimeout);
+                try {
+                    require_once dirname(__DIR__) . '/services/ExtensionService.php';
+                    MyPhoneRepository::updateFollowMe($userId, ExtensionService::followMeColumns($_POST));
+                } catch (\Exception $e) {
+                    static::notifyError($e->getMessage());
+                }
 
                 // Update session state for current user
                 $_SESSION['allowed_phone_mode'] = $mode;

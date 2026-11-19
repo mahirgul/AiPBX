@@ -34,8 +34,10 @@ class ExtensionController extends BaseController
         $boss_secretary_groups = BossSecretaryService::getGroups();
 
         $page_title = t('extensions.title');
+        require_once __DIR__ . '/../internal_numbers.php';
         static::renderPage('extensions/index', [
             'extensions' => $extensions,
+            'next_extension' => nextFreeExtension(),
             'pjsip_statuses' => $pjsip_statuses,
             'permission_groups' => $permission_groups,
             'boss_secretary_groups' => $boss_secretary_groups,

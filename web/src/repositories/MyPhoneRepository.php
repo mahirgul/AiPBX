@@ -18,6 +18,7 @@ class MyPhoneRepository extends BaseRepository
             "SELECT u.id, u.username, u.full_name, u.email, u.extension, u.sip_password, u.sip_auth_digest,
                     u.role, COALESCE(r.role_name, u.role) AS role_name, u.allowed_phone_mode, dnd_enabled, call_forward_number,
                     cf_busy_number, cf_noanswer_number, cf_noanswer_timeout,
+                    followme_numbers, followme_mode, followme_ring_time, followme_confirm,
                     cid_internal, cid_external, outbound_group, is_active,
                     voicemail_enabled, voicemail_pin, voicemail_email, voicemail_email_notify, voicemail_attach_audio,
                     vm_on_noanswer, vm_on_busy, vm_on_unavail, vm_always
@@ -514,5 +515,15 @@ class MyPhoneRepository extends BaseRepository
         );
         $stmt->execute([$userId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    }
+
+    /** @param array<string, mixed> $cols ExtensionService::followMeColumns() */
+    public static function updateFollowMe(int $userId, array $cols): void
+    {
+        if ($cols === []) {
+            return;
+        }
+        $set = implode(', ', array_map(static fn(string $c): string => "{$c} = ?", array_keys($cols)));
+        static::db()->prepare("UPDATE sys_users SET {$set} WHERE id = ?")->execute([...array_values($cols), $userId]);
     }
 }

@@ -161,7 +161,7 @@
 
                         <div class="form-group">
                             <label class="form-label"><?php echo t('extensions.field_extension'); ?></label>
-                            <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('extensions.field_extension_placeholder'); ?>" pattern="[0-9]{3,6}" required>
+                            <input type="text" name="extension" id="modal_extension" class="form-control" placeholder="<?php echo t('extensions.field_extension_placeholder'); ?>" pattern="[0-9]{3,6}" required data-suggest="<?php echo htmlspecialchars($next_extension ?? ''); ?>">
                         </div>
                     </div>
 
@@ -253,6 +253,36 @@
                             <small class="u-hint u-fs-11"><?php echo t('extensions.cf_noanswer_help'); ?></small>
                         </div>
                     </div>
+
+                    <!-- Follow Me (DialplanExtensionBuilder::followMeConfig) -->
+                    <div class="u-mt-16 u-bg-bg-card u-p-16 u-bd-1-solid-border-color u-r-8">
+                        <h4 class="u-fs-13 u-fw-700 u-mb-12 u-d-flex u-ai-center u-gap-8 u-text-main">
+                            <i class="fas fa-people-arrows u-primary"></i> <?php echo t('extensions.followme_title'); ?>
+                        </h4>
+                        <div class="form-group">
+                            <label class="form-label" for="modal_followme_numbers"><?php echo t('extensions.followme_numbers'); ?></label>
+                            <input type="text" name="followme_numbers" id="modal_followme_numbers" class="form-control" placeholder="05321234567, 1005">
+                            <small class="u-hint u-fs-11"><?php echo t('extensions.followme_numbers_help'); ?></small>
+                        </div>
+                        <div class="u-grid-2 u-gap-16">
+                            <div class="form-group">
+                                <label class="form-label" for="modal_followme_mode"><?php echo t('extensions.followme_mode'); ?></label>
+                                <select name="followme_mode" id="modal_followme_mode" class="form-control">
+                                    <option value="sequential"><?php echo t('extensions.followme_sequential'); ?></option>
+                                    <option value="parallel"><?php echo t('extensions.followme_parallel'); ?></option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="modal_followme_ring_time"><?php echo t('extensions.followme_ring_time'); ?></label>
+                                <input type="number" name="followme_ring_time" id="modal_followme_ring_time" class="form-control" min="5" max="120" value="20">
+                            </div>
+                        </div>
+                        <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer u-m-0">
+                            <input type="hidden" name="followme_confirm" value="0">
+                            <input type="checkbox" name="followme_confirm" id="modal_followme_confirm" value="1" checked class="u-accent">
+                            <span><?php echo t('extensions.followme_confirm'); ?></span>
+                        </label>
+                    </div>
                 </div>
 
                 <!-- TAB 3: Groups & Permissions -->
@@ -269,6 +299,27 @@
                             <input type="text" name="pickup_group" id="modal_pickup_group" class="form-control" placeholder="sales, tech">
                             <small class="u-hint u-fs-11"><?php echo t('extensions.pickup_group_help'); ?></small>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-language u-primary"></i> <?php echo t('extensions.field_pbx_language'); ?></label>
+                        <select name="pbx_language" id="modal_pbx_language" class="form-control u-maxw-320">
+                            <option value=""><?php echo t('extensions.pbx_language_default'); ?></option>
+                            <?php foreach (getAvailableLanguages() as $lang_code): ?>
+                                <option value="<?php echo htmlspecialchars($lang_code); ?>"><?php echo htmlspecialchars(LANGUAGE_LABELS[$lang_code] ?? $lang_code); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="u-hint u-fs-11"><?php echo t('extensions.pbx_language_help'); ?></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><i class="fas fa-record-vinyl u-danger"></i> <?php echo t('extensions.field_record_policy'); ?></label>
+                        <select name="record_policy" id="modal_record_policy" class="form-control u-maxw-320">
+                            <option value=""><?php echo t('extensions.record_policy_inherit'); ?></option>
+                            <option value="always"><?php echo t('extensions.record_policy_always'); ?></option>
+                            <option value="never"><?php echo t('extensions.record_policy_never'); ?></option>
+                        </select>
+                        <small class="u-hint u-fs-11"><?php echo t('extensions.record_policy_help'); ?></small>
                     </div>
 
                     <div class="u-grid-2 u-gap-16 u-mt-12">

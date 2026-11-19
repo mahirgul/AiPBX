@@ -37,6 +37,12 @@ class ExtensionService {
                 $is_device = $is_device === null ? null : 0;
             }
             $pickup_group = preg_replace('/[^A-Za-z0-9_-]/', '', trim((string) ($data['pickup_group'] ?? '')));
+            // Prompt language of this extension's phones: one of the installed sound languages, or the default.
+            $pbx_language = (string) ($data['pbx_language'] ?? '');
+            if ($pbx_language !== '' && !in_array($pbx_language, getAvailableLanguages(), true)) {
+                $pbx_language = '';
+            }
+            $record_policy = in_array($data['record_policy'] ?? '', ['always', 'never'], true) ? (string) $data['record_policy'] : '';
             $dnd_enabled = PBXHelper::boolFlag($data, 'dnd_enabled', 0);
             $call_forward_number = preg_replace('/[^0-9+*#]/', '', trim((string) ($data['call_forward_number'] ?? '')));
             $cf_busy_number = preg_replace('/[^0-9+*#]/', '', trim((string) ($data['cf_busy_number'] ?? '')));
@@ -158,7 +164,10 @@ class ExtensionService {
                     'cf_noanswer_number' => $cf_noanswer_number !== '' ? $cf_noanswer_number : null,
                     'cf_noanswer_timeout' => $cf_noanswer_timeout,
                     'is_active' => $is_active
-                ] + self::deviceColumns($is_device), 'id', $user_id);
+                ] + self::deviceColumns($is_device)
+                  // Only when the form sends them: the API and imports leave a user's choice as it is.
+                  + array_intersect_key(['pbx_language' => $pbx_language, 'record_policy' => $record_policy], $data)
+                  + self::followMeColumns($data), 'id', $user_id);
                 if ($is_device === 1) {
                     // Sessions and mobile tokens of the former user end now.
                     getDB()->prepare('UPDATE sys_users SET token_epoch = token_epoch + 1 WHERE id = ?')->execute([$user_id]);
@@ -224,6 +233,8 @@ class ExtensionService {
                     'cid_internal' => $cid_internal,
                     'cid_external' => $cid_external,
                     'pickup_group' => $pickup_group !== '' ? $pickup_group : null,
+                    'pbx_language' => $pbx_language,
+                    'record_policy' => $record_policy,
                     'dnd_enabled' => $dnd_enabled,
                     'call_forward_number' => $call_forward_number !== '' ? $call_forward_number : null,
                     'cf_busy_number' => $cf_busy_number !== '' ? $cf_busy_number : null,
@@ -231,7 +242,7 @@ class ExtensionService {
                     'cf_noanswer_timeout' => $cf_noanswer_timeout,
                     'is_active' => $is_active,
                     'created_at' => date('Y-m-d H:i:s')
-                ] + self::deviceColumns($is_device));
+                ] + self::deviceColumns($is_device) + self::followMeColumns($data));
                 SIPHelper::syncExtensionToSIP($extension, $full_name, $sip_password, $sip_auth_digest);
                 if ($extension_type === 'sip') {
                     ExtensionSipOptions::save($extension, $data);
@@ -341,5 +352,40 @@ class ExtensionService {
             markPendingSync('extensions', 'system_setting', 'all_extensions', 'All extensions (manual resync)', 'update', $_SESSION['user_id'] ?? null);
             return t('srv_ext.resync');
         });
+    }
+
+    /**
+     * Follow Me columns, only when the form sends them (the API and imports leave them as they are).
+     * Up to five numbers (extensions or outside numbers), sequential or parallel.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    public static function followMeColumns(array $data): array
+    {
+        if (!array_key_exists('followme_numbers', $data)) {
+            return [];
+        }
+        $numbers = [];
+        foreach (preg_split('/[,;\n]+/', (string) $data['followme_numbers']) ?: [] as $n) {
+            $n = (string) preg_replace('/[^0-9+]/', '', $n);
+            if ($n === '') {
+                continue;
+            }
+            if (!preg_match('/^\+?[0-9]{2,20}$/', $n)) {
+                throw new \Exception(sprintf(t('extensions.followme_err_number'), $n));
+            }
+            $numbers[] = $n;
+        }
+        $numbers = array_values(array_unique($numbers));
+        if (count($numbers) > 5) {
+            throw new \Exception(t('extensions.followme_err_count'));
+        }
+        return [
+            'followme_numbers' => $numbers ? implode(',', $numbers) : null,
+            'followme_mode' => ($data['followme_mode'] ?? '') === 'parallel' ? 'parallel' : 'sequential',
+            'followme_ring_time' => max(5, min(120, (int) ($data['followme_ring_time'] ?? 20))),
+            'followme_confirm' => PBXHelper::boolFlag($data, 'followme_confirm', 1),
+        ];
     }
 }
