@@ -13,6 +13,7 @@ require_once dirname(__DIR__) . '/services/ConferenceService.php';
 require_once dirname(__DIR__) . '/services/MeetingService.php';
 require_once dirname(__DIR__) . '/services/BossSecretaryService.php';
 require_once dirname(__DIR__) . '/services/DialPermissionService.php';
+require_once dirname(__DIR__) . '/services/PhonebookService.php';
 require_once __DIR__ . '/api/ApiV1OpenApi.php';
 require_once __DIR__ . '/api/ApiV1PbxHandlers.php';
 
@@ -92,6 +93,8 @@ final class ApiV1Controller
                     ApiV1PbxHandlers::handleCdr($method, $idOrSub);
                 case 'voicemails':
                     ApiV1PbxHandlers::handleVoicemails($method, $idOrSub);
+                case 'recordings':
+                    ApiV1PbxHandlers::handleRecordings($method, $idOrSub, $subAction);
                 case 'announcements':
                     self::handleAnnouncements($method, $idOrSub, $subAction);
                 case 'phones':
@@ -100,6 +103,8 @@ final class ApiV1Controller
                     self::handleWebWidgets($method, $idOrSub, $subAction);
                 case 'webhooks':
                     self::handleWebhooks($method, $idOrSub, $subAction);
+                case 'contacts':
+                    self::handleContacts($method, $idOrSub, $subAction);
                 case 'plugins':
                     self::handlePlugins($method, $idOrSub, $subAction, $subId, $segments[4] ?? null);
                 default:
@@ -375,6 +380,74 @@ final class ApiV1Controller
         ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/webhooks', 405);
     }
 
+    // ------------------------------------------------------------------ Contacts
+
+    /**
+     * The address book. GET ?q= searches names, companies, e-mails and numbers in any
+     * spelling; GET /contacts/lookup?number= is the caller lookup a CRM or a screen pop
+     * uses. POST with an external_id updates the contact stored with it (CRM sync).
+     */
+    private static function handleContacts(string $method, ?string $idStr, ?string $subAction = null): never
+    {
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
+        }
+        if ($method === 'GET' && $idStr === 'lookup') {
+            ApiRequestContext::requireScope('contacts:read');
+            ApiResponse::success(PhonebookService::findByNumber((string) ($_GET['number'] ?? '')));
+        }
+        if ($method === 'GET' && $idStr === null) {
+            ApiRequestContext::requireScope('contacts:read');
+            $pg = ApiRequestContext::pagination(50, 500);
+            [$rows, $total] = PhonebookService::search((string) ($_GET['q'] ?? ''), $pg['per_page'], $pg['offset']);
+            ApiResponse::success($rows, ['page' => $pg['page'], 'per_page' => $pg['per_page'], 'total' => $total]);
+        }
+        $id = $idStr !== null && ctype_digit($idStr) ? (int) $idStr : 0;
+        if ($idStr !== null && $id === 0) {
+            ApiResponse::error('NOT_FOUND', 'Contact not found.', 404);
+        }
+        if ($method === 'GET') {
+            ApiRequestContext::requireScope('contacts:read');
+            $row = PhonebookService::find($id);
+            if (!$row) {
+                ApiResponse::error('NOT_FOUND', 'Contact not found.', 404);
+            }
+            ApiResponse::success($row);
+        }
+        if (($method === 'POST' && $id === 0) || (in_array($method, ['PATCH', 'PUT'], true) && $id > 0)) {
+            ApiRequestContext::requireScope('contacts:write');
+            $body = ApiRequestContext::jsonBody();
+            if ($id > 0) {
+                $old = PhonebookService::find($id);
+                if (!$old || $old['source'] !== 'manual') {
+                    ApiResponse::error('NOT_FOUND', 'Contact not found or not editable (another directory owns it).', 404);
+                }
+                if ($method === 'PATCH') {
+                    if (!array_key_exists('numbers', $body) && !array_key_exists('numbers_value', $body)
+                        && (array_key_exists('phone_mobile', $body) || array_key_exists('phone_work', $body) || array_key_exists('phone_other', $body))) {
+                        unset($old['numbers']);
+                    }
+                    $body += $old; // a PATCH keeps what it does not send
+                }
+            }
+            [$newId, $err] = PhonebookService::store($id, $body);
+            if ($newId === 0) {
+                ApiResponse::error('VALIDATION_ERROR', t($err), 422);
+            }
+            writeAuditLog(null, 'phonebook', $newId, 'Phonebook contact saved over the API', $id > 0 ? 'update' : 'create', ApiRequestContext::userId());
+            ApiResponse::success(PhonebookService::find($newId), [], $id > 0 ? 200 : 201);
+        }
+        if ($method === 'DELETE' && $id > 0) {
+            ApiRequestContext::requireScope('contacts:write');
+            if (!PhonebookService::delete($id)) {
+                ApiResponse::error('NOT_FOUND', 'Contact not found or not deletable (another directory owns it).', 404);
+            }
+            writeAuditLog(null, 'phonebook', $id, 'Phonebook contact deleted over the API', 'delete', ApiRequestContext::userId());
+            ApiResponse::success(['deleted' => $id]);
+        }
+        ApiResponse::error('METHOD_NOT_ALLOWED', 'Unsupported method for /api/v1/contacts', 405);
+    }
+
     // ------------------------------------------------------------------ Plugins
 
     private static function handlePlugins(string $method, ?string $slug, ?string $subAction, ?string $collection, ?string $itemKey): never
@@ -521,12 +594,12 @@ final class ApiV1Controller
     }
 
     /**
-     * Execute a loopback `/api/v1/*` request on behalf of an enabled plugin or admin assistant.
+     * Execute a loopback `/api/v1/*` request on behalf of an enabled plugin.
      *
      * @param array<string, mixed> $body
      * @return array{status_code: int, response: array<string, mixed>}
      */
-    public static function invokeLoopback(string $method, string $path, array $body = [], string $pluginSlug = 'ai-assistant'): array
+    public static function invokeLoopback(string $method, string $path, array $body, string $pluginSlug): array
     {
         if (!PluginManager::isEnabled($pluginSlug)) {
             return [

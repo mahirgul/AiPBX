@@ -38,7 +38,7 @@ final class ApiRequestContext
 
         // Allow logged-in admin session for browser-based GETs or CSRF-verified mutations.
         // The epoch check first, as on every page: it also reloads the role.
-        if (isset($_SESSION['user_id']) && _isSessionActivityFresh() && _isSessionEpochCurrent() && ($_SESSION['user_role'] ?? '') === 'admin') {
+        if (isset($_SESSION['user_id']) && _isSessionActivityFresh() && _isSessionEpochCurrent() && userHasRole('admin')) {
             $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
             if (!in_array($method, ['GET', 'HEAD', 'OPTIONS'], true)) {
                 $csrfHeader = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
@@ -199,45 +199,70 @@ final class ApiRequestContext
         return self::$tokenRow;
     }
 
+    public static function userId(): ?int
+    {
+        return isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] > 0
+            ? (int)$_SESSION['user_id']
+            : null;
+    }
+
     public static function isIpAllowed(string $clientIp, string $allowlist): bool
     {
         $allowlist = trim($allowlist);
         if ($allowlist === '' || $allowlist === '*') {
             return true;
         }
-        $entries = array_filter(array_map('trim', preg_split('/[\s,]+/', $allowlist) ?: []));
-        if (empty($entries)) {
-            return true;
-        }
         $clientBin = @inet_pton($clientIp);
+        if ($clientBin === false) {
+            return false;
+        }
+        $entries = array_values(array_filter(
+            array_map('trim', explode(',', $allowlist)),
+            static fn(string $e): bool => $e !== ''
+        ));
+        if ($entries === []) {
+            return false;
+        }
         foreach ($entries as $entry) {
-            if ($entry === $clientIp) {
-                return true;
+            if (!str_contains($entry, '/')) {
+                $entryBin = @inet_pton($entry);
+                if ($entryBin !== false && $entryBin === $clientBin) {
+                    return true;
+                }
+                continue;
             }
-            if (str_contains($entry, '/') && $clientBin !== false) {
-                [$subnet, $bits] = explode('/', $entry, 2);
-                $subBin = @inet_pton(trim($subnet));
-                if ($subBin === false || strlen($subBin) !== strlen($clientBin)) {
-                    continue;
-                }
-                $maxBits = strlen($clientBin) * 8;
-                $bits = (int)$bits;
-                if ($bits < 0 || $bits > $maxBits) {
-                    continue;
-                }
-                $fullBytes = intdiv($bits, 8);
-                $remBits = $bits % 8;
-                if ($fullBytes > 0 && substr($clientBin, 0, $fullBytes) !== substr($subBin, 0, $fullBytes)) {
-                    continue;
-                }
-                if ($remBits > 0) {
-                    $mask = (0xFF << (8 - $remBits)) & 0xFF;
-                    if ((ord($clientBin[$fullBytes]) & $mask) !== (ord($subBin[$fullBytes]) & $mask)) {
-                        continue;
-                    }
-                }
-                return true;
+            $parts = explode('/', $entry);
+            if (count($parts) !== 2 || $parts[1] === '' || !ctype_digit($parts[1])) {
+                continue;
             }
+            $subBin = @inet_pton($parts[0]);
+            if ($subBin === false || strlen($subBin) !== strlen($clientBin)) {
+                continue;
+            }
+            $maxBits = strlen($clientBin) * 8;
+            $bits = (int)$parts[1];
+            if ($bits < 0 || $bits > $maxBits) {
+                continue;
+            }
+            if ($bits === 0) {
+                $canon = inet_ntop($subBin);
+                if (($maxBits === 32 && $canon === '0.0.0.0') || ($maxBits === 128 && $canon === '::')) {
+                    return true;
+                }
+                continue;
+            }
+            $fullBytes = intdiv($bits, 8);
+            $remBits = $bits % 8;
+            if ($fullBytes > 0 && substr($clientBin, 0, $fullBytes) !== substr($subBin, 0, $fullBytes)) {
+                continue;
+            }
+            if ($remBits > 0) {
+                $mask = (0xFF << (8 - $remBits)) & 0xFF;
+                if ((ord($clientBin[$fullBytes]) & $mask) !== (ord($subBin[$fullBytes]) & $mask)) {
+                    continue;
+                }
+            }
+            return true;
         }
         return false;
     }

@@ -20,6 +20,7 @@ class SystemServicesService
         'aipbx-chat' => 'dashboard.svc_chat',
         'aipbx-signaling' => 'dashboard.svc_signaling',
         'aipbx-webhook-worker' => 'dashboard.svc_webhook',
+        'aipbx-call-events' => 'dashboard.svc_call_events',
         'aipbx-ai' => 'dashboard.svc_ai',
         'ollama' => 'dashboard.svc_ollama',
         'aipbx-mdns' => 'dashboard.svc_mdns',

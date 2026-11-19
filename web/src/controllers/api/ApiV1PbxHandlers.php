@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once dirname(__DIR__, 2) . '/services/RecordingStorage.php';
+
 /**
  * PBX, Routing, Queue, and Call/CDR domain handlers for REST API v1 (`/api/v1/*`).
  */
@@ -883,9 +885,12 @@ final class ApiV1PbxHandlers
                 ApiResponse::error('VALIDATION_ERROR', 'Both from_extension and to_number are required.', 422);
             }
             $extUser = DBHelper::fetchOne(
-                'SELECT outbound_group, permission_group_id FROM sys_users WHERE extension = ? AND is_active = 1 LIMIT 1',
+                "SELECT outbound_group, permission_group_id FROM sys_users WHERE extension = ? AND is_active = 1 AND extension_type = 'sip' LIMIT 1",
                 [$fromExt]
             );
+            if (!$extUser) {
+                ApiResponse::error('NOT_FOUND', "Active extension '{$fromExt}' not found.", 404);
+            }
             $permGroup = max(1, (int)($extUser['permission_group_id'] ?? 1));
             if (!DialPermissionService::isDestinationAllowed($permGroup, $toNumber)) {
                 ApiResponse::error('FORBIDDEN', 'Destination is barred by the extension dial permission group.', 403);
@@ -895,18 +900,83 @@ final class ApiV1PbxHandlers
             // The CLI originate has no caller ID option: the call shows the extension's own
             // caller ID, so the event does not claim another one (a "caller_id" in the body
             // used to be echoed in the webhook without being applied).
-            $cmd = sprintf('channel originate Local/%s@cc-internal extension %s@%s', $fromExt, $toNumber, $outboundContext);
-            $out = AsteriskHelper::execCLI($cmd);
-            WebhookService::emit('call.started', [
-                'source'         => 'api_originate',
-                'from_extension' => $fromExt,
-                'to_number'      => $toNumber,
-            ]);
-            ApiResponse::success([
-                'from_extension' => $fromExt,
-                'to_number'      => $toNumber,
-                'asterisk_reply' => trim((string)($out['output'] ?? '')),
-            ]);
+            // client_request_id: the same request again within 10 minutes (a retry after a
+            // timeout) answers like the first one and places no second call.
+            $requestId = mb_substr(trim((string)($body['client_request_id'] ?? '')), 0, 128);
+            $keyHash = '';
+            $fingerprint = hash('sha256', $fromExt . "\n" . $toNumber);
+            if ($requestId !== '') {
+                $db = getDB();
+                $db->exec('DELETE FROM api_idempotency_keys WHERE created_at < NOW() - INTERVAL 10 MINUTE');
+                $tokenRow = ApiRequestContext::tokenRow();
+                $keyScope = $tokenRow !== null
+                    ? 'token:' . (string)($tokenRow['id'] ?? '')
+                    : 'session:' . (int)($_SESSION['user_id'] ?? 0);
+                $keyHash = hash('sha256', $keyScope . "\n" . $requestId);
+                $claim = $db->prepare('INSERT IGNORE INTO api_idempotency_keys (key_hash) VALUES (?)');
+                $claim->execute([$keyHash]);
+                if ($claim->rowCount() === 0) {
+                    $stPrev = $db->prepare('SELECT response_json FROM api_idempotency_keys WHERE key_hash = ? LIMIT 1');
+                    $stPrev->execute([$keyHash]);
+                    $prevRow = $stPrev->fetch(PDO::FETCH_ASSOC);
+                    if (!$prevRow || $prevRow['response_json'] === null) {
+                        ApiResponse::error('REQUEST_IN_PROGRESS', 'A request with this client_request_id is already in progress.', 409);
+                    }
+                    $data = json_decode((string)$prevRow['response_json'], true);
+                    if (!is_array($data)) {
+                        ApiResponse::error('REQUEST_IN_PROGRESS', 'A request with this client_request_id is already in progress.', 409);
+                    }
+                    $storedFp = $data['_fingerprint']
+                        ?? (isset($data['from_extension'], $data['to_number'])
+                            ? hash('sha256', (string)$data['from_extension'] . "\n" . (string)$data['to_number'])
+                            : null);
+                    if ($storedFp !== null && !hash_equals((string)$storedFp, $fingerprint)) {
+                        ApiResponse::error('IDEMPOTENCY_CONFLICT', 'client_request_id was already used with different request parameters.', 409);
+                    }
+                    unset($data['_fingerprint']);
+                    ApiResponse::success(array_merge($data, ['client_request_id' => $requestId, 'duplicate' => true]));
+                }
+            }
+            $completed = false;
+            try {
+                $cmd = sprintf('channel originate Local/%s@cc-internal extension %s@%s', $fromExt, $toNumber, $outboundContext);
+                $out = AsteriskHelper::execCLI($cmd);
+                if (empty($out['success'])) {
+                    if ($keyHash !== '') {
+                        getDB()->prepare('DELETE FROM api_idempotency_keys WHERE key_hash = ?')->execute([$keyHash]);
+                    }
+                    $completed = true;
+                    ApiResponse::error(
+                        'ORIGINATE_FAILED',
+                        'Failed to originate call: ' . (trim((string)($out['output'] ?? '')) ?: 'Asterisk CLI error.'),
+                        502
+                    );
+                }
+                WebhookService::emit('call.started', [
+                    'source'         => 'api_originate',
+                    'from_extension' => $fromExt,
+                    'to_number'      => $toNumber,
+                ]);
+                $result = [
+                    'from_extension' => $fromExt,
+                    'to_number'      => $toNumber,
+                    'asterisk_reply' => trim((string)($out['output'] ?? '')),
+                ];
+                if ($keyHash !== '') {
+                    getDB()->prepare('UPDATE api_idempotency_keys SET response_json = ? WHERE key_hash = ?')
+                        ->execute([json_encode($result + ['_fingerprint' => $fingerprint]), $keyHash]);
+                    $result += ['client_request_id' => $requestId, 'duplicate' => false];
+                }
+                $completed = true;
+                ApiResponse::success($result);
+            } finally {
+                if (!$completed && $keyHash !== '') {
+                    try {
+                        getDB()->prepare('DELETE FROM api_idempotency_keys WHERE key_hash = ?')->execute([$keyHash]);
+                    } catch (\Throwable $ignore) {
+                    }
+                }
+            }
         }
 
         if ($sub === 'hangup' && $method === 'POST') {
@@ -957,21 +1027,62 @@ final class ApiV1PbxHandlers
             $params[] = trim((string)$_GET['disposition']);
         }
 
+        // after_id: a sync cursor. Rows after that id, oldest first, so a CRM reads every
+        // record once by passing the last id it saw (meta.next_after_id).
+        $afterId = isset($_GET['after_id']) && ctype_digit((string)$_GET['after_id']) ? (int)$_GET['after_id'] : null;
+        if ($afterId !== null) {
+            $where .= ' AND id > ?';
+            $params[] = $afterId;
+        }
         $total = (int)DBHelper::fetchColumn("SELECT COUNT(*) FROM asteriskcdr WHERE {$where}", $params);
         $rows = DBHelper::fetchAll(
-            "SELECT calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, duration, billsec, disposition, uniqueid, userfield AS recordingfile
+            "SELECT id, calldate, clid, src, dst, dcontext, channel, dstchannel, lastapp, duration, billsec, disposition, uniqueid, linkedid, userfield AS recordingfile
              FROM asteriskcdr
              WHERE {$where}
-             ORDER BY calldate DESC
-             LIMIT {$pg['per_page']} OFFSET {$pg['offset']}",
+             ORDER BY " . ($afterId !== null ? 'id ASC' : 'calldate DESC') . "
+             LIMIT {$pg['per_page']}" . ($afterId !== null ? '' : " OFFSET {$pg['offset']}"),
             $params
         );
+        foreach ($rows as &$r) {
+            $r['id'] = (int)$r['id'];
+            $r['recording_url'] = (string)($r['recordingfile'] ?? '') !== '' ? '/api/v1/recordings/' . $r['id'] : null;
+        }
+        unset($r);
 
         ApiResponse::success($rows, [
             'page'     => $pg['page'],
             'per_page' => $pg['per_page'],
             'total'    => $total,
+            'next_after_id' => $rows ? (int)max(array_column($rows, 'id')) : $afterId,
         ]);
+    }
+
+    /**
+     * GET /api/v1/recordings/{id}: the audio of a call record (asteriskcdr id, as in
+     * /api/v1/cdr and the call events). By id only; the stored path never comes from the
+     * request, and RecordingStorage refuses a path outside the recordings folder.
+     */
+    public static function handleRecordings(string $method, ?string $sub = null, ?string $subAction = null): never
+    {
+        if ($subAction !== null) {
+            ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
+        }
+        if ($method !== 'GET') {
+            ApiResponse::error('METHOD_NOT_ALLOWED', 'Only GET is supported for /api/v1/recordings', 405);
+        }
+        ApiRequestContext::requireScope('calls:read');
+        if ($sub === null || !ctype_digit($sub)) {
+            ApiResponse::error('NOT_FOUND', 'Recording id is required: /api/v1/recordings/{id}', 404);
+        }
+        $path = (string)DBHelper::fetchColumn('SELECT userfield FROM asteriskcdr WHERE id = ?', [(int)$sub]);
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_write_close();
+        }
+        if (!RecordingStorage::send($path, !empty($_GET['download']) ? 'recording_' . (int)$sub : '')) {
+            ApiResponse::error('NOT_FOUND', 'No recording for this call.', 404);
+        }
+        writeAuditLog(null, 'cdr', (int)$sub, 'Recording downloaded via API: cdr #' . (int)$sub, 'download', ApiRequestContext::userId());
+        exit;
     }
 
     public static function handleVoicemails(string $method, ?string $sub = null): never

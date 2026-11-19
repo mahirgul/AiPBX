@@ -15,6 +15,12 @@ class WebhookService
         'call.started'             => 'Call Started (Ringing)',
         'call.ended'               => 'Call Ended (CDR Ready)',
         'call.missed'              => 'Missed Inbound/Extension Call',
+        'call.ringing'             => 'Live: Call Ringing (caller, DID, address book contact)',
+        'call.offered'             => 'Live: Call Offered to an Extension (screen pop)',
+        'call.answered'            => 'Live: Call Answered by a Person',
+        'call.completed'           => 'Live: Call Completed (outcome, wait and talk time)',
+        'call.ai_completed'        => 'Call AI Analysis Ready (summary, transcript, quality score)',
+        'recording.ready'          => 'Call Recording Ready (final MP3, /api/v1/recordings/{id})',
         'voicemail.created'        => 'New Voicemail Left',
         'voicemail.received'       => 'Voicemail Received & Processed',
         'voicemail.transcribed'    => 'Voicemail AI Transcription Ready',
@@ -25,6 +31,7 @@ class WebhookService
         'queue.member_logged_out'  => 'Queue Agent Logged Out',
         'queue.member_paused'      => 'Queue Agent Paused / Unpaused',
         'queue.caller_abandoned'   => 'Queue Caller Abandoned',
+        'autodial.result'          => 'Auto Dialer Campaign Result Ready',
         'config.pending_created'   => 'PBX Configuration Change Queued',
         'config.sync_applied'      => 'PBX Configuration Applied to Asterisk',
         'config.sync_failed'       => 'PBX Configuration Apply Failed (Rolled Back)',
@@ -99,7 +106,7 @@ class WebhookService
             throw new \InvalidArgumentException(t('webhooks.err_private_ip', 'Loopback and cloud metadata addresses are blocked for security (set ALLOW_PRIVATE_WEBHOOKS=1 in /etc/ai-pbx.env to allow internal LAN webhooks).'));
         }
         if (filter_var($cleanHost, FILTER_VALIDATE_IP)) {
-            if (filter_var($cleanHost, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            if (!self::isPublicIp($cleanHost)) {
                 throw new \InvalidArgumentException(t('webhooks.err_private_ip', 'Private/reserved IP ranges are blocked by default (set ALLOW_PRIVATE_WEBHOOKS=1 in /etc/ai-pbx.env to allow internal LAN webhooks).'));
             }
             return $cleanHost;
@@ -119,11 +126,31 @@ class WebhookService
             }
         }
         foreach ($ips as $ip) {
-            if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            if (!self::isPublicIp($ip)) {
                 throw new \InvalidArgumentException(t('webhooks.err_private_ip', 'Target hostname resolves to a private or reserved IP address.'));
             }
         }
         return $ips[0] ?? '';
+    }
+
+    private static function isPublicIp(string $ip): bool
+    {
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return false;
+        }
+        $bin = @inet_pton($ip);
+        if ($bin === false) {
+            return false;
+        }
+        if (strlen($bin) === 16 && str_starts_with($bin, str_repeat("\0", 10) . "\xff\xff")) {
+            $mappedV4 = inet_ntop(substr($bin, 12, 4));
+            return $mappedV4 !== false && self::isPublicIp($mappedV4);
+        }
+        // RFC 6598 CGNAT 100.64.0.0/10 (not covered by FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)
+        if (strlen($bin) === 4 && ord($bin[0]) === 100 && (ord($bin[1]) & 0xC0) === 64) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -164,7 +191,8 @@ class WebhookService
      */
     public static function save(array $data): array
     {
-        return PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data) {
+        $savedId = 0;
+        $res = PBXHelper::handleAction($data['csrf_token'] ?? '', function () use ($data, &$savedId) {
             $id = (int)($data['webhook_id'] ?? $data['id'] ?? 0);
             $name = trim((string)($data['name'] ?? ''));
             if ($name === '') {
@@ -229,6 +257,10 @@ class WebhookService
             writeAuditLog('webhooks', 'webhook', $savedId, "Webhook: {$name} ({$targetUrl})", $id > 0 ? 'update' : 'create', $_SESSION['user_id'] ?? null);
             return sprintf(t('webhooks.msg_saved', 'Webhook "%s" saved.'), $name);
         });
+        if (!empty($res['success'])) {
+            $res['id'] = (int)$savedId; // Connections own the webhook they made
+        }
+        return $res;
     }
 
     /**
@@ -254,6 +286,32 @@ class WebhookService
      *
      * @param array<string, mixed> $data
      */
+    /** One id per PBX, so a CRM fed by several PBXs knows where an event came from. */
+    public static function instanceId(): string
+    {
+        static $id = null;
+        if ($id !== null && $id !== '') {
+            return $id;
+        }
+        $db = getDB();
+        $st = $db->prepare("SELECT setting_value FROM sys_settings WHERE setting_key = 'instance_id' LIMIT 1");
+        $st->execute();
+        $existing = trim((string)($st->fetchColumn() ?: ''));
+        if ($existing === '') {
+            $candidate = self::uuidV4();
+            $db->prepare("INSERT IGNORE INTO sys_settings (setting_key, setting_value) VALUES ('instance_id', ?)")
+                ->execute([$candidate]);
+            $db->prepare("UPDATE sys_settings SET setting_value = ? WHERE setting_key = 'instance_id' AND (setting_value IS NULL OR setting_value = '')")
+                ->execute([$candidate]);
+            $st->execute();
+            $existing = trim((string)($st->fetchColumn() ?: ''));
+            $id = $existing !== '' ? $existing : $candidate;
+        } else {
+            $id = $existing;
+        }
+        return $id;
+    }
+
     public static function emit(string $eventName, array $data): int
     {
         $queued = 0;
@@ -263,6 +321,8 @@ class WebhookService
             $envelope = [
                 'event_id'    => $eventId,
                 'event'       => $eventName,
+                'schema_version' => 1,
+                'instance_id' => self::instanceId(),
                 'occurred_at' => date(DATE_ATOM),
                 'pbx_version' => defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev',
                 'data'        => $data,
@@ -310,11 +370,13 @@ class WebhookService
             }
             $eventId = self::uuidV4();
             $payloadJson = (string)json_encode([
-                'event_id'    => $eventId,
-                'event'       => 'webhook.test',
-                'occurred_at' => date(DATE_ATOM),
-                'pbx_version' => defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev',
-                'data'        => [
+                'event_id'       => $eventId,
+                'event'          => 'webhook.test',
+                'schema_version' => 1,
+                'instance_id'    => self::instanceId(),
+                'occurred_at'    => date(DATE_ATOM),
+                'pbx_version'    => defined('AIPBX_VERSION') ? AIPBX_VERSION : 'dev',
+                'data'           => [
                     'webhook_id'   => (int)$wh['id'],
                     'webhook_name' => $wh['name'],
                     'message'      => 'Test webhook delivery from AiPBX.',
@@ -337,6 +399,19 @@ class WebhookService
     public static function processPendingBatch(int $limit = 25): array
     {
         $db = getDB();
+        $lock = "SHA2(CONCAT(DATABASE(), ':aipbx:webhook-delivery'), 256)";
+        if ((int) $db->query("SELECT GET_LOCK($lock, 0)")->fetchColumn() !== 1) {
+            return ['processed' => 0, 'delivered' => 0, 'failed' => 0];
+        }
+        try {
+            return self::deliverPendingBatch($db, $limit);
+        } finally {
+            $db->query("SELECT RELEASE_LOCK($lock)");
+        }
+    }
+
+    private static function deliverPendingBatch(PDO $db, int $limit): array
+    {
         $limit = max(1, min(100, $limit));
         $jobs = $db->query(
             "SELECT * FROM sys_webhook_queue

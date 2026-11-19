@@ -157,7 +157,6 @@ final class PluginAndApiV1Test extends TestCase
     public function testPluginCatalogSettingsKvAndSignalingCaptureSync(): void
     {
         $this->installMovedPluginFixture('ai-voicemail');
-        $this->installMovedPluginFixture('ai-assistant');
         $this->installMovedPluginFixture('auto-dialer');
         PluginManager::resetCache();
         $manifests = PluginManager::discoverManifests();
@@ -166,27 +165,27 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertArrayHasKey('google-auth', $manifests);
         $this->assertArrayHasKey('ms-teams', $manifests);
         $this->assertArrayHasKey('web-widgets', $manifests);
-        $this->assertArrayHasKey('ai-cloud', $manifests);
+        $this->assertArrayNotHasKey('ai', $manifests);
+        $this->assertArrayHasKey('ailocal', $manifests);
+        $this->assertArrayHasKey('aicloud', $manifests);
+        $this->assertArrayHasKey('ai-call-analysis', $manifests);
         $this->assertArrayHasKey('ai-tts', $manifests);
         $this->assertArrayHasKey('ai-apps', $manifests);
-        $this->assertArrayHasKey('ai-models', $manifests);
+        $this->assertArrayNotHasKey('ai-models', $manifests);
         $this->assertArrayHasKey('ai-voicemail', $manifests);
         $this->assertArrayHasKey('ai-assistant', $manifests);
         // Signaling capture is part of AiPBX since 1.50.8, not a plugin any more.
         $this->assertArrayNotHasKey('signaling-capture', $manifests);
 
         // Secret settings: decrypted by getSetting(), masked by getAllSettings(..., true)
-        $en = PluginManager::enable('ai-assistant', 'test-csrf-token');
-        $this->assertTrue($en['success']);
-        $save = PluginManager::savePluginSettings('ai-assistant', [
-            'api_base_url' => 'https://api.example.com/v1',
-            'api_key' => 'my-secret-key',
-            'model' => 'test-model',
-        ], 'test-csrf-token');
-        $this->assertTrue($save['success']);
-        $this->assertSame('my-secret-key', PluginManager::getSetting('ai-assistant', 'api_key'));
-        $masked = PluginManager::getAllSettings('ai-assistant', true);
-        $this->assertNotSame('my-secret-key', $masked['api_key']);
+        $this->assertSame('official', $manifests['ai-assistant']['source'], 'the PBX Assistant is the bundled plugin');
+        $before = PluginManager::getSetting('oidc-auth', 'client_secret');
+        $save = PluginManager::savePluginSettings('oidc-auth', ['client_secret' => 'my-secret-key'], 'test-csrf-token');
+        $this->assertTrue($save['success'], json_encode($save));
+        $this->assertSame('my-secret-key', PluginManager::getSetting('oidc-auth', 'client_secret'));
+        $masked = PluginManager::getAllSettings('oidc-auth', true);
+        $this->assertNotSame('my-secret-key', $masked['client_secret']);
+        PluginManager::setSetting('oidc-auth', 'client_secret', $before, true);
 
         // Enable ai-voicemail and test voicemail.transcribed event hook + AI sidebar group
         $enVm = PluginManager::enable('ai-voicemail', 'test-csrf-token');
@@ -210,14 +209,12 @@ final class PluginAndApiV1Test extends TestCase
 
         // Disable plugins
         PluginManager::disable('ai-voicemail', 'test-csrf-token');
-        PluginManager::disable('ai-assistant', 'test-csrf-token');
-        $this->assertFalse(PluginManager::isEnabled('ai-assistant'));
+        $this->assertFalse(PluginManager::isEnabled('ai-voicemail'));
     }
 
     public function testVoicemailPluginUsesCompletedContentAndIgnoresMetadata(): void
     {
         $this->installMovedPluginFixture('ai-voicemail');
-        $this->installMovedPluginFixture('ai-assistant');
         $this->installMovedPluginFixture('auto-dialer');
         $this->assertTrue(PluginManager::enable('ai-voicemail', 'test-csrf-token')['success']);
         PluginManager::savePluginSettings('ai-voicemail', ['api_key' => ''], 'test-csrf-token');
@@ -373,7 +370,7 @@ final class PluginAndApiV1Test extends TestCase
 
     public function testPluginManagerTypeAndAuthorUrlSanitization(): void
     {
-        $this->installMovedPluginFixture('ai-assistant');
+        $this->installMovedPluginFixture('auto-dialer');
         $plugins = PluginManager::allPlugins();
         $this->assertNotEmpty($plugins);
 
@@ -394,9 +391,11 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertArrayHasKey('oidc-auth', $bySlug);
         $this->assertSame('official', $bySlug['oidc-auth']['type']);
 
+        $this->assertSame('official', $bySlug['ai-assistant']['type']);
+
         // Community plugins
-        if (isset($bySlug['ai-assistant'])) {
-            $this->assertSame('community', $bySlug['ai-assistant']['type']);
+        if (isset($bySlug['auto-dialer'])) {
+            $this->assertSame('community', $bySlug['auto-dialer']['type']);
         }
     }
 

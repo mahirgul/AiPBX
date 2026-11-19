@@ -5,7 +5,7 @@ require_once __DIR__ . '/../src/services/RecordingStorage.php';
 requireLogin();
 
 $user = getCurrentUser();
-$role = $_SESSION['user_role'] ?? 'user';
+$role = userEffectiveRole();
 
 $id = intval($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -37,38 +37,9 @@ if ($role !== 'admin' && !$can_listen && !$is_own_call) {
 
 session_write_close();
 
-// In the S3 bucket (#69): streamed through the chat service, same checks above.
-if (RecordingStorage::isRemote($cdr['recording_path'])) {
-    $key = RecordingStorage::key($cdr['recording_path']);
-    $ext = strtolower(pathinfo($key, PATHINFO_EXTENSION));
-    $headers = ['Content-Type' => ['wav' => 'audio/wav', 'mp3' => 'audio/mpeg', 'gsm' => 'audio/x-gsm', 'ogg' => 'audio/ogg'][$ext] ?? 'application/octet-stream'];
-    if (!empty($_GET['download'])) {
-        $headers['Content-Disposition'] = 'attachment; filename="cagri_kaydi_' . $id . '.' . ($ext !== '' ? $ext : 'mp3') . '"';
-    }
-    if (!RecordingStorage::passthru($key, $headers)) {
-        http_response_code(404);
-        die('Audio file not found');
-    }
-    exit;
-}
-
-$file = realpath($cdr['recording_path']);
-$allowed_dir = realpath(MONITOR_STORAGE_PATH);
-
-// Trailing '/' — a plain prefix comparison would also accept sibling
-// directories such as "/monitor2/...".
-if (!$file || !$allowed_dir || strpos($file, rtrim($allowed_dir, '/') . '/') !== 0 || !is_file($file)) {
+// From the bucket (#69) or the monitor folder; RecordingStorage refuses paths outside it.
+if (!RecordingStorage::send($cdr['recording_path'], !empty($_GET['download']) ? 'cagri_kaydi_' . $id : '')) {
     http_response_code(404);
     die('Audio file not found');
 }
-
-// The queue recording format can be something other than wav (record_format).
-$ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-$mime = ['wav' => 'audio/wav', 'mp3' => 'audio/mpeg', 'gsm' => 'audio/x-gsm', 'ogg' => 'audio/ogg'][$ext] ?? 'application/octet-stream';
-header('Content-Type: ' . $mime);
-header('Content-Length: ' . filesize($file));
-if (!empty($_GET['download'])) {
-    header('Content-Disposition: attachment; filename="cagri_kaydi_' . $id . '.' . ($ext !== '' ? $ext : 'wav') . '"');
-}
-readfile($file);
 exit;

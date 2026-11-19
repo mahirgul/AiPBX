@@ -19,6 +19,8 @@ class ApiTokenService
         'queues:write'  => 'Queues & Live Agent Control (Write)',
         'calls:read'    => 'Active Calls, CDRs, Recordings & Voicemail (Read)',
         'calls:write'   => 'Click-to-Call Originate, Hangup, Transfer, Spy & Voicemail (Write)',
+        'contacts:read' => 'Address Book Contacts & Caller Lookup (Read)',
+        'contacts:write'=> 'Address Book Contacts (Write)',
         'fax:read'      => 'Fax Inbox, Sent & Units (Read)',
         'fax:write'     => 'Send Fax & Manage Fax Units (Write)',
         'sounds:read'   => 'Sounds, Announcements & Music on Hold (Read)',
@@ -45,6 +47,57 @@ class ApiTokenService
             $r['scopes'] = json_decode((string)($r['scopes_json'] ?? '[]'), true) ?: [];
         }
         return $rows;
+    }
+
+    public static function validateAllowedIps(string $allowedIps): ?string
+    {
+        $raw = trim($allowedIps);
+        if ($raw === '') {
+            return null;
+        }
+        $valid = [];
+        foreach (explode(',', $raw) as $part) {
+            $entry = trim($part);
+            if ($entry === '') {
+                continue;
+            }
+            if (!self::isValidIpOrCidr($entry)) {
+                throw new \InvalidArgumentException(sprintf(t('api_keys.err_invalid_ip_entry', 'Invalid IP or CIDR entry: %s'), $entry));
+            }
+            $valid[] = $entry;
+        }
+        if ($valid === []) {
+            throw new \InvalidArgumentException(t('api_keys.err_invalid_ip', 'Allowed IPs must contain at least one valid IP or CIDR entry.'));
+        }
+        return implode(', ', $valid);
+    }
+
+    public static function isValidIpOrCidr(string $entry): bool
+    {
+        if (filter_var($entry, FILTER_VALIDATE_IP) !== false) {
+            return true;
+        }
+        if (!str_contains($entry, '/')) {
+            return false;
+        }
+        $parts = explode('/', $entry);
+        if (count($parts) !== 2 || $parts[1] === '' || !ctype_digit($parts[1])) {
+            return false;
+        }
+        $subBin = @inet_pton($parts[0]);
+        if ($subBin === false) {
+            return false;
+        }
+        $maxBits = strlen($subBin) * 8;
+        $bits = (int)$parts[1];
+        if ($bits < 0 || $bits > $maxBits) {
+            return false;
+        }
+        if ($bits === 0) {
+            $canon = inet_ntop($subBin);
+            return ($maxBits === 32 && $canon === '0.0.0.0') || ($maxBits === 128 && $canon === '::');
+        }
+        return true;
     }
 
     public static function generateRawToken(): string
@@ -95,7 +148,7 @@ class ApiTokenService
                 throw new \Exception(t('api_keys.err_scopes_required', 'Select at least one valid permission scope.'));
             }
 
-            $allowedIps = trim((string)($data['allowed_ips'] ?? ''));
+            $allowedIps = self::validateAllowedIps((string)($data['allowed_ips'] ?? ''));
             $rateLimit = max(10, min(10000, (int)($data['rate_limit_per_min'] ?? 120)));
             $expiresAt = null;
             if (!empty($data['expires_at'])) {
@@ -114,7 +167,7 @@ class ApiTokenService
                 'token_prefix'       => $prefix,
                 'token_hash'         => $hash,
                 'scopes_json'        => json_encode(array_values(array_unique($scopes))),
-                'allowed_ips'        => $allowedIps !== '' ? $allowedIps : null,
+                'allowed_ips'        => $allowedIps,
                 'rate_limit_per_min' => $rateLimit,
                 'expires_at'         => $expiresAt,
                 'created_by'         => $_SESSION['user_id'] ?? null,

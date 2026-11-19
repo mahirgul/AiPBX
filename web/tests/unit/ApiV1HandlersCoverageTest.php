@@ -510,9 +510,16 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
 
     public function testCallsOriginateValidationAndExecution(): void
     {
+        $stmt = $this->db->prepare(
+            "INSERT INTO sys_users (username, password_hash, full_name, role, extension, extension_type, is_active)
+             VALUES ('zz_cov_7978', 'hash', 'Originate Ext 7978', 'user', '7978', 'sip', 1)"
+        );
+        $stmt->execute();
+        $this->createdUserIds[] = (int)$this->db->lastInsertId();
+
         // 1. Missing fields -> 422
         $resBad = $this->apiRequest('POST', '/api/v1/calls/originate', [
-            'from_extension' => '7001',
+            'from_extension' => '7978',
             // 'to_number' is missing
         ]);
         $this->assertSame(422, $resBad['status']);
@@ -520,14 +527,14 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
 
         // 2. Valid fields -> 200 (AIPBX_NO_ASTERISK mock returns dummy output)
         $resGood = $this->apiRequest('POST', '/api/v1/calls/originate', [
-            'from_extension' => '7001',
+            'from_extension' => '7978',
             'to_number'      => '7002',
         ]);
         $this->assertSame(200, $resGood['status']);
         $this->assertTrue($resGood['json']['success']);
-        $this->assertSame('7001', $resGood['json']['data']['from_extension']);
+        $this->assertSame('7978', $resGood['json']['data']['from_extension']);
         $this->assertSame('7002', $resGood['json']['data']['to_number']);
-        $this->assertStringContainsString('Local/7001@cc-internal extension 7002@from-internal-web', $resGood['json']['data']['asterisk_reply']);
+        $this->assertStringContainsString('Local/7978@cc-internal extension 7002@from-internal-web', $resGood['json']['data']['asterisk_reply']);
     }
 
     public function testCallsHangupValidationAndExecution(): void

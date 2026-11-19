@@ -48,4 +48,65 @@ final class RecordingStorage
     {
         return BucketFiles::delete($key);
     }
+
+    private const MIME = ['wav' => 'audio/wav', 'mp3' => 'audio/mpeg', 'gsm' => 'audio/x-gsm', 'ogg' => 'audio/ogg'];
+
+    private static function sanitizeDownloadName(string $name): string
+    {
+        $clean = preg_replace('/[^A-Za-z0-9._-]/', '_', $name) ?? '';
+        $clean = trim($clean, '._-');
+        return $clean !== '' ? mb_substr($clean, 0, 120) : 'recording';
+    }
+
+    /**
+     * Send a recording the database points at: from the bucket, or a file inside the
+     * monitor folder (nothing else: a path that leads out of it is refused). The caller
+     * checks who may hear it first. $downloadName without extension; '' plays inline.
+     *
+     * @return bool false when there is no such file (nothing was sent)
+     */
+    public static function send(?string $path, string $downloadName = ''): bool
+    {
+        $path = (string) $path;
+        if ($path === '') {
+            return false;
+        }
+        if (self::isRemote($path)) {
+            $key = self::key($path);
+            if (!str_starts_with($key, 'recordings/') || str_contains($key, '..') || str_contains($key, '\\') || str_contains($key, "\0")) {
+                return false;
+            }
+            $ext = preg_replace('/[^a-z0-9]/', '', strtolower(pathinfo($key, PATHINFO_EXTENSION))) ?? '';
+            $headers = [
+                'Content-Type' => self::MIME[$ext] ?? 'application/octet-stream',
+                'Cache-Control' => 'private, no-store',
+                'X-Content-Type-Options' => 'nosniff',
+            ];
+            if ($downloadName !== '') {
+                $safeName = self::sanitizeDownloadName($downloadName);
+                $headers['Content-Disposition'] = 'attachment; filename="' . $safeName . '.' . ($ext !== '' ? $ext : 'mp3') . '"';
+            }
+            return self::passthru($key, $headers);
+        }
+        $file = realpath($path);
+        $allowed = realpath(MONITOR_STORAGE_PATH);
+        // Trailing '/': a plain prefix would also accept a sibling such as "/monitor2/...".
+        if (!$file || !$allowed || !str_starts_with($file, rtrim($allowed, '/') . '/') || !is_file($file)) {
+            return false;
+        }
+        $ext = preg_replace('/[^a-z0-9]/', '', strtolower(pathinfo($file, PATHINFO_EXTENSION))) ?? '';
+        header('Content-Type: ' . (self::MIME[$ext] ?? 'application/octet-stream'));
+        header('Content-Length: ' . filesize($file));
+        header('Cache-Control: private, no-store');
+        header('X-Content-Type-Options: nosniff');
+        if ($downloadName !== '') {
+            $safeName = self::sanitizeDownloadName($downloadName);
+            header('Content-Disposition: attachment; filename="' . $safeName . '.' . ($ext !== '' ? $ext : 'wav') . '"');
+        }
+        while (ob_get_level() > 0) {
+            @ob_end_flush();
+        }
+        readfile($file);
+        return true;
+    }
 }

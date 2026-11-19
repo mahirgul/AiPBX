@@ -428,6 +428,13 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
 
     public function testSessionAuthenticationRequiresCsrfOnMutation(): void
     {
+        $stmt = $this->db->prepare(
+            "INSERT INTO sys_users (username, password_hash, full_name, role, extension, extension_type, is_active)
+             VALUES ('zz_cov_7979', 'hash', 'Auth Originate Ext 7979', 'user', '7979', 'sip', 1)"
+        );
+        $stmt->execute();
+        $this->createdUserIds[] = (int)$this->db->lastInsertId();
+
         $now = time();
         $session = [
             'user_id'       => 1,
@@ -440,7 +447,7 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
 
         // Mutation without X-CSRF-Token header -> 403 CSRF_REQUIRED
         $resMissing = $this->apiRequest('POST', '/api/v1/calls/originate', null, [
-            'from_extension' => '7001',
+            'from_extension' => '7979',
             'to_number'      => '7002',
         ], [
             'SESSION' => $session,
@@ -450,7 +457,7 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
 
         // Mutation with invalid X-CSRF-Token header -> 403 CSRF_REQUIRED
         $resWrong = $this->apiRequest('POST', '/api/v1/calls/originate', null, [
-            'from_extension' => '7001',
+            'from_extension' => '7979',
             'to_number'      => '7002',
         ], [
             'SESSION'            => $session,
@@ -461,7 +468,7 @@ ApiV1Controller::serve(" . var_export($path, true) . ");
 
         // Mutation with matching X-CSRF-Token header passes auth -> hits handler (200)
         $resValid = $this->apiRequest('POST', '/api/v1/calls/originate', null, [
-            'from_extension' => '7001',
+            'from_extension' => '7979',
             'to_number'      => '7002',
         ], [
             'SESSION'            => $session,

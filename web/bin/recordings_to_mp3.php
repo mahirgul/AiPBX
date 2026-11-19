@@ -14,6 +14,26 @@ if (PHP_SAPI !== 'cli') {   // cron/dialplan tool; never over HTTP
 }
 require_once dirname(__DIR__) . '/config.php';
 require_once dirname(__DIR__) . '/src/services/RecordingStorage.php';
+require_once dirname(__DIR__) . '/src/services/WebhookService.php';
+if (is_file(dirname(__DIR__) . '/src/core/PluginManager.php')) {
+    require_once dirname(__DIR__) . '/src/core/PluginManager.php';
+}
+
+/** recording.ready for the call records that now point at their recording's final place. */
+function emitRecordingReady(PDO $db, string $finalPath): void
+{
+    $st = $db->prepare('SELECT id, uniqueid, linkedid FROM asteriskcdr WHERE userfield = ?');
+    $st->execute([$finalPath]);
+    foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+        WebhookService::emit('recording.ready', [
+            'recording_id' => (int) $r['id'],
+            'uniqueid' => (string) $r['uniqueid'],
+            'linkedid' => (string) $r['linkedid'],
+            'recording_url' => '/api/v1/recordings/' . (int) $r['id'],
+            'format' => strtolower(pathinfo(RecordingStorage::isRemote($finalPath) ? RecordingStorage::key($finalPath) : $finalPath, PATHINFO_EXTENSION)),
+        ]);
+    }
+}
 
 const MIN_AGE_SECONDS = 180;
 const EMPTY_WAV_BYTES = 1024;
@@ -74,6 +94,9 @@ foreach ($it as $f) {
     $updateCdr->execute([$mp3, $wav]);
     unlink($wav);
     $converted++;
+    if (!RecordingStorage::enabled()) {
+        emitRecordingReady($db, $mp3); // with the bucket on, ready once it is uploaded below
+    }
 }
 
 // Recordings in the S3 bucket (Admin → File storage, #69): finished MP3s are
@@ -96,6 +119,7 @@ if (RecordingStorage::enabled()) {
         $updateCdr->execute([RecordingStorage::PREFIX . $key, $mp3]);
         unlink($mp3);
         $uploaded++;
+        emitRecordingReady($db, RecordingStorage::PREFIX . $key);
     }
 }
 
