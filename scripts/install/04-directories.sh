@@ -26,7 +26,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in queue_callback.php feature_code_action.php widget_claim.php ai_request.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php privacy_purge.php task_dispatcher.php cdr_qa.php; do
+for script in queue_callback.php queue_record.php feature_code_action.php widget_claim.php ai_request.php ai_job_worker.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php privacy_purge.php task_dispatcher.php cdr_qa.php assistant_prune.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -69,8 +69,14 @@ cat > /etc/cron.d/aipbx << 'CRON'
 # Nightly KVKK / GDPR data retention auto-purge (Security -> GDPR & Data Privacy)
 45 3 * * * root /usr/local/bin/privacy_purge.php >/dev/null 2>&1
 
+# Assistant chat retention (independent of general privacy retention)
+25 3 * * * www-data /usr/local/bin/assistant_prune.php >/dev/null 2>&1
+
 # Automatic call quality review, when an administrator turned it on (AI -> Cloud services)
 */10 * * * * root /usr/local/bin/cdr_qa.php >/dev/null 2>&1
+
+# AI job queue worker for pending/retried voicemail & call-analysis jobs
+* * * * * root flock -n /tmp/aipbx-ai-jobs.lock /usr/local/bin/ai_job_worker.php --drain >/dev/null 2>&1
 
 # Scheduled tasks (System -> Scheduled tasks; sandboxed, as aipbx-task), SIP debug
 # switch-off and the night restart window (PBX settings)
@@ -168,7 +174,9 @@ find /var/www/faxes -type d -exec chmod 2775 {} +
 # recording playback and fax sending never worked for www-data.)
 for spec in "0750 /var/spool/asterisk" "2750 /var/spool/asterisk/monitor" \
             "2770 /var/spool/asterisk/outgoing" "2775 /var/spool/asterisk/fax" \
-            "2775 /var/spool/asterisk/fax/outgoing"; do
+            "2775 /var/spool/asterisk/fax/outgoing" \
+            "2775 /var/lib/asterisk/sounds/custom" \
+            "2775 /var/lib/asterisk/moh" "2775 /var/lib/asterisk/moh/custom"; do
     mode="${spec%% *}"; dir="${spec#* }"
     dpkg-statoverride --list "$dir" >/dev/null 2>&1 && dpkg-statoverride --remove "$dir" >/dev/null 2>&1
     dpkg-statoverride --update --add asterisk asterisk "$mode" "$dir"

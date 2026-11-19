@@ -383,26 +383,6 @@ if is_upgrade && [[ -f "$INSTALL_DIR/UPGRADE_FROM" ]]; then
     fi
 fi
 
-# Helper for interactive prompts when running via piped curl (reading from /dev/tty)
-prompt_read() {
-    local prompt="$1"
-    local varname="$2"
-    local default_val="${3:-}"
-    local val=""
-
-    if [[ -t 0 ]]; then
-        read -r -p "$prompt" val || val=""
-    elif { : < /dev/tty; } 2>/dev/null; then
-        # /dev/tty exists even without a controlling terminal (systemd, CI);
-        # only use it when it can actually be opened.
-        read -r -p "$prompt" val < /dev/tty || val=""
-    else
-        val=""
-    fi
-    val="${val:-$default_val}"
-    printf -v "$varname" '%s' "$val"
-}
-
 # If running via curl pipe or outside a cloned repository:
 if ! is_upgrade && [[ ! -f "$SCRIPT_DIR/web/config.php" ]]; then
     step "Bootstrapping Repository"

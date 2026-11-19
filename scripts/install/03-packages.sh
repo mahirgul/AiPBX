@@ -43,6 +43,7 @@ PACKAGES=(
   ghostscript
   lame
   sox
+  libsox-fmt-all
   rsync
   libtiff-tools
   postfix
@@ -55,6 +56,8 @@ PACKAGES=(
   # Health checks (Admin -> Health checks) shell out to curl; a minimal
   # Ubuntu image does not have it, and the check then reports a false FAIL.
   curl
+  # Problem recording (System -> Problem recording) captures RTP audio with it.
+  tcpdump
   # Reads /etc/cron.d/aipbx (queue sync, the 02:30 backup, phone discovery,
   # retention). Ubuntu server images ship it; a minimal one — a cloud image,
   # the container — does not, and then every scheduled job silently never runs.

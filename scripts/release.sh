@@ -9,6 +9,9 @@
 #    installations show it via `aipbx-update --check` and the portal's "What's new").
 # 4. Commit and tag are pushed to GitHub and a GitHub Release is created (if gh exists).
 #
+# Before any of this, the commit must have passed the Install test and Web & Chat CI
+# workflows on GitHub (gh needed; AIPBX_RELEASE_SKIP_CI=1 skips the check).
+#
 # Version numbers: MAJOR.MINOR.PATCH — backwards-incompatible change (e.g. a
 # migration that drops a column, a removed API) = MAJOR; new feature = MINOR; fix = PATCH.
 set -euo pipefail
@@ -30,6 +33,48 @@ fi
 git fetch -q origin main
 [[ "$(git rev-parse HEAD)" == "$(git rev-parse origin/main)" ]] || { echo "Local main differs from origin/main (push/pull first)" >&2; exit 1; }
 git rev-parse -q --verify "refs/tags/v$VER" >/dev/null && { echo "v$VER already exists" >&2; exit 1; }
+
+# CI gate: the commit being released must have passed "Install test" and "Web & Chat CI".
+# A workflow its path filters did not start for this commit counts by its last run on main.
+# AIPBX_RELEASE_SKIP_CI=1 skips the gate (say why in the CHANGELOG).
+ci_passed() {
+    local wf="$1" head line
+    head="$(git rev-parse HEAD)"
+    line="$(gh run list --workflow "$wf" --commit "$head" --limit 1 --json status,conclusion \
+        --jq '.[0] | .status + " " + (.conclusion // "")' 2>/dev/null || true)"
+    if [[ -z "$line" ]]; then
+        # Only fall back to the last run on main when this commit truly changes no files matched by $wf.
+        local changed_files="" matching=0
+        changed_files="$(git diff-tree --no-commit-id --name-only -r "$head" 2>/dev/null || true)"
+        if [[ "$wf" == "web-ci.yml" ]]; then
+            grep -Eq '^(web/|composer\.|phpcs|phpstan|\.github/workflows/web-ci\.yml)' <<<"$changed_files" && matching=1 || true
+        elif [[ "$wf" == "install-test.yml" ]]; then
+            grep -Eq '^(install\.sh|scripts/install/|conf/|web/|ai/|chat/|plugins/|\.github/workflows/install-test\.yml)' <<<"$changed_files" && matching=1 || true
+        else
+            matching=1
+        fi
+        if [[ "$matching" -eq 1 ]]; then
+            echo "$wf: no workflow run found for commit $head yet (wait for CI or check GitHub Actions)" >&2
+            return 1
+        fi
+        line="$(gh run list --workflow "$wf" --branch main --status completed --limit 1 --json conclusion --jq '.[0].conclusion // ""')"
+        if [[ "$line" == success ]]; then
+            echo "$wf: skipped by path filter for this commit; the last run on main passed"
+            return 0
+        fi
+        echo "$wf: not run for this commit, and the last run on main is '${line:-none}'" >&2
+        return 1
+    fi
+    [[ "$line" == "completed success" ]] && { echo "$wf: passed for this commit"; return 0; }
+    echo "$wf for this commit: $line (wait for it, or fix it)" >&2
+    return 1
+}
+if [[ "${AIPBX_RELEASE_SKIP_CI:-}" == 1 ]]; then
+    echo "Warning: CI gate skipped (AIPBX_RELEASE_SKIP_CI=1)" >&2
+else
+    command -v gh >/dev/null 2>&1 || { echo "The CI gate needs gh (GitHub CLI); or set AIPBX_RELEASE_SKIP_CI=1" >&2; exit 1; }
+    ci_passed install-test.yml && ci_passed web-ci.yml || { echo "Not released: CI is not green." >&2; exit 1; }
+fi
 
 PREV="$(tr -d '[:space:]' < VERSION)"
 # VERSION is either the release being published (not tagged yet) or lower.

@@ -4,8 +4,26 @@
 # ============================================================================
 step "6. Configuring MariaDB"
 
+# Tune MariaDB defaults for AiPBX:
+# - max_connections: 151 default is tight with Asterisk res_odbc (80) + Apache/chat/AI/workers
+# - max_allowed_packet: 16M default can fail on large restores/transcripts
+# - tmp_table_size / max_heap_table_size: 16M -> 32M for CDR/queue report aggregations
+# - utf8mb4_unicode_ci: prevents collation mismatch on MariaDB 11.x (Ubuntu 26.04)
+if [[ -d /etc/mysql/mariadb.conf.d ]]; then
+    cat > /etc/mysql/mariadb.conf.d/99-aipbx.cnf << 'EOF'
+[mysqld]
+max_connections = 500
+max_allowed_packet = 64M
+tmp_table_size = 32M
+max_heap_table_size = 32M
+character-set-server = utf8mb4
+collation-server = utf8mb4_unicode_ci
+EOF
+fi
+
 systemctl start mariadb
 systemctl enable mariadb
+mysql -e "SET GLOBAL max_connections = 500, GLOBAL max_allowed_packet = 67108864, GLOBAL tmp_table_size = 33554432, GLOBAL max_heap_table_size = 33554432;" 2>/dev/null || true
 
 # Create database
 mysql -e "CREATE DATABASE IF NOT EXISTS asterisk CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"

@@ -33,6 +33,7 @@ class CertificateController extends BaseController
                     'renew_test' => CertificateService::renew(true),
                     'renew' => CertificateService::renew(false),
                     'selfsigned' => CertificateService::selfSigned(),
+                    'names' => CertificateService::saveNames((string) ($_POST['names'] ?? '')),
                     'upload' => CertificateService::installCustom($_FILES, (string) ($_POST['password'] ?? ''), !empty($_POST['allow_mismatch'])),
                     default => ['success' => false, 'error' => t('certificates.action_failed')],
                 };
@@ -42,6 +43,7 @@ class CertificateController extends BaseController
                     'renew_test' => 'certificates.msg_renew_test_ok',
                     'renew' => 'certificates.msg_renew_ok',
                     'selfsigned' => 'certificates.msg_selfsigned_ok',
+                    'names' => 'certificates.msg_names_ok',
                     'upload' => 'certificates.msg_upload_ok',
                 ];
                 if ($res['success']) {

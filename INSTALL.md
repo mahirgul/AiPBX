@@ -52,13 +52,17 @@ On a server where AiPBX is already installed, `install.sh` stops: a new install 
 and the secrets. Update with `sudo aipbx-update`. If an install stopped half way and you want to run it again,
 use `sudo bash install.sh --reinstall`.
 
-Useful variables: `AIPBX_FQDN=pbx.example.com` (skip the domain prompt), `AIPBX_REF=main` (install the
+The installer asks nothing. It sets the portal up as `aipbx.local` (announced on the LAN via mDNS) with a
+self-signed certificate; set your domain names and get a Let's Encrypt certificate later on
+*System → Certificates*.
+
+Useful variables: `AIPBX_FQDN=pbx.example.com` (the portal's name instead of `aipbx.local`), `AIPBX_REF=main` (install the
 development branch instead of the latest release), `AIPBX_INSTALL_DIR` (default `/opt/aipbx`).
 
 To run it in a container instead of on the server itself, see [Incus or LXD](docs/incus-lxd.md). Docker is not supported.
 
 ### What the installer automates:
-1. **Interactive FQDN & TLS Provisioning**: Prompts for your domain. If your DNS is pointed to the server, it obtains a free **Let's Encrypt TLS** certificate via Certbot. If you do not have an active domain yet, it automatically provisions a secure **self-signed TLS certificate** with SAN support.
+1. **TLS without questions**: Installs a **self-signed TLS certificate** (SAN: the portal's name and the server IP). On *System → Certificates* you later enter your domain names (several are fine) and get a free **Let's Encrypt** certificate or upload your own.
 2. **Dynamic Cryptographic Credentials**: Automatically generates unique, random secrets for:
    - MariaDB application runtime user (`aipbx_portal`)
    - MariaDB schema migration user (`aipbx_migrator`)

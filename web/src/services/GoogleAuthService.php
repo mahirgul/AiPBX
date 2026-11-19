@@ -260,6 +260,74 @@ class GoogleAuthService
         return $data;
     }
 
+    public const MOBILE_NONCE_PREFIX = 'apx_';
+    public const MOBILE_NONCE_TTL = 600;
+
+    /**
+     * Issues a single-use server nonce for mobile Google Sign-In (Android Credential Manager / iOS).
+     *
+     * @return array{nonce: string, expires_in: int, client_id: string}
+     */
+    public static function issueMobileNonce(): array
+    {
+        $nonce = self::MOBILE_NONCE_PREFIX . bin2hex(random_bytes(16));
+        $now = time();
+        $expiresAt = $now + self::MOBILE_NONCE_TTL;
+        $db = getDB();
+        $db->prepare('DELETE FROM mobile_oauth_nonces WHERE expires_at < ?')->execute([$now]);
+        $db->prepare('INSERT INTO mobile_oauth_nonces (nonce_hash, expires_at) VALUES (?, ?)')->execute([
+            hash('sha256', $nonce),
+            $expiresAt,
+        ]);
+        return [
+            'nonce' => $nonce,
+            'expires_in' => self::MOBILE_NONCE_TTL,
+            'client_id' => self::getClientId(),
+        ];
+    }
+
+    /**
+     * Verifies and atomically consumes a single-use mobile Google Sign-In nonce.
+     *
+     * Accepts either the raw server nonce or its SHA-256 hex digest in the ID token's
+     * `nonce` claim. Server-issued nonces (prefixed with `apx_`) are strictly single-use;
+     * when `$expectedNonce` is supplied, the ID token must carry a matching nonce.
+     */
+    public static function verifyMobileNonce(string $tokenNonce, string $expectedNonce = ''): bool
+    {
+        $tokenNonce = trim($tokenNonce);
+        $expectedNonce = trim($expectedNonce);
+
+        if ($expectedNonce !== '') {
+            if ($tokenNonce === '') {
+                return false;
+            }
+            $matchesRaw = hash_equals($expectedNonce, $tokenNonce);
+            $matchesSha = hash_equals(hash('sha256', $expectedNonce), $tokenNonce);
+            if (!$matchesRaw && !$matchesSha) {
+                return false;
+            }
+            return self::consumeMobileNonce($expectedNonce);
+        }
+
+        if ($tokenNonce !== '' && str_starts_with($tokenNonce, self::MOBILE_NONCE_PREFIX)) {
+            return self::consumeMobileNonce($tokenNonce);
+        }
+
+        return true;
+    }
+
+    private static function consumeMobileNonce(string $rawNonce): bool
+    {
+        if (!str_starts_with($rawNonce, self::MOBILE_NONCE_PREFIX)) {
+            return false;
+        }
+        $now = time();
+        $stmt = getDB()->prepare('DELETE FROM mobile_oauth_nonces WHERE nonce_hash = ? AND expires_at >= ?');
+        $stmt->execute([hash('sha256', $rawNonce), $now]);
+        return $stmt->rowCount() === 1;
+    }
+
     /**
      * Finds the active user matching the email address in the database.
      */

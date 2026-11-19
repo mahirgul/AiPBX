@@ -91,7 +91,7 @@ case "$cmd" in
         # The same list as SystemServicesService (dashboard).
         case "$2" in
             asterisk|apache2|nginx|mariadb|postfix|coturn|firewalld|fail2ban|chrony|ssh|ollama) ;;
-            aipbx-chat|aipbx-signaling|aipbx-webhook-worker|aipbx-ai|aipbx-mdns|aipbx-dnsmasq|aipbx-syslog|aipbx-vsftpd) ;;
+            aipbx-chat|aipbx-signaling|aipbx-webhook-worker|aipbx-call-events|aipbx-ai|aipbx-mdns|aipbx-dnsmasq|aipbx-syslog|aipbx-vsftpd) ;;
             aipbx-vpn@*) match "$2" '^aipbx-vpn@[A-Za-z0-9_-]{1,32}$' ;;
             *) die "service not allowed: $2" ;;
         esac
@@ -387,6 +387,12 @@ case "$cmd" in
                 [ $# -eq 0 ] || die "usage: cert selfsigned"
                 args=()
                 ;;
+            names)
+                # cert names MAIN [EXTRA...] — aipbx-cert checks each name again
+                [ $# -ge 1 ] && [ $# -le 21 ] || die "usage: cert names MAIN [EXTRA...]"
+                args=()
+                for n in "$@"; do match "$n" '^[A-Za-z0-9.-]{1,253}$'; args+=("$n"); done
+                ;;
             *) die "unknown cert command: $sub" ;;
         esac
         if systemctl is-active --quiet aipbx-cert.service; then
@@ -535,7 +541,7 @@ case "$cmd" in
         # In the unit, not here: Apache's sandbox keeps the environment file read-only.
         exec systemd-run --quiet --collect --on-active=3 --setenv=ZONE="$1" --description="AiPBX: time zone changed" /bin/sh -c \
             'if grep -q "^TIMEZONE=" /etc/ai-pbx.env; then sed -i "s|^TIMEZONE=.*|TIMEZONE=$ZONE|" /etc/ai-pbx.env; else echo "TIMEZONE=$ZONE" >> /etc/ai-pbx.env; fi
-             for s in mariadb asterisk cron aipbx-webhook-worker aipbx-chat apache2; do systemctl try-restart "$s"; done'
+             for s in mariadb asterisk cron aipbx-webhook-worker aipbx-call-events aipbx-chat apache2; do systemctl try-restart "$s"; done'
         ;;
 
     tones)
@@ -586,15 +592,30 @@ case "$cmd" in
                 *) die "invalid line: $kind" ;;
             esac
         done
-        for f in "$names" "$addrs"; do [ -f "$f" ] && { cp -p "$f" "$f.prev" || die "cannot write $(dirname "$f")"; }; done
-        install -m 0644 "$tn" "$names" && install -m 0644 "$ta" "$addrs" || die "cannot write the lists in $(dirname "$names")"
-        if ! nginx -t -q 2>/dev/null; then
-            # The lists before, or none at all on a first write: nginx must start again either way.
-            for f in "$names" "$addrs"; do if [ -f "$f.prev" ]; then mv "$f.prev" "$f"; else : > "$f"; fi; done
-            die "nginx refused the lists; the previous ones stay"
+        backup="$(mktemp -d "$(dirname "$names")/.sip443.XXXXXX")" || die "cannot stage SIP 443 lists"
+        trap 'rm -f "$tn" "$ta"; rm -rf "$backup"' EXIT
+        for f in "$names" "$addrs"; do
+            if [ -f "$f" ]; then cp -p "$f" "$backup/${f##*/}" || die "cannot back up $f"; fi
+        done
+        restore_sip443() {
+            local f
+            for f in "$names" "$addrs"; do
+                if [ -f "$backup/${f##*/}" ]; then
+                    mv -f "$backup/${f##*/}" "$f" || return 1
+                else
+                    rm -f "$f" || return 1
+                fi
+            done
+        }
+        if ! install -m 0644 "$tn" "$names" || ! install -m 0644 "$ta" "$addrs" || ! nginx -t -q 2>/dev/null; then
+            restore_sip443 || die "could not restore SIP 443 lists"
+            die "could not install valid SIP 443 lists; restored previous files"
         fi
-        systemctl reload nginx || die "nginx did not reload"
-        rm -f "$names.prev" "$addrs.prev"
+        if ! systemctl reload nginx; then
+            restore_sip443 || die "could not restore SIP 443 lists"
+            systemctl reload nginx || die "nginx could not reload the restored SIP 443 lists"
+            die "nginx did not reload the new SIP 443 lists; restored previous files"
+        fi
         ;;
 
     asterisk-lang)
@@ -1075,6 +1096,17 @@ FTPCONF
                 exec systemd-run --quiet --wait --pipe --collect --unit=aipbx-ai-setup \
                     --description="AiPBX AI runtime: remove" /usr/local/sbin/aipbx-ai-setup remove
                 ;;
+            ollama-install)
+                if systemctl is-active --quiet aipbx-ollama-setup.service; then
+                    die "Ollama setup is already running"
+                fi
+                systemctl reset-failed aipbx-ollama-setup.service >/dev/null 2>&1 || true
+                exec systemd-run --quiet --collect --unit=aipbx-ollama-setup \
+                    --description="AiPBX Ollama runtime: install" /usr/local/sbin/aipbx-ollama-setup install
+                ;;
+            ollama-status)
+                exec /usr/local/sbin/aipbx-ollama-setup status
+                ;;
             runtime-status)
                 exec /usr/local/sbin/aipbx-ai-setup status
                 ;;
@@ -1163,7 +1195,7 @@ FTPCONF
                     for ip in $(hostname -I); do echo "allowed-peer-ip=$ip"; done >> /etc/turnserver.conf
                     systemctl stop aipbx-coturn-restart.service >/dev/null 2>&1 || true
                     systemd-run --quiet --collect --unit=aipbx-coturn-restart /bin/bash -c \
-                        'for i in $(seq 1 2880); do n=$(asterisk -rx "core show channels count" 2>/dev/null | awk "/active call/{print \$1}"); [ "$n" = 0 ] && exec systemctl restart coturn; sleep 15; done' \
+                        'for i in $(seq 1 2880); do n=$(asterisk -rx "core show channels count" 2>/dev/null | awk "/active call/{print \$1}"); { [ "$n" = 0 ] || [[ "$(systemctl show -p ActiveState --value asterisk)" =~ ^(inactive|failed)$ ]]; } && exec systemctl restart coturn; sleep 15; done' \
                         && echo "coturn: restarts when no call is up"
                 fi
                 if [ -f /etc/systemd/system/aipbx-mdns.service ] && grep -q " ${old}\$" /etc/systemd/system/aipbx-mdns.service; then

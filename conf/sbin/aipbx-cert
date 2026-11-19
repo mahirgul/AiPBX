@@ -12,6 +12,7 @@
 #   aipbx-cert renew [--dry-run]
 #   aipbx-cert custom [--allow-mismatch]           staged by the portal
 #   aipbx-cert selfsigned
+#   aipbx-cert names MAIN [EXTRA...]                portal name + extra names
 #   aipbx-cert renewal-hook                         certbot deploy hook
 #
 # The portal runs the user-facing commands through aipbx-priv, which starts
@@ -33,6 +34,8 @@ CUSTOM_KEY=$TLS_DIR/custom.key
 STAGE_DIR=/var/lib/aipbx/cert-stage
 STATUS_FILE=/var/lib/aipbx-system/cert-status.json
 ENV_FILE=/etc/ai-pbx.env
+NAMES_FILE=$TLS_DIR/names       # extra names the certificate carries, one per line
+RE_NAME='^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$'
 /usr/local/sbin/aipbx-system-state prepare || exit 1
 
 ACTION="${1:-}"
@@ -64,6 +67,13 @@ domain() {
 }
 
 server_ip() { hostname -I 2>/dev/null | awk '{print $1}'; }
+
+# The extra names set on the Certificates page (aipbx-cert names).
+extra_names() {
+    local n
+    [ -r "$NAMES_FILE" ] || return 0
+    while read -r n; do [[ ${#n} -le 253 && "$n" =~ $RE_NAME ]] && echo "$n"; done < "$NAMES_FILE"
+}
 
 key_matches() {
     local a b
@@ -163,7 +173,7 @@ certbot_errors() { grep -E 'Detail:|Type:|Domain:|Hint:|Error|error:|Challenge f
 region_names() {
     local d="$1" here extra n=0
     here=$(getent -s dns ahosts "$d" 2>/dev/null | awk '$1 !~ /^(127\.|::1$)/ {print $1}' | sort -u)
-    for extra in $(sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443/names.conf 2>/dev/null); do
+    for extra in $({ extra_names; sed -n 's/^\([A-Za-z0-9.-]*\) 1;$/\1/p' /etc/nginx/aipbx-sip443/names.conf 2>/dev/null; } | awk '!seen[$0]++'); do
         [ "$extra" = "$d" ] && continue
         if [ -z "$here" ] || ! getent -s dns ahosts "$extra" 2>/dev/null | awk '{print $1}' | grep -qxF -f <(printf '%s\n' "$here"); then
             echo "aipbx-cert: $extra does not point to the same address as $d yet, left out" >&2
@@ -350,14 +360,19 @@ do_custom() {
 
 do_selfsigned() {
     [ $# -eq 0 ] || die "usage: selfsigned"
-    local d ip san
+    local d ip san n fresh=1
     d="$(domain)" || exit 1; ip="$(server_ip)"
-    # Regenerate when missing or issued for another name.
-    if ! { [ -r "$SELF_CRT" ] && [ -r "$SELF_KEY" ] \
-            && openssl x509 -noout -checkhost "$d" -in "$SELF_CRT" 2>/dev/null | grep -q 'does match'; }; then
+    # Regenerate when missing or when it lacks one of the names.
+    [ -r "$SELF_CRT" ] && [ -r "$SELF_KEY" ] || fresh=0
+    for n in "$d" $(extra_names); do
+        [ "$fresh" = 1 ] && openssl x509 -noout -checkhost "$n" -in "$SELF_CRT" 2>/dev/null | grep -q 'does match' || fresh=0
+    done
+    if [ "$fresh" = 0 ]; then
         mkdir -p "$TLS_DIR"
         # Browsers ignore the CN and only look at subjectAltName.
-        san="DNS:${d}"; [ -n "$ip" ] && san="$san,IP:$ip"
+        san="DNS:${d}"
+        for n in $(extra_names); do [ "$n" = "$d" ] || san="$san,DNS:$n"; done
+        [ -n "$ip" ] && san="$san,IP:$ip"
         [[ "$d" =~ ^[0-9.]+$ ]] && san="IP:$d"
         openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
             -keyout "$SELF_KEY" -out "$SELF_CRT" \
@@ -367,6 +382,40 @@ do_selfsigned() {
     fi
     do_deploy selfsigned "$SELF_CRT" "$SELF_KEY" || exit 1
     record true "self-signed certificate active"
+}
+
+# The portal's name and the extra names of the certificate (Certificates page). The env file
+# follows a new portal name: PORTAL_DOMAIN, and TURN_HOST and the sender address where they
+# were the old name. A self-signed certificate is made again at once; a Let's Encrypt one
+# is requested again from the page.
+do_names() {
+    [ $# -ge 1 ] && [ $# -le 21 ] || die "usage: names MAIN [EXTRA...] (at most 20 extra names)"
+    local main="${1,,}" old n tmp extras=()
+    shift
+    [[ ${#main} -le 253 && "$main" =~ $RE_NAME ]] || die "invalid name: $main"
+    for n in "$@"; do
+        n="${n,,}"
+        [[ ${#n} -le 253 && "$n" =~ $RE_NAME ]] || die "invalid name: $n"
+        [ "$n" = "$main" ] || printf '%s\n' "${extras[@]}" | grep -qxF "$n" || extras+=("$n")
+    done
+    old="$(domain)" || exit 1
+    mkdir -p "$TLS_DIR"
+    tmp="$(mktemp "$NAMES_FILE.XXXXXX")" || die "cannot write $NAMES_FILE"
+    printf '%s\n' ${extras[@]+"${extras[@]}"} | sed '/^$/d' > "$tmp" && chmod 644 "$tmp" && mv -f "$tmp" "$NAMES_FILE" \
+        || { rm -f "$tmp"; die "cannot write $NAMES_FILE"; }
+    if [ "$main" != "$old" ]; then
+        tmp="$(mktemp "$ENV_FILE.XXXXXX")" || die "cannot write $ENV_FILE"
+        sed -e "s/^PORTAL_DOMAIN=.*/PORTAL_DOMAIN=${main}/" \
+            -e "s/^TURN_HOST=${old//./\\.}\$/TURN_HOST=${main}/" \
+            -e "s/^MAIL_FROM_ADDRESS=no-reply@${old//./\\.}\$/MAIL_FROM_ADDRESS=no-reply@${main}/" "$ENV_FILE" > "$tmp" \
+            && chown --reference="$ENV_FILE" "$tmp" && chmod --reference="$ENV_FILE" "$tmp" && mv -f "$tmp" "$ENV_FILE" \
+            || { rm -f "$tmp"; die "cannot write $ENV_FILE"; }
+        echo "portal name: $old -> $main"
+    fi
+    if [ "$(cat "$MODE_FILE" 2>/dev/null)" = selfsigned ] || [ ! -r "$ACTIVE_CRT" ]; then
+        do_selfsigned
+    fi
+    record true "names saved: $main${extras[*]:+ ${extras[*]}}"
 }
 
 # certbot deploy hook: only follow renewals while Let's Encrypt is the active source.
@@ -387,6 +436,7 @@ case "$ACTION" in
     renew)        do_renew "$@" ;;
     custom)       do_custom "$@" ;;
     selfsigned)   do_selfsigned "$@" ;;
+    names)        do_names "$@" ;;
     renewal-hook) do_renewal_hook ;;
     *) echo "usage: aipbx-cert deploy|letsencrypt|renew|custom|selfsigned|renewal-hook" >&2; exit 64 ;;
 esac

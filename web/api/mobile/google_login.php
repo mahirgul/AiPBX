@@ -16,9 +16,21 @@ if (!GoogleAuthService::isEnabled()) {
 }
 
 $json = mobileInput();
+$action = trim((string)($json['action'] ?? $_GET['action'] ?? $_POST['action'] ?? ''));
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' || $action === 'nonce') {
+    $issued = GoogleAuthService::issueMobileNonce();
+    mobileJson([
+        'success' => true,
+        'nonce' => $issued['nonce'],
+        'expires_in' => $issued['expires_in'],
+        'client_id' => $issued['client_id'],
+    ]);
+}
 
 $idToken = trim($json['id_token'] ?? $_POST['id_token'] ?? '');
 $code = trim($json['code'] ?? $_POST['code'] ?? '');
+$nonce = trim($json['nonce'] ?? $_POST['nonce'] ?? '');
 $device_name = trim($json['device_name'] ?? $_POST['device_name'] ?? 'Mobile');
 
 if (empty($idToken) && empty($code)) {
@@ -43,6 +55,10 @@ if (!$userInfo && !empty($code)) {
 }
 
 if (!$userInfo || empty($userInfo['email'])) {
+    mobileError(t('mobile_api.google_verify_failed'), 401);
+}
+
+if (!GoogleAuthService::verifyMobileNonce((string)($userInfo['nonce'] ?? ''), $nonce)) {
     mobileError(t('mobile_api.google_verify_failed'), 401);
 }
 

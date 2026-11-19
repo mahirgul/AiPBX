@@ -14,6 +14,7 @@ class CertificateService
 {
     public const ACTIVE_CRT = '/etc/ssl/aipbx/active.crt';
     public const MODE_FILE = '/etc/ssl/aipbx/mode';
+    public const NAMES_FILE = '/etc/ssl/aipbx/names';
     public const COTURN_CRT = '/etc/coturn/aipbx.crt';
     public const ASTERISK_CRT = '/etc/asterisk/keys/fullchain.pem';
     public const STAGE_DIR = '/var/lib/aipbx/cert-stage';
@@ -348,6 +349,7 @@ class CertificateService
 
         return [
             'domain' => $domain,
+            'extra_names' => self::extraNames(),
             'mode' => $mode,
             'active' => $active,
             'copies' => $copies,
@@ -438,6 +440,45 @@ class CertificateService
     public static function renew(bool $dryRun): array
     {
         return self::runPriv($dryRun ? ['cert', 'renew', '--dry-run'] : ['cert', 'renew'], $dryRun ? null : 'Let\'s Encrypt certificate renewed');
+    }
+
+    /** @return list<string> the extra names of the certificate (Certificates page) */
+    public static function extraNames(): array
+    {
+        return array_values(array_filter(array_map('trim', explode("\n", self::readFile(self::NAMES_FILE))), fn($n) => self::validName($n)));
+    }
+
+    public static function validName(string $name): bool
+    {
+        return strlen($name) <= 253
+            && preg_match('/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/D', $name) === 1;
+    }
+
+    /**
+     * The portal's name (first line) and the extra names of the certificate. A new portal
+     * name is the address of links, mails and TURN from now on; a self-signed certificate
+     * is made again at once, a Let's Encrypt one is requested again here.
+     */
+    public static function saveNames(string $text): array
+    {
+        $names = [];
+        foreach (preg_split('/[\s,]+/', strtolower($text)) ?: [] as $n) {
+            if ($n === '') {
+                continue;
+            }
+            if (!self::validName($n)) {
+                return ['success' => false, 'error' => sprintf(t('certificates.err_name'), mb_substr($n, 0, 80))];
+            }
+            $names[$n] = true;
+        }
+        $names = array_keys($names);
+        if ($names === []) {
+            return ['success' => false, 'error' => t('certificates.err_names_empty')];
+        }
+        if (count($names) > 21) {
+            return ['success' => false, 'error' => t('certificates.err_names_many')];
+        }
+        return self::runPriv(array_merge(['cert', 'names'], $names), 'Certificate names: ' . implode(', ', $names));
     }
 
     public static function selfSigned(): array

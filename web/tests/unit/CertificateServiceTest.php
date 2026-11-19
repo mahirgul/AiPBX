@@ -69,6 +69,20 @@ CNF);
         return CertificateService::parseChain(self::$pki[$name]['cert'])[0];
     }
 
+    public function testNamesAreCheckedBeforeTheyReachRoot(): void
+    {
+        foreach (['pbx.example.com', 'aipbx.local', 'a-1.b.example'] as $ok) {
+            $this->assertTrue(CertificateService::validName($ok), $ok);
+        }
+        foreach (['', 'localhost', 'Pbx.example.com', '-a.example.com', 'a..b', 'a b.com', "a.com\nb.com", 'x;rm.com', '*.example.com', str_repeat('a', 64) . '.com'] as $bad) {
+            $this->assertFalse(CertificateService::validName($bad), json_encode($bad));
+        }
+        $this->assertSame(sprintf(t('certificates.err_name'), 'x;rm.com'), CertificateService::saveNames("pbx.example.com\nx;rm.com")['error']);
+        $this->assertSame(t('certificates.err_names_empty'), CertificateService::saveNames(" \n ")['error']);
+        $many = implode("\n", array_map(fn($i) => "n{$i}.example.com", range(1, 22)));
+        $this->assertSame(t('certificates.err_names_many'), CertificateService::saveNames($many)['error']);
+    }
+
     public function testHostMatching(): void
     {
         $leaf = self::leaf('leaf');

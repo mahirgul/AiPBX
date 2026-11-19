@@ -73,6 +73,20 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
     </div>
 </div>
 
+<!-- Names: the portal's address and the extra names the certificate carries -->
+<div class="card">
+    <div class="card-header"><div class="card-title"><i class="fas fa-globe u-primary"></i> <?php echo t('certificates.names_title'); ?></div></div>
+    <div class="u-p-16-20">
+        <p class="u-fs-12 u-mt-0"><?php echo t('certificates.names_help'); ?></p>
+        <form method="POST" class="cert-form" data-confirm="<?php echo $h(t('certificates.confirm_names')); ?>">
+            <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token); ?>">
+            <input type="hidden" name="action" value="names">
+            <textarea name="names" class="form-control u-mono u-maxw-520" rows="4" placeholder="pbx.example.com&#10;sip.example.com"><?php echo $h(implode("\n", array_merge([$domain], $st['extra_names']))); ?></textarea>
+            <button type="submit" class="btn btn-primary u-mt-10"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button>
+        </form>
+    </div>
+</div>
+
 <?php if ($output !== ''): ?>
 <div class="card">
     <div class="card-header"><div class="card-title"><i class="fas fa-terminal u-primary"></i> <?php echo t('certificates.output'); ?></div></div>

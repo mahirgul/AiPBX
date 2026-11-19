@@ -38,6 +38,13 @@ same one. It flags the problems that break calls without an obvious error:
 - **expired / expiring soon / not yet valid**;
 - **a service's copy differs** from the active certificate — apply it again.
 
+**Domain names.** The installer asks nothing: it sets the portal up as `aipbx.local` (or `AIPBX_FQDN`)
+with a self-signed certificate. Enter your names here, one per line. The first is the portal's address
+(`PORTAL_DOMAIN`: links in mails, the web phone, TURN); the others go into the certificate too. A
+self-signed certificate is made again at once with all the names; for Let's Encrypt, save the names
+and then request the certificate. A name whose DNS record does not point where the first name points
+is left out of a Let's Encrypt request until its record is there.
+
 From the page an admin can:
 
 1. **Get a Let's Encrypt certificate.** Supports two validation challenge methods:
@@ -63,6 +70,7 @@ sudo aipbx-cert letsencrypt --email you@example.com                             
 sudo aipbx-cert letsencrypt --dns-cloudflare --wildcard --email you@example.com  # DNS-01 Cloudflare wildcard issue
 sudo aipbx-cert renew --dry-run
 sudo aipbx-cert selfsigned
+sudo aipbx-cert names pbx.example.com sip.example.com                          # portal name + extra names
 ```
 
 The result of the last operation is in `/var/lib/aipbx-system/cert-status.json` and on the page.

@@ -15,7 +15,7 @@ for f in "$INSTALL_DIR/conf/asterisk/pbx/"*.conf "$INSTALL_DIR/asterisk-config/p
     [[ -e "/etc/asterisk/pbx/$(basename "$f")" ]] || cp "$f" /etc/asterisk/pbx/
 done
 
-for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf hep.conf modules.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf stasis.conf dnsmgr.conf cli_permissions.conf; do
+for f in extensions.conf pjsip.conf pjsip_notify.conf queues.conf musiconhold.conf http.conf rtp.conf hep.conf modules.conf res_parking.conf cdr.conf res_odbc.conf cdr_adaptive_odbc.conf extconfig.conf stasis.conf dnsmgr.conf cli_permissions.conf; do
     if [[ -f "$INSTALL_DIR/conf/asterisk/$f" ]]; then
         cp "$INSTALL_DIR/conf/asterisk/$f" /etc/asterisk/"$f"
     elif [[ -f "$INSTALL_DIR/asterisk-config/$f" ]]; then
@@ -79,10 +79,13 @@ chmod 600 /etc/asterisk/manager.conf
 # Administrator's lines from the Advanced configuration page live in pbx/user_<file>.conf. The line
 # goes in here because this script replaces several of these files on every upgrade. It takes effect
 # on the next reload, so no restart is needed; a file that is not there yet is simply skipped.
+# PBX -> Custom Configs writes pbx/<file>_custom.conf, pulled in the same way, after it.
 for f in rtp features queues voicemail musiconhold cdr logger manager udptl indications confbridge; do
     [[ -f "/etc/asterisk/$f.conf" ]] || continue
     grep -q "pbx/user_$f.conf" "/etc/asterisk/$f.conf" \
         || printf '\n#tryinclude "pbx/user_%s.conf"\n' "$f" >> "/etc/asterisk/$f.conf"
+    grep -q "pbx/${f}_custom.conf" "/etc/asterisk/$f.conf" \
+        || printf '#tryinclude "pbx/%s_custom.conf"\n' "$f" >> "/etc/asterisk/$f.conf"
 done
 
 # Install Asterisk Sound Prompts (Turkish & WebRTC/IVR custom sounds)
@@ -256,6 +259,19 @@ blacklist nf_nat_sip
 MOD
 modprobe -r nf_nat_sip nf_conntrack_sip 2>/dev/null || true
 
+# On Hyper-V, dynamic memory ballooning (hv_balloon) can reclaim gigabytes of
+# RAM from Linux and trigger OOM kills on mariadbd/apache2 even with free swap.
+if [[ "$(systemd-detect-virt 2>/dev/null || true)" == "microsoft" ]] \
+   || grep -qi microsoft /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+    if [[ ! -f /etc/modprobe.d/aipbx-no-hv-balloon.conf ]]; then
+        cat > /etc/modprobe.d/aipbx-no-hv-balloon.conf << 'MOD'
+# Managed by AiPBX: prevent Hyper-V dynamic memory ballooning from starving mariadbd/apache2
+blacklist hv_balloon
+MOD
+        command -v update-initramfs >/dev/null 2>&1 && update-initramfs -u >/dev/null 2>&1 || true
+    fi
+fi
+
 # needrestart (unattended-upgrades) restarted Asterisk after library updates
 # at 06:35 and dropped the calls in progress. Asterisk is left out; it picks
 # up new libraries on the next update or reboot.
@@ -294,6 +310,7 @@ php /var/www/html/src/asterisk_sync.php \
     || warn "Asterisk configuration sync reported an error — open the portal and apply the pending changes"
 
 systemctl restart aipbx-webhook-worker.service 2>/dev/null || true
+systemctl restart aipbx-call-events.service 2>/dev/null || true
 
 ok "Asterisk configured"
 

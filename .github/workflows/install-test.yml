@@ -74,10 +74,22 @@ jobs:
           # and where it stopped. `tee` keeps the full log for the artifact,
           # and `sed -u` stops sed from adding a buffer of its own on top of
           # the pipe's. No `tail`: that was what hid a 45-minute stall.
-          sudo DEBIAN_FRONTEND=noninteractive bash install.sh </dev/null 2>&1 \
-            | tee /tmp/install.log \
-            | sed -u 's/\x1b\[[0-9;]*m//g'
-          test "${PIPESTATUS[0]}" -eq 0
+          run_install() {
+            sudo DEBIAN_FRONTEND=noninteractive bash install.sh "$@" </dev/null 2>&1 \
+              | tee -a /tmp/install.log \
+              | sed -u 's/\x1b\[[0-9;]*m//g'
+            return "${PIPESTATUS[0]}"
+          }
+          run_install && exit 0
+          # An Ubuntu mirror that does not answer is the runner's problem, not AiPBX's:
+          # one more try, as after an install that stopped half way. Any other failure fails.
+          if grep -qE '(Failed to fetch|Could not connect to|Temporary failure resolving|Unable to connect to|Connection timed out)[^[:cntrl:]]*ubuntu\.com|Unable to fetch some archives' /tmp/install.log; then
+            echo "::warning::An Ubuntu package mirror did not answer; installing once more."
+            sleep 60
+            run_install --reinstall
+          else
+            exit 1
+          fi
 
       - name: aipbx-selftest
         run: sudo /usr/local/sbin/aipbx-selftest

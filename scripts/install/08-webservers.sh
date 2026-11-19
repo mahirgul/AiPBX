@@ -74,7 +74,7 @@ cat > /etc/apache2/sites-available/aipbx.conf << VHOST
     # the PBX itself (Asterisk CURL() to http://127.0.0.1/api/...; CURL() does
     # not follow a redirect); everyone else is sent to HTTPS like the rest of
     # the portal (sign-in callbacks, widgets).
-    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$|meeting_join_check\.php\$|chat_call_check\.php\$) [OR]
+    RewriteCond %{REQUEST_URI} !^/api/(plugins/|ivr_data_lookup\.php\$|meeting_join_check\.php\$|chat_call_check\.php\$|phonebook_name\.php\$|queue_survey\.php\$) [OR]
     RewriteCond %{CONN_REMOTE_ADDR} !^(127\.0\.0\.1|::1)\$
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [END,NE,R=permanent]
 
@@ -538,8 +538,42 @@ UMask=0027
 [Install]
 WantedBy=multi-user.target
 WEBHOOKUNIT
+# Live call events (call.ringing/offered/answered/completed) from Asterisk's manager
+# interface on 127.0.0.1 into the webhook queue above.
+cat > /etc/systemd/system/aipbx-call-events.service << 'CALLEVENTSUNIT'
+[Unit]
+Description=AiPBX Live Call Events (AMI to webhooks)
+After=network-online.target mariadb.service asterisk.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/html
+ExecStart=/usr/bin/php /var/www/html/bin/call_events.php --daemon
+Restart=always
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectControlGroups=yes
+RestrictRealtime=yes
+InaccessiblePaths=-/etc/ai-pbx-migrator.env
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target
+CALLEVENTSUNIT
 systemctl daemon-reload
 systemctl enable aipbx-webhook-worker.service >/dev/null 2>&1 || true
+systemctl enable aipbx-call-events.service >/dev/null 2>&1 || true
+# AGI scripts (PBX -> AGI Scripts): FastAGI on 127.0.0.1:4573; each script runs sandboxed as aipbx-task.
+install -o root -g root -m 0644 "$INSTALL_DIR/conf/systemd/aipbx-agi.service" /etc/systemd/system/aipbx-agi.service
+systemctl daemon-reload >/dev/null 2>&1 || true
+systemctl enable --now aipbx-agi.service >/dev/null 2>&1 || true
+systemctl try-restart aipbx-agi.service >/dev/null 2>&1 || true
 # Network -> VPN Server and VPN Client: one unit per server or connection. All of it is
 # under /var/lib/aipbx-vpn, root only. An OpenVPN or WireGuard of the server's own
 # (openvpn-client@..., wg-quick@...) is a different unit and is not touched.

@@ -9,20 +9,6 @@ if is_upgrade; then
     # an uploaded one); older installs still point at CERT_FILE.
     [[ -f /etc/ssl/aipbx/mode || ( -f "$CERT_FILE" && -f "$KEY_FILE" ) ]] || error "Certificate not found: $CERT_FILE"
     info "Keeping the existing certificate"
-elif [[ "$USE_LETSENCRYPT" == "true" ]]; then
-    info "Requesting Let's Encrypt certificate for $PORTAL_DOMAIN..."
-    systemctl start apache2 2>/dev/null || true
-    if certbot certonly --apache -d "$PORTAL_DOMAIN" \
-        --non-interactive --agree-tos \
-        -m "${LE_EMAIL:-admin@${PORTAL_DOMAIN}}" 2>&1; then
-        CERT_FILE="/etc/letsencrypt/live/$PORTAL_DOMAIN/fullchain.pem"
-        KEY_FILE="/etc/letsencrypt/live/$PORTAL_DOMAIN/privkey.pem"
-        USE_SELFSIGNED=false
-        ok "Let's Encrypt certificate obtained"
-    else
-        warn "Let's Encrypt failed — falling back to self-signed certificate"
-        USE_SELFSIGNED=true
-    fi
 fi
 
 if ! is_upgrade && [[ "$USE_SELFSIGNED" == "true" ]]; then
@@ -106,8 +92,11 @@ if [[ ! -f /etc/asterisk/keys/asterisk.pem ]]; then
         -keyout /etc/asterisk/keys/asterisk.key \
         -out /etc/asterisk/keys/asterisk.crt \
         -subj "/CN=asterisk" 2>/dev/null
-    cat /etc/asterisk/keys/asterisk.crt /etc/asterisk/keys/asterisk.key \
-        > /etc/asterisk/keys/asterisk.pem
+    (
+        umask 077
+        cat /etc/asterisk/keys/asterisk.crt /etc/asterisk/keys/asterisk.key \
+            > /etc/asterisk/keys/asterisk.pem
+    )
     chmod 640 /etc/asterisk/keys/asterisk.pem /etc/asterisk/keys/asterisk.key
     chown asterisk:asterisk /etc/asterisk/keys/asterisk.pem \
         /etc/asterisk/keys/asterisk.key 2>/dev/null || true
