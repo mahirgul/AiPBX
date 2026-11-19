@@ -152,7 +152,7 @@ Scheduled background scripts run in a hardened `systemd-run` sandbox as the unpr
 
 ## Read-only external databases
 
-External database queries in IVR data steps and plugins run in strictly enforced read-only sessions with a 2.5-second statement timeout, single statement restrictions, and encrypted credentials (see [External databases](external-databases.md#supported-engines-and-security)).
+External database queries from Dynamic Routing, the AI Agent and plugins run in read-only sessions with a 2.5-second statement timeout, one statement at a time, values always bound as parameters, and encrypted credentials. Writing needs **Allow writing** on the connection, and then only one `INSERT` or `UPDATE` (used by the auto-dialer's write-back) (see [External databases](external-databases.md#supported-engines-and-security)).
 
 ## Other measures
 

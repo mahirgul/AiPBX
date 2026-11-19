@@ -12,11 +12,17 @@ $csrf = getCSRFToken();
     <?php echo uiPageHeaderOpen('fa-database', htmlspecialchars(t('external_dbs.page_title', 'External Databases')), 'externalDbsHelpBox'); ?>
 <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($connections); ?></span>
 <?php echo uiPageHeaderActions(); ?>
+<?php if ($query_tab): ?>
+    <a href="/external-dbs?tab=queries&amp;new_query=1" class="btn btn-primary btn-sm">
+        <i class="fas fa-plus"></i> <?php echo htmlspecialchars(t('external_dbs.query_new')); ?>
+    </a>
+<?php else: ?>
 <div class="u-flex-center u-gap-8">
             <button type="button" class="btn btn-primary btn-sm" onclick="showNewDbForm()">
                 <i class="fas fa-plus-circle"></i> <?php echo htmlspecialchars(t('external_dbs.btn_new', 'New Connection')); ?>
             </button>
         </div>
+<?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
 
     <?php echo uiHelpBoxOpen('externalDbsHelpBox', htmlspecialchars(t('external_dbs.help_title', 'External Database Connections'))); ?>
@@ -25,7 +31,17 @@ $csrf = getCSRFToken();
             <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars(t('external_dbs.read_only_advice', 'Security Recommendation: Always configure dedicated read-only user accounts on your external database servers.')); ?>
         </div>
 <?php echo uiHelpBoxClose(); ?>
+</div>
 
+<?php echo uiTabs([
+    'connections' => ['label' => t('external_dbs.tab_connections'), 'href' => '/external-dbs'],
+    'queries' => ['label' => t('external_dbs.tab_queries'), 'href' => '/external-dbs?tab=queries'],
+], $query_tab ? 'queries' : 'connections'); ?>
+
+<?php if ($query_tab): ?>
+    <?php require __DIR__ . '/queries.php'; ?>
+<?php else: ?>
+<div class="card">
     <!-- Create / Edit Form Box -->
     <div id="dbFormBox" style="display: none; padding: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--card-bg, #fff);">
         <h4 id="dbFormTitle" class="u-mt-0 u-mb-16">
@@ -90,6 +106,13 @@ $csrf = getCSRFToken();
                     <?php echo htmlspecialchars(t('common.active', 'Active')); ?>
                 </label>
             </div>
+            <div class="u-mb-16">
+                <label class="u-check-label u-fs-13">
+                    <input type="checkbox" name="allow_write" id="db_allow_write" value="1" class="u-accent">
+                    <?php echo htmlspecialchars(t('external_dbs.allow_write')); ?>
+                </label>
+                <div class="u-hint"><?php echo htmlspecialchars(t('external_dbs.allow_write_hint')); ?></div>
+            </div>
 
             <div class="u-flex-gap u-jc-space-between u-ai-center">
                 <div>
@@ -131,6 +154,7 @@ $csrf = getCSRFToken();
                         <tr>
                             <td>
                                 <strong><?php echo htmlspecialchars((string)$c['name']); ?></strong>
+                                <code class="u-muted">#<?php echo (int) $c['id']; ?></code>
                                 <div class="u-muted u-fs-11">User: <code><?php echo htmlspecialchars((string)$c['username']); ?></code></div>
                             </td>
                             <td>
@@ -155,6 +179,9 @@ $csrf = getCSRFToken();
                             <td>
                                 <?php if (!empty($c['is_active'])): ?>
                                     <span class="badge badge-success"><?php echo htmlspecialchars(t('common.active', 'Active')); ?></span>
+                                    <?php if (!empty($c['allow_write'])): ?>
+                                        <span class="badge badge-warning"><i class="fas fa-pen"></i> <?php echo htmlspecialchars(t('external_dbs.writable')); ?></span>
+                                    <?php endif; ?>
                                 <?php else: ?>
                                     <span class="badge badge-secondary"><?php echo htmlspecialchars(t('common.passive', 'Disabled')); ?></span>
                                 <?php endif; ?>
@@ -215,6 +242,7 @@ function editDb(c) {
     document.getElementById('db_password').value = '';
     document.getElementById('db_timeout').value = c.timeout_sec || 3;
     document.getElementById('db_active').checked = parseInt(c.is_active) === 1;
+    document.getElementById('db_allow_write').checked = parseInt(c.allow_write) === 1;
     document.getElementById('testFeedback').textContent = '';
 
     document.getElementById('dbFormBox').style.display = 'block';
@@ -276,3 +304,4 @@ function testSavedConnection(id) {
     });
 }
 </script>
+<?php endif; ?>

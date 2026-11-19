@@ -1,14 +1,18 @@
-# External databases & IVR data steps
+# External databases
 
-AiPBX can connect to external SQL databases and HTTP endpoints to look up caller information in real
-time during an incoming call and branch the call flow accordingly.
+AiPBX can query your own SQL databases during a call: a CRM, a customer list, an order system.
+Connections are made once under **Integration → Database Connections** (administrators only) and
+used by:
 
-- Database connections: **Integration → Database Connections** (administrators only).
-- IVR data steps: **IVR page → Data steps** button (administrators only).
+| Where | What it does |
+|---|---|
+| [Dynamic Routing](dynamic-routing.md) | Routes a call by a query's result (VIP, debtor, language, the customer's own agent) |
+| [Auto-dialer](auto-dialer.md) (plugin) | Takes a campaign's numbers from a query and can write each call's result back |
+| Plugins | Read, and write where allowed, through `PluginData` ([plugin-development.md](plugin-development.md)) |
 
 ## Database connections
 
-Store encrypted credentials to query external SQL databases from IVR call flows or custom plugins.
+Store encrypted credentials once; features name the connection and never see the password.
 
 ### Supported engines and security
 
@@ -17,8 +21,8 @@ Store encrypted credentials to query external SQL databases from IVR call flows 
   internal system or PBX files.
 - **Encrypted credentials:** Passwords are encrypted on disk and decrypted only in memory when
   establishing a connection.
-- **Strict read-only sessions:** Regardless of user account privileges granted on the remote database,
-  AiPBX enforces read-only transactions on every connection:
+- **Read-only sessions:** Whatever rights the account has, queries run in read-only transactions
+  (writing is a separate, opt-in path; see below):
   - MySQL / MariaDB: `SET SESSION TRANSACTION READ ONLY`
   - PostgreSQL: `SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY`
 - **Time-boxed execution:** A hard statement timeout of **2.5 seconds** is enforced at the session level
@@ -50,89 +54,48 @@ Click **Test Connection** on the form or in the connection list to verify networ
 credentials, and latency. The test runs a lightweight `SELECT 1` ping query and displays the round-trip
 latency in milliseconds.
 
-A database connection that is currently in use by an IVR data step cannot be deleted.
+A database connection that is currently in use by a Dynamic Routing step cannot be deleted.
+
+### Allow writing
+
+Off by default. When it is on, features may write to this connection: the auto-dialer's result
+write-back, for example. Writing is limited:
+- **One statement only:** a single `INSERT` or `UPDATE` that you write yourself. Several statements,
+  DDL (`DROP`, `ALTER`, `CREATE`, …) and file access are refused.
+- **Variables are parameters:** they are bound, never pasted into the statement.
+- **Unknown names are refused.**
+
+What can really change is decided by the database account's own rights. Give it only what the
+statement needs, for example `UPDATE` on one table. A connection that may write shows a **Writable**
+badge.
 
 ---
 
-## IVR data steps
+## Saved queries
 
-An IVR data step executes a fast data lookup during an active call, stores the retrieved value in an
-Asterisk channel variable, and routes the call to different destinations depending on the result.
+Open **Database Connections → Saved Queries** to register read-only SQL once.
+Choose a permanent query ID, a connection, a description and the caller access mode.
+Disable a query to remove it from tool catalogs and call routing.
 
-### Input sources
+- **AI Applications** accepts one saved query ID per line in **Database lookups**.
+- **AI Agent** accepts `get_db_value | fatura_odeme_durumu` in its
+  `agent-tools.txt` file to expose one saved query. Use `db_connection | 2`
+  to expose the active saved queries registered under connection ID 2.
+  Each agent can use up to ten database queries.
+- **Dynamic Routing** can choose a saved query under **Source**. It lists
+  active queries with **Any caller** access.
 
-- **Keypad digits (DTMF):** Prompts the caller with an optional audio announcement and collects digits
-  (with configurable maximum digits and timeout).
-- **Caller ID:** Uses the incoming caller's phone number without asking for user input.
+The model gets query IDs, descriptions and parameter names. The server binds
+values to the SQL. Use `:input` for a DTMF or voice input and `:var_name` for a
+named input. Context variables such as `:caller_id` come from the call. A
+private query needs the `:var_verified_customer_id` ownership predicate and
+the **Verified customer** access mode. Applying changes refreshes the tool
+catalog and routing parameters.
 
-### Data sources
+### Variables
 
-- **External database:** Selects a configured database connection and executes a parameterized query.
-  The query can use `:input` (the collected DTMF digits) and/or `:caller_id` (the caller's number)
-  named parameters.
-- **HTTP request (REST API):** Sends an HTTP `GET` or `POST` request to an external endpoint:
-  - Supports `{input}` and `{caller_id}` placeholders in the URL, automatically URL-encoded.
-  - On `POST`, sends a JSON payload: `{"input": "...", "caller_id": "..."}`.
-  - Accepts a plain text response or JSON (extracts `value` or `result`).
-  - **Internal address guard:** Requests to private or loopback addresses (`127.0.0.1`, RFC 1918 private
-    ranges, link-local, cloud metadata endpoints) are blocked to prevent Server-Side Request Forgery
-    (SSRF).
-  - Hard network timeout of 2.5 seconds.
+Every feature uses the same variable names (`input`, `caller_id`, `did`, `var_NAME`, …):
+- `:name` in SQL;
+- `{name}` in URLs and bodies.
 
-### Channel variable and cleaning
-
-The returned result is cleaned to prevent dialplan injection: line breaks, control characters, and pipe
-symbols (`|`) are removed, and the value is truncated to at most 64 characters. It is stored in the
-chosen channel variable (default `IVR_DATA_VAL`), accessible downstream in dialplans, queue scripts, or
-CRM popups.
-
-### Routing branches
-
-Each data step routes the call to one of three destination branches:
-
-1. **Found (Match):** A row was found in the database, or the HTTP request returned HTTP 2xx with a
-   non-empty value.
-2. **Not Found:** The database returned 0 rows, or the HTTP request returned HTTP 404.
-3. **Timeout / Error:** The remote server did not respond within 2.5 seconds, could not be reached, or
-   returned an error.
-
-Each branch can route to any destination (extension, ring group, queue, another IVR, announcement, or
-hang up).
-
-A data step currently selected as a destination in any IVR key, inbound route, time condition, or ring
-group cannot be deleted.
-
----
-
-## Worked example: VIP customer routing
-
-Look up incoming callers in a CRM database and route VIP customers directly to a priority queue:
-
-1. **Create the database connection:**
-   - Under **Integration → Database Connections**, click **New Connection**.
-   - Set Name to `CRM Read Replica`, choose `MySQL / MariaDB`, enter the replica server host, database
-     name `crm`, and read-only credentials.
-   - Click **Test Connection** to confirm connectivity, then save.
-
-2. **Create the IVR data step:**
-   - Go to **PBX → IVRs**, click **Data Steps**, then click **New Data Step**.
-   - **Step Name:** `VIP Customer Check`
-   - **Input Source:** `The caller's number`
-   - **Data Source:** `External database`
-   - **Database Connection:** Select `CRM Read Replica`.
-   - **SQL Query:**
-     ```sql
-     SELECT tier FROM customers WHERE phone = :caller_id LIMIT 1
-     ```
-   - **Channel Variable Name:** `CUSTOMER_TIER`
-   - **Found (Match):** Queue → `VIP Support`
-   - **Not Found:** Queue → `General Support`
-   - **Timeout / Error:** Queue → `General Support`
-   - Save the step and click **Apply Changes**.
-
-3. **Route calls to the step:**
-   - On **Inbound Routes**, select your main incoming DID.
-   - Set Destination to **IVR Data Step → VIP Customer Check**.
-
-When a customer calls, AiPBX checks their number in the CRM. If their record exists, the call is routed
-instantly to VIP Support, while new numbers fall back to General Support without caller delay.
+The list and examples are in [Dynamic Routing → Variables](dynamic-routing.md#variables).

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../services/ExternalDbService.php';
 require_once __DIR__ . '/../repositories/ExternalDbRepository.php';
+require_once __DIR__ . '/../services/ExternalDbQueryService.php';
 
 /**
  * Controller for /external-dbs (Roadmap 2.2).
@@ -28,6 +29,20 @@ class ExternalDbsController extends BaseController
             }
 
             $action = (string)($_POST['action'] ?? '');
+
+            if ($action === 'save_query') {
+                try {
+                    $id = ExternalDbQueryService::save($_POST);
+                    writeAuditLog('external_dbs', 'query', $id, t('external_dbs.query_saved'), empty($_POST['id']) ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+                    static::notifySuccess(t('external_dbs.query_saved'));
+                    static::redirect('/external-dbs?tab=queries');
+                } catch (InvalidArgumentException $e) {
+                    static::renderPage('external_dbs/index', self::getViewData($_POST), [
+                        'title' => t('external_dbs.page_title'), 'error' => $e->getMessage(),
+                    ]);
+                    return;
+                }
+            }
 
             if ($action === 'test_connection') {
                 $res = ExternalDbService::testConnection($_POST);
@@ -55,6 +70,10 @@ class ExternalDbsController extends BaseController
 
             if ($action === 'delete_connection') {
                 $id = (int)($_POST['id'] ?? 0);
+                if (DBHelper::fetchColumn('SELECT 1 FROM pbx_external_db_queries WHERE external_db_id = ? LIMIT 1', [$id])) {
+                    static::notifyError(t('external_dbs.query_connection_in_use'));
+                    static::redirect('/external-dbs');
+                }
                 $inUse = (int) DBHelper::fetchColumn('SELECT COUNT(*) FROM pbx_ivr_data_steps WHERE external_db_id = ?', [$id]);
                 if ($inUse > 0) {
                     static::notifyError(sprintf(t('external_dbs.err_in_use'), $inUse));
@@ -62,7 +81,15 @@ class ExternalDbsController extends BaseController
                 }
                 if ($id > 0) {
                     $name = (string) (ExternalDbRepository::findById($id)['name'] ?? "#{$id}");
-                    ExternalDbService::deleteConnection($id);
+                    try {
+                        ExternalDbService::deleteConnection($id);
+                    } catch (PDOException $e) {
+                        if (($e->errorInfo[1] ?? 0) !== 1451) {
+                            throw $e;
+                        }
+                        static::notifyError(t('external_dbs.query_connection_in_use'));
+                        static::redirect('/external-dbs');
+                    }
                     writeAuditLog('external_dbs', 'connection', $id, $name, 'delete', $_SESSION['user_id'] ?? null);
                     static::notifySuccess(t('external_dbs.deleted_successfully'));
                 }
@@ -88,11 +115,15 @@ class ExternalDbsController extends BaseController
     /**
      * @return array<string, mixed>
      */
-    private static function getViewData(): array
+    private static function getViewData(?array $queryDraft = null): array
     {
+        $queryTab = $queryDraft !== null || ($_GET['tab'] ?? '') === 'queries';
         return [
             'connections' => ExternalDbRepository::findAll('name ASC'),
             'drivers' => ExternalDbService::SUPPORTED_DRIVERS,
+            'query_tab' => $queryTab,
+            'queries' => $queryTab ? ExternalDbQueryService::all() : [],
+            'query_edit' => $queryTab ? ($queryDraft ?? (isset($_GET['new_query']) ? [] : ExternalDbQueryService::find((int) ($_GET['edit_query'] ?? 0)))) : null,
         ];
     }
 }

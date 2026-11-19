@@ -71,6 +71,8 @@ class ExternalDbService
 
         $id = !empty($data['id']) ? (int)$data['id'] : null;
         $isActive = isset($data['is_active']) ? (!empty($data['is_active']) ? 1 : 0) : 1;
+        // Writing (auto-dialer results, ...) is off unless asked for; the DB user's rights still decide.
+        $allowWrite = empty($data['allow_write']) ? 0 : 1;
         $charset = (string) ($data['charset'] ?? 'utf8mb4');
         $charset = in_array($charset, ['utf8mb4', 'utf8', 'latin1', 'latin5'], true) ? $charset : 'utf8mb4';
         $sslMode = (string) ($data['ssl_mode'] ?? 'prefer');
@@ -95,13 +97,13 @@ class ExternalDbService
                 'UPDATE pbx_external_dbs
                  SET name = ?, driver = ?, host = ?, port = ?, database_name = ?,
                      username = ?, password_encrypted = ?, timeout_sec = ?, charset = ?,
-                     ssl_mode = ?, is_active = ?, updated_at = NOW()
+                     ssl_mode = ?, is_active = ?, allow_write = ?, updated_at = NOW()
                  WHERE id = ?'
             );
             $stmt->execute([
                 $name, $driver, $host, $port, $dbName,
                 $username, $passwordEnc, $timeout, $charset,
-                $sslMode, $isActive, $id
+                $sslMode, $isActive, $allowWrite, $id
             ]);
 
             return ['ok' => true, 'id' => $id, 'errors' => []];
@@ -111,13 +113,13 @@ class ExternalDbService
         $stmt = $db->prepare(
             'INSERT INTO pbx_external_dbs
              (name, driver, host, port, database_name, username, password_encrypted,
-              timeout_sec, charset, ssl_mode, is_active, created_at, updated_at, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)'
+              timeout_sec, charset, ssl_mode, is_active, allow_write, created_at, updated_at, created_by)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)'
         );
         $stmt->execute([
             $name, $driver, $host, $port, $dbName,
             $username, $passwordEnc, $timeout, $charset,
-            $sslMode, $isActive, $userId
+            $sslMode, $isActive, $allowWrite, $userId
         ]);
         $newId = (int)$db->lastInsertId();
 
@@ -214,7 +216,17 @@ class ExternalDbService
         if (empty($connRow['is_active'])) {
             throw new RuntimeException("External database connection '{$connRow['name']}' is disabled");
         }
+        self::assertReadOnlyQuery($sql);
 
+        $pdo = self::connect($connRow);
+        $stmt = $pdo->prepare(rtrim(trim($sql), ';'));
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function assertReadOnlyQuery(string $sql): void
+    {
         // Strict read-only query guard: strip single-quoted string literals and comments only for validation
         $validationSql = preg_replace("/'(?:''|\\\\'|[^'])*'/s", "''", $sql) ?? $sql;
         $validationSql = trim(preg_replace('#/\*.*?\*/#s', '', $validationSql) ?? '');
@@ -234,19 +246,16 @@ class ExternalDbService
             throw new InvalidArgumentException('Multiple SQL statements in a single query are not allowed');
         }
 
-        $pdo = self::connect($connRow);
-        $stmt = $pdo->prepare(rtrim(trim($sql), ';'));
-        $stmt->execute($params);
-
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     /**
      * Builds and returns a connected PDO instance for the given config.
+     * Read-only unless $forWrite: only DataSourceService::write() asks for that, and only
+     * on a connection where "Allow writing" is on.
      *
      * @param array<string, mixed> $config
      */
-    public static function connect(array $config): PDO
+    public static function connect(array $config, bool $forWrite = false): PDO
     {
         $driver = strtolower(trim((string)($config['driver'] ?? 'mysql')));
         $host = trim((string)($config['host'] ?? 'localhost'));
@@ -279,8 +288,10 @@ class ExternalDbService
         if ($driver === 'pgsql') {
             $ssl = in_array($config['ssl_mode'] ?? 'prefer', ['disable', 'prefer', 'require'], true) ? $config['ssl_mode'] : 'prefer';
             $pdo = new PDO("pgsql:host={$host};port={$port};dbname={$dbName};sslmode={$ssl}", $username, $password, $options);
-            // Read-only and time-boxed, whatever rights the account has.
-            $pdo->exec('SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY');
+            // Read-only (unless writing was allowed) and time-boxed, whatever rights the account has.
+            if (!$forWrite) {
+                $pdo->exec('SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY');
+            }
             $pdo->exec("SET statement_timeout = {$ms}");
             return $pdo;
         }
@@ -290,7 +301,9 @@ class ExternalDbService
             $options[\Pdo\Mysql::ATTR_SSL_CA] = '/etc/ssl/certs/ca-certificates.crt';
         }
         $pdo = new PDO("mysql:host={$host};port={$port};dbname={$dbName};charset={$charset}", $username, $password, $options);
-        $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        if (!$forWrite) {
+            $pdo->exec('SET SESSION TRANSACTION READ ONLY');
+        }
         // MariaDB counts in seconds, MySQL in ms; whichever the server knows.
         try {
             $pdo->exec('SET SESSION max_statement_time = ' . ($ms / 1000));
