@@ -67,7 +67,7 @@ class QueueLogController extends BaseController
         $page_title = t('queue_logs.title');
         // Recordings: same rule as /api/cc_audio.php (admin, "can listen" users, or their own calls).
         $user = getCurrentUser();
-        $can_listen_all = ($_SESSION['user_role'] ?? '') === 'admin' || !empty($user['can_listen_recordings']);
+        $can_listen_all = userHasRole('admin') || !empty($user['can_listen_recordings']);
 
         static::renderPage('queue_logs/index', [
             'can_listen_all' => $can_listen_all,

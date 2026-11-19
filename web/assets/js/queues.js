@@ -25,7 +25,9 @@ function openCreateQueueModal() {
     const maxWaitEl = document.getElementById('modal_max_wait_seconds');
     const fbActionEl = document.getElementById('modal_fallback_action');
     const fbTargetEl = document.getElementById('modal_fallback_target');
-    const recEnabledEl = document.getElementById('modal_record_enabled');
+    const recModeEl = document.getElementById('modal_record_mode');
+    const preAiEl = document.getElementById('modal_pre_queue_ai_app_id');
+    if (preAiEl) preAiEl.value = '0';
     const langEl = document.getElementById('modal_language');
 
     if (idEl) idEl.value = '';
@@ -47,8 +49,9 @@ function openCreateQueueModal() {
     if (posEl) posEl.value = 'yes';
     const perFreqEl = document.getElementById('modal_periodic_frequency');
     if (perFreqEl) perFreqEl.value = 45;
-    const perAnnEl = document.getElementById('modal_periodic_announce');
-    if (perAnnEl) perAnnEl.value = '';
+    const joinAnnEl = document.getElementById('modal_join_announce');
+    if (joinAnnEl) joinAnnEl.value = '';
+    queueSetImprovements({});
     if (joinEl) joinEl.value = 'yes';
     if (leaveEl) leaveEl.value = 'no';
     if (ringEl) ringEl.value = 'no';
@@ -56,7 +59,7 @@ function openCreateQueueModal() {
     if (maxWaitEl) maxWaitEl.value = 300;
     if (fbActionEl) fbActionEl.value = 'hangup';
     if (fbTargetEl) fbTargetEl.value = '';
-    if (recEnabledEl) recEnabledEl.checked = true;
+    if (recModeEl) recModeEl.value = 'answer';
     toggleQueueFallbackTarget();
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = true;
@@ -101,7 +104,7 @@ function openEditQueueModal(item) {
     const maxWaitEl = document.getElementById('modal_max_wait_seconds');
     const fbActionEl = document.getElementById('modal_fallback_action');
     const fbTargetEl = document.getElementById('modal_fallback_target');
-    const recEnabledEl = document.getElementById('modal_record_enabled');
+    const recModeEl = document.getElementById('modal_record_mode');
     const langEl = document.getElementById('modal_language');
     const actCb = document.getElementById('modal_is_active');
     if (actCb) actCb.checked = (parseInt(item.is_active) === 1);
@@ -124,8 +127,9 @@ function openEditQueueModal(item) {
     if (posEl) posEl.value = item.announce_position || 'yes';
     const perFreqEl = document.getElementById('modal_periodic_frequency');
     if (perFreqEl) perFreqEl.value = item.periodic_frequency !== undefined && item.periodic_frequency !== null ? item.periodic_frequency : 45;
-    const perAnnEl = document.getElementById('modal_periodic_announce');
-    if (perAnnEl) perAnnEl.value = item.periodic_announce || '';
+    const joinAnnEl = document.getElementById('modal_join_announce');
+    if (joinAnnEl) joinAnnEl.value = item.join_announce || '';
+    queueSetImprovements(item);
     if (joinEl) joinEl.value = item.joinempty || 'yes';
     if (leaveEl) leaveEl.value = item.leavewhenempty || 'no';
     if (ringEl) ringEl.value = item.ringinuse || 'no';
@@ -133,7 +137,9 @@ function openEditQueueModal(item) {
     if (maxWaitEl) maxWaitEl.value = (item.max_wait_seconds !== undefined && item.max_wait_seconds !== null) ? item.max_wait_seconds : 300;
     if (fbActionEl) fbActionEl.value = item.fallback_action || 'hangup';
     if (fbTargetEl) fbTargetEl.value = item.fallback_target || '';
-    if (recEnabledEl) recEnabledEl.checked = (item.record_enabled === undefined || item.record_enabled === null) ? true : (parseInt(item.record_enabled) === 1);
+    if (recModeEl) recModeEl.value = (item.record_enabled !== undefined && item.record_enabled !== null && parseInt(item.record_enabled) !== 1) ? 'off' : (item.record_mode === 'enter' ? 'enter' : 'answer');
+    const preAiEl = document.getElementById('modal_pre_queue_ai_app_id');
+    if (preAiEl) preAiEl.value = (item.pre_queue_ai_app_id && parseInt(item.pre_queue_ai_app_id) > 0) ? String(item.pre_queue_ai_app_id) : '0';
     toggleQueueFallbackTarget();
 
     // Check assigned agent checkboxes
@@ -211,3 +217,19 @@ function closeQueueModal() {
     UIHelper.closeOverlayModal('queueModal');
 }
 
+
+/** Queue modal: periodic announcements (several), random order, survey and member levels. */
+function queueSetImprovements(item) {
+    const picked = String(item.periodic_announce || '').split(',').filter(Boolean);
+    const per = document.getElementById('modal_periodic_announce');
+    if (per) Array.from(per.options).forEach(o => { o.selected = picked.includes(o.value); });
+    const rnd = document.getElementById('modal_periodic_random');
+    if (rnd) rnd.checked = parseInt(item.periodic_random || 0) === 1;
+    const sv = document.getElementById('modal_survey_enabled');
+    if (sv) sv.checked = parseInt(item.survey_enabled || 0) === 1;
+    const sa = document.getElementById('modal_survey_announce');
+    if (sa) sa.value = item.survey_announce || '';
+    let levels = {};
+    try { levels = JSON.parse(item.member_levels_json || '{}') || {}; } catch (e) { levels = {}; }
+    document.querySelectorAll('.modal-agent-level').forEach(sel => { sel.value = String(levels[sel.dataset.ext] || 0); });
+}

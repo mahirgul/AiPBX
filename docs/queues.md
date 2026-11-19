@@ -27,6 +27,27 @@ offline phone. Check both the queue status and the extension's registered device
 not ring. Settings for joining or leaving an empty queue can send callers to the fallback instead
 of leaving them on hold.
 
+## Announcements while waiting
+
+**Periodic announcement** takes one or more announcements (Ctrl/Cmd + click). Every *periodic frequency*
+seconds the caller hears the next one, in turn; with **Play them in random order** a random one. With none
+picked the built-in prompts are played.
+
+## Skill levels
+
+Next to each agent's mode, a level from 0 to 9 sets who is rung first: agents with a lower level take the calls;
+an agent with a higher level rings only when every lower one is busy, paused or logged out. All agents on 0
+(the default) is the usual queue. Use it to send calls to the specialists first and to others only when they
+are all busy. A change reaches logged-in agents on **Apply**.
+
+## After-call survey
+
+With **After-call survey** on, a caller whose agent hangs up hears the chosen announcement (for example
+"Please rate our service from 1 to 5") and answers with a key. A caller who hangs up first is not asked,
+and an unanswered call goes to the timeout destination as before. Record the question under
+**Sounds → Announcements**. The queue list shows the average of the last 30 days; the answers are kept per
+queue and agent in the `queue_survey_results` table.
+
 ## Agent workflow
 
 Open **Agent Screen** and check the queues shown for your extension. Join a dynamic queue when

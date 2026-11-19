@@ -64,6 +64,9 @@
                             </td>
                             <td>
                                 <span class="badge badge-warning"><?php echo is_array($members) ? count($members) : 0; ?> <?php echo t('queues.agent_count_suffix'); ?></span>
+                                <?php if (!empty($survey_stats[$q['queue_name']])): $ss = $survey_stats[$q['queue_name']]; ?>
+                                    <span class="badge badge-info" title="<?php echo htmlspecialchars(sprintf(t('queues.survey_avg_t'), $ss['count'])); ?>"><i class="fas fa-star"></i> <?php echo number_format((float) $ss['avg'], 1); ?></span>
+                                <?php endif; ?>
                                 <?php $static_count = count(QueueHelper::staticMembersOf($q)); if ($static_count > 0): ?>
                                     <span class="badge badge-info" title="<?php echo t('queues.member_mode_static'); ?>"><i class="fas fa-thumbtack"></i> <?php echo $static_count; ?></span>
                                 <?php endif; ?>
@@ -267,13 +270,44 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label"><?php echo t('queues.field_periodic_announce'); ?></label>
-                        <select name="periodic_announce" id="modal_periodic_announce" class="form-control">
-                            <option value=""><?php echo t('queues.periodic_announce_default'); ?></option>
+                        <label class="form-label"><?php echo t('queues.field_join_announce'); ?></label>
+                        <select name="join_announce" id="modal_join_announce" class="form-control">
+                            <option value=""><?php echo t('queues.join_announce_none'); ?></option>
                             <?php foreach (($announcements ?? []) as $anc): ?>
                                 <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label"><?php echo t('queues.field_periodic_announce'); ?></label>
+                        <select name="periodic_announce[]" id="modal_periodic_announce" class="form-control" multiple size="4">
+                            <?php foreach (($announcements ?? []) as $anc): ?>
+                                <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="u-hint"><?php echo t('queues.periodic_announce_multi_help'); ?></small>
+                        <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer u-mt-6">
+                            <input type="hidden" name="periodic_random" value="0">
+                            <input type="checkbox" name="periodic_random" id="modal_periodic_random" value="1" class="u-accent">
+                            <span><?php echo t('queues.periodic_random'); ?></span>
+                        </label>
+                    </div>
+
+                    <!-- After-call survey -->
+                    <div class="form-group u-bg-bg-card u-p-12 u-r-8 u-bd-1-solid-border-color">
+                        <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer u-fw-600">
+                            <input type="hidden" name="survey_enabled" value="0">
+                            <input type="checkbox" name="survey_enabled" id="modal_survey_enabled" value="1" class="u-accent">
+                            <span><i class="fas fa-star u-warning"></i> <?php echo t('queues.survey_enabled'); ?></span>
+                        </label>
+                        <select name="survey_announce" id="modal_survey_announce" class="form-control u-mt-6">
+                            <option value=""><?php echo t('queues.survey_announce_pick'); ?></option>
+                            <?php foreach (($announcements ?? []) as $anc): ?>
+                                <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="u-hint"><?php echo t('queues.survey_help'); ?></small>
                     </div>
 
                     <div class="u-grid-2">
@@ -346,11 +380,25 @@
 
                         <div class="form-group">
                             <label class="form-label"><?php echo t('queues.field_record_enabled'); ?></label>
-                            <label class="u-d-flex u-ai-center u-gap-8 u-pointer u-mt-8">
-                                <input type="checkbox" name="record_enabled" id="modal_record_enabled" value="1" checked class="u-check">
-                                <span class="u-fw-600 u-fs-13"><?php echo t('queues.record_enabled_label'); ?></span>
-                            </label>
+                            <select name="record_mode" id="modal_record_mode" class="form-control">
+                                <option value="answer"><?php echo t('queues.record_mode_answer'); ?></option>
+                                <option value="enter"><?php echo t('queues.record_mode_enter'); ?></option>
+                                <option value="off"><?php echo t('queues.record_mode_off'); ?></option>
+                            </select>
                         </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label form-label-help">
+                            <span><i class="fas fa-robot"></i> <?php echo t('queues.field_pre_queue_ai'); ?></span>
+                            <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('queues.pre_queue_ai_help'); ?></span></span>
+                        </label>
+                        <select name="pre_queue_ai_app_id" id="modal_pre_queue_ai_app_id" class="form-control">
+                            <option value="0"><?php echo t('queues.pre_queue_ai_none'); ?></option>
+                            <?php foreach ($ai_apps ?? [] as $aa): ?>
+                                <option value="<?php echo (int) $aa['id']; ?>"><?php echo htmlspecialchars($aa['title']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <input type="hidden" name="record_format" value="wav">
                 </div>
@@ -360,7 +408,7 @@
                     <div class="form-group">
                         <label class="form-label form-label-help">
                             <span><i class="fas fa-users-cog"></i> <?php echo t('queues.section_members'); ?></span>
-                            <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('queues.member_mode_help'); ?></span></span>
+                            <span class="field-help" tabindex="0">?<span class="field-help-tip"><?php echo t('queues.member_mode_help'); ?> <?php echo t('queues.member_level_help'); ?></span></span>
                         </label>
                         <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-260-1fr u-gap-12 u-maxh-220 u-overflow-y-auto u-bg-bg-sidebar u-p-12 u-r-8 u-bd-1-solid-border-color">
                             <?php if (empty($queue_agents)): ?>
@@ -378,6 +426,11 @@
                                         <option value=""><?php echo t('queues.member_mode_none'); ?></option>
                                         <option value="dynamic"><?php echo t('queues.member_mode_dynamic'); ?></option>
                                         <option value="static"><?php echo t('queues.member_mode_static'); ?></option>
+                                    </select>
+                                    <select name="member_level[<?php echo htmlspecialchars($agent['extension']); ?>]" class="form-control modal-agent-level u-w-auto u-flex-shrink-0 u-p-2-8 u-h-auto u-fs-12" data-ext="<?php echo htmlspecialchars($agent['extension']); ?>" title="<?php echo t('queues.member_level_t'); ?>">
+                                        <?php for ($lv = 0; $lv <= 9; $lv++): ?>
+                                            <option value="<?php echo $lv; ?>"><?php echo t('queues.member_level_short'); ?> <?php echo $lv; ?></option>
+                                        <?php endfor; ?>
                                     </select>
                                 </div>
                             <?php endforeach; ?>

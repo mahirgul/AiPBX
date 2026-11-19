@@ -173,7 +173,7 @@ if ($action === 'get_supervisor_agents') {
 
 if ($action === 'spy_call') {
     $role = $_SESSION['user_role'] ?? '';
-    if (!in_array($role, ['admin', 'cc_manager'], true)) {
+    if (array_intersect(userRoles(), ['admin', 'cc_manager']) === []) {
         echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
         exit;
     }

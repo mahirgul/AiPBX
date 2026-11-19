@@ -27,6 +27,11 @@ class QueueController extends BaseController
         $legacy_agents = QueueRepository::assignedOutsideRole('members_json', QueueRepository::AGENT_ROLES);
         $legacy_managers = QueueRepository::assignedOutsideRole('supervisors_json', QueueRepository::MANAGER_ROLES);
         $moh_classes = QueueRepository::activeMohClasses();
+        $ai_apps = [];
+        try {
+            $ai_apps = getDB()->query('SELECT id, title, app_type FROM pbx_ai_apps WHERE is_active = 1 ORDER BY title ASC')->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+        }
 
         $page_title = t('queues.title');
         static::renderPage('queues/index', [
@@ -37,7 +42,9 @@ class QueueController extends BaseController
             'legacy_agents' => $legacy_agents,
             'legacy_managers' => $legacy_managers,
             'moh_classes' => $moh_classes,
+            'ai_apps' => $ai_apps,
             'announcements' => IvrRepository::activeAnnouncements(),
+            'survey_stats' => QueueService::surveyStats(30),
         ], ['title' => $page_title] + $notices);
     }
 }

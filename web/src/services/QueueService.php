@@ -23,18 +23,33 @@ class QueueService {
             // 0 = no periodic announcement; otherwise 15–600 s.
             $periodic_frequency = intval($data['periodic_frequency'] ?? 45);
             $periodic_frequency = $periodic_frequency <= 0 ? 0 : max(15, min(600, $periodic_frequency));
-            // Only an announcement that exists may be played ('' = the built-in prompts).
-            $periodic_announce = trim((string) ($data['periodic_announce'] ?? ''));
-            if ($periodic_announce !== '' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ?', [$periodic_announce])) {
-                $periodic_announce = '';
+            // Only an announcement that exists may be played ('' = none / built-in).
+            $join_announce = trim((string) ($data['join_announce'] ?? ''));
+            if ($join_announce !== '' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ?', [$join_announce])) {
+                $join_announce = '';
             }
+            // Several periodic announcements, played in turn (or at random); only ones that exist.
+            $periodic_list = [];
+            foreach ((array) ($data['periodic_announce'] ?? []) as $pa) {
+                foreach (explode(',', (string) $pa) as $one) {
+                    $one = trim($one);
+                    if ($one !== '' && !in_array($one, $periodic_list, true) && count($periodic_list) < 10
+                        && DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ?', [$one])) {
+                        $periodic_list[] = $one;
+                    }
+                }
+            }
+            $periodic_announce = implode(',', $periodic_list);
             $joinempty = trim($data['joinempty'] ?? 'yes');
             $leavewhenempty = trim($data['leavewhenempty'] ?? 'no');
             $ringinuse = trim($data['ringinuse'] ?? 'no');
             $max_wait_seconds = intval($data['max_wait_seconds'] ?? 300) ?: 300;
             $fallback_action = trim($data['fallback_action'] ?? 'hangup');
             $fallback_target = preg_replace('/[^0-9]/', '', trim($data['fallback_target'] ?? '')) ?: null;
-            $record_enabled = PBXHelper::boolFlag($data, 'record_enabled', 0);
+            // One list on the form: off, from the agent's answer, from entering the queue.
+            $record_mode = (string) ($data['record_mode'] ?? 'answer');
+            $record_enabled = in_array($record_mode, ['answer', 'enter'], true) ? 1 : 0;
+            $record_mode = $record_mode === 'enter' ? 'enter' : 'answer';
             $record_format = trim($data['record_format'] ?? 'wav');
             if (!in_array($record_format, QUEUE_RECORD_FORMATS, true)) {
                 $record_format = 'wav';   // it goes into the dialplan: never free text
@@ -55,6 +70,11 @@ class QueueService {
             if ($language !== '' && !in_array($language, getAvailableLanguages(), true)) {
                 $language = '';
             }
+            $pre_queue_ai_app_id = intval($data['pre_queue_ai_app_id'] ?? 0);
+            if ($pre_queue_ai_app_id > 0 && !DBHelper::fetchColumn('SELECT 1 FROM pbx_ai_apps WHERE id = ? AND is_active = 1', [$pre_queue_ai_app_id])) {
+                throw new \Exception(t('queues.err_pre_queue_ai'));
+            }
+            $pre_queue_ai_app_id = $pre_queue_ai_app_id > 0 ? $pre_queue_ai_app_id : null;
 
             if ($fallback_action === 'forward' && empty($fallback_target)) {
                 throw new \Exception(t('srv_queue.err_timeout_ext'));
@@ -125,6 +145,7 @@ class QueueService {
                 'announce_position' => $announce_position,
                 'periodic_frequency' => $periodic_frequency,
                 'periodic_announce' => $periodic_announce,
+                'join_announce' => $join_announce,
                 'joinempty' => $joinempty,
                 'leavewhenempty' => $leavewhenempty,
                 'ringinuse' => $ringinuse,
@@ -133,6 +154,8 @@ class QueueService {
                 'fallback_target' => $fallback_target,
                 'record_enabled' => $record_enabled,
                 'record_format' => $record_format,
+                'record_mode' => $record_mode,
+                'pre_queue_ai_app_id' => $pre_queue_ai_app_id,
                 'members_json' => $members_json,
                 'static_members_json' => $static_members_json,
                 'supervisors_json' => $supervisors_json,
@@ -141,7 +164,7 @@ class QueueService {
                 'is_active' => $is_active,
                 'callback_enabled' => $callback_enabled,
                 'callback_announce' => $callback_announce
-            ];
+            ] + self::improvementColumns($data, $selected_members);
 
             $is_new = ($queue_id <= 0);
             $id = DBHelper::save('pbx_queues', $q_data);
@@ -151,6 +174,7 @@ class QueueService {
             // presses Apply on the "Apply" page (2026-08-24, deferred reload
             // system). The real regen+reload: applyPendingSync().
             markPendingSync('queues', 'queue', $queue_name, "Queue: {$title} ({$queue_name})", $is_new ? 'create' : 'update', $_SESSION['user_id'] ?? null);
+            markPendingSync('ai_apps', 'queue', $queue_name, "Pre-queue AI: {$title}", 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('general_dialplan', 'queue', $queue_name, "Queue callbacks: {$title}", 'update', $_SESSION['user_id'] ?? null);
             markPendingSync('outbound_dialplan', 'queue', $queue_name, "Queue callbacks: {$title}", 'update', $_SESSION['user_id'] ?? null);
             // When a number was added, changed or removed, the internal targets context must be rebuilt too.
@@ -196,5 +220,67 @@ class QueueService {
 
             return t('srv_queue.deleted');
         });
+    }
+
+    /**
+     * Queue improvements, only when the form sends them (the API and imports leave them as they are):
+     * random periodic announcements, member levels (0 = rung first) and the after-call survey.
+     *
+     * @param array<string, mixed> $data
+     * @param list<string> $members
+     * @return array<string, mixed>
+     */
+    public static function improvementColumns(array $data, array $members): array
+    {
+        $out = [];
+        if (array_key_exists('periodic_random', $data)) {
+            $out['periodic_random'] = PBXHelper::boolFlag($data, 'periodic_random', 0);
+        }
+        if (isset($data['member_level']) && is_array($data['member_level'])) {
+            $levels = [];
+            foreach ($data['member_level'] as $ext => $lvl) {
+                $ext = preg_replace('/[^0-9]/', '', (string) $ext);
+                $lvl = max(0, min(9, (int) $lvl));
+                if ($ext !== '' && $lvl > 0 && in_array($ext, $members, true)) {
+                    $levels[$ext] = $lvl;
+                }
+            }
+            $out['member_levels_json'] = $levels ? json_encode($levels) : null;
+        }
+        if (array_key_exists('survey_enabled', $data)) {
+            $on = PBXHelper::boolFlag($data, 'survey_enabled', 0);
+            $file = trim((string) ($data['survey_announce'] ?? ''));
+            if ($file !== '' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ?', [$file])) {
+                $file = '';
+            }
+            if ($on && $file === '') {
+                throw new \Exception(t('queues.survey_needs_announcement'));
+            }
+            $out['survey_enabled'] = $on;
+            $out['survey_announce'] = $file !== '' ? $file : null;
+        }
+        return $out;
+    }
+
+    /**
+     * After-call survey of the last $days days, per queue (and per agent with $byAgent).
+     *
+     * @return array<string, array{avg: float, count: int}>
+     */
+    public static function surveyStats(int $days = 30, bool $byAgent = false): array
+    {
+        $col = $byAgent ? 'agent' : 'queue_name';
+        try {
+            $st = getDB()->prepare("SELECT {$col} AS k, AVG(score) AS a, COUNT(*) AS n FROM queue_survey_results
+                                    WHERE created_at >= NOW() - INTERVAL ? DAY GROUP BY {$col}");
+            $st->execute([max(1, $days)]);
+        } catch (\Throwable $e) {
+            return []; // before the migration
+        }
+        $out = [];
+        foreach ($st->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $out[(string) $r['k']] = ['avg' => round((float) $r['a'], 2), 'count' => (int) $r['n']];
+        }
+        return $out;
     }
 }

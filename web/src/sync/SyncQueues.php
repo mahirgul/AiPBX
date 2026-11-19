@@ -75,10 +75,13 @@ function __syncAllQueuesBody() {
         // The interface/state_interface are kept exactly the same as the dynamic
         // entry (QueueHelper::setMembership) — otherwise the same agent would
         // show up as two separate members.
+        // Skill levels (member_levels_json): a lower level is rung first.
+        $levels = json_decode((string) ($q['member_levels_json'] ?? ''), true) ?: [];
         foreach (QueueHelper::staticMembersOf($q) as $s_ext) {
             $s_ext = preg_replace('/[^0-9]/', '', $s_ext);
             if ($s_ext === '') continue;
-            $conf .= "member => Local/{$s_ext}@from-internal-pbx/n,0,Agent {$s_ext},hint:{$s_ext}@from-internal-pbx\n";
+            $level = (int) ($levels[$s_ext] ?? 0);
+            $conf .= "member => Local/{$s_ext}@from-internal-pbx/n,{$level},Agent {$s_ext},hint:{$s_ext}@from-internal-pbx\n";
         }
         $conf .= "\n";
     }
@@ -91,16 +94,28 @@ function __syncAllQueuesBody() {
         }
     }
 
-    writeConfWithRollback('extensions_queue_callbacks.conf', $callbacks, function () {
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::execCLI('dialplan reload')], t('sync.ctx_queues'));
-    }, t('sync.ctx_queues'));
-    $result = writeConfWithRollback("queues_pbx.conf", $conf, function() {
+    $result = writeConfsWithRollback([
+        'extensions_queue_callbacks.conf' => $callbacks,
+        'queues_pbx.conf' => $conf,
+    ], function () {
         refreshAdvancedFileOverlay('queues');
-        AsteriskHelper::assertReloadsOk([AsteriskHelper::reloadQueue('all')], t('sync.ctx_queues'));
+        AsteriskHelper::assertReloadsOk([
+            AsteriskHelper::execCLI('dialplan reload'),
+            AsteriskHelper::reloadQueue('all'),
+        ], t('sync.ctx_queues'));
     }, t('sync.ctx_queues'));
 
     foreach ($queues as $q) {
         purgeStaticFromPersistentMembers($q['queue_name'], QueueHelper::staticMembersOf($q));
+        // Logged-in dynamic members take a changed level at once (a static one has it from the file).
+        $levels = json_decode((string) ($q['member_levels_json'] ?? ''), true) ?: [];
+        $static = QueueHelper::staticMembersOf($q);
+        foreach (json_decode((string) ($q['members_json'] ?? '[]'), true) ?: [] as $m) {
+            $m = preg_replace('/[^0-9]/', '', (string) $m);
+            if ($m !== '' && !in_array($m, $static, true)) {
+                AsteriskHelper::execCLI(sprintf('queue set penalty %d on Local/%s@from-internal-pbx/n in %s', (int) ($levels[$m] ?? 0), $m, $q['queue_name']));
+            }
+        }
     }
 
     return $result;

@@ -34,9 +34,10 @@ class QueueRepository extends BaseRepository
     {
         $in = implode(',', array_fill(0, count(self::AGENT_ROLES), '?'));
         $stmt = static::db()->prepare(
-            "SELECT id, username, full_name, extension, role FROM sys_users WHERE role IN ({$in}) AND (extension_type IS NULL OR extension_type != 'fax') AND (is_active IS NULL OR is_active = 1) AND extension IS NOT NULL AND extension != '' ORDER BY extension ASC"
+            // The main role, or an extra one (sys_user_roles): a fax user who is also an agent is listed.
+            "SELECT id, username, full_name, extension, role FROM sys_users WHERE (role IN ({$in}) OR id IN (SELECT user_id FROM sys_user_roles WHERE role_key IN ({$in}))) AND (extension_type IS NULL OR extension_type != 'fax') AND (is_active IS NULL OR is_active = 1) AND extension IS NOT NULL AND extension != '' ORDER BY extension ASC"
         );
-        $stmt->execute(self::AGENT_ROLES);
+        $stmt->execute(array_merge(self::AGENT_ROLES, self::AGENT_ROLES));
         return $stmt->fetchAll();
     }
 
@@ -52,9 +53,10 @@ class QueueRepository extends BaseRepository
     {
         $in = implode(',', array_fill(0, count(self::MANAGER_ROLES), '?'));
         $stmt = static::db()->prepare(
-            "SELECT id, username, full_name, extension, role FROM sys_users WHERE role IN ({$in}) AND (extension_type IS NULL OR extension_type != 'fax') AND (is_active IS NULL OR is_active = 1) AND extension IS NOT NULL AND extension != '' ORDER BY extension ASC"
+            // The main role, or an extra one (sys_user_roles): a fax user who is also an agent is listed.
+            "SELECT id, username, full_name, extension, role FROM sys_users WHERE (role IN ({$in}) OR id IN (SELECT user_id FROM sys_user_roles WHERE role_key IN ({$in}))) AND (extension_type IS NULL OR extension_type != 'fax') AND (is_active IS NULL OR is_active = 1) AND extension IS NOT NULL AND extension != '' ORDER BY extension ASC"
         );
-        $stmt->execute(self::MANAGER_ROLES);
+        $stmt->execute(array_merge(self::MANAGER_ROLES, self::MANAGER_ROLES));
         return $stmt->fetchAll();
     }
 

@@ -68,7 +68,10 @@ class QueueHelper {
         $announce_position = ($q['announce_position'] ?? 'yes') === 'no' ? 'no' : 'yes';
         $periodic_frequency = max(0, intval($q['periodic_frequency'] ?? 45));
         require_once __DIR__ . '/file_helper.php';
-        $periodic_file = FileHelper::sanitizeAudioPath((string) ($q['periodic_announce'] ?? ''));
+        $periodic_file = implode(',', array_filter(array_map(
+            static fn(string $f): string => FileHelper::sanitizeAudioPath(trim($f)),
+            explode(',', (string) ($q['periodic_announce'] ?? ''))
+        )));
         $ringinuse = ($q['ringinuse'] ?? 'no') === 'yes' ? 'yes' : 'no';
         $joinempty = ($q['joinempty'] ?? 'yes') === 'no' ? 'no' : 'yes';
         $leavewhenempty = ($q['leavewhenempty'] ?? 'no') === 'yes' ? 'yes' : 'no';
@@ -96,6 +99,7 @@ class QueueHelper {
             // youarenext+thankyou prompts, which exist in Turkish, makes them
             // repeat in turn periodically (2026-08-31, user request).
             'periodic-announce' => $periodic_file !== '' ? $periodic_file : 'queue-youarenext,queue-thankyou',
+            'random-periodic-announce' => !empty($q['periodic_random']) ? 'yes' : 'no',
             'joinempty' => $joinempty,
             'leavewhenempty' => $leavewhenempty,
             'maxlen' => (string)$maxlen,
@@ -133,6 +137,14 @@ class QueueHelper {
         $members = array_map('strval', json_decode($q_row['members_json'] ?? '[]', true) ?: []);
         $static = array_map('strval', json_decode($q_row['static_members_json'] ?? '[]', true) ?: []);
         return array_values(array_intersect($static, $members));
+    }
+
+    /** Skill level of a member in a queue (0 = rung first; a higher level only when the lower ones are busy or away). */
+    public static function memberLevel($ext, $queue_name): int {
+        $stmt = getDB()->prepare("SELECT member_levels_json FROM pbx_queues WHERE queue_name = ?");
+        $stmt->execute([$queue_name]);
+        $levels = json_decode((string) $stmt->fetchColumn(), true);
+        return is_array($levels) ? max(0, min(9, (int) ($levels[(string) $ext] ?? 0))) : 0;
     }
 
     public static function isStaticMember($ext, $queue_name) {
@@ -188,7 +200,7 @@ class QueueHelper {
         }
 
         if ($join) {
-            @exec("asterisk -rx " . escapeshellarg("queue add member Local/$ext@from-internal-pbx/n to $queue_name penalty 0 as \"Agent $ext\" state_interface hint:$ext@from-internal-pbx"));
+            @exec("asterisk -rx " . escapeshellarg("queue add member Local/$ext@from-internal-pbx/n to $queue_name penalty " . self::memberLevel($ext, $queue_name) . " as \"Agent $ext\" state_interface hint:$ext@from-internal-pbx"));
             $is_paused = false;
             try {
                 $chk = getDB()->prepare("SELECT 1 FROM cc_pause_logs WHERE agent_extension = ? AND status = 'PAUSED' LIMIT 1");
