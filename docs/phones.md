@@ -111,6 +111,11 @@ phone networks (e.g. `192.168.10.0/24`) and hand out `https://<portal>/provision
 *provisioning address*, below) as option 66.
 Phones inside these networks then ask for their MAC-based file directly; a known MAC gets its
 configuration, an unknown one appears under *Waiting phones*.
+A MAC-based file is answered to anyone inside the allowed networks who knows the MAC, and it
+holds the phone's SIP password. MAC addresses are not secret (they are printed on the phone and
+show up in ARP and DHCP tables), so keep **Allowed networks** to the phone network or voice VLAN
+only, never the office or guest network. Where that is not possible, give the phones their
+per-phone URL instead of option 66.
 AiPBX can also be that DHCP server for a phone network or VLAN, or serve TFTP next to your own
 DHCP server: see [Network services](network-services.md).
 

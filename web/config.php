@@ -86,10 +86,12 @@ define('TURN_HOST', portalEnv('TURN_HOST', 'pbx.example.com'));
 define('TURNS_PORT', portalEnv('TURNS_PORT', '443'));
 
 // Hardened Session Configuration for Public Security
-// Stateless /api/v1/* requests carrying an Authorization header use an in-memory
-// $_SESSION array so they never write session files or emit Set-Cookie headers.
+// Stateless /api/v1/* requests carrying an Authorization header (and internal
+// loopback helpers that define AIPBX_NO_SESSION) use an in-memory $_SESSION
+// array so they never write session files or emit Set-Cookie headers.
 $_reqUriPath = (string)parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH);
-if (str_starts_with($_reqUriPath, '/api/v1/') && !empty($_SERVER['HTTP_AUTHORIZATION'])) {
+if (defined('AIPBX_NO_SESSION')
+    || (str_starts_with($_reqUriPath, '/api/v1/') && !empty($_SERVER['HTTP_AUTHORIZATION']))) {
     if (!isset($_SESSION)) {
         $_SESSION = [];
     }
@@ -566,7 +568,7 @@ function dialplanText($str): string {
  * config-injection vector.
  */
 function sanitizeDestType($type) {
-    $valid = ['queue', 'ivr', 'ivr_data', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app', 'ai_agent'];
+    $valid = ['queue', 'ivr', 'ivr_data', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app', 'ai_agent', 'builtin_ai_agent', 'call_modifier'];
     $type = trim((string)$type);
     return in_array($type, $valid, true) ? $type : 'hangup';
 }
@@ -603,7 +605,29 @@ function getUserLanguage() {
     if (isset($_SESSION['ui_language']) && isset(UI_LANGUAGES[$_SESSION['ui_language']])) {
         return $_SESSION['ui_language'];
     }
-    return DEFAULT_UI_LANGUAGE;
+    if (isset($_COOKIE['aipbx_lang']) && isset(UI_LANGUAGES[$_COOKIE['aipbx_lang']])) {
+        return $_COOKIE['aipbx_lang'];
+    }
+    static $sysDefault = null;
+    if ($sysDefault === null) {
+        $sysDefault = DEFAULT_UI_LANGUAGE;
+        if (function_exists('getSystemSetting')) {
+            try {
+                $raw = strtolower(trim((string) getSystemSetting('system_default_language', '')));
+                if ($raw !== '') {
+                    $code = substr($raw, 0, 2);
+                    if (isset(UI_LANGUAGES[$raw])) {
+                        $sysDefault = $raw;
+                    } elseif (isset(UI_LANGUAGES[$code])) {
+                        $sysDefault = $code;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // DB may not be ready in early CLI/test bootstrap; keep DEFAULT_UI_LANGUAGE.
+            }
+        }
+    }
+    return $sysDefault;
 }
 
 /**

@@ -4,7 +4,7 @@ Planned work, roughly in the order it is expected. Nothing here is a promise of 
 [issues](https://github.com/mahirgul/AiPBX/issues) hold the discussion of each item, and ideas are
 welcome there.
 
-## Delivered updates (reviewed 11 November 2026)
+## Delivered updates (reviewed 19 November 2026)
 
 The 1.50 maintenance freeze ended on 1 November 2026. Features and fixes have continued since then.
 The older waves below are design history, not a list of everything still missing. Current user guides
@@ -12,6 +12,7 @@ and the [changelog](../CHANGELOG.md) describe shipped behavior.
 
 | Delivered area | Current guide |
 |----------------|---------------|
+| CRM layer: address book, live call events, Connections, Odoo connector; holiday calendars, Follow Me, trunk monthly limits, queue survey and skill levels, call parking (1.80.0) | [Connections](connections.md), [Phonebook](phonebook.md), [Time conditions](time-conditions.md), [Queues](queues.md), [Parking](parking.md) |
 | Manual queue callbacks with confirmation announcement (1.75.0) | [Callbacks](queue-callbacks.md) |
 | Device-only extensions, users without extensions, additional desk-phone accounts (1.74.0) | [Extensions](extensions.md), [Phones](phones.md) |
 | Signed community catalog and migration of optional bundled plugins (1.73–1.74) | [Plugin development](plugin-development.md) |
@@ -173,8 +174,9 @@ when they want (no ringing everyone).
 
 #### 3.3 Community plugins — delivered
 
-`ai-assistant`, `auto-dialer` and `ai-voicemail` now live in the community repository. Core upgrades
-move existing bundled copies offline while preserving configuration. Catalog installs/updates and
+`auto-dialer` and `ai-voicemail` now live in the community repository. Core upgrades
+move existing bundled copies offline while preserving configuration. The former community
+`ai-assistant` was replaced by the official PBX Assistant plugin; an upgrade removes the old copy. Catalog installs/updates and
 signature verification are described in [Plugin development](plugin-development.md).
 
 #### 3.4 Remote TTS server

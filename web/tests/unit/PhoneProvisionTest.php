@@ -770,6 +770,7 @@ final class PhoneProvisionTest extends TestCase
         $p = PhoneModelSettingsService::parse("# note\n\nline.1.digitmap = [36]xxx|x.T\nphone.a=1\nphone.a=2\n");
         $this->assertSame(['line.1.digitmap' => '[36]xxx|x.T', 'phone.a' => '2'], $p['settings']);
         $this->assertSame([], $p['errors']);
+        $this->assertSame(['line.1.digitmap' => '3xxx|[0]x.T', 'a' => "'x"], PhoneModelSettingsService::parse("line.1.digitmap = \"3xxx|[0]x.T\"\na = 'x")['settings'], 'surrounding quotes dropped');
         foreach (['no equals sign', 'bad name" x=y = 1', '<x> = 1', '= 1'] as $bad) {
             $this->assertNotSame([], PhoneModelSettingsService::parse($bad)['errors'], $bad);
         }

@@ -6,7 +6,7 @@
  *         open_on? (extra pages that open the group without an item of their own)
  * Item:   href, icon, icon_style?, label, title? (tooltip, defaults to label),
  *         show (bool), pages (basenames that mark it active), uri? (request-URI
- *         part that also marks it active)
+ *         part that also marks it active), experimental? (shows the Experimental badge)
  * label/title: a translation key, or [key, default].
  *
  * A group is shown when at least one of its items is shown, and opened when
@@ -15,7 +15,7 @@
  * Expects $role and $user (set by app_header.php).
  */
 $can = fn(string $module) => hasModulePermission($module, 'view');
-$isAdmin = ($role ?? '') === 'admin';
+$isAdmin = userHasRole('admin');
 
 // The call-center board is also open to queue supervisors without the
 // cc_board permission.
@@ -31,10 +31,12 @@ return [
         'id' => 'dashboard', 'icon' => 'fas fa-chart-pie u-primary', 'label' => 'sidebar.group_dashboard',
         'open_on' => ['index.php'],
         'items' => [
+            ['href' => '/assistant', 'icon' => 'fas fa-wand-magic-sparkles', 'label' => 'sidebar.item_assistant', 'show' => $can('assistant') && $pluginOn('ai-assistant'), 'pages' => ['assistant.php'], 'experimental' => true],
             ['href' => '/dashboard', 'icon' => 'fas fa-tachometer-alt', 'label' => 'sidebar.item_dashboard_overview', 'show' => $can('dashboard'), 'pages' => ['dashboard.php']],
             ['href' => '/my-phone', 'icon' => 'fas fa-phone-volume', 'label' => 'sidebar.item_my_phone', 'show' => $can('my_phone'), 'pages' => ['my_phone.php']],
             ['href' => '/chat', 'icon' => 'fas fa-comments', 'label' => 'sidebar.item_chat', 'show' => $can('chat'), 'pages' => ['chat.php']],
             ['href' => '/cdr-reports', 'icon' => 'fas fa-file-audio', 'label' => 'sidebar.item_cdr_reports', 'show' => $can('cdr_reports') || $can('cc_reports'), 'pages' => ['cdr_reports.php', 'reports.php']],
+            ['href' => '/phonebook', 'icon' => 'fas fa-address-book', 'label' => 'sidebar.item_phonebook', 'show' => $can('phonebook'), 'pages' => ['phonebook.php']],
             ...PluginManager::userSidebarItems((array) ($user ?? [])),
         ],
     ],
@@ -53,6 +55,7 @@ return [
             ['href' => '/backup', 'icon' => 'fas fa-box-archive', 'label' => 'sidebar.item_backup', 'show' => $isAdmin, 'pages' => ['backup.php']],
             ['href' => '/system-update', 'icon' => 'fas fa-cloud-arrow-down', 'label' => 'sidebar.item_system_update', 'show' => $isAdmin, 'pages' => ['system_update.php']],
             ['href' => '/scheduled-tasks', 'icon' => 'fas fa-calendar-check', 'label' => 'sidebar.item_scheduled_tasks', 'show' => $isAdmin, 'pages' => ['scheduled_tasks.php']],
+            ['href' => '/agi-scripts', 'icon' => 'fas fa-terminal', 'label' => 'agi_scripts.title', 'show' => $isAdmin, 'pages' => ['agi_scripts.php']],
             ['href' => '/health', 'icon' => 'fas fa-heart-pulse', 'label' => 'sidebar.item_health', 'show' => $isAdmin, 'pages' => ['health.php']],
             ['href' => '/help', 'icon' => 'fas fa-book', 'label' => 'sidebar.item_help', 'show' => $isAdmin, 'pages' => ['help.php']],
         ],
@@ -81,10 +84,13 @@ return [
             ['href' => '/meetings', 'icon' => 'fas fa-video', 'label' => 'sidebar.item_meetings', 'show' => $can('meetings'), 'pages' => ['meetings.php'], 'uri' => '/meetings'],
             ['href' => '/boss-secretary', 'icon' => 'fas fa-user-tie', 'label' => 'sidebar.item_boss_secretary', 'show' => $can('boss_secretary'), 'pages' => ['boss_secretary.php'], 'uri' => '/boss-secretary'],
             ['href' => '/end-call', 'icon' => 'fas fa-phone-slash', 'label' => 'sidebar.item_end_call', 'show' => $can('end_call'), 'pages' => ['end_call.php']],
+            ['href' => '/call-modifiers', 'icon' => 'fas fa-tags', 'label' => 'sidebar.item_call_modifiers', 'show' => $isAdmin, 'pages' => ['call_modifiers.php']],
+            ['href' => '/parking', 'icon' => 'fas fa-parking', 'label' => 'sidebar.item_parking', 'show' => $isAdmin, 'pages' => ['parking.php']],
             ['href' => '/sounds', 'icon' => 'fas fa-music', 'label' => 'sidebar.item_sounds', 'show' => $can('sounds'), 'pages' => ['sounds.php']],
             ['href' => '/feature-codes', 'icon' => 'fas fa-hashtag', 'label' => 'sidebar.item_feature_codes', 'title' => 'sidebar.item_feature_codes_tooltip', 'show' => $can('feature_codes'), 'pages' => ['feature_codes.php']],
             ['href' => '/feature-codes-status', 'icon' => 'fas fa-list-check', 'label' => 'sidebar.item_feature_codes_status', 'show' => $can('feature_codes'), 'pages' => ['feature_codes_status.php']],
             ['href' => '/custom-dialplan', 'icon' => 'fas fa-code', 'label' => 'sidebar.item_custom_dialplan', 'show' => $can('custom_dialplan'), 'pages' => ['custom_dialplan.php'], 'uri' => '/custom-dialplan'],
+            ['href' => '/custom-configs', 'icon' => 'fas fa-file-code', 'label' => 'sidebar.item_custom_configs', 'show' => $isAdmin, 'pages' => ['custom_configs.php'], 'uri' => '/custom-configs'],
             ['href' => '/advanced-config', 'icon' => 'fas fa-sliders-h', 'label' => 'sidebar.item_advanced_config', 'show' => $can('advanced_config'), 'pages' => ['advanced_config.php'], 'uri' => '/advanced-config'],
         ],
     ],
@@ -104,7 +110,6 @@ return [
         'id' => 'provisioning', 'icon' => 'fas fa-phone u-primary', 'label' => 'sidebar.group_provisioning',
         'items' => [
             ['href' => '/phones', 'icon' => 'fas fa-phone', 'label' => 'sidebar.item_phones', 'show' => $can('phones'), 'pages' => ['phones.php', 'phone_keys.php']],
-            ['href' => '/phonebook', 'icon' => 'fas fa-address-book', 'label' => 'sidebar.item_phonebook', 'show' => $can('phones'), 'pages' => ['phonebook.php']],
             ['href' => '/phone-regions', 'icon' => 'fas fa-map-marker-alt', 'label' => 'sidebar.item_phone_regions', 'show' => $isAdmin, 'pages' => ['phone_regions.php']],
         ],
     ],
@@ -129,15 +134,30 @@ return [
         ],
     ],
     [
-        'id' => 'ai', 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);', 'label' => 'sidebar.group_ai',
+        'id' => 'call_center', 'icon' => 'fas fa-headset u-primary', 'label' => ['roles.group_call_center', 'Call Center'],
+        'items' => [
+            ...PluginManager::dynamicSidebarItems($isAdmin, 'call_center'),
+        ],
+    ],
+    [
+        'id' => 'ai', 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);', 'label' => ['sidebar.group_ai_apps', 'AI Apps'],
         'items' => [
             ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts') && $pluginOn('ai-tts'), 'pages' => ['ai_tts.php']],
-            ['href' => '/assistant', 'icon' => 'fas fa-wand-magic-sparkles', 'label' => 'sidebar.item_assistant', 'show' => $isAdmin, 'pages' => ['assistant.php']],
             ['href' => '/ai-apps', 'icon' => 'fas fa-robot', 'label' => 'sidebar.item_ai_apps', 'show' => $isAdmin && $pluginOn('ai-apps'), 'pages' => ['ai_apps.php']],
+            ['href' => '/ai-agent', 'icon' => 'fas fa-headset', 'label' => 'builtin_ai_agent.title', 'show' => $isAdmin, 'pages' => ['builtin_ai_agent.php']],
             ['href' => '/ai-agents', 'icon' => 'fas fa-satellite', 'label' => 'sidebar.item_ai_agents', 'show' => $can('ai_agents'), 'pages' => ['ai_agents.php']],
-            ['href' => '/ai-models', 'icon' => 'fas fa-microchip', 'label' => 'sidebar.item_ai_models', 'show' => $isAdmin && $pluginOn('ai-models'), 'pages' => ['ai_models.php']],
-            ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => 'sidebar.item_ai_cloud', 'show' => $isAdmin && $pluginOn('ai-cloud'), 'pages' => ['ai_cloud.php']],
             ...PluginManager::dynamicSidebarItems($isAdmin, 'ai'),
+        ],
+    ],
+    [
+        'id' => 'ai_settings', 'icon' => 'fas fa-sliders', 'icon_style' => 'color: var(--purple);', 'label' => ['sidebar.group_ai_settings', 'AI Settings'],
+        'items' => [
+            ['href' => '/ai-local', 'icon' => 'fas fa-microchip', 'label' => ['sidebar.item_ai_local', 'Local AI'], 'show' => $isAdmin && $pluginOn('ailocal'), 'pages' => ['ai_local.php']],
+            ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => ['sidebar.item_ai_cloud', 'Cloud AI'], 'show' => $isAdmin && $pluginOn('aicloud'), 'pages' => ['ai_cloud.php']],
+            ['href' => '/ai-voicemail', 'icon' => 'fas fa-voicemail', 'label' => 'sidebar.item_ai_voicemail', 'show' => $can('ai_voicemail') && $pluginOn('ai-voicemail'), 'pages' => ['ai_voicemail.php']],
+            ['href' => '/ai-call-analysis', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_ai_call_analysis', 'show' => $can('ai_call_analysis') && $pluginOn('ai-call-analysis'), 'pages' => ['ai_call_analysis.php']],
+            ['href' => '/ai-knowledge', 'icon' => 'fas fa-book-open', 'label' => 'sidebar.item_ai_knowledge', 'show' => $can('ai_knowledge') && $pluginOn('ai-knowledge'), 'pages' => ['ai_knowledge.php']],
+            ['href' => '/ai-assistant', 'icon' => 'fas fa-robot', 'label' => ['ai_settings.ast_title', 'Assistant Settings'], 'show' => $isAdmin, 'pages' => ['ai_assistant.php'], 'experimental' => true],
         ],
     ],
     [
@@ -146,7 +166,9 @@ return [
             ['href' => '/plugins', 'icon' => 'fas fa-puzzle-piece', 'label' => 'sidebar.item_plugins', 'show' => $isAdmin, 'pages' => ['plugins.php']],
             ['href' => '/api-keys', 'icon' => 'fas fa-key', 'label' => 'sidebar.item_api_keys', 'show' => $isAdmin, 'pages' => ['api_keys.php'], 'uri' => '/api-keys'],
             ['href' => '/webhooks', 'icon' => 'fas fa-satellite-dish', 'label' => 'sidebar.item_webhooks', 'show' => $isAdmin, 'pages' => ['webhooks.php'], 'uri' => '/webhooks'],
+            ['href' => '/connections', 'icon' => 'fas fa-link', 'label' => 'sidebar.item_connections', 'show' => $isAdmin, 'pages' => ['connections.php'], 'uri' => '/connections'],
             ['href' => '/external-dbs', 'icon' => 'fas fa-database', 'label' => 'sidebar.item_external_dbs', 'show' => $isAdmin, 'pages' => ['external_dbs.php'], 'uri' => '/external-dbs'],
+            ['href' => '/dynamic-routing', 'icon' => 'fas fa-route', 'label' => 'dynamic_routing.title', 'show' => $isAdmin, 'pages' => ['ivr_data_steps.php']],
             ['href' => '/google-integration', 'icon' => 'fab fa-google', 'icon_style' => 'color: #ea4335;', 'label' => 'sidebar.item_google_integration', 'show' => $isAdmin && $pluginOn('google-auth'), 'pages' => ['google_integration.php'], 'uri' => '/google-integration'],
             ['href' => '/ms-teams', 'icon' => 'fab fa-windows', 'icon_style' => 'color: #6264a7;', 'label' => 'sidebar.item_ms_teams', 'show' => $can('ms_teams') && $pluginOn('ms-teams'), 'pages' => ['ms_teams.php']],
             ['href' => '/web-widgets', 'icon' => 'fas fa-headset', 'label' => 'sidebar.item_web_widgets', 'show' => $can('web_widgets') && $pluginOn('web-widgets'), 'pages' => ['web_widgets.php']],
@@ -163,6 +185,7 @@ return [
             ['href' => '/registrations', 'icon' => 'fas fa-plug', 'label' => 'sidebar.item_registrations', 'show' => $isAdmin, 'pages' => ['registrations.php']],
             ['href' => '/call-quality', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_call_quality', 'show' => $isAdmin, 'pages' => ['call_quality.php']],
             ['href' => '/phone-logs', 'icon' => 'fas fa-scroll', 'label' => 'sidebar.item_phone_logs', 'show' => $isAdmin, 'pages' => ['phone_logs.php']],
+            ['href' => '/asterisk-logs', 'icon' => 'fas fa-file-alt', 'label' => 'sidebar.item_asterisk_logs', 'show' => $isAdmin, 'pages' => ['asterisk_logs.php']],
             ['href' => '/sip-capture-settings', 'icon' => 'fas fa-sliders', 'label' => 'sidebar.item_sip_capture_settings', 'show' => $isAdmin, 'pages' => ['sip_capture_settings.php']],
         ],
     ],
@@ -177,6 +200,7 @@ return [
             ['href' => '/certificates', 'icon' => 'fas fa-certificate', 'label' => 'sidebar.item_certificates', 'show' => $isAdmin, 'pages' => ['certificates.php']],
             ['href' => '/privacy', 'icon' => 'fas fa-user-lock', 'label' => 'sidebar.item_privacy', 'show' => $isAdmin, 'pages' => ['privacy.php']],
             ['href' => '/audit-log', 'icon' => 'fas fa-shield-alt', 'label' => 'sidebar.item_audit_log', 'show' => $can('audit_log'), 'pages' => ['audit_log.php']],
+            ...PluginManager::dynamicSidebarItems($isAdmin, 'security'),
         ],
     ],
 ];

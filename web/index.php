@@ -32,6 +32,13 @@ if ($path === '/set-language') {
         $lang = DEFAULT_UI_LANGUAGE;
     }
     $_SESSION['ui_language'] = $lang;
+    setcookie('aipbx_lang', $lang, [
+        'expires'  => time() + 365 * 86400,
+        'path'     => '/',
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     if (isset($_SESSION['user_id'])) {
         $stmt = getDB()->prepare('UPDATE sys_users SET language_preference = ? WHERE id = ?');
         $stmt->execute([$lang, $_SESSION['user_id']]);
@@ -48,7 +55,7 @@ if ($path === '/set-language') {
 if ($path === '/accept-license' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     requireLogin();
     header('Content-Type: application/json; charset=utf-8');
-    if (($_SESSION['user_role'] ?? '') !== 'admin') {
+    if (!userHasRole('admin')) {
         http_response_code(403);
         echo json_encode(['success' => false, 'error' => 'Admin privileges required.']);
         exit;
@@ -165,9 +172,22 @@ $LEGACY = [
     '/cc'                      => '/cc-agent',
     '/cc/agent.php'            => '/cc-agent',
     '/cc/supervisor.php'       => '/cc-supervisor',
+    '/ai-models'               => '/ai-local',
+    '/ai-settings'             => '/ai-local',
 ];
 if (isset($LEGACY[$path])) {
-    header('Location: ' . $LEGACY[$path], true, ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' ? 301 : 308);
+    $target = $LEGACY[$path];
+    if ($path === '/ai-settings') {
+        $tab = (string) ($_GET['tab'] ?? '');
+        $target = match ($tab) {
+            'cloud' => '/ai-cloud',
+            'assistant' => '/ai-assistant',
+            'voicemail' => '/ai-voicemail',
+            'cdr' => '/ai-call-analysis',
+            default => '/ai-local',
+        };
+    }
+    header('Location: ' . $target, true, ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' ? 301 : 308);
     exit;
 }
 

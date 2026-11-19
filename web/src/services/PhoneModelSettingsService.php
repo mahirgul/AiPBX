@@ -120,6 +120,10 @@ class PhoneModelSettingsService
             $at = strpos($line, '=');
             $name = $at === false ? '' : trim(substr($line, 0, $at));
             $value = $at === false ? '' : trim(substr($line, $at + 1));
+            // name = "value" as copied from a phone file: the quotes are not part of the value.
+            if (strlen($value) >= 2 && ($value[0] === '"' || $value[0] === "'") && substr($value, -1) === $value[0]) {
+                $value = substr($value, 1, -1);
+            }
             if ($at === false || preg_match('/^[A-Za-z0-9_][A-Za-z0-9_.-]{0,99}$/D', $name) !== 1) {
                 $errors[] = sprintf(t('phones.extra_err_line'), $i + 1);
                 continue;

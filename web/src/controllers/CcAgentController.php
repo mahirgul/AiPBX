@@ -14,7 +14,7 @@ class CcAgentController extends BaseController
 
         // Access is allowed only to the real cc_agent role OR to a user
         // explicitly assigned as agent to at least one active queue.
-        if ($user['role'] !== 'cc_agent' && !$is_queue_agent) {
+        if (!userHasRole('cc_agent') && !$is_queue_agent) {
             static::renderPage('cc_agent/restricted', [], $page);
             return;
         }

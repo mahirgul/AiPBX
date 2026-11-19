@@ -239,7 +239,12 @@ function loadCdrs() {
 
                 let audioBtn = '<span class="text-muted" style="font-size: 11px;">' + __('js.agent.none') + '</span>';
                 if (cdr.has_recording && cdr.can_listen) {
-                    audioBtn = `<button class="btn btn-secondary btn-xs" onclick="playAudio('${escapeJsAttr(cdr.audio_url)}')"><i class="fas fa-play"></i> ${__('js.cc.spy')}</button>`;
+                    if (typeof playCdrAudio === 'function' && cdr.id) {
+                        audioBtn = `<button type="button" class="btn btn-icon btn-secondary btn-xs" onclick="playCdrAudio(${Number(cdr.id)}, '${escapeJsAttr(cdr.caller_num || '')}', '${escapeJsAttr(cdr.start_time || '')}')" title="${__('js.cc.spy')}"><i class="fas fa-play"></i></button>`
+                            + ` <a href="/api/cc_audio.php?id=${Number(cdr.id)}&download=1" class="btn btn-icon btn-secondary btn-xs" title="Download"><i class="fas fa-download"></i></a>`;
+                    } else {
+                        audioBtn = `<button class="btn btn-secondary btn-xs" onclick="playAudio('${escapeJsAttr(cdr.audio_url)}')"><i class="fas fa-play"></i> ${__('js.cc.spy')}</button>`;
+                    }
                 }
 
                 let noteBtn = '<span class="text-muted" style="font-size: 11px;">-</span>';

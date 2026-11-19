@@ -242,9 +242,11 @@ function submitAipbxLicenseAccept(btn) {
 <!-- 100% Offline Local JavaScript Modules -->
 <script src="<?php echo asset('/assets/js/theme.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/nav.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/sidebar_search.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/modal.js'); ?>"></script>
+<script src="<?php echo asset('/assets/js/qr_login.js'); ?>"></script>
 <script src="<?php echo asset('/assets/js/footer_notify.js'); ?>"></script>
-<?php if (($_SESSION['user_role'] ?? '') === 'admin'): ?><script src="<?php echo asset('/assets/js/notices.js'); ?>"></script><?php endif; ?>
+<?php if (userHasRole('admin')): ?><script src="<?php echo asset('/assets/js/notices.js'); ?>"></script><?php endif; ?>
 <script src="<?php echo asset('/assets/js/datatable_enhancer.js'); ?>"></script>
 
 <?php if (!empty($all_notifications)): ?>

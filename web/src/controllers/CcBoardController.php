@@ -40,7 +40,7 @@ class CcBoardController extends BaseController
         static::renderPage('cc_board/index', [
             'my_queues' => $my_queues,
             // The same rule as api/cc.php spy_call
-            'can_spy' => in_array($user['role'] ?? '', ['admin', 'cc_manager'], true),
+            'can_spy' => array_intersect(userRoles(), ['admin', 'cc_manager']) !== [],
         ], $page);
     }
 }

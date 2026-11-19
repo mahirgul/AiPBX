@@ -31,6 +31,9 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📤 [Outbound routes](outbound-routes.md) | Dial patterns, number manipulation, trunk failover, route groups, RFC 6442 / RFC 6443 Geolocation emergency headers |
 | 🎛️ [Outbound and inbound call normalization](call-normalization.md) | Rules for dialled numbers per device (mobile, desk, web), rules for incoming numbers per trunk, ready-made rules per country, E.164, SIP headers |
 | 📥 [Inbound routes (DIDs)](inbound-routes.md) | DID matching, destinations, fax DIDs |
+| 🕘 [Time conditions and holidays](time-conditions.md) | Working hours, time groups, holiday calendars (typed in, `.ics` file or address) |
+| 🅿️ [Call parking](parking.md) | Park a call in a numbered slot and pick it up from any phone; BLF on slots |
+| 🏷️ [Call modifiers](call-modifiers.md) | Steps on a call's way: set the prompt language, prefix the caller name |
 | ⚙️ [PBX Settings](pbx-settings.md) | Every tab of System → PBX Settings and where each is explained |
 | 📟 [Extensions](extensions.md) | The extension form, copying a SIP password, per-extension SIP settings (transport, DTMF, SRTP, NAT, codecs) |
 | 🛣️ [Transports](transports.md) | Where Asterisk listens for SIP: ports, TCP and TLS, your own transports |
@@ -56,7 +59,9 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📹 [Video calls](video-calls.md) | Video between the web phone, the Android app and desk video phones; the one video codec; bandwidth |
 | 🗓️ [Video meetings](meetings.md) | Scheduled browser rooms, SFU/Follow-Talker, guest links, invitations, join windows and calendar downloads |
 | 🎧 [WebRTC, NAT and TURN](webrtc-nat.md) | Browser and app audio across NAT, external IP, TURNS on 443, troubleshooting silent calls |
-| 🗄️ [External databases & IVR data steps](external-databases.md) | Read-only MySQL/PostgreSQL connections, encrypted credentials, real-time IVR caller/DTMF data lookups and call branching |
+| 🗄️ [External databases](external-databases.md) | MySQL/PostgreSQL connections (read-only unless writing is allowed), encrypted credentials, saved queries for Dynamic Routing, the AI Agent and plugins |
+| 🔀 [Dynamic Routing](dynamic-routing.md) | Route calls by a value from a database, an HTTP service, a template or an AGI script |
+| 🖥️ [AGI scripts](agi-scripts.md) | Python, PHP or Bash AGI scripts written in the portal, run sandboxed |
 | 🎚️ [PBX fine tuning & maintenance](pbx-tuning.md) | Jitter buffer, SIP protocol timers (T1, B, Max-Forwards), 10-minute SIP debug, safe night restart window, spoken status messages |
 | 🐧 [Linux OS & kernel tuning](linux-tuning.md) | Network sysctl (RTP buffers, MPTCP disable), SIP ALG blacklist, real-time CPU scheduling, OOM protection, needrestart shielding |
 
@@ -76,6 +81,8 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | ✉️ [E-mail](mail.md) | Mail relay and e-mail templates (fax, voicemail, invitations, password e-mails) |
 | 🗄️ [File storage](file-storage.md) | Chat attachments on the local disk or in an S3-compatible bucket (AWS S3, MinIO, Wasabi, Backblaze B2), moving existing files |
 | 🔑 [REST API v1 & outbound webhooks](rest-api-v1.md) | Stateless `/api/v1/*` endpoints, OpenAPI 3.1 spec, Bearer API keys (`apbx_...`), scopes, IP allowlists, and HMAC-SHA256 signed webhooks |
+| 🔗 [Connections (Odoo, CRM)](connections.md) | One outside system per connection: its own API key and signed webhook for the live call events, handed over once as a connection pack |
+| 🤝 [CRM integrations](crm-integrations.md) | Odoo app; HubSpot, Zoho, Pipedrive, Bitrix24 through n8n; a signed receiver of your own |
 | ⏱️ [Scheduled tasks](scheduled-tasks.md) | Sandboxed background shell, PHP and Python scripts on a cron schedule (`aipbx-task`, systemd-run), run history, bell alarms |
 | 🛠️ [Troubleshooting](troubleshooting.md) | The Troubleshooting menu (SIP traffic `.pcap`/calls/ladder/live, problem recording, registrations, call quality, phone logs), changes not applied, calls hung up, sounds not found |
 
@@ -100,7 +107,7 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 | 🧠 [Local AI models (Plugin)](local-ai.md) | `ai-models` | AI models on the PBX itself (EMA Lightning Turkish TTS): the runtime, downloading models, the `aipbx-ai` service and its API |
 | 🎛️ [AI applications (Plugin)](ai-apps.md) | `ai-apps` | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
 | 🛰️ [External AI agents](ai-agents.md) | AI → External agents | A voice agent of another service at a SIP address as a call destination; hand-over to a person by REFER, call limit, fallback |
-| ✨ [Dialplan editor / AI assistant (Community plugin, @shido6)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, and the Echo box that answers questions from this server's own data |
+| ✨ [PBX Assistant (experimental)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base |
 | 📡 [Signaling capture](signaling.md) | Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
 | 📮 [Voicemail](voicemail.md) | PBX settings → Voicemail | Mailboxes, listening (\*97/\*98, portal, apps, e-mail), message limits and PIN rules |
 | 📈 [Call quality](call-quality.md) | Troubleshooting → Call quality | Packet loss in both directions and jitter per trunk and extension from RTCP; a health check alarms when audio is lost |

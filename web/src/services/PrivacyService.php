@@ -350,6 +350,12 @@ final class PrivacyService
             'privacy_block_cloud_ai' => $blockCloudAi,
         ]);
 
+        if (function_exists('markPendingSync')) {
+            $uid = $_SESSION['user_id'] ?? null;
+            markPendingSync('ai_apps', 'privacy', 'block_cloud_ai', "Cloud AI lock: {$blockCloudAi}", 'update', $uid);
+            markPendingSync('ai_agents', 'privacy', 'block_cloud_ai', "Cloud AI lock: {$blockCloudAi}", 'update', $uid);
+        }
+
         if (function_exists('writeAuditLog')) {
             writeAuditLog('privacy', 'compliance', 'block_cloud_ai', "Cross-border Cloud AI lock: block_cloud_ai={$blockCloudAi}", 'update', $_SESSION['user_id'] ?? null);
         }

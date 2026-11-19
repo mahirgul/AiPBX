@@ -8,7 +8,7 @@ require_once __DIR__ . '/../../src/asterisk_sync.php';
 /** Dialplan bugs found in the review of 2026-10-25. */
 final class DialplanReviewFixesTest extends TestCase
 {
-    public function testSameQueueTwiceInOneTimeConditionGetsUniqueLabels(): void
+    public function testSameQueueTwiceInOneTimeConditionUsesAnswerTimeRecording(): void
     {
         $db = getDB();
         $db->exec("INSERT INTO pbx_time_groups (id, title, time_start, time_end, days_of_week, is_active)
@@ -23,9 +23,12 @@ final class DialplanReviewFixesTest extends TestCase
             $db->exec('DELETE FROM pbx_time_groups WHERE id = 7931');
             @unlink(ASTERISK_PBX_DIR . '/extensions_timecondition_7931.conf');
         }
-        preg_match_all('/n\((kayit_var_zz_fix_q[^)]*)\)/', $conf, $m);
-        $this->assertCount(2, $m[1], 'both branches record');
-        $this->assertCount(2, array_unique($m[1]), 'a repeated label made the second branch jump to the first');
+        $this->assertSame(2, substr_count($conf, 'Queue(zz_fix_q,'), 'both branches reach the queue');
+        $this->assertSame(2, substr_count($conf, '/usr/local/bin/queue_record.php'), 'both branches use answer-time recording');
+        $this->assertStringNotContainsString('MixMonitor(', $conf, 'waiting callers must not start recording');
+        preg_match_all('/same => n\(([^)]+)\)/', $conf, $labels);
+        $this->assertCount(count($labels[1]), array_unique($labels[1]), 'a repeated label can jump to the other branch');
+
     }
 
     public function testFaxContextTakesE164AndDefaultTargets(): void

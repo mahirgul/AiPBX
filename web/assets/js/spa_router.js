@@ -302,6 +302,13 @@
             setTimeout(() => {
                 updateActiveSidebarNav(url);
                 updatePendingSyncBadge(pageData);
+                // The user's own extension changed and was applied: the web phone moves to it.
+                if (pageData && pageData.getAttribute('data-pending-sync-count') === '0' && typeof headerPhoneFollowExtension === 'function') {
+                    headerPhoneFollowExtension(pageData.getAttribute('data-user-ext') || '');
+                }
+                if (pageData && pageData.getAttribute('data-auto-apply') === '1' && typeof executeDirectPendingSync === 'function') {
+                    executeDirectPendingSync(null, true);
+                }
                 if (pageData && pageData.getAttribute('data-menu-changed') === '1') {
                     refreshSidebarMenu(url);
                 }
@@ -328,10 +335,17 @@
             .then(res => (res.ok && isHtmlResponse(res)) ? res.text() : null)
             .then(html => {
                 if (!html) return;
-                const fresh = new DOMParser().parseFromString(html, 'text/html').querySelector('#app-sidebar .nav-menu');
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const fresh = doc.querySelector('#app-sidebar .nav-menu');
                 const current = document.querySelector('#app-sidebar .nav-menu');
                 if (!fresh || !current) return;
                 current.innerHTML = fresh.innerHTML;
+                // The Assistant link under the menu search comes and goes with the Assistant.
+                const freshAsk = doc.getElementById('sidebar-ai-ask-link');
+                const ask = document.getElementById('sidebar-ai-ask-link');
+                const wrap = document.querySelector('#app-sidebar .sidebar-search-wrap');
+                if (ask && !freshAsk) ask.remove();
+                if (!ask && freshAsk && wrap) wrap.appendChild(document.importNode(freshAsk, true));
                 updateActiveSidebarNav(url);
             })
             .catch(() => {});

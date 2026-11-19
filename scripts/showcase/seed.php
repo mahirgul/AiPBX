@@ -724,7 +724,7 @@ $ins('pbx_advanced_pjsip', [
 ]);
 
 // --- plugins: a few official ones on, and the SMS plugin with conversations ---
-foreach (['web-widgets', 'auto-dialer', 'ai-apps', 'ai-tts', 'ai-cloud', 'ai-models', 'ms-teams', 'google-auth'] as $slug) {
+foreach (['web-widgets', 'auto-dialer', 'ai-apps', 'ai-tts', 'ai', 'ms-teams', 'google-auth'] as $slug) {
     PluginManager::enable($slug, 't');
 }
 $ins('plg_autodial_campaigns', [

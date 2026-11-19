@@ -129,7 +129,7 @@ if ($action === 'pickup_call') {
     // found from the "queue show" output and the caller's membership of that
     // queue is checked. Admin/cc_manager (supervisor roles) can take calls from
     // any queue and are exempt from this check.
-    if (!in_array($user['role'] ?? '', ['admin', 'cc_manager'], true)) {
+    if (array_intersect(userRoles(), ['admin', 'cc_manager']) === []) {
         @exec("asterisk -rx " . escapeshellarg("queue show"), $qs_output);
         $found_queue = null;
         $cur_q = '';

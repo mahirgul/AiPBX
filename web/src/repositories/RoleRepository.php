@@ -24,10 +24,12 @@ class RoleRepository extends BaseRepository
     {
         $all = self::ALL_ACTIONS;
         return [
+            'assistant'          => ['title' => 'PBX Assistant', 'group' => 'General', 'actions' => self::VAE],
             'dashboard'          => ['title' => 'Dashboard', 'group' => 'General', 'actions' => self::VAE],
             'my_phone'           => ['title' => 'My Phone', 'group' => 'General', 'actions' => self::VAE],
             'chat'               => ['title' => 'Chat', 'group' => 'General', 'actions' => self::VA],
             'cdr_reports'        => ['title' => 'Call Reports', 'group' => 'General', 'actions' => self::VAD],
+            'phonebook'          => ['title' => 'Address Book', 'group' => 'General', 'actions' => $all],
             'system_users'       => ['title' => 'Users', 'group' => 'Administration', 'actions' => $all, 'admin_only' => true],
             'roles'              => ['title' => 'Roles & Permissions', 'group' => 'Administration', 'actions' => $all, 'admin_only' => true],
             'asterisk_settings'  => ['title' => 'PBX Settings', 'group' => 'Administration', 'actions' => self::VAE],
@@ -53,9 +55,12 @@ class RoleRepository extends BaseRepository
             'meetings'           => ['title' => 'Video Meetings', 'group' => 'PBX Management', 'actions' => $all],
             'boss_secretary'     => ['title' => 'Boss - Secretary', 'group' => 'PBX Management', 'actions' => $all],
             'end_call'           => ['title' => 'Hangup Actions', 'group' => 'PBX Management', 'actions' => $all],
+            'call_modifiers'     => ['title' => 'Call Modifiers', 'group' => 'PBX Management', 'actions' => $all, 'admin_only' => true],
+            'parking'            => ['title' => 'Call Parking', 'group' => 'PBX Management', 'actions' => ['view', 'edit'], 'admin_only' => true],
             'sounds'             => ['title' => 'Sounds & Music', 'group' => 'PBX Management', 'actions' => $all],
             'feature_codes'      => ['title' => 'Feature Codes (*)', 'group' => 'PBX Management', 'actions' => self::VAE],
             'custom_dialplan'    => ['title' => 'Custom Dialplan', 'group' => 'PBX Management', 'actions' => $all, 'admin_only' => true],
+            'custom_configs'     => ['title' => 'Custom Configs', 'group' => 'PBX Management', 'actions' => ['view', 'edit'], 'admin_only' => true],
             'advanced_config'    => ['title' => 'Advanced Configuration', 'group' => 'PBX Management', 'actions' => $all, 'admin_only' => true],
             'phones'             => ['title' => 'Phones', 'group' => 'Network & Devices', 'actions' => $all, 'admin_only' => true],
             'cc_board'           => ['title' => 'Wallboard', 'group' => 'Call Center', 'actions' => self::VA],
@@ -70,14 +75,19 @@ class RoleRepository extends BaseRepository
             'fax_settings'       => ['title' => 'Fax Units', 'group' => 'Fax System', 'actions' => $all],
             'fax_mail_settings'  => ['title' => 'Fax Settings', 'group' => 'Fax System', 'actions' => self::VAE],
             'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all, 'plugin' => 'ai-tts'],
-            'assistant'          => ['title' => 'Dialplan editor', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'ai_apps'            => ['title' => 'AI Applications', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-apps'],
+            'builtin_ai_agent'   => ['title' => 'AI Agent', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
             'ai_agents'          => ['title' => 'External AI Agents', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
-            'ai_models'          => ['title' => 'Local Models', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-models'],
-            'ai_cloud'           => ['title' => 'Cloud Services', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-cloud'],
+            'ai_local'           => ['title' => 'Local AI', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ailocal'],
+            'ai_cloud'           => ['title' => 'Cloud AI', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'aicloud'],
+            'ai_voicemail'       => ['title' => 'AI Voicemail', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-voicemail'],
+            'ai_call_analysis'   => ['title' => 'Call Analysis', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-call-analysis'],
+            'ai_knowledge'       => ['title' => 'Knowledge Base (TXT RAG)', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-knowledge'],
+            'ai_assistant'       => ['title' => 'Assistant Settings', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-assistant'],
             'plugins'            => ['title' => 'Plugin Catalog', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'api_keys'           => ['title' => 'REST API Keys', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'webhooks'           => ['title' => 'Outbound Webhooks', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
+            'connections'        => ['title' => 'Connections (Odoo, CRM)', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'external_dbs'       => ['title' => 'External Databases', 'group' => 'Integrations', 'actions' => $all, 'admin_only' => true],
             'google_integration' => ['title' => 'Google Sign-in', 'group' => 'Integrations', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'google-auth'],
             'ms_teams'           => ['title' => 'Microsoft Teams', 'group' => 'Integrations', 'actions' => $all, 'plugin' => 'ms-teams'],
@@ -131,16 +141,19 @@ class RoleRepository extends BaseRepository
             'AI' => 'ai',
             'Fax System' => 'fax_system',
             'Call Center' => 'call_center',
+            'Troubleshooting' => 'troubleshooting',
         ];
     }
 
     public static function allWithUserCount(): array
     {
         return localizeRoles(static::db()->query(
-            "SELECT r.*, COUNT(u.id) as user_count
+            "SELECT r.*,
+                (SELECT COUNT(*) FROM sys_users u
+                 WHERE u.role = r.role_key
+                    OR EXISTS (SELECT 1 FROM sys_user_roles ur WHERE ur.user_id = u.id AND ur.role_key = r.role_key)
+                ) AS user_count
              FROM sys_roles r
-             LEFT JOIN sys_users u ON r.role_key = u.role
-             GROUP BY r.id
              ORDER BY r.is_system DESC, r.id ASC"
         )->fetchAll());
     }

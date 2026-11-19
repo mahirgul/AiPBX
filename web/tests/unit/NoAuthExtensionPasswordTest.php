@@ -60,6 +60,38 @@ final class NoAuthExtensionPasswordTest extends TestCase
         $this->assertSame($stored, (string) getDB()->query("SELECT sip_password FROM sys_users WHERE extension = '" . self::EXT . "'")->fetchColumn());
     }
 
+    public function testPhoneLanguageGoesToEveryEndpointOfTheExtension(): void
+    {
+        $lang = getAvailableLanguages()[0] ?? '';
+        if ($lang === '') {
+            $this->markTestSkipped('no sound languages on this machine');
+        }
+        getDB()->prepare('UPDATE sys_users SET pbx_language = ? WHERE extension = ?')->execute([$lang, self::EXT]);
+        syncAllExtensions();
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/pjsip_endpoints.conf');
+        foreach (['sip', 'webrtc', 'mob-webrtc'] as $kind) {
+            $this->assertMatchesRegularExpression('/\[' . self::EXT . '-' . $kind . '\]\([^)]*\)\n[^\[]*language=' . preg_quote($lang, '/') . '\n/', $conf, $kind);
+        }
+        // A language whose sounds are not installed is never written.
+        getDB()->prepare("UPDATE sys_users SET pbx_language = 'xx' WHERE extension = ?")->execute([self::EXT]);
+        syncAllExtensions();
+        $this->assertStringNotContainsString('language=xx', (string) file_get_contents(ASTERISK_PBX_DIR . '/pjsip_endpoints.conf'));
+    }
+
+    public function testRecordingChoiceTravelsOnTheUsersCalls(): void
+    {
+        getDB()->prepare("UPDATE sys_users SET record_policy = 'always' WHERE extension = ?")->execute([self::EXT]);
+        syncAllExtensions();
+        $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/pjsip_endpoints.conf');
+        $this->assertSame(3, substr_count($conf, "set_var=AIPBX_REC_POLICY=always\n"));
+        // A call to this extension starts a recording unless one runs or the caller opted out.
+        $lines = implode("\n", buildExtensionDialLines(self::EXT, getDB())['lines']);
+        $this->assertStringContainsString('MixMonitor(${REC_FILE}', $lines);
+        $this->assertStringContainsString('"${MIXMONITOR_FILENAME}" != "" | "${PRIVACY_NO_RECORD}" = "1"', $lines);
+        $this->assertStringNotContainsString('"${AIPBX_REC_POLICY}" != "always"', $lines, 'its own choice needs no check of the caller');
+        getDB()->prepare("UPDATE sys_users SET record_policy = '' WHERE extension = ?")->execute([self::EXT]);
+    }
+
     public function testTheWebPhoneGetsTheSecretInUse(): void
     {
         SIPHelper::setSettings(self::EXT, ['account' => self::EXT, 'auth_digest' => 'no', 'secret' => 'Existing-Secret-77']);

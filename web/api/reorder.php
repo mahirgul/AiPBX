@@ -23,7 +23,7 @@ if (!verifyCSRFToken($_POST['csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? ''
     echo json_encode(['success' => false, 'error' => 'Invalid CSRF token']);
     exit;
 }
-if (($_SESSION['user_role'] ?? '') !== 'admin' || !hasModulePermission($entity['module'], 'edit')) {
+if (!userHasRole('admin') || !hasModulePermission($entity['module'], 'edit')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);
     exit;

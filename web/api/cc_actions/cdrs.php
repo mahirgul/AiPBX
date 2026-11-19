@@ -9,7 +9,7 @@ if ($action === 'my_cdrs') {
     // Link the "pending" note entered during the active call (by agent_extension, call_id IS NULL)
     // to this agent's most recently finished call (its CDR). A pending note entered in the last
     // 2 hours is looked for; anything older (a forgotten draft) is not linked automatically.
-    $can_claim_note = ($user['role'] !== 'read_only_admin')
+    $can_claim_note = (array_diff(userRoles(), ['read_only_admin']) !== [])
         && verifyCSRFToken($_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf_token'] ?? $_GET['csrf_token'] ?? '');
     if (!empty($user_ext) && $can_claim_note) {
         // agent_extension can now also show the CALLED side on calls not

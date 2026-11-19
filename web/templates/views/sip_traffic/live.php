@@ -37,7 +37,7 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 
     <div class="u-mt-10">
         <div class="u-fs-12 u-muted" id="sipLiveHead"><?php echo t('siptrace.click_message'); ?></div>
-        <pre id="sipLiveText" class="u-mono u-fs-12" style="max-height: 420px; overflow: auto; white-space: pre-wrap; background: var(--bg-hover, #f1f5f9); padding: 12px; border-radius: 6px;"></pre>
+        <pre id="sipLiveText" class="u-mono u-fs-12 u-maxh-420 u-of-auto u-white-space-pre-wrap u-bg-bg-input u-p-12 u-r-8"></pre>
     </div>
 </div>
 

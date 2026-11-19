@@ -123,3 +123,5 @@
         </div>
     </div>
 </div>
+
+<?php require dirname(__DIR__, 2) . '/cdr_audio_player.php'; ?>

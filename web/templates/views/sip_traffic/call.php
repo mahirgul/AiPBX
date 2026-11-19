@@ -16,9 +16,9 @@ $height = $top + count($messages) * $rowH + 20;
 $x = fn(string $host) => $left + $hosts[$host] * $colW + $colW / 2;
 $color = static function (array $m): string {
     if ($m['request']) {
-        return 'var(--primary, #2563eb)';
+        return 'var(--primary)';
     }
-    return $m['status'] < 200 ? 'var(--text-secondary, #64748b)' : ($m['status'] < 300 ? 'var(--success, #16a34a)' : ($m['status'] < 400 ? 'var(--info, #0891b2)' : 'var(--danger, #dc2626)'));
+    return $m['status'] < 200 ? 'var(--text-muted)' : ($m['status'] < 300 ? 'var(--success)' : ($m['status'] < 400 ? 'var(--info)' : 'var(--danger)'));
 };
 $t0 = $messages[0]['ts'] ?? 0;
 ?>
@@ -32,7 +32,7 @@ $t0 = $messages[0]['ts'] ?? 0;
         <p class="u-muted"><?php echo t('siptrace.no_messages'); ?></p>
     <?php else: ?>
         <div class="table-responsive">
-            <svg class="sip-ladder" width="<?php echo $width; ?>" height="<?php echo $height; ?>" viewBox="0 0 <?php echo $width; ?> <?php echo $height; ?>" role="img" aria-label="SIP ladder" style="font: 12px var(--font-mono, monospace); color: var(--text-main, #0f172a);">
+            <svg class="sip-ladder u-fs-12 u-mono u-text-main" width="<?php echo $width; ?>" height="<?php echo $height; ?>" viewBox="0 0 <?php echo $width; ?> <?php echo $height; ?>" role="img" aria-label="SIP ladder">
                 <defs>
                     <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="context-stroke"/></marker>
                 </defs>
@@ -56,7 +56,7 @@ $t0 = $messages[0]['ts'] ?? 0;
         </div>
         <div class="u-mt-10">
             <div class="u-fs-12 u-muted" id="sipMsgHead"><?php echo t('siptrace.click_message'); ?></div>
-            <pre id="sipMsgText" class="u-mono u-fs-12" style="max-height: 480px; overflow: auto; white-space: pre-wrap; background: var(--bg-hover, #f1f5f9); padding: 12px; border-radius: 6px;"></pre>
+            <pre id="sipMsgText" class="u-mono u-fs-12 u-maxh-480 u-of-auto u-white-space-pre-wrap u-bg-bg-input u-p-12 u-r-8"></pre>
         </div>
         <script>
         (function () {

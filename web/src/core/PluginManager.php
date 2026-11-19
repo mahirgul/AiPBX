@@ -291,6 +291,14 @@ final class PluginManager
                 }
             }
 
+            if ($slug === 'ai-apps') {
+                try {
+                    require_once dirname(__DIR__) . '/services/LocalAiService.php';
+                    LocalAiService::drainCalls(false);
+                } catch (\Throwable $e) {
+                }
+            }
+
             writeAuditLog('plugins', 'plugin', $slug, "Plugin enabled: {$m['name']} (v{$m['version']})", 'update', $_SESSION['user_id'] ?? null);
             return sprintf(t('plugins.msg_enabled', 'Plugin "%s" has been installed and enabled.'), (string)($m['name'] ?? $slug));
         });

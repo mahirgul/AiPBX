@@ -9,7 +9,7 @@
 $db = getDB();
 
 $user = getCurrentUser();
-$role = $_SESSION['user_role'] ?? 'user';
+$role = userHasRole('admin') ? 'admin' : ($_SESSION['user_role'] ?? 'user');
 $theme = portalTheme($_SESSION['theme'] ?? null);
 $active_page = basename($_SERVER['PHP_SELF']);
 $request_uri = $_SERVER['REQUEST_URI'] ?? '';
@@ -46,10 +46,12 @@ if ($is_spa_request) {
     // spa_router.js fetches the new sidebar (it is not in this response).
     $menu_changed_for_spa = class_exists('PluginManager', false) && PluginManager::$menuChanged;
     echo '<div id="spa-page-data" data-title="' . htmlspecialchars(($page_title ?? '') . ' - ' . $site_title) . '" data-page="' . htmlspecialchars($active_page) . '" data-pending-sync-count="' . (int)$pending_sync_count_for_spa . '"'
-        . ($menu_changed_for_spa ? ' data-menu-changed="1"' : '') . '></div>';
+        . ($menu_changed_for_spa ? ' data-menu-changed="1"' : '')
+        . (pendingSyncAutoApplyNow() ? ' data-auto-apply="1"' : '')
+        . ' data-user-ext="' . htmlspecialchars(currentUserExtension()) . '"></div>';
     return;
 }
-$is_cc_agent = ($user['role'] === 'cc_agent');
+$is_cc_agent = userHasRole('cc_agent');
 if (!$is_cc_agent && !empty($user['extension'])) {
     $stmt_top = $db->query("SELECT members_json FROM pbx_queues WHERE is_active = 1");
     $q_mems = $stmt_top ? $stmt_top->fetchAll(PDO::FETCH_COLUMN) : [];
@@ -91,6 +93,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
             document.documentElement.setAttribute('data-font-size', savedFont);
         })();
         window.CSRF_TOKEN = "<?php echo getCSRFToken(); ?>";
+        window.PENDING_AUTO_APPLY = <?php require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php'; echo pendingSyncAutoApplyNow() ? 'true' : 'false'; ?>;
         window.CURRENT_USER_EXT = "<?php echo htmlspecialchars($user['extension'] ?? ''); ?>";
         window.IS_CC_AGENT = <?php echo $is_cc_agent ? 'true' : 'false'; ?>;
         // The WebSocket path comes from sys_settings (no static value in code)
@@ -143,5 +146,6 @@ if (!$is_cc_agent && !empty($user['extension'])) {
         <?php require_once dirname(__DIR__) . '/topbar.php'; ?>
         <?php require_once dirname(__DIR__) . '/softphone_drawer.php'; ?>
         <?php require_once dirname(__DIR__) . '/phone_settings_modal.php'; ?>
+        <?php require_once dirname(__DIR__) . '/qr_login_modal.php'; ?>
 
         <section class="content-area">

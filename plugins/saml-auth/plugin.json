@@ -24,7 +24,7 @@
     "hooks": {
         "auth_provider": true,
         "admin_page": {
-            "group": "integrations"
+            "group": "security"
         }
     },
     "settings_schema": [

@@ -69,6 +69,22 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
         </div>
     <?php endif; ?>
 
+    <?php
+    $can_assistant_search = hasModulePermission('assistant', 'view') && PluginManager::isEnabled('ai-assistant');
+    ?>
+    <div class="sidebar-search-wrap">
+        <div class="u-relative">
+            <i class="fas fa-search u-pos-absolute u-left-10 u-top-50pc u-transform-translatey-50pc u-muted u-fs-12 u-pointer-events-none"></i>
+            <input type="search" id="sidebar-menu-search" class="form-control form-control-sm u-pl-28 sidebar-search-input" placeholder="<?php echo htmlspecialchars(t('common.search', 'Ara...')); ?>" autocomplete="off">
+        </div>
+        <?php if ($can_assistant_search): ?>
+        <a href="/assistant" id="sidebar-ai-ask-link" class="sidebar-ai-ask">
+            <i class="fas fa-wand-magic-sparkles"></i>
+            <span id="sidebar-ai-ask-text"></span>
+        </a>
+        <?php endif; ?>
+    </div>
+
     <ul class="nav-menu">
         <?php
         $sidebar_label = fn($l) => is_array($l) ? t($l[0], $l[1]) : t($l);
@@ -98,7 +114,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
                     <?php foreach ($items as $item): ?>
                         <li>
                             <a href="<?php echo $item['href']; ?>" class="nav-link <?php echo $is_active($item) ? 'active' : ''; ?>" title="<?php echo $sidebar_label($item['title'] ?? $item['label']); ?>">
-                                <?php echo $sidebar_icon($item); ?> <span class="nav-text"><?php echo $sidebar_label($item['label']); ?></span>
+                                <?php echo $sidebar_icon($item); ?> <span class="nav-text"><?php echo $sidebar_label($item['label']); ?><?php echo !empty($item['experimental']) ? ' ' . uiExperimentalBadge() : ''; ?></span>
                             </a>
                         </li>
                     <?php endforeach; ?>

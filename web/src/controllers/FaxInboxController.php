@@ -17,7 +17,7 @@ class FaxInboxController extends BaseController
             static::requireRole(['admin', 'fax_user']);
         }
 
-        $user_role = $_SESSION['user_role'] ?? '';
+        $user_role = userEffectiveRole();
         $user_id = intval($_SESSION['user_id'] ?? 0);
         $user_ext = $_SESSION['extension'] ?? '';
 

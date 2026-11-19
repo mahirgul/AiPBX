@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth.php';
 requireLogin();
-if (($_SESSION['user_role'] ?? '') !== 'admin'
+if (!userHasRole('admin')
     && !hasModulePermission('sounds', 'view')
     && !hasModulePermission('announcements', 'view')
     && !hasModulePermission('ivrs', 'view')

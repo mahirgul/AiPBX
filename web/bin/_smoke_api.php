@@ -41,6 +41,15 @@ if (!is_file($file)) {
     file_put_contents($outfile, json_encode(['script' => $script, 'status' => 'skip', 'error' => 'no such endpoint']));
     exit(0);
 }
+// The Assistant starts switched off and then refuses everyone, admin too.
+if ($script === 'api/assistant.php') {
+    require_once $SMOKE_ROOT . '/config.php';
+    require_once $SMOKE_ROOT . '/src/core/PluginManager.php';
+    if (!PluginManager::isEnabled('ai-assistant')) {
+        file_put_contents($outfile, json_encode(['script' => $script, 'status' => 'skip', 'error' => 'switched off']));
+        exit(0);
+    }
+}
 
 // The endpoint is addressed directly, as the browser's fetch() addresses it.
 $_SERVER['REQUEST_METHOD'] = 'GET';

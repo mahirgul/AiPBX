@@ -27,7 +27,7 @@ class ChatController extends BaseController
         }
 
         // Chat settings: administrators only.
-        $isAdmin = ($_SESSION['user_role'] ?? '') === 'admin';
+        $isAdmin = userHasRole('admin');
         $notices = $isAdmin
             ? static::handlePost([
                 'save_chat_settings' => fn() => static::verifyCsrf()

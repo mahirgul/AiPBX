@@ -184,8 +184,9 @@ when they want (no ringing everyone).
 
 #### 3.3 Community plugins — delivered
 
-`ai-assistant`, `auto-dialer` and `ai-voicemail` now live in the community repository. Core upgrades
-move existing bundled copies offline while preserving configuration. Catalog installs/updates and
+`auto-dialer` and `ai-voicemail` now live in the community repository. Core upgrades
+move existing bundled copies offline while preserving configuration. The former community
+`ai-assistant` was replaced by the official PBX Assistant plugin; an upgrade removes the old copy. Catalog installs/updates and
 signature verification are described in [Plugin development](docs/plugin-development.md).
 
 #### 3.4 Remote TTS server

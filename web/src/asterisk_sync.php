@@ -84,29 +84,60 @@ function handEditedConfCopies(): array
  * functions move their writePBXConf() and reload calls in here.
  */
 function writeConfWithRollback($filename, $content, callable $reloadFn, $context) {
-    $file_path = ASTERISK_PBX_DIR . '/' . $filename;
-    $backup_path = $file_path . '.prev';
-    $had_previous = is_file($file_path);
-    $previous_content = $had_previous ? @file_get_contents($file_path) : null;
+    return writeConfsWithRollback([$filename => $content], $reloadFn, (string) $context);
+}
 
-    writePBXConf($filename, $content);
+/**
+ * The same for files that belong together (parking: res_parking + its dialplan): all are
+ * written, then reloaded; when the reload fails ALL of them go back to their previous
+ * content, so Asterisk never runs a new half with an old half.
+ *
+ * @param array<string, string> $files file name in pbx/ => content
+ */
+function writeConfsWithRollback(array $files, callable $reloadFn, string $context): bool {
+    $previous = [];
+    foreach (array_keys($files) as $filename) {
+        $path = ASTERISK_PBX_DIR . '/' . $filename;
+        $previous[$filename] = is_file($path) ? file_get_contents($path) : null;
+        if ($previous[$filename] === false) {
+            throw new \RuntimeException(sprintf(t('sync.err_write'), $path, 'Cannot read the previous configuration'));
+        }
+    }
 
+    $written = [];
     try {
+        foreach ($files as $filename => $content) {
+            writePBXConf($filename, $content);
+            $written[] = $filename;
+        }
         $reloadFn();
-        // Success — keep this content as the "known good" version to go back
-        // to on the next failure (the current file is exactly this already).
-        if ($previous_content !== null) {
-            @FileHelper::writeFile($backup_path, $previous_content, 'asterisk', 'asterisk', 0640);
+        // Success — keep the previous content as the "known good" version to go back
+        // to on the next failure (the current file is exactly the new one already).
+        foreach ($previous as $filename => $old) {
+            if ($old !== null) {
+                @FileHelper::writeFile(ASTERISK_PBX_DIR . '/' . $filename . '.prev', $old, 'asterisk', 'asterisk', 0640);
+            }
         }
         return true;
-    } catch (\Exception $e) {
-        if ($previous_content === null) {
-            throw new \Exception(sprintf(t('sync.err_no_rollback'), $context, $e->getMessage()));
+    } catch (\Throwable $e) {
+        if ($written === []) {
+            throw $e;
         }
-        writePBXConf($filename, $previous_content);
         try {
+            foreach ($written as $filename) {
+                $old = $previous[$filename];
+                if ($old !== null) {
+                    writePBXConf($filename, $old);
+                    continue;
+                }
+                $path = ASTERISK_PBX_DIR . '/' . $filename;
+                if (is_file($path) && !unlink($path)) {
+                    throw new \RuntimeException(sprintf(t('sync.err_write'), $path, 'Cannot remove the new configuration'));
+                }
+                @unlink($path . '.written');
+            }
             $reloadFn();
-        } catch (\Exception $e2) {
+        } catch (\Throwable $e2) {
             throw new \Exception(sprintf(t('sync.err_rollback_failed'), $context, $e->getMessage(), $e2->getMessage()));
         }
         throw new \Exception(sprintf(t('sync.err_rolled_back'), $context, $e->getMessage()));
@@ -189,6 +220,7 @@ const PENDING_SYNC_DOMAIN_MAP = [
     'custom_dialplan'   => 'syncCustomDialplan',
     'advanced_pjsip'    => 'syncAdvancedPjsip',
     'readdress'         => 'syncReaddress',
+    'parking'           => 'syncParking',
 ];
 
 /**
@@ -214,9 +246,13 @@ function markPendingSync($domain, $entity_type, $entity_id, $entity_label, $acti
     $stmt = $db->prepare(
         "INSERT INTO sys_pending_sync (domain, entity_type, entity_id, entity_label, action, changed_by, changed_at)
          VALUES (?, ?, ?, ?, ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE entity_label = VALUES(entity_label), action = VALUES(action), changed_by = VALUES(changed_by), changed_at = NOW()"
+         ON DUPLICATE KEY UPDATE entity_label = VALUES(entity_label), action = VALUES(action), changed_by = VALUES(changed_by), changed_at = NOW(), revision = revision + 1"
     );
     $stmt->execute([$domain, $entity_type, (string)$entity_id, $entity_label, $action, $user_id]);
+    // "Apply changes at once": the next page this user opens applies them (pendingSyncAutoApplyNow()).
+    if ($domain !== 'readdress' && isset($_SESSION)) {
+        $_SESSION['pending_sync_marked'] = 1;
+    }
 
     // sys_pending_sync ROWS are DELETED after Apply — a permanent "who did
     // what and when" record goes to the separate, INSERT-only sys_audit_log.
@@ -267,12 +303,36 @@ function getPendingSyncList() {
     return $grouped;
 }
 
+/** The signed-in user's extension as it is now (the web phone follows a change of it). */
+function currentUserExtension(): string
+{
+    $st = getDB()->prepare('SELECT extension FROM sys_users WHERE id = ?');
+    $st->execute([(int) ($_SESSION['user_id'] ?? 0)]);
+    return (string) $st->fetchColumn();
+}
+
+/**
+ * True once after this user saved a change, when "apply changes at once" is on and
+ * they may apply. A pending server address change is never applied this way.
+ */
+function pendingSyncAutoApplyNow(): bool
+{
+    if (empty($_SESSION['pending_sync_marked'])) {
+        return false;
+    }
+    unset($_SESSION['pending_sync_marked']);
+    return getSystemSetting('pending_sync_auto_apply', '0') === '1'
+        && hasModulePermission('pending_sync', 'edit')
+        && !getDB()->query("SELECT 1 FROM sys_pending_sync WHERE domain = 'readdress' LIMIT 1")->fetchColumn()
+        && getPendingSyncCount() > 0;
+}
+
 /**
  * Runs when "Apply" is pressed: calls the real syncXxx() function once for
  * EVERY pending domain (ONE regen per domain however many records changed
  * in it — syncAllQueues() already generates all queues in one go, and the
  * withSyncLock() lock applies here too). A successful domain's rows are
- * deleted; if a domain fails its rows STAY (retried on the next Apply) and
+ * deleted (only those read before its sync, at the revision read); if a domain fails its rows STAY (retried on the next Apply) and
  * the other domains are NOT AFFECTED.
  * Returns: ['domain' => ['success' => bool, 'error' => string|null]].
  */
@@ -294,13 +354,20 @@ function applyPendingSync($user_id = null) {
             $results[$domain] = ['success' => false, 'error' => "Unknown domain: {$domain}"];
             continue;
         }
+        // What this run applies: a row saved (or saved again) while the sync runs has
+        // another id or revision and stays pending for the next Apply.
+        $snap = $db->prepare('SELECT id, revision FROM sys_pending_sync WHERE domain = ?');
+        $snap->execute([$domain]);
+        $applied = $snap->fetchAll(PDO::FETCH_KEY_PAIR);
         try {
             $fn();
             if ($domain === 'general_dialplan' && class_exists('PluginManager')) {
                 PluginManager::syncAllEnabledPlugins();
             }
-            $del = $db->prepare("DELETE FROM sys_pending_sync WHERE domain = ?");
-            $del->execute([$domain]);
+            $del = $db->prepare('DELETE FROM sys_pending_sync WHERE id = ? AND revision = ?');
+            foreach ($applied as $rowId => $rev) {
+                $del->execute([$rowId, $rev]);
+            }
             $results[$domain] = ['success' => true, 'error' => null];
             writeAuditLog($domain, 'sync_apply', $domain, $domain, 'apply', $user_id);
             if (class_exists('WebhookService')) {
@@ -355,6 +422,7 @@ require_once __DIR__ . '/sync/SyncAiAgents.php';
 require_once __DIR__ . '/sync/SyncCustomDialplan.php';
 require_once __DIR__ . '/sync/SyncAdvancedPjsip.php';
 require_once __DIR__ . '/sync/SyncReaddress.php';
+require_once __DIR__ . '/sync/SyncParking.php';
 
 /**
  * Updates the system default language (/etc/asterisk/asterisk.conf [options]
@@ -430,6 +498,11 @@ function syncEverything() {
     syncRtpSettings();
     syncUdptlSettings();
     syncSignalingCapture();
+    syncParking();
+    if (is_file(__DIR__ . '/services/CustomConfigService.php')) {
+        require_once __DIR__ . '/services/CustomConfigService.php';
+        CustomConfigService::ensureFilesExist();
+    }
 
     return true;
 }

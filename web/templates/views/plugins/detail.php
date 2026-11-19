@@ -9,7 +9,7 @@
  * @var string $csrf_token
  */
 
-$schema = $plugin['settings_schema'] ?? [];
+$schema = ($plugin['slug'] ?? '') === 'ai-assistant' ? [] : ($plugin['settings_schema'] ?? []);
 $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
 ?>
 

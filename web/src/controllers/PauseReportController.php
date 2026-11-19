@@ -14,7 +14,7 @@ class PauseReportController extends BaseController
         static::requireRole(['admin', 'cc_manager', 'cc_agent']);
 
         $user = getCurrentUser();
-        $role = $_SESSION['user_role'] ?? 'user';
+        $role = userEffectiveRole();
         $user_ext = $user['extension'] ?? '';
         $can_view_all = ($role === 'admin' || !empty($user['can_view_all_cdrs']));
 

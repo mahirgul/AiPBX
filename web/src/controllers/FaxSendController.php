@@ -13,7 +13,7 @@ class FaxSendController extends BaseController
 
         $user_id = $_SESSION['user_id'];
         $user_ext = (string)($_SESSION['extension'] ?? '');
-        $user_role = $_SESSION['user_role'] ?? 'user';
+        $user_role = userEffectiveRole();
 
         if (static::isPost() && !empty($_POST['cover_preview']) && verifyCSRFToken($_POST['csrf_token'] ?? '')) {
             $settings = FaxCoverService::settingsFor($_POST, (int) $user_id, (string) $user_role);

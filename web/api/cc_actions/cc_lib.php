@@ -38,6 +38,7 @@ function buildOriginateCommand(string $user_ext, string $to, string $outbound_co
            "Context: $outbound_context\r\n" .
            "Exten: $to\r\n" .
            "Priority: 1\r\n" .
+           "Async: true\r\n" .
            "CallerID: Agent $user_ext <$user_ext>\r\n" .
            "Variable: __SAVED_DST=$to\r\n" .
            "Variable: __PERMISSION_GROUP_ID=$perm_group\r\n\r\n";

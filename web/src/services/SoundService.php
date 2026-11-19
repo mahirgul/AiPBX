@@ -162,13 +162,13 @@ class SoundService {
                         UNION ALL
                         SELECT id FROM pbx_ivr_data_steps WHERE prompt_file = ?
                         UNION ALL
-                        SELECT id FROM pbx_queues WHERE periodic_announce = ? OR callback_announce = ?
+                        SELECT id FROM pbx_queues WHERE periodic_announce = ? OR callback_announce = ? OR join_announce = ?
                         UNION ALL
                         SELECT id FROM pbx_hangup_actions WHERE announcement_id = ?
                         UNION ALL
                         SELECT 1 AS id FROM sys_settings WHERE setting_key = 'privacy_notice_sound_id' AND setting_value = ?
                     ) refs",
-                    [$afile, $afile, $afile, $afile, $anc_id, $sid]
+                    [$afile, $afile, $afile, $afile, $afile, $anc_id, $sid]
                 );
                 if ($refs > 0) {
                     throw new \Exception(t('srv_tc.err_in_use'));

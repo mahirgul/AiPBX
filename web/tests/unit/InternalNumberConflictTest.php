@@ -35,6 +35,15 @@ final class InternalNumberConflictTest extends TestCase
         $this->db->exec("DELETE FROM pbx_conferences WHERE room_number IN ('7301','7302')");
         $this->db->exec("DELETE FROM pbx_ring_groups WHERE group_number IN ('7301','7303')");
         $this->db->exec("DELETE FROM sys_users WHERE username LIKE 'inttest_%'");
+        $this->db->exec("DELETE FROM pbx_feature_codes WHERE code = '999991'");
+    }
+
+    public function testNextFreeExtensionSkipsUsedNumbers(): void
+    {
+        $this->db->exec("INSERT INTO sys_users (username, password_hash, full_name, email, role, extension, is_active, is_device, token_epoch)
+                         VALUES ('inttest_next', '', 'Next', '', 'user', '999990', 1, 0, 0)");
+        $this->db->exec("INSERT INTO pbx_feature_codes (feature_key, code, title) VALUES ('inttest_next', '999991', 'Test code')");
+        $this->assertSame('999992', nextFreeExtension());
     }
 
     public function testConferenceCanBeSaved(): void

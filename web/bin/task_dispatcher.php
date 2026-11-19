@@ -28,6 +28,27 @@ try {
 } catch (\Throwable $e) {
     // Non-fatal
 }
+// Holiday calendars with an .ics address: read again once a day.
+try {
+    require_once dirname(__DIR__) . '/src/services/HolidayCalendarService.php';
+    if (HolidayCalendarService::refreshDue()) {
+        try {
+            syncAllTimeConditions();
+        } catch (\Throwable $e) {
+            error_log('[holidays] time condition sync failed: ' . $e->getMessage());
+            markPendingSync('time_conditions', 'holiday_calendar', 0, 'Holidays (refreshed)', 'update', null);
+        }
+    }
+} catch (\Throwable $e) {
+    // Non-fatal
+}
+// Trunk monthly minutes / cost limits: the flag the dialplan reads, and the bell.
+try {
+    require_once dirname(__DIR__) . '/src/services/TrunkUsageService.php';
+    TrunkUsageService::refresh();
+} catch (\Throwable $e) {
+    // Non-fatal
+}
 
 ScheduledTaskRunner::removeDeletedTaskFolders();
 

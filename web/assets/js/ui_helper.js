@@ -294,6 +294,11 @@ function closeHeaderSyncDropdown() {
     if (btn) btn.classList.remove('active');
 }
 
+// A change saved by a full page load: apply it now when "apply changes at once" is on.
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.PENDING_AUTO_APPLY) executeDirectPendingSync(null, true);
+});
+
 // Close the menu when clicking outside the dropdown
 document.addEventListener('click', function(e) {
     const container = document.getElementById('header-pending-sync-container');
@@ -302,7 +307,27 @@ document.addEventListener('click', function(e) {
     }
 });
 
-function executeDirectPendingSync(event) {
+/** The welcome card's "Do not show again": closed for this user for good. */
+function dismissWelcomeCard() {
+    const card = document.getElementById('welcomeCard');
+    if (card) card.remove();
+    fetch('/api/welcome.php', {
+        method: 'POST',
+        headers: { 'X-CSRF-Token': window.CSRF_TOKEN || '', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'csrf_token=' + encodeURIComponent(window.CSRF_TOKEN || '')
+    }).catch(() => {});
+}
+
+/** Covers the page while changes are applied on their own ("apply changes at once"). */
+function showApplyLock() {
+    const lock = document.createElement('div');
+    lock.className = 'modal-overlay active';
+    lock.innerHTML = '<div class="card u-p-16 u-fw-600"><i class="fas fa-spinner fa-spin u-primary"></i> ' + __('js.ui.applying') + '</div>';
+    document.body.appendChild(lock);
+    return () => lock.remove();
+}
+
+function executeDirectPendingSync(event, lockScreen) {
     if (event) {
         event.preventDefault();
         event.stopPropagation();
@@ -315,6 +340,7 @@ function executeDirectPendingSync(event) {
     const originalContent = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="d-none d-sm-inline">' + (window.LANG_APPLYING || __('js.ui.applying')) + '</span>';
+    const unlock = lockScreen ? showApplyLock() : () => {};
 
     fetch('/api/pending_sync.php', {
         method: 'POST',
@@ -328,10 +354,14 @@ function executeDirectPendingSync(event) {
     .then(data => {
         btn.disabled = false;
         btn.innerHTML = originalContent;
+        unlock();
 
         if (data.success) {
             if (typeof showFooterToast === 'function') {
                 showFooterToast(data.message || __('js.ui.applied'), 'success');
+            }
+            if (typeof headerPhoneFollowExtension === 'function') {
+                headerPhoneFollowExtension(data.user_extension || '');
             }
             // Success: hide the badges in the header and sidebar, reset the counters
             const headerContainer = document.getElementById('header-pending-sync-container');
@@ -367,6 +397,7 @@ function executeDirectPendingSync(event) {
     .catch(err => {
         btn.disabled = false;
         btn.innerHTML = originalContent;
+        unlock();
         console.error('Pending sync apply error:', err);
         if (typeof showFooterToast === 'function') {
             showFooterToast('' + __('js.common.connection_error_colon') + '' + err.message, 'danger');

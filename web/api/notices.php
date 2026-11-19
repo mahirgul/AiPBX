@@ -8,7 +8,7 @@ require_once __DIR__ . '/../src/services/NoticeService.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-if (($_SESSION['user_role'] ?? '') !== 'admin') {
+if (!userHasRole('admin')) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => t('api.err_no_permission')]);
     return;

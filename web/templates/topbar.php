@@ -79,7 +79,7 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
 
     <!-- Top Bar Right: Pending Sync (Uygula) Dropdown & Actions -->
     <div class="top-bar-right">
-        <?php if (($_SESSION['user_role'] ?? '') === 'admin'): /* api/notices.php checks it too */ ?>
+        <?php if (userHasRole('admin')): /* api/notices.php checks it too */ ?>
             <div class="header-notices-wrapper" id="header-notices">
                 <button type="button" class="topbar-btn header-notices-btn" id="header-notices-btn" onclick="toggleNotices(event)"
                         title="<?php echo htmlspecialchars(t('notices.title')); ?>" aria-label="<?php echo htmlspecialchars(t('notices.title')); ?>" aria-expanded="false">

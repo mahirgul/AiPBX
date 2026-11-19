@@ -293,6 +293,36 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
     padding: 10px 12px;
 }
 
+.nav-submenu .nav-link > i {
+    color: var(--sidebar-icon-color, var(--primary));
+}
+
+#group-admin,
+#group-troubleshooting {
+    --sidebar-icon-color: var(--warning);
+}
+
+#group-trunks,
+#group-network,
+#group-integrations {
+    --sidebar-icon-color: var(--info);
+}
+
+#group-provisioning,
+#group-cc {
+    --sidebar-icon-color: var(--success);
+}
+
+#group-fax,
+#group-ai,
+#group-ai_settings {
+    --sidebar-icon-color: var(--purple);
+}
+
+#group-security {
+    --sidebar-icon-color: var(--danger);
+}
+
 .nav-link {
     display: flex;
     align-items: center;
@@ -359,3 +389,20 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
 /* The .content-area definition moved to style.css (this file loads before
    ui/*.css, so the rule here never took effect — see the note in
    style.css). Removed so it does not linger here as dead code. */
+
+/* Sidebar menu search (templates/sidebar.php, assets/js/sidebar_search.js) */
+.sidebar-search-wrap { padding: 5px 12px 10px; }
+.sidebar.collapsed .sidebar-search-wrap { display: none; }
+.sidebar-search-input { font-size: 12px; border-radius: 8px; }
+.sidebar-ai-ask {
+    display: none; margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    text-decoration: none; background: var(--nav-active-bg); color: var(--primary); align-items: center; gap: 6px;
+}
+.sidebar-ai-ask.is-visible { display: flex; }
+
+/* A setting found by the settings search (?highlight=) */
+@keyframes aipbxHighlightPulse {
+    0% { box-shadow: 0 0 0 3px var(--primary); background: var(--nav-active-bg); }
+    100% { box-shadow: none; }
+}
+.aipbx-search-highlight { animation: aipbxHighlightPulse 2.4s ease-out; border-radius: 6px; }

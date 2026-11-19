@@ -36,6 +36,13 @@
                 <label class="form-label"><i class="fas fa-bell"></i> <?php echo t('phone_settings.field_ring_volume'); ?></label>
                 <input type="range" id="phone_ring_volume_slider" min="0" max="100" value="100" style="width: 100%;" oninput="savePhoneRingVolume(this.value)">
             </div>
+
+            <div class="form-group u-mb-0 u-mt-16">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closePhoneSettingsModal(); openQrLoginModal();">
+                    <i class="fas fa-qrcode"></i> <?php echo t('my_phone.show_qr'); ?>
+                </button>
+                <small class="u-muted u-fs-11 u-mt-6" style="display: block;"><?php echo t('phone_settings.qr_help'); ?></small>
+            </div>
         </div>
     </div>
 </div>

@@ -46,6 +46,12 @@ function uiPageHeaderOpen(string $icon, string $title, string $help = ''): strin
     return '<div class="card-header"><div class="card-title"><i class="' . htmlspecialchars($class) . '"></i> ' . $title;
 }
 
+/** The "Experimental" mark of a feature that still changes (sidebar entry, page title). */
+function uiExperimentalBadge(): string {
+    return '<span class="badge badge-warning u-fs-10" title="' . htmlspecialchars(t('common.experimental_hint')) . '">'
+        . htmlspecialchars(t('common.experimental')) . '</span>';
+}
+
 function uiPageHeaderActions(): string {
     $help = (string) ($GLOBALS['uiPageHeaderHelp'] ?? '');
     return '</div><div class="page-actions">' . ($help !== '' ? uiHelpButton($help) : '');

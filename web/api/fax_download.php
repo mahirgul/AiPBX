@@ -20,7 +20,7 @@ $fax_module_key = ($type === 'sent') ? 'fax_sent' : 'fax_inbox';
 requireModulePermission($fax_module_key, 'view');
 
 $db = getDB();
-$user_role = $_SESSION['user_role'] ?? '';
+$user_role = userEffectiveRole();
 $user_id = $_SESSION['user_id'] ?? 0;
 $user_ext = $_SESSION['extension'] ?? '';
 

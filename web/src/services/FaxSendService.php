@@ -41,7 +41,7 @@ class FaxSendService {
         // injected into the TSID/header by tampering with the POST
         // (2026-08-31, user request).
         $requested_sender_did = preg_replace('/[^0-9]/', '', trim($post['sender_did'] ?? ''));
-        $current_role = $_SESSION['user_role'] ?? 'user';
+        $current_role = userEffectiveRole();
         if ($current_role === 'admin' && $requested_sender_did !== '') {
             $sender_did = self::faxOwner($requested_sender_did) !== [] ? $requested_sender_did : $userExt;
         } elseif ($requested_sender_did !== '' && in_array($requested_sender_did, FaxInboxRepository::sendableNumbers((int) ($_SESSION['user_id'] ?? 0)), true)) {

@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/Fixtures.php';
 require_once dirname(__DIR__, 2) . '/src/asterisk_sync.php';
 require_once dirname(__DIR__, 2) . '/src/services/PrivacyService.php';
 
-/** Privacy → "Record outbound calls": on by default (the old behaviour), off leaves MixMonitor out. */
+/** Privacy → "Record outbound calls": on by default (the old behaviour); a user's own choice wins either way. */
 final class OutboundRecordingSwitchTest extends TestCase
 {
     protected function setUp(): void
@@ -33,10 +33,14 @@ final class OutboundRecordingSwitchTest extends TestCase
 
         $res = PrivacyService::saveNotice(['csrf_token' => 'rec', 'notice_mode' => 'off', 'record_outbound' => '0']);
         $this->assertTrue($res['success'], $res['error'] ?? '');
-        $this->assertStringNotContainsString('MixMonitor(${REC_FILE}', $this->outbound());
+        // Off: recorded only for a user who chose "always" (their endpoint sets AIPBX_REC_POLICY).
+        $this->assertStringContainsString('"${AIPBX_REC_POLICY}" != "always"]?norec)', $this->outbound());
 
         $this->assertTrue(PrivacyService::saveNotice(['csrf_token' => 'rec', 'notice_mode' => 'off', 'record_outbound' => '1'])['success']);
-        $this->assertStringContainsString('MixMonitor(${REC_FILE}', $this->outbound());
+        $on = $this->outbound();
+        $this->assertStringContainsString('MixMonitor(${REC_FILE}', $on);
+        // On: everyone but a user who chose "never".
+        $this->assertStringContainsString('"${AIPBX_REC_POLICY}" = "never"]?norec)', $on);
     }
 
     public function testACallerWithoutTheFieldLeavesItAlone(): void

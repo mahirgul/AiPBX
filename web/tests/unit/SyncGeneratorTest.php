@@ -782,7 +782,7 @@ final class SyncGeneratorTest extends TestCase
         syncOutboundDialplan();
         $conf = (string) file_get_contents(ASTERISK_PBX_DIR . '/extensions_outbound.conf');
         if (str_contains($conf, 'MixMonitor(${REC_FILE})')) {
-            $this->assertStringContainsString('GotoIf($["${AIPBX_FAX}" = "1" | "${PRIVACY_NO_RECORD}" = "1"]?norec)', $conf);
+            $this->assertStringContainsString('GotoIf($["${AIPBX_FAX}" = "1" | "${PRIVACY_NO_RECORD}" = "1" | "${AIPBX_REC_POLICY}"', $conf);
             $this->assertStringContainsString(' same => n(norec),NoOp()', $conf);
         }
         $this->assertStringNotContainsString(" same => n,Set(JITTERBUFFER(adaptive)=default)\n", $conf);

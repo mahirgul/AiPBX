@@ -53,6 +53,8 @@ function _isSessionEpochCurrent(): bool {
     }
     if (!(PHP_SAPI === 'cli' && defined('AIPBX_SMOKE_FORGED_ROLE'))) {
         $_SESSION['user_role'] = (string) $row['role'];
+        // Read on every request like the main role: a role taken away applies at once.
+        $_SESSION['user_roles'] = loadUserRoles($userId, (string) $row['role']);
     }
     $stamp = $userId . ':' . (int) $row['token_epoch'];
     $held = $_SESSION['session_epoch'] ?? null;
@@ -142,6 +144,11 @@ function getOtherActiveAdmins($exclude_user_id, $window_seconds = 120) {
  * Landing page after sign-in for a role (all login flows and "/" use this).
  */
 function roleHomePath(string $role): string {
+    $aiSettingsFile = __DIR__ . '/src/services/ai/AssistantSettingsService.php';
+    if (is_file($aiSettingsFile)) {
+        require_once $aiSettingsFile;
+        return AssistantSettingsService::homePath($role);
+    }
     return match ($role) {
         'admin' => '/dashboard',
         'cc_agent' => '/cc-agent',
@@ -173,10 +180,12 @@ function getModuleKeyForPage($page = null) {
         'ivrs.php'              => 'ivrs',
         // SQL against the external databases: administrators only, like them.
         'ivr_data_steps.php'    => 'external_dbs',
+        // Code that runs on the server: administrators only, like scheduled tasks.
+        'agi_scripts.php'       => 'scheduled_tasks',
         'extensions.php'        => 'extensions',
         'phones.php'            => 'phones',
         'phone_keys.php'        => 'phones',
-        'phonebook.php'         => 'phones',
+        'phonebook.php'         => 'phonebook',
         'phone_regions.php'     => 'phones',
         // DHCP/TFTP for desk phones: admin-only like the Phones page.
         'network_services.php'  => 'phones',
@@ -185,6 +194,8 @@ function getModuleKeyForPage($page = null) {
         'vpn_client.php'        => 'phones',
         'reverse_proxy.php'     => 'phones',
         'phone_logs.php'        => 'troubleshooting',
+        'asterisk_logs.php'     => 'troubleshooting',
+        'call_modifiers.php'    => 'call_modifiers',
         'ring_groups.php'       => 'ring_groups',
         'conferences.php'       => 'conferences',
         'meetings.php'          => 'meetings',
@@ -229,15 +240,21 @@ function getModuleKeyForPage($page = null) {
         'plugins.php'               => 'plugins',
         'api_keys.php'              => 'api_keys',
         'webhooks.php'              => 'webhooks',
+        'connections.php'           => 'connections',
         'external_dbs.php'          => 'external_dbs',
         'google_integration.php'    => 'google_integration',
         'ms_teams.php'              => 'ms_teams',
         'web_widgets.php'           => 'web_widgets',
         'ai_tts.php'                => 'ai_tts',
-        'ai_models.php'             => 'ai_models',
+        'ai_local.php'              => 'ai_local',
         'ai_cloud.php'              => 'ai_cloud',
         'ai_apps.php'               => 'ai_apps',
+        'builtin_ai_agent.php'      => 'builtin_ai_agent',
         'ai_agents.php'             => 'ai_agents',
+        'ai_voicemail.php'          => 'ai_voicemail',
+        'ai_call_analysis.php'      => 'ai_call_analysis',
+        'ai_assistant.php'          => 'ai_assistant',
+        'ai_knowledge.php'          => 'ai_knowledge',
         'assistant.php'             => 'assistant',
         'privacy.php'               => 'privacy',
         'mail_settings.php'         => 'mail_settings',
@@ -325,8 +342,57 @@ function userIsOnFaxNumber(): bool
     return $cache[$userId];
 }
 
+/**
+ * A user's roles: the main one (sys_users.role) first, then the extra ones (sys_user_roles).
+ * @return list<string>
+ */
+function loadUserRoles(int $userId, string $mainRole): array {
+    $roles = $mainRole !== '' ? [$mainRole] : [];
+    try {
+        $st = getDB()->prepare('SELECT role_key FROM sys_user_roles WHERE user_id = ? ORDER BY role_key');
+        $st->execute([$userId]);
+        foreach ($st->fetchAll(PDO::FETCH_COLUMN) as $r) {
+            if (!in_array($r, $roles, true)) {
+                $roles[] = (string) $r;
+            }
+        }
+    } catch (\PDOException $e) {
+        // Before the migration: the main role alone.
+    }
+    return $roles;
+}
+
+/** @return list<string> the signed-in user's roles, main role first */
+function userRoles(): array {
+    $main = (string) ($_SESSION['user_role'] ?? '');
+    $roles = $_SESSION['user_roles'] ?? null;
+    if (!is_array($roles) || ($roles[0] ?? null) !== $main) {
+        return $main !== '' ? [$main] : [];
+    }
+    return array_values(array_map('strval', $roles));
+}
+
+/** Whether one of the signed-in user's roles is $role (an agent who is also a fax user, say). */
+function userHasRole(string $role): bool {
+    return in_array($role, userRoles(), true);
+}
+
+/** The role to act as where one role is asked for: admin when the user has it, else the main role. */
+function userEffectiveRole(): string {
+    return userHasRole('admin') ? 'admin' : (string) ($_SESSION['user_role'] ?? '');
+}
+
+/** Any of the user's roles opens the module for $action (each role is checked as before). */
 function hasModulePermission($module_key, $action = 'access') {
-    $role = $_SESSION['user_role'] ?? '';
+    foreach (userRoles() as $role) {
+        if (roleHasModulePermission($role, $module_key, $action)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function roleHasModulePermission(string $role, $module_key, $action = 'access') {
 
     // The 'roles', 'system_users', 'firewall' and 'fail2ban' modules are under a SYMMETRIC circuit breaker:
     // admin can ALWAYS access them (if the roles page got locked the admin could
@@ -344,12 +410,24 @@ function hasModulePermission($module_key, $action = 'access') {
     // 'phones': the provisioning URLs it shows hand out SIP passwords.
     // 'web_widgets': an external destination or the call-back form can cost money.
     // 'file_storage': holds the S3 secret key of the bucket with all chat files.
-    // 'ai_models': installs software as root and downloads models (disk, RAM, CPU).
-    // 'ai_cloud': holds the API keys of paid cloud AI services.
+    // 'ai_local', 'ai_cloud': installs software as root, downloads models, and holds paid cloud AI API keys.
     // 'ai_apps': an application's lookup URL is requested by the server itself.
     // 'ai_agents': calls leave for a SIP address an admin chose, with the service's password.
+    // 'builtin_ai_agent': the built-in agent runs database queries and tools for callers.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
-    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_models', 'ai_cloud', 'ai_apps', 'ai_agents', 'assistant', 'health', 'call_quality', 'custom_dialplan', 'troubleshooting'], true)) {
+    if ($module_key === 'assistant') {
+        $aiSettingsFile = __DIR__ . '/src/services/ai/AssistantSettingsService.php';
+        if (is_file($aiSettingsFile)) {
+            require_once $aiSettingsFile;
+            if ($action === 'edit' || $action === 'delete') {
+                return AssistantSettingsService::canChange($role);
+            }
+            return AssistantSettingsService::canAsk($role);
+        }
+        return $role === 'admin';
+    }
+
+    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'connections', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_local', 'ai_cloud', 'ai_apps', 'ai_agents', 'builtin_ai_agent', 'ai_voicemail', 'ai_call_analysis', 'ai_knowledge', 'ai_assistant', 'health', 'call_quality', 'custom_dialplan', 'custom_configs', 'troubleshooting', 'call_modifiers', 'parking'], true)) {
         return $role === 'admin';
     }
 
@@ -477,8 +555,6 @@ function requireModulePermission($module_key, $action = 'access') {
  */
 function requireRole($allowed_roles) {
     requireLogin();
-    
-    $user_role = $_SESSION['user_role'] ?? '';
 
     // NOTE: there used to be an unconditional shortcut for $user_role === 'admin' here.
     // hasModulePermission() now applies the same nuanced logic to admin too
@@ -486,14 +562,36 @@ function requireRole($allowed_roles) {
     // guard — on every other module the admin's DB permission applies, allowed
     // by default when there is no row), so admin goes through the general
     // flow below as well; no separate shortcut needed.
+    // A user may have several roles (main + extra): any of them can open the page.
+    $roles = userRoles();
 
     if (!is_array($allowed_roles)) {
         $allowed_roles = [$allowed_roles];
     }
 
+    $forbidden = static function (): void {
+        http_response_code(403);
+        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
+        echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
+        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
+        echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
+        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
+        echo '</div></body></html>';
+        exit;
+    };
+    // Explicitly set in roles.php for every one of the user's roles (closed, not just unconfigured).
+    $setForAllRoles = static function (array $modules) use ($roles): bool {
+        foreach ($roles as $r) {
+            if (array_intersect_key(getRolePermissionsMap($r), array_flip($modules)) === []) {
+                return false;
+            }
+        }
+        return $roles !== [];
+    };
+
     $module_key = getModuleKeyForPage();
     if ($module_key === 'cc') {
-        if ($user_role === 'read_only_admin' && !in_array('read_only_admin', $allowed_roles, true)) {
+        if (array_diff($roles, ['read_only_admin']) === [] && !in_array('read_only_admin', $allowed_roles, true)) {
             http_response_code(403);
             exit;
         }
@@ -503,18 +601,8 @@ function requireRole($allowed_roles) {
                 return;
             }
         }
-        $role_perm_map = getRolePermissionsMap($user_role);
-        foreach ($cc_modules as $cm) {
-            if (isset($role_perm_map[$cm])) {
-                http_response_code(403);
-                echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
-                echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
-                echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
-                echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
-                echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
-                echo '</div></body></html>';
-                exit;
-            }
+        if ($setForAllRoles($cc_modules)) {
+            $forbidden();
         }
     }
 
@@ -545,28 +633,14 @@ function requireRole($allowed_roles) {
     // it was explicitly closed, the fixed $allowed_roles list below must NEVER
     // override it — otherwise closing a role's access in roles.php did nothing
     // on pages whose fixed list names that role (inconsistent access behaviour).
-    $role_perm_map = getRolePermissionsMap($user_role);
-    if (isset($role_perm_map[$module_key])) {
-        http_response_code(403);
-        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
-        echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
-        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
-        echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
-        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
-        echo '</div></body></html>';
-        exit;
+    // With several roles: a role named in the list opens the page only when its
+    // own access to the module is not set (closed) in roles.php.
+    foreach ($roles as $r) {
+        if (in_array($r, $allowed_roles, true) && !isset(getRolePermissionsMap($r)[$module_key])) {
+            return;
+        }
     }
-
-    if (!in_array($user_role, $allowed_roles)) {
-        http_response_code(403);
-        echo '<!DOCTYPE html><html lang="' . getUserLanguage() . '"><head><title>' . t('auth.blocked') . '</title><link rel="stylesheet" href="/assets/css/variables.css"><link rel="stylesheet" href="/assets/css/layout.css">' . uiStylesheets() . '<link rel="stylesheet" href="/assets/css/fontawesome.min.css"><link rel="stylesheet" href="/assets/css/style.css"></head>';
-        echo '<body class="auth-body"><div class="auth-card" style="text-align:center; max-width:480px;">';
-        echo '<h2 style="color:var(--danger);"><i class="fas fa-lock"></i> 403 - ' . t('auth.forbidden') . '</h2>';
-        echo '<p style="margin:20px 0; color:var(--text-muted);">' . t('auth.no_page_access') . '</p>';
-        echo '<a href="/" class="btn btn-primary"><i class="fas fa-arrow-left"></i> ' . t('auth.back_home') . '</a>';
-        echo '</div></body></html>';
-        exit;
-    }
+    $forbidden();
 }
 
 function getCurrentUser() {

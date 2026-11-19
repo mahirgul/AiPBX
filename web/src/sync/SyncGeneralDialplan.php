@@ -182,6 +182,14 @@ function __syncGeneralDialplanBody() {
     // Conferences started from a group chat ("cc<room>", SyncConferences).
     $conf .= "include => chat-calls-pbx\n";
     $conf .= "include => custom-dialplan-pbx\n";
+    try {
+        $parkingActive = (int) $db->query("SELECT is_active FROM pbx_parking ORDER BY id ASC LIMIT 1")->fetchColumn();
+        if ($parkingActive === 1) {
+            $conf .= "include => parkedcalls\n";
+        }
+    } catch (\Throwable $e) {
+        // Pre-migration safety: ignore when pbx_parking does not exist yet.
+    }
 
     $conf .= "\n; Default (group 1) — internal + outbound routes\n";
     $conf .= "[from-internal-pbx]\n";
@@ -335,6 +343,32 @@ function __syncGeneralDialplanBody() {
     $conf .= " same => n,Playback(\${IF(\$[\"\${ARG1}\" = \"busy\"]?vm-isonphone:vm-isunavail)}&please-try-again,noanswer)\n";
     $conf .= " same => n,Goto(done)\n";
     $conf .= " same => n(noans),Playback(number-not-answering&please-try-again,noanswer)\n";
+    $conf .= " same => n(done),Return()\n\n";
+
+    // Follow Me (DialplanExtensionBuilder): a number of an extension's list is dialled through
+    // [followme-confirm] when it must be accepted. The person who answers hears "press 1 to accept";
+    // anything else (a mobile's voicemail) hangs that leg up and the others go on ringing.
+    // FM_CTX (the user's outbound context) and FM_RING are inherited from the call.
+    $conf .= "[followme-confirm]\n";
+    $conf .= "exten => _X.,1,Dial(Local/\${EXTEN}@\${FM_CTX}/n,\${FM_RING},U(sub-followme-confirm))\n";
+    $conf .= " same => n,Hangup()\n";
+    $conf .= "exten => _+X.,1,Dial(Local/\${EXTEN}@\${FM_CTX}/n,\${FM_RING},U(sub-followme-confirm))\n";
+    $conf .= " same => n,Hangup()\n\n";
+    $conf .= "[sub-followme-confirm]\n";
+    $conf .= "exten => s,1,Read(FM_OK,followme/options,1,,2,5)\n";
+    $conf .= " same => n,GotoIf(\$[\"\${FM_OK}\" = \"1\"]?ok)\n";
+    $conf .= " same => n,Set(GOSUB_RESULT=CONTINUE)\n";
+    $conf .= " same => n(ok),Return()\n\n";
+
+    // After-call survey of a queue (DialplanDestinationBuilder): the agent hung up, the caller
+    // rates the call 1-5 with a key. ARG1 the queue, ARG2 the question (an announcement).
+    // The agent is the extension in MEMBERINTERFACE (Local/<ext>@from-internal-pbx/n).
+    $conf .= "[sub-queue-survey]\n";
+    $conf .= "exten => s,1,Set(LOCAL(agent)=\${FILTER(0-9,\${CUT(MEMBERINTERFACE,@,1)})})\n";
+    $conf .= " same => n,Read(QSCORE,\${ARG2},1,,2,6)\n";
+    $conf .= " same => n,GotoIf(\$[\"\${FILTER(1-5,\${QSCORE})}\" = \"\"]?done)\n";
+    $conf .= " same => n,Set(LOCAL(r)=\${CURL(http://127.0.0.1/api/queue_survey.php?q=\${ARG1}&a=\${agent}&s=\${QSCORE}&u=\${UNIQUEID})})\n";
+    $conf .= " same => n,Playback(auth-thankyou)\n";
     $conf .= " same => n(done),Return()\n\n";
 
     $conf .= "[aipbx-callback-answered]\n";

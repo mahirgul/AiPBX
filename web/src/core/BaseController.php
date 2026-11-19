@@ -52,6 +52,16 @@ abstract class BaseController
     protected static function handlePost(array $actions): array
     {
         if (static::isPost()) {
+            if (empty($_POST) && empty($_FILES) && (int) ($_SERVER['CONTENT_LENGTH'] ?? 0) > 0) {
+                $limit = (string) ini_get('post_max_size');
+                error_log(sprintf(
+                    '[AI PBX Web] POST body dropped (CONTENT_LENGTH=%d exceeds post_max_size=%s) on %s',
+                    (int) ($_SERVER['CONTENT_LENGTH'] ?? 0),
+                    $limit,
+                    (string) ($_SERVER['REQUEST_URI'] ?? '')
+                ));
+                return ['message' => '', 'error' => sprintf(t('srv_sound.err_too_big'), $limit)];
+            }
             foreach ($actions as $field => $action) {
                 if (isset($_POST[$field])) {
                     return static::notices($action());
@@ -144,6 +154,10 @@ abstract class BaseController
 
         $layouts = dirname(__DIR__, 2) . '/templates/layouts';
         require $layouts . '/app_header.php';
+        require_once dirname(__DIR__) . '/services/WelcomeService.php';
+        if (WelcomeService::shouldShow()) {
+            require dirname(__DIR__, 2) . '/templates/welcome_card.php';
+        }
         View::render($view, $data);
         require $layouts . '/app_footer.php';
     }
@@ -157,6 +171,9 @@ abstract class BaseController
      */
     protected static function renderAuthPage(string $view, array $data = [], array $page = []): void
     {
+        if (!headers_sent()) {
+            header('X-Robots-Tag: noindex, nofollow');
+        }
         $auth_title = $page['title'] ?? '';
         $auth_head = $page['head'] ?? '';
         $auth_lang_switch_inline = !empty($page['inline_lang_switch']);

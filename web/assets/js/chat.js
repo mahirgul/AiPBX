@@ -628,7 +628,7 @@ function appendMessageToUI(msg, replaceEl) {
             font-size: 11.5px; border-radius: 12px; max-width: 85%;
             text-align: center; line-height: 1.4;
         `;
-        sysRow.innerHTML = chatCallCardHtml(msg) || `<i class="fas fa-info-circle" style="margin-right: 4px;"></i> ${escapeHtml(msg.message)}`;
+        sysRow.innerHTML = chatCallCardHtml(msg) || `<i class="fas fa-info-circle u-mr-4"></i> ${escapeHtml(msg.message)}`;
         scrollEl.appendChild(sysRow);
         markEndedChatCalls();
         return;
@@ -982,7 +982,7 @@ function chatCallCardHtml(msg) {
     const meta = chatCallMeta(msg);
     const callId = parseInt(meta.call_id, 10) || 0;
     const video = meta.video === '1';
-    const icon = `<i class="fas ${video ? 'fa-video' : 'fa-phone-alt'}" style="margin-right: 4px;"></i>`;
+    const icon = `<i class="fas ${video ? 'fa-video' : 'fa-phone-alt'} u-mr-4"></i>`;
     if (msg.system_event === 'call_ended') {
         const secs = parseInt(meta.duration, 10) || 0;
         const dur = Math.floor(secs / 60) + ':' + String(secs % 60).padStart(2, '0');
@@ -990,7 +990,7 @@ function chatCallCardHtml(msg) {
     }
     const who = escapeHtml(msg.sender_name || msg.sender_ext || '');
     const text = escapeHtml(__(video ? 'js.chat.call_started_video' : 'js.chat.call_started_voice', who));
-    return `${icon}${text} <button type="button" class="btn btn-sm btn-primary u-r-8" data-call-join="${callId}" data-call-video="${video ? 1 : 0}" style="margin-left: 8px; padding: 1px 10px; font-size: 11.5px;" onclick="joinChatCall(${callId}, ${video})">${escapeHtml(__('js.chat.call_join'))}</button>`;
+    return `${icon}${text} <button type="button" class="btn btn-xs btn-primary u-r-8 u-ml-8" data-call-join="${callId}" data-call-video="${video ? 1 : 0}" onclick="joinChatCall(${callId}, ${video})">${escapeHtml(__('js.chat.call_join'))}</button>`;
 }
 
 // A call that has its "ended" message no longer offers Join.

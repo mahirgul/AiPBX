@@ -46,12 +46,15 @@ class PBXHelper {
         if (!verifyCSRFToken($csrf_token)) {
             return ['success' => false, 'error' => t('common.invalid_csrf')];
         }
+        $uri = (string) ($_SERVER['REQUEST_URI'] ?? 'cli');
         try {
             $msg = $action();
             return ['success' => true, 'message' => is_string($msg) ? $msg : t('common.done')];
         } catch (\PDOException $e) {
+            error_log('[AI PBX DB] ' . $uri . ': ' . $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine());
             return ['success' => false, 'error' => sprintf(t('common.db_error'), $e->getMessage())];
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            error_log('[AI PBX Error] ' . $uri . ': ' . $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine());
             return ['success' => false, 'error' => sprintf(t('common.error_colon'), $e->getMessage())];
         }
     }
@@ -79,6 +82,7 @@ class PBXHelper {
                 'pbx_announcements' => ['domain' => 'inbound_dialplan', 'label_col' => 'title', 'entity_type' => 'announcement', 'has_internal_number' => true],
                 'pbx_time_groups' => ['domain' => 'time_conditions', 'label_col' => 'title', 'entity_type' => 'time_group'],
                 'sys_did_mappings' => ['domain' => 'inbound_dialplan', 'label_col' => 'department_name', 'entity_type' => 'did_mapping'],
+                'pbx_call_modifiers' => ['domain' => 'inbound_dialplan', 'label_col' => 'title', 'entity_type' => 'call_modifier'],
             ];
             if (!isset($allowed_tables[$table])) {
                 throw new \Exception("Invalid table name!");
@@ -114,6 +118,10 @@ class PBXHelper {
             // without an extension (e.g. plain office staff) does not affect
             // the PJSIP config at all — do not dirty the "extensions" domain
             // for nothing.
+            if ($table === 'pbx_call_modifiers') {
+                markCallModifierPendingSync($id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
+                return sprintf(t('common.status_set_apply'), $status_text);
+            }
             if ($table !== 'sys_users' || !empty($row['extension'])) {
                 markPendingSync($meta['domain'], $meta['entity_type'], $id, ($row['label'] ?: $id) . " ({$status_text})", 'update', $_SESSION['user_id'] ?? null);
                 // The number of a target that was switched off must leave the dialplan too
@@ -200,6 +208,27 @@ function getMeetingGuestSipSecret(): string {
         ? (string)TURN_SECRET
         : (defined('DB_PASS') ? (string)DB_PASS : 'aipbx-meeting-guest');
     return substr(hash_hmac('sha256', 'aipbx-webrtc-meeting-guest-v1', $seed), 0, 32);
+}
+
+/**
+ * Call modifiers are inlined via buildDestinationLines() into every routing
+ * domain, so creating, editing, toggling, or deleting one must dirty them all.
+ */
+function markCallModifierPendingSync(int $modifierId, string $label, string $action, $userId = null): void {
+    $domains = [
+        'inbound_dialplan',
+        'ivrs',
+        'time_conditions',
+        'ring_groups',
+        'general_dialplan',
+        'internal_numbers',
+        'widgets',
+        'ai_apps',
+        'ai_agents',
+    ];
+    foreach ($domains as $domain) {
+        markPendingSync($domain, 'call_modifier', $modifierId, $label, $action, $userId);
+    }
 }
 
 

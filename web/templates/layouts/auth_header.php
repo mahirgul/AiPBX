@@ -13,6 +13,7 @@ $auth_favicon = getSystemSetting('site_favicon_url', '');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
     <title><?php echo $auth_title !== '' ? htmlspecialchars($auth_title) . ' - ' : ''; ?><?php echo htmlspecialchars($auth_site_title); ?></title>
     <link rel="shortcut icon" href="<?php echo $auth_favicon !== '' ? htmlspecialchars($auth_favicon) : '/favicon.ico'; ?>">
     <!-- PWA: installing from the sign-in page gets the same name and icons -->

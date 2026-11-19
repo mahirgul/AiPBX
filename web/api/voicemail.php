@@ -20,7 +20,7 @@ if (!hasModulePermission('my_phone', 'view')) {
 }
 
 // Only the own extension can be listened to/managed, unless the user has the admin/read_only_admin role
-if (!in_array($role, ['admin', 'read_only_admin'], true) && ($targetExt === '' || $targetExt !== $userExt)) {
+if (array_intersect(userRoles(), ['admin', 'read_only_admin']) === [] && ($targetExt === '' || $targetExt !== $userExt)) {
     http_response_code(403);
     echo json_encode(['success' => false, 'error' => t('api.err_vm_access')]);
     exit;

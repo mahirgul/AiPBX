@@ -507,6 +507,7 @@
 /* The page under a row of tabs: only the corner under the first tab is square. */
 .ui-tabs ~ .card,
 .ui-tabs ~ [data-tab-pane] > .card:first-child,
+.ui-tabs ~ [data-tab-pane] > form:first-child > .card:first-child,
 .sub-tab-nav ~ .tab-pane > .card:first-child,
 .sub-tab-nav ~ .card,
 .settings-tabs ~ .settings-tab-pane > .card:first-child,
@@ -547,6 +548,50 @@
 .modal-card .modal-tab-pane.active,
 .tabs-nav ~ .proxy-tab-content,
 .tabs-nav ~ .fw-tab-content,
-.ui-tabs ~ [data-tab-pane] {
+.card .ui-tabs ~ [data-tab-pane],
+.modal-card .ui-tabs ~ [data-tab-pane] {
     padding-top: 16px;
 }
+
+/* PBX Assistant (/assistant) */
+.assistant-result-link { display: block; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); text-decoration: none; color: var(--text-main); }
+.assistant-shell { display: flex; min-height: calc(100vh - 140px); align-items: flex-start; }
+.table-sm th,
+.table-sm td { padding: 6px 8px; font-size: 12px; }
+.assistant-main { flex: 1; display: flex; flex-direction: column; min-width: 0; max-width: 880px; margin: 0 auto; width: 100%; }
+.assistant-main.is-welcome { justify-content: center; align-items: center; text-align: center; padding: 24px 12px; }
+.assistant-main.is-chatting { justify-content: space-between; }
+.assistant-welcome-head { margin-bottom: 18px; }
+.assistant-welcome-logo { width: 52px; height: 52px; border-radius: 16px; background: var(--nav-active-bg); color: var(--purple); display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 12px; }
+.assistant-welcome-title { font-size: 24px; font-weight: 700; margin: 0; }
+.assistant-main.is-chatting .assistant-welcome-head,
+.assistant-main.is-chatting .assistant-badges,
+.assistant-main.is-chatting .assistant-suggestions,
+.assistant-main.is-chatting .assistant-footer-links { display: none; }
+.assistant-badges { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 14px; }
+.assistant-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; background: var(--bg-subtle); border: 1px solid var(--border-color); }
+.assistant-messages { flex: 1; overflow-y: auto; display: none; flex-direction: column; gap: 14px; padding: 12px 4px 18px; }
+.assistant-main.is-chatting .assistant-messages { display: flex; }
+.assistant-msg { display: flex; flex-direction: column; max-width: 88%; }
+.assistant-msg.user { align-self: flex-end; align-items: flex-end; }
+.assistant-msg.assistant { align-self: flex-start; align-items: flex-start; width: 100%; max-width: 720px; }
+.assistant-bubble { padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; }
+.assistant-msg.user .assistant-bubble { background: var(--primary); color: var(--text-inverse); border-bottom-right-radius: 4px; }
+.assistant-msg.assistant .assistant-bubble { background: var(--bg-card); border: 1px solid var(--border-color); border-bottom-left-radius: 4px; width: 100%; }
+.assistant-preview { border-left: 3px solid var(--primary); background: var(--nav-hover-bg); border-radius: 0 8px 8px 0; padding: 12px 14px; margin-top: 8px; }
+.assistant-nav-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.assistant-nav-link { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; background: var(--nav-active-bg); color: var(--primary); text-decoration: none; font-size: 13px; font-weight: 500; }
+.assistant-nav-link:hover { background: var(--primary-glow); }
+.assistant-composer { width: 100%; max-width: 720px; }
+.assistant-input-wrap { display: flex; gap: 8px; align-items: center; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 28px; padding: 6px 8px 6px 18px; box-shadow: var(--card-shadow); }
+.assistant-input-wrap input { border: 0; outline: none; background: transparent; flex: 1; font-size: 15px; min-width: 0; color: var(--text-main); }
+.assistant-input-wrap button { border-radius: 999px; padding: 8px 18px; }
+.assistant-suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 14px; }
+.assistant-suggestion { border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-main); border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer; }
+.assistant-suggestion:hover { border-color: var(--primary); color: var(--primary); }
+.assistant-footer-links { margin-top: 14px; font-size: 12px; }
+.assistant-thinking { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 13px; }
+.assistant-thinking-dots span { animation: asstPulse 1.2s infinite ease-in-out; display: inline-block; }
+.assistant-thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+.assistant-thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes asstPulse { 0%, 80%, 100% { opacity: 0.25; } 40% { opacity: 1; } }

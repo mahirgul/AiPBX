@@ -98,6 +98,7 @@ function check_routes(?string $onlyRoute = null): void
     // /force-reset → goes to /login without $_SESSION['pending_reset_user_id'].
     // /login-2fa   → goes to /login without $_SESSION['pending_2fa_user_id'].
     $REDIRECT_OK = [
+        '/assistant',          // the PBX Assistant is off on a new installation: it goes to its settings
         '/force-reset',
         '/login-2fa',
         '/auth/google',
@@ -221,7 +222,10 @@ function check_rbac(): void
         '/webhooks',
         '/google-integration',
         '/ai-apps',
-        '/ai-models',
+        '/ai-local',
+        '/ai-cloud',
+        '/ai-voicemail',
+        '/ai-call-analysis',
         '/file-storage',
         '/mail-settings',
         '/system-update',
@@ -241,8 +245,6 @@ function check_rbac(): void
         '/phone-logs',
         '/custom-dialplan',
         '/privacy',
-        '/ai-cloud',
-        '/assistant',
         '/mail-templates',
         '/conferences',
         '/meetings',
@@ -501,7 +503,8 @@ function check_conventions(): void
     // 0b) One page title and one help, written in src/ui_helpers.php. Pages that wrote their own came out
     //     with always-open help, no help button and buttons of different sizes (2026-11-05).
     $n++;
-    $noTitle = ['force_reset', 'forgot_password', 'help', 'login', 'mobile_login', 'reset_password'];
+    // Assistant has its own centered welcome h1 and chat layout.
+    $noTitle = ['assistant', 'force_reset', 'forgot_password', 'help', 'login', 'mobile_login', 'reset_password'];
     foreach (glob(SMOKE_ROOT . '/templates/views/*/*.php') ?: [] as $f) {
         $src = (string) file_get_contents($f);
         if (preg_match('/class="[^"]*(module-help-box|btn-help)\b/', $src, $m)) {

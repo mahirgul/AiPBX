@@ -18,7 +18,7 @@ class FaxSentController extends BaseController
         }
 
         $user_id = $_SESSION['user_id'];
-        $user_role = $_SESSION['user_role'] ?? '';
+        $user_role = userEffectiveRole();
 
         $notices = static::handlePost([
             'delete_sent_fax' => fn() => hasModulePermission('fax_sent', 'delete')
