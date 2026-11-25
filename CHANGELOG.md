@@ -11,6 +11,36 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.82.0
+
+### New
+
+- **AI setup wizard:** *AI Apps → AI setup wizard* lists the steps an AI agent needs (plugins, speech recognition and language model, voice, knowledge base, agent, phone number, test call) as a checklist. Each step is ticked from the system's real state, so a setting made on its own page ticks it too; the next step is open and the plugins can be turned on there. The pages a step opens show a bar with the progress and a way back to the wizard.
+- **AI Agent advanced settings:** phone line profile (normal, noisy line, quiet callers), how often to ask again when nothing is understood, the silence before asking, the longest answer, how easily the caller can interrupt, and the memory of a local model.
+- **Smarter silence:** when the caller is silent, too quiet or not understood, the agent is told why and asks again in its own words (shorter, or whether the caller can hear it); Realtime models do the same after a silence. The fixed *say it again* sentence stays the fallback. Built-in agents used to give up at the first silence; they now ask twice by default.
+- **Optional call detectors:** two small models, installed with one click on *Local AI → Hugging Face* (3 and 9 MB, nothing is added to the installation): *Silero VAD* tells a voice from line noise, *Smart Turn* decides from the sound whether the caller has finished (0.4 s for a finished sentence, up to 1.6 s for an unfinished one, instead of a fixed 0.8 s). An agent chooses them under *Advanced settings*; the default is the standard detection and every decision is in the AI call log. See [Local AI models](docs/local-ai.md).
+- **Goodbye ends the call:** a short goodbye or thank you from the caller (*thanks, goodbye*, or *no, thank you* after *anything else?*) and a goodbye from the agent itself end the call, also when a small model would carry on. English, Turkish and German; a longer sentence, or thanks for the answer to a question, still goes to the model.
+- **Barge-in:** a cough or a *mm-hm* no longer stops a prompt; the caller has to talk for a quarter of a second.
+- **Documentation:** every help box links to its page of the documentation (Help on this server for administrators). New diagrams show [caller ID](docs/caller-id.md) for outgoing and incoming calls, a call of the [built-in AI agent](docs/ai-apps.md#how-a-call-goes) and the [PBX Assistant](docs/assistant.md).
+- **Call reports:** each row of the AI call log downloads as a file with the call's settings, timings, notes and what was said, without any key, for a support request.
+- **AI Agent calls:** the agent list shows the last 30 days (calls, handed over, finished, not understood, hung up, turns), and the last 90 days download as CSV. An e-mail address per agent receives every call's conversation and summary with the caller's last recording.
+- **Local AI voices:** each voice has folded *Voice settings*: speed, speaker (voices with several speakers) and the pause between sentences. They apply to every call and test.
+- **Local AI GPU:** the models use an NVIDIA GPU when the server has one and the CPU otherwise, and fall back to the CPU if the GPU does not work. The runtime installation adds the GPU packages only when `nvidia-smi` lists a GPU. See [Local AI models](docs/local-ai.md).
+- **AI call log:** *AI Agent* shows the newest AI calls (7 days): how each ended, how long the audio took to prepare and to play, whether it was sent late (choppy speech), what the caller said and what went wrong, such as a language model error. The AI service keeps it in `call-log.jsonl`; see [Privacy](docs/privacy.md).
+- **AI Agent form:** the drop-down choices are together, the check boxes below them, and the tools (PBX tools, saved queries) are in a folded *Advanced settings* section with every tool except dialling out to any number selected for a new agent. A note explains that speech to text, language model and text to speech are the backup when a Realtime account is chosen.
+- **Voice cache:** *Clear voice cache* on the AI Agent page makes the AI service forget the prompts and phrases it has spoken, for a voice or text that came out wrong. Saving a voice's settings clears it by itself.
+- **AI Agent instructions:** a variable chip inserts at the cursor (at the end when the text was never clicked) and the text scrolls to it; a chip can also be dragged into the text.
+- **Local AI runtime:** downloading or starting a model installs the runtime first by itself and then continues. The installer prepares the Python environment, so the runtime never touches the system Python.
+
+### Removed
+
+- **External AI agents (SIP)**: unused since 1.81, when they left the menu.
+
+### Fixes
+
+- **AI calls through ARI:** after an upgrade Asterisk now loads the ARI user, so AI applications answer (before, calls ended without audio and Asterisk logged `Stasis app 'aipbx-ai' doesn't exist`). A media channel that is not yet in the Stasis application joins the call when it arrives, without holding up the other calls. An upgrade sends the AI applications to the updated AI service, so new settings apply without saving each agent again.
+- **Portal:** the Cloud AI account dialog is no longer covered by the *Active consumers* strip. The Try result is titled *Answer* instead of showing `%s · %s ms`. User roles use the standard badge styles.
+
 ## 1.81.0
 
 ### New
@@ -110,7 +140,7 @@ Run the update as usual (`sudo aipbx-update`); the database migrations and the i
 
 ### ✨ New
 
-- **External AI voice agents (`AI → External agents`, `pbx_ai_agents`, `AiAgentService`, `SyncAiAgents`):** route calls from IVRs, inbound routes, queues, and other destinations to an external SIP voice agent (`sip:user@host:port`), with concurrency limit, maximum call duration, caller headers (`X-AiPBX-*`), fallback destination, and `REFER` hand-over restricted to the agent's configured hand-over destination ([docs/ai-agents.md](docs/ai-agents.md)).
+- **External AI voice agents (`AI → External agents`, `pbx_ai_agents`, `AiAgentService`, `SyncAiAgents`):** route calls from IVRs, inbound routes, queues, and other destinations to an external SIP voice agent (`sip:user@host:port`), with concurrency limit, maximum call duration, caller headers (`X-AiPBX-*`), fallback destination, and `REFER` hand-over restricted to the agent's configured hand-over destination.
 - **Conversation mode, barge-in & assistant hand-over (`AI → Applications`, `conversation.py`, `voice_requests.py`):**
   - **Conversation mode:** multi-turn dialogue powered by the configured cloud language model following company instructions, calling up to 5 configured HTTP lookups mid-call, and finishing by transferring to a configured request or destination or hanging up politely ([docs/ai-apps.md](docs/ai-apps.md)).
   - **Barge-in:** per-application setting (off by default) allowing callers to interrupt the greeting and retry prompt after `0.2 s` of speech or a DTMF key, capturing the spoken request from the first syllable.
