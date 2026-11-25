@@ -119,7 +119,12 @@ systemctl status asterisk mariadb nginx apache2 coturn aipbx-chat
 ```
 
 ### 3.3 Updating
-Releases are published as git tags (`vX.Y.Z`, see `CHANGELOG.md`). To update an installation:
+Releases are published as git tags (`vX.Y.Z`, see [CHANGELOG.md](CHANGELOG.md)).
+
+**From v1.80.1 to v1.81.0**, the ARI configuration change requires an Asterisk restart.
+Wait for active calls to finish before starting the update. [Release notes](https://github.com/mahirgul/AiPBX/releases/tag/v1.81.0)
+
+To update from the command line, run the following.
 
 ```bash
 sudo aipbx-update --check   # installed vs. latest version

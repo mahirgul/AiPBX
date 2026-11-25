@@ -1,6 +1,6 @@
 # Queue callbacks
 
-Manual callbacks are available in **AiPBX 1.75.0 and newer**. See [Queues and the agent screen](queues.md) for queue setup
+Manual callbacks are available from **AiPBX 1.75.0** and automatic callbacks from **1.81.0**. See [Queues and the agent screen](queues.md) for queue setup
 and agent access. On an older installation, follow [Installation & updating](../INSTALL.md).
 
 An alternative to holding: the caller presses **1** while waiting in an enabled queue,

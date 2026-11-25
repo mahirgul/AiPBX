@@ -1,6 +1,6 @@
 # Phonebook
 
-**Dashboard → Address Book** keeps the company contacts everyone can reach (suppliers, customers,
+**Panel → Phonebook** keeps the company contacts everyone can reach (suppliers, customers,
 branches) and serves them, together with the extensions, to desk phones over LDAP.
 
 Who may do what is set per role (**Roles & Permissions → Address Book**). By default everyone
@@ -15,9 +15,9 @@ change and delete. The LDAP and matching settings below are for whoever may chan
 - A contact can have up to 12 numbers, each with a label: mobile, work, work 2, home, fax, other.
   Desk phones see three of them (LDAP has three number fields): the first mobile, the first work
   number and the first of the rest.
-- Select **VIP** when editing a contact to give calls from its numbers priority 100 in the queue
-  they reach. The call moves ahead of waiting callers with lower priority. Calls already in
-  progress and explicit priorities set by call routing keep their existing behavior.
+- From v1.81.0, select **VIP** when editing a contact to give calls from its numbers priority 100
+  in the queue they reach. The call moves ahead of waiting callers with lower priority. Calls
+  already in progress continue. An explicit priority set by call routing takes precedence.
 - **Call Reports** show the contact's name under a number that is in the address book, and a
   <i>Save to address book</i> button next to an outside caller (or a dialled outside number) that
   is not; it opens this form with the number filled in.

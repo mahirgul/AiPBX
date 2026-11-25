@@ -49,12 +49,20 @@
 
 ---
 
+## What's new in v1.81.0
+
+- [Queue callbacks](docs/queue-callbacks.md) can start automatically by calling an available agent first. [VIP contacts](docs/phonebook.md#contacts) get priority when they reach a queue.
+- [AI voice agents](docs/ai-settings.md#realtime-voice-and-the-asterisk-media-bridge) support OpenAI Realtime and Gemini Live. Asterisk can connect calls to the AI service through ARI.
+- [Appearance](docs/portal.md#finding-your-way) lets administrators choose a single sidebar or the default Operations and Settings sections. [Cisco CP-7841 provisioning](docs/cisco-callmanager.md) is available.
+
+[Full v1.81.0 release notes](https://github.com/mahirgul/AiPBX/releases/tag/v1.81.0)
+
 ## 💡 Why AiPBX?
 
 Legacy open-source PBXs feel stuck in the 2000s or lock essential features behind per-seat licensing. **AiPBX** gives you a modern, self-hosted enterprise phone system on **native Asterisk 22** with built-in AI, call center, and unified communications — with zero vendor lock-in:
 
 - **Native Asterisk 22 + PJSIP** — extensions, trunks, IVR, dynamic routing, time conditions, BLF, parking, and fax without legacy GUI bloat.
-- **Built-in AI Voice & Analytics** — interactive AI voice agents (`Cascade` & `Realtime` over `AudioSocket`), local Ollama or cloud LLMs, Knowledge Base RAG, voicemail summaries, and call scoring.
+- **Built-in AI Voice & Analytics** — interactive Cascade and Realtime voice agents with ARI or AudioSocket media, local Ollama or cloud LLMs, Knowledge Base RAG, voicemail summaries, and call scoring.
 - **Full Call Center Suite** — real-time queues, customizable break reasons & auto-unpause, agent wallboard, callbacks, and CDR/pause reporting.
 - **Unified Communications** — browser WebRTC softphone, video meetings, Go-powered team chat, and native Android & iOS apps.
 - **Enterprise Auth & Integrations** — Google, Microsoft Entra ID, OIDC, SAML 2.0, LDAP, REST API v1, webhooks, and CRM/DB connectors.
@@ -91,8 +99,8 @@ sudo bash install.sh
 ```
 
 The installer:
-1. 🌐 Asks for your **FQDN** — with Let's Encrypt if DNS points to the server, otherwise a self-signed
-   certificate; leave it blank for a LAN-only install announced as `aipbx.local` via mDNS
+1. 🌐 Sets up **aipbx.local** with a self-signed certificate. Set `AIPBX_FQDN` to use another name.
+   Configure Let's Encrypt later in **System → Certificates**.
 2. 🔑 Generates **strong random secrets** for every service (no default passwords)
 3. ⚙️ Installs and configures Asterisk, MariaDB, Nginx + Apache, PHP, coturn, the Go chat service,
    firewalld and fail2ban, and builds the database from migrations
@@ -127,6 +135,9 @@ Narrated and with subtitles — on the [AiPBX YouTube channel](https://www.youtu
 ## 🔄 Updating
 
 Releases are published as git tags (`vX.Y.Z`) with notes in [CHANGELOG.md](CHANGELOG.md).
+
+**Updating from v1.80.1 to v1.81.0** restarts Asterisk because its ARI configuration changed.
+Wait for active calls to finish before updating. [Release notes](https://github.com/mahirgul/AiPBX/releases/tag/v1.81.0)
 
 ```bash
 sudo aipbx-update --check   # installed vs. latest release
@@ -206,11 +217,11 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Local Network Phone Discovery (`/phones`)** — automated discovery daemon (`aipbx-phone-discovery`) monitors local subnets, DHCP lease files, ARP cache, and `dnsmasq` logs every 5 minutes; new devices appear instantly in the *Discovered on the network* panel
 - **Zero-Touch Pool Provisioning** — automatically allocates extensions from an administrator-configured pool (`provision_discovery_pool`) and maps detected OUI vendors to default models (`provision_discovery_models`), producing TFTP/HTTP configuration files without manual entry
 - **Multi-Vendor Provisioning Engine** — automated configuration generation for Yealink (T3x, T4x, T5x), Fanvil (X series), Grandstream (GXP, GRP), Snom, Gigaset, and Cisco (SPA series and CallManager enterprise series)
-- **Cisco 7900 & 8800 CallManager Series** — native `SEP<MAC>.cnf.xml` XML profile generation, XML directory services, and line keys across 11 enterprise models (`cisco-cm-7941g` through `7975g`, `8841`, `8851`, `8861`); see [docs/cisco-callmanager.md](docs/cisco-callmanager.md)
+- **Cisco 7841, 7900 and 8800 CallManager phones** — native `SEP<MAC>.cnf.xml` profiles, XML directory services and model-specific line keys. [Cisco provisioning](docs/cisco-callmanager.md)
 - **Phone regions** — groups of phones get their own SIP server, port, transport, proxy, NTP, syslog, codecs, time zone and language (*Provisioning → Regions*), e.g. one set inside the network and one outside
 - **SIP over TLS on port 443 (v1.71+)** — for desk phones on networks that let TLS out only on 443: the same 443 port serves the portal, TURN and these phones. nginx tells them apart by the region's own SIP server name (`sip1.example.com` beside the portal's name) or, without one, by the phones' addresses; Asterisk accepts the name and Let's Encrypt puts it on the one certificate. One switch on the region; see [docs/phones.md](docs/phones.md#sip-over-tls-on-port-443)
 - **Automated SCCP-to-SIP Firmware Switching** — model-by-model firmware migration pipeline that moves Cisco 7900 phones from proprietary SCCP to Cisco SIP firmware upon restart, with server-side `.loads` manifest validation before deployment
-- **Phonebook and LDAP directory for desk phones (v1.77.1+)** — shared company contacts (*Provisioning → Phonebook*, CSV import) served with the extensions over a read-only LDAP phonebook (389 StartTLS / 636 LDAPS): phones search by name and show the caller's name; the [`ldap-sync`](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/ldap-sync) plugin brings people from Active Directory or OpenLDAP; see [docs/phonebook.md](docs/phonebook.md)
+- **Phonebook and LDAP directory for desk phones (v1.77.1+)** — shared company contacts under **Panel → Phonebook**, with CSV import and a read-only LDAP directory for desk phones (389 StartTLS / 636 LDAPS). The `ldap-sync` plugin imports Active Directory or OpenLDAP contacts. [Phonebook guide](docs/phonebook.md)
 - **Yealink OpenVPN package (v1.77.2+)** — one-click `.tar` download (`vpn.cnf` + `keys/`) on *Network → VPN Server* for Yealink phones to upload under *Network → Advanced → VPN* ([docs](docs/vpn.md#yealink-phones))
 
 ### 📠 Fax
@@ -222,9 +233,8 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 - **Agent desk and wallboard** — live queues, waiting callers (with pickup), agent states
   (idle / ringing / in call / on break), SLA, answered / missed / abandoned statistics
 - **Breaks with reasons**, applied in Asterisk per queue, and break reports
-- **[Manual queue callbacks](docs/queue-callbacks.md)** — callers press 1 while waiting, hear a
-  confirmation and hang up; assigned agents call from a shared list. Answered agent conversations
-  clear the request, including when the customer calls again; unanswered attempts stay pending.
+- **[Queue callbacks](docs/queue-callbacks.md)** — callers press 1 to request a callback. An assigned
+  agent can call from the shared list, or the queue can ring an available agent and then the customer.
 - **Listen, whisper and barge** — from the wallboard or with `*90`/`*91`/`*92`
 - **Call transfer** that keeps the caller connected through queue Local channels
 - **Queue Report Centre** — service level, answered / lost calls, average wait and talk time per queue
@@ -281,14 +291,14 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 </p>
 
 ### 🤖 AI Voice Agent, Local/Cloud AI & Dialplan Assistant
-- **Built-in AI Voice Agent (`/ai-agent`)** — interactive voice agents over Asterisk `AudioSocket` supporting **Cascade (STT → LLM → TTS)** and **Realtime** modes, structured prompt editor, **Knowledge Base (RAG)** grounding, **Saved External DB Queries** as LLM tools, **Inbound & Outbound DTMF (`collect_dtmf`, `send_dtmf`)**, and autonomous outbound IVR navigation (`dial_and_navigate`) with phonebook `sub_extension` lookup
+- **Built-in AI Voice Agent (`/ai-agent`)** — **Cascade (STT → LLM → TTS)** and **Realtime** voice, with ARI or AudioSocket media, structured prompts, Knowledge Base RAG, saved external DB queries, DTMF and outbound IVR navigation. [AI settings](docs/ai-settings.md)
 - **Local AI (`/ai-local`) & Cloud AI (`/ai-cloud`)** — run Ollama LLMs, Faster-Whisper STT, Piper TTS, and ONNX embeddings locally via `aipbx-ai`, or connect OpenAI, Google Gemini, Groq, Deepgram, ElevenLabs, Azure, Amazon Polly, and OpenAI-compatible endpoints with encrypted secrets and quota tracking
 - **AI TTS Studio (`/ai-tts`)**, **Voicemail AI (`/ai-voicemail`)** & **Call Analysis (`/ai-call-analysis`)** — generate and save audio announcements, transcribe/summarize voicemails, and run automated call quality scoring
 - **Dialplan Editor (`/assistant`) & Echo Reporter** — plain-language PBX change planner with dry-run preview before apply, safety validation, audit trail and one-click undo (`pbx_ai_changes`), plus the Echo diagnostic box backed by an opt-in local HEPv3 SIP signaling capture daemon (`aipbx-signaling` → `pbx_signaling_events`)
 
 ```mermaid
 flowchart LR
-    Caller["Caller / Outbound Call"] <-->|"SIP / RTP"| Ast["Asterisk 22\nAudioSocket"]
+    Caller["Caller / Outbound Call"] <-->|"SIP / RTP"| Ast["Asterisk 22\nARI / AudioSocket"]
     Ast <-->|"PCM Audio + DTMF"| AiSvc["aipbx-ai\nPython AI Service"]
     Portal["AiPBX Web Portal\n/ai-agent · /ai-local · /ai-cloud"] -->|"Config & Sync"| AiSvc
     AiSvc <-->|"Local Runtime"| Local["Ollama · Whisper\nPiper · ONNX"]

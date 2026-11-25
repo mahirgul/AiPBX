@@ -2,7 +2,7 @@
 
 The **AI** and **AI Settings** menus organize voice agents, local models, cloud providers, and per-feature tools into dedicated tabbed pages:
 
-- **AI Voice Agent (`/ai-agent`):** Built-in voice agents bridged via Asterisk `AudioSocket`, supporting **Cascade (STT → LLM → TTS)** and **Realtime** modes, structured prompt editor, Knowledge Base RAG, Saved External DB Query tools, inbound/outbound DTMF (`collect_dtmf`, `send_dtmf`), and autonomous outbound IVR navigation (`dial_and_navigate`) with phonebook `sub_extension` lookup.
+- **AI Voice Agent (`/ai-agent`):** Built-in voice agents bridged via Asterisk ARI or AudioSocket, supporting **Cascade (STT → LLM → TTS)** and **Realtime** modes, structured prompts, Knowledge Base RAG, saved external DB queries, inbound and outbound DTMF (`collect_dtmf`, `send_dtmf`), and outbound IVR navigation (`dial_and_navigate`) with phonebook `sub_extension` lookup.
 - **Local AI (`/ai-local`):** Install or remove the local AI runtime (`aipbx-ai`) and Ollama, download/run/stop Piper TTS, Faster-Whisper STT, ONNX embedding, and Ollama LLM models, and configure local defaults, languages, and Try playground.
 - **Cloud AI (`/ai-cloud`):** Configure cloud AI provider accounts (OpenAI, Google Gemini, Groq, Deepgram, ElevenLabs, Azure, Amazon Polly, or OpenAI-compatible servers), monthly quotas, and test connections.
 - **AI TTS Studio (`/ai-tts`):** Generate speech from text and save directly as PBX announcements, with synthesis history.
@@ -13,6 +13,17 @@ The **AI** and **AI Settings** menus organize voice agents, local models, cloud 
 Legacy URLs `/ai-models` and `/ai-settings` permanently redirect (`301`) to `/ai-local` (with `?tab=cloud` → `/ai-cloud`, `?tab=assistant` → `/pbx-assistant`, `?tab=voicemail` → `/ai-voicemail`, `?tab=cdr` → `/ai-call-analysis`).
 
 See also: [Cloud AI](cloud-ai.md) · [Local AI](local-ai.md)
+
+## Realtime voice and the Asterisk media bridge
+
+1. Open **AI Settings → Cloud AI → Connections** and configure a provider account with its API key.
+   Set **Realtime model** if you want to override the account's default. OpenAI-compatible accounts also
+   offer a **Realtime protocol** selector (automatic, OpenAI Realtime GA or Beta) and a WebSocket URL.
+2. Open **AI → AI Agent**, select the account in the speech-to-speech field and choose a voice.
+   Save and apply the changes. Leave that account field off to use Cascade.
+
+Realtime is the connection from the AI service to the model provider, such as OpenAI Realtime or Gemini Live.
+Asterisk connects to the AI service through ARI when ARI is configured, and through AudioSocket otherwise.
 
 ## Architecture Overview
 

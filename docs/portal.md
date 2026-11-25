@@ -4,6 +4,9 @@
 
 - **The menu** opens on the left; the button beside it closes it, and a closed menu is remembered for
   this browser session only.
+- **Sidebar layout.** To change the default **Operations** and **Settings** sections to a single list,
+  open **System → Appearance → Logo & Icon** and set **Sidebar layout** to **Single menu**.
+  The saved layout applies to everyone who signs in to the portal. Menu entries follow each user's permissions.
 - **Help:** every page explains itself behind the **?** button in its title bar.
 - **Light or dark:** the theme button at the bottom of the menu. **System → Appearance** sets the
   default theme (sign-in page and users who have not chosen) and can use one theme for everyone.

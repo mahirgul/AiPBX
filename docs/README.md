@@ -17,7 +17,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📦 [Incus or LXD container](incus-lxd.md) | Running the normal install in a system container, networking, snapshots |
 | 📺 [Video: Installation](https://www.youtube.com/@aipbx) | Step-by-step setup on YouTube: [English](https://www.youtube.com/watch?v=lH1-k_z5jFE) · [Türkçe](https://www.youtube.com/watch?v=eDHHHW6ZcvQ) · [Deutsch](https://www.youtube.com/watch?v=1QuOM6Rtcbg) |
 | 📺 [Video: Menu tour](https://www.youtube.com/@aipbx) | Every screen of the portal on YouTube: [English](https://www.youtube.com/watch?v=xU0BYN6AKE4) · [Türkçe](https://www.youtube.com/watch?v=Teol14NgXbY) · [Deutsch](https://www.youtube.com/watch?v=8whV_DY3ZqQ) |
-| 🖥️ [Portal basics](portal.md) | The *Apply* workflow, edit dialogs, ordering lists, copying records |
+| 🖥️ [Portal basics](portal.md) | Sidebar layout and appearance, the *Apply* workflow, edit dialogs, ordering lists, copying records |
 | 💾 [Backups, recovery & rollback](backup-and-rollback.md) | Reproducible daily backups (`aipbx-backup`), disaster recovery restore commands, and zero-downtime automated upgrade rollback (`aipbx-update`) |
 | 🛠️ [CLI & Server commands](cli.md) | Terminal utilities (`aipbx-update`, `aipbx-backup`, `aipbx-restore`, `aipbx-selftest`, `aipbx-cert`, SSO recovery) |
 | 🏗️ [Architecture](../ARCHITECTURE.md) | Components, traffic flow, security model |
@@ -43,16 +43,16 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |
 | ☎️ [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, phones found on the network, key layouts (BLF, speed dial, park), re-provision, regions, SIP over TLS on port 443 |
-| 📒 [Phonebook](phonebook.md) | Shared company contacts, LDAP phonebook for desk phones (name search, caller name), contacts from Active Directory / OpenLDAP with the `ldap-sync` plugin |
-| 🔵 [Cisco 7900 / 8800 series](cisco-callmanager.md) | Cisco's enterprise phones (CallManager firmware): the `SEP<MAC>.cnf.xml` AiPBX writes, the firmware, the usecallmanager.nz Asterisk patch and the shared files you provide |
+| 📒 [Phonebook](phonebook.md) | Shared company contacts, VIP queue priority, LDAP phonebook, Active Directory and OpenLDAP contacts |
+| 🔵 [Cisco 7841 / 7900 / 8800](cisco-callmanager.md) | Enterprise CallManager firmware, model-specific TFTP configuration and the usecallmanager.nz Asterisk patch |
 | 🖧 [Network settings](network-settings.md) | The server's network cards, and moving every address after an IP change in one step |
 | 🔐 [VPN server and client](vpn.md) | WireGuard or OpenVPN: let phones and laptops reach the PBX through a tunnel (including Yealink OpenVPN `.tar` packages with `vpn.cnf` + keys), and connect the PBX to another network by uploading a profile |
 | 🛡️ [Reverse proxy setup](reverse-proxy.md) | Deploying behind Nginx, Caddy, Traefik, HAProxy, Apache; WebRTC WebSocket proxying, trusted proxies, and SIP/RTP bypass |
 | 📡 [Network services](network-services.md) | DHCP (option 66/150/160) TFTP and read-only FTP for desk phones on a phone network or VLAN, leases, the options for your own DHCP server, an NTP server and phone logs (syslog) by IP or MAC |
 | 🩺 [Health checks](health.md) | The server watches itself (services, trunks, disk, certificate, backup …), alarm e-mails, the daily summary with yesterday's calls, `aipbx-selftest` |
 | 🎙️ [Call recordings](recordings.md) | Where recordings live, automatic MP3 conversion, playback |
-| 🎧 [Queues and the agent screen](queues.md) | Queue setup, static and dynamic agents, breaks, waiting calls and manual callbacks |
-| ☎️ [Manual queue callbacks](queue-callbacks.md) | Press 1 while waiting, confirmation announcement, agent callback list, automatic removal after a conversation, troubleshooting |
+| 🎧 [Queues and the agent screen](queues.md) | Queue setup, static and dynamic agents, breaks, waiting calls and callbacks |
+| ☎️ [Queue callbacks](queue-callbacks.md) | Press 1 while waiting, manual callbacks, agent-first automatic callbacks and retry behavior |
 | 📊 [Reports](reports.md) | Call reports with trunks and direction, Queue Report Centre, PDF and Excel export |
 | 🔊 [Sounds & languages](sounds.md) | Custom sounds, the Turkish prompt packages (six formats), regenerating a prompt |
 | 🌍 [Translating](translating.md) | Interface languages, adding or correcting a translation with `scripts/i18n.py`, mobile app texts, prompts in other languages |
@@ -105,7 +105,7 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 | ☁️ [Cloud AI services (Plugin)](cloud-ai.md) | `aicloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
 | 🗣️ [Cloud TTS (Plugin)](cloud-tts.md) | `ai-tts` | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |
 | 🧠 [Local AI models (Plugin)](local-ai.md) | `ailocal` | Local AI runtime (`aipbx-ai`), Ollama LLMs, Whisper STT, Piper TTS, and ONNX embeddings |
-| 🤖 [AI Voice Agent & Settings](ai-settings.md) | Built-in `/ai-agent` | Built-in Cascade & Realtime voice agents over AudioSocket, External DB tools, DTMF, outbound IVR navigation, and architecture diagrams |
+| 🤖 [AI Voice Agent & Settings](ai-settings.md) | Built-in `/ai-agent` | Cascade and Realtime voice agents, ARI and AudioSocket, external DB tools, DTMF and outbound IVR navigation |
 | ✨ [PBX Assistant (experimental)](assistant.md) | `pbx-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base |
 | 📡 [Signaling capture](signaling.md) | Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
 | 📮 [Voicemail](voicemail.md) | PBX settings → Voicemail | Mailboxes, listening (\*97/\*98, portal, apps, e-mail), message limits and PIN rules |

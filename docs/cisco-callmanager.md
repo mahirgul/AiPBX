@@ -10,8 +10,9 @@ documents how: it publishes the Asterisk patch that adds what Cisco's firmware e
 and DND synchronisation, pickup, parking), a sample `tftpboot` folder with the shared files these phones ask
 for, and a full reference for every element of `SEP<MAC>.cnf.xml`.
 
-AiPBX writes the per-phone file for you (**Provisioning → Phones → Add phone**, model `Cisco 79xx/88xx`), from the same extension,
-password, codec and key data it uses for every other vendor. Everything around it — the firmware, the
+AiPBX writes the per-phone file under **Provisioning → Phones → Add phone**. Select the matching
+model from the Cisco CallManager list. From v1.81.0 the CP-7841 has its own entry (`cisco-cm-7841`).
+The file uses the extension, password, codecs and line keys configured for that phone. The firmware, the
 Asterisk patch and the shared files — is a one-time setup on your own server, described below.
 
 ## What you need before a phone works

@@ -66,7 +66,9 @@ played after the request is saved. The confirmation is followed by hangup.
 
 Agents see requests on their screen and choose when to call. Their phone rings first, followed by
 the customer. A completed answered conversation with a queue agent removes the request, including
-when the customer calls again. Unanswered calls leave it pending. Follow the
+when the customer calls again. Unanswered calls leave it pending. From **1.81.0**, you can enable
+**Call back automatically when an agent is available** for each queue. Live callers keep priority.
+Follow the
 [setup and verification checklist](queue-callbacks.md#verify-the-setup) before enabling it for callers.
 
 For historical statistics, recordings and exports, see [Reports](reports.md) and
