@@ -24,6 +24,18 @@ find "$AI_BASE/app.new" -name __pycache__ -prune -exec rm -rf {} +
 chown -R root:root "$AI_BASE/app.new"; chmod -R u=rwX,go=rX "$AI_BASE/app.new"
 rm -rf "$AI_BASE/app"; mv "$AI_BASE/app.new" "$AI_BASE/app"
 
+# An empty venv (a few MB, no packages) so the local runtime never has to touch the system
+# Python (Ubuntu refuses pip there). The ML packages follow only when the admin installs the
+# runtime; a venv without .aipbx-requirements still counts as "absent".
+if [[ ! -x "$AI_VENV/bin/python" ]]; then
+    if ! python3 -c 'import ensurepip, venv' >/dev/null 2>&1; then
+        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-venv >/dev/null 2>&1 \
+            || warn "python3-venv could not be installed: the local AI runtime will try again when installed"
+    fi
+    python3 -m venv "$AI_VENV" >/dev/null 2>&1 \
+        || { rm -rf "$AI_VENV"; warn "The Python venv for local AI could not be created"; }
+fi
+
 # Shared secret of the portal and the service; created once, never rotated.
 # The service reads it through LoadCredential (as root), so aipbx-ai needs no
 # access to the file itself.
@@ -51,6 +63,12 @@ read_only = no
 password = ${ARI_PW}
 password_format = plain
 ARIEOF
+fi
+# An upgrade restarts Asterisk in step 9, before this step has written the ARI user: Asterisk then
+# has no "aipbx_ai" user and every AI call ends with "Stasis app 'aipbx-ai' doesn't exist".
+# Load the file now (a reload keeps calls up).
+if systemctl is-active --quiet asterisk && ! asterisk -rx 'ari show users' 2>/dev/null | grep -qw aipbx_ai; then
+    asterisk -rx 'module reload res_ari.so' >/dev/null 2>&1 || warn "Asterisk did not reload the ARI user: run  asterisk -rx 'module reload res_ari.so'"
 fi
 
 cat > /etc/systemd/system/aipbx-ai.service << 'AIUNIT'

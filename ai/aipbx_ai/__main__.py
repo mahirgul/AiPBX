@@ -96,6 +96,7 @@ def _start_ari_if_configured(audiosocket_port: int, calls=None):
         calls.on_finish = lambda call_uuid: mgr.release_call(call_uuid, continue_dialplan=True)
         calls.on_dtmf = None
         mgr.on_dtmf = calls.digit_from_ari
+        mgr.on_error = calls.note
         nav = OutboundNavigator(mgr, calls)
         mgr.outbound_navigator = nav
         calls.outbound_navigator = nav

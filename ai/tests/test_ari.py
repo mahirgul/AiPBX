@@ -84,6 +84,25 @@ class AriSessionManagerTest(unittest.TestCase):
         self.assertIn(("destroy_bridge", "br-1"), cli.calls)
         self.assertIn(("continue", "PJSIP/100-0001", "", "", 1), cli.calls)
 
+    def test_external_media_channel_joins_the_bridge_once_it_is_in_stasis(self) -> None:
+        cli = FakeAriClient()
+        left = {"n": 3}
+        plain_add = cli.add_channel
+
+        def add(bridge_id: str, channel_id: str) -> None:
+            if channel_id == "11111111-2222-3333-4444-555555555555" and left["n"]:
+                left["n"] -= 1
+                raise AriError('ARI POST /bridges/x/addChannel -> 422: {"message":"Channel not in Stasis application"}')
+            plain_add(bridge_id, channel_id)
+
+        cli.add_channel = add
+        mgr = AriSessionManager(cli, app_name="aipbx-ai", audiosocket_port=8791)
+        with patch("aipbx_ai.ari.time.sleep"):
+            mgr.handle_event({"type": "StasisStart", "args": ["7", "11111111-2222-3333-4444-555555555555"],
+                              "channel": {"id": "PJSIP/100-0001"}})
+        self.assertEqual(0, left["n"])
+        self.assertIn(("add_channel", "br-1", "11111111-2222-3333-4444-555555555555"), cli.calls)
+
     def test_media_setup_failure_releases_bridge_and_resumes_dialplan(self) -> None:
         cli = FakeAriClient()
         mgr = AriSessionManager(cli)

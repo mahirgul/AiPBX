@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../services/ai/BuiltinAiAgentService.php';
+require_once __DIR__ . '/../services/LocalAiService.php';
 require_once __DIR__ . '/../services/ExternalDbQueryService.php';
 
 final class BuiltinAiAgentController extends BaseController
@@ -43,6 +44,7 @@ final class BuiltinAiAgentController extends BaseController
             'saved_queries' => $savedQueries,
             'default_instructions' => BuiltinAiAgentService::defaultInstructionsTemplate(),
             'targets' => BuiltinAiAgentService::targets(true), 'csrf_token' => getCSRFToken(),
+            'ai_calls' => $edit === null ? LocalAiService::callLog(30) : [],
         ], ['title' => t('builtin_ai_agent.title')] + $notices);
     }
 }

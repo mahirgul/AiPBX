@@ -143,9 +143,40 @@ fi
 PIP=("$VENV/bin/python" -m pip --disable-pip-version-check --no-input --no-cache-dir)
 "${PIP[@]}" install --upgrade pip >>"$LOG_FILE" 2>&1 || fail "pip upgrade failed"
 
+HAVE_GPU=0
+if [[ "$(uname -m)" == x86_64 ]] && command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi -L >/dev/null 2>&1; then
+    HAVE_GPU=1
+fi
+# The GPU of an earlier run is gone: take the GPU build out so only the CPU build is left
+# (both packages share one folder).
+if [[ "$HAVE_GPU" == 0 ]] && "${PIP[@]}" show onnxruntime-gpu >/dev/null 2>&1; then
+    "${PIP[@]}" uninstall -y onnxruntime-gpu onnxruntime >>"$LOG_FILE" 2>&1 || true
+fi
+
 step models
 "${PIP[@]}" install -r "$APP_DIR/requirements.txt" >>"$LOG_FILE" 2>&1 \
     || fail "the model packages could not be installed — see $LOG_FILE"
+
+# An NVIDIA GPU (x86-64 only): the GPU build of ONNX Runtime and the CUDA libraries it loads. The models
+# then pick the GPU by themselves (aipbx_ai/device.py) and fall back to the CPU when it does not work.
+# Best effort: any failure here puts the CPU build back and the runtime stays on the CPU.
+if [[ "$HAVE_GPU" == 1 ]]; then
+    step gpu
+    log "NVIDIA GPU found: installing the GPU packages"
+    # Both distributions share the onnxruntime/ folder (the -r install above puts the CPU one
+    # back on a repeated run): remove both, then install the GPU build fresh.
+    if "${PIP[@]}" uninstall -y onnxruntime onnxruntime-gpu >>"$LOG_FILE" 2>&1 \
+       && "${PIP[@]}" install "onnxruntime-gpu>=1.21,<2" "nvidia-cublas-cu12>=12,<13" "nvidia-cudnn-cu12>=9,<10" \
+            "nvidia-cuda-runtime-cu12>=12,<13" "nvidia-cufft-cu12>=11,<12" "nvidia-curand-cu12>=10,<11" >>"$LOG_FILE" 2>&1 \
+       && "$VENV/bin/python" -c 'import onnxruntime as o; o.preload_dlls(); assert "CUDAExecutionProvider" in o.get_available_providers()' >>"$LOG_FILE" 2>&1; then
+        log "GPU packages installed"
+    else
+        log "GPU packages could not be installed or do not load: using the CPU"
+        "${PIP[@]}" uninstall -y onnxruntime onnxruntime-gpu >>"$LOG_FILE" 2>&1 || true
+        "${PIP[@]}" install "onnxruntime>=1.20,<2" >>"$LOG_FILE" 2>&1 \
+            || fail "the CPU packages could not be put back — see $LOG_FILE"
+    fi
+fi
 
 step check
 IMPORTS='onnxruntime, numpy, num2words, ctranslate2'

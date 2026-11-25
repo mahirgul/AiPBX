@@ -77,7 +77,7 @@ final class AiAppServiceTest extends TestCase
     {
         $conf = buildAiAppsDialplan([['id' => 7, 'title' => 'Borç', 'model_id' => 'ema-lightning', 'speed' => '1.10',
             'max_concurrent' => 3, 'text_template' => 'Merhaba {caller_name}', 'lookup_url' => 'https://crm.example/x?a=1',
-            'fallback_text' => '', 'dest_type' => 'hangup', 'dest_id' => '']], str_repeat('ab', 32));
+            'fallback_text' => '', 'dest_type' => 'hangup', 'dest_id' => '']], str_repeat('ab', 32), false);
         $this->assertStringContainsString('[aipbx-ai-app-7]', $conf);
         $this->assertStringContainsString('Set(AI_CALL=${CURL(http://127.0.0.1:8790/v1/calls/start,app=7&key=' . str_repeat('ab', 32) . '&model=ema-lightning&speed=1.10&max=3&', $conf);
         $this->assertStringContainsString('&lookup=https%3A%2F%2Fcrm.example%2Fx%3Fa%3D1&', $conf);

@@ -62,6 +62,22 @@ installs. Several models can run at the same time; *Stop* frees their memory and
 A stopped model stays stopped after a restart (`/var/lib/aipbx-ai/state.json`). Downloads stop at
 the disk limit for models, 5 GB by default (`AIPBX_AI_DISK_LIMIT_MB` in the unit).
 
+### GPU or CPU
+
+The models choose by themselves: the GPU when the server has an NVIDIA GPU, otherwise the CPU. On
+an x86-64 server with `nvidia-smi` the runtime installation adds the GPU build of ONNX Runtime and
+the CUDA libraries (a few GB). If the GPU packages cannot be installed, or the GPU does not work
+when a model starts, the model runs on the CPU and the service keeps working. To force
+the CPU run `systemctl edit aipbx-ai`, add `Environment=AIPBX_AI_DEVICE=cpu` under `[Service]` and
+restart the service. A GPU or driver added later is picked up when you click *Install Runtime* again
+(the models are kept). Ollama decides for itself.
+Small voices can be as fast on the CPU; Whisper and Kokoro gain the most.
+
+### Voice settings
+
+Each voice has a folded *Voice settings* section on the Hugging Face tab: speed, speaker (voices
+with several speakers) and the pause between sentences.
+
 ### Kokoro
 
 [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0, model and voices) is the

@@ -506,6 +506,14 @@ class VoiceRequestsTest(unittest.TestCase):
 
     # ---- calls --------------------------------------------------------------
 
+    def poll(self, fn, seconds=5.0):
+        end = time.monotonic() + seconds
+        while time.monotonic() < end:
+            if fn():
+                return True
+            time.sleep(0.02)
+        return False
+
     def test_matched_call(self):
         self.stt.texts = ["iki tane daha havlu alabilir miyim"]
         u, c = self.call()
@@ -522,6 +530,11 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertLessEqual(wav.getnframes(), 8000 * 1.7)
         # results
         self.assertEqual(self.result(u), "towels")
+        self.assertTrue(self.poll(lambda: self.registry.log.recent(1)))
+        rec = self.registry.log.recent(1)[0]                 # the call log line: what the caller said, how it ended
+        self.assertEqual(rec["transcripts"], ["iki tane daha havlu alabilir miyim"])
+        self.assertEqual(rec["result"], "matched")
+        self.assertEqual(rec["intent"], "towels")
         self.assertEqual(self.result(u, key="0" * 64), "")
         self.assertEqual(self.result(str(uuid.uuid4())), "")
         status, data = self.details(u)
@@ -754,6 +767,9 @@ class VoiceRequestsTest(unittest.TestCase):
         self.wait_done(c)
         self.assertEqual(self.result(u), "none")
         self.assertEqual(self.details(u)[1]["result"], "not_understood")
+        self.assertTrue(self.poll(lambda: self.registry.log.recent(1)))
+        notes = self.registry.log.recent(1)[0]["notes"]       # the provider error reaches the call log
+        self.assertTrue(any("conversation model failed" in n[1] for n in notes))
 
     def test_conversation_gets_the_summary_of_the_assistant_before(self):
         self.stt.texts = ["evet"]

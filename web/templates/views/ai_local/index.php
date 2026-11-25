@@ -13,8 +13,17 @@ $readyLlm = array_values(array_filter($local_models, fn($m) => ($m['kind'] ?? ''
 ?>
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-microchip', t('ai_local.title', 'Local AI'), 'aiLocalHelpBox'); ?>
+        <?php
+        $rtState = (string) ($status['runtime']['state'] ?? 'absent');
+        $rtBadgeCls = match ($rtState) {
+            'installed' => 'badge-success',
+            'installing' => 'badge-warning',
+            'failed' => 'badge-danger',
+            default => 'badge-secondary',
+        };
+        ?>
         <span class="u-fs-12 u-muted" title="<?php echo $h(t('ai_models.runtime', 'Local AI Runtime')); ?>"><?php echo $h(t('ai_models.runtime', 'Local AI Runtime')); ?>:</span>
-        <span id="ail-runtime-badge" class="badge badge-secondary"><?php echo $h($status['runtime']['state'] ?? 'absent'); ?></span>
+        <span id="ail-runtime-badge" class="badge <?php echo $rtBadgeCls; ?>"><?php echo $h($rtState); ?></span>
     <?php echo uiPageHeaderActions(); ?>
         <button type="button" class="btn btn-primary btn-sm" onclick="ailApi('runtime_install')"><i class="fas fa-download"></i> <?php echo $h(t('ai_models.btn_runtime_install', 'Install Runtime')); ?></button>
         <button type="button" class="btn btn-danger btn-sm" onclick="if(confirm('Remove runtime and models?')) ailApi('runtime_remove')"><i class="fas fa-trash"></i> <?php echo $h(t('ai_models.btn_runtime_remove', 'Remove Runtime')); ?></button>
@@ -22,6 +31,10 @@ $readyLlm = array_values(array_filter($local_models, fn($m) => ($m['kind'] ?? ''
     <?php echo uiTabs($tabs, $active_tab); ?>
     <?php echo uiHelpBoxOpen('aiLocalHelpBox', t('ai_local.title', 'Local AI')); ?>
         <?php echo $h(t('ai_local.help_body', 'Manage local speech and language models, Ollama & Hugging Face catalogs, and local Gateway testing.')); ?>
+        <p class="u-mt-8 u-mb-0"><strong><?php echo $h(t('ai_local.help_gpu_title', 'GPU or CPU')); ?>:</strong>
+            <?php echo $h(t('ai_local.help_gpu', 'The models use an NVIDIA GPU when the server has one, otherwise the CPU. Install the NVIDIA driver first (nvidia-smi must list the GPU), then install the runtime: the GPU packages (a few GB) are added automatically. If the GPU is added or the driver installed later, click Install Runtime again (your models are kept). If the GPU does not work, the models fall back to the CPU. To force the CPU, run systemctl edit aipbx-ai, add Environment=AIPBX_AI_DEVICE=cpu under [Service], and restart the service.')); ?></p>
+        <p class="u-mt-8 u-mb-0"><strong><?php echo $h(t('ai_models.tts_settings', 'Voice settings')); ?>:</strong>
+            <?php echo $h(t('ai_local.help_tts', 'On the Hugging Face tab, open "Voice settings" under a downloaded voice to set its speed, its speaker (voices with several speakers) and the pause between sentences.')); ?></p>
     <?php echo uiHelpBoxClose(); ?>
 
 <?php if (!$plugin_enabled): ?>
@@ -242,7 +255,7 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
         </form>
         <?php if ($try_output !== ''): ?>
             <div class="u-mt-12 u-p-12 u-r-8 u-bd-1-solid-border-color u-bg-bg-input">
-                <strong><?php echo $h(t('ai_models.try_result', 'Result')); ?>:</strong>
+                <strong><?php echo $h(t('ai_models.try_answer', 'Answer')); ?>:</strong>
                 <div class="u-mt-6 u-white-space-pre-wrap"><?php echo $h($try_output); ?></div>
             </div>
         <?php endif; ?>
@@ -270,6 +283,15 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
     't_btn_run' => t('ai_models.btn_run', 'Run'),
     't_btn_stop' => t('ai_models.btn_stop', 'Stop'),
     't_confirm_model_remove' => t('ai_models.confirm_model_remove', 'Remove this model and its files?'),
+    't_tts_settings' => t('ai_models.tts_settings', 'Voice settings'),
+    't_tts_speed' => t('ai_models.tts_speed', 'Speed'),
+    't_tts_speaker' => t('ai_models.tts_speaker', 'Speaker'),
+    't_tts_pause' => t('ai_models.tts_pause', 'Pause between sentences'),
+    't_tts_pause_short' => t('ai_models.tts_pause_short', 'Short'),
+    't_tts_pause_normal' => t('ai_models.tts_pause_normal', 'Normal'),
+    't_tts_pause_long' => t('ai_models.tts_pause_long', 'Long'),
+    't_tts_start' => t('ai_models.tts_start_for_speakers', 'Start the voice to choose a speaker.'),
+    't_btn_save' => t('common.save', 'Save'),
     't_license' => t('ai_local.license', 'License'),
     't_noncommercial' => t('ai_local.noncommercial', 'not for commercial use'),
 ], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>;</script>

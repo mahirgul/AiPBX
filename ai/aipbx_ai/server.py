@@ -15,6 +15,7 @@ import os
 import platform
 import re
 import time
+import urllib.parse
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
@@ -58,7 +59,7 @@ def benchmark_text(languages):
             return text
     return BENCHMARK_TEXTS["en"]
 
-_MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop|cancel)$")
+_MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop|cancel|tts-settings)$")
 _APP = re.compile(r"^/v1/apps/([0-9]{1,7})$")
 _CALL = re.compile(r"^/v1/calls/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(/audio|/result|/summary)?$")
 _OUTBOUND_JOB = re.compile(r"^/v1/outbound/navigate/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$")
@@ -281,6 +282,18 @@ class Handler(BaseHTTPRequestHandler):
                 return self._tts(self._body())
             if method == "POST" and path == "/v1/stt":
                 return self._stt()
+            if method == "POST" and path == "/v1/tts-cache/clear":
+                self._authorize()
+                calls = self.server.calls
+                return self._json(HTTPStatus.OK, calls.apps.clear_tts_cache() if calls is not None else {"removed": 0, "bytes": 0})
+            if method == "GET" and path == "/v1/calls/log":
+                self._authorize()          # the bearer token only, never the per-application key
+                q = urllib.parse.parse_qs(urllib.parse.urlsplit(self.path).query)
+                try:
+                    limit = int((q.get("limit") or ["100"])[0])
+                except ValueError:
+                    limit = 100
+                return self._json(HTTPStatus.OK, {"calls": self.server.calls.log.recent(limit)})
             if method == "GET" and path == "/v1/calls":
                 return self._json(HTTPStatus.OK, self.server.calls.snapshot())
             if method == "POST" and path == "/v1/calls/drain":
@@ -297,7 +310,7 @@ class Handler(BaseHTTPRequestHandler):
             m = _MODEL_ACTION.match(path)
             if m and method == "POST":
                 return self._model_action(m.group(1), m.group(2), self._body())
-            if path in ("/v1/health", "/v1/models", "/v1/tts", "/v1/calls", "/v1/calls/start", "/v1/apps") or m:
+            if path in ("/v1/health", "/v1/models", "/v1/tts", "/v1/calls", "/v1/calls/start", "/v1/apps", "/v1/calls/log", "/v1/tts-cache/clear") or m:
                 raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
             raise ApiError(HTTPStatus.NOT_FOUND, "not found")
         except (BrokenPipeError, ConnectionResetError):
@@ -502,6 +515,16 @@ class Handler(BaseHTTPRequestHandler):
             except ModelBusy:
                 raise ApiError(HTTPStatus.CONFLICT, "model is busy downloading or loading") from None
             return self._json(HTTPStatus.OK, {"state": state})
+        if action == "tts-settings":
+            try:
+                saved = manager.set_tts_settings(model_id, body.get("speed", 1.0), body.get("speaker"), body.get("pause", "normal"))
+            except WrongKind:
+                raise ApiError(HTTPStatus.BAD_REQUEST, "this model is not a text-to-speech model") from None
+            except ValueError as e:
+                raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
+            if self.server.calls is not None:
+                self.server.calls.apps.clear_tts_cache()      # the voice sounds different now: made again on use
+            return self._json(HTTPStatus.OK, saved)
         # benchmark
         try:
             result = manager.benchmark(model_id, benchmark_text(manager.describe(model_id)["languages"]), BENCHMARK_RATE)

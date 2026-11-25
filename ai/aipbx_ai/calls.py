@@ -66,6 +66,7 @@ import uuid
 from collections import deque
 
 from . import cloud_llm, conversation, gateway, secret_refs
+from .calllog import CallLog, clip, redact
 from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
@@ -361,6 +362,37 @@ class CallSession:
         self.intent = None
         self.transcript = None
         self.max_call_seconds = None
+        self.heard = []                # what speech recognition returned, in order
+        self.notes = []                # what went wrong, for the call log: [seconds, text]
+        self.late_frames = 0           # 20 ms frames sent more than 20 ms late
+        self.max_late_ms = 0
+        self.resyncs = 0               # the pacing fell so far behind that it started over
+
+    def note(self, text):
+        if len(self.notes) < 25:
+            self.notes.append([round(time.monotonic() - self.created, 1), redact(text)])
+
+    def hear(self, text):
+        if text and len(self.heard) < 8:
+            self.heard.append(text)
+
+    def late(self, behind):
+        """A frame left `behind` seconds after its time."""
+        if behind > 0.02:
+            self.late_frames += 1
+            self.max_late_ms = max(self.max_late_ms, int(behind * 1000))
+
+    def record(self):
+        """The call log line."""
+        played = self.sent_bytes / 2 / SAMPLE_RATE
+        tr = self.heard or ([self.transcript] if isinstance(self.transcript, str) and self.transcript else [])
+        return {"uuid": self.uuid, "app": self.app, "type": self.kind, "model": self.model, "caller": self.caller,
+                "did": self.did, "started": int(self.started), "ended": int(self.ended or time.time()),
+                "seconds": self.seconds(), "result": self.result, "prepare_ms": self.prepare_ms, "chars": self.chars,
+                "audio_seconds": round(self.audio_seconds, 1), "played_seconds": round(played, 1),
+                "late_frames": self.late_frames, "max_late_ms": self.max_late_ms, "resyncs": self.resyncs,
+                "inbound_frames": self.inbound_frames, "intent": self.intent,
+                "transcripts": [clip(t) for t in tr[:8]], "notes": self.notes}
 
     def audio_in(self, kind, payload):
         self.inbound_bytes += len(payload)
@@ -403,6 +435,7 @@ class CallRegistry:
         self.key = dialplan_key(token).encode()
         self.apps = AppStore(manager, data_dir)
         self.results = ResultStore(data_dir)
+        self.log = CallLog(data_dir)
         self._next_cleanup = 0.0
         self.ttl = ttl
         self.max_live = max_live
@@ -644,6 +677,13 @@ class CallRegistry:
             session.connected = time.monotonic()
             return session
 
+    def note(self, call_uuid, text):
+        """A problem outside the call's own thread (ARI) for the call log."""
+        with self._mu:
+            s = self._live.get(call_uuid)
+        if s is not None:
+            s.note(text)
+
     def finish(self, session, result):
         with self._mu:
             if session.state == DONE:
@@ -656,6 +696,7 @@ class CallRegistry:
             session.pcm = b""          # free the audio
             session.listen_q = None
             self._finished.append(session)
+        self.log.add(session.record())
         played = session.sent_bytes / 2 / SAMPLE_RATE
         wall = session.ended_mono - session.connected if session.connected else 0.0
         log.info("call app=%d caller=%s chars=%d audio=%.1fs prepared=%dms played=%.1fs in %.2fs "
@@ -919,6 +960,7 @@ class AudioSocketServer:
                     break
                 if reader.gone.is_set():
                     break
+                session.late(-wait - LEAD_SECONDS)
                 chunk = pcm[i * FRAME_BYTES:(i + 1) * FRAME_BYTES]
                 conn.sendall(message(KIND_AUDIO, chunk))
                 session.sent_bytes += len(chunk)
@@ -991,7 +1033,9 @@ class VoiceRequestsCall:
             while not self._stop_pump.is_set():
                 now = time.monotonic()
                 wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - now
+                self.session.late(-wait - LEAD_SECONDS)
                 if wait < -LEAD_SECONDS:
+                    self.session.resyncs += 1
                     t0 = now - i * FRAME_SECONDS
                     wait = 0.0
                 if wait > 0 and (self._stop_pump.wait(wait) or self.reader.gone.is_set()):
@@ -1107,6 +1151,7 @@ class VoiceRequestsCall:
             return self.registry.apps.prompt(s.app, s.version, self.config, key)
         except Exception as e:  # noqa: BLE001
             log.warning("call app=%d: prompt %s failed (%s)", s.app, key, type(e).__name__)
+            s.note(f"prompt {key} failed: {type(e).__name__}")
             return b""
 
     # ---- audio in -------------------------------------------------------
@@ -1214,6 +1259,7 @@ class VoiceRequestsCall:
             except Exception as e:  # noqa: BLE001 - never lose the call: fall back to local matching
                 log.warning("call app=%d: cloud model failed (%s), local matching", self.session.app,
                             type(e).__name__ + ": " + str(e)[:80])
+                self.session.note("cloud model failed, local matching: " + type(e).__name__ + ": " + str(e))
         return match_intent(text, cfg["intents"], cfg["threshold"],
                             embed=None if mode == "keywords" else self.embedder())
 
@@ -1248,6 +1294,7 @@ class VoiceRequestsCall:
                             raise
                         log.warning("call app=%d: cloud stt (%s) failed (%s), falling back to %s",
                                     self.session.app, model, type(ce).__name__, fb)
+                        self.session.note(f"cloud speech to text failed ({type(ce).__name__}), using {fb}")
                         box["text"] = (self.registry.manager.transcribe(fb, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
                         return
                 box["text"] = (self.registry.manager.transcribe(model, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
@@ -1266,6 +1313,7 @@ class VoiceRequestsCall:
             return "", ms
         if "error" in box or t.is_alive():
             log.warning("call app=%d: transcription failed (%s)", self.session.app, box.get("error", "timeout"))
+            self.session.note("transcription failed: " + str(box.get("error", "timeout")))
         text = box.get("text") or ""
         return (text.strip() if isinstance(text, str) else ""), ms
 
@@ -1298,6 +1346,7 @@ class VoiceRequestsCall:
                     return self.save("hangup")
                 self.attempts.append(attempt)
                 session.transcript = attempt["transcript"] or session.transcript
+                session.hear(attempt["transcript"])
                 if attempt["intent"]:
                     self.matched = next(i for i in cfg["intents"] if i["id"] == attempt["intent"])
                     session.intent = self.matched["id"]
@@ -1340,6 +1389,7 @@ class VoiceRequestsCall:
             return self.registry.apps.speech(self.session.app, self.config, text)
         except Exception as e:  # noqa: BLE001
             log.warning("call app=%d: speech failed (%s)", self.session.app, type(e).__name__)
+            self.session.note("speech synthesis failed: " + type(e).__name__)
             return b""
 
     def lookup(self, tool, query):
@@ -1584,6 +1634,7 @@ class VoiceRequestsCall:
                 continue
             quiet = 0
             session.transcript = text
+            session.hear(text)
             self.history.append(("caller", text))
             self.waiting_spoken = False
             started = time.monotonic()
@@ -1596,6 +1647,7 @@ class VoiceRequestsCall:
                 continue
             except cloud_llm.CloudLlmError as e:
                 log.warning("call app=%d: conversation model failed (%s): to the destination", session.app, e)
+                session.note(f"conversation model failed ({e}): the call went to its destination")
                 break
             attempt["step"] = step["action"]
             log.info("call app=%d: conversation step %s in %d ms", session.app, step["action"],

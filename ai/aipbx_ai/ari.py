@@ -220,6 +220,7 @@ class AriSessionManager:
         self._ext_channels: set[str] = set()
         self._pending_xfers: dict[str, dict[str, Any]] = {}
         self.on_dtmf: Any = None
+        self.on_error: Any = None      # (call_uuid, text): shown in the call log
         self.outbound_navigator: Any = None
 
     def register_ext_channel(self, channel_id: str) -> None:
@@ -326,6 +327,11 @@ class AriSessionManager:
             self.attach_caller(ch_id, call_uuid, app_id=app_id)
         except AriError:
             log.exception("Could not attach ARI caller %s", ch_id)
+            if self.on_error is not None:
+                try:
+                    self.on_error(call_uuid, "ARI could not join the call to the media channel")
+                except Exception:  # noqa: BLE001 - a log entry must never keep the caller from the dialplan
+                    pass
             try:
                 self.client.continue_in_dialplan(ch_id)
             except AriError:
@@ -364,7 +370,7 @@ class AriSessionManager:
                 self._by_caller[caller_channel_id] = state
                 self._by_uuid[call_uuid] = state
 
-            self.client.add_channel(bridge_id, ext_id)
+            self._add_when_in_stasis(bridge_id, ext_id)
             return state
         except AriError:
             if state is not None:
@@ -379,6 +385,21 @@ class AriSessionManager:
                 except AriError:
                     log.exception("Could not clean up ARI bridge %s", bridge_id)
             raise
+
+    def _add_when_in_stasis(self, bridge_id: str, channel_id: str) -> None:
+        """The external media channel is created before it has entered the Stasis application;
+        Asterisk 22 then answers addChannel with 422 "Channel not in Stasis application".
+        A few short retries cover that gap."""
+        for attempt in range(30):
+            try:
+                self.client.add_channel(bridge_id, channel_id)
+                if attempt:
+                    log.info("ARI channel %s joined bridge %s after %d retries (%.1f s)", channel_id, bridge_id, attempt, attempt * 0.1)
+                return
+            except AriError as e:
+                if "not in Stasis" not in str(e) or attempt == 29:
+                    raise
+                time.sleep(0.1)
 
     def _on_xfer_stasis_start(self, xfer_ch_id: str, call_uuid: str) -> None:
         with self._lock:

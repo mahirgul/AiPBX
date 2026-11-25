@@ -74,6 +74,7 @@ import threading
 from pathlib import Path
 
 from .. import textnorm
+from ..device import onnx_providers
 from .piper import (ELLIPSIS, check_request, clean_text, espeak_available, espeak_clauses,
                     resample, split_clauses, split_long)
 
@@ -307,7 +308,7 @@ class KokoroVoice:
         if threads:
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = 1
-        self.session = ort.InferenceSession(str(model_path), so, providers=["CPUExecutionProvider"])
+        self.session = ort.InferenceSession(str(model_path), so, providers=onnx_providers())
         inputs = {i.name: i.type for i in self.session.get_inputs()}
         # kokoro-onnx: older exports call the token input "tokens"
         self._ids_name = "input_ids" if "input_ids" in inputs else "tokens"
@@ -389,7 +390,7 @@ class KokoroVoice:
 
     # ---- public -------------------------------------------------------
 
-    def say(self, text, speed=1.0, sample_rate=8000, on_first_audio=None, voice=None):
+    def say(self, text, speed=1.0, sample_rate=8000, on_first_audio=None, voice=None, pause=1.0):
         """float32 mono audio at sample_rate; on_first_audio() runs once when
         the first run is ready."""
         speed = check_request(text, speed, sample_rate)
@@ -399,9 +400,9 @@ class KokoroVoice:
         parts = []
         for tokens in self.runs(text, voice):
             audio = self.synthesize_tokens(tokens, pack, speed)
-            pause = PAUSES.get(tokens[-1], 0.0) / speed
+            gap = PAUSES.get(tokens[-1], 0.0) * pause / speed
             parts.append(audio)
-            parts.append(np.zeros(round(pause * SAMPLE_RATE), np.float32))
+            parts.append(np.zeros(round(gap * SAMPLE_RATE), np.float32))
             if on_first_audio is not None and len(parts) == 2:
                 on_first_audio()
         if parts:

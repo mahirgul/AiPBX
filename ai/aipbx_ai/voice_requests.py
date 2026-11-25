@@ -463,6 +463,23 @@ class AppStore:
                     pass
         return existed
 
+    def clear_tts_cache(self):
+        """Forgets every synthesised prompt and phrase (memory and disk); they are made again on first use.
+        For a wrongly made voice, and after the settings of a voice changed."""
+        with self._mu:
+            self._cache.clear()
+            self._phrase_cache.clear()
+        removed = size = 0
+        if self.tts_dir is not None:
+            for f in self.tts_dir.glob("*.pcm"):
+                try:
+                    size += f.stat().st_size
+                    f.unlink()
+                    removed += 1
+                except OSError:
+                    pass
+        return {"removed": removed, "bytes": size}
+
     def _drop_cache(self, app_id):
         for key in [k for k in self._cache if k[0] == app_id]:
             del self._cache[key]

@@ -249,6 +249,10 @@ REGISTRY = (
 )
 
 
+# Silence between sentences, relative to the voice's own length.
+PAUSE_SCALE = {"short": 0.5, "normal": 1.0, "long": 2.0}
+
+
 class UnknownModel(Exception):
     pass
 
@@ -302,6 +306,9 @@ class ModelManager:
         self._entries = {s.id: _Entry(s, make(s)) for s in specs}
         self._state_file = Path(data_dir) / "state.json"
         self._stopped = self._read_stopped()
+        self._tts_file = Path(data_dir) / "tts-settings.json"
+        self._tts_mu = threading.Lock()
+        self._tts = self._read_tts()
         if disk_limit_mb is None:
             disk_limit_mb = int(os.environ.get("AIPBX_AI_DISK_LIMIT_MB", "5120") or 5120)
         self.disk_limit_mb = disk_limit_mb
@@ -332,6 +339,43 @@ class ModelManager:
                 self._stopped.discard(model_id)
             if changed:
                 self._write_stopped()
+
+    # ---- voice settings (speed, speaker, pause): one small file for all voices
+
+    def _read_tts(self):
+        try:
+            data = json.loads(self._tts_file.read_text())
+            return data if isinstance(data, dict) else {}
+        except (OSError, ValueError):
+            return {}
+
+    def tts_settings(self, model_id):
+        s = self._tts.get(model_id) if isinstance(self._tts.get(model_id), dict) else {}
+        speed = s.get("speed", 1.0)
+        pause = s.get("pause", "normal")
+        return {"speed": float(speed) if isinstance(speed, (int, float)) and not isinstance(speed, bool) else 1.0,
+                "speaker": s.get("speaker") if isinstance(s.get("speaker"), (int, str)) else None,
+                "pause": pause if pause in PAUSE_SCALE else "normal"}
+
+    def set_tts_settings(self, model_id, speed, speaker, pause):
+        entry = self._entry(model_id)
+        if entry.spec.kind != "tts":
+            raise WrongKind(model_id)
+        if isinstance(speed, bool) or not isinstance(speed, (int, float)) or not 0.5 <= speed <= 2.0:
+            raise ValueError("speed must be a number from 0.5 to 2.0")
+        if pause not in PAUSE_SCALE:
+            raise ValueError("pause must be short, normal or long")
+        if speaker is not None and (isinstance(speaker, bool) or not isinstance(speaker, (int, str))):
+            raise ValueError("speaker must be a number or a name")
+        with self._tts_mu:
+            self._tts[model_id] = {"speed": round(float(speed), 2), "speaker": speaker, "pause": pause}
+            try:
+                tmp = self._tts_file.with_suffix(".tmp")
+                tmp.write_text(json.dumps(self._tts))
+                os.replace(tmp, self._tts_file)
+            except OSError:
+                log.warning("could not save %s", self._tts_file)
+        return self.tts_settings(model_id)
 
     # ---- queries ---------------------------------------------------------
 
@@ -367,7 +411,14 @@ class ModelManager:
             disk_mb = round(entry.backend.disk_bytes() / (1024 * 1024))
         except OSError:
             disk_mb = 0
+        extra = {}
+        if spec.kind == "tts":
+            extra["tts"] = self.tts_settings(spec.id)
+            speakers = getattr(entry.backend, "speakers", None)
+            extra["speakers"] = speakers() if speakers and state == READY else []
+            extra["tts_options"] = bool(getattr(entry.backend, "tts_options", False))
         return {
+            **extra,
             "id": spec.id, "title": spec.title, "kind": spec.kind,
             "languages": list(spec.languages), "license": spec.license,
             "license_url": spec.license_url, "homepage": spec.homepage,
@@ -647,8 +698,14 @@ class ModelManager:
         return None
 
     def synthesize(self, model_id, text, speed, sample_rate):
-        return self._run_job(model_id, "tts",
-                             lambda b: b.synthesize(text, speed, sample_rate))
+        """The request's speed times the voice's own speed; the voice's speaker and pause apply."""
+        cfg = self.tts_settings(model_id)
+        speed = max(0.5, min(2.0, speed * cfg["speed"]))
+        def job(backend):
+            if getattr(backend, "tts_options", False):
+                return backend.synthesize(text, speed, sample_rate, speaker=cfg["speaker"], pause=PAUSE_SCALE[cfg["pause"]])
+            return backend.synthesize(text, speed, sample_rate)
+        return self._run_job(model_id, "tts", job)
 
     def benchmark(self, model_id, text, sample_rate):
         """Speed test: the seconds of audio made per second of work."""

@@ -75,6 +75,7 @@ import unicodedata
 from math import gcd
 
 from .. import textnorm
+from ..device import onnx_providers
 
 try:  # the service and the tests start without them; PiperVoice needs both
     import numpy as np
@@ -398,7 +399,7 @@ class PiperVoice:
         if threads:
             so.intra_op_num_threads = threads
             so.inter_op_num_threads = 1
-        self.session = ort.InferenceSession(str(onnx_path), so, providers=["CPUExecutionProvider"])
+        self.session = ort.InferenceSession(str(onnx_path), so, providers=onnx_providers())
         self._inputs = {i.name for i in self.session.get_inputs()}
 
     # ---- text -> ids --------------------------------------------------
@@ -440,7 +441,7 @@ class PiperVoice:
 
     # ---- public -------------------------------------------------------
 
-    def say(self, text, speed=1.0, sample_rate=8000, on_first_audio=None, speaker=None):
+    def say(self, text, speed=1.0, sample_rate=8000, on_first_audio=None, speaker=None, pause=1.0):
         """float32 mono audio at sample_rate; on_first_audio() runs once when
         the first sentence is ready."""
         speed = check_request(text, speed, sample_rate)
@@ -448,7 +449,7 @@ class PiperVoice:
         if self.normalize_text:
             text = textnorm.normalize(text, self.text_language)
         length_scale = self.length_scale / speed
-        gap = np.zeros(round(SENTENCE_SILENCE * self.sample_rate), np.float32)
+        gap = np.zeros(round(SENTENCE_SILENCE * pause * self.sample_rate), np.float32)
         parts = []
         for sentence in self.phonemize(text):
             pieces = []

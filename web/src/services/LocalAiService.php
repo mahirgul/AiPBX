@@ -118,6 +118,27 @@ class LocalAiService
         writeAuditLog('ai_models', 'runtime', 0, 'Local AI runtime', 'install', $_SESSION['user_id'] ?? null);
     }
 
+    /**
+     * Ensures the local AI ML runtime (venv with numpy/onnxruntime/ctranslate2) is
+     * installed before starting a non-Ollama model download or load. Starts the
+     * background installer automatically if missing/failed and returns false so
+     * the caller can report progress instead of failing with ModuleNotFoundError.
+     */
+    public static function ensureRuntimeReady(): bool
+    {
+        $rt = self::runtime();
+        if ($rt['state'] === 'installed') {
+            return true;
+        }
+        if ($rt['state'] === 'removing') {
+            throw new LocalAiException(t('ai_models.err_runtime_removing'));
+        }
+        if ($rt['state'] !== 'installing') {
+            self::installRuntime();
+        }
+        return false;
+    }
+
     public static function removeRuntime(): void
     {
         $res = PrivHelper::run(['ai', 'runtime-remove']);
@@ -479,6 +500,42 @@ class LocalAiService
             'seconds' => round((float) ($d['seconds'] ?? 0), 2),
             'realtime_factor' => round((float) ($d['realtime_factor'] ?? 0), 1),
         ];
+    }
+
+    /**
+     * Forgets the synthesised prompts and phrases of the AI applications (they are made again on use).
+     * @return array{removed: int, bytes: int}
+     */
+    public static function clearVoiceCache(): array
+    {
+        $d = self::callJson('POST', '/v1/tts-cache/clear', [], 10);
+        return ['removed' => (int) ($d['removed'] ?? 0), 'bytes' => (int) ($d['bytes'] ?? 0)];
+    }
+
+    /**
+     * The newest AI calls (what the AI service kept): result, timing, pacing, transcripts and problems.
+     * @return list<array<string, mixed>>
+     */
+    public static function callLog(int $limit = 30): array
+    {
+        try {
+            $d = self::callJson('GET', '/v1/calls/log?limit=' . max(1, min(100, $limit)), null, 2);
+        } catch (LocalAiException $e) {
+            return [];
+        }
+        return array_values(array_filter((array) ($d['calls'] ?? []), 'is_array'));
+    }
+
+    /** A voice's own speed, speaker and pause between sentences (the service applies them to every call). */
+    public static function setTtsSettings(string $id, float $speed, string $speaker, string $pause): void
+    {
+        self::requireId($id);
+        $body = ['speed' => max(0.5, min(2.0, $speed)), 'pause' => in_array($pause, ['short', 'normal', 'long'], true) ? $pause : 'normal'];
+        if ($speaker !== '') {
+            $body['speaker'] = mb_substr($speaker, 0, 80);   // a map name or an index, always as text
+        }
+        self::callJson('POST', '/v1/models/' . $id . '/tts-settings', $body, 10);
+        self::$modelsCache = null;
     }
 
     /** 16-bit mono WAV bytes. Long texts take a while on a CPU: generous timeout. */

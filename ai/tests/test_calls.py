@@ -5,6 +5,7 @@ fake AudioSocket client in place of Asterisk.
 
     python3 -m unittest discover ai/tests
 """
+import tempfile
 import http.client
 import json
 import logging
@@ -21,6 +22,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from aipbx_ai.calllog import CallLog
 from aipbx_ai import calls  # noqa: E402
 from aipbx_ai.calls import AudioSocketServer, CallRegistry, dialplan_key, render  # noqa: E402
 from aipbx_ai.models import ModelManager, ModelSpec  # noqa: E402
@@ -140,6 +142,7 @@ class CallsTest(unittest.TestCase):
             time.sleep(0.01)
         self.tts = self.backends["ema-lightning"]
         self.registry = CallRegistry(self.manager, TOKEN, ttl=30)
+        self.registry.log = CallLog(tempfile.mkdtemp())
         self.server = AiServer(("127.0.0.1", 0), TOKEN, self.manager, calls=self.registry)
         self.port = self.server.server_address[1]
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
@@ -424,6 +427,11 @@ class CallsTest(unittest.TestCase):
         call = self.registry.snapshot()["calls"][0]
         self.assertEqual((call["result"], call["state"]), ("played", "done"))
         self.assertEqual(self.registry.snapshot()["per_app"], {})
+        # the call log line of a healthy call: played in full, the pacing never slipped
+        rec = self.registry.log.recent(1)[0]
+        self.assertEqual((rec["result"], rec["app"], rec["caller"]), ("played", 7, "+905551112233"))
+        self.assertGreater(rec["played_seconds"], 0.9)
+        self.assertEqual((rec["late_frames"], rec["resyncs"]), (0, 0))
 
     def test_early_hangup_by_caller(self):
         self.tts.seconds = 3.0

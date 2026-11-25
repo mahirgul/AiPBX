@@ -102,10 +102,27 @@ class PiperBackend:
             self._voice = None
             gc.collect()
 
-    def synthesize(self, text, speed, sample_rate, on_first_audio=None):
+    tts_options = True      # takes the voice settings: speaker and pause
+
+    def speakers(self):
+        """[{"id": number or name, "name": label}] of a voice with several speakers, else []."""
+        v = self._voice
+        if v is None or v.num_speakers <= 1:
+            return []
+        if v.speaker_id_map:
+            return [{"id": k, "name": k} for k in v.speaker_id_map]
+        return [{"id": i, "name": str(i)} for i in range(v.num_speakers)]
+
+    def synthesize(self, text, speed, sample_rate, on_first_audio=None, speaker=None, pause=1.0):
         voice, np = self._voice, self._np
         if voice is None:
             raise RuntimeError("model not loaded")
+        if speaker is None:
+            speaker = self.spec.source.get("speaker")
+        try:
+            voice.speaker_id(speaker)
+        except (ValueError, KeyError):
+            speaker = self.spec.source.get("speaker")   # a saved speaker this voice does not have
         audio = voice.say(text, speed=speed, sample_rate=sample_rate, on_first_audio=on_first_audio,
-                          speaker=self.spec.source.get("speaker"))
+                          speaker=speaker, pause=pause)
         return (np.clip(audio, -1.0, 1.0) * 32767.0).round().astype("<i2").tobytes()

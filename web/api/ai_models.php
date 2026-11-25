@@ -133,6 +133,11 @@ try {
             $out['message'] = t('ai_models.msg_runtime_removed');
             break;
         case 'model_install':
+            if (!str_starts_with($id, 'ollama-') && !LocalAiService::ensureRuntimeReady()) {
+                $out['runtime_installing'] = true;
+                $out['message'] = t('ai_models.msg_runtime_auto_installing');
+                break;
+            }
             LocalAiService::installModel($id, !empty($_POST['accept_license']));
             $out['message'] = t('ai_models.msg_downloading');
             break;
@@ -144,6 +149,11 @@ try {
             $out['benchmark'] = LocalAiService::benchmark($id);
             break;
         case 'add_piper':
+            if (!LocalAiService::ensureRuntimeReady()) {
+                $out['runtime_installing'] = true;
+                $out['message'] = t('ai_models.msg_runtime_auto_installing');
+                break;
+            }
             $out['id'] = LocalAiService::addPiperVoice((string) ($_POST['key'] ?? ''), !empty($_POST['accept_license']));
             $out['message'] = t('ai_models.msg_downloading');
             break;
@@ -162,6 +172,11 @@ try {
             );
             break;
         case 'hf_add':
+            if (!LocalAiService::ensureRuntimeReady()) {
+                $out['runtime_installing'] = true;
+                $out['message'] = t('ai_models.msg_runtime_auto_installing');
+                break;
+            }
             $out['id'] = LocalAiService::addHuggingFaceModel(
                 (string) ($_POST['repo'] ?? ''),
                 (string) ($_POST['revision'] ?? ''),
@@ -196,6 +211,11 @@ try {
             }
             break;
         case 'model_run':
+            if (!str_starts_with($id, 'ollama-') && !LocalAiService::ensureRuntimeReady()) {
+                $out['runtime_installing'] = true;
+                $out['message'] = t('ai_models.msg_runtime_auto_installing');
+                break;
+            }
             LocalAiService::runModel($id);
             $out['message'] = t('ai_models.msg_starting');
             break;
@@ -206,6 +226,14 @@ try {
         case 'model_stop':
             LocalAiService::stopModel($id);
             $out['message'] = t('ai_models.msg_stopped');
+            break;
+        case 'tts_cache_clear':
+            $r = LocalAiService::clearVoiceCache();
+            $out['message'] = sprintf(t('ai_models.msg_tts_cache_cleared'), $r['removed'], (int) round($r['bytes'] / 1024));
+            break;
+        case 'tts_settings':
+            LocalAiService::setTtsSettings($id, (float) ($_POST['speed'] ?? 1), (string) ($_POST['speaker'] ?? ''), (string) ($_POST['pause'] ?? 'normal'));
+            $out['message'] = t('ai_models.msg_tts_saved');
             break;
         case 'try':
             $text = trim((string) ($_POST['text'] ?? ''));

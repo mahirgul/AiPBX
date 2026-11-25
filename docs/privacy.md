@@ -39,6 +39,7 @@ When **Enable automated nightly data retention purge** is checked, `/etc/cron.d/
 - Deletes call recording audio files (`/var/spool/asterisk/monitor/*`) older than N days, with their transcripts and summaries (`cdr_ai`)
 - Deletes voicemail archives and AI transcripts older than N days, and the voicemail messages themselves (`INBOX`, `Old`, `Urgent` of every mailbox), whether they were listened to or not
 - Deletes fax logs and spool files older than N days
+- The local AI service keeps a short call log for troubleshooting (AI → AI Agent → *Recent AI calls*): caller number, how the call ended, timing, what the caller said and what went wrong, for the newest 300 calls and at most 7 days, in `/var/lib/aipbx-ai/call-log.jsonl`. It is independent of the retention setting; deleting the file clears it. Error texts have keys and tokens removed. Admin only.
 - Deletes chat messages older than N days
 - Anonymizes expired CDR rows across both `asteriskcdr` (Asterisk ODBC runtime) and `cdrs` (`src = 'REDACTED'`, `dst = 'REDACTED'`, `clid = 'REDACTED'`) so call volume statistics remain intact without retaining personal phone numbers (or deletes expired CDR rows if configured)
 
