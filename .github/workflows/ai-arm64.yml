@@ -40,3 +40,5 @@ jobs:
           PY
       - name: Service tests
         run: python -m unittest discover -v ai/tests
+        env:
+          PYTHONPATH: ai
