@@ -87,14 +87,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
 
     <?php
     $sidebar_label = fn($l) => is_array($l) ? t($l[0], $l[1]) : t($l);
-    $sidebar_emoji = require __DIR__ . '/sidebar_emoji.php';
-    $sidebar_icon = function (array $e) use ($sidebar_emoji): string {
-        $emoji = $sidebar_emoji[isset($e['href']) ? (string) $e['href'] : 'group:' . ($e['id'] ?? '')] ?? '';
-        if ($emoji !== '') {
-            return '<span class="nav-emoji" aria-hidden="true">' . $emoji . '</span>';
-        }
-        return '<i class="' . $e['icon'] . '"' . (isset($e['icon_style']) ? ' style="' . $e['icon_style'] . '"' : '') . '></i>';
-    };
+    $sidebar_icon = fn(array $e) => '<i class="' . $e['icon'] . '"' . (isset($e['icon_style']) ? ' style="' . $e['icon_style'] . '"' : '') . '></i>';
     $request_path = parse_url($request_uri ?? '', PHP_URL_PATH) ?: '/';
     $is_active = fn($item) => ($item['href'] === $request_path)
         || ($active_page !== 'index.php' && in_array($active_page, $item['pages'], true))
