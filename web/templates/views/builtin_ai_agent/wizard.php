@@ -14,8 +14,8 @@ $n = 0;
 ?>
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-list-check', t('builtin_ai_agent.wizard_title'), 'aiWizardHelp'); ?>
-    <?php echo uiPageHeaderActions(); ?>
     <span class="badge <?php echo $done === $total ? 'badge-success' : 'badge-secondary'; ?>"><?php echo $h(sprintf(t('builtin_ai_agent.wizard_progress'), $done, $total)); ?></span>
+    <?php echo uiPageHeaderActions(); ?>
     <?php echo uiPageHeaderClose(); ?>
     <?php echo uiHelpBoxOpen('aiWizardHelp', t('builtin_ai_agent.wizard_title')); ?>
     <p><?php echo $h(t('builtin_ai_agent.wizard_help')); ?></p>
@@ -39,7 +39,7 @@ $n = 0;
                 <div class="u-mt-6 u-pl-24">
                     <p class="u-fs-13 u-mt-0"><?php echo $h(t('builtin_ai_agent.wizard_' . $key . '_help')); ?></p>
                     <?php if ($key === 'plugins'): ?>
-                        <div class="u-flex u-wrap u-gap-8 u-mb-8">
+                        <div class="u-d-flex u-wrap u-gap-8 u-mb-8">
                             <?php foreach ($plugins as $slug => $enabled): ?>
                                 <?php if ($enabled): ?>
                                     <span class="badge badge-success"><i class="fas fa-check"></i> <?php echo $h($slug); ?></span>
@@ -55,7 +55,7 @@ $n = 0;
                     <?php if ($key === 'test' && ($step['number'] ?? '') !== ''): ?>
                         <p class="u-fs-13"><strong><?php echo $h(sprintf(t('builtin_ai_agent.wizard_call'), $step['number'])); ?></strong></p>
                     <?php endif; ?>
-                    <div class="u-flex u-wrap u-gap-8">
+                    <div class="u-d-flex u-wrap u-gap-8">
                         <?php foreach ($step['links'] as $href => $label): ?>
                             <a href="<?php echo $h($href); ?>" class="btn btn-sm <?php echo $key === $current ? 'btn-primary' : 'btn-secondary'; ?>"><?php echo $h(t($label)); ?> <i class="fas fa-arrow-right"></i></a>
                         <?php endforeach; ?>

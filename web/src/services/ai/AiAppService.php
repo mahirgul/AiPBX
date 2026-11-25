@@ -746,10 +746,10 @@ class AiAppService
             $extra['waiting_phrases'] = $c['waiting_phrases'] ?? [];
             require_once __DIR__ . '/BuiltinAiAgentService.php';
             $extra += BuiltinAiAgentService::listening($c);
-            foreach (['retry', 'goodbye'] as $phrase) {            // saved before the agent had these sentences
-                if (trim((string) ($c[$phrase] ?? '')) === '') {
-                    $extra[$phrase] = langStrings($lang)['ai_apps.default_agent_' . $phrase] ?? langStrings('en')['ai_apps.default_agent_' . $phrase] ?? '';
-                }
+            foreach (['retry', 'goodbye'] as $phrase) {            // the saved sentence, or the language's own for older agents
+                $saved = trim((string) ($c[$phrase] ?? ''));
+                $extra[$phrase] = $saved !== '' ? $saved
+                    : (langStrings($lang)['ai_apps.default_agent_' . $phrase] ?? langStrings('en')['ai_apps.default_agent_' . $phrase] ?? '');
             }
         }
         if (!$resolveCredentials) {

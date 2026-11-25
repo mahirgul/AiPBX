@@ -440,6 +440,7 @@ class RealtimeCall:
         self._last_frame = now
         if pcm and _rms(pcm) >= _SPEECH_RMS:
             self._last_activity = now
+            self._nudges = 0                      # the caller is back: the silences are counted afresh
 
     def _nudge_seconds(self) -> float:
         """Twice the listening silence (default 4 s -> 8 s): server VAD and a caller who thinks need longer."""
@@ -492,6 +493,7 @@ class RealtimeCall:
                 if len(item) >= 3 and item[0] == "dtmf":
                     digit = str(item[2])
                     self._last_activity = time.monotonic()
+                    self._nudges = 0
                     self._dtmf_q.put(digit)
                     if hasattr(self.call.session, "dtmf") and (
                         not self.call.session.dtmf or self.call.session.dtmf[-1] != digit
@@ -703,6 +705,7 @@ class RealtimeCall:
                 if len(item) >= 3 and item[0] == "dtmf":
                     digit = str(item[2])
                     self._last_activity = time.monotonic()
+                    self._nudges = 0
                     self._dtmf_q.put(digit)
                     if hasattr(self.call.session, "dtmf") and (
                         not self.call.session.dtmf or self.call.session.dtmf[-1] != digit
@@ -796,6 +799,7 @@ class RealtimeCall:
                     self._enqueue_pcm(pcm)
             elif etype == "input_audio_buffer.speech_started":
                 self._last_activity = time.monotonic()
+                self._nudges = 0
                 self._clear_playback()
                 if self._last_item_id:
                     ws.send_json({

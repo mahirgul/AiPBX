@@ -428,6 +428,10 @@ final class AiAppServiceTest extends TestCase
             $this->assertNotSame('', $cfg['retry']);
             $this->assertNotSame('', $cfg['goodbye']);
             $this->assertTrue($cfg['end_on_goodbye']);
+            $saved = AiAppService::serviceConfig(['id' => 99, 'title' => 'RT Agent', 'app_type' => AiAppService::BUILTIN_AGENT,
+                'model_id' => 'local:piper-tr-fahrettin', 'speed' => '1',
+                'config' => json_encode(['conversation' => true, 'goodbye' => 'Hoşça kalın.', 'retry' => 'Efendim?'])]);
+            $this->assertSame(['Hoşça kalın.', 'Efendim?'], [$saved['goodbye'], $saved['retry']]);   // a saved sentence reaches the service
             $this->assertSame('openai', $cfg['realtime_cloud']['provider'] ?? null);
             $this->assertSame('gpt-realtime', $cfg['realtime_cloud']['model'] ?? null);
             $this->assertSame('coral', $cfg['realtime_cloud']['voice'] ?? null);

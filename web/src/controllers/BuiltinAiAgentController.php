@@ -90,6 +90,7 @@ final class BuiltinAiAgentController extends BaseController
             'stats' => $edit === null ? BuiltinAiAgentService::stats() : [],
             'detectors' => $edit !== null ? BuiltinAiAgentService::detectors() : ['vad' => false, 'turn' => false],
             'ai_calls' => $edit === null ? LocalAiService::callLog(30) : [],
-        ], ['title' => t('builtin_ai_agent.title')] + $notices);
+        ], ['title' => t('builtin_ai_agent.title'),
+            'extra_js' => '<script src="' . asset('/assets/js/builtin_ai_agent.js') . '"></script>'] + $notices);
     }
 }

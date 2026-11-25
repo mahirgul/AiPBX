@@ -111,13 +111,18 @@ class RealtimeTest(unittest.TestCase):
         note = rt._silence_note()
         self.assertIn("Phone line note, not the caller: the caller said nothing", note)
         self.assertIsNone(rt._silence_note())                       # the clock restarted
-        rt._heard(struct.pack("<160h", *([3000, -3000] * 80)))       # speech restarts it too
+        rt._heard(struct.pack("<160h", *([3000, -3000] * 80)))       # speech restarts it, and the count of silences
         self.assertLess(time.monotonic() - rt._last_activity, 1)
+        self.assertEqual(rt._nudges, 0)
+        rt._nudges = 0                                              # (speech reset it above; count one again)
+        rt._last_activity -= SILENCE_NUDGE_SECONDS + 1
+        rt._last_frame = time.monotonic()
+        self.assertIsNotNone(rt._silence_note())
         rt._last_activity -= SILENCE_NUDGE_SECONDS + 1
         rt._last_frame = 0.0                                        # and now no frames at all
-        self.assertIsNone(rt._silence_note())                       # second time: the limit
+        self.assertIsNone(rt._silence_note())                       # second time in a row: the limit
         self.assertTrue(rt._gave_up and rt._stop.is_set())
-        self.assertEqual(notes, ["caller turn: silence (1 of 2)", "caller turn: no_audio (2 of 2)"])
+        self.assertEqual(notes, ["caller turn: silence (1 of 2)", "caller turn: silence (1 of 2)", "caller turn: no_audio (2 of 2)"])
 
     def test_given_up_on_silence_goes_to_the_not_understood_destination(self) -> None:
         session = CallSession(1, "test", "100", "200", "test-call")

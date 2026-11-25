@@ -170,12 +170,23 @@ if [[ "$HAVE_GPU" == 1 ]]; then
             "nvidia-cuda-runtime-cu12>=12,<13" "nvidia-cufft-cu12>=11,<12" "nvidia-curand-cu12>=10,<11" >>"$LOG_FILE" 2>&1 \
        && "$VENV/bin/python" -c 'import onnxruntime as o; o.preload_dlls(); assert "CUDAExecutionProvider" in o.get_available_providers()' >>"$LOG_FILE" 2>&1; then
         log "GPU packages installed"
+        # The unit hides /dev (PrivateDevices=yes): let the service see the NVIDIA devices only.
+        mkdir -p "/etc/systemd/system/$UNIT.d"
+        {
+            printf '[Service]\nPrivateDevices=no\nDevicePolicy=closed\n'
+            for dev in /dev/nvidia*; do [[ -c "$dev" ]] && printf 'DeviceAllow=%s rw\n' "$dev"; done
+        } > "/etc/systemd/system/$UNIT.d/gpu.conf"
     else
         log "GPU packages could not be installed or do not load: using the CPU"
         "${PIP[@]}" uninstall -y onnxruntime onnxruntime-gpu >>"$LOG_FILE" 2>&1 || true
         "${PIP[@]}" install "onnxruntime>=1.20,<2" >>"$LOG_FILE" 2>&1 \
             || fail "the CPU packages could not be put back — see $LOG_FILE"
     fi
+fi
+
+if [[ "$HAVE_GPU" == 0 || ! -f "/etc/systemd/system/$UNIT.d/gpu.conf" ]] \
+   || ! "$VENV/bin/python" -c 'import onnxruntime as o; assert "CUDAExecutionProvider" in o.get_available_providers()' >/dev/null 2>&1; then
+    rm -f "/etc/systemd/system/$UNIT.d/gpu.conf"
 fi
 
 step check

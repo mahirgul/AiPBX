@@ -45,6 +45,12 @@ class FarewellTest(unittest.TestCase):
         self.assertFalse(assistant_says_goodbye("İyi günler. Başka bir konuda yardımcı olabilir miyim?", "tr"))
         self.assertFalse(assistant_says_goodbye("Randevunuz yarın saat 10'da.", "tr"))
         self.assertFalse(assistant_says_goodbye("", "tr"))
+        # a farewell word inside the reply is not a goodbye: only one at its end
+        self.assertFalse(assistant_says_goodbye("I'll take care of that and open a claim now.", "en"))
+        self.assertFalse(assistant_says_goodbye("See you on Tuesday at ten for the meeting.", "en"))
+        self.assertFalse(assistant_says_goodbye("İyi günler, kaydınıza bakıyorum.", "tr"))
+        self.assertTrue(assistant_says_goodbye("Thank you for calling, goodbye.", "en"))
+        self.assertTrue(assistant_says_goodbye("Gern geschehen, einen schönen Tag noch!", "de"))
 
 
 if __name__ == "__main__":

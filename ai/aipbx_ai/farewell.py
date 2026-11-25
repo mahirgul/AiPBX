@@ -101,9 +101,16 @@ def caller_says_goodbye(text, lang, assistant_last=""):
     return closing or not asked                       # thanks: after a statement, or after "anything else?"
 
 
+# words that may follow a farewell at the very end of the agent's reply
+TRAILING = {"tr": ["dilerim", "diliyorum", "dileriz"], "en": ["to you", "now"], "de": ["noch", "ihnen", "dir"]}
+
+
 def assistant_says_goodbye(text, lang):
-    """True when the agent's own sentence is a farewell that is not a question."""
+    """True when the agent's reply ENDS with a farewell and is not a question: "Rica ederim, iyi günler dilerim."
+    A farewell word inside a reply ("I'll take care of that", "İyi günler, kaydınıza bakıyorum") does not count."""
     text = (text or "").strip()
     if not text or text.endswith("?") or len(text.split()) > MAX_ASSISTANT_WORDS:
         return False
-    return bool(_COMPILED[_lang(lang)]["strong"].search(fold(text)))
+    lang = _lang(lang)
+    tail = _alternation(TRAILING[lang])
+    return bool(re.search(rf"(?:^| )(?:{_alternation(STRONG[lang])})(?: (?:{tail}))*$", fold(text)))

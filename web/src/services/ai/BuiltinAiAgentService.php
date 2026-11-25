@@ -14,6 +14,8 @@ final class BuiltinAiAgentService
     public const TOOL_FILE = AiKnowledgeService::AGENT_TOOLS_FILE;
     public const TARGET_TYPES = ['extension', 'queue', 'ring_group'];
     public const RETRIES_DEFAULT = 2;
+    /** Not selected for a new agent: dials any number for any caller without confirmation (toll fraud on a public line). */
+    public const TOOLS_OFF_BY_DEFAULT = ['dial_and_navigate'];
     public const LINE_PROFILES = ['normal', 'noisy', 'faint'];
     public const LOCAL_CONTEXTS = [0, 2048, 4096, 8192, 16384];
     public const REALTIME_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
@@ -228,7 +230,8 @@ final class BuiltinAiAgentService
             'number' => ['done' => $numbered !== [], 'optional' => false,
                 'info' => $numbered ? $numbered[0]['title'] . ': ' . $numbered[0]['internal_number'] : '',
                 'links' => $agents ? ['/ai-agent?edit=' . (int) $agents[0]['id'] => 'builtin_ai_agent.wizard_go_number'] : []],
-            'test' => ['done' => $last !== null && (int) $last['turns'] > 0, 'optional' => false,
+            'test' => ['done' => $last !== null && ((int) $last['turns'] > 0 || in_array($last['result'], ['matched', 'ended'], true)),
+                'optional' => false,
                 'info' => $last ? sprintf('%s · %s · %s · %d', $last['created_at'], $last['title'], $last['result'], (int) $last['turns']) : '',
                 'number' => $numbered[0]['internal_number'] ?? '', 'links' => ['/ai-agent' => 'builtin_ai_agent.wizard_go_calls']],
         ];

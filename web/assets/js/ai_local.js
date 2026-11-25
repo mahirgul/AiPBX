@@ -62,7 +62,7 @@
                 } else {
                     if (res.message) toast(res.message, 'success');
                     if (res.runtime_installing && ['model_install', 'add_piper', 'hf_add', 'model_run'].includes(action)) {
-                        pendingAfterRuntime = { action: action, extra: extra || {} };
+                        pendingAfterRuntime = { action: action, extra: extra || {}, at: Date.now() / 1000 };
                         startRuntimePolling();
                     } else if (action === 'runtime_install') {
                         startRuntimePolling();
@@ -88,15 +88,18 @@
                         rt.textContent = rst;
                         rt.className = 'badge ' + rcls;
                     }
-                    if (rst === 'installing') {
+                    // Right after the request the background setup may not have written its state yet: an
+                    // "absent", or a "failed" from an earlier attempt, is stale until the new attempt shows up.
+                    const pend = pendingAfterRuntime;
+                    const fresh = pend && Number(s.runtime.started || 0) >= pend.at - 5;
+                    if (rst === 'installing' || (pend && rst !== 'installed' && !fresh && Date.now() / 1000 - pend.at < 90)) {
                         startRuntimePolling();
                     } else {
                         stopRuntimePolling();
-                        if (rst === 'installed' && pendingAfterRuntime) {
-                            const next = pendingAfterRuntime;
+                        if (rst === 'installed' && pend) {
                             pendingAfterRuntime = null;
-                            ailApi(next.action, next.extra);
-                        } else if (rst === 'failed' && pendingAfterRuntime) {
+                            ailApi(pend.action, pend.extra);
+                        } else if (pend) {
                             pendingAfterRuntime = null;
                             toast(s.runtime.error || 'Runtime installation failed', 'danger');
                         }

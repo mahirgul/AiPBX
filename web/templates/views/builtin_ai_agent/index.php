@@ -6,7 +6,8 @@ $collectionNames = array_column($collections, 'name', 'id');
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-headset', t('builtin_ai_agent.title'), 'builtinAgentHelp'); ?>
     <?php echo uiPageHeaderActions(); ?>
-    <button type="button" class="btn btn-secondary btn-sm" id="builtinAgentClearCache" title="<?php echo $h(t('builtin_ai_agent.clear_cache_help')); ?>"><i class="fas fa-eraser"></i> <?php echo $h(t('builtin_ai_agent.clear_cache')); ?></button>
+    <button type="button" class="btn btn-secondary btn-sm" id="builtinAgentClearCache" title="<?php echo $h(t('builtin_ai_agent.clear_cache_help')); ?>"
+            data-confirm="<?php echo $h(t('builtin_ai_agent.clear_cache_confirm')); ?>" data-csrf="<?php echo $h($csrf_token); ?>"><i class="fas fa-eraser"></i> <?php echo $h(t('builtin_ai_agent.clear_cache')); ?></button>
     <a href="/ai-wizard" class="btn btn-secondary btn-sm"><i class="fas fa-list-check"></i> <?php echo $h(t('builtin_ai_agent.wizard_title')); ?></a>
     <a href="/ai-agent?export=csv" class="btn btn-secondary btn-sm" title="<?php echo $h(t('builtin_ai_agent.export_help')); ?>"><i class="fas fa-file-csv"></i> CSV</a>
     <a href="/ai-agent?new=1" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> <?php echo $h(t('ai_agents.btn_new')); ?></a>
@@ -44,19 +45,6 @@ $collectionNames = array_column($collections, 'name', 'id');
     <?php echo uiTableClose(); ?>
 </div>
 
-<script>
-document.getElementById('builtinAgentClearCache')?.addEventListener('click', function () {
-    if (!confirm(<?php echo json_encode(t('builtin_ai_agent.clear_cache_confirm'), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>)) return;
-    const body = new URLSearchParams({ action: 'tts_cache_clear', csrf_token: <?php echo json_encode($csrf_token); ?> });
-    fetch('/api/ai_models.php', { method: 'POST', body: body, credentials: 'same-origin' })
-        .then(function (r) { return r.json(); })
-        .then(function (res) {
-            const ok = res && res.success;
-            const msg = ok ? res.message : ((res && res.error) || 'Error');
-            if (window.showFooterToast) window.showFooterToast(msg, ok ? 'success' : 'danger'); else alert(msg);
-        });
-});
-</script>
 <?php if (!empty($ai_calls)): ?>
 <?php
 $appTitles = array_column(array_merge($agents, AiAppService::all(false)), 'title', 'id');
@@ -272,7 +260,8 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
             <p class="u-muted u-fs-12 u-mt-6"><?php echo $h(t('builtin_ai_agent.advanced_help')); ?></p>
             <div class="u-mt-6">
             <?php $allPbxTools = array_column(PbxToolRegistry::all(), 'name');
-            $enabledPbx = is_array($edit['pbx_tools'] ?? null) ? $edit['pbx_tools'] : ($edit === [] ? $allPbxTools : []); ?>
+            $enabledPbx = is_array($edit['pbx_tools'] ?? null) ? $edit['pbx_tools']
+                : ($edit === [] ? array_values(array_diff($allPbxTools, BuiltinAiAgentService::TOOLS_OFF_BY_DEFAULT)) : []); ?>
             <div class="form-group">
                 <label class="form-label"><?php echo $h(t('builtin_ai_agent.pbx_tools')); ?></label>
                 <div class="u-d-grid u-gtc-1fr-1fr u-gap-8">

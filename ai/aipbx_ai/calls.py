@@ -1763,7 +1763,9 @@ class VoiceRequestsCall:
             connection = {**secret_refs.local_chat(self.session.app), "json_output": True}
             if self.config.get("local_context"):
                 connection["num_ctx"] = self.config["local_context"]
-            result, _ = gateway.chat(connection, text, 384, time.monotonic() + 15, self.registry.manager)
+            # A context size other than the loaded one makes Ollama reload the model (seconds on a CPU).
+            wait = 45 if connection.get("num_ctx") else 15
+            result, _ = gateway.chat(connection, text, 384, time.monotonic() + wait, self.registry.manager)
             return result
         except Exception as exc:  # provider errors go to the call's fallback
             raise cloud_llm.CloudLlmError("local model unavailable") from exc
