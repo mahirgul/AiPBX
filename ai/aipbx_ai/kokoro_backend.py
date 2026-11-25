@@ -211,11 +211,13 @@ class KokoroBackend:
 
     # ---- inference -------------------------------------------------------
 
-    def synthesize(self, text, speed, sample_rate, on_first_audio=None):
+    tts_options = True      # takes the voice settings (the pause; the voice itself is the model)
+
+    def synthesize(self, text, speed, sample_rate, on_first_audio=None, speaker=None, pause=1.0):
         voice, lock, np = self._voice, self._voice_lock, self._np
         if voice is None:
             raise RuntimeError("model not loaded")
         with lock if lock is not None else _engine_lock:
             audio = voice.say(text, speed=speed, sample_rate=sample_rate, on_first_audio=on_first_audio,
-                              voice=self.spec.source["voice_name"])
+                              voice=self.spec.source["voice_name"], pause=pause)
         return (np.clip(audio, -1.0, 1.0) * 32767.0).round().astype("<i2").tobytes()

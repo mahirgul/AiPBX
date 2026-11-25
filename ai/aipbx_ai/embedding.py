@@ -153,9 +153,10 @@ class EmbeddingBackend:
     def load(self):
         import numpy as np
         import onnxruntime as ort
+        from .device import onnx_providers
         opts = ort.SessionOptions()
         opts.intra_op_num_threads = 1      # one short sentence: threads cost more than they give
-        self.session = ort.InferenceSession(str(self.dir / "model.onnx"), opts, providers=["CPUExecutionProvider"])
+        self.session = ort.InferenceSession(str(self.dir / "model.onnx"), opts, providers=onnx_providers())
         self.tokenizer = UnigramTokenizer(self.dir / "tokenizer.json")
         self.np = np
 

@@ -39,6 +39,7 @@ sentence. Audio longer than 30 s is transcribed in 30 s pieces.
 """
 import gc
 import hashlib
+import logging
 import os
 import re
 import shutil
@@ -46,6 +47,7 @@ import threading
 import urllib.request
 
 from . import hf
+from .device import ct2_device, onnx_providers
 from pathlib import Path
 
 from .vosk_backend import pcm16_from_wav
@@ -63,6 +65,13 @@ _REPEAT = re.compile(r"(\S.{4,}?)(?:\s+\1)+", re.S)
 # One CTranslate2 Whisper engine per model.bin SHA-256 across language specs.
 _engine_lock = threading.Lock()
 _engines = {}
+log = logging.getLogger("aipbx_ai.whisper")
+_cpu_only = False       # set when the GPU failed once: every later load stays on the CPU
+
+
+def _set_cpu_only():
+    global _cpu_only
+    _cpu_only = True
 
 
 def _sha256(path):
@@ -239,8 +248,21 @@ class WhisperBackend:
         with _engine_lock:
             shared = _engines.get(sha)
             if shared is None:
-                model = ctranslate2.models.Whisper(str(self.dir), device="cpu", compute_type="int8",
-                                                   intra_threads=os.cpu_count() or 1, inter_threads=1)
+                if not _cpu_only:
+                    onnx_providers()                    # loads the CUDA libraries of this venv, once
+                device = "cpu" if _cpu_only else ct2_device()
+                try:
+                    model = ctranslate2.models.Whisper(str(self.dir), device=device,
+                                                       compute_type="float16" if device == "cuda" else "int8",
+                                                       intra_threads=os.cpu_count() or 1, inter_threads=1)
+                except Exception:
+                    if device != "cuda":
+                        raise
+                    log.warning("%s: the GPU did not work, using the CPU", self.spec.id)
+                    _set_cpu_only()
+                    device = "cpu"
+                    model = ctranslate2.models.Whisper(str(self.dir), device="cpu", compute_type="int8",
+                                                       intra_threads=os.cpu_count() or 1, inter_threads=1)
                 filters = mel_filters(np, getattr(model, "n_mels", 80))
                 shared = _engines[sha] = {"model": model, "filters": filters, "np": np,
                                           "users": set(), "lock": threading.Lock()}
@@ -257,6 +279,10 @@ class WhisperBackend:
                 self._run(np.zeros(RATE, np.float32))      # warm-up: the first run allocates its buffers
             except Exception:
                 self.unload()
+                if not _cpu_only and device == "cuda":
+                    log.warning("%s: the GPU did not work, using the CPU", self.spec.id)
+                    _set_cpu_only()
+                    return self.load()
                 raise
 
     def unload(self):

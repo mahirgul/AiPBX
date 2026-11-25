@@ -21,6 +21,8 @@ from itertools import pairwise
 import numpy as np
 import onnxruntime as ort
 
+from .device import onnx_providers
+
 try:
     from normalizer_tr import Normalizer
 except ImportError as e:
@@ -118,7 +120,7 @@ class EmaOnnx:
         so = ort.SessionOptions()
         if threads:
             so.intra_op_num_threads = threads
-        prov = ["CPUExecutionProvider"]
+        prov = onnx_providers()
         self.text = ort.InferenceSession(f"{model_dir}/text.onnx", so, providers=prov)
         self.sound = ort.InferenceSession(f"{model_dir}/sound.onnx", so, providers=prov)
         self.decoder = ort.InferenceSession(f"{model_dir}/decoder.onnx", so, providers=prov)
