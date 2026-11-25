@@ -83,76 +83,84 @@
         border-radius: 12px;
     }
 
-    /* Top bar: the phone/CID/pause controls did not fit a narrow screen (the
-       number input was clipped) — instead of a fixed 70px height it wraps to
-       a second line: ☰/status/mode on the first line, the number input on its
-       own full-width line. */
     .top-bar {
+        --topbar-control-size: 36px;
         height: auto;
         min-height: 56px;
         padding: 8px 10px;
     }
 
-    /* Keep everything on one line: ☰ / status badge / mode switch keep their
-       fixed size and the number input fills the remaining space and shrinks
-       (instead of wrapping to a second line). */
     .top-bar-left {
-        flex-wrap: nowrap;
         column-gap: 6px;
         flex: 1 1 auto;
         min-width: 0;
-        width: auto;
     }
 
     .top-bar-right {
         margin-left: 6px;
+        gap: 6px;
+    }
+
+    .top-bar :is(.sidebar-toggle-btn, .header-phone-status-pill, .topbar-btn, .header-sync-btn) {
+        box-sizing: border-box;
+        width: var(--topbar-control-size);
+        height: var(--topbar-control-size);
+        padding: 0;
+        border-radius: 10px;
         flex-shrink: 0;
+        justify-content: center;
+        font-size: 14px;
+        line-height: 1;
     }
 
-    .header-sync-btn .header-sync-label {
-        display: none;
-    }
-
-    .header-sync-btn {
-        padding: 5px 9px;
-        gap: 5px;
-    }
-
-    .mobile-menu-btn,
-    .header-phone-status-pill {
-        flex-shrink: 0;
-    }
-
-    .header-quick-dial-wrapper {
+    .header-quick-dial-wrapper,
+    .header-quick-dial-wrapper > div {
         flex: 1 1 auto;
         min-width: 0;
     }
 
+    #header-incoming-controls,
+    #header-active-controls {
+        flex-wrap: wrap;
+    }
+
     .header-quick-dial-input {
         width: 100%;
+        min-width: 0;
+        height: var(--topbar-control-size);
         box-sizing: border-box;
-        padding: 5px 10px;
+        padding: 0 10px;
         font-size: 12px;
     }
 
-    .header-phone-status-pill {
-        padding: 4px 8px;
-        gap: 4px;
-    }
-
-    .header-phone-status-pill .status-text {
+    .header-phone-status-pill .status-text,
+    .topbar-btn-label,
+    .header-sync-label,
+    .top-bar .header-sync-arrow {
         display: none;
     }
 
-    /* Answer/Reject/Hold/Transfer/Hang up: icon only on mobile, text hidden */
-    .topbar-btn-label {
-        display: none;
+    .header-sync-btn {
+        position: relative;
     }
 
-    .topbar-btn {
-        padding: 8px 10px !important;
-        width: 38px;
-        justify-content: center;
+    .top-bar :is(.header-notices-count, .header-sync-count) {
+        position: absolute;
+        top: -4px;
+        right: -3px;
+        padding: 1px 4px;
+        font-size: 10px;
+        line-height: 1.2;
+    }
+
+    .top-bar .header-sync-count {
+        background: var(--warning);
+        box-shadow: 0 0 0 1px var(--bg-sidebar);
+    }
+
+    .top-bar .header-notices-btn.has-new::after {
+        top: auto;
+        bottom: 4px;
     }
 
     /* Dozens of form pages use inline "display:grid;
