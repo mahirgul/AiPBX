@@ -141,6 +141,17 @@ class PluginValidatorTests(unittest.TestCase):
             v = PluginValidator(path, slug=slug, check_php_syntax=False)
             self.assertTrue(v.validate(), v.errors)
 
+    def test_admin_page_with_settings_schema_passes_without_page_php(self):
+        slug = "sample-plugin"
+        manifest = valid_manifest(
+            slug,
+            hooks={"admin_page": {"group": "security"}},
+            settings_schema=[{"key": "enabled", "type": "boolean"}],
+        )
+        with TempPluginTree(slug, {"plugin.json": manifest}) as path:
+            v = PluginValidator(path, slug=slug, check_php_syntax=False)
+            self.assertTrue(v.validate(), v.errors)
+
     def test_user_page_needs_user_page_php(self):
         slug = "sample-plugin"
         manifest = valid_manifest(slug, hooks={"user_page": {"label": "Messages"}})

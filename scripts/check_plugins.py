@@ -195,11 +195,11 @@ class PluginValidator:
                     group = hook_val.get("group")
                     if not route and not group:
                         self.add_error("hooks.admin_page must specify either 'group' or 'route'")
-                    # If there's no custom core route, admin/page.php should exist
-                    if not route:
+                    # A settings schema can render the admin page without a custom template.
+                    if not route and not data.get("settings_schema"):
                         page_php = os.path.join(self.plugin_dir, "admin", "page.php")
                         if not os.path.isfile(page_php):
-                            self.add_error("hooks.admin_page specified without 'route', but admin/page.php was not found")
+                            self.add_error("hooks.admin_page requires a route or settings_schema; admin/page.php was not found")
 
             elif hook_name == "worker":
                 if hook_val:
