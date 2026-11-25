@@ -328,6 +328,32 @@ final class AiAppServiceTest extends TestCase
         $this->assertSame('Arayan: hello / Ajan: How can I help?', AiAppService::callText(['conversation' => $call['conversation']], true, 'tr'));
     }
 
+    public function testWizardBarLeadsBackFromTheStepPages(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
+        $saved = [$_SESSION['ai_wizard_return'] ?? null, $_GET['wizard_bar'] ?? null];
+        try {
+            unset($_SESSION['ai_wizard_return'], $_GET['wizard_bar']);
+            $this->assertNull(BuiltinAiAgentService::wizardBar('/ai-local'));          // the wizard was never opened
+            $_SESSION['ai_wizard_return'] = 1;
+            $this->assertNull(BuiltinAiAgentService::wizardBar('/extensions'));        // not a page of the wizard
+            $bar = BuiltinAiAgentService::wizardBar('/ai-local/');
+            if ($bar !== null) {                                                     // null only when every step is done
+                $this->assertSame(7, $bar['total']);
+                $this->assertArrayHasKey($bar['step'], BuiltinAiAgentService::wizardSteps());
+                $this->assertLessThan($bar['total'], $bar['done']);
+            }
+            $_GET['wizard_bar'] = 'off';                                             // the close link
+            $this->assertNull(BuiltinAiAgentService::wizardBar('/ai-local'));
+            $this->assertArrayNotHasKey('ai_wizard_return', $_SESSION);
+        } finally {
+            [$flag, $get] = $saved;
+            unset($_SESSION['ai_wizard_return'], $_GET['wizard_bar']);
+            if ($flag !== null) { $_SESSION['ai_wizard_return'] = $flag; }
+            if ($get !== null) { $_GET['wizard_bar'] = $get; }
+        }
+    }
+
     public function testBuiltinAgentListeningSettingsAreClamped(): void
     {
         require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';

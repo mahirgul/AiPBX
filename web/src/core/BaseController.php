@@ -158,6 +158,13 @@ abstract class BaseController
         if (WelcomeService::shouldShow()) {
             require dirname(__DIR__, 2) . '/templates/welcome_card.php';
         }
+        if (!empty($_SESSION['ai_wizard_return']) && ($_SESSION['user_role'] ?? '') === 'admin') {
+            require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
+            $wizardBar = BuiltinAiAgentService::wizardBar((string) parse_url((string) ($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH));
+            if ($wizardBar !== null) {
+                require dirname(__DIR__, 2) . '/templates/views/builtin_ai_agent/wizard_bar.php';
+            }
+        }
         View::render($view, $data);
         require $layouts . '/app_footer.php';
     }

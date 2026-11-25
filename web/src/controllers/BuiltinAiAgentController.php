@@ -10,6 +10,7 @@ final class BuiltinAiAgentController extends BaseController
     public static function wizard(): void
     {
         static::requireRole('admin');
+        $_SESSION['ai_wizard_return'] = 1;                        // the pages its steps open show a way back
         $token = (string) ($_POST['csrf_token'] ?? '');
         $notices = ['message' => '', 'error' => ''];
         $slug = (string) ($_POST['enable_plugin'] ?? '');

@@ -166,6 +166,34 @@ final class BuiltinAiAgentService
     /** Plugins the wizard may turn on: the knowledge base (an agent needs one) and the two model sources. */
     public const WIZARD_PLUGINS = ['ai-knowledge', 'ailocal', 'aicloud'];
 
+    /** Pages a wizard step sends the administrator to: they show a bar back to the wizard. */
+    public const WIZARD_PAGES = ['/plugins', '/ai-local', '/ai-cloud', '/ai-knowledge', '/ai-agent'];
+
+    /**
+     * The bar on a page the wizard sent the administrator to: ['done' => n, 'total' => n, 'step' => key] or null.
+     * The wizard sets the session flag when it is opened; the bar's close link, or a finished wizard, clears it.
+     */
+    public static function wizardBar(string $path): ?array
+    {
+        if (empty($_SESSION['ai_wizard_return'])) {
+            return null;
+        }
+        if (($_GET['wizard_bar'] ?? '') === 'off') {
+            unset($_SESSION['ai_wizard_return']);
+            return null;
+        }
+        if (!in_array(rtrim($path, '/') ?: '/', self::WIZARD_PAGES, true)) {
+            return null;
+        }
+        $steps = self::wizardSteps();
+        $open = array_keys(array_filter($steps, static fn ($s) => !$s['done']));
+        if ($open === []) {
+            unset($_SESSION['ai_wizard_return']);
+            return null;
+        }
+        return ['done' => count($steps) - count($open), 'total' => count($steps), 'step' => $open[0]];
+    }
+
     /**
      * The setup wizard's steps, each read from the system as it is now (so settings made by hand tick
      * their step too): key => ['done' => bool, 'optional' => bool, 'info' => string, 'links' => [href => label key]].
