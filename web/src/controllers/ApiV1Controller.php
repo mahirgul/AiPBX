@@ -182,6 +182,7 @@ final class ApiV1Controller
                 'pjsip_wss_port', 'pjsip_udp_port', 'pjsip_external_ip',
                 'pjsip_local_net', 'pjsip_codecs', 'pjsip_wired_codecs',
                 'pjsip_user_agent', 'pjsip_direct_media', 'pjsip_rtp_symmetric',
+                'pjsip_use_ptime', 'codecs_genericplc_on_equal_codecs',
                 'pjsip_qualify_frequency', 'pjsip_internal_dial_timeout',
                 'pjsip_external_dial_timeout', 'rtp_start', 'rtp_end',
                 'udptl_start', 'udptl_end', 'udptl_checksums',

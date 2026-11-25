@@ -1,5 +1,13 @@
 <?php
 $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
+$regionTabs = [
+    'regions'  => ['label' => t('phones.region_title'), 'icon' => 'fa-map-marker-alt', 'badge' => (string) count($regions)],
+    'defaults' => ['label' => t('phones.region_defaults_title'), 'icon' => 'fa-phone'],
+];
+$activeRegionTab = (string) ($_GET['tab'] ?? 'regions');
+if (!isset($regionTabs[$activeRegionTab])) {
+    $activeRegionTab = 'regions';
+}
 ?>
 
 <div class="card">
@@ -8,8 +16,10 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
 <a href="/phones" class="btn btn-secondary btn-sm" title="<?php echo t('phones.title'); ?>"><i class="fas fa-phone"></i> <?php echo t('phones.title'); ?></a>
             <button type="button" class="btn btn-primary btn-sm" onclick="phonesEditRegion(0)"><i class="fas fa-plus"></i> <?php echo t('phones.region_add'); ?></button>
 <?php echo uiPageHeaderClose(); ?>
+<?php echo uiTabs($regionTabs, $activeRegionTab); ?>
 <?php echo uiHelpBoxOpen('regionsHelpBox', t('common.module_guide')); ?><?php echo t('phones.region_help'); ?><?php echo uiHelpBoxClose(); ?>
-    
+
+    <div data-tab-pane="regions"<?php echo $activeRegionTab === 'regions' ? '' : ' hidden'; ?>>
     <?php echo uiTableOpen([
         t('phones.region_name'),
         t('phones.region_sip_server'),
@@ -37,18 +47,15 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
             </tr>
         <?php endforeach; ?>
         <?php echo uiTableClose(); ?>
-</div>
+    </div>
 
 <datalist id="regionLocalIps">
     <?php foreach ($localIps as $ip): ?><option value="<?php echo $h($ip); ?>"><?php endforeach; ?>
 </datalist>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-phone u-primary"></i> <?php echo t('phones.region_defaults_title'); ?></div>
-    </div>
-    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('phones.region_defaults_help'); ?> <?php echo t('phones.addresses_help'); ?></div>
-    <form method="POST" action="/phone-regions" autocomplete="off" class="u-card-pad">
+<div data-tab-pane="defaults"<?php echo $activeRegionTab === 'defaults' ? '' : ' hidden'; ?>>
+    <div class="u-muted u-fs-12 u-mb-12"><?php echo t('phones.region_defaults_help'); ?> <?php echo t('phones.addresses_help'); ?></div>
+    <form method="POST" action="/phone-regions?tab=defaults" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
         <input type="hidden" name="save_phones" value="1">
         <div class="u-grid-2">
@@ -83,6 +90,7 @@ $h = static fn($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
         </div>
         <div class="form-actions"><button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> <?php echo t('common.save'); ?></button></div>
     </form>
+</div>
 </div>
 
 <div class="modal-overlay" id="phoneRegionModal">

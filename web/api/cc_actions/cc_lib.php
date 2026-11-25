@@ -30,18 +30,25 @@ function agentDialScope(array $user, PDO $db): array
     return [$group > 1 ? "from-internal-web-{$group}" : 'from-internal-web', max(1, $perm)];
 }
 
-function buildOriginateCommand(string $user_ext, string $to, string $outbound_context, int $perm_group): string
+function buildOriginateCommand(string $user_ext, string $to, string $outbound_context, int $perm_group, int $automaticCallbackId = 0, int $automaticAttempt = 0): string
 {
     $perm_group = max(1, $perm_group);
+    $channel = $automaticCallbackId > 0 ? 'Local/' . $automaticCallbackId . '-' . $user_ext . '@' . QueueCallbackService::AUTO_AGENT_CONTEXT . '/n' : "Local/$user_ext@cc-internal";
+    $context = $automaticCallbackId > 0 ? QueueCallbackService::AUTO_OUTBOUND_CONTEXT : $outbound_context;
     return "Action: Originate\r\n" .
-           "Channel: Local/$user_ext@cc-internal\r\n" .
-           "Context: $outbound_context\r\n" .
+           "Channel: $channel\r\n" .
+           "Context: $context\r\n" .
            "Exten: $to\r\n" .
            "Priority: 1\r\n" .
            "Async: true\r\n" .
+           ($automaticCallbackId > 0 ? "Timeout: 25000\r\n" : '') .
            "CallerID: Agent $user_ext <$user_ext>\r\n" .
            "Variable: __SAVED_DST=$to\r\n" .
-           "Variable: __PERMISSION_GROUP_ID=$perm_group\r\n\r\n";
+           "Variable: __PERMISSION_GROUP_ID=$perm_group\r\n" .
+           ($automaticCallbackId > 0 ? "Variable: __AIPBX_AUTO_CB_ID=$automaticCallbackId\r\n" .
+               "Variable: __AIPBX_AUTO_CB_ATTEMPT=$automaticAttempt\r\n" .
+               "Variable: __AIPBX_AUTO_CB_CONTEXT=$outbound_context\r\n" : '') .
+           "\r\n";
 }
 
 function parseAsteriskQueuesOutput($raw_output) {
@@ -53,12 +60,13 @@ function parseAsteriskQueuesOutput($raw_output) {
         $clean_line = preg_replace("/\x1b\[[0-9;]*[a-zA-Z]/", "", $line);
         $trimmed = trim($clean_line);
 
-        if (preg_match('/^([a-zA-Z0-9_-]+)\s+has\s+\d+\s+calls/i', $trimmed, $m)) {
+        if (preg_match('/^([a-zA-Z0-9_-]+)\s+has\s+(\d+)\s+calls/i', $trimmed, $m)) {
             $current_queue = $m[1];
             if (!isset($queues[$current_queue])) {
                 $queues[$current_queue] = [
                     'members' => [],
-                    'callers' => []
+                    'callers' => [],
+                    'waiting_count' => (int) $m[2],
                 ];
             }
             continue;

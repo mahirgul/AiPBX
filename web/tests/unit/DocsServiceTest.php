@@ -86,7 +86,7 @@ final class DocsServiceTest extends TestCase
     {
         $docs = DocsService::list();
         $this->assertSame('system-map', $docs[0]['name']);
-        $this->assertSame('System map (for administrators)', $docs[0]['title']);
+        $this->assertSame('System Map', $docs[0]['title']);
         foreach ($docs as $d) {
             $src = (string) DocsService::source($d['name']);
             $html = DocsService::render($src);

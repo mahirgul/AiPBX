@@ -48,8 +48,6 @@ final class RbacTest extends TestCase
         'ai_local',
         'ai_knowledge', 'ai_assistant',
         'ai_cloud',
-        'ai_apps',
-        'ai_agents',
         'builtin_ai_agent',
         'ai_voicemail',
         'ai_call_analysis',

@@ -389,6 +389,15 @@
                 group.classList.remove('open');
             }
         });
+
+        if (activeGroup && typeof window.switchSidebarSection === 'function') {
+            const sec = activeGroup.getAttribute('data-section');
+            if (sec) {
+                window.switchSidebarSection(sec, false);
+            }
+        } else if (typeof window.applySidebarSection === 'function') {
+            window.applySidebarSection();
+        }
     }
 
     // The "Apply" badge in the sidebar sits OUTSIDE .content-area, so a normal

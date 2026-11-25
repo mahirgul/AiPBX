@@ -14,10 +14,10 @@ $configuredLlm = array_values(array_filter($providers, fn($p) => !empty($p['conf
     <?php echo uiPageHeaderOpen('fa-cloud', t('ai_cloud.title', 'Cloud AI'), 'aiCloudHelpBox'); ?>
     <?php echo uiPageHeaderActions(); ?>
     <?php echo uiPageHeaderClose(); ?>
+    <?php echo uiTabs($tabs, $active_tab); ?>
     <?php echo uiHelpBoxOpen('aiCloudHelpBox', t('ai_cloud.title', 'Cloud AI')); ?>
         <?php echo $h(t('ai_cloud.help_body', 'Manage cloud AI provider accounts, default cloud bindings, and cloud Gateway testing.')); ?>
     <?php echo uiHelpBoxClose(); ?>
-</div>
 
 <?php if (!$plugin_enabled): ?>
     <div class="alert alert-warning u-mb-12">
@@ -33,37 +33,26 @@ $configuredLlm = array_values(array_filter($providers, fn($p) => !empty($p['conf
     </div>
 <?php endif; ?>
 
-<?php if (!empty($dependencies)): ?>
-    <div class="card u-mb-12">
-        <div class="u-fs-12 u-fw-700 u-mb-6"><i class="fas fa-link u-primary"></i> <?php echo $h(t('ai_cloud.active_deps', 'Active cloud consumers')); ?></div>
-        <div class="u-d-flex u-wrap u-gap-6">
-            <?php foreach ($dependencies as $dep): ?>
-                <span class="badge badge-info u-fs-11"><?php echo $h($dep['label'] . ' → ' . $dep['target']); ?></span>
-            <?php endforeach; ?>
-        </div>
-    </div>
-<?php endif; ?>
-
-<?php echo uiTabs($tabs, $active_tab); ?>
-
 <?php
 $taskCaps = ['chat' => 'llm', 'stt' => 'stt', 'tts' => 'tts'];
 $taskLabels = ['chat' => 'Chat / LLM', 'stt' => 'STT', 'tts' => 'TTS'];
-$cloudOptions = static function (string $task, string $selected, string $emptyLabel) use ($providers, $taskCaps, $h): string {
+$realtimeTypes = ['openai', 'google_ai', 'qwen', 'openai_compat'];
+$modeLabel = static fn (string $type): string => in_array($type, $realtimeTypes, true) ? ' [Cascade + Realtime]' : ' [Cascade]';
+$cloudOptions = static function (string $task, string $selected, string $emptyLabel) use ($providers, $taskCaps, $modeLabel, $h): string {
     $cap = $taskCaps[$task] ?? $task;
     $out = '<option value="">' . $h($emptyLabel) . '</option>';
     foreach ($providers as $p) {
         if (!in_array($cap, (array) ($p['caps'] ?? []), true)) continue;
         $ref = 'cloud:' . $p['id'];
         $sel = $selected === $ref ? ' selected' : '';
+        $mode = $modeLabel((string) ($p['type'] ?? $p['id']));
         $suffix = empty($p['configured']) ? ' (' . t('common.not_configured', 'Not configured') . ')' : '';
-        $out .= '<option value="' . $h($ref) . '"' . $sel . '>' . $h($p['title'] . $suffix) . '</option>';
+        $out .= '<option value="' . $h($ref) . '"' . $sel . '>' . $h($p['title'] . $mode . $suffix) . '</option>';
     }
     return $out;
 };
 ?>
 <div data-tab-pane="models"<?php echo $active_tab === 'models' ? '' : ' hidden'; ?>>
-    <div class="card">
         <h3 class="card-title u-mb-12"><?php echo $h(t('ai_cloud.defaults_title', 'Default Cloud Bindings')); ?></h3>
         <form method="POST">
             <?php echo $csrf; ?>
@@ -82,11 +71,10 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
             <?php endforeach; ?>
             <button type="submit" class="btn btn-primary"<?php echo $plugin_enabled ? '' : ' disabled'; ?>><i class="fas fa-save"></i> <?php echo $h(t('common.save', 'Save')); ?></button>
         </form>
-    </div>
 </div>
 
 <div data-tab-pane="languages"<?php echo $active_tab === 'languages' ? '' : ' hidden'; ?>>
-    <div class="card u-mb-12">
+    <div class="u-mb-16">
         <h3 class="card-title u-mb-8"><i class="fas fa-language u-primary"></i> <?php echo $h(t('ai_cloud.engines_title', 'Language Overrides')); ?></h3>
         <p class="u-muted u-fs-12 u-mt-0 u-mb-10"><?php echo $h(t('ai_cloud.engines_help', 'Optional per-language cloud providers. Leave empty to use the Default Cloud Binding.')); ?></p>
         <form method="POST">
@@ -121,7 +109,7 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
         </form>
     </div>
 
-    <div class="card">
+    <div>
         <h3 class="card-title u-mb-8"><i class="fas fa-globe u-primary"></i> <?php echo $h(t('ai_cloud.languages_title', 'AI Languages')); ?></h3>
         <p class="u-muted u-fs-12 u-mt-0 u-mb-10"><?php echo $h(t('ai_cloud.languages_help', 'Manage languages available for STT, TTS, and language-specific provider overrides.')); ?></p>
         <?php echo uiTableOpen([
@@ -163,7 +151,6 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
     $capLabels = ['llm' => 'LLM', 'stt' => 'STT', 'tts' => 'TTS', 'embed' => 'Embed'];
     $fmtNum = fn($n) => number_format((float) $n, 0, ',', '.');
     ?>
-    <div class="card">
         <div class="u-d-flex u-jc-space-between u-ai-center u-wrap u-gap-8 u-mb-10">
             <h3 class="card-title u-m-0"><i class="fas fa-cloud u-primary"></i> <?php echo $h(t('ai_cloud.accounts_title')); ?></h3>
             <button type="button" class="btn btn-primary btn-sm" onclick="aiCloudOpenAccount('')"<?php echo $plugin_enabled ? '' : ' disabled'; ?>><i class="fas fa-plus"></i> <?php echo $h(t('ai_cloud.account_add')); ?></button>
@@ -193,6 +180,10 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
                     <td class="col-hide-mobile"><?php echo $h($p['provider_title']); ?></td>
                     <td class="col-hide-mobile">
                         <?php foreach ((array) $p['caps'] as $c): ?><span class="badge badge-secondary u-fs-11"><?php echo $h($capLabels[$c] ?? $c); ?></span> <?php endforeach; ?>
+                        <?php if (in_array((string) ($p['type'] ?? $p['id']), $realtimeTypes, true)): ?>
+                            <span class="badge badge-primary u-fs-11">Realtime</span>
+                        <?php endif; ?>
+                        <span class="badge badge-info u-fs-11">Cascade</span>
                     </td>
                     <td class="col-hide-mobile u-fs-12 u-muted"><?php echo $h($usageParts ? implode(' · ', $usageParts) : '—'); ?></td>
                     <td>
@@ -222,12 +213,11 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
             <?php endforeach; ?>
         <?php echo uiTableClose(); ?>
         <?php endif; ?>
-    </div>
 </div>
 
 <!-- Add / edit one account -->
 <div class="modal-overlay" id="aiCloudAccountModal">
-    <div class="modal-card u-maxw-520">
+    <div class="modal-card u-maxw-800">
         <div class="modal-header">
             <h3 class="u-title" id="aiCloudAccountTitle"></h3>
             <button type="button" class="btn btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('aiCloudAccountModal')"><i class="fas fa-times"></i></button>
@@ -238,20 +228,22 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
                 <input type="hidden" name="_tab" value="connections">
                 <input type="hidden" name="save_account" value="1">
                 <input type="hidden" name="account_id" id="aiCloudAccountId" value="">
-                <div class="form-group">
-                    <label class="form-label"><?php echo $h(t('ai_cloud.provider', 'Provider')); ?></label>
-                    <select name="account_type" id="aiCloudAccountType" class="form-control" onchange="aiCloudRenderFields()">
-                        <?php foreach ($types as $tp): ?>
-                            <option value="<?php echo $h($tp['type']); ?>"><?php echo $h($tp['title']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <small class="u-muted u-fs-11" id="aiCloudAccountSignup"></small>
+                <div class="u-grid-2">
+                    <div class="form-group">
+                        <label class="form-label"><?php echo $h(t('ai_cloud.provider', 'Provider')); ?></label>
+                        <select name="account_type" id="aiCloudAccountType" class="form-control" onchange="aiCloudRenderFields()">
+                            <?php foreach ($types as $tp): ?>
+                                <option value="<?php echo $h($tp['type']); ?>"><?php echo $h($tp['title'] . $modeLabel((string) $tp['type'])); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="u-muted u-fs-11" id="aiCloudAccountSignup"></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><?php echo $h(t('ai_cloud.account_name')); ?></label>
+                        <input type="text" name="account_name" id="aiCloudAccountName" class="form-control" maxlength="60" placeholder="<?php echo $h(t('ai_cloud.account_name_hint')); ?>">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label"><?php echo $h(t('ai_cloud.account_name')); ?></label>
-                    <input type="text" name="account_name" id="aiCloudAccountName" class="form-control" maxlength="60" placeholder="<?php echo $h(t('ai_cloud.account_name_hint')); ?>">
-                </div>
-                <div id="aiCloudAccountFields"></div>
+                <div id="aiCloudAccountFields" class="u-grid-2"></div>
                 <details class="u-mt-10">
                     <summary class="u-pointer u-fs-12 u-fw-600"><?php echo $h(t('ai_cloud.account_limits')); ?></summary>
                     <div class="u-d-flex u-wrap u-gap-8 u-mt-8">
@@ -273,7 +265,6 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
 <script>window.AI_CLOUD = <?php echo json_encode(['types' => $types, 'accounts' => array_map(fn($p) => array_intersect_key($p, array_flip(['id', 'type', 'name', 'fields', 'limits'])), $providers)], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE); ?>;</script>
 
 <div data-tab-pane="try"<?php echo $active_tab === 'try' ? '' : ' hidden'; ?>>
-    <div class="card">
         <h3 class="card-title u-mb-12"><?php echo $h(t('ai_cloud.try_title', 'Try Cloud Chat')); ?></h3>
         <form method="POST">
             <?php echo $csrf; ?>
@@ -299,7 +290,18 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
                 <div class="u-mt-6 u-white-space-pre-wrap"><?php echo $h($try_output); ?></div>
             </div>
         <?php endif; ?>
-    </div>
 </div>
+</div>
+
+<?php if (!empty($dependencies)): ?>
+    <div class="card u-mt-12">
+        <div class="u-fs-12 u-fw-700 u-mb-6"><i class="fas fa-link u-primary"></i> <?php echo $h(t('ai_cloud.active_deps', 'Active cloud consumers')); ?></div>
+        <div class="u-d-flex u-wrap u-gap-6">
+            <?php foreach ($dependencies as $dep): ?>
+                <span class="badge badge-info u-fs-11"><?php echo $h($dep['label'] . ' → ' . $dep['target']); ?></span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
 
 <script src="<?php echo asset('/assets/js/ai_cloud.js'); ?>"></script>

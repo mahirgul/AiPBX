@@ -1,0 +1,121 @@
+{
+    "slug": "microsoft-auth",
+    "name": "Microsoft Sign-In",
+    "name_i18n": {
+        "en": "Microsoft Sign-In",
+        "tr": "Microsoft ile Giriş"
+    },
+    "version": "1.0.0",
+    "author": "AiPBX Official Team",
+    "author_url": "https://github.com/mahirgul/AiPBX",
+    "type": "official",
+    "category": "integration",
+    "icon": "fab fa-microsoft",
+    "icon_style": "color: #00a4ef;",
+    "description": "Allow portal users to sign in with their Microsoft 365, Entra ID (Azure AD), or personal Microsoft accounts via OAuth 2.0.",
+    "description_i18n": {
+        "tr": "Web paneli kullanıcılarının Microsoft 365, Entra ID (Azure AD) veya kişisel Microsoft hesaplarıyla tek tıkla giriş yapmasını sağlar.",
+        "en": "Allow portal users to sign in with their Microsoft 365, Entra ID (Azure AD), or personal Microsoft accounts via OAuth 2.0."
+    },
+    "scopes": [
+        "users:read",
+        "users:write"
+    ],
+    "hooks": {
+        "auth_provider": true,
+        "admin_page": {
+            "group": "security"
+        }
+    },
+    "settings_schema": [
+        {
+            "key": "enabled",
+            "type": "boolean",
+            "default": "0",
+            "label": "Enable Microsoft Sign-In",
+            "label_i18n": {
+                "tr": "Microsoft ile Girişi Etkinleştir",
+                "en": "Enable Microsoft Sign-In"
+            },
+            "help": "Show the 'Sign in with Microsoft' button on the login page.",
+            "help_i18n": {
+                "tr": "Giriş sayfasında 'Microsoft ile Giriş' butonunu gösterir.",
+                "en": "Show the 'Sign in with Microsoft' button on the login page."
+            }
+        },
+        {
+            "key": "tenant_id",
+            "type": "text",
+            "default": "common",
+            "placeholder": "common, organizations, or Tenant UUID",
+            "label": "Microsoft Entra Tenant ID",
+            "label_i18n": {
+                "tr": "Microsoft Entra Kiracı (Tenant) ID",
+                "en": "Microsoft Entra Tenant ID"
+            },
+            "help": "Use 'common' for all Microsoft accounts, 'organizations' for work/school accounts only, or your specific Tenant ID.",
+            "help_i18n": {
+                "tr": "Tüm Microsoft hesapları için 'common', sadece kurumsal hesaplar için 'organizations' veya kendi Tenant ID değerinizi girin.",
+                "en": "Use 'common' for all Microsoft accounts, 'organizations' for work/school accounts only, or your specific Tenant ID."
+            }
+        },
+        {
+            "key": "client_id",
+            "type": "text",
+            "default": "",
+            "placeholder": "00000000-0000-0000-0000-000000000000",
+            "label": "Application (Client) ID",
+            "label_i18n": {
+                "tr": "Uygulama (Client) ID",
+                "en": "Application (Client) ID"
+            }
+        },
+        {
+            "key": "client_secret",
+            "type": "password",
+            "secret": true,
+            "default": "",
+            "label": "Client Secret",
+            "label_i18n": {
+                "tr": "İstemci Gizli Anahtarı (Client Secret)",
+                "en": "Client Secret"
+            }
+        },
+        {
+            "key": "allowed_domains",
+            "type": "text",
+            "default": "",
+            "placeholder": "example.com, company.org",
+            "label": "Allowed E-mail Domains (Optional)",
+            "label_i18n": {
+                "tr": "İzin Verilen E-posta Alan Adları (İsteğe Bağlı)",
+                "en": "Allowed E-mail Domains (Optional)"
+            }
+        },
+        {
+            "key": "auto_provision",
+            "type": "boolean",
+            "default": "0",
+            "label": "Auto-create missing users",
+            "label_i18n": {
+                "tr": "Kayıtlı olmayan kullanıcıyı otomatik oluştur",
+                "en": "Auto-create missing users"
+            }
+        },
+        {
+            "key": "default_role",
+            "type": "select",
+            "default": "user",
+            "label": "Default Role for New Users",
+            "label_i18n": {
+                "tr": "Yeni Kullanıcı Varsayılan Rolü",
+                "en": "Default Role for New Users"
+            },
+            "options": {
+                "user": "Extension / User",
+                "cc_agent": "Call Center Agent",
+                "cc_manager": "Call Center Manager"
+            }
+        }
+    ]
+}

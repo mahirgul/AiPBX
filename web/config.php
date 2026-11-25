@@ -77,13 +77,40 @@ define('AMI_PASS', portalEnv('AMI_PASS'));
 date_default_timezone_set(portalEnv('TIMEZONE', 'UTC'));
 
 // WebRTC TURN server (coturn) — used to issue REST-API style time-limited
-// credentials (secret: NO fallback). Only TURNS (TLS/TCP) is used — plain
-// STUN/TURN is filtered by protocol signature at the network edge
-// (verified with an external test, 2026-08-20).
+// credentials (secret: NO fallback). Clients get TURNS (TLS/TCP through the 443 edge)
+// and TURN over UDP 3478: UDP is faster where it is open, and TURNS still works where
+// an edge filters it. The clients stop gathering soon after the
+// first relay candidate, so an unreachable UDP address does not delay the call.
 define('TURN_SECRET', portalEnv('TURN_SECRET'));
 define('CHAT_JWT_SECRET', portalEnv('CHAT_JWT_SECRET'));
 define('TURN_HOST', portalEnv('TURN_HOST', 'pbx.example.com'));
 define('TURNS_PORT', portalEnv('TURNS_PORT', '443'));
+define('TURN_UDP_PORT', portalEnv('TURN_UDP_PORT', '3478'));
+
+/**
+ * The TURN server for one WebRTC client (web phone, mobile app, widget, meeting): a time-limited
+ * TURN REST credential (HMAC-SHA1 with coturn's static-auth-secret), or null without a secret.
+ *
+ * @return array{urls: list<string>, username: string, credential: string}|null
+ */
+function turnIceServer(string $user, int $ttl = 3600, ?string $host = null): ?array
+{
+    if (!defined('TURN_SECRET') || TURN_SECRET === '') {
+        return null;
+    }
+    $host = $host ?: TURN_HOST;
+    $username = (time() + $ttl) . ':' . $user;
+    return [
+        // TURNS first: app versions before 2026-11 use only the first address and must keep the
+        // one that passes every edge. Browsers and newer apps use both.
+        'urls' => [
+            'turns:' . $host . ':' . TURNS_PORT . '?transport=tcp',
+            'turn:' . $host . ':' . TURN_UDP_PORT . '?transport=udp',
+        ],
+        'username' => $username,
+        'credential' => base64_encode(hash_hmac('sha1', $username, TURN_SECRET, true)),
+    ];
+}
 
 // Hardened Session Configuration for Public Security
 // Stateless /api/v1/* requests carrying an Authorization header (and internal
@@ -350,15 +377,18 @@ function getAvailableLanguages() {
 }
 
 /**
- * Looks up the account a sign-in name refers to. The name may be a username
- * or an extension; when one user's username equals another user's
- * extension, the username match wins. A device-only extension (is_device)
- * is no account: it cannot sign in.
+ * Looks up the account a sign-in name refers to. The name may be a username,
+ * an extension, or a non-empty e-mail address; username and extension matches
+ * take priority over e-mail. A device-only extension (is_device) is no account:
+ * it cannot sign in.
  */
 function findLoginUser(string $login, string $columns): array|false
 {
-    $stmt = getDB()->prepare("SELECT {$columns} FROM sys_users WHERE (username = ? OR extension = ?) AND is_device = 0 ORDER BY (username = ?) DESC, id ASC LIMIT 1");
-    $stmt->execute([$login, $login, $login]);
+    if ($login === '') {
+        return false;
+    }
+    $stmt = getDB()->prepare("SELECT {$columns} FROM sys_users WHERE (username = ? OR extension = ? OR (email IS NOT NULL AND email != '' AND LOWER(email) = LOWER(?))) AND is_device = 0 ORDER BY (username = ?) DESC, (extension = ?) DESC, id ASC LIMIT 1");
+    $stmt->execute([$login, $login, $login, $login, $login]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
 

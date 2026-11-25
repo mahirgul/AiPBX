@@ -319,6 +319,25 @@
             register: false,
             session_timers: false
         });
+        // JsSIP waits for ICE gathering to finish; an unreachable TURN address (UDP 3478 behind an
+        // edge that filters it) would hold the call for seconds. Shortly after the first relay
+        // candidate (at most 3 s after the first candidate) gathering ends with what there is.
+        function capIceGathering(pc) {
+            var done = false, timer = null;
+            function finish() {
+                if (done || pc.iceGatheringState === 'complete') return;
+                done = true;
+                try { pc.dispatchEvent(new RTCPeerConnectionIceEvent('icecandidate', { candidate: null })); } catch (err) {}
+            }
+            pc.addEventListener('icecandidate', function (ev) {
+                if (!ev.candidate || done) return;
+                if (/ typ relay /.test(ev.candidate.candidate || '')) {
+                    clearTimeout(timer); timer = setTimeout(finish, 300);
+                } else if (!timer) {
+                    timer = setTimeout(finish, 3000);
+                }
+            });
+        }
         ua.on('connected', function () {
             if (session) {
                 return;
@@ -328,6 +347,7 @@
                 pcConfig: { iceServers: res.ice_servers || [] },
                 eventHandlers: {
                     peerconnection: function (e) {
+                        capIceGathering(e.peerconnection);
                         e.peerconnection.addEventListener('track', function (ev) {
                             if (!ui.audio) {
                                 ui.audio = new Audio();

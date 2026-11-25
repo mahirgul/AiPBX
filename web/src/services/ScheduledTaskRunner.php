@@ -84,10 +84,14 @@ class ScheduledTaskRunner
         $scriptType = (string) ($task['script_type'] ?? 'shell');
         $timeoutSec = max(5, min(3600, (int) ($task['timeout_sec'] ?? 300)));
         $interpreter = self::interpreter($scriptType);
+        $envFile = self::prepareExternalDbEnv($task);
 
-        $cmd = self::sandboxCommand($task, $runId, $dir, $scriptFile, $interpreter);
+        $cmd = self::sandboxCommand($task, $runId, $dir, $scriptFile, $interpreter, 'aipbx-task-', $envFile);
         [$exitCode, $output] = self::executeWithTimeout($cmd, $dir, (int) ($task['timeout_sec'] ?? 300) + 10);
         @unlink($scriptFile);
+        if ($envFile !== null) {
+            @unlink($envFile);
+        }
 
         $errorMessage = ($exitCode !== 0) ? ('Process exited with code ' . $exitCode) : null;
         if ($exitCode === 124 || $exitCode === 137 || $exitCode === 143) {
@@ -186,10 +190,54 @@ class ScheduledTaskRunner
     }
 
     /**
+     * Writes an ephemeral root-only EnvironmentFile with the selected external DB connection
+     * credentials so the task script never has to store passwords.
+     *
+     * @param array<string, mixed> $task
+     */
+    public static function prepareExternalDbEnv(array $task): ?string
+    {
+        $dbId = (int) ($task['external_db_id'] ?? 0);
+        if ($dbId <= 0) {
+            return null;
+        }
+        require_once __DIR__ . '/../repositories/ExternalDbRepository.php';
+        require_once __DIR__ . '/../secret_box.php';
+        $conn = ExternalDbRepository::findById($dbId);
+        if (!$conn || empty($conn['is_active'])) {
+            return null;
+        }
+        $password = !empty($conn['password_encrypted']) ? SecretBox::decrypt((string) $conn['password_encrypted']) : '';
+        $vars = [
+            'AIPBX_DB_DRIVER' => (string) ($conn['driver'] ?? 'mysql'),
+            'AIPBX_DB_HOST' => (string) ($conn['host'] ?? ''),
+            'AIPBX_DB_PORT' => (string) ((int) ($conn['port'] ?? 3306)),
+            'AIPBX_DB_NAME' => (string) ($conn['database_name'] ?? ''),
+            'AIPBX_DB_USER' => (string) ($conn['username'] ?? ''),
+            'AIPBX_DB_PASS' => $password,
+        ];
+        $lines = [];
+        foreach ($vars as $k => $v) {
+            $clean = str_replace(["\r", "\n", "\0"], '', $v);
+            $lines[] = $k . '=' . $clean;
+        }
+        $dir = self::SCRIPT_DIR;
+        if (!is_dir($dir) && !@mkdir($dir, 0711, true)) {
+            return null;
+        }
+        $file = $dir . '/' . bin2hex(random_bytes(16)) . '.env';
+        if (@file_put_contents($file, implode("\n", $lines) . "\n") === false) {
+            return null;
+        }
+        @chmod($file, 0400);
+        return $file;
+    }
+
+    /**
      * The systemd-run command line of one run (pure, so the sandbox is tested).
      * AGI scripts use it too, with their own unit name prefix.
      */
-    public static function sandboxCommand(array $task, int $runId, string $dir, string $scriptFile, string $interpreter, string $unitPrefix = 'aipbx-task-'): string
+    public static function sandboxCommand(array $task, int $runId, string $dir, string $scriptFile, string $interpreter, string $unitPrefix = 'aipbx-task-', ?string $envFile = null): string
     {
         $timeoutSec = max(5, min(3600, (int) ($task['timeout_sec'] ?? 300)));
         $memoryMb = max(32, min(4096, (int) ($task['memory_limit_mb'] ?? 256)));
@@ -208,6 +256,9 @@ class ScheduledTaskRunner
         // (cgroup BPF, missing in containers and some kernels) it always holds.
         if (empty($task['network_access'])) {
             $props[] = 'PrivateNetwork=yes';
+        }
+        if ($envFile !== null && $envFile !== '') {
+            $props[] = 'EnvironmentFile=' . $envFile;
         }
         $cmd = 'systemd-run --wait --pipe --collect --quiet --unit=' . escapeshellarg($unitPrefix . (int) $task['id'] . '-' . $runId)
             . ' --uid=' . self::USER . ' --gid=' . self::USER . ' --working-directory=' . escapeshellarg($dir);

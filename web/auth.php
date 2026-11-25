@@ -248,9 +248,7 @@ function getModuleKeyForPage($page = null) {
         'ai_tts.php'                => 'ai_tts',
         'ai_local.php'              => 'ai_local',
         'ai_cloud.php'              => 'ai_cloud',
-        'ai_apps.php'               => 'ai_apps',
         'builtin_ai_agent.php'      => 'builtin_ai_agent',
-        'ai_agents.php'             => 'ai_agents',
         'ai_voicemail.php'          => 'ai_voicemail',
         'ai_call_analysis.php'      => 'ai_call_analysis',
         'ai_assistant.php'          => 'ai_assistant',
@@ -411,8 +409,6 @@ function roleHasModulePermission(string $role, $module_key, $action = 'access') 
     // 'web_widgets': an external destination or the call-back form can cost money.
     // 'file_storage': holds the S3 secret key of the bucket with all chat files.
     // 'ai_local', 'ai_cloud': installs software as root, downloads models, and holds paid cloud AI API keys.
-    // 'ai_apps': an application's lookup URL is requested by the server itself.
-    // 'ai_agents': calls leave for a SIP address an admin chose, with the service's password.
     // 'builtin_ai_agent': the built-in agent runs database queries and tools for callers.
     // Keep in sync with RoleRepository::modulesDefinition() 'admin_only' (RbacTest checks it).
     if ($module_key === 'assistant') {
@@ -427,7 +423,7 @@ function roleHasModulePermission(string $role, $module_key, $action = 'access') 
         return $role === 'admin';
     }
 
-    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'connections', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_local', 'ai_cloud', 'ai_apps', 'ai_agents', 'builtin_ai_agent', 'ai_voicemail', 'ai_call_analysis', 'ai_knowledge', 'ai_assistant', 'health', 'call_quality', 'custom_dialplan', 'custom_configs', 'troubleshooting', 'call_modifiers', 'parking'], true)) {
+    if (in_array($module_key, ['advanced_config', 'roles', 'system_users', 'firewall', 'fail2ban', 'mail_settings', 'system_update', 'backup', 'scheduled_tasks', 'certificates', 'privacy', 'plugins', 'api_keys', 'webhooks', 'connections', 'external_dbs', 'google_integration', 'phones', 'web_widgets', 'file_storage', 'ai_local', 'ai_cloud', 'builtin_ai_agent', 'ai_voicemail', 'ai_call_analysis', 'ai_knowledge', 'ai_assistant', 'health', 'call_quality', 'custom_dialplan', 'custom_configs', 'troubleshooting', 'call_modifiers', 'parking'], true)) {
         return $role === 'admin';
     }
 

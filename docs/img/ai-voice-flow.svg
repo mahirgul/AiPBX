@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 280" width="860" height="280">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="860" height="280" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="430" y="28" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" font-weight="700" fill="#0f172a">AI Voice Agent Call &amp; Tool Flow</text>
+
+  <!-- Step boxes -->
+  <rect x="24" y="64" width="142" height="72" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="95" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#1e3a8a">1. Call / Dial</text>
+  <text x="95" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">Inbound or Outbound</text>
+  <text x="95" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">AudioSocket Bridge</text>
+
+  <rect x="194" y="64" width="146" height="72" rx="8" fill="#faf5ff" stroke="#9333ea" stroke-width="1.5"/>
+  <text x="267" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#581c87">2. Listen / STT</text>
+  <text x="267" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">VAD + Whisper / Cloud</text>
+  <text x="267" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">or Realtime Stream</text>
+
+  <rect x="368" y="64" width="146" height="72" rx="8" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+  <text x="441" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#7c2d12">3. LLM + RAG</text>
+  <text x="441" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">System Instructions</text>
+  <text x="441" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">+ Knowledge Context</text>
+
+  <rect x="542" y="64" width="146" height="72" rx="8" fill="#fefce8" stroke="#eab308" stroke-width="1.5"/>
+  <text x="615" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#713f12">4. Tool Call</text>
+  <text x="615" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">External DB · Phonebook</text>
+  <text x="615" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">collect/send DTMF</text>
+
+  <rect x="716" y="64" width="120" height="72" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="776" y="94" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#14532d">5. Reply / Act</text>
+  <text x="776" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">TTS Playback or</text>
+  <text x="776" y="128" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10.5" fill="#334155">AMI Transfer</text>
+
+  <line x1="166" y1="100" x2="190" y2="100" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="340" y1="100" x2="364" y2="100" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="514" y1="100" x2="538" y2="100" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+  <line x1="688" y1="100" x2="712" y2="100" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- Outbound IVR Navigator highlight -->
+  <rect x="24" y="176" width="812" height="76" rx="8" fill="#ffffff" stroke="#cbd5e1" stroke-dasharray="4 3"/>
+  <text x="42" y="202" font-family="system-ui, sans-serif" font-size="12" font-weight="700" fill="#0f172a">Autonomous Outbound IVR Navigator (dial_and_navigate):</text>
+  <text x="42" y="222" font-family="system-ui, sans-serif" font-size="11" fill="#334155">1) Phonebook lookup resolves target number + sub_extension  →  2) Originates outbound call &amp; listens to remote IVR prompts</text>
+  <text x="42" y="239" font-family="system-ui, sans-serif" font-size="11" fill="#334155">3) LLM sends DTMF digits (send_dtmf) to navigate menus/extensions  →  4) Transfers connected call back to requester</text>
+</svg>

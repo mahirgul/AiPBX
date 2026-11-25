@@ -5,6 +5,16 @@ $mode = $settings['netsvc_mode'];
 // Two switches (DHCP, TFTP) stored as one mode: dhcp (TFTP optional), tftp (TFTP only) or off.
 $tftpOn = $mode === 'tftp' || ($mode === 'dhcp' && $settings['netsvc_tftp'] === '1');
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
+$netsvcTabs = [
+    'services' => ['label' => t('netsvc.services'), 'icon' => 'fa-ethernet'],
+    'hints'    => ['label' => t('netsvc.hints_title'), 'icon' => 'fa-list-check'],
+    'leases'   => ['label' => t('netsvc.leases_title'), 'icon' => 'fa-address-book', 'badge' => (string) count($leases)],
+    'tftp'     => ['label' => t('netsvc.tftp_title'), 'icon' => 'fa-folder-open', 'badge' => (string) count($tftpFiles)],
+];
+$activeNetsvcTab = (string) ($_GET['tab'] ?? 'services');
+if (!isset($netsvcTabs[$activeNetsvcTab])) {
+    $activeNetsvcTab = 'services';
+}
 ?>
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-ethernet', t('netsvc.header_title'), 'netsvcHelpBox'); ?>
@@ -14,12 +24,14 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 <?php echo uiPageHeaderActions(); ?>
 
 <?php echo uiPageHeaderClose(); ?>
+<?php echo uiTabs($netsvcTabs, $activeNetsvcTab); ?>
 
     <?php echo uiHelpBoxOpen('netsvcHelpBox', t('netsvc.help_title')); ?>
         <?php echo t('netsvc.help_body'); ?>
 <?php echo uiHelpBoxClose(); ?>
 
-    <form method="POST" autocomplete="off" class="u-card-pad" id="netsvcForm">
+    <div data-tab-pane="services"<?php echo $activeNetsvcTab === 'services' ? '' : ' hidden'; ?>>
+    <form method="POST" autocomplete="off" id="netsvcForm">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
 
         <div class="form-group">
@@ -181,13 +193,10 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <button type="submit" name="probe_dhcp" value="1" class="btn btn-secondary netsvc-needs-iface"><i class="fas fa-magnifying-glass"></i> <?php echo t('netsvc.probe'); ?></button>
         </div>
     </form>
-</div>
-
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-list-check u-primary"></i> <?php echo t('netsvc.hints_title'); ?></div>
     </div>
-    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('netsvc.hints_help'); ?></div>
+
+<div data-tab-pane="hints"<?php echo $activeNetsvcTab === 'hints' ? '' : ' hidden'; ?>>
+    <div class="u-muted u-fs-12 u-mb-8"><?php echo t('netsvc.hints_help'); ?></div>
     <?php echo uiTableOpen([
         t('netsvc.col_option'),
         t('netsvc.col_value'),
@@ -203,11 +212,8 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <?php echo uiTableClose(); ?>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-address-book u-primary"></i> <?php echo t('netsvc.leases_title'); ?></div>
-    </div>
-    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('netsvc.leases_help'); ?></div>
+<div data-tab-pane="leases"<?php echo $activeNetsvcTab === 'leases' ? '' : ' hidden'; ?>>
+    <div class="u-muted u-fs-12 u-mb-8"><?php echo t('netsvc.leases_help'); ?></div>
     <?php echo uiTableOpen([
         t('netsvc.col_mac'),
         t('netsvc.col_ip'),
@@ -231,12 +237,9 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
             <?php echo uiTableClose(); ?>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title"><i class="fas fa-folder-open u-primary"></i> <?php echo t('netsvc.tftp_title'); ?></div>
-    </div>
-    <div class="u-fs-12 u-p-0-20-4"><i class="fas fa-folder u-muted"></i> <?php echo sprintf(t('netsvc.tftp_folder'), '<code>' . $h($tftpDir) . '</code>'); ?></div>
-    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('netsvc.tftp_help'); ?></div>
+<div data-tab-pane="tftp"<?php echo $activeNetsvcTab === 'tftp' ? '' : ' hidden'; ?>>
+    <div class="u-fs-12 u-mb-4"><i class="fas fa-folder u-muted"></i> <?php echo sprintf(t('netsvc.tftp_folder'), '<code>' . $h($tftpDir) . '</code>'); ?></div>
+    <div class="u-muted u-fs-12 u-mb-8"><?php echo t('netsvc.tftp_help'); ?></div>
     <?php echo uiTableOpen([
         t('netsvc.col_file'),
         t('netsvc.col_size'),
@@ -261,12 +264,13 @@ $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
                     <?php endforeach; ?>
                 <?php endif; ?>
             <?php echo uiTableClose(); ?>
-    <form class="u-p-12-20-20 u-d-flex u-gap-8 u-wrap u-ai-center" method="POST" enctype="multipart/form-data" autocomplete="off">
+    <form class="u-mt-12 u-d-flex u-gap-8 u-wrap u-ai-center" method="POST" enctype="multipart/form-data" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf); ?>">
         <input type="hidden" name="upload_tftp" value="1">
         <input type="file" name="tftp_file" class="form-control u-maxw-360" required>
         <button type="submit" class="btn btn-primary"><i class="fas fa-upload"></i> <?php echo t('netsvc.tftp_upload'); ?></button>
     </form>
+</div>
 </div>
 
 <script src="<?php echo asset('/assets/js/network_services.js'); ?>"></script>

@@ -301,4 +301,74 @@ final class AiAppServiceTest extends TestCase
             }
         }
     }
+
+    public function testBuildAiAppsDialplanSupportsAriStasisAndAudioSocketFallback(): void
+    {
+        $apps = [
+            ['id' => 11, 'title' => 'Announce', 'app_type' => 'announcement', 'model_id' => 'piper-tr-fahrettin', 'speed' => '1', 'text_template' => 'Hi', 'lookup_url' => '', 'fallback_text' => '', 'max_concurrent' => 2, 'dest_type' => 'hangup', 'dest_id' => ''],
+        ];
+        $key = str_repeat('a', 32);
+
+        $ariDialplan = buildAiAppsDialplan($apps, $key, true);
+        $this->assertStringContainsString('Stasis(aipbx-ai,11,${AI_CALL})', $ariDialplan);
+        $this->assertStringNotContainsString('AudioSocket(${AI_CALL}', $ariDialplan);
+
+        $legacyDialplan = buildAiAppsDialplan($apps, $key, false);
+        $this->assertStringContainsString('AudioSocket(${AI_CALL},127.0.0.1:8791)', $legacyDialplan);
+        $this->assertStringNotContainsString('Stasis(aipbx-ai,', $legacyDialplan);
+    }
+
+    public function testRealtimeConfigPayloadWhenOpenAiEnabled(): void
+    {
+        $db = getDB();
+        $before = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_tts.google_ai.%'")->fetchAll(\PDO::FETCH_KEY_PAIR);
+        SecretBox::useKey(str_repeat('k', 32));
+        try {
+            CloudAiService::save('openai', ['api_key' => 'sk-test-realtime-123']);
+            $cfg = AiAppService::serviceConfig([
+                'id' => 99,
+                'title' => 'RT Agent',
+                'app_type' => AiAppService::BUILTIN_AGENT,
+                'model_id' => 'local:piper-tr-fahrettin',
+                'speed' => '1',
+                'config' => json_encode(['conversation' => true, 'realtime_account' => 'cloud:openai', 'realtime_voice' => 'coral']),
+            ]);
+            $this->assertTrue($cfg['builtin_agent']);
+            $this->assertTrue($cfg['conversation']);
+            $this->assertSame('openai', $cfg['realtime_cloud']['provider'] ?? null);
+            $this->assertSame('gpt-realtime', $cfg['realtime_cloud']['model'] ?? null);
+            $this->assertSame('coral', $cfg['realtime_cloud']['voice'] ?? null);
+            $this->assertSame('sk-test-realtime-123', $cfg['realtime_cloud']['api_key'] ?? null);
+            CloudAiService::save('openai', ['realtime_model' => 'gpt-realtime-mini']);
+            $overridden = AiAppService::serviceConfig([
+                'id' => 99, 'title' => 'RT Agent', 'model_id' => 'local:piper-tr-fahrettin',
+                'speed' => '1',
+                'config' => json_encode(['realtime_account' => 'cloud:openai']),
+            ]);
+            $this->assertSame('gpt-realtime-mini', $overridden['realtime_cloud']['model']);
+            $this->assertSame('sk-test-realtime-123', $overridden['realtime_cloud']['api_key']);
+
+            require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
+            CloudAiService::save('google_ai', ['api_key' => 'g-test-realtime-123']);
+            $rtAccounts = BuiltinAiAgentService::realtimeAccounts();
+            $this->assertArrayHasKey('cloud:openai', $rtAccounts);
+            $this->assertArrayHasKey('cloud:google_ai', $rtAccounts);
+            $gCfg = AiAppService::serviceConfig([
+                'id' => 100,
+                'title' => 'Gemini RT Agent',
+                'model_id' => 'local:piper-tr-fahrettin',
+                'speed' => '1',
+                'config' => json_encode(['realtime_account' => 'cloud:google_ai', 'realtime_voice' => 'coral']),
+            ]);
+            $this->assertSame('google_ai', $gCfg['realtime_cloud']['provider'] ?? null);
+            $this->assertSame('gemini-3.8-live', $gCfg['realtime_cloud']['model'] ?? null);
+        } finally {
+            SecretBox::useKey(null);
+            $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_tts.google_ai.%'");
+            $st = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?)');
+            foreach ($before as $k => $val) {
+                $st->execute([$k, $val]);
+            }
+        }
+    }
 }

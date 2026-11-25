@@ -132,7 +132,7 @@ class AssistantChatService
             'keywords' => ['cloud ai', 'bulut ai', 'openai', 'gemini'],
         ],
         'assistant_settings' => [
-            'href' => '/ai-assistant',
+            'href' => '/pbx-assistant',
             'label_key' => 'ai_settings.ast_title',
             'keywords' => ['ai settings', 'assistant settings', 'yapay zeka ayar', 'asistan ayar'],
         ],
@@ -587,18 +587,28 @@ class AssistantChatService
         }
         try {
             AiKnowledgeService::ensureBuiltIn();
-            $collections = AiKnowledgeService::assistantCollections(function_exists('getUserLanguage') ? (string) getUserLanguage() : 'en');
+            $roleKb = class_exists('AssistantSettingsService') ? AssistantSettingsService::roleCollection($role) : 0;
+            if ($roleKb === -1) {
+                return null;
+            }
+            if ($roleKb > 0) {
+                $collections = [$roleKb];
+                $searchRole = 'admin';
+            } else {
+                $collections = AiKnowledgeService::assistantCollections(function_exists('getUserLanguage') ? (string) getUserLanguage() : 'en');
+                $searchRole = $role;
+            }
             if ($collections === []) {
                 return null;
             }
             if ($directOnly) {
-                $res = AiKnowledgeService::directAnswer(AiKnowledgeService::search($question, $role, $collections, 3, AiKnowledgeService::MIN_SCORE, 'assistant'));
+                $res = AiKnowledgeService::directAnswer(AiKnowledgeService::search($question, $searchRole, $collections, 3, AiKnowledgeService::MIN_SCORE, 'assistant'));
             } else {
                 $selection = AssistantModel::resolvedMode();
                 if (!str_contains($selection, ':') && AiKnowledgeService::$chatter === null) {
                     return null;
                 }
-                $res = AiKnowledgeService::askWithContext($question, $role, $collections, $selection, 'assistant');
+                $res = AiKnowledgeService::askWithContext($question, $searchRole, $collections, $selection, 'assistant');
             }
         } catch (\Throwable) {
             return null;

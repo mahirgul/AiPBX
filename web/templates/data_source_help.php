@@ -8,6 +8,7 @@
  */
 $h = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 $rows = [
+    'customer_id' => t('phonebook.customer_id'),
     'input' => t('data_source.var_input'),
     'caller_id' => t('data_source.var_caller_id'),
     'caller_name' => t('data_source.var_caller_name'),

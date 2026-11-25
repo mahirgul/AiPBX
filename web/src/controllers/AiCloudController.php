@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/ai/CloudAiService.php';
 require_once __DIR__ . '/../services/ai/AiBindingService.php';
 require_once __DIR__ . '/../services/ai/AiGateway.php';
+require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
  * /ai-cloud — AI -> Cloud AI (admin / ai_cloud RBAC):
@@ -48,6 +49,9 @@ class AiCloudController extends BaseController
                         } else {
                             CloudAiService::save($id, $post);
                             CloudAiService::renameAccount($id, $name);
+                            if (isset(CloudAiService::REALTIME_MODELS[CloudAiService::typeOf($id)])) {
+                                markPendingSync('ai_apps', 'ai_cloud_provider', $id, CloudAiService::label($id), 'update', $_SESSION['user_id'] ?? null);
+                            }
                             $message = t('ai_tts.msg_provider_saved');
                         }
                     } elseif (isset($_POST['toggle_account'])) {

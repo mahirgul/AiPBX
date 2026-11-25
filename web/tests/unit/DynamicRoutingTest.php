@@ -50,7 +50,12 @@ final class DynamicRoutingTest extends TestCase
         $this->assertStringContainsString('ivr_data_lookup.php?step_id=901&input=${URIENCODE(${DR_INPUT})}&caller_id=${URIENCODE(${CALLERID(num)})}&var_ACC=${URIENCODE(${ACC})}', $block);
         $this->assertStringNotContainsString('Answer()', $block, 'no keys asked: the call is not answered');
         $this->assertStringContainsString('Set(CRM_${CUT(DR_KV,=,1)}=${CUT(DR_KV,=,2-)})', $block);
-        $this->assertStringContainsString('Set(CALLERID(name)=${CRM_NAME} – ${CALLERID(name)})', $block);
+        $this->assertStringContainsString(
+            'Set(DR_CALLER_NAME=${CRM_NAME})' . "\n"
+            . ' same => n,ExecIf($[${LEN(${CALLERID(name)})} > 0]?Set(DR_CALLER_NAME=${DR_CALLER_NAME} – ${CALLERID(name)}))' . "\n"
+            . ' same => n,Set(CALLERID(name)=${DR_CALLER_NAME})',
+            $block
+        );
         $this->assertStringContainsString('GotoIf($["${DR_VALUE}" = "VIP"]?rule0)', $block);
         $this->assertStringContainsString('${DR_NUM} >= 1 & ${DR_NUM} <= 9]?rule1)', $block);
         $this->assertStringContainsString('Dial(Local/${DR_VALUE}@from-internal-pbx-ortak/n,,tT)', $block);
@@ -97,5 +102,59 @@ final class DynamicRoutingTest extends TestCase
         $bad = IvrDataStepService::saveStep(['http_url' => 'https://1.1.1.1/l?p={phone}'] + $base);
         $this->assertFalse($bad['ok']);
         $this->assertArrayHasKey('http_url', $bad['errors']);
+    }
+
+    public function testRevokedSavedQueryDoesNotUseAnExistingCacheEntry(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/services/ExternalDbQueryService.php';
+        $dbId = ExternalDbService::saveConnection([
+            'name' => 'Test routing cache revocation', 'host' => 'localhost', 'database_name' => 'unused', 'username' => 'reader',
+        ])['id'];
+        $query = [
+            'query_key' => 'test_routing_cache_revocation', 'description' => 'Test routing cache', 'external_db_id' => $dbId,
+            'query_sql' => 'SELECT 1 AS extension', 'access_mode' => 'public', 'is_active' => 1,
+        ];
+        $queryId = ExternalDbQueryService::save($query);
+        $step = IvrDataStepService::saveStep([
+            'name' => 'Test routing cache', 'data_source' => 'saved_query', 'saved_query_id' => $queryId, 'cache_ttl_sec' => 120,
+        ]);
+        $this->assertTrue($step['ok']);
+        $values = DataSourceService::withDefaults(['input' => 'fixture']);
+        unset($values['date'], $values['time']);
+        ksort($values);
+        $source = ExternalDbQueryService::ivrSource($queryId);
+        $key = hash('sha256', serialize([$source, ExternalDbRepository::findById($dbId), 120, $values]));
+        IvrDataStepService::writeCache($step['id'], $key, ['status' => 'found', 'value' => 'old', 'vars' => [], 'ms' => 0, 'error' => ''], 120);
+        $this->assertSame('old', IvrDataStepService::performLookup($step['id'], ['input' => 'fixture'])['value']);
+
+        ExternalDbQueryService::save(['id' => $queryId, 'is_active' => 0] + $query);
+        $this->assertSame('timeout', IvrDataStepService::performLookup($step['id'], ['input' => 'fixture'])['status']);
+    }
+
+    public function testB8CacheStatsCdrAndSayDialplan(): void
+    {
+        $res = IvrDataStepService::saveStep([
+            'name' => 'zz b8', 'input_source' => 'caller_id', 'data_source' => 'none',
+            'channel_var_name' => 'IVR_DATA_VAL',
+            'cache_ttl_sec' => 120, 'say_mode' => 'number', 'cdr_write' => '1',
+            'rules' => [['type' => 'exact', 'value' => '100', 'dest_type' => 'hangup']],
+        ]);
+        $this->assertTrue($res['ok'], implode(' ', $res['errors']));
+        $step = IvrDataStepRepository::findById($res['id']);
+        $this->assertSame(120, (int) $step['cache_ttl_sec']);
+        $this->assertSame('number', $step['say_mode']);
+        $this->assertSame(1, (int) $step['cdr_write']);
+
+        $dp = buildIvrDataStepDialplanBlock($step);
+        $this->assertStringContainsString('Set(CDR(userfield)=DR:' . $res['id'] . '=${DR_VALUE})', $dp);
+        $this->assertStringContainsString('SayNumber(${DR_VALUE})', $dp);
+        $this->assertStringContainsString('hit=rule0', $dp);
+
+        IvrDataStepService::recordBranchHit($res['id'], 'found');
+        IvrDataStepService::recordBranchHit($res['id'], 'found');
+        IvrDataStepService::recordBranchHit($res['id'], 'rule0');
+        $stats = IvrDataStepService::statsMap();
+        $this->assertSame(2, $stats[$res['id']]['found']);
+        $this->assertSame(1, $stats[$res['id']]['rule0']);
     }
 }

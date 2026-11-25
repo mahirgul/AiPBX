@@ -14,6 +14,7 @@ final class AssistantSettingsTest extends TestCase
         'assistant.model',
         'assistant.roles',
         'assistant.home_roles',
+        'assistant.role_kb',
         'assistant.history_days',
         'assistant.suggestions',
         'privacy_block_cloud_ai',
@@ -37,13 +38,13 @@ final class AssistantSettingsTest extends TestCase
            ->execute(self::KEYS);
         $this->prevRole = $_SESSION['user_role'] ?? null;
 
-        $pStmt = $db->prepare("SELECT enabled FROM sys_plugins WHERE slug = 'ai-assistant'");
+        $pStmt = $db->prepare("SELECT enabled FROM sys_plugins WHERE slug = 'pbx-assistant'");
         $pStmt->execute();
         $this->prevPluginRow = $pStmt->fetchColumn();
         $now = date('Y-m-d H:i:s');
         $db->prepare(
             "INSERT INTO sys_plugins (slug, name, version, source, enabled, worker_enabled, config_version, installed_at, updated_at)
-             VALUES ('ai-assistant', 'PBX Asistan', '1.0.0', 'official', 1, 0, 1, ?, ?)
+             VALUES ('pbx-assistant', 'PBX Asistan', '1.0.0', 'official', 1, 0, 1, ?, ?)
              ON DUPLICATE KEY UPDATE enabled = 1, updated_at = ?"
         )->execute([$now, $now, $now]);
         PluginManager::resetCache();
@@ -63,9 +64,9 @@ final class AssistantSettingsTest extends TestCase
             }
         }
         if ($this->prevPluginRow === false) {
-            $db->exec("DELETE FROM sys_plugins WHERE slug = 'ai-assistant'");
+            $db->exec("DELETE FROM sys_plugins WHERE slug = 'pbx-assistant'");
         } else {
-            $db->prepare("UPDATE sys_plugins SET enabled = ? WHERE slug = 'ai-assistant'")->execute([(int) $this->prevPluginRow]);
+            $db->prepare("UPDATE sys_plugins SET enabled = ? WHERE slug = 'pbx-assistant'")->execute([(int) $this->prevPluginRow]);
         }
         PluginManager::resetCache();
         if ($this->prevRole === null) {
@@ -88,7 +89,7 @@ final class AssistantSettingsTest extends TestCase
         $this->assertSame(10, AssistantSettingsService::historyDays());
         $this->assertSame(AssistantSettingsService::defaultSuggestions(), AssistantSettingsService::suggestions());
 
-        getDB()->exec("UPDATE sys_plugins SET enabled = 0 WHERE slug = 'ai-assistant'");
+        getDB()->exec("UPDATE sys_plugins SET enabled = 0 WHERE slug = 'pbx-assistant'");
         PluginManager::resetCache();
         $this->assertSame('/dashboard', roleHomePath('admin'));
     }
@@ -104,11 +105,18 @@ final class AssistantSettingsTest extends TestCase
                 'user' => 'assistant',
                 'fax_user' => 'assistant', // ask is false for fax_user -> must fall back
             ],
+            'role_kb' => [
+                'user' => '5',
+                'cc_agent' => '-1',
+            ],
             'history_days' => '0',
             'suggestions' => "Line one\n\nLine two\nLine three",
         ], ['admin', 'user', 'cc_agent', 'fax_user']);
 
         $this->assertSame('rules_only', AssistantSettingsService::model());
+        $this->assertSame(5, AssistantSettingsService::roleCollection('user'));
+        $this->assertSame(-1, AssistantSettingsService::roleCollection('cc_agent'));
+        $this->assertSame(0, AssistantSettingsService::roleCollection('admin'));
         $this->assertTrue(AssistantSettingsService::canAsk('user'));
         $this->assertFalse(AssistantSettingsService::canChange('user'));
         $this->assertTrue(AssistantSettingsService::canAsk('cc_agent'));

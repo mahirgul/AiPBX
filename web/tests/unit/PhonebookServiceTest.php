@@ -187,11 +187,13 @@ final class PhonebookServiceTest extends TestCase
 
     public function testPhonebookNameEndpointRejectsProxyHeadersStripsNewlinesAndSkipsSession(): void
     {
-        PhonebookService::store(0, ['display_name' => "Ayse\r\n", 'company' => 'ACME', 'phone_mobile' => '0532 111 22 33']);
+        $contact = ['display_name' => "Ayse\r\n", 'company' => 'ACME', 'phone_mobile' => '0532 111 22 33'];
+        [$id] = PhonebookService::store(0, $contact, true);
+        PhonebookService::store($id, $contact);
         $envFile = dirname(__DIR__) . '/.env.test';
         $endpoint = dirname(__DIR__, 2) . '/api/phonebook_name.php';
 
-        $run = static function (array $server, string $num) use ($envFile, $endpoint): array {
+        $run = static function (array $server, string $num, bool $includeVip = false) use ($envFile, $endpoint): array {
             $code = '<?php
 foreach (file(' . var_export($envFile, true) . ', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
     $line = trim($line);
@@ -199,6 +201,7 @@ foreach (file(' . var_export($envFile, true) . ', FILE_IGNORE_NEW_LINES | FILE_S
 }
 $_SERVER = array_merge($_SERVER, ' . var_export($server, true) . ');
 $_GET["num"] = ' . var_export($num, true) . ';
+$_GET["include_vip"] = ' . var_export($includeVip ? '1' : '0', true) . ';
 register_shutdown_function(static function () {
     echo "\n__META__:" . json_encode(["status" => http_response_code() ?: 200, "session" => session_status()]);
 });
@@ -218,6 +221,9 @@ require ' . var_export($endpoint, true) . ';';
         $this->assertSame(200, $ok['meta']['status']);
         $this->assertSame(PHP_SESSION_NONE, $ok['meta']['session']);
         $this->assertSame('NAME:Ayse - ACME', $ok['body'], 'no trailing newline and CR/LF stripped');
+        $this->assertSame('VIP:Ayse - ACME', $run(['REMOTE_ADDR' => '127.0.0.1'], '+905321112233', true)['body']);
+        PhonebookService::store($id, $contact, false);
+        $this->assertSame('NAME:Ayse - ACME', $run(['REMOTE_ADDR' => '127.0.0.1'], '+905321112233', true)['body']);
 
         $miss = $run(['REMOTE_ADDR' => '127.0.0.1'], '05320000000');
         $this->assertSame('NONE', $miss['body']);
@@ -227,5 +233,98 @@ require ' . var_export($endpoint, true) . ';';
             $this->assertSame(403, $blocked['meta']['status'], $hdr);
             $this->assertSame('NONE', $blocked['body'], $hdr);
         }
+    }
+
+    public function testExternalDbSettingsAndUpsertSync(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_external_dbs (name, driver, host, port, database_name, username, is_active, allow_write)
+                       VALUES ('zz_crm', 'mysql', '127.0.0.1', 3306, 'crm', 'u', 1, 0)");
+            $dbId = (int) $db->lastInsertId();
+            $queryKey = 'zz_pb_query_' . $dbId;
+
+            $sql = 'SELECT id AS external_id, name AS display_name, company, phone AS phone_work FROM customers';
+            $query = [
+                'query_key' => $queryKey, 'description' => 'Phonebook import', 'external_db_id' => $dbId,
+                'query_sql' => $sql, 'access_mode' => 'public', 'is_active' => 1,
+            ];
+            $queryId = ExternalDbQueryService::save($query);
+            PhonebookService::saveExternalDbSettings($dbId, $sql, true, $queryKey);
+            $cfg = PhonebookService::externalDbSettings();
+            $this->assertSame($dbId, $cfg['db_id']);
+            $this->assertSame($sql, $cfg['sql']);
+            $this->assertTrue($cfg['enabled']);
+            $this->assertSame($queryKey, $cfg['query_key']);
+
+            ExternalDbQueryService::save(['id' => $queryId, 'is_active' => 0] + $query);
+            $disabled = PhonebookService::externalDbSettings();
+            $this->assertSame(0, $disabled['db_id']);
+            $this->assertSame('', $disabled['sql']);
+            $this->assertFalse($disabled['enabled']);
+
+            PhonebookService::saveExternalDbSettings($dbId, $sql, true);
+            $this->assertTrue(PhonebookService::externalDbSettings()['enabled'], 'Legacy imports without a query key still work.');
+
+            $res1 = PhonebookService::importExternalRows([
+                ['external_id' => 'cust-100', 'display_name' => 'Veli Kaya', 'company' => 'Beta Ltd', 'phone_work' => '0212 555 00 01'],
+                ['external_id' => 'cust-101', 'display_name' => '', 'phone_work' => ''],
+            ]);
+            $this->assertSame(['added' => 1, 'updated' => 0, 'skipped' => 1], $res1);
+            $this->assertSame('Veli Kaya', PhonebookService::findByNumber('02125550001')['display_name'] ?? null);
+
+            $res2 = PhonebookService::importExternalRows([
+                ['external_id' => 'cust-100', 'display_name' => 'Veli Kaya (VIP)', 'company' => 'Beta AS', 'phone_work' => '0212 555 00 99'],
+            ]);
+            $this->assertSame(['added' => 0, 'updated' => 1, 'skipped' => 0], $res2);
+            $this->assertSame('Veli Kaya (VIP)', PhonebookService::findByNumber('02125550099')['display_name'] ?? null);
+
+            $this->expectException(InvalidArgumentException::class);
+            PhonebookService::saveExternalDbSettings($dbId, 'DELETE FROM customers', false);
+        } finally {
+            $db->rollBack();
+        }
+    }
+
+    public function testCustomerIdCreateUpdateAndSearch(): void
+    {
+        [$id, $err] = PhonebookService::store(0, [
+            'customer_id' => 'CUST-ABC-01',
+            'display_name' => 'Zeynep Acar',
+            'phone_mobile' => '0533 222 33 44',
+        ]);
+        $this->assertSame('', $err);
+        $found = PhonebookService::findByNumber('+905332223344');
+        $this->assertNotNull($found);
+        $this->assertSame('CUST-ABC-01', $found['customer_id']);
+        $this->assertSame('CUST-ABC-01', $found['external_id']);
+
+        [$updatedId, $uErr] = PhonebookService::store($id, [
+            'external_id' => 'CUST-ABC-02',
+            'display_name' => 'Zeynep Acar',
+            'phone_mobile' => '0533 222 33 44',
+        ]);
+        $this->assertSame('', $uErr);
+        $this->assertSame($id, $updatedId);
+        $this->assertSame('CUST-ABC-02', PhonebookService::find($id)['customer_id'] ?? null);
+
+        [$rows, $total] = PhonebookService::search('CUST-ABC-02', 10, 0);
+        $this->assertSame(1, $total);
+        $this->assertSame($id, (int) $rows[0]['id']);
+
+        [$afmId, $afmErr] = PhonebookService::store(0, [
+            'display_name' => 'Mehmet Bey',
+            'company' => 'AFM Şirketi',
+            'sub_extension' => '1000#w',
+            'phone_work' => '0212 444 00 10',
+        ]);
+        $this->assertSame('', $afmErr);
+        $afm = PhonebookService::find($afmId);
+        $this->assertSame('1000#w', $afm['sub_extension'] ?? null);
+
+        [$multiRows, $multiTotal] = PhonebookService::search('AFM Mehmet', 10, 0);
+        $this->assertSame(1, $multiTotal);
+        $this->assertSame('1000#w', $multiRows[0]['sub_extension'] ?? null);
     }
 }

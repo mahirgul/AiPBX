@@ -5,6 +5,17 @@ $can_admin = $canAdmin ?? false;
 $ldap = $ldap ?? ['enabled' => false, 'anonymous' => false, 'password' => ''];
 $host = ($host ?? '') !== '' ? $host : 'pbx.example.com';
 $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_manual') : $s;
+$pbTabs = [
+    'contacts' => ['label' => t('phonebook.title'), 'icon' => 'fa-address-book'],
+];
+if ($can_admin) {
+    $pbTabs['match'] = ['label' => t('phonebook.match_title'), 'icon' => 'fa-equals'];
+    $pbTabs['ldap'] = ['label' => t('phonebook.ldap_title'), 'icon' => 'fa-server'];
+}
+$activePbTab = (string) ($_GET['tab'] ?? 'contacts');
+if (!isset($pbTabs[$activePbTab])) {
+    $activePbTab = 'contacts';
+}
 ?>
 
 <?php if (!empty($notices['message'])): ?>
@@ -18,6 +29,9 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     <?php echo uiPageHeaderOpen('fa-address-book', t('phonebook.title'), 'phonebookHelpBox'); ?>
 <?php echo uiPageHeaderActions(); ?>
             <?php if ($can_edit): ?>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('phonebookExtDbModal')">
+                    <i class="fas fa-database"></i> <?php echo t('phonebook.import_extdb'); ?>
+                </button>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('phonebookImportModal')">
                     <i class="fas fa-file-csv"></i> <?php echo t('phonebook.import_csv'); ?>
                 </button>
@@ -26,11 +40,15 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
                 </button>
             <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
+<?php if (count($pbTabs) > 1): ?>
+<?php echo uiTabs($pbTabs, $activePbTab); ?>
+<?php endif; ?>
 
     <?php echo uiHelpBoxOpen('phonebookHelpBox', t('phonebook.help_title')); ?>
         <p><?php echo t('phonebook.help_desc'); ?></p>
     <?php echo uiHelpBoxClose(); ?>
 
+    <div data-tab-pane="contacts"<?php echo $activePbTab === 'contacts' ? '' : ' hidden'; ?>>
     <?php if (!empty($counts)): ?>
         <p class="u-fs-12 text-muted">
             <?php foreach ($counts as $src => $n): ?>
@@ -41,6 +59,7 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
 
     <?php echo uiTableOpen([
         t('phonebook.col_name'),
+        ['label' => t('phonebook.customer_id'), 'class' => 'col-hide-mobile'],
         ['label' => t('phonebook.col_company'), 'class' => 'col-hide-mobile'],
         t('phonebook.col_numbers'),
         ['label' => t('phonebook.col_email'), 'class' => 'col-hide-mobile'],
@@ -48,16 +67,25 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
         ['label' => t('common.actions'), 'class' => 'text-right'],
     ], ['id' => 'phonebookTable']); ?>
         <?php if (empty($contacts)): ?>
-            <?php echo uiTableEmptyRow(6, t('phonebook.empty'), 'fa-address-book'); ?>
+            <?php echo uiTableEmptyRow(7, t('phonebook.empty'), 'fa-address-book'); ?>
         <?php else: ?>
             <?php foreach ($contacts as $c): $manual = ($c['source'] ?? '') === 'manual'; ?>
                 <tr>
-                    <td><?php echo htmlspecialchars((string) $c['display_name']); ?></td>
+                    <td>
+                        <?php echo htmlspecialchars((string) $c['display_name']); ?>
+                        <?php if (!empty($c['is_vip'])): ?>
+                            <span class="badge badge-warning"><?php echo t('phonebook.vip'); ?></span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="col-hide-mobile"><?php echo ($c['external_id'] ?? '') !== '' ? '<code>' . htmlspecialchars((string) $c['external_id']) . '</code>' : '—'; ?></td>
                     <td class="col-hide-mobile"><?php echo htmlspecialchars((string) $c['company']); ?></td>
                     <td>
                         <?php foreach ($c['numbers'] ?? [] as $n): ?>
                             <div class="u-fs-12"><span class="text-muted"><?php echo htmlspecialchars(t('phonebook.label_' . $n['label'])); ?>:</span> <code><?php echo htmlspecialchars($n['number']); ?></code></div>
                         <?php endforeach; ?>
+                        <?php if (($c['sub_extension'] ?? '') !== ''): ?>
+                            <div class="u-fs-12"><span class="text-muted"><?php echo htmlspecialchars(t('phonebook.sub_extension')); ?>:</span> <code><?php echo htmlspecialchars((string) $c['sub_extension']); ?></code></div>
+                        <?php endif; ?>
                     </td>
                     <td class="col-hide-mobile u-fs-12"><?php echo htmlspecialchars((string) $c['email']); ?></td>
                     <td class="col-hide-mobile"><span class="badge badge-secondary"><?php echo htmlspecialchars($sourceLabel((string) $c['source'])); ?></span></td>
@@ -80,11 +108,10 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
             <?php endforeach; ?>
         <?php endif; ?>
     <?php echo uiTableClose(); ?>
-</div>
+    </div>
 
 <?php if ($can_admin): ?>
-<div class="card u-mt-16">
-    <?php echo uiPageHeader('fa-equals', t('phonebook.match_title')); ?>
+<div data-tab-pane="match"<?php echo $activePbTab === 'match' ? '' : ' hidden'; ?>>
     <p class="u-fs-13"><?php echo t('phonebook.match_desc'); ?></p>
     <form method="POST" class="u-d-flex u-ai-center u-gap-8 u-wrap">
         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
@@ -102,8 +129,7 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     </form>
 </div>
 
-<div class="card u-mt-16">
-    <?php echo uiPageHeader('fa-server', t('phonebook.ldap_title')); ?>
+<div data-tab-pane="ldap"<?php echo $activePbTab === 'ldap' ? '' : ' hidden'; ?>>
     <p class="u-fs-13"><?php echo t('phonebook.ldap_desc'); ?></p>
 
     <form method="POST" autocomplete="off">
@@ -161,6 +187,7 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     <?php endif; ?>
 </div>
 <?php endif; ?>
+</div>
 
 <?php if ($can_edit): ?>
 <div class="modal-overlay" id="phonebookModal">
@@ -175,14 +202,21 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
                 <input type="hidden" name="action" value="save_contact">
                 <input type="hidden" name="contact_id" id="pb_id" value="">
                 <?php foreach ([
-                    'display_name' => t('phonebook.col_name'), 'first_name' => t('phonebook.first_name'), 'last_name' => t('phonebook.last_name'),
-                    'company' => t('phonebook.col_company'), 'email' => t('phonebook.col_email'),
+                    'external_id' => t('phonebook.customer_id'), 'display_name' => t('phonebook.col_name'), 'first_name' => t('phonebook.first_name'), 'last_name' => t('phonebook.last_name'),
+                    'company' => t('phonebook.col_company'), 'sub_extension' => t('phonebook.sub_extension'), 'email' => t('phonebook.col_email'),
                 ] as $f => $label): ?>
                     <div class="form-group u-mt-10">
                         <label class="form-label" for="pb_<?php echo $f; ?>"><?php echo $label; ?></label>
-                        <input type="<?php echo $f === 'email' ? 'email' : 'text'; ?>" name="<?php echo $f; ?>" id="pb_<?php echo $f; ?>" class="form-control">
+                        <input type="<?php echo $f === 'email' ? 'email' : 'text'; ?>" name="<?php echo $f; ?>" id="pb_<?php echo $f; ?>" class="form-control"<?php echo $f === 'external_id' ? ' maxlength="191"' : ($f === 'sub_extension' ? ' maxlength="32"' : ''); ?>>
                     </div>
                 <?php endforeach; ?>
+                <div class="form-group u-mt-10">
+                    <label class="u-d-flex u-gap-8">
+                        <input type="checkbox" name="is_vip" id="pb_is_vip" value="1" class="u-check">
+                        <span><?php echo t('phonebook.vip'); ?></span>
+                    </label>
+                    <small class="u-hint"><?php echo t('phonebook.vip_help'); ?></small>
+                </div>
                 <div class="form-group u-mt-10">
                     <label class="form-label"><?php echo t('phonebook.col_numbers'); ?></label>
                     <div id="pb_numbers"></div>
@@ -226,8 +260,45 @@ $sourceLabel = fn(string $s): string => $s === 'manual' ? t('phonebook.source_ma
     </div>
 </div>
 
+<?php $extCfg = $extdb_settings ?? ['db_id' => 0, 'sql' => '', 'enabled' => false, 'query_key' => '']; ?>
+<div class="modal-overlay" id="phonebookExtDbModal">
+    <div class="modal-card u-maxw-480">
+        <div class="modal-header">
+            <h3 class="u-title"><i class="fas fa-database"></i> <?php echo t('phonebook.import_extdb'); ?></h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="UIHelper.closeOverlayModal('phonebookExtDbModal')"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="modal-body">
+            <form method="POST" autocomplete="off">
+                <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                <input type="hidden" name="action" value="import_external_db">
+                <div class="form-group">
+                    <label class="form-label" for="extdb_saved_query_key"><?php echo htmlspecialchars(t('external_dbs.query_key')); ?></label>
+                    <select name="saved_query_key" id="extdb_saved_query_key" class="form-control" required>
+                        <option value=""><?php echo htmlspecialchars(t('external_dbs.query_select_public')); ?></option>
+                        <?php foreach (($saved_queries ?? []) as $sq): ?>
+                            <option value="<?php echo htmlspecialchars((string) $sq['query_key']); ?>" <?php echo (($extCfg['query_key'] ?? '') === (string) $sq['query_key']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars((string) $sq['query_key'] . ' — ' . (string) $sq['description'] . ' (' . (string) $sq['connection_name'] . ')'); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="u-hint u-fs-11"><a href="/external-dbs?tab=queries"><?php echo htmlspecialchars(t('external_dbs.tab_queries')); ?></a></small>
+                </div>
+                <?php if ($can_admin): ?>
+                <div class="form-group">
+                    <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer">
+                        <input type="checkbox" name="nightly_sync" value="1" class="u-accent" <?php echo !empty($extCfg['enabled']) ? 'checked' : ''; ?>>
+                        <span><?php echo t('phonebook.extdb_nightly_sync'); ?></span>
+                    </label>
+                </div>
+                <?php endif; ?>
+                <?php echo uiModalFooter("UIHelper.closeOverlayModal('phonebookExtDbModal')"); ?>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>window.PHONEBOOK = <?php echo json_encode([
-    'fields' => array_values(array_diff(PhonebookService::FIELDS, ['phone_work', 'phone_mobile', 'phone_other'])),
+    'fields' => array_merge(['external_id'], array_values(array_diff(PhonebookService::FIELDS, ['phone_work', 'phone_mobile', 'phone_other']))),
     'add' => (string) ($prefill ?? ''),
 ], JSON_HEX_TAG | JSON_HEX_AMP); ?>;</script>
 <script src="<?php echo asset('/assets/js/phonebook.js'); ?>"></script>

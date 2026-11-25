@@ -40,6 +40,7 @@ class BrandSettingsService {
             'mail_show_brand_title' => '1',
             'theme_default' => 'light',
             'theme_locked' => '0',
+            'sidebar_layout' => 'split',
         ];
     }
 
@@ -171,6 +172,7 @@ class BrandSettingsService {
                 'mail_show_brand_title' => empty($post['mail_show_brand_title']) ? '0' : '1',
                 'theme_default' => (($post['theme_default'] ?? '') === 'dark') ? 'dark' : 'light',
                 'theme_locked' => empty($post['theme_locked']) ? '0' : '1',
+                'sidebar_layout' => ($post['sidebar_layout'] ?? $current['sidebar_layout']) === 'single' ? 'single' : 'split',
             ];
 
             if (!empty($post['remove_logo_image'])) {

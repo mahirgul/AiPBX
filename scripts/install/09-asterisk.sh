@@ -198,7 +198,7 @@ chown -R asterisk:asterisk /etc/asterisk/
 chown root:asterisk /etc/asterisk && chmod 0755 /etc/asterisk
 chown -R asterisk:asterisk /etc/asterisk/pbx
 chmod 2775 /etc/asterisk/pbx
-chmod 664 /etc/asterisk/pbx/*.conf /etc/asterisk/rtp.conf /etc/asterisk/udptl.conf /etc/asterisk/voicemail.conf 2>/dev/null || true
+chmod 664 /etc/asterisk/pbx/*.conf /etc/asterisk/rtp.conf /etc/asterisk/udptl.conf /etc/asterisk/voicemail.conf /etc/asterisk/codecs.conf 2>/dev/null || true
 if [[ -f /etc/asterisk/cli_permissions.conf ]]; then
     chown root:asterisk /etc/asterisk/cli_permissions.conf
     chmod 0640 /etc/asterisk/cli_permissions.conf

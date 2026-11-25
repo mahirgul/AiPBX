@@ -63,7 +63,7 @@ case "$cmd" in
         # asterisk-conf write FILE < content
         [ $# -eq 2 ] && [ "$1" = write ] || die "usage: asterisk-conf write FILE < content"
         case "$2" in
-            rtp.conf|udptl.conf|voicemail.conf) ;;
+            rtp.conf|udptl.conf|voicemail.conf|codecs.conf) ;;
             *) die "file not allowed: $2" ;;
         esac
         target="/etc/asterisk/$2"

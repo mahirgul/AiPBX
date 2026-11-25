@@ -1,9 +1,9 @@
 {
     "slug": "ms-teams",
-    "name": "Microsoft Teams Direct Routing & Webhooks",
+    "name": "Microsoft Teams",
     "name_i18n": {
-        "tr": "Microsoft Teams Direct Routing ve Bildirimler",
-        "en": "Microsoft Teams Direct Routing & Webhooks"
+        "en": "Microsoft Teams",
+        "tr": "Microsoft Teams"
     },
     "version": "1.2.0",
     "author": "AiPBX Official Team",

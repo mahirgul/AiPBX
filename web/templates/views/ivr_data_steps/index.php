@@ -84,6 +84,13 @@ $soundOptions = function () use ($h, $announcements): string {
                         <?php if (count($s['rules']) > 3): ?>
                             <span class="u-muted u-fs-11">+<?php echo count($s['rules']) - 3; ?></span>
                         <?php endif; ?>
+                        <?php if (!empty($stats[$s['id']])): ?>
+                            <div class="u-muted u-fs-11 u-mt-4">
+                                <?php foreach ($stats[$s['id']] as $br => $cnt): ?>
+                                    <span class="badge badge-secondary"><?php echo $h($br . ': ' . $cnt); ?></span>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </td>
                     <td><?php echo uiStatusToggleForm($s['id'], $s['is_active'], 'id'); ?></td>
                     <td class="text-right">
@@ -174,26 +181,10 @@ $soundOptions = function () use ($h, $announcements): string {
                     <label class="form-label" for="dr_source"><?php echo $h(t('dynamic_routing.source')); ?></label>
                     <select name="data_source" id="dr_source" class="form-control" onchange="drToggle()">
                         <?php foreach ($sourceLabels as $k => $label): ?>
+                            <?php if ($k === 'database') { continue; } ?>
                             <option value="<?php echo $h($k); ?>"><?php echo $h($label); ?></option>
                         <?php endforeach; ?>
                     </select>
-                </div>
-                <div data-dr-source="database">
-                    <div class="form-group">
-                        <label class="form-label" for="dr_db"><?php echo $h(t('dynamic_routing.db')); ?></label>
-                        <select name="external_db_id" id="dr_db" class="form-control">
-                            <option value=""><?php echo $h(t('dynamic_routing.db_pick')); ?></option>
-                            <?php foreach ($dbs as $d): ?>
-                                <option value="<?php echo (int) $d['id']; ?>"><?php echo $h($d['name'] . ' (' . $d['driver'] . ': ' . $d['database_name'] . ')'); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <?php if (!$dbs): ?><small class="u-hint"><a href="/external-dbs"><?php echo $h(t('dynamic_routing.db_none')); ?></a></small><?php endif; ?>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="dr_sql"><?php echo $h(t('dynamic_routing.sql')); ?></label>
-                        <textarea name="query_sql" id="dr_sql" class="form-control u-mono" rows="3" placeholder="SELECT segment, name FROM customers WHERE phone = :caller_id LIMIT 1"></textarea>
-                        <small class="u-hint"><?php echo $h(t('dynamic_routing.sql_hint')); ?></small>
-                    </div>
                 </div>
                 <div class="form-group" data-dr-source="saved_query">
                     <label class="form-label" for="dr_saved_query"><?php echo $h(t('external_dbs.query_key')); ?></label>
@@ -255,7 +246,7 @@ $soundOptions = function () use ($h, $announcements): string {
                     <input type="text" name="value_template" id="dr_value" class="form-control u-mono" maxlength="255" placeholder="{var_CUSTOMER_TYPE}">
                     <small class="u-hint"><?php echo $h(t('dynamic_routing.value_hint')); ?></small>
                 </div>
-                <div data-dr-source="database http" class="form-group">
+                <div data-dr-source="saved_query http" class="form-group">
                     <label class="form-label" for="dr_prefix"><?php echo $h(t('dynamic_routing.var_prefix')); ?></label>
                     <input type="text" name="var_prefix" id="dr_prefix" class="form-control u-mono u-maxw-240" maxlength="32" placeholder="DR_">
                     <small class="u-hint"><?php echo $h(t('dynamic_routing.var_prefix_hint')); ?></small>
@@ -307,6 +298,35 @@ $soundOptions = function () use ($h, $announcements): string {
                         <label class="form-label" for="dr_name_tpl"><?php echo $h(t('dynamic_routing.caller_name_tpl')); ?></label>
                         <input type="text" name="caller_name_template" id="dr_name_tpl" class="form-control" maxlength="100" placeholder="VIP – {NAME}">
                         <small class="u-hint"><?php echo $h(t('dynamic_routing.caller_name_hint')); ?></small>
+                    </div>
+                </div>
+                <div class="u-d-grid u-gtc-1fr-2fr u-gap-12">
+                    <div class="form-group">
+                        <label class="form-label" for="dr_say_mode"><?php echo $h(t('dynamic_routing.say_mode')); ?></label>
+                        <select name="say_mode" id="dr_say_mode" class="form-control" onchange="drToggle()">
+                            <option value="none"><?php echo $h(t('dynamic_routing.say_none')); ?></option>
+                            <option value="number"><?php echo $h(t('dynamic_routing.say_number')); ?></option>
+                            <option value="digits"><?php echo $h(t('dynamic_routing.say_digits')); ?></option>
+                            <option value="tts"><?php echo $h(t('dynamic_routing.say_tts')); ?></option>
+                        </select>
+                    </div>
+                    <div class="form-group" data-dr-say="tts">
+                        <label class="form-label" for="dr_say_tpl"><?php echo $h(t('dynamic_routing.say_tpl')); ?></label>
+                        <input type="text" name="say_template" id="dr_say_tpl" class="form-control" maxlength="255" placeholder="{value}">
+                        <small class="u-hint"><?php echo $h(t('dynamic_routing.say_tpl_hint')); ?></small>
+                    </div>
+                </div>
+                <div class="u-d-grid u-gtc-1fr-1fr u-gap-12">
+                    <div class="form-group">
+                        <label class="form-label" for="dr_cache_ttl"><?php echo $h(t('dynamic_routing.cache_ttl')); ?></label>
+                        <input type="number" name="cache_ttl_sec" id="dr_cache_ttl" class="form-control" min="0" max="86400" value="0">
+                        <small class="u-hint"><?php echo $h(t('dynamic_routing.cache_ttl_hint')); ?></small>
+                    </div>
+                    <div class="form-group u-d-flex u-ai-center">
+                        <label class="u-check-label">
+                            <input type="checkbox" name="cdr_write" id="dr_cdr_write" value="1" class="u-check">
+                            <span><?php echo $h(t('dynamic_routing.cdr_write')); ?></span>
+                        </label>
                     </div>
                 </div>
                 <div class="form-group">

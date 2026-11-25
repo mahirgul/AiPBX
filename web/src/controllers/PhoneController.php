@@ -69,6 +69,7 @@ class PhoneController extends BaseController
             ),
             'ignore_discovery' => fn() => PhoneDiscoveryService::ignore((int) ($_POST['discovery_id'] ?? 0), $csrf),
             'restore_discovery' => fn() => PhoneDiscoveryService::restore((int) ($_POST['discovery_id'] ?? 0), $csrf),
+            'delete_discovery' => fn() => PhoneDiscoveryService::delete((int) ($_POST['discovery_id'] ?? 0), $csrf),
         ]);
 
         // Phones that got an address from AiPBX's DHCP (Network services) wait here too.

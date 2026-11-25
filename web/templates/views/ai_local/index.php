@@ -19,10 +19,10 @@ $readyLlm = array_values(array_filter($local_models, fn($m) => ($m['kind'] ?? ''
         <button type="button" class="btn btn-primary btn-sm" onclick="ailApi('runtime_install')"><i class="fas fa-download"></i> <?php echo $h(t('ai_models.btn_runtime_install', 'Install Runtime')); ?></button>
         <button type="button" class="btn btn-danger btn-sm" onclick="if(confirm('Remove runtime and models?')) ailApi('runtime_remove')"><i class="fas fa-trash"></i> <?php echo $h(t('ai_models.btn_runtime_remove', 'Remove Runtime')); ?></button>
     <?php echo uiPageHeaderClose(); ?>
+    <?php echo uiTabs($tabs, $active_tab); ?>
     <?php echo uiHelpBoxOpen('aiLocalHelpBox', t('ai_local.title', 'Local AI')); ?>
         <?php echo $h(t('ai_local.help_body', 'Manage local speech and language models, Ollama & Hugging Face catalogs, and local Gateway testing.')); ?>
     <?php echo uiHelpBoxClose(); ?>
-</div>
 
 <?php if (!$plugin_enabled): ?>
     <div class="alert alert-warning u-mb-12">
@@ -31,26 +31,12 @@ $readyLlm = array_values(array_filter($local_models, fn($m) => ($m['kind'] ?? ''
     </div>
 <?php endif; ?>
 
-<?php if (!empty($dependencies)): ?>
-    <div class="card u-mb-12">
-        <div class="u-fs-12 u-fw-700 u-mb-6"><i class="fas fa-link u-primary"></i> <?php echo $h(t('ai_local.active_deps', 'Active local consumers')); ?></div>
-        <div class="u-d-flex u-wrap u-gap-6">
-            <?php foreach ($dependencies as $dep): ?>
-                <span class="badge badge-info u-fs-11"><?php echo $h($dep['label'] . ' → ' . $dep['target']); ?></span>
-            <?php endforeach; ?>
-        </div>
-    </div>
-<?php endif; ?>
-
-<?php echo uiTabs($tabs, $active_tab); ?>
-
 <!-- TAB: OLLAMA CATALOG -->
 <?php
 $olState = (string) ($status['ollama']['state'] ?? 'absent');
 $olRunning = in_array($olState, ['installed', 'ready', 'running'], true);
 ?>
 <div data-tab-pane="ollama"<?php echo $active_tab === 'ollama' ? '' : ' hidden'; ?>>
-    <div class="card">
         <div class="u-d-flex u-jc-space-between u-ai-center u-wrap u-gap-8 u-mb-12">
             <div>
                 <strong>Ollama:</strong>
@@ -72,12 +58,10 @@ $olRunning = in_array($olState, ['installed', 'ready', 'running'], true);
         ], ['id' => 'ail-ol-table', 'body_id' => 'ail-ol-tbody', 'attrs' => 'data-no-dt="true"']); ?>
         <?php echo uiTableEmptyRow(6, t('common.loading', 'Loading...'), 'fa-spinner fa-spin'); ?>
         <?php echo uiTableClose(); ?>
-    </div>
 </div>
 
 <!-- TAB: HUGGING FACE: only small speech/embedding models the local runtime can run -->
 <div data-tab-pane="huggingface"<?php echo $active_tab === 'huggingface' ? '' : ' hidden'; ?>>
-    <div class="card">
         <div class="alert alert-info u-mb-12 u-fs-12">
             <i class="fas fa-circle-info"></i>
             <?php echo $h(t('ai_local.hf_runnable_body', 'Only small models that run on this server are listed: recommended models, Piper voices (TTS), Whisper in CTranslate2 (STT) and ONNX sentence models. Language models are on the Ollama tab.')); ?>
@@ -117,7 +101,6 @@ $olRunning = in_array($olState, ['installed', 'ready', 'running'], true);
         ], ['id' => 'ail-hf-table', 'body_id' => 'ail-hf-tbody', 'attrs' => 'data-no-dt="true"']); ?>
         <?php echo uiTableEmptyRow(6, t('common.loading', 'Loading...'), 'fa-spinner fa-spin'); ?>
         <?php echo uiTableClose(); ?>
-    </div>
 </div>
 
 <?php
@@ -133,7 +116,7 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
         $installed = in_array($m['state'] ?? '', ['installed', 'loading', 'ready'], true);
         if (!$installed && $selected !== $ref) continue;
         $sel = $selected === $ref ? ' selected' : '';
-        $title = ($m['title'] ?? $m['id']) . ($installed ? '' : ' (' . t('ai_local.not_downloaded', 'not downloaded') . ')');
+        $title = ($m['title'] ?? $m['id']) . ' [Cascade]' . ($installed ? '' : ' (' . t('ai_local.not_downloaded', 'not downloaded') . ')');
         $out .= '<option value="' . $h($ref) . '"' . $sel . '>' . $h($title) . '</option>';
     }
     return $out;
@@ -142,7 +125,6 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
 
 <!-- TAB: CONNECTIONS / DEFAULT BINDINGS -->
 <div data-tab-pane="connections"<?php echo $active_tab === 'connections' ? '' : ' hidden'; ?>>
-    <div class="card">
         <h3 class="card-title u-mb-12"><?php echo $h(t('ai_local.defaults_title', 'Default Local Bindings')); ?></h3>
         <form method="POST">
             <?php echo $csrf; ?>
@@ -161,12 +143,11 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
             <?php endforeach; ?>
             <button type="submit" class="btn btn-primary"<?php echo $plugin_enabled ? '' : ' disabled'; ?>><i class="fas fa-save"></i> <?php echo $h(t('common.save', 'Save')); ?></button>
         </form>
-    </div>
 </div>
 
 <!-- TAB: LANGUAGES -->
 <div data-tab-pane="languages"<?php echo $active_tab === 'languages' ? '' : ' hidden'; ?>>
-    <div class="card u-mb-12">
+    <div class="u-mb-16">
         <h3 class="card-title u-mb-8"><i class="fas fa-language u-primary"></i> <?php echo $h(t('ai_cloud.engines_title', 'Language Overrides')); ?></h3>
         <p class="u-muted u-fs-12 u-mt-0 u-mb-10"><?php echo $h(t('ai_cloud.engines_help', 'Optional per-language local models. Leave empty to use the Default Local Binding.')); ?></p>
         <form method="POST">
@@ -201,7 +182,7 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
         </form>
     </div>
 
-    <div class="card">
+    <div>
         <h3 class="card-title u-mb-8"><i class="fas fa-globe u-primary"></i> <?php echo $h(t('ai_cloud.languages_title', 'AI Languages')); ?></h3>
         <p class="u-muted u-fs-12 u-mt-0 u-mb-10"><?php echo $h(t('ai_cloud.languages_help', 'Manage languages available for STT, TTS, and language-specific model overrides.')); ?></p>
         <?php echo uiTableOpen([
@@ -240,7 +221,6 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
 
 <!-- TAB: TRY -->
 <div data-tab-pane="try"<?php echo $active_tab === 'try' ? '' : ' hidden'; ?>>
-    <div class="card">
         <h3 class="card-title u-mb-12"><?php echo $h(t('ai_local.try_title', 'Try Local Chat')); ?></h3>
         <form method="POST">
             <?php echo $csrf; ?>
@@ -266,8 +246,19 @@ $localOptions = static function (string $task, string $selected, string $emptyLa
                 <div class="u-mt-6 u-white-space-pre-wrap"><?php echo $h($try_output); ?></div>
             </div>
         <?php endif; ?>
-    </div>
 </div>
+</div>
+
+<?php if (!empty($dependencies)): ?>
+    <div class="card u-mt-12">
+        <div class="u-fs-12 u-fw-700 u-mb-6"><i class="fas fa-link u-primary"></i> <?php echo $h(t('ai_local.active_deps', 'Active local consumers')); ?></div>
+        <div class="u-d-flex u-wrap u-gap-6">
+            <?php foreach ($dependencies as $dep): ?>
+                <span class="badge badge-info u-fs-11"><?php echo $h($dep['label'] . ' → ' . $dep['target']); ?></span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
 
 <script>window.AI_LOCAL = <?php echo json_encode([
     'csrf' => $csrf_token,

@@ -12,12 +12,12 @@ final class AiGatewayTest extends TestCase
     protected function setUp(): void
     {
         $db=getDB(); $this->settings=$db->query('SELECT * FROM sys_settings')->fetchAll();
-        $this->plugins=$db->query("SELECT * FROM sys_plugins WHERE slug IN ('ailocal','aicloud','ai-assistant','ai-knowledge')")->fetchAll();
+        $this->plugins=$db->query("SELECT * FROM sys_plugins WHERE slug IN ('ailocal','aicloud','pbx-assistant','ai-knowledge')")->fetchAll();
         $this->session=$_SESSION;
         $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.nvidia.%' OR setting_key LIKE 'ai_tts.openai.%' OR setting_key='privacy_block_cloud_ai'");
         $db->exec("INSERT INTO sys_users (username,password_hash,full_name,email,role,is_active,is_device,token_epoch) VALUES ('gateway_test_user','','Gateway Test','','admin',1,0,0)");
         $this->uid=(int)$db->lastInsertId(); $_SESSION['user_id']=$this->uid; $_SESSION['user_role']='admin';
-        $db->exec("INSERT INTO sys_plugins (slug,enabled) VALUES ('ailocal',1),('aicloud',1),('ai-assistant',1),('ai-knowledge',1) ON DUPLICATE KEY UPDATE enabled=1");
+        $db->exec("INSERT INTO sys_plugins (slug,enabled) VALUES ('ailocal',1),('aicloud',1),('pbx-assistant',1),('ai-knowledge',1) ON DUPLICATE KEY UPDATE enabled=1");
         CloudAiService::save('nvidia',['api_key'=>'test-provider-secret','model'=>'test-model']);
         $this->token=tempnam(sys_get_temp_dir(),'gateway-token-');file_put_contents($this->token,str_repeat('a',64));putenv('AIPBX_AI_TOKEN_FILE='.$this->token);
     }
@@ -28,7 +28,7 @@ final class AiGatewayTest extends TestCase
         $db->prepare('DELETE FROM sys_users WHERE id=?')->execute([$this->uid]);
         $db->exec('DELETE FROM sys_settings');$q=$db->prepare('INSERT INTO sys_settings VALUES (?,?)');
         foreach($this->settings as $r)$q->execute([$r['setting_key'],$r['setting_value']]);
-        $db->exec("DELETE FROM sys_plugins WHERE slug IN ('ailocal','aicloud','ai-assistant','ai-knowledge')");
+        $db->exec("DELETE FROM sys_plugins WHERE slug IN ('ailocal','aicloud','pbx-assistant','ai-knowledge')");
         foreach($this->plugins as $r)$db->prepare('INSERT INTO sys_plugins (`'.implode('`,`',array_keys($r)).'`) VALUES ('.implode(',',array_fill(0,count($r),'?')).')')->execute(array_values($r));
         $_SESSION=$this->session;
     }

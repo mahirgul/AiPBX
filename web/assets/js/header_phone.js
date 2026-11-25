@@ -64,6 +64,8 @@ function startHeaderPhoneTurnRefresh() {
 var headerPhoneDigits = window.headerPhoneDigits || "";
 var headerJsSipUA = window.headerJsSipUA || null;
 var headerJsSipSession = window.headerJsSipSession || null;
+// A call in progress moves its audio to the new network when the network changes.
+var headerIceWatch = window.AiPBXIce ? AiPBXIce.watchNetwork(() => headerJsSipSession, () => headerJsSipUA) : null;
 var headerSipRegistered = window.headerSipRegistered || false;
 var headerIsOnHold = false;
 var headerCallInProgress = false;
@@ -322,6 +324,7 @@ function initHeaderWebRTCPhone() {
 // eventHandlers.peerconnection) and incoming calls (newRTCSession ->
 // session.on("peerconnection")) — see the note in initHeaderJsSIPPhone.
 function attachPeerConnectionHandlers(pc) {
+    if (window.AiPBXIce) AiPBXIce.capGathering(pc);
     pc.ontrack = (event) => {
         // event.streams[0] can be empty in some SDP/negotiation cases; then a
         // MediaStream is built from the track by hand (so the browser can
@@ -398,6 +401,7 @@ function initHeaderJsSIPPhone(ext, webrtcUsername, pass) {
         });
 
         headerJsSipUA.on("connected", () => {
+            if (headerIceWatch) headerIceWatch.onConnected();
         });
 
         headerJsSipUA.on("disconnected", () => {
@@ -1096,7 +1100,9 @@ function headerCallerCard(number, shown, seq) {
             parts.push(escapeHtml(number));
             if (c && c.company && !String(shown || '').includes(c.company)) parts.push(escapeHtml(c.company));
             let link = '';
-            if (c && res.can_access !== false) {
+            if (c && c.external_url) {
+                link = `<a href="${escapeHtml(c.external_url)}" target="_blank" rel="noopener" class="u-fs-11"><i class="fas fa-arrow-up-right-from-square"></i> ${__('js.phone.contact_open')}</a>`;
+            } else if (c && res.can_access !== false) {
                 link = `<a href="/phonebook" class="u-fs-11"><i class="fas fa-address-book"></i> ${__('js.phone.contact_open')}</a>`;
             } else if (!c && res.can_add) {
                 link = `<a href="/phonebook?add=${encodeURIComponent(number)}" class="u-fs-11"><i class="fas fa-user-plus"></i> ${__('js.phone.contact_save')}</a>`;

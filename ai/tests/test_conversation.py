@@ -178,6 +178,19 @@ class StepTest(unittest.TestCase):
         with self.assertRaises(cloud_llm.CloudLlmError):
             conversation.next_step(CFG, [("caller", "x")], "tr", lambda t, q: "{}", post=scripted(loop, loop, loop))
 
+    def test_render_instructions_interpolates_dynamic_variables(self):
+        cfg = dict(
+            CFG,
+            caller_name="Ayşe",
+            caller="05321112233",
+            verified_customer="CUST-99",
+            did="02125550000",
+            instructions="Caller={caller_name}, Num={caller_id}, Cust={customer_id}, DID={did}, Lang={language}",
+        )
+        p = conversation.prompt(cfg, [("caller", "faturam nedir")], "tr")
+        self.assertIn("Caller=Ayşe, Num=05321112233, Cust=CUST-99, DID=02125550000, Lang=Turkish", p)
+        self.assertIn('System-resolved Customer ID: "CUST-99"', p)
+
 
 if __name__ == "__main__":
     unittest.main()

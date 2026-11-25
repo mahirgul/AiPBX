@@ -45,7 +45,7 @@ if (!is_file($file)) {
 if ($script === 'api/assistant.php') {
     require_once $SMOKE_ROOT . '/config.php';
     require_once $SMOKE_ROOT . '/src/core/PluginManager.php';
-    if (!PluginManager::isEnabled('ai-assistant')) {
+    if (!PluginManager::isEnabled('pbx-assistant')) {
         file_put_contents($outfile, json_encode(['script' => $script, 'status' => 'skip', 'error' => 'switched off']));
         exit(0);
     }

@@ -21,7 +21,7 @@ class FileHelper {
         // unprivileged processes (www-data) cannot create temp files in /etc/asterisk.
         // Delegate to the privilege broker if available.
         $baseName = basename($filepath);
-        if (!is_writable($dir) && $dir === '/etc/asterisk' && in_array($baseName, ['rtp.conf', 'udptl.conf', 'voicemail.conf'], true)) {
+        if (!is_writable($dir) && $dir === '/etc/asterisk' && in_array($baseName, ['rtp.conf', 'udptl.conf', 'voicemail.conf', 'codecs.conf'], true)) {
             $isRoot = function_exists('posix_geteuid') ? (posix_geteuid() === 0) : false;
             if (!$isRoot) {
                 require_once __DIR__ . '/priv_helper.php';

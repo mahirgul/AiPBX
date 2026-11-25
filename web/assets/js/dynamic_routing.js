@@ -14,6 +14,7 @@ function drToggle() {
     const source = drVal('dr_source');
     const method = drVal('dr_method');
     const nameMode = drVal('dr_name_mode');
+    const sayMode = drVal('dr_say_mode');
     const direct = document.getElementById('dr_direct')?.checked ? '1' : '';
     const show = (sel, value) => document.querySelectorAll('#drForm [' + sel + ']').forEach(el => {
         el.style.display = el.getAttribute(sel).split(' ').includes(value) ? '' : 'none';
@@ -22,6 +23,7 @@ function drToggle() {
     show('data-dr-source', source);
     show('data-dr-method', method);
     show('data-dr-name', nameMode);
+    show('data-dr-say', sayMode);
     show('data-dr-direct', direct);
 }
 
@@ -77,10 +79,8 @@ function drOpen(s) {
     set('dr_max_digits', s?.max_digits || 10);
     set('dr_timeout', s?.input_timeout_sec || 5);
     set('dr_retries', s?.retries || 0);
-    set('dr_source', s?.data_source || 'database');
-    set('dr_db', s?.external_db_id);
+    set('dr_source', (!s || s.data_source === 'database') ? 'saved_query' : s.data_source);
     set('dr_saved_query', s?.saved_query_id);
-    set('dr_sql', s?.query_sql);
     set('dr_url', s?.http_url);
     set('dr_method', s?.http_method || 'GET');
     set('dr_body', s?.http_body);
@@ -90,6 +90,11 @@ function drOpen(s) {
     set('dr_prefix', s?.var_prefix);
     set('dr_name_mode', s?.caller_name_mode);
     set('dr_name_tpl', s?.caller_name_template);
+    set('dr_say_mode', s?.say_mode || 'none');
+    set('dr_say_tpl', s?.say_template);
+    set('dr_cache_ttl', s?.cache_ttl_sec || 0);
+    const cdrEl = document.getElementById('dr_cdr_write');
+    if (cdrEl) cdrEl.checked = s ? parseInt(s.cdr_write) === 1 : false;
     document.getElementById('dr_headers').placeholder = s && parseInt(s.has_headers) === 1
         ? __('js.dynamic_routing.headers_saved') : 'Authorization: Bearer …';
     document.getElementById('dr_headers_clear_box').style.display = s && parseInt(s.has_headers) === 1 ? '' : 'none';

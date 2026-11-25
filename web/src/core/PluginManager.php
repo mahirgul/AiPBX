@@ -291,14 +291,6 @@ final class PluginManager
                 }
             }
 
-            if ($slug === 'ai-apps') {
-                try {
-                    require_once dirname(__DIR__) . '/services/LocalAiService.php';
-                    LocalAiService::drainCalls(false);
-                } catch (\Throwable $e) {
-                }
-            }
-
             writeAuditLog('plugins', 'plugin', $slug, "Plugin enabled: {$m['name']} (v{$m['version']})", 'update', $_SESSION['user_id'] ?? null);
             return sprintf(t('plugins.msg_enabled', 'Plugin "%s" has been installed and enabled.'), (string)($m['name'] ?? $slug));
         });
@@ -1179,14 +1171,18 @@ final class PluginManager
         return $dir;
     }
 
-    /** Sidebar items of the plugins' user pages this user may open. */
-    public static function userSidebarItems(array $user): array
+    /** Sidebar items of the plugins' user pages this user may open, filtered by menu group ('apps' or 'call_center'). */
+    public static function userSidebarItems(array $user, string $group = 'apps'): array
     {
         $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
         $items = [];
         foreach (self::allPlugins() as $p) {
             $hook = $p['hooks']['user_page'] ?? null;
             if (!$p['enabled'] || !is_array($hook) || self::userPageDir($p['slug'], $user) === null) {
+                continue;
+            }
+            $itemGroup = (string) ($hook['group'] ?? (($p['hooks']['admin_page']['group'] ?? '') === 'call_center' ? 'call_center' : 'apps'));
+            if ($itemGroup !== $group) {
                 continue;
             }
             $items[] = [

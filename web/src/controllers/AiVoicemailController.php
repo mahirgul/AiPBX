@@ -16,7 +16,7 @@ require_once __DIR__ . '/../services/ai/OllamaService.php';
  */
 class AiVoicemailController extends BaseController
 {
-    public const TABS = ['settings', 'languages', 'jobs'];
+    public const TABS = ['settings', 'jobs'];
 
     public static function index(): void
     {

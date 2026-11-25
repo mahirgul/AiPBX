@@ -53,16 +53,21 @@ function aiCloudRenderFields() {
         const name = escapeHtml(f.key);
         const label = escapeHtml(f.label || f.key) + (f.optional ? ' <span class="u-muted u-fs-11">(' + escapeHtml(__('js.ai_cloud.optional')) + ')</span>' : '');
         let input;
-        if (f.json) {
+        if (f.options) {
+            const options = Object.entries(f.options).map(([value, text]) =>
+                '<option value="' + escapeHtml(value) + '"' + (value === (f.value || '') ? ' selected' : '') + '>'
+                + escapeHtml(text) + '</option>').join('');
+            input = '<select name="' + name + '" class="form-control">' + options + '</select>';
+        } else if (f.json) {
             input = '<textarea name="' + name + '" class="form-control u-mono u-fs-12" rows="3" placeholder="' + escapeHtml(f.masked || '{ "type": "service_account", ... }') + '"></textarea>'
                 + '<input type="file" name="service_account_file" accept=".json,application/json" class="form-control form-control-sm u-mt-6">';
         } else if (f.secret) {
             input = '<input type="password" name="' + name + '" class="form-control" autocomplete="new-password" placeholder="'
                 + escapeHtml(f.masked ? f.masked + ' — ' + __('js.ai_cloud.keep_secret') : '') + '">';
         } else {
-            input = '<input type="text" name="' + name + '" class="form-control" value="' + escapeHtml(f.value || '') + '" placeholder="' + escapeHtml(f.default || '') + '">';
+            input = '<input type="text" name="' + name + '" class="form-control" value="' + escapeHtml(f.value || '') + '" placeholder="' + escapeHtml(f.placeholder || f.default || '') + '">';
         }
-        return '<div class="form-group u-mb-8"><label class="form-label">' + label + '</label>' + input + '</div>';
+        return '<div class="form-group u-mb-8' + (f.json ? ' u-grid-column-1-1' : '') + '"><label class="form-label">' + label + '</label>' + input + '</div>';
     }).join('');
 }
 

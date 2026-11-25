@@ -28,6 +28,7 @@ class ConnectionsController extends BaseController
                     'create' => ConnectionService::create($_POST, $csrf),
                     'rotate' => ConnectionService::rotate($id, $csrf),
                     'test' => ConnectionService::test($id, $csrf),
+                    'enable', 'disable' => ConnectionService::setActive($id, $action === 'enable', $csrf),
                     'delete' => ConnectionService::delete($id)
                         ? ['success' => true, 'message' => t('connections.msg_deleted')]
                         : ['success' => false, 'message' => t('common.not_found')],

@@ -170,15 +170,16 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertArrayHasKey('aicloud', $manifests);
         $this->assertArrayHasKey('ai-call-analysis', $manifests);
         $this->assertArrayHasKey('ai-tts', $manifests);
-        $this->assertArrayHasKey('ai-apps', $manifests);
+        $this->assertArrayNotHasKey('ai-apps', $manifests);
+        $this->assertArrayNotHasKey('external-voice-ai', $manifests);
         $this->assertArrayNotHasKey('ai-models', $manifests);
         $this->assertArrayHasKey('ai-voicemail', $manifests);
-        $this->assertArrayHasKey('ai-assistant', $manifests);
+        $this->assertArrayHasKey('pbx-assistant', $manifests);
         // Signaling capture is part of AiPBX since 1.50.8, not a plugin any more.
         $this->assertArrayNotHasKey('signaling-capture', $manifests);
 
         // Secret settings: decrypted by getSetting(), masked by getAllSettings(..., true)
-        $this->assertSame('official', $manifests['ai-assistant']['source'], 'the PBX Assistant is the bundled plugin');
+        $this->assertSame('official', $manifests['pbx-assistant']['source'], 'the PBX Assistant is the bundled plugin');
         $before = PluginManager::getSetting('oidc-auth', 'client_secret');
         $save = PluginManager::savePluginSettings('oidc-auth', ['client_secret' => 'my-secret-key'], 'test-csrf-token');
         $this->assertTrue($save['success'], json_encode($save));
@@ -391,7 +392,7 @@ final class PluginAndApiV1Test extends TestCase
         $this->assertArrayHasKey('oidc-auth', $bySlug);
         $this->assertSame('official', $bySlug['oidc-auth']['type']);
 
-        $this->assertSame('official', $bySlug['ai-assistant']['type']);
+        $this->assertSame('official', $bySlug['pbx-assistant']['type']);
 
         // Community plugins
         if (isset($bySlug['auto-dialer'])) {

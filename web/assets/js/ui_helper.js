@@ -171,7 +171,11 @@ const UIHelper = {
             tab.setAttribute('aria-selected', on ? 'true' : 'false');
         });
         const root = bar.parentElement;
-        root.querySelectorAll(':scope > [data-tab-pane]').forEach((pane) => {
+        let panes = root ? Array.from(root.querySelectorAll(':scope > [data-tab-pane]')) : [];
+        if (panes.length === 0 && root && root.parentElement) {
+            panes = Array.from(root.parentElement.querySelectorAll(':scope > [data-tab-pane]'));
+        }
+        panes.forEach((pane) => {
             pane.hidden = pane.getAttribute('data-tab-pane') !== btn.getAttribute('data-tab');
         });
         // A page that does more on a tab (remember it, load data) listens for this.

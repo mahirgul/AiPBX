@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../services/ai/BuiltinAiAgentService.php';
+require_once __DIR__ . '/../services/ExternalDbQueryService.php';
 
 final class BuiltinAiAgentController extends BaseController
 {
@@ -32,9 +33,15 @@ final class BuiltinAiAgentController extends BaseController
                 }
             }
         }
+        $savedQueries = array_values(array_filter(
+            ExternalDbQueryService::all(),
+            [ExternalDbQueryService::class, 'available']
+        ));
         static::renderPage('builtin_ai_agent/index', [
             'agents' => $agents, 'edit' => $edit, 'models' => $edit !== null ? BuiltinAiAgentService::models() : [],
             'collections' => PluginManager::isEnabled('ai-knowledge') ? AiKnowledgeService::collections() : [],
+            'saved_queries' => $savedQueries,
+            'default_instructions' => BuiltinAiAgentService::defaultInstructionsTemplate(),
             'targets' => BuiltinAiAgentService::targets(true), 'csrf_token' => getCSRFToken(),
         ], ['title' => t('builtin_ai_agent.title')] + $notices);
     }

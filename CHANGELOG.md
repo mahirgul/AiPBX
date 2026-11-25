@@ -11,6 +11,22 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.81.0
+
+### New
+
+- **Queues and contacts:** automatic callbacks call an available agent before calling the customer. Queue managers can configure pause reasons. Mark a contact as VIP to give incoming calls from their numbers priority in the queue.
+- **AI calls:** support for ARI media bridging and OpenAI Realtime or Gemini Live where configured. The PBX assistant adds phone tools and scheduled reminders.
+- **CRM and routing:** ERPNext connection type, address book synchronisation from an external database, and more Dynamic Routing and saved-query options.
+- **Portal:** choose a single sidebar or the default Operations and Settings sections under Brand & Appearance. Routes and VPN settings have shared tabs.
+- **Phones:** Cisco CP-7841 provisioning, with model and firmware selection. [#168](https://github.com/mahirgul/AiPBX/issues/168)
+
+### Fixes
+
+- **WebRTC:** ICE server configuration refreshes for subsequent calls and accepts TURN over TLS.
+- **Caller ID:** a blank internal caller ID uses the extension number. A blank external caller ID allows the trunk default. Dynamic Routing keeps the spacing around a caller name prefix and omits the separator when the name is empty.
+- **Install and upgrade:** improve package-lock handling and the installation summary.
+
 ## 1.80.1
 
 ### 🐛 Fixes

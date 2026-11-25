@@ -2,6 +2,20 @@
 # ============================================================================
 # STEP 14: SAVE CREDENTIALS TO FILE
 # ============================================================================
+# ============================================================================
+# EXAMPLES — one of each thing, so every menu shows how it is done
+# ============================================================================
+# Fresh installs only (an upgrade ends in step 13), once: a second run finds them in place.
+echo -e "\n ${BOLD}Examples${NC} ${DIM}(ordinary records: change or delete them)${NC}"
+EXAMPLE_USER_PASS=""; EXAMPLE_USER_SIP_PASS=""; EXAMPLE_FAX_PASS=""
+examples_out="$(runuser -u www-data -- php "$INSTALL_DIR/web/bin/seed_examples.php" 2>&1)" || warn "Some examples could not be created (see the lines marked !)"
+while IFS= read -r line; do
+    case "$line" in
+        EXAMPLE_*=*) printf -v "${line%%=*}" '%s' "${line#*=}" ;;
+        *) echo "   $line" ;;
+    esac
+done <<<"$examples_out"
+
 CREDS_FILE="/root/aipbx-credentials.txt"
 install -m 0600 -o root -g root /dev/null "$CREDS_FILE"
 
@@ -20,6 +34,14 @@ cat > "$CREDS_FILE" << CREDS
   Admin Password: ${ADMIN_PASS}
   Admin Exten   : 1000
   Admin SIP Pass: ${ADMIN_SIP_PASS}
+
+  EXAMPLE USERS
+  ─────────────
+  User          : alex (Alex Morgan, extension 1001)
+  User Password : ${EXAMPLE_USER_PASS:-not created}
+  User SIP Pass : ${EXAMPLE_USER_SIP_PASS:-not created}
+  Fax Login     : fax (Office Fax, fax number 5550199)
+  Fax Password  : ${EXAMPLE_FAX_PASS:-not created}
 
   DATABASE (MariaDB)
   ──────────────────
@@ -61,26 +83,7 @@ chmod 600 "$CREDS_FILE"
 # ============================================================================
 # DONE — PRINT SUMMARY
 # ============================================================================
-TOOK=$((SECONDS - START_SECONDS))
 echo ""
-box "${I_OK} AiPBX is ready  ${SEP}  $((TOOK / 60)) min $((TOOK % 60)) s" \
-    "Portal        ${CYAN}https://${PORTAL_DOMAIN}${NC}" \
-    "Username      ${YELLOW}admin${NC}" \
-    "Password      ${YELLOW}${ADMIN_PASS}${NC}" \
-    "Extension     ${YELLOW}1000${NC} (web, mobile, SIP)" \
-    "SIP password  ${YELLOW}${ADMIN_SIP_PASS}${NC}"
-echo ""
-box "Database (MariaDB)" \
-    "App user      ${YELLOW}${DB_USER}${NC}" \
-    "App password  ${YELLOW}${DB_PASS}${NC}" \
-    "DDL user      ${YELLOW}${MIGRATOR_USER}${NC}" \
-    "DDL password  ${YELLOW}${MIGRATOR_PASS}${NC}"
-echo ""
-box "Asterisk AMI" \
-    "User          ${YELLOW}${AMI_USER}${NC}" \
-    "Password      ${YELLOW}${AMI_PASS}${NC}"
-echo ""
-
 echo -e " ${BOLD}TLS certificate${NC}"
 if [[ "${USE_LETSENCRYPT:-false}" == "true" ]]; then
     ok "Let's Encrypt certificate for ${CYAN}${PORTAL_DOMAIN}${NC}"
@@ -135,6 +138,35 @@ if grep -qi '^permitrootlogin yes' <<<"$ssh_cfg" && grep -qi '^passwordauthentic
     warn "limiting port 22 to trusted networks (see docs/security.md)."
     echo ""
 fi
+# The credentials come last, right above the prompt: printed first, the self test and the
+# service list pushed them off the top of the screen, and a closed terminal lost them.
+TOOK=$((SECONDS - START_SECONDS))
+echo ""
+box "${I_OK} AiPBX is ready  ${SEP}  $((TOOK / 60)) min $((TOOK % 60)) s" \
+    "Portal        ${CYAN}https://${PORTAL_DOMAIN}${NC}" \
+    "Username      ${YELLOW}admin${NC}" \
+    "Password      ${YELLOW}${ADMIN_PASS}${NC}" \
+    "Extension     ${YELLOW}1000${NC} (web, mobile, SIP)" \
+    "SIP password  ${YELLOW}${ADMIN_SIP_PASS}${NC}"
+echo ""
+if [[ -n "$EXAMPLE_USER_PASS$EXAMPLE_FAX_PASS" ]]; then
+    box "Example users" \
+        "alex          ${YELLOW}${EXAMPLE_USER_PASS:-—}${NC} (Alex Morgan, extension 1001)" \
+        "SIP password  ${YELLOW}${EXAMPLE_USER_SIP_PASS:-—}${NC}" \
+        "fax           ${YELLOW}${EXAMPLE_FAX_PASS:-—}${NC} (Office Fax, 5550199)"
+    echo ""
+fi
+box "Database (MariaDB)" \
+    "App user      ${YELLOW}${DB_USER}${NC}" \
+    "App password  ${YELLOW}${DB_PASS}${NC}" \
+    "DDL user      ${YELLOW}${MIGRATOR_USER}${NC}" \
+    "DDL password  ${YELLOW}${MIGRATOR_PASS}${NC}"
+echo ""
+box "Asterisk AMI" \
+    "User          ${YELLOW}${AMI_USER}${NC}" \
+    "Password      ${YELLOW}${AMI_PASS}${NC}"
+echo ""
+
 info "All credentials saved to ${CYAN}${CREDS_FILE}${NC}"
 warn "Note these credentials now! Delete the file after saving them securely."
 info "All passwords can be changed later from: ${CYAN}Admin Panel → Settings → System${NC}"

@@ -119,6 +119,17 @@ $csrf = getCSRFToken();
             </div>
 
             <div class="u-mb-16">
+                <label class="form-label"><?php echo htmlspecialchars(t('scheduled_tasks.external_db')); ?></label>
+                <select name="external_db_id" id="task_external_db" class="form-control">
+                    <option value=""><?php echo htmlspecialchars(t('scheduled_tasks.external_db_none')); ?></option>
+                    <?php foreach (($externalDbs ?? []) as $edb): ?>
+                        <option value="<?php echo (int) $edb['id']; ?>"><?php echo htmlspecialchars((string) $edb['name'] . ' (' . (string) $edb['driver'] . ')'); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <small class="u-hint"><?php echo htmlspecialchars(t('scheduled_tasks.external_db_help')); ?></small>
+            </div>
+
+            <div class="u-mb-16">
                 <label class="form-label" for="task_script_content"><strong><?php echo htmlspecialchars(t('scheduled_tasks.script_content', 'Script Code')); ?> *</strong></label>
                 <textarea name="script_content" id="task_script_content" class="form-control u-mono u-fs-13 u-tab-size-4" rows="10" required placeholder="#!/bin/bash&#10;echo &quot;Running task...&quot;"></textarea>
             </div>
@@ -310,6 +321,7 @@ function editTask(t) {
     document.getElementById('task_memory').value = t.memory_limit_mb || 256;
     document.getElementById('task_cpu').value = t.cpu_limit_pct || 50;
     document.getElementById('task_network').checked = parseInt(t.network_access) === 1;
+    document.getElementById('task_external_db').value = t.external_db_id || '';
     document.getElementById('task_script_content').value = t.script_content || '';
     document.getElementById('task_active').checked = parseInt(t.is_active) === 1;
 

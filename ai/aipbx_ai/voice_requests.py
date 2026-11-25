@@ -20,6 +20,7 @@ This module holds the parts that do not touch the socket:
 The call itself (greeting -> listen -> retry -> reply -> terminate) runs in
 calls.AudioSocketServer; matching is intents.match.
 """
+import hashlib
 import json
 import logging
 import math
@@ -71,6 +72,9 @@ FLOOR_ADAPT = 0.05           # ... and rises slowly to louder ones (before speec
 
 RESULT_KEEP_SECONDS = 24 * 3600
 RESULT_MEMORY = 2000
+PHRASE_CACHE_MEMORY = 512
+SILENCE_TRIM_RMS = 120.0
+_GREETING_VAR_RE = re.compile(r"\{caller_name\}|\$name\b|\{caller_number\}|\{did\}")
 
 
 class ConfigError(ValueError):
@@ -261,9 +265,11 @@ def validate_config(data, manager=None):
             raise ConfigError(f"{where}needs at least one keyword or example")
         out.append(item)
     config["intents"] = out
-    # Conversation: several turns with the cloud language model (conversation.py).
+    rc = data.get("realtime_cloud")
+    has_realtime = isinstance(rc, dict) and bool(rc.get("api_key") or rc.get("ws_url") or rc.get("base_url"))
+    # Conversation: several turns with the language model (conversation.py).
     if data.get("conversation") is True:
-        if not config.get("llm_cloud") and not config.get("local_chat_app"):
+        if not config.get("llm_cloud") and not config.get("local_chat_app") and not has_realtime:
             raise ConfigError("a conversation needs a language model")
         try:
             config.update(conversation.validate(
@@ -271,6 +277,30 @@ def validate_config(data, manager=None):
         except conversation.ConversationError as e:
             raise ConfigError(str(e)) from None
         config["conversation"] = True
+    if has_realtime:
+        config["realtime_cloud"] = {
+            "provider": str(rc.get("provider") or "openai"),
+            "api_key": str(rc.get("api_key") or ""),
+            "model": str(rc.get("model") or ""),
+            "voice": str(rc.get("voice") or "alloy"),
+            "lang": str(rc.get("lang") or config.get("language") or "tr"),
+        }
+        if rc.get("ws_url"):
+            config["realtime_cloud"]["ws_url"] = str(rc["ws_url"])
+        if rc.get("base_url"):
+            config["realtime_cloud"]["base_url"] = str(rc["base_url"])
+        if config["realtime_cloud"]["provider"] == "openai_compat" and rc.get("protocol"):
+            if rc["protocol"] not in ("openai_ga", "openai_beta"):
+                raise ConfigError("invalid Realtime protocol")
+            config["realtime_cloud"]["protocol"] = rc["protocol"]
+    pbx_tools = data.get("pbx_tools")
+    if isinstance(pbx_tools, list) and pbx_tools:
+        config["pbx_tools"] = [
+            t for t in pbx_tools
+            if isinstance(t, dict) and isinstance(t.get("name"), str) and t["name"]
+        ]
+        if isinstance(data.get("pbx_tools_key"), str) and data["pbx_tools_key"].strip():
+            config["pbx_tools_key"] = data["pbx_tools_key"].strip()
     return config
 
 
@@ -302,10 +332,11 @@ def pick_local_fallback(manager, kind, lang="tr", preferred=None):
 def public(config):
     """A config as the API shows it: a cloud provider's key is never returned."""
     out = dict(config)
-    for name in ("stt_cloud", "tts_cloud", "llm_cloud"):
+    for name in ("stt_cloud", "tts_cloud", "llm_cloud", "realtime_cloud"):
         if name in out:
             out[name] = {k: v for k, v in out[name].items() if k not in ("api_key", "key")}
             out[name]["api_key_set"] = True
+    out.pop("pbx_tools_key", None)
     return out
 
 
@@ -324,16 +355,55 @@ def _atomic_write(path, data):
         raise
 
 
+def trim_edge_silence(pcm, trim_start=True, trim_end=True, threshold=SILENCE_TRIM_RMS):
+    """Trims leading/trailing dead-silence frames while keeping 1 frame (20 ms) of padding."""
+    whole = len(pcm) - (len(pcm) % FRAME_BYTES)
+    if whole < FRAME_BYTES * 3:
+        return pcm
+    frames = [pcm[i:i + FRAME_BYTES] for i in range(0, whole, FRAME_BYTES)]
+    start, end = 0, len(frames)
+    if trim_start:
+        while start < end and frame_rms(frames[start]) < threshold:
+            start += 1
+        start = max(0, start - 1)
+    if trim_end:
+        while end > start and frame_rms(frames[end - 1]) < threshold:
+            end -= 1
+        end = min(len(frames), end + 1)
+    if start >= end:
+        return pcm
+    return b"".join(frames[start:end])
+
+
+def stitch_pcm(parts, segments=None):
+    """Concatenates multiple 8 kHz 16-bit PCM segments, trimming join edges and inserting natural pauses."""
+    valid = [(p, (segments[i] if segments and i < len(segments) else "")) for i, p in enumerate(parts) if p]
+    if not valid:
+        return b""
+    if len(valid) == 1:
+        return valid[0][0]
+    out = []
+    for i, (pcm, seg_text) in enumerate(valid):
+        trimmed = trim_edge_silence(pcm, trim_start=(i > 0), trim_end=(i < len(valid) - 1))
+        out.append(trimmed)
+        if i < len(valid) - 1:
+            pause_frames = 4 if seg_text.rstrip().endswith((".", "!", "?", ",", ";", ":")) else 2
+            out.append(b"\x00" * (FRAME_BYTES * pause_frames))
+    return b"".join(out)
+
+
 class AppStore:
     """Pushed application configs and their prompt audio."""
 
     def __init__(self, manager, data_dir=None):
         self.manager = manager
         self.dir = Path(data_dir) / "apps" if data_dir else None
+        self.tts_dir = Path(data_dir) / "tts_cache" if data_dir else None
         self._mu = threading.Lock()
         self._apps = {}              # id -> config
         self._version = {}           # id -> int, bumped by every PUT/DELETE
         self._cache = {}             # (id, version, prompt key) -> PCM
+        self._phrase_cache = OrderedDict()   # sha256 -> PCM bytes (LRU)
         self._warming = set()        # (id, version)
         self._counter = 0
         if self.dir is not None:
@@ -450,11 +520,131 @@ class AppStore:
                 self._cache[(app_id, version, key)] = pcm
         return pcm
 
+    @staticmethod
+    def _phrase_key(config, text):
+        norm = " ".join(text.split())
+        model = str(config.get("tts_model") or "")
+        speed = f"{float(config.get('speed', 1.0)):.2f}"
+        lang = str(config.get("language") or "")
+        if model.startswith("cloud:"):
+            tc = config.get("tts_cloud") or {}
+            voice_id = f"{tc.get('provider', '')}:{tc.get('model', '')}:{tc.get('voice', '')}:{tc.get('lang', '')}"
+        else:
+            voice_id = model
+        raw = f"{model}|{voice_id}|{speed}|{lang}|{norm}"
+        return hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    def _phrase_get(self, key):
+        with self._mu:
+            pcm = self._phrase_cache.get(key)
+            if pcm is not None:
+                self._phrase_cache.move_to_end(key)
+                return pcm
+        if self.tts_dir is not None:
+            path = self.tts_dir / f"{key}.pcm"
+            try:
+                pcm = path.read_bytes()
+                if pcm and len(pcm) % 2 == 0:
+                    with self._mu:
+                        self._phrase_cache[key] = pcm
+                        self._phrase_cache.move_to_end(key)
+                        while len(self._phrase_cache) > PHRASE_CACHE_MEMORY:
+                            self._phrase_cache.popitem(last=False)
+                    return pcm
+            except OSError:
+                pass
+        return None
+
+    def _phrase_put(self, key, pcm):
+        if not pcm:
+            return
+        with self._mu:
+            self._phrase_cache[key] = pcm
+            self._phrase_cache.move_to_end(key)
+            while len(self._phrase_cache) > PHRASE_CACHE_MEMORY:
+                self._phrase_cache.popitem(last=False)
+        if self.tts_dir is not None:
+            try:
+                self.tts_dir.mkdir(parents=True, exist_ok=True)
+                _atomic_write(self.tts_dir / f"{key}.pcm", pcm)
+            except OSError:
+                pass
+
+    @classmethod
+    def split_greeting_segments(cls, template, caller_name="", caller_number="", did=""):
+        """Splits a greeting template with dynamic variables into static and dynamic segments for caching.
+
+        * When no dynamic variable in `template` has a value, returns a single-element list [full_text].
+        * When dynamic variables are filled:
+          - Splits at clause/sentence punctuation boundaries (.!?,;: followed by space).
+          - If a clause containing a dynamic variable has more than 2 non-variable words (no comma around the name),
+            splits that clause around the variable into [prefix, var_value, suffix].
+          - Merges consecutive static clauses so static parts stay one cached segment.
+        """
+        values = {"{caller_name}": caller_name, "$name": caller_name, "{caller_number}": caller_number, "{did}": did}
+        active_vars = {k for k, v in values.items() if v}
+        has_active = any(m.group(0) in active_vars for m in _GREETING_VAR_RE.finditer(template))
+        if not has_active:
+            full = cls.greeting_text({"greeting": template}, caller_name, caller_number, did)
+            return [full] if full else []
+
+        raw_clauses = [c.strip() for c in re.split(r"(?<=[.!?,;:])\s+", template.strip()) if c.strip()]
+        tagged = []  # list of (is_dynamic: bool, rendered_text: str)
+        for clause in raw_clauses:
+            matches = list(_GREETING_VAR_RE.finditer(clause))
+            if not any(m.group(0) in active_vars for m in matches):
+                rendered = cls.greeting_text({"greeting": clause}, caller_name, caller_number, did)
+                if rendered:
+                    tagged.append((False, rendered))
+                continue
+            without_vars = _GREETING_VAR_RE.sub("", clause).strip(" ,;.!?-")
+            non_var_words = [w for w in without_vars.split() if w]
+            if len(non_var_words) > 2 and len(matches) == 1 and matches[0].group(0) in active_vars:
+                m = matches[0]
+                before = cls.greeting_text({"greeting": clause[:m.start()]}, caller_name, caller_number, did)
+                var_val = values[m.group(0)].strip()
+                after = cls.greeting_text({"greeting": clause[m.end():]}, caller_name, caller_number, did)
+                if before:
+                    tagged.append((False, before))
+                if var_val:
+                    tagged.append((True, var_val))
+                if after:
+                    tagged.append((False, after))
+            else:
+                rendered = cls.greeting_text({"greeting": clause}, caller_name, caller_number, did)
+                if rendered:
+                    tagged.append((True, rendered))
+
+        merged = []
+        for is_dyn, text in tagged:
+            if not is_dyn and merged and not merged[-1][0]:
+                merged[-1] = (False, merged[-1][1] + " " + text)
+            else:
+                merged.append((is_dyn, text))
+        return [t for _, t in merged if t]
+
+    def greeting_speech(self, app_id, version, config, template, caller_name="", caller_number="", did=""):
+        """Synthesises a greeting (single cached prompt when static, or stitched cached segments when dynamic)."""
+        segments = self.split_greeting_segments(template, caller_name, caller_number, did)
+        if not segments:
+            return b""
+        if len(segments) == 1:
+            if segments[0] == self.greeting_text(config):
+                return self.prompt(app_id, version, config, "greeting")
+            return self.speech(app_id, config, segments[0])
+        parts = [self.speech(app_id, config, seg) for seg in segments]
+        return stitch_pcm(parts, segments)
+
     def speech(self, app_id, config, text):
-        """Any text in the application's voice as 8 kHz PCM (b"" for an empty text), not cached:
-        the prompts, and the answers of a conversation. Raises what ModelManager.synthesize raises."""
+        """Any text in the application's voice as 8 kHz PCM (b"" for an empty text), cached by content+voice:
+        the prompts, greeting segments, and the answers of a conversation."""
         pcm = b""
+        text = (text or "").strip()
         if text:
+            key = self._phrase_key(config, text)
+            cached_pcm = self._phrase_get(key)
+            if cached_pcm is not None:
+                return cached_pcm
             if config["tts_model"].startswith("cloud:"):
                 lang = config.get("language") or config.get("tts_cloud", {}).get("lang") or "tr"
                 try:
@@ -469,6 +659,8 @@ class AppStore:
                 pcm = bytes(self.manager.synthesize(config["tts_model"], text, config["speed"], SAMPLE_RATE))
             if len(pcm) % 2:
                 pcm = pcm[:-1]
+            if pcm:
+                self._phrase_put(key, pcm)
         return pcm
 
     def warm(self, app_id, version, config):

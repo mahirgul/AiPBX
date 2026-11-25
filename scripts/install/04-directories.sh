@@ -26,7 +26,7 @@ ln -sf "$INSTALL_DIR/web" /var/www/html
 # fax processing).
 # A root-only 750 bin/ silently broke *60/*72 because System(... &) logs nothing.
 chmod 755 "$INSTALL_DIR/web/bin"
-for script in queue_callback.php queue_record.php feature_code_action.php widget_claim.php ai_request.php ai_job_worker.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php privacy_purge.php task_dispatcher.php cdr_qa.php assistant_prune.php; do
+for script in queue_callback.php queue_record.php feature_code_action.php widget_claim.php ai_request.php ai_job_worker.php push_dispatcher.php process_incoming_fax.sh process_outgoing_fax_result.sh fax_cleanup.sh fax_pending_sweep.sh sync_queue_logs.php recordings_to_mp3.php aipbx_health.php voicemail_notify.php fax_to_bucket.php voicemail_to_bucket.php provision_tftp.php privacy_purge.php phonebook_extdb_sync.php reminder_worker.php task_dispatcher.php cdr_qa.php assistant_prune.php; do
     if [[ -f "$INSTALL_DIR/web/bin/$script" ]]; then
         ln -sf "$INSTALL_DIR/web/bin/$script" "/usr/local/bin/$script"
         chmod 755 "$INSTALL_DIR/web/bin/$script"
@@ -38,6 +38,9 @@ cat > /etc/cron.d/aipbx << 'CRON'
 # AI PBX Automated Maintenance & Synchronization Crons
 # Asterisk Queue Log to MariaDB DB Synchronization
 * * * * * root /usr/local/bin/sync_queue_logs.php >/dev/null 2>&1
+
+# Dispatch pending automatic queue callbacks
+* * * * * asterisk /usr/local/bin/queue_callback.php dispatch >/dev/null
 
 # Daily fax retention & spool cleanup (fax_retention_days)
 15 3 * * * root /usr/local/bin/fax_cleanup.sh >/dev/null 2>&1
@@ -68,6 +71,12 @@ cat > /etc/cron.d/aipbx << 'CRON'
 
 # Nightly KVKK / GDPR data retention auto-purge (Security -> GDPR & Data Privacy)
 45 3 * * * root /usr/local/bin/privacy_purge.php >/dev/null 2>&1
+
+# Nightly external DB -> Phonebook contact sync (Phonebook -> Import from External DB)
+15 2 * * * root /usr/local/bin/phonebook_extdb_sync.php >/dev/null 2>&1
+
+# AI Reminders & Wake-Up Calls dispatcher
+* * * * * root /usr/local/bin/reminder_worker.php >/dev/null 2>&1
 
 # Assistant chat retention (independent of general privacy retention)
 25 3 * * * www-data /usr/local/bin/assistant_prune.php >/dev/null 2>&1

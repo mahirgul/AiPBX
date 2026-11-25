@@ -19,12 +19,12 @@ final class RoleMatrixTest extends TestCase
     private const ROOT = __DIR__ . '/../..';
 
     /** Pages that are not permission-controlled modules (login flow, own account, OAuth, SAML). */
-    private const NOT_MODULES = ['login', 'login_2fa', 'logout', 'force_reset', 'reset_password', 'forgot_password', 'mobile_login', 'security', 'google_auth', 'google_auth_callback', 'oidc_auth', 'oidc_auth_callback', 'saml_auth', 'saml_auth_acs', 'saml_auth_metadata'];
+    private const NOT_MODULES = ['login', 'login_2fa', 'logout', 'force_reset', 'reset_password', 'forgot_password', 'mobile_login', 'security', 'google_auth', 'google_auth_callback', 'oidc_auth', 'oidc_auth_callback', 'saml_auth', 'saml_auth_acs', 'saml_auth_metadata', 'microsoft_auth', 'microsoft_auth_callback'];
 
     /** Sidebar group id => matrix group. */
     private const SIDEBAR_GROUPS = [
-        'group-dashboard' => 'General', 'group-trunks' => 'Outbound Line Management', 'group-pbx' => 'PBX Management', 'group-network' => 'Network & Devices',
-        'group-admin' => 'Administration', 'group-security' => 'Security', 'group-integrations' => 'Integrations', 'group-ai' => 'AI',
+        'group-dashboard' => 'General', 'group-trunks' => 'Outbound Line Management', 'group-pbx' => 'PBX Management', 'group-network' => 'Network & Devices', 'group-provisioning' => 'Network & Devices',
+        'group-admin' => 'Administration', 'group-security' => 'Security', 'group-integrations' => 'Integrations', 'group-ai' => 'AI', 'group-ai_settings' => 'AI',
         'group-fax' => 'Fax System', 'group-cc' => 'Call Center', 'group-troubleshooting' => 'Troubleshooting',
     ];
 
@@ -60,7 +60,7 @@ final class RoleMatrixTest extends TestCase
         $group = null;
         $order = [];
         foreach (file(self::ROOT . '/templates/sidebar_menu.php') as $line) {
-            if (preg_match("/'id' => '([a-z]+)'/", $line, $m)) {
+            if (preg_match("/'id' => '([a-z_]+)'/", $line, $m)) {
                 $group = self::SIDEBAR_GROUPS['group-' . $m[1]] ?? null;
             }
             if ($group && preg_match("#'href' => '(/[a-z0-9/-]+)'#", $line, $m) && isset($byPath[$m[1]], $def[$byPath[$m[1]]])) {

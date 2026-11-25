@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/services/DataSourceService.php';
 require_once dirname(__DIR__) . '/services/AgiScriptService.php';
 require_once dirname(__DIR__) . '/services/IvrDataStepService.php';
+require_once dirname(__DIR__) . '/services/ai/AiAppService.php';
 
 /**
  * Dynamic Routing (formerly IVR data steps): /etc/asterisk/pbx/extensions_ivrdata.conf
@@ -147,13 +148,49 @@ function buildIvrDataStepDialplanBlock(array $step): string
     }
     $c .= " same => n,GotoIf(\$[\"\${DR_VALUE}\" = \"\"]?{$notFound})\n";
     $c .= " same => n,Set({$channelVar}=\${DR_VALUE})\n";
+    if ($channelVar === 'AIPBX_VERIFIED_CUSTOMER_ID') {
+        $c .= " same => n,Set(__AIPBX_VERIFIED_CUSTOMER_ID=\${DR_VALUE})\n";
+    }
+    if (!empty($step['cdr_write'])) {
+        $c .= " same => n,Set(CDR(userfield)=DR:{$id}=\${DR_VALUE})\n";
+    }
+
+    // 2b. Optional spoken result (SayNumber / SayDigits / AI TTS)
+    $sayMode = (string) ($step['say_mode'] ?? 'none');
+    if ($sayMode === 'number') {
+        $c .= " same => n,Answer()\n";
+        $c .= " same => n,ExecIf(\$[\${REGEX(\"^-?[0-9]+$\" \${DR_VALUE})}]?SayNumber(\${DR_VALUE}))\n";
+    } elseif ($sayMode === 'digits') {
+        $c .= " same => n,Answer()\n";
+        $c .= " same => n,SayDigits(\${DR_VALUE})\n";
+    } elseif ($sayMode === 'tts' && defined('AI_APP_SERVICE_URL') && defined('AI_APP_AUDIOSOCKET')) {
+        $ttsKey = is_readable('/etc/aipbx/ai.token') ? trim((string) @file_get_contents('/etc/aipbx/ai.token')) : '';
+        $ttsModel = AiAppService::resolveTaskBinding(0, 'tts', '', 'tr', !AiAppService::isPrivacyCloudBlocked() && AiAppService::isScopeEnabled('cloud'));
+        if ($ttsKey !== '' && $ttsModel !== '') {
+            $sayTpl = trim((string) ($step['say_template'] ?? '')) ?: '{value}';
+            $sayExpr = dynamicRoutingExpr($sayTpl, $prefix);
+            $c .= " same => n,Answer()\n";
+            $c .= " same => n,Set(CURLOPT(httptimeout)=5)\n";
+            $c .= " same => n,Set(DR_TTS_CALL=\${CURL(" . AI_APP_SERVICE_URL . ',app=0&key=' . $ttsKey . '&model=' . rawurlencode($ttsModel) . '&speed=1.00&max=10&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}&text=${URIENCODE(' . $sayExpr . ")})})\n";
+            $c .= " same => n,ExecIf(\$[\"\${LEN(\${DR_TTS_CALL})}\" = \"36\"]?AudioSocket(\${DR_TTS_CALL}," . AI_APP_AUDIOSOCKET . "))\n";
+        }
+    }
 
     // 3. Caller name
     $nameTpl = trim((string) ($step['caller_name_template'] ?? ''));
     $mode = (string) ($step['caller_name_mode'] ?? '');
     if ($nameTpl !== '' && in_array($mode, ['prefix', 'replace'], true)) {
-        $expr = dynamicRoutingExpr($nameTpl, $prefix);
-        $c .= ' same => n,Set(CALLERID(name)=' . ($mode === 'prefix' ? $expr . ' ${CALLERID(name)}' : $expr) . ")\n";
+        if ($mode === 'prefix') {
+            // "VIP -" + name; without a caller name only "VIP" (no dangling separator).
+            $head = (string) preg_replace('~[\s\-–—|/]+$~u', '', $nameTpl);
+            $sep = $head === '' ? '' : substr($nameTpl, strlen($head));
+            $expr = dynamicRoutingExpr($head === '' ? $nameTpl : $head, $prefix);
+            $c .= ' same => n,Set(DR_CALLER_NAME=' . $expr . ")\n";
+            $c .= ' same => n,ExecIf($[${LEN(${CALLERID(name)})} > 0]?Set(DR_CALLER_NAME=${DR_CALLER_NAME}' . $sep . ' ${CALLERID(name)}))' . "\n";
+            $c .= ' same => n,Set(CALLERID(name)=${DR_CALLER_NAME})' . "\n";
+        } else {
+            $c .= ' same => n,Set(CALLERID(name)=' . dynamicRoutingExpr($nameTpl, $prefix) . ")\n";
+        }
     }
 
     // 4. Rules, in order
@@ -186,6 +223,7 @@ function buildIvrDataStepDialplanBlock(array $step): string
 
     foreach ($rules as $i => $r) {
         $c .= " same => n(rule{$i}),NoOp(Dynamic Routing {$id}: rule " . ($i + 1) . ")\n";
+        $c .= " same => n,Set(DR_HIT=\${CURL(http://127.0.0.1/api/ivr_data_lookup.php?step_id={$id}&hit=rule{$i})})\n";
         $c .= buildDestinationLines($r['dest_type'], $r['dest_id']) . "\n";
         $c .= " same => n,Hangup()\n";
     }

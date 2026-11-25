@@ -16,6 +16,13 @@ require_once dirname(__DIR__) . '/config.php';
 try {
     $db = getDB();
 
+    if (class_exists('PauseReasonRepository')) {
+        try {
+            PauseReasonRepository::enforceAutoUnpause();
+        } catch (\Throwable $e) {
+        }
+    }
+
     // The last synchronized epoch (from the portal table)
     $max_time = intval($db->query("SELECT IFNULL(MAX(time_id), 0) FROM cc_queue_logs")->fetchColumn());
 

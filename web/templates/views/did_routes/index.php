@@ -12,6 +12,7 @@ $destOptionsCache = [];
                 </button>
             <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
+<?php $dirTabs = ['/did-routes', 'did_routes', '/outbound-routes', 'outbound_routes']; $dirActive = 'in'; require dirname(__DIR__, 2) . '/direction_tabs.php'; ?>
 
         <?php echo uiHelpBoxOpen('didHelpBox', t('did.help_title')); ?>
         <?php echo t('did.help_body'); ?>

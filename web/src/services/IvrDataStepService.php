@@ -128,6 +128,11 @@ class IvrDataStepService
             'rules_json' => $rules ? json_encode($rules, JSON_UNESCAPED_UNICODE) : null,
             'caller_name_mode' => $nameMode,
             'caller_name_template' => $nameMode !== '' ? mb_substr(trim((string) ($data['caller_name_template'] ?? '')), 0, 100) : null,
+            'cache_ttl_sec' => max(0, min(86400, (int) ($data['cache_ttl_sec'] ?? 0))),
+            'say_mode' => in_array($sayMode = (string) ($data['say_mode'] ?? 'none'), ['none', 'number', 'digits', 'tts'], true) ? $sayMode : 'none',
+            'say_template' => ($sayMode === 'tts' && trim((string) ($data['say_template'] ?? '')) !== '')
+                ? mb_substr(trim((string) $data['say_template']), 0, 255) : null,
+            'cdr_write' => empty($data['cdr_write']) ? 0 : 1,
             'direct_extension' => empty($data['direct_extension']) ? 0 : 1,
             'busy_dest_type' => $busyT, 'busy_dest_id' => $busyI,
             'found_dest_type' => $foundT, 'found_dest_id' => $foundI,
@@ -289,11 +294,115 @@ class IvrDataStepService
             return ['status' => 'not_found', 'value' => '', 'vars' => [], 'ms' => 0, 'error' => 'no such step'];
         }
         $known = array_filter($values, fn ($k): bool => DataSourceService::isVar((string) $k), ARRAY_FILTER_USE_KEY);
+        $known = DataSourceService::withDefaults(array_map('strval', $known));
         $source = self::sourceOf($step);
-        if ($step['data_source'] === 'saved_query' &&
-            array_diff(DataSourceService::placeholders($source['sql'], true), ['date', 'time'], array_keys($known))) {
-            return ['status' => 'timeout', 'value' => '', 'vars' => [], 'ms' => 0, 'error' => 'missing saved query parameters'];
+        $connection = null;
+        if ($source['type'] === 'database') {
+            $connection = ExternalDbRepository::findById((int) $source['db_id']);
+            if (!$connection || empty($connection['is_active']) || trim($source['sql']) === ''
+                || ($step['data_source'] === 'saved_query' && array_diff(DataSourceService::placeholders($source['sql'], true), array_keys($known)))) {
+                self::recordBranchHit($stepId, 'timeout');
+                return ['status' => 'timeout', 'value' => '', 'vars' => [], 'ms' => 0, 'error' => 'database query unavailable'];
+            }
         }
-        return DataSourceService::run($source, array_map('strval', $known));
+
+        $ttl = max(0, (int) ($step['cache_ttl_sec'] ?? 0));
+        $cacheKey = '';
+        if ($ttl > 0) {
+            $cacheValues = $known;
+            $template = ($source['sql'] ?? '') . ' ' . ($source['url'] ?? '') . ' ' . ($source['body'] ?? '');
+            $variables = [...DataSourceService::placeholders($template, true), ...DataSourceService::placeholders($template)];
+            foreach (['date', 'time'] as $variable) {
+                if (!in_array($variable, $variables, true)) {
+                    unset($cacheValues[$variable]);
+                }
+            }
+            ksort($cacheValues);
+            $cacheKey = hash('sha256', serialize([$source, $connection, $ttl, $cacheValues]));
+            $cached = self::readCache($stepId, $cacheKey);
+            if ($cached !== null) {
+                self::recordBranchHit($stepId, $cached['status']);
+                return $cached;
+            }
+        }
+
+        $res = DataSourceService::run($source, array_map('strval', $known));
+        if ($ttl > 0 && $res['status'] === 'found') {
+            self::writeCache($stepId, $cacheKey, $res, $ttl);
+        }
+        self::recordBranchHit($stepId, $res['status']);
+        return $res;
+    }
+
+    /** @return array{status: string, value: string, vars: array<string, string>, ms: int, error: string}|null */
+    private static function readCache(int $stepId, string $cacheKey): ?array
+    {
+        try {
+            $st = getDB()->prepare('SELECT payload_json FROM pbx_ivr_data_cache WHERE step_id = ? AND cache_key = ? AND expires_at > NOW() LIMIT 1');
+            $st->execute([$stepId, $cacheKey]);
+            $raw = $st->fetchColumn();
+            if (!is_string($raw) || $raw === '') {
+                return null;
+            }
+            $data = json_decode($raw, true);
+            if (!is_array($data) || !isset($data['status'], $data['value'])) {
+                return null;
+            }
+            return [
+                'status' => (string) $data['status'],
+                'value' => (string) $data['value'],
+                'vars' => is_array($data['vars'] ?? null) ? $data['vars'] : [],
+                'ms' => 0,
+                'error' => '',
+            ];
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    /** @param array{status: string, value: string, vars: array<string, string>, ms: int, error: string} $res */
+    public static function writeCache(int $stepId, string $cacheKey, array $res, int $ttl): void
+    {
+        try {
+            $payload = (string) json_encode(['status' => $res['status'], 'value' => $res['value'], 'vars' => $res['vars']], JSON_UNESCAPED_UNICODE);
+            getDB()->prepare(
+                'INSERT INTO pbx_ivr_data_cache (step_id, cache_key, payload_json, expires_at)
+                 VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND))
+                 ON DUPLICATE KEY UPDATE payload_json = VALUES(payload_json), expires_at = VALUES(expires_at)'
+            )->execute([$stepId, $cacheKey, $payload, $ttl]);
+        } catch (\Throwable $e) {
+        }
+    }
+
+    public static function recordBranchHit(int $stepId, string $branch): void
+    {
+        $clean = preg_replace('/[^a-zA-Z0-9_]/', '', $branch) ?: 'unknown';
+        $clean = substr($clean, 0, 32);
+        if ($stepId <= 0) {
+            return;
+        }
+        try {
+            getDB()->prepare(
+                'INSERT INTO pbx_ivr_data_stats (step_id, branch, hits, last_hit_at)
+                 VALUES (?, ?, 1, NOW())
+                 ON DUPLICATE KEY UPDATE hits = hits + 1, last_hit_at = NOW()'
+            )->execute([$stepId, $clean]);
+        } catch (\Throwable $e) {
+        }
+    }
+
+    /** @return array<int, array<string, int>> */
+    public static function statsMap(): array
+    {
+        try {
+            $rows = getDB()->query('SELECT step_id, branch, hits FROM pbx_ivr_data_stats ORDER BY step_id, branch')->fetchAll(PDO::FETCH_ASSOC);
+            $out = [];
+            foreach ($rows as $r) {
+                $out[(int) $r['step_id']][(string) $r['branch']] = (int) $r['hits'];
+            }
+            return $out;
+        } catch (\Throwable $e) {
+            return [];
+        }
     }
 }

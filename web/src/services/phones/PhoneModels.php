@@ -62,6 +62,7 @@ final class PhoneModels
         'cisco-cm-7962g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7962G', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
         'cisco-cm-7965g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7965G', 'keys' => 6, 'exp_keys' => 0, 'exp_max' => 0],
         'cisco-cm-7975g' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7975G', 'keys' => 8, 'exp_keys' => 0, 'exp_max' => 0],
+        'cisco-cm-7841' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 7841', 'keys' => 4, 'exp_keys' => 0, 'exp_max' => 0],
         'cisco-cm-8841' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8841', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
         'cisco-cm-8851' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8851', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
         'cisco-cm-8861' => ['vendor' => 'cisco-cm', 'label' => 'Cisco 8861', 'keys' => 5, 'exp_keys' => 0, 'exp_max' => 0],
@@ -157,7 +158,7 @@ final class PhoneModels
     {
         if (
             ($file !== '' && preg_match('/^SEP[0-9a-fA-F]{12}\.cnf\.xml$/i', $file))
-            || preg_match('/Cisco-CP[ -]?(?:79|88)/i', $userAgent)
+            || preg_match('/Cisco-CP[ -]?(?:7841|79|88)/i', $userAgent)
         ) {
             return 'cisco-cm';
         }

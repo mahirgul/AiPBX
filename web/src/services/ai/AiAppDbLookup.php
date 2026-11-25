@@ -103,13 +103,15 @@ final class AiAppDbLookup
         $builtin = $app['app_type'] === AiAppService::BUILTIN_AGENT;
         $local = $builtin && str_starts_with((string) ($config['understand'] ?? ''), 'local:');
         if (empty($config['conversation']) || (!$local && AiAppService::isPrivacyCloudBlocked())
-            || !PluginManager::isEnabled($builtin ? 'ai-knowledge' : 'ai-apps')
+            || ($builtin && !PluginManager::isEnabled('ai-knowledge'))
             || ($local && !PluginManager::isEnabled('ailocal'))) {
             return ['status' => 'unavailable'];
         }
         if ($builtin) {
             require_once __DIR__ . '/BuiltinAiAgentService.php';
-            $config = BuiltinAiAgentService::toolsForCollection((int) ($config['knowledge_collection'] ?? 0));
+            $colTools = BuiltinAiAgentService::toolsForCollection((int) ($config['knowledge_collection'] ?? 0));
+            $merged = array_merge($config['db_lookups'] ?? [], $colTools['db_lookups'] ?? []);
+            $config['db_lookups'] = $merged;
         }
         $lookups = array_column($config['db_lookups'] ?? [], null, 'id');
         $lookup = isset($lookups[$queryId]) ? self::resolveDefinition($lookups[$queryId]) : null;
@@ -117,9 +119,9 @@ final class AiAppDbLookup
             return ['status' => 'unavailable'];
         }
         $values = [];
-        if (!empty($lookup['saved'])) {
-            foreach (array_intersect(['caller_id', 'caller_name', 'did', 'uniqueid', 'linkedid', 'lang'], DataSourceService::placeholders($lookup['sql'], true)) as $var) {
-                $values[$var] = is_string($context[$var] ?? null) ? mb_substr($context[$var], 0, 150) : '';
+        foreach (['caller_id', 'caller_name', 'did', 'uniqueid', 'linkedid', 'lang', 'customer_id', 'external_id'] as $var) {
+            if (is_string($context[$var] ?? null) && $context[$var] !== '') {
+                $values[$var] = mb_substr($context[$var], 0, 150);
             }
         }
         if ($lookup['access'] === 'verified') {
@@ -139,8 +141,14 @@ final class AiAppDbLookup
             return ['status' => 'unavailable'];
         }
         $result = DataSourceService::run(['type' => 'database', 'db_id' => $lookup['db_id'], 'sql' => $lookup['sql']], $values);
+        if ($result['status'] === 'found') {
+            $out = ['status' => 'found', 'value' => $result['value']];
+            if (!empty($result['vars']) && count($result['vars']) > 1) {
+                $out['data'] = $result['vars'];
+            }
+            return $out;
+        }
         return match ($result['status']) {
-            'found' => ['status' => 'found', 'value' => $result['value']],
             'not_found' => ['status' => 'not_found'],
             default => ['status' => 'unavailable'],
         };

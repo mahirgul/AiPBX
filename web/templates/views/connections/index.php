@@ -1,6 +1,6 @@
 <?php
 $h = fn($v) => htmlspecialchars((string) $v, ENT_QUOTES);
-$kindLabel = fn(string $k): string => $k === 'odoo' ? 'Odoo' : t('connections.kind_generic');
+$kindLabel = fn(string $k): string => match ($k) { 'odoo' => 'Odoo', 'erpnext' => 'ERPNext', default => t('connections.kind_generic') };
 ?>
 
 <?php if (!empty($message)): ?>
@@ -47,7 +47,9 @@ $kindLabel = fn(string $k): string => $k === 'odoo' ? 'Odoo' : t('connections.ki
         <?php else: ?>
             <?php foreach ($connections as $c): $code = (int) ($c['last_status_code'] ?? 0); ?>
                 <tr>
-                    <td class="u-strong"><?php echo $h($c['name']); ?></td>
+                    <td class="u-strong"><?php echo $h($c['name']); ?>
+                        <?php if (empty($c['is_active'])): ?> <span class="badge badge-secondary"><?php echo t('connections.off'); ?></span><?php endif; ?>
+                    </td>
                     <td><span class="badge badge-secondary"><?php echo $h($kindLabel((string) $c['kind'])); ?></span></td>
                     <td class="col-hide-mobile u-fs-12"><code><?php echo $h($c['target_url'] ?? ''); ?></code></td>
                     <td class="u-fs-12">
@@ -66,6 +68,13 @@ $kindLabel = fn(string $k): string => $k === 'odoo' ? 'Odoo' : t('connections.ki
                         <div class="u-muted u-fs-11"><?php echo !empty($c['last_used_at']) ? $h($c['last_used_at'] . ' · ' . ($c['last_used_ip'] ?? '')) : t('connections.never'); ?></div>
                     </td>
                     <td class="text-right u-nowrap">
+                        <?php $on = !empty($c['is_active']); ?>
+                        <form method="POST" class="u-d-inline">
+                            <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
+                            <input type="hidden" name="action" value="<?php echo $on ? 'disable' : 'enable'; ?>">
+                            <input type="hidden" name="connection_id" value="<?php echo (int) $c['id']; ?>">
+                            <button type="submit" class="btn btn-icon <?php echo $on ? 'btn-success' : 'btn-secondary'; ?> btn-sm" title="<?php echo $h(t($on ? 'connections.act_disable' : 'connections.act_enable')); ?>"><i class="fas <?php echo $on ? 'fa-toggle-on' : 'fa-toggle-off'; ?>"></i></button>
+                        </form>
                         <?php foreach (['test' => ['fa-paper-plane', 'btn-secondary', ''], 'rotate' => ['fa-rotate', 'btn-secondary', t('connections.confirm_rotate')], 'delete' => ['fa-trash-alt', 'btn-danger', t('connections.confirm_delete')]] as $act => [$icon, $cls, $confirm]): ?>
                             <form method="POST" class="u-d-inline"<?php echo $confirm !== '' ? ' onsubmit="return confirm(' . jsArg($confirm) . ');"' : ''; ?>>
                                 <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
@@ -99,6 +108,7 @@ $kindLabel = fn(string $k): string => $k === 'odoo' ? 'Odoo' : t('connections.ki
                     <label class="form-label" for="conn_kind"><?php echo t('connections.col_kind'); ?></label>
                     <select name="kind" id="conn_kind" class="form-control">
                         <option value="odoo">Odoo (AiPBX Connector)</option>
+                        <option value="erpnext">ERPNext / Frappe (AiPBX Connector)</option>
                         <option value="generic"><?php echo t('connections.kind_generic'); ?></option>
                     </select>
                 </div>

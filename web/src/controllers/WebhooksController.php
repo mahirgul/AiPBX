@@ -23,6 +23,9 @@ class WebhooksController extends BaseController
                 if (isset($_POST['save_webhook'])) {
                     $res = WebhookService::save($_POST);
                     ['message' => $message, 'error' => $error] = static::notices($res);
+                } elseif (isset($_POST['toggle_status'])) {
+                    $res = WebhookService::toggleStatus((int)($_POST['webhook_id'] ?? 0), $csrf);
+                    ['message' => $message, 'error' => $error] = static::notices($res);
                 } elseif (isset($_POST['test_webhook_id'])) {
                     $res = WebhookService::sendTestPing((int)$_POST['test_webhook_id'], $csrf);
                     ['message' => $message, 'error' => $error] = static::notices($res);

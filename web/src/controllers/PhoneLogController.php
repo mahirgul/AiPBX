@@ -2,10 +2,12 @@
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../services/PhoneLogService.php';
 require_once __DIR__ . '/../services/NetworkServicesService.php';
+require_once __DIR__ . '/../services/PhoneDiscoveryService.php';
 
 /**
  * PBX → Phone logs: everything desk phones do with this server, one tab each:
- * syslog (followed live), HTTPS provisioning, FTP, TFTP and DHCP, by IP or MAC.
+ * syslog (followed live), HTTPS provisioning, FTP, TFTP and DHCP, by IP or MAC,
+ * and the log of the phone discovery engine.
  */
 class PhoneLogController extends BaseController
 {
@@ -26,14 +28,16 @@ class PhoneLogController extends BaseController
             static::json(['success' => true] + $res);
         }
 
-        $tab = in_array($_GET['tab'] ?? '', PhoneLogService::SOURCES, true) ? (string) $_GET['tab'] : 'syslog';
+        $tab = in_array($_GET['tab'] ?? '', [...PhoneLogService::SOURCES, 'discovery'], true) ? (string) $_GET['tab'] : 'syslog';
         $who = mb_substr((string) ($_GET['who'] ?? ''), 0, 64);
         $text = mb_substr((string) ($_GET['text'] ?? ''), 0, 200);
         $on = getSystemSetting('netsvc_syslog', '0') === '1';
         static::renderPage('phone_logs/index', [
             'tab' => $tab,
             'text' => $text,
-            'events' => $tab === 'syslog' ? [] : PhoneLogService::events($tab, $who, $text),
+            'events' => in_array($tab, ['syslog', 'discovery'], true) ? [] : PhoneLogService::events($tab, $who, $text),
+            // The phone discovery engine's own log (every 5 minutes), newest first.
+            'discoveryLog' => $tab === 'discovery' ? array_reverse(PhoneDiscoveryService::engineStatus(200)['log']) : [],
             'serviceOn' => [
                 'http' => true,
                 'ftp' => getSystemSetting('netsvc_ftp', '0') === '1',

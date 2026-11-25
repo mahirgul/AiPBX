@@ -131,6 +131,7 @@ if (!$is_cc_agent && !empty($user['extension'])) {
     <audio id="globalRemoteAudio" autoplay></audio>
     <script src="<?php echo asset('/assets/js/jssip.min.js'); ?>"></script>
     <script src="<?php echo asset('/assets/js/ui_helper.js'); ?>"></script>
+    <script src="<?php echo asset('/assets/js/webrtc_ice.js'); ?>"></script>
     <script src="<?php echo asset('/assets/js/header_phone.js'); ?>"></script>
     <script src="<?php echo asset('/assets/js/spa_router.js'); ?>"></script>
 </head>

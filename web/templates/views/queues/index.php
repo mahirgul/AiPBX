@@ -116,6 +116,9 @@
                     <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="agents" onclick="switchQueueTab('agents', this)">
                         <i class="fas fa-users-cog"></i> <?php echo t('queues.tab_agents'); ?>
                     </button>
+                    <button type="button" class="modal-tab-btn queue-tab-btn" data-tab="survey" onclick="switchQueueTab('survey', this)">
+                        <i class="fas fa-star"></i> <?php echo t('queues.survey_enabled'); ?>
+                    </button>
                 </div>
 
                 <!-- 1. Basic definitions -->
@@ -126,6 +129,13 @@
                             <span><?php echo t('queues.callback_enabled'); ?></span>
                         </label>
                         <small class="u-hint"><?php echo t('queues.callback_help'); ?></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label u-check-label">
+                            <input type="checkbox" name="callback_auto_enabled" id="modal_callback_auto_enabled" value="1" class="u-check">
+                            <span><?php echo t('queues.callback_auto_enabled'); ?></span>
+                        </label>
+                        <small class="u-hint"><?php echo t('queues.callback_auto_help'); ?></small>
                     </div>
                     <div class="form-group">
                         <label class="form-label"><?php echo t('queues.callback_announce'); ?></label>
@@ -294,22 +304,6 @@
                         </label>
                     </div>
 
-                    <!-- After-call survey -->
-                    <div class="form-group u-bg-bg-card u-p-12 u-r-8 u-bd-1-solid-border-color">
-                        <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer u-fw-600">
-                            <input type="hidden" name="survey_enabled" value="0">
-                            <input type="checkbox" name="survey_enabled" id="modal_survey_enabled" value="1" class="u-accent">
-                            <span><i class="fas fa-star u-warning"></i> <?php echo t('queues.survey_enabled'); ?></span>
-                        </label>
-                        <select name="survey_announce" id="modal_survey_announce" class="form-control u-mt-6">
-                            <option value=""><?php echo t('queues.survey_announce_pick'); ?></option>
-                            <?php foreach (($announcements ?? []) as $anc): ?>
-                                <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                        <small class="u-hint"><?php echo t('queues.survey_help'); ?></small>
-                    </div>
-
                     <div class="u-grid-2">
                         <div class="form-group">
                             <label class="form-label form-label-help">
@@ -355,6 +349,12 @@
                             <label class="form-label"><?php echo t('queues.field_max_wait_seconds'); ?></label>
                             <input type="number" name="max_wait_seconds" id="modal_max_wait_seconds" class="form-control" value="300" min="30" max="1800" required>
                             <small class="u-hint"><?php echo t('queues.max_wait_help'); ?></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label"><?php echo t('queues.field_default_priority'); ?></label>
+                            <input type="number" name="default_priority" id="modal_default_priority" class="form-control" value="0" min="0" max="100">
+                            <small class="u-hint"><?php echo t('queues.default_priority_help'); ?></small>
                         </div>
 
                         <div class="form-group">
@@ -461,6 +461,24 @@
                         <small class="u-muted u-fs-11 u-mt-8" style="display: block;">
                             <?php echo t('queues.supervisors_help'); ?>
                         </small>
+                    </div>
+                </div>
+
+                <!-- 7. After-call survey -->
+                <div id="queue_tab_survey" class="queue-tab-pane" style="display: none;">
+                    <div class="form-group u-bg-bg-card u-p-12 u-r-8 u-bd-1-solid-border-color">
+                        <label class="u-d-inline-flex u-ai-center u-gap-6 u-fs-12 u-pointer u-fw-600">
+                            <input type="hidden" name="survey_enabled" value="0">
+                            <input type="checkbox" name="survey_enabled" id="modal_survey_enabled" value="1" class="u-accent">
+                            <span><i class="fas fa-star u-warning"></i> <?php echo t('queues.survey_enabled'); ?></span>
+                        </label>
+                        <select name="survey_announce" id="modal_survey_announce" class="form-control u-mt-6">
+                            <option value=""><?php echo t('queues.survey_announce_pick'); ?></option>
+                            <?php foreach (($announcements ?? []) as $anc): ?>
+                                <option value="<?php echo htmlspecialchars($anc['audio_file']); ?>"><?php echo htmlspecialchars($anc['title']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <small class="u-hint"><?php echo t('queues.survey_help'); ?></small>
                     </div>
                 </div>
 

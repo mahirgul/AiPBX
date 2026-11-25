@@ -293,35 +293,16 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
     padding: 10px 12px;
 }
 
-.nav-submenu .nav-link > i {
-    color: var(--sidebar-icon-color, var(--primary));
-}
-
-#group-admin,
-#group-troubleshooting {
-    --sidebar-icon-color: var(--warning);
-}
-
-#group-trunks,
-#group-network,
-#group-integrations {
-    --sidebar-icon-color: var(--info);
-}
-
-#group-provisioning,
-#group-cc {
-    --sidebar-icon-color: var(--success);
-}
-
-#group-fax,
-#group-ai,
-#group-ai_settings {
-    --sidebar-icon-color: var(--purple);
-}
-
-#group-security {
-    --sidebar-icon-color: var(--danger);
-}
+/* Each menu icon has its own colour: nine theme colours repeat down a menu, so two neighbours never match. */
+.nav-submenu li:nth-child(9n+1) .nav-link > i { color: var(--primary); }
+.nav-submenu li:nth-child(9n+2) .nav-link > i { color: var(--success); }
+.nav-submenu li:nth-child(9n+3) .nav-link > i { color: var(--warning); }
+.nav-submenu li:nth-child(9n+4) .nav-link > i { color: var(--purple); }
+.nav-submenu li:nth-child(9n+5) .nav-link > i { color: var(--teal); }
+.nav-submenu li:nth-child(9n+6) .nav-link > i { color: var(--pink); }
+.nav-submenu li:nth-child(9n+7) .nav-link > i { color: var(--orange); }
+.nav-submenu li:nth-child(9n+8) .nav-link > i { color: var(--indigo); }
+.nav-submenu li:nth-child(9n+9) .nav-link > i { color: var(--info); }
 
 .nav-link {
     display: flex;
@@ -393,6 +374,8 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
 /* Sidebar menu search (templates/sidebar.php, assets/js/sidebar_search.js) */
 .sidebar-search-wrap { padding: 5px 12px 10px; }
 .sidebar.collapsed .sidebar-search-wrap { display: none; }
+.sidebar-section-switcher { padding: 0 12px 10px; }
+.sidebar.collapsed .sidebar-section-switcher { display: none; }
 .sidebar-search-input { font-size: 12px; border-radius: 8px; }
 .sidebar-ai-ask {
     display: none; margin-top: 6px; padding: 6px 10px; border-radius: 6px; font-size: 11px; font-weight: 600;

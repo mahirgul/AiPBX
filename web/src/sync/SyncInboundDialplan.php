@@ -337,11 +337,15 @@ function __syncInboundDialplanBody() {
     $conf .= 'exten => s,1,GotoIf($[${LEN(${FILTER(0-9,${CALLERID(num)})})} < 5]?done)' . "\n";
     $conf .= " same => n,Set(CURLOPT(conntimeout)=1)\n";
     $conf .= " same => n,Set(CURLOPT(httptimeout)=1)\n";
-    $conf .= ' same => n,Set(PB_ANSWER=${CURL(http://127.0.0.1/api/phonebook_name.php?num=${URIENCODE(${CALLERID(num)})})})' . "\n";
+    $conf .= ' same => n,Set(PB_ANSWER=${CURL(http://127.0.0.1/api/phonebook_name.php?num=${URIENCODE(${CALLERID(num)})}&include_vip=1)})' . "\n";
     // The prefix is required: an HTTP error page must never become a caller name.
     // FILTER strips quotes/punctuation from the slice so JSON/HTML errors cannot break $[...].
     // Its own Set line: a comma or bracket in a name would split an ExecIf().
-    $conf .= ' same => n,GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:5})}" = "NAME:"]?set:done)' . "\n";
+    $conf .= ' same => n,GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:5})}" = "NAME:"]?set)' . "\n";
+    $conf .= ' same => n,GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:4})}" != "VIP:"]?done)' . "\n";
+    $conf .= ' same => n,Set(__AIPBX_PHONEBOOK_VIP=1)' . "\n";
+    $conf .= ' same => n,Set(CALLERID(name)=${PB_ANSWER:4})' . "\n";
+    $conf .= " same => n,Goto(done)\n";
     $conf .= ' same => n(set),Set(CALLERID(name)=${PB_ANSWER:5})' . "\n";
     // Restore default timeouts so downstream CURL() calls (e.g. sub-cnam-lookup) are not clamped to 1s.
     $conf .= " same => n(done),Set(CURLOPT(conntimeout)=5)\n";

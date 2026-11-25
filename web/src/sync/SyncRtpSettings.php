@@ -17,6 +17,9 @@
  */
 
 define('RTP_CONF_PATH', ASTERISK_CONF_DIR . '/rtp.conf');
+if (!defined('CODECS_CONF_PATH')) {
+    define('CODECS_CONF_PATH', ASTERISK_CONF_DIR . '/codecs.conf');
+}
 
 function syncRtpSettings()
 {
@@ -137,6 +140,78 @@ function rtpPrimaryIp(): string
     return filter_var($first, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) ? $first : '';
 }
 
+/**
+ * Updates [plc] genericplc / genericplc_on_equal_codecs inside codecs.conf
+ * without disturbing other sections such as [opus].
+ */
+function updateCodecsPlcConf(string $existing, bool $equalCodecPlc): string
+{
+    $val = $equalCodecPlc ? 'true' : 'false';
+    $lines = preg_split('/\r\n|\n|\r/', $existing);
+    if ($lines === false) {
+        $lines = [$existing];
+    }
+
+    $inPlc = false;
+    $plcFound = false;
+    $genericSet = false;
+    $equalSet = false;
+    $out = [];
+
+    $flushMissing = static function () use (&$out, &$genericSet, &$equalSet, $val): void {
+        if (!$genericSet) {
+            $out[] = 'genericplc => true';
+            $genericSet = true;
+        }
+        if (!$equalSet) {
+            $out[] = "genericplc_on_equal_codecs => {$val}";
+            $equalSet = true;
+        }
+    };
+
+    foreach ($lines as $line) {
+        if (preg_match('/^\s*\[([^\]]+)\]\s*(?:;.*)?$/', $line, $m)) {
+            if ($inPlc) {
+                $flushMissing();
+            }
+            $inPlc = (strtolower(trim($m[1])) === 'plc');
+            if ($inPlc) {
+                $plcFound = true;
+            }
+            $out[] = $line;
+            continue;
+        }
+
+        if ($inPlc) {
+            if (preg_match('/^\s*;?\s*genericplc\s*(?:=>|=)/i', $line)) {
+                $out[] = 'genericplc => true';
+                $genericSet = true;
+                continue;
+            }
+            if (preg_match('/^\s*;?\s*genericplc_on_equal_codecs\s*(?:=>|=)/i', $line)) {
+                $out[] = "genericplc_on_equal_codecs => {$val}";
+                $equalSet = true;
+                continue;
+            }
+        }
+
+        $out[] = $line;
+    }
+
+    if ($inPlc) {
+        $flushMissing();
+    } elseif (!$plcFound) {
+        if (!empty($out) && end($out) !== '') {
+            $out[] = '';
+        }
+        $out[] = '[plc]';
+        $out[] = 'genericplc => true';
+        $out[] = "genericplc_on_equal_codecs => {$val}";
+    }
+
+    return implode("\n", $out);
+}
+
 function __syncRtpSettingsBody()
 {
     $conf = buildRtpConf();
@@ -156,6 +231,25 @@ function __syncRtpSettingsBody()
             throw new \Exception(sprintf(t('sync.err_settings_rolled_back'), 'RTP', $e->getMessage()));
         }
         throw new \Exception(sprintf(t('sync.err_settings_no_rollback'), 'RTP', $e->getMessage()));
+    }
+
+    $equalCodecPlc = getSystemSetting('codecs_genericplc_on_equal_codecs', 'false') === 'true';
+    $previousCodecs = is_readable(CODECS_CONF_PATH) ? file_get_contents(CODECS_CONF_PATH) : null;
+    $existingCodecs = ($previousCodecs !== null && $previousCodecs !== false) ? (string) $previousCodecs : '';
+    $updatedCodecs = updateCodecsPlcConf($existingCodecs, $equalCodecPlc);
+    if ($updatedCodecs !== $existingCodecs) {
+        if (!FileHelper::writeFile(CODECS_CONF_PATH, $updatedCodecs, 'asterisk', 'asterisk', 0664)) {
+            throw new \Exception(sprintf(t('sync.err_conf_write'), 'codecs.conf'));
+        }
+        try {
+            AsteriskHelper::assertReloadsOk([AsteriskHelper::execCLI('core reload')], 'codecs.conf');
+        } catch (\Exception $e) {
+            if ($previousCodecs !== null && $previousCodecs !== false && FileHelper::writeFile(CODECS_CONF_PATH, $previousCodecs, 'asterisk', 'asterisk', 0664)) {
+                AsteriskHelper::execCLI('core reload');
+                throw new \Exception(sprintf(t('sync.err_settings_rolled_back'), 'Codecs', $e->getMessage()));
+            }
+            throw new \Exception(sprintf(t('sync.err_settings_no_rollback'), 'Codecs', $e->getMessage()));
+        }
     }
 
     return true;

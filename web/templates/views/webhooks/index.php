@@ -79,10 +79,11 @@
         htmlspecialchars(t('webhooks.col_events', 'Subscribed Events')),
         htmlspecialchars(t('webhooks.col_secret', 'HMAC Secret')),
         htmlspecialchars(t('webhooks.col_last_delivery', 'Last Delivery')),
+        htmlspecialchars(t('common.status', 'Status')),
         ['label' => htmlspecialchars(t('common.actions', 'Actions')), 'class' => 'text-right'],
     ]); ?>
                 <?php if (empty($webhooks)): ?>
-                    <?php echo uiTableEmptyRow(5, t('webhooks.empty', 'No outbound webhooks configured yet.'), 'fa-bolt'); ?>
+                    <?php echo uiTableEmptyRow(6, t('webhooks.empty', 'No outbound webhooks configured yet.'), 'fa-bolt'); ?>
                 <?php else: ?>
                     <?php foreach ($webhooks as $wh): ?>
                         <tr>
@@ -113,6 +114,9 @@
                                 <?php else: ?>
                                     <span class="text-muted u-fs-12">—</span>
                                 <?php endif; ?>
+                            </td>
+                            <td>
+                                <?php echo uiStatusToggleForm($wh['id'], $wh['is_active'] ?? 1, 'webhook_id'); ?>
                             </td>
                             <td class="text-right">
                                 <form method="POST" class="u-d-inline">

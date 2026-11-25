@@ -527,7 +527,7 @@ class MailTemplateService
                 $vars['browser'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/140.0';
             }
             if ($key === 'ai_request') {
-                $vars['portal_link'] = $link . '/ai-apps';
+                $vars['portal_link'] = $link . '/ai-agent';
             }
             if (str_starts_with($key, 'health_')) {
                 $vars['portal_link'] = $link . '/health';

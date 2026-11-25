@@ -163,6 +163,7 @@ function __syncAllExtensionsBody() {
     $wired_codecs = implode(',', array_merge(pbxAudioCodecs(getSystemSetting('pjsip_wired_codecs', 'opus,g722,alaw,ulaw')), $video_codecs));
     $direct_media = getSystemSetting('pjsip_direct_media', 'no');
     $rtp_symmetric = getSystemSetting('pjsip_rtp_symmetric', 'yes');
+    $use_ptime = getSystemSetting('pjsip_use_ptime', 'no') === 'yes' ? 'yes' : 'no';
     $qualify_frequency = intval(getSystemSetting('pjsip_qualify_frequency', '60'));
     $qualify_frequency_mobile = intval(getSystemSetting('pjsip_qualify_frequency_mobile', '0'));
 
@@ -182,6 +183,7 @@ function __syncAllExtensionsBody() {
     // PJSIP_ETPNOTSUITABLE). An extension can still name one (ExtensionSipOptions).
     $conf .= "identify_by=auth_username,username\n";
     $conf .= "rtp_symmetric={$rtp_symmetric}\n";
+    $conf .= "use_ptime={$use_ptime}\n";
     $conf .= "rewrite_contact=yes\n";
     $conf .= "force_rport=yes\n";
     $conf .= "direct_media=no\n";
@@ -229,6 +231,7 @@ function __syncAllExtensionsBody() {
     $conf .= "dtls_cert_file=" . PJSIP_DTLS_CERT . "\n";
     $conf .= "dtls_ca_file=" . PJSIP_DTLS_CERT . "\n";
     $conf .= "rtp_symmetric={$rtp_symmetric}\n";
+    $conf .= "use_ptime={$use_ptime}\n";
     $conf .= "rewrite_contact=yes\n";
     $conf .= "force_rport=yes\n\n";
 

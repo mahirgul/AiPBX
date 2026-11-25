@@ -145,6 +145,26 @@
             </div>
         </div>
 
+        <div class="u-grid-2 u-mt-12">
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_use_ptime'); ?></label>
+                <select name="pjsip_use_ptime" class="form-control">
+                    <option value="no" <?php echo ($s['pjsip_use_ptime'] ?? 'no') === 'no' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.use_ptime_no'); ?></option>
+                    <option value="yes" <?php echo ($s['pjsip_use_ptime'] ?? 'no') === 'yes' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.use_ptime_yes'); ?></option>
+                </select>
+                <small class="u-hint"><?php echo t('asterisk_settings.use_ptime_help'); ?></small>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label"><?php echo t('asterisk_settings.field_equal_codec_plc'); ?></label>
+                <select name="codecs_genericplc_on_equal_codecs" class="form-control">
+                    <option value="false" <?php echo ($s['codecs_genericplc_on_equal_codecs'] ?? 'false') === 'false' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.equal_codec_plc_no'); ?></option>
+                    <option value="true" <?php echo ($s['codecs_genericplc_on_equal_codecs'] ?? 'false') === 'true' ? 'selected' : ''; ?>><?php echo t('asterisk_settings.equal_codec_plc_yes'); ?></option>
+                </select>
+                <small class="u-hint"><?php echo t('asterisk_settings.equal_codec_plc_help'); ?></small>
+            </div>
+        </div>
+
         <div class="u-d-grid u-gtc-1fr-1fr-1fr u-gap-16 u-mt-12">
             <div class="form-group">
                 <label class="form-label form-label-help">

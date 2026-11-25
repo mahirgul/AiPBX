@@ -29,9 +29,11 @@ $destCache = [];
                 $dMod = DestinationRegistry::getModule($m['dest_type']);
                 $dName = $dMod ? $dMod->getName() : $m['dest_type'];
                 $dLabel = DestinationRegistry::resolveLabel($m['dest_type'], $m['dest_id'], $destCache);
-                $badge = $m['mod_type'] === 'language'
-                    ? '<span class="badge badge-info"><i class="fas fa-language"></i> ' . $h(t('call_modifiers.type_language')) . ': ' . $h($m['mod_value']) . '</span>'
-                    : '<span class="badge badge-purple"><i class="fas fa-tag"></i> ' . $h(t('call_modifiers.type_cid_prefix')) . ': ' . $h($m['mod_value']) . '</span>';
+                $badge = match ($m['mod_type']) {
+                    'language' => '<span class="badge badge-info"><i class="fas fa-language"></i> ' . $h(t('call_modifiers.type_language')) . ': ' . $h($m['mod_value']) . '</span>',
+                    'queue_priority' => '<span class="badge badge-warning"><i class="fas fa-arrow-up-short-wide"></i> ' . $h(t('call_modifiers.type_queue_priority')) . ': ' . $h($m['mod_value']) . '</span>',
+                    default => '<span class="badge badge-purple"><i class="fas fa-tag"></i> ' . $h(t('call_modifiers.type_cid_prefix')) . ': ' . $h($m['mod_value']) . '</span>',
+                };
             ?>
                 <tr>
                     <td class="u-strong"><?php echo $h($m['title']); ?></td>
@@ -73,6 +75,7 @@ $destCache = [];
                     <select name="mod_type" id="mod_type" class="form-control" onchange="toggleModifierTypeField()">
                         <option value="language"><?php echo $h(t('call_modifiers.type_language')); ?></option>
                         <option value="cid_prefix"><?php echo $h(t('call_modifiers.type_cid_prefix')); ?></option>
+                        <option value="queue_priority"><?php echo $h(t('call_modifiers.type_queue_priority')); ?></option>
                     </select>
                 </div>
 
@@ -89,6 +92,12 @@ $destCache = [];
                     <label class="form-label"><?php echo $h(t('call_modifiers.field_prefix')); ?></label>
                     <input type="text" id="mod_prefix_input" class="form-control" maxlength="40" placeholder="VIP " oninput="syncModifierValue()">
                     <small class="u-hint"><?php echo $h(t('call_modifiers.prefix_help')); ?></small>
+                </div>
+
+                <div class="form-group" id="mod_prio_group" style="display:none;">
+                    <label class="form-label"><?php echo $h(t('call_modifiers.field_priority')); ?></label>
+                    <input type="number" id="mod_prio_input" class="form-control" min="0" max="100" value="10" oninput="syncModifierValue()">
+                    <small class="u-hint"><?php echo $h(t('call_modifiers.priority_help')); ?></small>
                 </div>
 
                 <input type="hidden" name="mod_value" id="mod_value" value="<?php echo $h($languages[0] ?? 'en'); ?>">

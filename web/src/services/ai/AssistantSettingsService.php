@@ -139,6 +139,32 @@ class AssistantSettingsService
         return !empty($cfg[$role]['ask']) && !empty($cfg[$role]['change']);
     }
 
+    /**
+     * Per-role knowledge collection assignment for Assistant answers:
+     * 0 = language default, -1 = disabled, > 0 = specific collection id.
+     *
+     * @return array<string, int>
+     */
+    public static function roleCollectionsConfig(): array
+    {
+        $raw = function_exists('getSystemSetting') ? (string) getSystemSetting('assistant.role_kb', '') : '';
+        $decoded = $raw !== '' ? json_decode($raw, true) : null;
+        $out = [];
+        if (is_array($decoded)) {
+            foreach ($decoded as $role => $cid) {
+                if (is_string($role) && $role !== '') {
+                    $out[$role] = (int) $cid;
+                }
+            }
+        }
+        return $out;
+    }
+
+    public static function roleCollection(string $role): int
+    {
+        return (int) (self::roleCollectionsConfig()[$role] ?? 0);
+    }
+
     public static function defaultHomePath(string $role): string
     {
         return match ($role) {
@@ -179,12 +205,12 @@ class AssistantSettingsService
             return false;
         }
         require_once $pm;
-        return PluginManager::isEnabled('ai-assistant');
+        return PluginManager::isEnabled('pbx-assistant');
     }
 
     /**
      * Landing path for $role, falling back to the role's default home page
-     * if ai-assistant is disabled, or if $role is not allowed to ask.
+     * if pbx-assistant is disabled, or if $role is not allowed to ask.
      */
     public static function homePath(string $role): string
     {
@@ -264,6 +290,7 @@ class AssistantSettingsService
             'binding'                => $binding,
             'roles'                  => self::rolesConfig(),
             'home_roles'             => self::homeRolesConfig(),
+            'role_kb'                => self::roleCollectionsConfig(),
             'history_days'           => self::historyDays(),
             'suggestions'            => self::suggestions(),
             'custom_suggestions'     => self::customSuggestions(),
@@ -344,6 +371,16 @@ class AssistantSettingsService
             $homeRoles[$rk] = $val === 'assistant' ? 'assistant' : 'default';
         }
 
+        $roleKbInput = is_array($post['role_kb'] ?? null) ? $post['role_kb'] : [];
+        $roleKb = [];
+        foreach ($roleKeys as $rk) {
+            if ($rk === '') {
+                continue;
+            }
+            $cid = (int) ($roleKbInput[$rk] ?? 0);
+            $roleKb[$rk] = $cid < 0 ? -1 : $cid;
+        }
+
         $daysRaw = $post['history_days'] ?? self::DEFAULT_HISTORY_DAYS;
         $days = is_numeric($daysRaw) ? (int) $daysRaw : self::DEFAULT_HISTORY_DAYS;
         $days = max(0, min(self::MAX_HISTORY_DAYS, $days));
@@ -369,6 +406,7 @@ class AssistantSettingsService
         }
         setSystemSetting('assistant.roles', (string) json_encode($roles, JSON_UNESCAPED_UNICODE));
         setSystemSetting('assistant.home_roles', (string) json_encode($homeRoles, JSON_UNESCAPED_UNICODE));
+        setSystemSetting('assistant.role_kb', (string) json_encode($roleKb, JSON_UNESCAPED_UNICODE));
         setSystemSetting('assistant.history_days', (string) $days);
         require_once __DIR__ . '/AssistantChatService.php';
         AssistantChatService::pruneOldChats($days);

@@ -25,6 +25,13 @@ if ($stepId <= 0) {
     exit(0);
 }
 
+$hit = (string) ($_GET['hit'] ?? '');
+if ($hit !== '') {
+    IvrDataStepService::recordBranchHit($stepId, $hit);
+    echo "OK\n";
+    exit(0);
+}
+
 // The variables the step's query or URL uses (SyncIvrDataSteps sends only those).
 $values = [];
 foreach ($_GET as $k => $v) {

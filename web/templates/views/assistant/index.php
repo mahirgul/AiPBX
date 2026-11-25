@@ -79,7 +79,7 @@ $texts['no_settings_results'] = t('help.no_results');
             <a href="/dashboard" class="u-muted"><i class="fas fa-tachometer-alt"></i> <?php echo htmlspecialchars($texts['go_dashboard']); ?></a>
           <?php endif; ?>
           <?php if (!empty($is_admin)): ?>
-            <a href="/ai-assistant" class="u-muted u-ml-8"><i class="fas fa-sliders"></i> <?php echo htmlspecialchars(t('common.settings', 'Settings')); ?></a>
+            <a href="/pbx-assistant" class="u-muted u-ml-8"><i class="fas fa-sliders"></i> <?php echo htmlspecialchars(t('common.settings', 'Settings')); ?></a>
           <?php endif; ?>
         </div>
       <?php endif; ?>

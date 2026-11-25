@@ -48,13 +48,14 @@ final class BundledPluginMigrationTest extends TestCase
                 BundledPluginMigrationService::retireCommunityAssistant($db,$dir);   // a second run changes nothing
                 PluginManager::resetCache();
                 $this->assertDirectoryDoesNotExist($dir.'/ai-assistant');
-                $row=$db->query("SELECT source,name,version,enabled FROM sys_plugins WHERE slug='ai-assistant'")->fetch(PDO::FETCH_ASSOC);
+                $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_plugins WHERE slug='ai-assistant'")->fetchColumn(), 'the old id is gone');
+                $row=$db->query("SELECT source,name,version,enabled FROM sys_plugins WHERE slug='pbx-assistant'")->fetch(PDO::FETCH_ASSOC);
                 $this->assertSame(['source'=>'official','name'=>'PBX Assistant','version'=>'2.0.0','enabled'=>$enabled],
                     ['source'=>$row['source'],'name'=>$row['name'],'version'=>$row['version'],'enabled'=>(int)$row['enabled']]);
                 $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_api_tokens WHERE plugin_slug='ai-assistant' AND is_active=1")->fetchColumn());
                 $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_plugin_settings WHERE plugin_slug='ai-assistant'")->fetchColumn());
                 $this->assertSame(0,(int)$db->query("SELECT COUNT(*) FROM sys_plugin_kv WHERE plugin_slug='ai-assistant'")->fetchColumn());
-                $this->assertSame('official',PluginManager::getPlugin('ai-assistant')['source'] ?? null, 'the bundled manifest is the one found');
+                $this->assertSame('official',PluginManager::getPlugin('pbx-assistant')['source'] ?? null, 'the bundled manifest is the one found');
                 mkdir($dir.'/ai-assistant',0700);file_put_contents($dir.'/ai-assistant/plugin.json','{}');
             }
         } finally {

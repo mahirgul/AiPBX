@@ -16,7 +16,7 @@ require_once __DIR__ . '/WebhookService.php';
  */
 final class ConnectionService
 {
-    public const KINDS = ['odoo', 'generic'];
+    public const KINDS = ['odoo', 'erpnext', 'generic'];
     public const PACK_VERSION = 1;
     /** What a CRM needs: call history and recordings, click-to-call, the address book, the extensions. */
     public const SCOPES = ['calls:read', 'calls:write', 'contacts:read', 'contacts:write', 'pbx:read'];
@@ -34,7 +34,7 @@ final class ConnectionService
     {
         return getDB()->query(
             'SELECT c.*, t.token_prefix, t.last_used_at, t.last_used_ip, t.allowed_ips,
-                    w.target_url, w.last_status_code, w.last_triggered_at, w.last_error, w.failure_streak
+                    COALESCE(w.is_active, 0) AS is_active, w.target_url, w.last_status_code, w.last_triggered_at, w.last_error, w.failure_streak
              FROM sys_connections c
              LEFT JOIN sys_api_tokens t ON t.id = c.api_token_id
              LEFT JOIN sys_webhooks w ON w.id = c.webhook_id
@@ -54,7 +54,12 @@ final class ConnectionService
      */
     public static function webhookUrl(string $kind, string $baseUrl, string $uuid): string
     {
-        return $kind === 'odoo' ? rtrim($baseUrl, '/') . '/aipbx/webhook/' . $uuid : $baseUrl;
+        return match ($kind) {
+            'odoo' => rtrim($baseUrl, '/') . '/aipbx/webhook/' . $uuid,
+            // ERPNext / Frappe: the app's whitelisted method (aipbx_connector, AiPBX-Frappe).
+            'erpnext' => rtrim($baseUrl, '/') . '/api/method/aipbx_connector.api.webhook?connection=' . $uuid,
+            default => $baseUrl,
+        };
     }
 
     /**
@@ -103,6 +108,31 @@ final class ConnectionService
      * New token and webhook secret; the old ones stop at once, so the other side needs the
      * new pack. @return array{success: bool, message: string, pack?: string}
      */
+    /**
+     * On or off: off, the connection's webhook sends nothing and its API key is refused, so the
+     * CRM neither hears about calls nor places them. Nothing is deleted; on brings it back as it was.
+     */
+    public static function setActive(int $id, bool $on, string $csrf): array
+    {
+        if (!verifyCSRFToken($csrf)) {
+            return ['success' => false, 'message' => t('common.invalid_csrf')];
+        }
+        $c = self::find($id);
+        if (!$c) {
+            return ['success' => false, 'message' => t('common.not_found')];
+        }
+        $db = getDB();
+        $db->prepare(
+            'UPDATE sys_connections c
+             INNER JOIN sys_api_tokens t ON t.id = c.api_token_id
+             INNER JOIN sys_webhooks w ON w.id = c.webhook_id
+             SET t.is_active = ?, w.is_active = ?
+             WHERE c.id = ?'
+        )->execute([(int) $on, (int) $on, $id]);
+        writeAuditLog('integrations', 'connection', $id, "Connection {$c['name']} " . ($on ? 'on' : 'off'), 'update', $_SESSION['user_id'] ?? null);
+        return ['success' => true, 'message' => t($on ? 'connections.msg_enabled' : 'connections.msg_disabled')];
+    }
+
     public static function rotate(int $id, string $csrf): array
     {
         if (!verifyCSRFToken($csrf)) {
@@ -251,6 +281,128 @@ final class ConnectionService
             throw new \RuntimeException((string) ($res['message'] ?? $res['error'] ?? 'token'));
         }
         return [(int) $res['id'], (string) $res['raw_token']];
+    }
+
+    /** @var callable|null Optional HTTP transport hook for tests: fn(string $url, array $headers, string $body): ?string */
+    public static $lookupTransport = null;
+
+    /**
+     * On-demand caller lookup against the active CRM/ERP connection (1 s timeout, fail-open, 60 s cache).
+     *
+     * @return array{display_name: string, company: string, email: string, external_url: string, source: string, customer_id: string, external_id: string}|null
+     */
+    public static function lookupCaller(string $number, bool $useCache = true): ?array
+    {
+        $digits = preg_replace('/\D+/', '', $number) ?? '';
+        if (strlen($digits) < 5) {
+            return null;
+        }
+        try {
+            $conn = getDB()->query(
+                "SELECT c.uuid, c.kind, c.base_url, w.secret_encrypted
+                 FROM sys_connections c
+                 INNER JOIN sys_webhooks w ON w.id = c.webhook_id
+                 WHERE w.is_active = 1 AND c.kind = 'odoo'
+                 ORDER BY c.id ASC LIMIT 1"
+            )->fetch(PDO::FETCH_ASSOC);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if (!$conn) {
+            return null;
+        }
+
+        $key = substr($digits, -10);
+        $cacheFile = sys_get_temp_dir() . '/aipbx-conn-lookup-' . hash('sha256', implode('|', [$conn['uuid'], $conn['base_url'], $conn['secret_encrypted'], $key])) . '.json';
+        if ($useCache && is_file($cacheFile) && (time() - (int) @filemtime($cacheFile)) < 60) {
+            $cached = json_decode((string) @file_get_contents($cacheFile), true);
+            if (is_array($cached)) {
+                if (empty($cached['found']) || !is_array($cached['data'] ?? null)) {
+                    return null;
+                }
+                return $cached['data'] + [
+                    'display_name' => '',
+                    'company' => '',
+                    'email' => '',
+                    'external_url' => '',
+                    'source' => 'odoo',
+                    'customer_id' => '',
+                    'external_id' => '',
+                ];
+            }
+        }
+
+        $baseUrl = rtrim((string) $conn['base_url'], '/');
+        $url = $baseUrl . '/aipbx/lookup/' . $conn['uuid'];
+        try {
+            $pinnedResolve = WebhookService::validatedResolve($url);
+            $secret = SecretBox::decrypt((string) $conn['secret_encrypted']);
+        } catch (\Throwable $e) {
+            return null;
+        }
+        if ($secret === '') {
+            return null;
+        }
+
+        $body = json_encode(['number' => $number], JSON_UNESCAPED_UNICODE) ?: '{}';
+        $ts = (string) time();
+        $sig = 'sha256=' . hash_hmac('sha256', $ts . '.' . $body, $secret);
+        $headers = [
+            'Content-Type: application/json',
+            'X-AiPBX-Timestamp: ' . $ts,
+            'X-AiPBX-Signature-256: ' . $sig,
+        ];
+
+        $raw = null;
+        if (self::$lookupTransport !== null) {
+            $raw = (self::$lookupTransport)($url, $headers, $body);
+        } else {
+            $ch = curl_init($url);
+            if ($ch === false) {
+                return null;
+            }
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $body,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_CONNECTTIMEOUT_MS => 500,
+                CURLOPT_TIMEOUT_MS => 1000,
+                CURLOPT_FOLLOWLOCATION => false,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+            ]);
+            if ($pinnedResolve !== []) {
+                curl_setopt($ch, CURLOPT_RESOLVE, $pinnedResolve);
+            }
+            $res = curl_exec($ch);
+            $code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            if (is_string($res) && $code >= 200 && $code < 300) {
+                $raw = $res;
+            }
+        }
+
+        $parsed = is_string($raw) ? json_decode($raw, true) : null;
+        $result = null;
+        if (is_array($parsed) && !empty($parsed['found'])) {
+            $relUrl = (string) ($parsed['url'] ?? '');
+            $extUrl = (str_starts_with($relUrl, '/') && preg_match('#^https?://#i', $baseUrl)) ? $baseUrl . $relUrl : '';
+            $custId = mb_substr(trim((string) ($parsed['customer_id'] ?? $parsed['external_id'] ?? $parsed['partner_id'] ?? $parsed['id'] ?? '')), 0, 191);
+            $result = [
+                'display_name' => mb_substr(trim((string) ($parsed['name'] ?? '')), 0, 80),
+                'company' => mb_substr(trim((string) ($parsed['company'] ?? '')), 0, 80),
+                'email' => mb_substr(trim((string) ($parsed['email'] ?? '')), 0, 120),
+                'external_url' => $extUrl,
+                'source' => (string) ($conn['kind'] ?? 'odoo'),
+                'customer_id' => $custId,
+                'external_id' => $custId,
+            ];
+        }
+
+        if ($useCache && ($result !== null || ($parsed['found'] ?? null) === false)) {
+            @file_put_contents($cacheFile, json_encode(['found' => $result !== null, 'data' => $result], JSON_UNESCAPED_UNICODE));
+        }
+        return $result;
     }
 
     private static function uuid(): string

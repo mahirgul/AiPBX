@@ -1,9 +1,9 @@
 {
     "slug": "saml-auth",
-    "name": "SAML 2.0 & Corporate SSO",
+    "name": "SAML 2.0 SSO",
     "name_i18n": {
-        "tr": "SAML 2.0 ve Kurumsal SSO",
-        "en": "SAML 2.0 & Corporate SSO"
+        "en": "SAML 2.0 SSO",
+        "tr": "SAML 2.0 SSO"
     },
     "version": "1.0.0",
     "author": "AiPBX Official Team",

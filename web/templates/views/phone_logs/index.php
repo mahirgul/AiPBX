@@ -8,7 +8,8 @@
  * @var bool $enabled
  * @var array<string, string> $labels MAC → "1001 · model"
  * @var string $who
- * @var string $tab   syslog | http | ftp | tftp | dhcp
+ * @var string $tab   syslog | http | ftp | tftp | dhcp | discovery
+ * @var list<string> $discoveryLog
  * @var string $text
  * @var list<array{time: string, ip: string, mac: string, result: string, ok: bool, file: string, detail: string}> $events
  * @var array<string, bool> $serviceOn
@@ -16,7 +17,7 @@
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $tabUrl = fn(string $t) => '/phone-logs?' . http_build_query(array_filter(['tab' => $t === 'syslog' ? '' : $t, 'who' => $who]));
 $tabs = ['syslog' => ['fa-scroll', 'Syslog'], 'http' => ['fa-lock', 'HTTPS'], 'ftp' => ['fa-folder-open', 'FTP'],
-    'tftp' => ['fa-folder', 'TFTP'], 'dhcp' => ['fa-network-wired', 'DHCP']];
+    'tftp' => ['fa-folder', 'TFTP'], 'dhcp' => ['fa-network-wired', 'DHCP'], 'discovery' => ['fa-wifi', 'Discovery']];
 ?>
 <div class="card tabbed-page">
     <?php echo uiPageHeader('fa-scroll', t('sidebar.item_phone_logs')); ?>
@@ -25,7 +26,21 @@ $tabs = ['syslog' => ['fa-scroll', 'Syslog'], 'http' => ['fa-lock', 'HTTPS'], 'f
         <a href="<?php echo $h($tabUrl($key)); ?>" class="sub-tab-btn<?php echo $tab === $key ? ' active' : ''; ?> u-text-decoration-none"><i class="fas <?php echo $icon; ?>"></i> <?php echo $label; ?></a>
     <?php endforeach; ?>
 </div>
-<?php if ($tab !== 'syslog'): ?>
+<?php if ($tab === 'discovery'): ?>
+<div class="card">
+    <div class="card-header">
+        <div class="card-title"><i class="fas fa-wifi u-primary"></i> <?php echo t('phonelogs.tab_title_discovery'); ?></div>
+    </div>
+    <div class="u-muted u-fs-12 u-p-0-20-8"><?php echo t('phonelogs.tab_help_discovery'); ?> <a href="/phones"><?php echo t('sidebar.item_phones'); ?></a></div>
+    <div class="u-card-text">
+        <?php if ($discoveryLog === []): ?>
+            <p class="u-muted"><?php echo t('phonelogs.discovery_empty'); ?></p>
+        <?php else: ?>
+            <pre class="u-fs-11"><?php echo $h(implode("\n", $discoveryLog)); ?></pre>
+        <?php endif; ?>
+    </div>
+</div>
+<?php elseif ($tab !== 'syslog'): ?>
 <div class="card">
     <div class="card-header">
         <div class="card-title"><i class="fas <?php echo $tabs[$tab][0]; ?> u-primary"></i> <?php echo t('phonelogs.tab_title_' . $tab); ?></div>

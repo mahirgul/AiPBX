@@ -10,10 +10,17 @@ what AiPBX does about it and what you need to configure.
 ![How a WebRTC call reaches Asterisk](img/webrtc-nat.svg)
 
 ICE tries the candidates in order of preference: the direct path (client to Asterisk's address) and,
-when that is blocked, the **TURN relay** on the same server. Clients are given only a **TURNS**
-(TURN over TLS) server — no plain STUN/TURN and no public STUN servers — because firewalls with deep
-packet inspection recognise and drop unencrypted STUN/TURN by its signature, and dead candidates only
-slow ICE down. (The Android app falls back to a public STUN server only when no TURN is configured.)
+when that is blocked, the **TURN relay** on the same server. Clients are given two TURN addresses
+and no public STUN server: **TURNS** (TURN over TLS, through the 443 edge) and plain **TURN over UDP
+3478**. UDP is the faster relay where it is open; TURNS still works where a firewall with deep packet
+inspection drops unencrypted STUN/TURN. A dead address must not slow the call down, so the clients
+stop gathering candidates 300 ms after the first relay candidate (3 s at most). (The Android app
+falls back to a public STUN server only when no TURN is configured.)
+
+**Network change during a call.** When the network changes (Wi-Fi ↔ mobile data, a new address),
+the Android app and the browser phone send a re-INVITE with an **ICE restart**: the call keeps going
+and its audio moves to the new network. If the SIP connection is down at that moment, the restart
+waits until it is back. The UDP port is `TURN_UDP_PORT` (default 3478) in `/etc/ai-pbx.env`.
 
 TURN credentials are per user and valid for one hour (HMAC-SHA1 with coturn's `static-auth-secret`,
 the *TURN REST API* scheme); no static TURN password is ever sent to a client. The browser phone
@@ -37,7 +44,7 @@ router), set **External IP Address** and list your **Local Network & VPN Subnets
 
 | Setting | Clients are given | Needs open |
 |---------|-------------------|-----------|
-| `TURNS_PORT=443` (installer default) | `turns:your-domain:443?transport=tcp` | only 443/tcp |
+| `TURNS_PORT=443` (installer default) | `turns:your-domain:443?transport=tcp` | only 443/tcp (plus 3478/udp for the UDP relay) |
 | `TURNS_PORT=5349` | `turns:your-domain:5349?transport=tcp` | 5349/tcp |
 
 coturn listens on 5349; the nginx multiplexer on 443 passes TLS connections without ALPN (browsers,

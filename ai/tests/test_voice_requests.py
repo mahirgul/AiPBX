@@ -452,6 +452,58 @@ class VoiceRequestsTest(unittest.TestCase):
         self.start()
         self.assertEqual(self.tts.calls[5], "Yeni karşılama.")
 
+    def test_segmented_greeting_and_tts_phrase_cache(self):
+        AppStore = voice_requests.AppStore
+        self.assertEqual(
+            AppStore.split_greeting_segments(
+                "Merhaba, {caller_name}, şirketimize hoş geldiniz. Size nasıl yardımcı olabilirim?",
+                caller_name="Ahmet Yılmaz",
+            ),
+            ["Merhaba,", "Ahmet Yılmaz,", "şirketimize hoş geldiniz. Size nasıl yardımcı olabilirim?"],
+        )
+        self.assertEqual(
+            AppStore.split_greeting_segments(
+                "Merhaba sayın {caller_name} şirketimize hoş geldiniz",
+                caller_name="Ahmet Yılmaz",
+            ),
+            ["Merhaba sayın", "Ahmet Yılmaz", "şirketimize hoş geldiniz"],
+        )
+        self.assertEqual(
+            AppStore.split_greeting_segments(
+                "Merhaba {caller_name}, size nasıl yardımcı olabilirim?",
+                caller_name="Ahmet Yılmaz",
+            ),
+            ["Merhaba Ahmet Yılmaz,", "size nasıl yardımcı olabilirim?"],
+        )
+
+        tpl = "Merhaba, {caller_name}, şirketimize hoş geldiniz."
+        self.put_app(greeting=tpl)
+        config, version = self.registry.apps.get(902)
+        self.tts.calls.clear()
+
+        pcm1 = self.registry.apps.greeting_speech(902, version, config, tpl, caller_name="Ahmet Yılmaz")
+        self.assertGreater(len(pcm1), 0)
+        self.assertEqual(self.tts.calls, ["Merhaba,", "Ahmet Yılmaz,", "şirketimize hoş geldiniz."])
+
+        pcm2 = self.registry.apps.greeting_speech(902, version, config, tpl, caller_name="Mehmet Demir")
+        self.assertGreater(len(pcm2), 0)
+        self.assertEqual(
+            self.tts.calls,
+            ["Merhaba,", "Ahmet Yılmaz,", "şirketimize hoş geldiniz.", "Mehmet Demir,"],
+        )
+
+        pcm3 = self.registry.apps.greeting_speech(902, version, config, tpl, caller_name="Ahmet Yılmaz")
+        self.assertEqual(pcm1, pcm3)
+        self.assertEqual(len(self.tts.calls), 4)
+
+        cache_files = os.listdir(os.path.join(self.tmp, "tts_cache"))
+        self.assertEqual(len(cache_files), 4)
+
+        fresh = AppStore(self.manager, self.tmp)
+        pcm4 = fresh.greeting_speech(902, version, config, tpl, caller_name="Ahmet Yılmaz")
+        self.assertEqual(pcm1, pcm4)
+        self.assertEqual(len(self.tts.calls), 4)
+
     # ---- calls --------------------------------------------------------------
 
     def test_matched_call(self):

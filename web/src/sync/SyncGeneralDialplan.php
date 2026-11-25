@@ -373,6 +373,7 @@ function __syncGeneralDialplanBody() {
 
     $conf .= "[aipbx-callback-answered]\n";
     $conf .= "exten => s,1,Set(CHANNEL(hangup_handler_push)=aipbx-callback-finished,s,1(\${ARG1},\${ARG2},\${EPOCH}))\n";
+    $conf .= " same => n,ExecIf(\$[\"\${AIPBX_AUTO_CB_ID}\" != \"\"]?Gosub(aipbx-auto-callback-result,s,1(customer_answered)))\n";
     $conf .= " same => n,Return()\n\n";
     $conf .= "[aipbx-callback-finished]\n";
     $conf .= "exten => s,1,System(/usr/local/bin/queue_callback.php complete '\${FILTER(0-9+,\${ARG1})}' '\${FILTER(0-9,\${ARG2})}' '\${FILTER(0-9,\${ARG3})}')\n";

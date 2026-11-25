@@ -22,6 +22,8 @@ class AsteriskSettingsService {
             'pjsip_user_agent' => 'Asterisk PBX',
             'pjsip_direct_media' => 'no',
             'pjsip_rtp_symmetric' => 'yes',
+            'pjsip_use_ptime' => 'no',
+            'codecs_genericplc_on_equal_codecs' => 'false',
             'pjsip_qualify_frequency' => '60',
             'pjsip_internal_dial_timeout' => '30',
             'pjsip_external_dial_timeout' => '60',
@@ -193,6 +195,8 @@ class AsteriskSettingsService {
             'pjsip_user_agent' => preg_replace('/[\r\n]+/', ' ', trim($post['pjsip_user_agent'] ?? 'Asterisk PBX')),
             'pjsip_direct_media' => (($post['pjsip_direct_media'] ?? 'no') === 'yes') ? 'yes' : 'no',
             'pjsip_rtp_symmetric' => (($post['pjsip_rtp_symmetric'] ?? 'yes') === 'no') ? 'no' : 'yes',
+            'pjsip_use_ptime' => (($post['pjsip_use_ptime'] ?? 'no') === 'yes') ? 'yes' : 'no',
+            'codecs_genericplc_on_equal_codecs' => (($post['codecs_genericplc_on_equal_codecs'] ?? 'false') === 'true') ? 'true' : 'false',
             'pjsip_qualify_frequency' => max(0, intval($post['pjsip_qualify_frequency'] ?? 60)),
             'pjsip_internal_dial_timeout' => max(5, min(120, intval($post['pjsip_internal_dial_timeout'] ?? 30))),
             'pjsip_external_dial_timeout' => max(5, min(180, intval($post['pjsip_external_dial_timeout'] ?? 60))),
@@ -330,6 +334,8 @@ class AsteriskSettingsService {
         $label = "General Asterisk settings (PJSIP/codecs/timeouts)";
         markPendingSync('transports', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('extensions', 'system_setting', 'general', $label, 'update', $uid);
+        markPendingSync('trunks', 'system_setting', 'general', $label, 'update', $uid);
+        markPendingSync('widgets', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('inbound_dialplan', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('outbound_dialplan', 'system_setting', 'general', $label, 'update', $uid);
         markPendingSync('general_dialplan', 'system_setting', 'general', $label, 'update', $uid);

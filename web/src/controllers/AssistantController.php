@@ -25,12 +25,12 @@ class AssistantController extends BaseController
 
         // The settings moved to their own page.
         if ((string) ($_GET['tab'] ?? '') === 'settings') {
-            header('Location: /ai-assistant', true, 301);
+            header('Location: /pbx-assistant', true, 301);
             exit;
         }
         // Switched off (an experimental plugin, off on a new installation): the switch is on its settings page.
         if (!AssistantSettingsService::isPluginEnabled()) {
-            header('Location: ' . ($role === 'admin' ? '/ai-assistant' : AssistantSettingsService::homePath($role)));
+            header('Location: ' . ($role === 'admin' ? '/pbx-assistant' : AssistantSettingsService::homePath($role)));
             exit;
         }
         $isAdmin = $role === 'admin';
@@ -107,7 +107,7 @@ class AssistantController extends BaseController
         if (static::isPost() && isset($_POST['assistant_onoff'])) {
             $on = ($_POST['enabled'] ?? '') === '1';
             $csrf = (string) ($_POST['csrf_token'] ?? '');
-            $res = $on ? PluginManager::enable('ai-assistant', $csrf) : PluginManager::disable('ai-assistant', $csrf);
+            $res = $on ? PluginManager::enable('pbx-assistant', $csrf) : PluginManager::disable('pbx-assistant', $csrf);
             if (!empty($res['success'])) {
                 PluginManager::$menuChanged = true;   // spa_router.js fetches the new sidebar
                 $message = t($on ? 'ai_settings.ast_turned_on' : 'ai_settings.ast_turned_off');

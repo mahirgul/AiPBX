@@ -151,6 +151,61 @@ final class CloudAiServiceTest extends TestCase
         CloudAiService::stt('openrouter', self::wav(1), 'tr');
     }
 
+    public function testCustomRealtimeSettingsStaySeparateFromChat(): void
+    {
+        require_once __DIR__ . '/../../src/services/ai/AiAppService.php';
+        $db = getDB();
+        $enabled = $db->query("SELECT enabled FROM sys_plugins WHERE slug = 'aicloud'")->fetchColumn();
+        $db->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug = 'aicloud'");
+        PluginManager::resetCache();
+        try {
+            $id = CloudAiService::addAccount('openai_compat', 'Realtime fixture', [
+                'base_url' => 'https://chat.example.test/v1',
+                'model' => 'chat-model',
+                'realtime_model' => 'voice-model',
+                'realtime_protocol' => 'openai_ga',
+                'realtime_ws_url' => 'wss://voice.example.test/realtime',
+            ]);
+            $app = [
+                'id' => 99, 'title' => 'RT Agent', 'model_id' => 'local:piper-tr-fahrettin',
+                'speed' => '1',
+                'config' => json_encode(['conversation' => true, 'realtime_account' => 'cloud:' . $id]),
+            ];
+            $cfg = AiAppService::serviceConfig($app)['realtime_cloud'];
+            $this->assertSame('voice-model', $cfg['model']);
+            $this->assertSame('openai_ga', $cfg['protocol']);
+            $this->assertSame('wss://voice.example.test/realtime', $cfg['ws_url']);
+            $this->assertSame('chat-model', CloudAiService::llmSettings($id)['model']);
+
+            foreach ([
+                ['realtime_protocol' => 'unsupported'],
+                ['realtime_ws_url' => 'https://voice.example.test/realtime'],
+                ['realtime_ws_url' => 'wss://user:pass@voice.example.test/realtime'],
+            ] as $invalid) {
+                try {
+                    CloudAiService::save($id, $invalid + ['model' => 'unwanted-change']);
+                    $this->fail('Invalid Realtime configuration was accepted');
+                } catch (CloudAiException $e) {
+                    $this->assertSame('chat-model', CloudAiService::config($id)['model']);
+                }
+            }
+
+            CloudAiService::save($id, [
+                'base_url' => 'https://chat.example.test/v1', 'model' => 'chat-model',
+                'realtime_model' => '', 'realtime_protocol' => '', 'realtime_ws_url' => '',
+            ]);
+            $cfg = AiAppService::serviceConfig($app)['realtime_cloud'];
+            $this->assertSame('chat-model', $cfg['model']);
+            $this->assertSame('', $cfg['protocol']);
+            $this->assertArrayNotHasKey('ws_url', $cfg);
+        } finally {
+            if ($enabled !== false) {
+                $db->prepare("UPDATE sys_plugins SET enabled = ? WHERE slug = 'aicloud'")->execute([$enabled]);
+            }
+            PluginManager::resetCache();
+        }
+    }
+
     public function testSeveralAccountsOfOneProvider(): void
     {
         getDB()->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key = 'ai_cloud_accounts'");

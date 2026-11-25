@@ -71,6 +71,11 @@ class UserService {
             if ($extension !== '' && !preg_match('/^\d{3,6}$/', $extension)) {
                 throw new \Exception(t('srv_ext.err_number'));
             }
+            if ($extension !== '') {
+                if ($cid_internal === '') {
+                    $cid_internal = $extension;
+                }
+            }
 
             if (isset($data['allowed_phone_modes']) && is_array($data['allowed_phone_modes'])) {
                 $allowed_phone_mode = formatPhoneModes($data['allowed_phone_modes']);

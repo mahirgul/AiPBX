@@ -44,6 +44,7 @@ class QueueService {
             $leavewhenempty = trim($data['leavewhenempty'] ?? 'no');
             $ringinuse = trim($data['ringinuse'] ?? 'no');
             $max_wait_seconds = intval($data['max_wait_seconds'] ?? 300) ?: 300;
+            $default_priority = max(0, min(100, intval($data['default_priority'] ?? 0)));
             $fallback_action = trim($data['fallback_action'] ?? 'hangup');
             $fallback_target = preg_replace('/[^0-9]/', '', trim($data['fallback_target'] ?? '')) ?: null;
             // One list on the form: off, from the agent's answer, from entering the queue.
@@ -56,6 +57,7 @@ class QueueService {
             }
             $is_active = PBXHelper::boolFlag($data, 'is_active', 1);
             $callback_enabled = PBXHelper::boolFlag($data, 'callback_enabled', 0);
+            $callback_auto_enabled = $callback_enabled && PBXHelper::boolFlag($data, 'callback_auto_enabled', 0) ? 1 : 0;
             $callback_announce = trim((string) ($data['callback_announce'] ?? ''));
             if ($callback_announce !== '' && !DBHelper::fetchColumn('SELECT 1 FROM pbx_announcements WHERE audio_file = ? AND is_active = 1', [$callback_announce])) {
                 $callback_announce = '';
@@ -150,6 +152,7 @@ class QueueService {
                 'leavewhenempty' => $leavewhenempty,
                 'ringinuse' => $ringinuse,
                 'max_wait_seconds' => $max_wait_seconds,
+                'default_priority' => $default_priority,
                 'fallback_action' => $fallback_action,
                 'fallback_target' => $fallback_target,
                 'record_enabled' => $record_enabled,
@@ -163,6 +166,7 @@ class QueueService {
                 'internal_number' => $internal_number !== '' ? $internal_number : null,
                 'is_active' => $is_active,
                 'callback_enabled' => $callback_enabled,
+                'callback_auto_enabled' => $callback_auto_enabled,
                 'callback_announce' => $callback_announce
             ] + self::improvementColumns($data, $selected_members);
 

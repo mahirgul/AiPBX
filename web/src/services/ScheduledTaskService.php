@@ -70,6 +70,14 @@ class ScheduledTaskService
             $errors['cpu_limit_pct'] = t('scheduled_tasks.err_cpu');
         }
 
+        $externalDbId = !empty($data['external_db_id']) ? (int)$data['external_db_id'] : null;
+        if ($externalDbId !== null) {
+            require_once __DIR__ . '/../repositories/ExternalDbRepository.php';
+            if (!ExternalDbRepository::findById($externalDbId)) {
+                $errors['external_db_id'] = t('scheduled_tasks.err_external_db');
+            }
+        }
+
         if (!empty($errors)) {
             return ['ok' => false, 'errors' => $errors];
         }
@@ -94,14 +102,14 @@ class ScheduledTaskService
                 'UPDATE pbx_scheduled_tasks
                  SET name = ?, description = ?, is_active = ?, cron_expression = ?, script_type = ?,
                      script_content = ?, timeout_sec = ?, memory_limit_mb = ?, cpu_limit_pct = ?,
-                     network_access = ?, env_vars = ?, data_scopes = ?, allow_personal_data = ?,
+                     network_access = ?, external_db_id = ?, env_vars = ?, data_scopes = ?, allow_personal_data = ?,
                      api_scopes = ?, updated_at = NOW()
                  WHERE id = ?'
             );
             $stmt->execute([
                 $name, $description, $isActive, $cronExpr, $scriptType,
                 $scriptContent, $timeout, $memory, $cpu,
-                $networkAccess, $envVars, $dataScopes, $allowPersonal,
+                $networkAccess, $externalDbId, $envVars, $dataScopes, $allowPersonal,
                 $apiScopes, $id
             ]);
 
@@ -116,13 +124,13 @@ class ScheduledTaskService
         $stmt = $db->prepare(
             'INSERT INTO pbx_scheduled_tasks
              (name, description, is_active, cron_expression, script_type, script_content,
-              timeout_sec, memory_limit_mb, cpu_limit_pct, network_access, env_vars,
+              timeout_sec, memory_limit_mb, cpu_limit_pct, network_access, external_db_id, env_vars,
               data_scopes, allow_personal_data, api_scopes, created_at, updated_at, created_by)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), ?)'
         );
         $stmt->execute([
             $name, $description, $isActive, $cronExpr, $scriptType, $scriptContent,
-            $timeout, $memory, $cpu, $networkAccess, $envVars,
+            $timeout, $memory, $cpu, $networkAccess, $externalDbId, $envVars,
             $dataScopes, $allowPersonal, $apiScopes, $userId
         ]);
         $newId = (int)$db->lastInsertId();

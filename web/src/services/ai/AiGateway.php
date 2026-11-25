@@ -49,7 +49,7 @@ final class AiGateway
             throw new AiGatewayException('permission_denied');
         }
         if ($feature === 'assistant' || $feature === 'knowledge') {
-            $slug = $feature === 'assistant' ? 'ai-assistant' : 'ai-knowledge';
+            $slug = $feature === 'assistant' ? 'pbx-assistant' : 'ai-knowledge';
             $q = getDB()->prepare("SELECT enabled FROM sys_plugins WHERE slug = ?");
             $q->execute([$slug]);
             if (!(bool) $q->fetchColumn()) {

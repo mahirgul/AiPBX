@@ -83,6 +83,22 @@ final class CiscoCallManagerTemplateTest extends TestCase
 
     // ------------------------------------------------------------- the file
 
+    public function testCisco7841UsesFourButtonsAndKeepsItsSipFirmware(): void
+    {
+        $model = 'cisco-cm-7841';
+        $keys = [];
+        for ($position = 2; $position <= 5; $position++) {
+            $keys[] = $this->key($position, 'speeddial', '123' . $position);
+        }
+        $xml = $this->tpl->render($this->context($model, $keys));
+        $this->assertSame(4, PhoneModels::keysOnPage($model, 0));
+        $this->assertSame($model, PhoneProvisionService::modelFromText('Cisco 7841'));
+        $this->assertSame('cisco-cm', PhoneModels::guessVendor('aabbccddeeff', 'Cisco-CP7841/14.2'));
+        $this->assertStringContainsString('<line button="4"', $xml);
+        $this->assertStringNotContainsString('<line button="5"', $xml);
+        $this->assertFalse(PhoneFirmwareService::needsSwitch($model));
+    }
+
     public function testTheDocumentIsWellFormedXml(): void
     {
         $xml = $this->tpl->render($this->context());

@@ -28,6 +28,11 @@ final class ConnectionServiceTest extends TestCase
 
     private function cleanUp(): void
     {
+        // Also remove fixtures left by older runs of the lookup test.
+        $legacyIds = $this->db->query("SELECT id FROM sys_connections WHERE name = 'Odoo Live Lookup'")->fetchAll(PDO::FETCH_COLUMN);
+        foreach ($legacyIds as $id) {
+            ConnectionService::delete((int) $id);
+        }
         $this->db->exec("DELETE FROM sys_connections WHERE name LIKE 'zz conn%'");
         $this->db->exec("DELETE FROM sys_api_tokens WHERE name LIKE 'Connection: zz conn%'");
         $this->db->exec("DELETE FROM sys_webhook_queue WHERE webhook_id IN (SELECT id FROM sys_webhooks WHERE name LIKE '%zz conn%')");
@@ -163,6 +168,49 @@ final class ConnectionServiceTest extends TestCase
             } else {
                 $_SERVER['HTTP_HOST'] = $prevHost;
             }
+        }
+    }
+
+    public function testOnDemandOdooCallerLookup(): void
+    {
+        $res = ConnectionService::create([
+            'name' => 'zz conn Odoo Live Lookup',
+            'kind' => 'odoo',
+            'base_url' => 'https://8.8.8.8',
+        ], $_SESSION['csrf_token']);
+        $this->assertTrue($res['success']);
+
+        $seen = [];
+        ConnectionService::$lookupTransport = function (string $url, array $headers, string $body) use (&$seen): ?string {
+            $seen[] = ['url' => $url, 'headers' => $headers, 'body' => $body];
+            return json_encode([
+                'found' => true,
+                'partner_id' => 42,
+                'name' => 'Ahmet Yılmaz',
+                'company' => 'ACME A.Ş.',
+                'email' => 'ahmet@acme.example',
+                'url' => '/web#id=42&model=res.partner&view_type=form',
+            ]);
+        };
+
+        try {
+            $number = '+90 532 111 22 33';
+            $found = ConnectionService::lookupCaller($number);
+            $this->assertNotNull($found);
+            $this->assertSame('Ahmet Yılmaz', $found['display_name']);
+            $this->assertSame('ACME A.Ş.', $found['company']);
+            $this->assertSame('42', $found['customer_id']);
+            $this->assertSame('https://8.8.8.8/web#id=42&model=res.partner&view_type=form', $found['external_url']);
+            $this->assertCount(1, $seen);
+            $this->assertStringContainsString('/aipbx/lookup/', $seen[0]['url']);
+            $this->assertSame($found, ConnectionService::lookupCaller($number));
+            $this->assertCount(1, $seen, 'The second lookup uses the cache.');
+
+            $this->assertTrue(ConnectionService::setActive($res['id'], false, 'conn-csrf')['success']);
+            $this->assertNull(ConnectionService::lookupCaller($number));
+            $this->assertCount(1, $seen, 'The disabled connection sends no lookup.');
+        } finally {
+            ConnectionService::$lookupTransport = null;
         }
     }
 }

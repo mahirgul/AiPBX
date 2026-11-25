@@ -47,6 +47,12 @@ class CloudAiService
     public const QWEN_ENDPOINT = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
     /** Accounts whose Model / address fields are for their language model. */
     public const LLM_FIELDS_OWN = ['nvidia', 'qwen', 'openai_compat', 'ollama'];
+    public const REALTIME_MODELS = [
+        'openai' => 'gpt-realtime',
+        'google_ai' => 'gemini-3.8-live',
+        'qwen' => 'qwen-omni-turbo-realtime',
+        'openai_compat' => '',
+    ];
 
     // ------------------------------------------------------------ languages
 
@@ -228,7 +234,7 @@ class CloudAiService
         $tts = fn(string $cls) => $cls::fields();
         $key = [['key' => 'api_key', 'label' => 'API key', 'secret' => true]];
         $model = fn(string $default) => ['key' => 'model', 'label' => 'Model', 'secret' => false, 'optional' => true, 'default' => $default];
-        return [
+        $providers = [
             'google_ai' => ['title' => 'Google AI Studio (Gemini, Gemma)', 'caps' => ['stt', 'llm', 'embed'], 'fields' => $key,
                             'url' => 'https://aistudio.google.com/apikey', 'free' => true],
             'openai' => ['title' => 'OpenAI', 'caps' => ['tts', 'stt', 'llm', 'embed'], 'fields' => $tts(OpenAiTts::class),
@@ -284,6 +290,26 @@ class CloudAiService
                                              ['key' => 'api_key', 'label' => 'API key', 'secret' => true, 'optional' => true]],
                                 'url' => 'https://platform.openai.com/docs/api-reference/chat', 'free' => false],
         ];
+        foreach (self::REALTIME_MODELS as $type => $modelName) {
+            $providers[$type]['fields'][] = [
+                'key' => 'realtime_model', 'label' => t('ai_cloud.realtime_model'),
+                'secret' => false, 'optional' => true, 'placeholder' => $modelName,
+            ];
+        }
+        $providers['openai_compat']['fields'][] = [
+            'key' => 'realtime_protocol', 'label' => t('ai_cloud.realtime_protocol'),
+            'secret' => false, 'optional' => true,
+            'options' => [
+                '' => t('ai_cloud.realtime_automatic'),
+                'openai_ga' => 'OpenAI Realtime GA',
+                'openai_beta' => 'OpenAI Realtime Beta',
+            ],
+        ];
+        $providers['openai_compat']['fields'][] = [
+            'key' => 'realtime_ws_url', 'label' => t('ai_cloud.realtime_ws_url'),
+            'secret' => false, 'optional' => true, 'placeholder' => 'wss://example.com/v1/realtime',
+        ];
+        return $providers;
     }
 
     // ------------------------------------------------------------ accounts
@@ -572,27 +598,47 @@ class CloudAiService
 
     public static function save(string $id, array $post): void
     {
-        self::provider($id);
         $p = self::provider($id);
         $db = getDB();
-        $set = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
-        $del = $db->prepare('DELETE FROM sys_settings WHERE setting_key = ?');
+        $values = [];
+        $clear = !empty($post['clear']);
         foreach ($p['fields'] as $f) {
-            $key = "ai_tts.{$id}.{$f['key']}";
-            if (!empty($post['clear'])) {
-                $del->execute([$key]);
+            $field = $f['key'];
+            if (!$clear && str_starts_with($field, 'realtime_') && !array_key_exists($field, $post)) {
                 continue;
             }
-            $v = trim((string) ($post[$f['key']] ?? ''));
+            $v = $clear ? '' : trim((string) ($post[$field] ?? ''));
             if ($v !== '' && !empty($f['json']) && $p['type'] === 'google') {
                 $v = GoogleTts::validateServiceAccount($v);
             }
-            if ($v !== '' && $f['key'] === 'base_url') {
+            if ($v !== '' && $field === 'base_url') {
                 $v = self::validBaseUrl($v) ?? throw new CloudAiException(t('ai_cloud.err_base_url'));
             }
-            if ($v !== '' && $f['key'] === 'model' && !preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#', $v)) {
+            if ($v !== '' && in_array($field, ['model', 'realtime_model'], true) && !preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#D', $v)) {
                 throw new CloudAiException(t('ai_cloud.err_model'));
             }
+            if ($v !== '' && $field === 'realtime_protocol' && !array_key_exists($v, $f['options'])) {
+                throw new CloudAiException(t('ai_cloud.err_realtime_protocol'));
+            }
+            if ($v !== '' && $field === 'realtime_ws_url' && (strlen($v) > 200
+                || !preg_match('~^wss?://[^\s/?#@]+(/[^\s?#]*)?$~D', $v)
+                || filter_var($v, FILTER_VALIDATE_URL) === false)) {
+                throw new CloudAiException(t('ai_cloud.err_realtime_ws_url'));
+            }
+            $values[$field] = $v;
+        }
+        $set = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+        $del = $db->prepare('DELETE FROM sys_settings WHERE setting_key = ?');
+        foreach ($p['fields'] as $f) {
+            if (!array_key_exists($f['key'], $values)) {
+                continue;
+            }
+            $key = "ai_tts.{$id}.{$f['key']}";
+            if ($clear) {
+                $del->execute([$key]);
+                continue;
+            }
+            $v = $values[$f['key']];
             if ($f['secret']) {
                 if ($v !== '') {
                     $set->execute([$key, SecretBox::encrypt($v)]);

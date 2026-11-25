@@ -271,6 +271,8 @@ if [[ "${ADMIN_EXISTS:-0}" -eq 0 ]]; then
     mysql asterisk <<EOF
     INSERT INTO sys_users (username, password_hash, full_name, extension, sip_password, role, is_active, can_listen_recordings, can_view_all_cdrs, can_view_queue_monitor)
     VALUES ('admin', '${ADMIN_HASH}', 'Administrator', '1000', '${ADMIN_SIP_PASS}', 'admin', 1, 1, 1, 1);
+    -- A new installation starts with Cloud AI on: it does nothing until an account has a key.
+    UPDATE sys_plugins SET enabled = 1 WHERE slug = 'aicloud';
 EOF
     ok "Admin user created"
 else
@@ -458,9 +460,6 @@ systemctl enable aipbx-netcfg-boot.service >/dev/null 2>&1 || true
 # and records what it found; the portal decides what happens to it. Installed on
 # fresh installs AND by --upgrade.
 if [ -d "$INSTALL_DIR/engine" ]; then
-    if command -v apt-get >/dev/null 2>&1; then
-        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-pymysql
-    fi
     install -d -o www-data -g www-data -m 0750 /var/lib/aipbx/engine
     # dnsmasq's DHCP log is read with journalctl and it is the source that finds a
     # phone whose lease has expired. Without this group www-data gets "No journal
@@ -483,9 +482,6 @@ fi
 # Signaling page). Installed here on fresh installs AND by --upgrade, so
 # aipbx-update upgrades land the same components.
 if [ -d "$INSTALL_DIR/signaling" ]; then
-    if command -v apt-get >/dev/null 2>&1; then
-        DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq python3-pymysql
-    fi
     # SIP traffic files: written by the daemon (asterisk), read by the portal
     # (www-data is in the asterisk group), nobody else.
     install -d -o asterisk -g asterisk -m 0750 /var/lib/aipbx/sip-capture

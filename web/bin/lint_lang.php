@@ -10,7 +10,8 @@
  * turns that silence into a visible error in CI/manual runs. Item 6 (medium
  * priority) of the 2026-08-23 architecture review.
  *
- * Usage: php bin/lint_lang.php
+ * Usage: php bin/lint_lang.php            (problems; exit 1 when any)
+ *        php bin/lint_lang.php --unused   (keys of en.php the code never names; a report)
  * Exit code: 0 = clean, 1 = problems found.
  */
 if (PHP_SAPI !== 'cli') {
@@ -25,6 +26,58 @@ $en = require $root . '/lang/en.php';
 if (!is_array($tr) || !is_array($en)) {
     fwrite(STDERR, "ERROR: lang/tr.php or lang/en.php does not return an array.\n");
     exit(1);
+}
+
+// --unused: keys of en.php the code never names. A key is "used" when it appears quoted anywhere
+// (PHP, JS, plugins), and "built" when a quoted prefix of it is joined with a value
+// ('group.item_' . $x, "group.{$x}", `group.${x}`). The rest is listed: most are leftovers of
+// replaced pages, but a key put together some other way shows up too, so check before deleting.
+// A report only: it never fails (exit 0).
+if (in_array('--unused', $argv ?? [], true)) {
+    $text = '';
+    $paths = array_merge(
+        array_map(fn($d) => $root . '/' . $d, ['src', 'templates', 'modules', 'api', 'bin', 'assets/js', 'public', 'config.php', 'auth.php', 'index.php']),
+        [dirname($root) . '/plugins', dirname($root) . '/conf']
+    );
+    foreach ($paths as $p) {
+        if (is_file($p)) {
+            $text .= file_get_contents($p) . "\n";
+            continue;
+        }
+        if (!is_dir($p)) {
+            continue;
+        }
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($p, FilesystemIterator::SKIP_DOTS)) as $f) {
+            $path = $f->getPathname();
+            if (preg_match('#/(lang|vendor|node_modules)/#', $path) || !preg_match('/\.(php|js|html|json)$/', $path)) {
+                continue;
+            }
+            $text .= file_get_contents($path) . "\n";
+        }
+    }
+    preg_match_all('/[\'"`]([a-z0-9_]+\.[A-Za-z0-9_.\-]+)[\'"`]/', $text, $m);
+    $quoted = array_flip($m[1]);
+    preg_match_all('/[\'"`]([a-z0-9_]+\.[A-Za-z0-9_.\-]*)[\'"`]\s*[.+]/', $text, $m1);
+    preg_match_all('/["`]([a-z0-9_]+\.[A-Za-z0-9_.\-]*)(?:\{\$|\$\{|\$[a-z])/', $text, $m2);
+    $prefixes = array_unique(array_merge($m1[1], $m2[1]));
+    $unused = [];
+    foreach (array_keys($en) as $key) {
+        if (isset($quoted[$key])) {
+            continue;
+        }
+        foreach ($prefixes as $prefix) {
+            if (str_starts_with($key, $prefix)) {
+                continue 2;
+            }
+        }
+        $unused[] = $key;
+    }
+    sort($unused);
+    foreach ($unused as $key) {
+        echo $key, "\n";
+    }
+    fwrite(STDERR, count($unused) . ' of ' . count($en) . " keys in en.php are not named in the code (check before deleting).\n");
+    exit(0);
 }
 
 $problems = 0;

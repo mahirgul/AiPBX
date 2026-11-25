@@ -4,6 +4,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/src/services/QueueCallbackService.php';
+require_once dirname(__DIR__, 2) . '/src/services/QueueCallbackDispatcher.php';
 
 final class QueueCallbackTest extends TestCase
 {
@@ -72,6 +73,57 @@ final class QueueCallbackTest extends TestCase
         QueueCallbackService::request($this->queue, '03125550100');
         QueueCallbackService::complete('03125550100', '98761', time() - 60);
         $this->assertCount(1, QueueCallbackService::pending('98761'));
+    }
+
+    public function testAutomaticDispatchUsesOnlyReadyMembersAndRetainsUnansweredRequests(): void
+    {
+        $db = getDB();
+        $db->exec("INSERT INTO sys_users (username, password_hash, full_name, extension, role, is_active, outbound_group, permission_group_id)
+            VALUES ('cb_auto_98761', '', 'Test Agent One', '98761', 'cc_agent', 1, 2, 3), ('cb_auto_98762', '', 'Test Agent Two', '98762', 'cc_agent', 1, 1, 1)");
+        QueueCallbackService::request($this->queue, '03125550100');
+        QueueCallbackService::request($this->queue, '03125550101');
+
+        $ready = ['is_busy' => false, 'is_ringing' => false, 'is_unavailable' => false, 'is_paused' => false, 'raw_line' => '(Not in use)'];
+        $waiting = 1;
+        $live = ['98761' => $ready, '98762' => ['is_paused' => true] + $ready];
+        $read = static function () use (&$live, &$waiting): array {
+            return ['callback-test' => ['waiting_count' => $waiting, 'members' => $live]];
+        };
+        $calls = [];
+        $originate = static function (array $agent, string $number) use (&$calls): bool {
+            $calls[] = [$agent['extension'], (int) $agent['outbound_group'], (int) $agent['permission_group_id'], $number];
+            return true;
+        };
+        $this->assertSame(0, QueueCallbackDispatcher::dispatch($read, $originate), 'manual-only by default');
+        $db->prepare('UPDATE pbx_queues SET callback_auto_enabled = 1, wrapuptime = 10 WHERE id = ?')->execute([$this->queue]);
+        $this->assertSame(0, QueueCallbackDispatcher::dispatch($read, $originate), 'live callers take priority');
+        $waiting = 0;
+        $live['98761']['raw_line'] = '(Not in use) (last was 3 secs ago)';
+        $this->assertSame(0, QueueCallbackDispatcher::dispatch($read, $originate), 'respect wrap-up');
+        $live['98761']['raw_line'] = '(Not in use) (last was 15 secs ago)';
+
+        $this->assertSame(1, QueueCallbackDispatcher::dispatch($read, $originate));
+        $this->assertSame([['98761', 2, 3, '03125550100']], $calls);
+        $requests = QueueCallbackService::pending('98761');
+        $this->assertCount(2, $requests);
+        $this->assertSame(1, (int) $requests[0]['auto_attempts']);
+        $this->assertSame('queued', $requests[0]['last_auto_result']);
+        $this->assertNotNull($requests[0]['next_auto_at']);
+        $requestId = (int) $requests[0]['id'];
+        QueueCallbackService::recordAutomaticResult($requestId, 1, 'calling_customer');
+        QueueCallbackService::recordAutomaticResult($requestId, 1, 'agent_unanswered');
+        $this->assertSame('calling_customer', QueueCallbackService::pending('98761')[0]['last_auto_result']);
+        QueueCallbackService::recordAutomaticResult($requestId, 1, 'customer_unanswered');
+        $this->assertSame('customer_unanswered', QueueCallbackService::pending('98761')[0]['last_auto_result']);
+
+        $this->assertSame(0, QueueCallbackDispatcher::dispatch($read, $originate), 'the agent is reserved');
+        $this->assertNull(QueueCallbackService::claim((int) $requests[0]['id'], '98762'));
+
+        $db->prepare('UPDATE cc_callbacks SET auto_attempts = ?, claimed_until = DATE_SUB(NOW(), INTERVAL 1 SECOND) WHERE id = ?')
+            ->execute([QueueCallbackService::MAX_AUTOMATIC_ATTEMPTS, (int) $requests[0]['id']]);
+        $this->assertSame(1, QueueCallbackDispatcher::dispatch($read, $originate));
+        $this->assertSame('03125550101', $calls[1][3]);
+        $this->assertSame('03125550100', QueueCallbackService::claim((int) $requests[0]['id'], '98762'), 'exhausted requests remain manual');
     }
 
     public function testConfirmationIsRequiredSavedAndPlayedOnlyAfterSuccess(): void

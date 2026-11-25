@@ -361,7 +361,7 @@ class GoogleAuthService
     /**
      * Starts a web session (fills the session variables as if the password had been verified).
      */
-    public static function loginUser(array $user, string $clientIp = '127.0.0.1'): string
+    public static function loginUser(array $user, string $clientIp = '127.0.0.1', string $provider = 'Google'): string
     {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
@@ -375,7 +375,7 @@ class GoogleAuthService
                 logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
             }
             if (function_exists('writeAuditLog')) {
-                writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with Google, required to reset password.", 'google_login', (int)$user['id']);
+                writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with {$provider}, required to reset password.", strtolower($provider) . '_login', (int)$user['id']);
             }
             return '/force-reset';
         }
@@ -400,7 +400,7 @@ class GoogleAuthService
             logLoginAttempt($clientIp, $user['username'], 'SUCCESS');
         }
         if (function_exists('writeAuditLog')) {
-            writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with Google ({$user['email']}).", 'google_login', (int)$user['id']);
+            writeAuditLog('security', 'sys_users', (string)$user['id'], "User '{$user['username']}' signed in with {$provider} ({$user['email']}).", strtolower($provider) . '_login', (int)$user['id']);
         }
 
         return roleHomePath($user['role']);

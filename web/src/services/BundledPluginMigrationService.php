@@ -19,9 +19,11 @@ final class BundledPluginMigrationService
     }
 
     /**
-     * The PBX Assistant is the official `ai-assistant` plugin (plugins/ai-assistant). An older
-     * installed `ai-assistant` from the community catalog is removed: its files, its settings and
-     * its API token. The enabled flag stays, so the Assistant stays on or off as it was.
+     * The PBX Assistant is the official `pbx-assistant` plugin (plugins/pbx-assistant); until 1.80 its
+     * id was `ai-assistant`. An older `ai-assistant` from the community catalog is removed: its
+     * files, its settings and its API token. Then whatever is left under the old id (the official
+     * plugin's row, settings and token) moves to `pbx-assistant`, so the Assistant stays on or off
+     * as it was. Runs on every install and upgrade; a second run changes nothing.
      */
     public static function retireCommunityAssistant(PDO $db, string $customDir): void
     {
@@ -33,12 +35,22 @@ final class BundledPluginMigrationService
         $q = $db->prepare("SELECT source FROM sys_plugins WHERE slug = 'ai-assistant'");
         $q->execute();
         $source = $q->fetchColumn();
-        if ($source === false || $source === 'official') { return; }
-        $db->prepare("UPDATE sys_api_tokens SET is_active = 0 WHERE plugin_slug = 'ai-assistant'")->execute();
-        $db->prepare("DELETE FROM sys_plugin_settings WHERE plugin_slug = 'ai-assistant'")->execute();
-        $db->prepare("DELETE FROM sys_plugin_kv WHERE plugin_slug = 'ai-assistant'")->execute();
-        $db->prepare("UPDATE sys_plugins SET source = 'official', name = 'PBX Assistant', version = '2.0.0', updated_at = NOW() WHERE slug = 'ai-assistant'")
+        if ($source === false) { return; }
+        if ($source !== 'official') {
+            $db->prepare("UPDATE sys_api_tokens SET is_active = 0 WHERE plugin_slug = 'ai-assistant'")->execute();
+            $db->prepare("DELETE FROM sys_plugin_settings WHERE plugin_slug = 'ai-assistant'")->execute();
+            $db->prepare("DELETE FROM sys_plugin_kv WHERE plugin_slug = 'ai-assistant'")->execute();
+            $db->prepare("UPDATE sys_plugins SET version = '2.0.0' WHERE slug = 'ai-assistant'")->execute();
+        }
+        // The old row holds the real state (on or off). A `pbx-assistant` row beside it can only be
+        // the empty one the plugin list made on finding the new folder: it gives way.
+        $db->prepare("DELETE FROM sys_plugins WHERE slug = 'pbx-assistant'")->execute();
+        $db->prepare("UPDATE sys_plugins SET slug = 'pbx-assistant', source = 'official', name = 'PBX Assistant', updated_at = NOW() WHERE slug = 'ai-assistant'")
             ->execute();
+        foreach (['sys_plugin_settings', 'sys_plugin_kv', 'sys_api_tokens'] as $table) {
+            $db->prepare("UPDATE IGNORE {$table} SET plugin_slug = 'pbx-assistant' WHERE plugin_slug = 'ai-assistant'")->execute();
+            $db->prepare("DELETE FROM {$table} WHERE plugin_slug = 'ai-assistant'")->execute();
+        }
     }
 
     private static function removeTree(string $dir): void

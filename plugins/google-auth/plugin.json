@@ -1,9 +1,9 @@
 {
     "slug": "google-auth",
-    "name": "Google Sign-In (OAuth 2.0)",
+    "name": "Google Sign-In",
     "name_i18n": {
-        "tr": "Google ile Giriş (OAuth 2.0)",
-        "en": "Google Sign-In (OAuth 2.0)"
+        "en": "Google Sign-In",
+        "tr": "Google ile Giriş"
     },
     "version": "1.1.0",
     "author": "AiPBX Official Team",
@@ -22,7 +22,7 @@
         "auth_provider": true,
         "admin_page": {
             "route": "/google-integration",
-            "group": "integrations"
+            "group": "security"
         }
     },
     "type": "official",

@@ -26,6 +26,7 @@ foreach ($trunks as $trunk) {
                 </button>
             <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
+<?php $dirTabs = ['/inbound-normalization', 'did_routes', '/dialplan-rules', 'outbound_routes']; $dirActive = 'in'; require dirname(__DIR__, 2) . '/direction_tabs.php'; ?>
     <?php echo uiHelpBoxOpen('inboundNormHelpBox', t('inbound_norm.title')); ?>
         <p><?php echo t('inbound_norm.help'); ?></p>
         <p class="u-mt-8"><?php echo t('common.help_number_order'); ?></p>

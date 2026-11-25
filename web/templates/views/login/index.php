@@ -79,7 +79,7 @@ $brand_html = ob_get_clean();
         <button type="button" class="btn btn-outline-primary u-w-100 u-jc-center u-fw-700 u-gap-8 u-r-12" id="btnPasskeyLogin" onclick="loginWithPasskey()">
             <i class="fas fa-fingerprint u-fs-16"></i> <?php echo t('login.btn_passkey'); ?>
         </button>
-<?php elseif (!empty($googleLoginEnabled) || !empty($oidcLoginEnabled) || !empty($samlLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled()) || (class_exists('OidcAuthService') && OidcAuthService::isEnabled()) || (class_exists('SamlAuthService') && SamlAuthService::isEnabled())): ?>
+<?php elseif (!empty($googleLoginEnabled) || !empty($microsoftLoginEnabled) || !empty($oidcLoginEnabled) || !empty($samlLoginEnabled) || (class_exists('GoogleAuthService') && GoogleAuthService::isEnabled()) || (class_exists('MicrosoftAuthService') && MicrosoftAuthService::isEnabled()) || (class_exists('OidcAuthService') && OidcAuthService::isEnabled()) || (class_exists('SamlAuthService') && SamlAuthService::isEnabled())): ?>
         <div class="u-d-flex u-ai-center u-m-16-0-12-0 u-gap-12">
             <div class="u-flex-1 u-h-1 u-bg-border-color"></div>
             <span class="u-fs-11 u-muted u-uppercase u-fw-700"><?php echo t('login.or_divider'); ?></span>
@@ -96,6 +96,18 @@ $brand_html = ob_get_clean();
                 <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.166 6.656 3.58 9 3.58z"/>
             </svg>
             <span><?php echo t('login.btn_google'); ?></span>
+        </a>
+        <?php endif; ?>
+
+        <?php if (!empty($microsoftLoginEnabled) || (class_exists('MicrosoftAuthService') && MicrosoftAuthService::isEnabled())): ?>
+        <a href="/auth/microsoft" class="btn u-w-100 u-jc-center u-fw-700 u-gap-12 u-r-12 u-mt-12 u-bg-ffffff u-c-3c4043 u-bd-1-solid-dadce0 u-box-shadow-0-1-2-rgba-60-64-67-0-1 u-text-decoration-none u-d-inline-flex u-ai-center u-transition-all-0-2s">
+            <svg width="18" height="18" viewBox="0 0 21 21" aria-hidden="true">
+                <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+                <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+                <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+                <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+            </svg>
+            <span><?php echo t('login.btn_microsoft'); ?></span>
         </a>
         <?php endif; ?>
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../secret_box.php';
+require_once __DIR__ . '/ExternalDbQueryService.php';
 
 /**
  * The shared phonebook (phonebook_contacts) and the switch of the LDAP
@@ -14,9 +15,9 @@ final class PhonebookService
 {
     public const BASE_DN = 'ou=phonebook,dc=aipbx';
     public const BIND_DN = 'cn=phonebook,dc=aipbx';
-    public const FIELDS = ['display_name', 'first_name', 'last_name', 'company', 'phone_work', 'phone_mobile', 'phone_other', 'email'];
+    public const FIELDS = ['display_name', 'first_name', 'last_name', 'company', 'sub_extension', 'phone_work', 'phone_mobile', 'phone_other', 'email'];
     private const LIMITS = ['display_name' => 150, 'first_name' => 80, 'last_name' => 80, 'company' => 120,
-        'phone_work' => 40, 'phone_mobile' => 40, 'phone_other' => 40, 'email' => 191];
+        'sub_extension' => 32, 'phone_work' => 40, 'phone_mobile' => 40, 'phone_other' => 40, 'email' => 191];
     /** Number labels, in the order the form offers them. */
     public const LABELS = ['mobile', 'work', 'work2', 'home', 'fax', 'other'];
     public const MAX_NUMBERS = 12;
@@ -51,6 +52,7 @@ final class PhonebookService
         }
         foreach ($rows as &$r) {
             $r['numbers'] = $byId[(int) $r['id']] ?? [];
+            $r['customer_id'] = (string) ($r['external_id'] ?? '');
             unset($r['numbers_indexed_at']);
         }
         return $rows;
@@ -367,7 +369,9 @@ final class PhonebookService
         $row = [];
         foreach (self::FIELDS as $f) {
             $v = trim(preg_replace('/[\x00-\x1F\x7F]/u', '', (string) ($in[$f] ?? '')) ?? '');
-            if (str_starts_with($f, 'phone_')) {
+            if ($f === 'sub_extension') {
+                $v = trim(preg_replace('/[^0-9*#wW,]/', '', $v) ?? '');
+            } elseif (str_starts_with($f, 'phone_')) {
                 $v = trim(preg_replace('/[^0-9+*# ]/', '', $v) ?? '');
             }
             $row[$f] = mb_substr($v, 0, self::LIMITS[$f]);
@@ -402,7 +406,7 @@ final class PhonebookService
      *
      * @return array{0: int, 1: string} the id (0 when refused) and the error key
      */
-    public static function store(int $id, array $in): array
+    public static function store(int $id, array $in, ?bool $vip = null): array
     {
         [$row, $err] = self::clean($in);
         if ($row === null) {
@@ -412,7 +416,15 @@ final class PhonebookService
         unset($row['numbers']);
         $db = getDB();
         $cols = self::FIELDS;
-        $externalId = mb_substr(trim((string) ($in['external_id'] ?? '')), 0, 191);
+        if ($vip !== null) {
+            $cols[] = 'is_vip';
+            $row['is_vip'] = (int) $vip;
+        }
+        $hasExtIdKey = array_key_exists('customer_id', $in) || array_key_exists('external_id', $in);
+        $rawExtId = trim((string) ($in['customer_id'] ?? '')) !== ''
+            ? (string) $in['customer_id']
+            : (string) ($in['external_id'] ?? ($in['customer_id'] ?? ''));
+        $externalId = mb_substr(trim(preg_replace('/[\x00-\x1F\x7F]/u', '', $rawExtId) ?? ''), 0, 191);
         if ($id <= 0 && $externalId !== '') {
             $st = $db->prepare("SELECT id FROM phonebook_contacts WHERE source = 'manual' AND external_id = ?");
             $st->execute([$externalId]);
@@ -421,6 +433,18 @@ final class PhonebookService
         if ($id > 0) {
             if (!self::exists($id)) {
                 return [0, 'common.action_failed'];
+            }
+            if ($hasExtIdKey) {
+                $conflict = false;
+                if ($externalId !== '') {
+                    $chk = $db->prepare("SELECT 1 FROM phonebook_contacts WHERE source = 'manual' AND external_id = ? AND id <> ? LIMIT 1");
+                    $chk->execute([$externalId, $id]);
+                    $conflict = (bool) $chk->fetchColumn();
+                }
+                if (!$conflict) {
+                    $cols[] = 'external_id';
+                    $row['external_id'] = $externalId !== '' ? $externalId : null;
+                }
             }
             $set = implode(', ', array_map(fn($c) => "$c = ?", $cols));
             $db->prepare("UPDATE phonebook_contacts SET $set WHERE id = ? AND source = 'manual'")->execute([...array_values($row), $id]);
@@ -447,14 +471,26 @@ final class PhonebookService
         $q = trim($q);
         if ($q !== '') {
             $like = '%' . addcslashes($q, '%_\\') . '%';
-            $where = '(display_name LIKE ? OR company LIKE ? OR email LIKE ?';
-            $params = [$like, $like, $like];
             $key = self::matchKey($q);
-            if (strlen($key) >= 3 && preg_match('/^[0-9+()\s.-]+$/', $q)) {
-                $where .= ' OR id IN (SELECT contact_id FROM phonebook_numbers WHERE match_key = ?)';
-                $params[] = $key;
+            $tokens = array_values(array_filter(preg_split('/\s+/u', $q) ?: [], static fn (string $t): bool => mb_strlen($t) >= 2));
+            if (count($tokens) > 1 && count($tokens) <= 5 && !(strlen($key) >= 3 && preg_match('/^[0-9+()\s.-]+$/', $q))) {
+                $tokenClauses = [];
+                foreach ($tokens as $tok) {
+                    $tLike = '%' . addcslashes($tok, '%_\\') . '%';
+                    $tokenClauses[] = '(display_name LIKE ? OR company LIKE ? OR first_name LIKE ? OR last_name LIKE ?)';
+                    array_push($params, $tLike, $tLike, $tLike, $tLike);
+                }
+                $where = '((' . implode(' AND ', $tokenClauses) . ') OR display_name LIKE ? OR company LIKE ? OR email LIKE ? OR external_id LIKE ?)';
+                array_push($params, $like, $like, $like, $like);
+            } else {
+                $where = '(display_name LIKE ? OR company LIKE ? OR email LIKE ? OR external_id LIKE ?';
+                $params = [$like, $like, $like, $like];
+                if (strlen($key) >= 3 && preg_match('/^[0-9+()\s.-]+$/', $q)) {
+                    $where .= ' OR id IN (SELECT contact_id FROM phonebook_numbers WHERE match_key = ?)';
+                    $params[] = $key;
+                }
+                $where .= ')';
             }
-            $where .= ')';
         }
         $st = $db->prepare("SELECT COUNT(*) FROM phonebook_contacts WHERE $where");
         $st->execute($params);
@@ -583,5 +619,117 @@ final class PhonebookService
             return true;
         }
         return false;
+    }
+
+    // ---- External DB phonebook sync (D3) ----
+
+    /** @return array{db_id: int, sql: string, enabled: bool, query_key: string} */
+    public static function externalDbSettings(): array
+    {
+        $st = getDB()->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key IN ('phonebook_extdb_id', 'phonebook_extdb_sql', 'phonebook_extdb_sync_enabled', 'phonebook_extdb_query_key')");
+        $s = $st ? $st->fetchAll(PDO::FETCH_KEY_PAIR) : [];
+        $dbId = max(0, (int) ($s['phonebook_extdb_id'] ?? 0));
+        $sql = (string) ($s['phonebook_extdb_sql'] ?? '');
+        $queryKey = trim((string) ($s['phonebook_extdb_query_key'] ?? ''));
+        if ($queryKey !== '') {
+            $q = ExternalDbQueryService::find($queryKey);
+            $dbId = 0;
+            $sql = '';
+            if ($q && ExternalDbQueryService::available($q) && $q['access_mode'] === 'public'
+                && !DataSourceService::placeholders((string) $q['query_sql'], true)) {
+                $dbId = (int) $q['external_db_id'];
+                $sql = (string) $q['query_sql'];
+            }
+        }
+        return [
+            'db_id' => $dbId,
+            'sql' => $sql,
+            'enabled' => $dbId > 0 && $sql !== '' && ($s['phonebook_extdb_sync_enabled'] ?? '0') === '1',
+            'query_key' => $queryKey,
+        ];
+    }
+
+    public static function saveExternalDbSettings(int $dbId, string $sql, bool $enabled, string $queryKey = ''): void
+    {
+        $sql = trim($sql);
+        if ($dbId > 0) {
+            $conn = ExternalDbRepository::findById($dbId);
+            if (!$conn || empty($conn['is_active'])) {
+                throw new \InvalidArgumentException(t('phonebook.err_extdb_missing'));
+            }
+        }
+        if ($sql !== '') {
+            ExternalDbService::assertReadOnlyQuery($sql);
+        } elseif ($enabled || $dbId > 0) {
+            throw new \InvalidArgumentException(t('phonebook.err_extdb_sql'));
+        }
+
+        $st = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
+        foreach ([
+            'phonebook_extdb_id' => (string) max(0, $dbId),
+            'phonebook_extdb_sql' => $sql,
+            'phonebook_extdb_sync_enabled' => $enabled ? '1' : '0',
+            'phonebook_extdb_query_key' => trim($queryKey),
+        ] as $k => $v) {
+            $st->execute([$k, $v]);
+        }
+    }
+
+    /**
+     * Imports rows from an external SELECT query into manual phonebook contacts,
+     * updating existing rows when external_id matches.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @return array{added: int, updated: int, skipped: int}
+     */
+    public static function importExternalRows(array $rows): array
+    {
+        $added = $updated = $skipped = 0;
+        $check = getDB()->prepare("SELECT id FROM phonebook_contacts WHERE source = 'manual' AND external_id = ?");
+
+        foreach ($rows as $row) {
+            $extId = mb_substr(trim((string) ($row['customer_id'] ?? $row['external_id'] ?? '')), 0, 191);
+            $existed = false;
+            if ($extId !== '') {
+                $check->execute([$extId]);
+                $existed = (bool) $check->fetchColumn();
+            }
+
+            $in = [
+                'external_id' => $extId,
+                'display_name' => (string) ($row['display_name'] ?? ''),
+                'first_name' => (string) ($row['first_name'] ?? ''),
+                'last_name' => (string) ($row['last_name'] ?? ''),
+                'company' => (string) ($row['company'] ?? ''),
+                'sub_extension' => (string) ($row['sub_extension'] ?? $row['extension'] ?? ''),
+                'phone_work' => (string) ($row['phone_work'] ?? ''),
+                'phone_mobile' => (string) ($row['phone_mobile'] ?? ''),
+                'phone_other' => (string) ($row['phone_other'] ?? ''),
+                'email' => (string) ($row['email'] ?? ''),
+            ];
+            [$savedId, $err] = self::store(0, $in);
+            if ($err !== '' || $savedId <= 0) {
+                $skipped++;
+            } elseif ($existed) {
+                $updated++;
+            } else {
+                $added++;
+            }
+        }
+
+        return ['added' => $added, 'updated' => $updated, 'skipped' => $skipped];
+    }
+
+    /** @return array{added: int, updated: int, skipped: int} */
+    public static function syncFromExternalDb(?int $connectionId = null, ?string $sql = null): array
+    {
+        $cfg = self::externalDbSettings();
+        $dbId = $connectionId ?? $cfg['db_id'];
+        $query = trim((string) ($sql ?? $cfg['sql']));
+        if ($dbId <= 0 || $query === '') {
+            throw new \InvalidArgumentException(t('phonebook.err_extdb_sql'));
+        }
+        $rows = ExternalDbService::executeQuery($dbId, $query);
+        return self::importExternalRows($rows);
     }
 }

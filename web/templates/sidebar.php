@@ -70,7 +70,7 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
     <?php endif; ?>
 
     <?php
-    $can_assistant_search = hasModulePermission('assistant', 'view') && PluginManager::isEnabled('ai-assistant');
+    $can_assistant_search = hasModulePermission('assistant', 'view') && PluginManager::isEnabled('pbx-assistant');
     ?>
     <div class="sidebar-search-wrap">
         <div class="u-relative">
@@ -85,25 +85,61 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
         <?php endif; ?>
     </div>
 
+    <?php
+    $sidebar_label = fn($l) => is_array($l) ? t($l[0], $l[1]) : t($l);
+    $sidebar_icon = fn(array $e) => '<i class="' . $e['icon'] . '"' . (isset($e['icon_style']) ? ' style="' . $e['icon_style'] . '"' : '') . '></i>';
+    $request_path = parse_url($request_uri ?? '', PHP_URL_PATH) ?: '/';
+    $is_active = fn($item) => ($item['href'] === $request_path)
+        || ($active_page !== 'index.php' && in_array($active_page, $item['pages'], true))
+        || (isset($item['uri']) && str_contains($request_uri, $item['uri']));
+
+    $visibleGroups = [];
+    $hasOps = false;
+    $hasSettings = false;
+    $forcedSection = null;
+    foreach (require __DIR__ . '/sidebar_menu.php' as $group) {
+        $items = array_filter($group['items'], fn($item) => $item['show']);
+        if (!$items) {
+            continue;
+        }
+        $sec = (string) ($group['section'] ?? 'ops');
+        if ($sec === 'settings') {
+            $hasSettings = true;
+        } else {
+            $hasOps = true;
+        }
+        $open = ($active_page !== 'index.php' && in_array($active_page, $group['open_on'] ?? [], true))
+            || ($request_path === '/' && in_array('index.php', $group['open_on'] ?? [], true))
+            || (bool) array_filter($items, $is_active);
+        if ($open && $forcedSection === null) {
+            $forcedSection = $sec;
+        }
+        $visibleGroups[] = ['group' => $group, 'items' => $items, 'section' => $sec, 'open' => $open];
+    }
+    $showSwitcher = $hasOps && $hasSettings && getSystemSetting('sidebar_layout', 'split') !== 'single';
+    $activeSection = $forcedSection ?? 'ops';
+    ?>
+
+    <?php if ($showSwitcher): ?>
+    <div id="sidebar-section-switcher" class="sidebar-section-switcher u-d-flex u-gap-6" role="tablist">
+        <button type="button" id="sb-sec-ops" role="tab" aria-selected="<?php echo $activeSection === 'ops' ? 'true' : 'false'; ?>" class="btn btn-xs u-flex-1 u-jc-center <?php echo $activeSection === 'ops' ? 'btn-primary' : 'btn-ghost'; ?>" onclick="switchSidebarSection('ops', true)">
+            <i class="fas fa-briefcase"></i> <span class="nav-text"><?php echo htmlspecialchars(t('sidebar.section_operations')); ?></span>
+        </button>
+        <button type="button" id="sb-sec-settings" role="tab" aria-selected="<?php echo $activeSection === 'settings' ? 'true' : 'false'; ?>" class="btn btn-xs u-flex-1 u-jc-center <?php echo $activeSection === 'settings' ? 'btn-primary' : 'btn-ghost'; ?>" onclick="switchSidebarSection('settings', true)">
+            <i class="fas fa-sliders-h"></i> <span class="nav-text"><?php echo htmlspecialchars(t('sidebar.section_settings')); ?></span>
+        </button>
+    </div>
+    <?php endif; ?>
+
     <ul class="nav-menu">
-        <?php
-        $sidebar_label = fn($l) => is_array($l) ? t($l[0], $l[1]) : t($l);
-        $sidebar_icon = fn(array $e) => '<i class="' . $e['icon'] . '"' . (isset($e['icon_style']) ? ' style="' . $e['icon_style'] . '"' : '') . '></i>';
-        $request_path = parse_url($request_uri ?? '', PHP_URL_PATH) ?: '/';
-        foreach (require __DIR__ . '/sidebar_menu.php' as $group):
-            $items = array_filter($group['items'], fn($item) => $item['show']);
-            if (!$items) {
-                continue;
-            }
-            $is_active = fn($item) => ($item['href'] === $request_path)
-                || ($active_page !== 'index.php' && in_array($active_page, $item['pages'], true))
-                || (isset($item['uri']) && str_contains($request_uri, $item['uri']));
-            $open = ($active_page !== 'index.php' && in_array($active_page, $group['open_on'] ?? [], true))
-                || ($request_path === '/' && in_array('index.php', $group['open_on'] ?? [], true))
-                || (bool) array_filter($group['items'], $is_active);
+        <?php foreach ($visibleGroups as $vg):
+            $group = $vg['group'];
+            $items = $vg['items'];
+            $sec = $vg['section'];
+            $open = $vg['open'];
             $group_label = $sidebar_label($group['label']);
             ?>
-            <li class="nav-group <?php echo ($open && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-<?php echo $group['id']; ?>">
+            <li class="nav-group <?php echo ($open && !$is_collapsed_cookie) ? 'open' : ''; ?>" id="group-<?php echo $group['id']; ?>" data-section="<?php echo $sec; ?>"<?php echo ($showSwitcher && $sec !== $activeSection) ? ' hidden' : ''; ?>>
                 <button class="nav-toggle-btn" onclick="toggleNavGroup('group-<?php echo $group['id']; ?>')" title="<?php echo $group_label; ?>">
                     <span class="toggle-title">
                         <?php echo $sidebar_icon($group); ?> <span class="nav-text"><?php echo $group_label; ?></span>
@@ -122,4 +158,39 @@ $is_collapsed_cookie = isset($_COOKIE['sidebar_collapsed']) && $_COOKIE['sidebar
             </li>
         <?php endforeach; ?>
     </ul>
+    <?php if ($showSwitcher): ?>
+    <script>
+    (function () {
+        var forced = <?php echo json_encode($forcedSection); ?>;
+        var current = forced || (localStorage.getItem('aipbx_sidebar_section') || 'ops');
+        if (current !== 'ops' && current !== 'settings') current = 'ops';
+
+        window.applySidebarSection = function () {
+            var opsBtn = document.getElementById('sb-sec-ops');
+            var setBtn = document.getElementById('sb-sec-settings');
+            if (opsBtn && setBtn) {
+                opsBtn.classList.toggle('btn-primary', current === 'ops');
+                opsBtn.classList.toggle('btn-ghost', current !== 'ops');
+                opsBtn.setAttribute('aria-selected', current === 'ops' ? 'true' : 'false');
+                setBtn.classList.toggle('btn-primary', current === 'settings');
+                setBtn.classList.toggle('btn-ghost', current !== 'settings');
+                setBtn.setAttribute('aria-selected', current === 'settings' ? 'true' : 'false');
+            }
+            document.querySelectorAll('#app-sidebar .nav-group[data-section]').forEach(function (g) {
+                g.hidden = g.getAttribute('data-section') !== current;
+            });
+        };
+
+        window.switchSidebarSection = function (sec, persist) {
+            current = (sec === 'settings') ? 'settings' : 'ops';
+            if (persist) {
+                try { localStorage.setItem('aipbx_sidebar_section', current); } catch (e) {}
+            }
+            window.applySidebarSection();
+        };
+
+        window.applySidebarSection();
+    })();
+    </script>
+    <?php endif; ?>
 </aside>

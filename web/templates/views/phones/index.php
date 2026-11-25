@@ -37,6 +37,21 @@ $userOptions = function () use ($users) {
 };
 ?>
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/phones.css'); ?>">
+<?php
+// Green: seen in the last 30 minutes; grey: not seen since.
+$seenDot = fn(?string $at): string => PhoneDiscoveryService::seenRecently($at)
+    ? '<span class="seen-dot is-on" title="' . htmlspecialchars(t('phonedisc.seen_recent')) . '"></span>'
+    : '<span class="seen-dot" title="' . htmlspecialchars(t('phonedisc.seen_old')) . '"></span>';
+$phonesTabs = [
+    'phones'    => ['label' => t('phones.title'), 'icon' => 'fa-phone', 'badge' => (string) count($phones)],
+    'discovery' => ['label' => t('phonedisc.title'), 'icon' => 'fa-wifi', 'badge' => (string) count($discovered)],
+    'waiting'   => ['label' => t('phones.waiting_title'), 'icon' => 'fa-hourglass-half', 'badge' => (string) count($waiting)],
+];
+$activePhonesTab = (string) ($_GET['tab'] ?? 'phones');
+if (!isset($phonesTabs[$activePhonesTab])) {
+    $activePhonesTab = 'phones';
+}
+?>
 
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-phone', t('phones.title'), 'phonesHelpBox'); ?>
@@ -53,6 +68,7 @@ $userOptions = function () use ($users) {
                 <button type="button" class="btn btn-primary btn-sm" onclick="openCreatePhoneModal()" title="<?php echo t('phones.add'); ?>"><i class="fas fa-plus-circle"></i> <?php echo t('phones.add'); ?></button>
             <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
+<?php echo uiTabs($phonesTabs, $activePhonesTab); ?>
 
     <?php echo uiHelpBoxOpen('phonesHelpBox', t('phones.help_title')); ?>
         <p><?php echo t('phones.help_body'); ?></p>
@@ -62,6 +78,8 @@ $userOptions = function () use ($users) {
             <li><strong><?php echo t('phones.help_keys'); ?></strong> <?php echo t('phones.help_keys_desc'); ?></li>
         </ul>
 <?php echo uiHelpBoxClose(); ?>
+
+    <div data-tab-pane="phones"<?php echo $activePhonesTab === 'phones' ? '' : ' hidden'; ?>>
 
     <?php echo uiTableOpen([
         t('phones.col_mac'),
@@ -148,7 +166,7 @@ $userOptions = function () use ($users) {
                     <?php endforeach; ?>
                 <?php endif; ?>
             <?php echo uiTableClose(); ?>
-</div>
+    </div>
 
 <?php
 // --- Phones the discovery engine found on the network -----------------------
@@ -164,20 +182,18 @@ $pool = array_filter(explode(',', $discovery['provision_discovery_pool']));
 // vendor => model: a vendor that is not here is never provisioned automatically.
 $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_discovery_models']);
 ?>
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-wifi u-primary"></i> <?php echo t('phonedisc.title'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($discovered); ?></span>
+<div data-tab-pane="discovery"<?php echo $activePhonesTab === 'discovery' ? '' : ' hidden'; ?>>
+    <div class="u-d-flex u-jc-space-between u-ai-center u-wrap u-gap-8 u-mb-8">
+        <div class="u-d-flex u-ai-center u-gap-8">
+            <span class="u-fw-600"><i class="fas fa-wifi u-primary"></i> <?php echo t('phonedisc.title'); ?></span>
+            <span class="badge badge-secondary u-fs-11"><?php echo count($discovered); ?></span>
             <?php if ($discoverySummary['new'] > 0): ?>
-                <span class="badge badge-warning u-fs-11 u-ml-8"><?php echo sprintf(t('phonedisc.badge_new'), $discoverySummary['new']); ?></span>
+                <span class="badge badge-warning u-fs-11"><?php echo sprintf(t('phonedisc.badge_new'), $discoverySummary['new']); ?></span>
             <?php endif; ?>
         </div>
-        <div class="u-flex-center">
-            <?php if ($canEdit): ?>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('discoverySettingsModal')" title="<?php echo t('phonedisc.settings_title'); ?>"><i class="fas fa-sliders-h"></i> <?php echo t('phonedisc.settings_btn'); ?></button>
-            <?php endif; ?>
-        </div>
+        <?php if ($canEdit): ?>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="UIHelper.openOverlayModal('discoverySettingsModal')" title="<?php echo t('phonedisc.settings_title'); ?>"><i class="fas fa-sliders-h"></i> <?php echo t('phonedisc.settings_btn'); ?></button>
+        <?php endif; ?>
     </div>
     <p class="text-muted u-fs-12"><?php echo t('phonedisc.desc'); ?></p>
     <div class="alert alert-info u-fs-12 u-mb-10">
@@ -196,9 +212,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
             <?php else: ?>
                 — <strong><?php echo t('phonedisc.engine_never'); ?></strong>
             <?php endif; ?>
-            <?php foreach (($discoveryEngine['log'] ?? []) as $i => $line): ?>
-                <?php if ($i === 0): ?><br><?php endif; ?><code class="u-fs-11"><?php echo htmlspecialchars($line); ?></code><br>
-            <?php endforeach; ?>
+            — <a href="/phone-logs?tab=discovery"><?php echo t('phonedisc.log_link'); ?></a>
         </span>
     </div>
     <?php echo uiTableOpen([
@@ -224,9 +238,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                             <td class="u-fs-11">
                                 <?php echo htmlspecialchars(t('phonedisc.src_' . ($d['source'] ?: 'unknown'))); ?>
                             </td>
-                            <td class="u-fs-11"><?php echo htmlspecialchars((string) $d['last_seen_at']); ?>
-                                <div class="text-muted"><?php echo sprintf(t('phonedisc.seen_times'), (int) $d['seen_count']); ?></div>
-                            </td>
+                            <td class="u-fs-11"><?php echo $seenDot($d['last_seen_at']); ?><?php echo htmlspecialchars((string) $d['last_seen_at']); ?></td>
                             <td>
                                 <span class="badge <?php echo $badge; ?>"><?php echo t($label); ?></span>
                                 <?php if (!empty($d['extension'])): ?>
@@ -254,6 +266,13 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                                             <button type="submit" name="ignore_discovery" value="1" class="btn btn-icon btn-danger btn-sm" title="<?php echo t('phonedisc.ignore'); ?>"><i class="fas fa-ban"></i></button>
                                         </form>
                                     <?php endif; ?>
+                                    <?php if ($canEdit): ?>
+                                        <form method="POST" class="u-inline">
+                                            <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
+                                            <input type="hidden" name="discovery_id" value="<?php echo (int) $d['id']; ?>">
+                                            <button type="submit" name="delete_discovery" value="1" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('phonedisc.delete'); ?>" onclick="return confirm(<?php echo htmlspecialchars(json_encode(t('phonedisc.delete_confirm')), ENT_QUOTES); ?>);"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    <?php endif; ?>
                                     <?php if ($canEdit && $d['state'] === 'ignored'): ?>
                                         <form method="POST" class="u-inline">
                                             <input type="hidden" name="csrf_token" value="<?php echo $csrf; ?>">
@@ -269,13 +288,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
             <?php echo uiTableClose(); ?>
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <i class="fas fa-hourglass-half u-warning"></i> <?php echo t('phones.waiting_title'); ?>
-            <span class="badge badge-secondary u-fs-11 u-ml-8"><?php echo count($waiting); ?></span>
-        </div>
-    </div>
+<div data-tab-pane="waiting"<?php echo $activePhonesTab === 'waiting' ? '' : ' hidden'; ?>>
     <p class="text-muted u-fs-12"><?php echo t('phones.waiting_desc'); ?></p>
     <?php echo uiTableOpen([
         t('phones.col_mac'),
@@ -294,7 +307,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                                 <div class="text-muted u-fs-11" title="<?php echo htmlspecialchars($w['user_agent']); ?>"><?php echo htmlspecialchars(mb_strimwidth($w['user_agent'], 0, 40, '…')); ?></div>
                             </td>
                             <td><?php echo htmlspecialchars($w['ip']); ?></td>
-                            <td class="u-fs-11"><?php echo htmlspecialchars($w['last_seen_at']); ?> (<?php echo (int) $w['request_count']; ?>×)</td>
+                            <td class="u-fs-11"><?php echo $seenDot($w['last_seen_at']); ?><?php echo htmlspecialchars($w['last_seen_at']); ?></td>
                             <td class="text-right">
                                 <?php if ($canEdit): ?>
                                     <form method="POST" class="phones-assign-form">
@@ -317,6 +330,7 @@ $configuredModels = PhoneDiscoveryService::parseModels($discovery['provision_dis
                     <?php endforeach; ?>
                 <?php endif; ?>
             <?php echo uiTableClose(); ?>
+</div>
 </div>
 
 <!-- The phones' requests (HTTPS, FTP, TFTP, DHCP) are on PBX -> Phone logs, one tab each. -->

@@ -267,6 +267,26 @@ class PhoneDiscoveryService
         });
     }
 
+    /** Off the list. A phone still on the network is found again on the next scan (every 5 minutes). */
+    public static function delete(int $id, string $csrf): array
+    {
+        return PBXHelper::handleAction($csrf, function () use ($id) {
+            if (self::get($id) === null) {
+                throw new \Exception(t('phones.err_not_found'));
+            }
+            getDB()->prepare('DELETE FROM pbx_phone_discoveries WHERE id = ?')->execute([$id]);
+            self::touch($id, 'delete');
+            return t('phonedisc.deleted');
+        });
+    }
+
+    /** Seen in the last 30 minutes (the scan runs every 5): the green dot on the page. */
+    public static function seenRecently(?string $lastSeenAt): bool
+    {
+        $ts = $lastSeenAt ? strtotime($lastSeenAt) : false;
+        return $ts !== false && time() - $ts <= 1800;
+    }
+
     /** Back to "new": the automatic step may look at it again. */
     public static function restore(int $id, string $csrf): array
     {

@@ -35,7 +35,7 @@ class AiKnowledgeController extends BaseController
                     if ($action === 'save_collection') {
                         requireModulePermission('ai_knowledge', 'edit');
                         $active_tab = 'collections';
-                        $roles = is_array($_POST['allowed_roles'] ?? null) ? array_map('strval', $_POST['allowed_roles']) : [];
+                        $roles = is_array($_POST['allowed_roles'] ?? null) ? array_map('strval', $_POST['allowed_roles']) : ['*'];
                         AiKnowledgeService::saveCollection(
                             (int) ($_POST['id'] ?? 0),
                             (string) ($_POST['name'] ?? ''),

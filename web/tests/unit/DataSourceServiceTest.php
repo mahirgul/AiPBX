@@ -12,16 +12,17 @@ final class DataSourceServiceTest extends TestCase
     public function testVariablesInSqlAreParametersEachTime(): void
     {
         [$sql, $params] = DataSourceService::bindSql(
-            "SELECT 'Label :time' AS lbl, a FROM t WHERE x = :caller_id OR y = :caller_id OR z = :var_ACCOUNT AND w = '12:30' AND v::text = :input /* :date */",
+            "SELECT 'Label :time {caller_id} \$input' AS lbl, a FROM t WHERE x = :caller_id OR y = {caller_id} OR z = \$var_ACCOUNT AND w = '12:30' AND v::text = :input /* :date */",
             ['caller_id' => '0532', 'var_ACCOUNT' => '77', 'input' => '5', 'time' => '09:00']
         );
-        $this->assertSame("SELECT 'Label :time' AS lbl, a FROM t WHERE x = :p1 OR y = :p2 OR z = :p3 AND w = '12:30' AND v::text = :p4 /* :date */", $sql);
+        $this->assertSame("SELECT 'Label :time {caller_id} \$input' AS lbl, a FROM t WHERE x = :p1 OR y = :p2 OR z = :p3 AND w = '12:30' AND v::text = :p4 /* :date */", $sql);
         $this->assertSame([':p1' => '0532', ':p2' => '0532', ':p3' => '77', ':p4' => '5'], $params);
     }
 
     public function testUnknownNamesAreFound(): void
     {
         $this->assertSame(['phone'], DataSourceService::unknownPlaceholders('SELECT 1 WHERE a = :phone AND b = :input', true));
+        $this->assertSame(['foo'], DataSourceService::unknownPlaceholders('SELECT 1 WHERE a = {foo} AND b = $caller_id', true));
         $this->assertSame(['foo'], DataSourceService::unknownPlaceholders('https://x.test/?a={foo}&b={did}&c={var_X}'));
         $this->assertSame(['caller_id', 'var_X'], DataSourceService::placeholders('https://x.test/?a={caller_id}&b={var_X}&c={foo}'));
     }
@@ -92,5 +93,68 @@ final class DataSourceServiceTest extends TestCase
         $this->assertSame('agi://127.0.0.1:4573/vip-check', AgiScriptService::dialplanTarget('script:vip-check'));
         $this->assertSame('', AgiScriptService::dialplanTarget('script:../x'));
         $this->assertSame('', AgiScriptService::dialplanTarget('bin:not-there.sh'));
+    }
+
+    public function testCustomerIdIsResolvedFromPhonebookByCallerNumber(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/services/PhonebookService.php';
+        $db = getDB();
+        $db->exec("DELETE FROM phonebook_contacts WHERE source = 'manual' AND external_id = 'CUST-ZZ-99'");
+        try {
+            [$id, $err] = PhonebookService::store(0, [
+                'customer_id' => 'CUST-ZZ-99',
+                'display_name' => 'Orhan Yılmaz',
+                'phone_mobile' => '+90 535 777 88 99',
+            ]);
+            $this->assertSame('', $err);
+            $this->assertGreaterThan(0, $id);
+
+            $resolved = DataSourceService::withDefaults(['caller_id' => '05357778899']);
+            $this->assertSame('CUST-ZZ-99', $resolved['customer_id']);
+            $this->assertSame('CUST-ZZ-99', $resolved['external_id']);
+
+            [$boundSql, $params] = DataSourceService::bindSql('SELECT * FROM orders WHERE cust = {customer_id}', $resolved);
+            $this->assertSame('SELECT * FROM orders WHERE cust = :p1', $boundSql);
+            $this->assertSame([':p1' => 'CUST-ZZ-99'], $params);
+        } finally {
+            $db->exec("DELETE FROM phonebook_contacts WHERE source = 'manual' AND external_id = 'CUST-ZZ-99'");
+        }
+    }
+
+    public function testCustomerIdIsResolvedFromCrmConnectionWhenNotInPhonebook(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/services/ConnectionService.php';
+        $db = getDB();
+        $prevCsrf = $_SESSION['csrf_token'] ?? null;
+        $_SESSION['csrf_token'] = 'ds-crm-csrf';
+
+        $created = ConnectionService::create([
+            'name' => 'zz conn ds_crm',
+            'kind' => 'odoo',
+            'base_url' => 'https://8.8.8.8',
+        ], 'ds-crm-csrf');
+        $this->assertTrue($created['success'], (string) ($created['message'] ?? ''));
+
+        ConnectionService::$lookupTransport = static fn (): string => json_encode([
+            'found' => true,
+            'customer_id' => 'CRM-7788',
+            'name' => 'Mehmet Demir',
+            'company' => 'Demo Corp',
+        ]) ?: '';
+
+        try {
+            $resolved = DataSourceService::withDefaults(['caller_id' => '+90 544 111 22 33']);
+            $this->assertSame('CRM-7788', $resolved['customer_id']);
+            $this->assertSame('CRM-7788', $resolved['external_id']);
+            $this->assertSame('Mehmet Demir - Demo Corp', $resolved['caller_name']);
+        } finally {
+            ConnectionService::$lookupTransport = null;
+            ConnectionService::delete((int) $created['id']);
+            if ($prevCsrf === null) {
+                unset($_SESSION['csrf_token']);
+            } else {
+                $_SESSION['csrf_token'] = $prevCsrf;
+            }
+        }
     }
 }

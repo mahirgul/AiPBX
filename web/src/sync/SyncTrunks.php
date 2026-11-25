@@ -56,6 +56,7 @@ function __syncAllTrunksBody() {
         $prack_100rel = toCleanAscii(!empty($sip_map['100rel']) ? $sip_map['100rel'] : (!empty($t['prack_100rel']) ? $t['prack_100rel'] : 'yes'));
 
         $rtp_symmetric = toCleanAscii(!empty($sip_map['rtp_symmetric']) ? $sip_map['rtp_symmetric'] : (!empty($t['rtp_symmetric']) ? $t['rtp_symmetric'] : 'yes'));
+        $use_ptime = toCleanAscii(!empty($sip_map['use_ptime']) ? $sip_map['use_ptime'] : (!empty($t['use_ptime']) ? $t['use_ptime'] : (getSystemSetting('pjsip_use_ptime', 'no') === 'yes' ? 'yes' : 'no')));
         $force_rport = toCleanAscii(!empty($sip_map['force_rport']) ? $sip_map['force_rport'] : (!empty($t['force_rport']) ? $t['force_rport'] : 'yes'));
         $rewrite_contact = toCleanAscii(!empty($sip_map['rewrite_contact']) ? $sip_map['rewrite_contact'] : (!empty($t['rewrite_contact']) ? $t['rewrite_contact'] : 'yes'));
         $outbound_proxy = toCleanAscii(!empty($sip_map['outbound_proxy']) ? $sip_map['outbound_proxy'] : (!empty($t['outbound_proxy']) ? $t['outbound_proxy'] : ''));
@@ -134,6 +135,7 @@ function __syncAllTrunksBody() {
         $conf .= "aors={$aor_name}\n";
         $conf .= "direct_media={$direct_media}\n";
         $conf .= "rtp_symmetric={$rtp_symmetric}\n";
+        $conf .= "use_ptime={$use_ptime}\n";
         $conf .= "force_rport={$force_rport}\n";
         $conf .= "rewrite_contact={$rewrite_contact}\n";
         $conf .= "dtmf_mode={$dtmf_mode}\n";

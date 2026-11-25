@@ -419,6 +419,34 @@
 .u-z-index-9999:not(#u):not(#u) { z-index: 9999; }
 .u-z-index-99999:not(#u):not(#u) { z-index: 99999; }
 
+.ai-editor-box.ai-editor-fs {
+    position: fixed;
+    inset: 16px;
+    z-index: 9999;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--card-shadow);
+    margin: 0;
+}
+.ai-editor-box.ai-editor-fs textarea {
+    flex: 1 1 auto;
+    min-height: 0;
+    resize: none;
+}
+.modal-card.ai-modal-fs {
+    width: 96vw;
+    max-width: 96vw;
+    height: 92vh;
+    max-height: 92vh;
+}
+.modal-card.ai-modal-fs textarea {
+    min-height: 55vh;
+}
+
 /* Columns stack on a phone. */
 @media (max-width: 768px) {
     .u-gtc-1fr-1fr:not(#u):not(#u),

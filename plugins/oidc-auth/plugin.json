@@ -1,9 +1,9 @@
 {
     "slug": "oidc-auth",
-    "name": "OpenID Connect & SSO (OIDC)",
+    "name": "OIDC SSO",
     "name_i18n": {
-        "tr": "OpenID Connect ve Kurumsal SSO (OIDC)",
-        "en": "OpenID Connect & Corporate SSO (OIDC)"
+        "en": "OIDC SSO",
+        "tr": "OIDC SSO"
     },
     "version": "1.0.0",
     "author": "AiPBX Official Team",

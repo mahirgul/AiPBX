@@ -1,0 +1,31 @@
+# Example Company — information for the Virtual Receptionist
+
+This is example text. Replace it with your own company's information
+(AI → Knowledge Base → Company Info). The Virtual Receptionist answers
+callers from the documents in this collection.
+
+## Opening hours
+We are open Monday to Friday, from 9 a.m. to 6 p.m.
+We are closed on Saturdays, Sundays and public holidays.
+Outside opening hours callers hear the "We are closed" announcement.
+
+## Departments
+- Sales: new orders, prices and quotes. Callers reach Sales with key 1 in the main menu.
+- Support: help with an existing order, delivery or a technical problem. Key 2 in the main menu.
+- Operator: everything else. Key 0 in the main menu.
+
+## Address and contact
+Example Company, 1 Example Street, Example City.
+E-mail: info@example.com
+Fax: 555 0199
+
+## Frequently asked questions
+
+### How long does delivery take?
+Orders placed before 2 p.m. leave the same day. Delivery takes 2 to 3 working days.
+
+### How can I return a product?
+Products can be returned within 30 days. Support sends a return label by e-mail.
+
+### Do you have a price list?
+Sales sends the current price list by e-mail on request.

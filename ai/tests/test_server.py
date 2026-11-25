@@ -330,6 +330,25 @@ class ApiTest(unittest.TestCase):
             self.assertEqual(size, len(wav) - 8)
         self.assertEqual(self.fake.calls[0], ("ş" * 5000, 0.5, 8000))   # trimmed
 
+    def test_ari_dtmf_and_outbound_validation(self):
+        from unittest.mock import Mock
+        from aipbx_ai.ari import AriError
+
+        ari = Mock()
+        ari.send_dtmf_for_call.side_effect = AriError("empty DTMF sequence")
+        self.server.calls.ari_manager = ari
+        self.server.calls.outbound_navigator = Mock()
+        try:
+            st, body, _ = self.request("POST", "/v1/ari/dtmf", {"call_uuid": "c1", "digits": "123", "between": "bad"})
+            self.assertEqual(st, 400)
+            st2, body2, _ = self.request("POST", "/v1/ari/dtmf", {"call_uuid": "c1", "digits": "xyz"})
+            self.assertEqual((st2, body2["error"]), (400, "empty DTMF sequence"))
+            st3, body3, _ = self.request("POST", "/v1/outbound/navigate", {"target_number": "100", "requester_ext": "200", "app_id": "bad"})
+            self.assertEqual(st3, 400)
+        finally:
+            self.server.calls.ari_manager = None
+            self.server.calls.outbound_navigator = None
+
     def test_tts_queue_limit(self):
         self.make_ready()
         self.fake.synth_gate.clear()

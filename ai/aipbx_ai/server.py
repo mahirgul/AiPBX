@@ -61,6 +61,7 @@ def benchmark_text(languages):
 _MODEL_ACTION = re.compile(r"^/v1/models/([a-z0-9][a-z0-9._-]{0,63})/(install|remove|benchmark|run|stop|cancel)$")
 _APP = re.compile(r"^/v1/apps/([0-9]{1,7})$")
 _CALL = re.compile(r"^/v1/calls/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})(/audio|/result|/summary)?$")
+_OUTBOUND_JOB = re.compile(r"^/v1/outbound/navigate/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$")
 MAX_APP_BODY = 4 * 1024 * 1024  # an app config: up to 30 intents x 61 texts of 1000 characters
 
 
@@ -123,6 +124,16 @@ class Handler(BaseHTTPRequestHandler):
         auth = self.headers.get("Authorization") or ""
         scheme, _, given = auth.partition(" ")
         if scheme.lower() != "bearer" or not hmac.compare_digest(given.strip().encode(), self.server.token):
+            raise ApiError(HTTPStatus.UNAUTHORIZED, "missing or invalid token")
+
+    def _authorize_or_key(self):
+        if self._forwarded():
+            raise ApiError(HTTPStatus.FORBIDDEN, "forwarded requests are not accepted")
+        if self.headers.get("Authorization") is not None:
+            return self._authorize()
+        from urllib.parse import parse_qs, urlsplit
+        key = (parse_qs(urlsplit(self.path).query).get("key") or [""])[0]
+        if not key or not self.server.calls.key_ok(key):
             raise ApiError(HTTPStatus.UNAUTHORIZED, "missing or invalid token")
 
     def _body(self, limit=MAX_BODY):
@@ -236,6 +247,16 @@ class Handler(BaseHTTPRequestHandler):
             if call:
                 self._authorize()
                 raise ApiError(HTTPStatus.METHOD_NOT_ALLOWED, "method not allowed")
+            if method == "POST" and path == "/v1/ari/dtmf":
+                self._authorize_or_key()
+                return self._ari_dtmf(self._body())
+            if method == "POST" and path == "/v1/outbound/navigate":
+                self._authorize_or_key()
+                return self._outbound_navigate(self._body())
+            out_job = _OUTBOUND_JOB.match(path)
+            if out_job and method == "GET":
+                self._authorize_or_key()
+                return self._outbound_status(out_job.group(1))
             self._authorize()
             if method == "POST" and path == "/v1/gateway/execute":
                 from .gateway import execute
@@ -523,3 +544,56 @@ class Handler(BaseHTTPRequestHandler):
             log.exception("synthesis failed (%d characters)", len(text))
             raise ApiError(HTTPStatus.INTERNAL_SERVER_ERROR, "synthesis failed") from None
         self._send(HTTPStatus.OK, wav_bytes(pcm, rate), "audio/wav")
+
+    def _ari_dtmf(self, body):
+        from .ari import AriError
+
+        ari = getattr(self.server.calls, "ari_manager", None)
+        if ari is None:
+            raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "ARI is not configured")
+        target = str(body.get("call_uuid") or body.get("channel_id") or "").strip()
+        digits = str(body.get("digits") or body.get("dtmf") or "").strip()
+        if not target or not digits:
+            raise ApiError(HTTPStatus.BAD_REQUEST, "call_uuid/channel_id and digits are required")
+        try:
+            between = max(50, min(500, int(body.get("between", 100))))
+            duration = max(50, min(500, int(body.get("duration", 100))))
+        except (ValueError, TypeError):
+            raise ApiError(HTTPStatus.BAD_REQUEST, "invalid between or duration") from None
+        try:
+            ok = ari.send_dtmf_for_call(target, digits, between=between, duration=duration)
+        except AriError as e:
+            raise ApiError(HTTPStatus.BAD_REQUEST, str(e)) from None
+        if not ok:
+            raise ApiError(HTTPStatus.NOT_FOUND, "active call/channel not found")
+        return self._json(HTTPStatus.OK, {"ok": True})
+
+    def _outbound_navigate(self, body):
+        nav = getattr(self.server.calls, "outbound_navigator", None)
+        if nav is None:
+            raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "outbound navigator unavailable")
+        try:
+            app_id = int(body.get("app_id") or 0)
+        except (ValueError, TypeError):
+            raise ApiError(HTTPStatus.BAD_REQUEST, "invalid app_id") from None
+        res = nav.start_navigation(
+            target_number=str(body.get("target_number") or ""),
+            requester_ext=str(body.get("requester_ext") or ""),
+            target_dtmf=str(body.get("target_dtmf") or ""),
+            goal=str(body.get("goal") or ""),
+            app_id=app_id,
+            caller_call_uuid=str(body.get("call_uuid") or ""),
+            mode=str(body.get("mode") or "callback"),
+        )
+        if not res.get("ok"):
+            raise ApiError(HTTPStatus.BAD_REQUEST, str(res.get("error") or "invalid request"))
+        return self._json(HTTPStatus.OK, res)
+
+    def _outbound_status(self, job_id):
+        nav = getattr(self.server.calls, "outbound_navigator", None)
+        if nav is None:
+            raise ApiError(HTTPStatus.SERVICE_UNAVAILABLE, "outbound navigator unavailable")
+        job = nav.get_job(job_id)
+        if job is None:
+            raise ApiError(HTTPStatus.NOT_FOUND, "unknown job")
+        return self._json(HTTPStatus.OK, {"ok": True, "job": job})

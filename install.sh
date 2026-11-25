@@ -344,7 +344,16 @@ fi
 # secrets: one forgotten word on a live server. An install that stopped half way
 # can go again with --reinstall.
 if [[ "$AIPBX_MODE" == "install" && -f /etc/ai-pbx.env && "${AIPBX_REINSTALL:-0}" != "1" ]]; then
-    error "AiPBX is already installed here (/etc/ai-pbx.env). To update it: bash install.sh --upgrade. To install over it, which resets the admin password and the secrets: bash install.sh --reinstall"
+    # Run as `curl ... | sudo bash` there is no install.sh on disk: show the commands that work from where it ran.
+    if [[ -f "${BASH_SOURCE[0]:-}" ]]; then
+        reinstall_cmd="sudo bash install.sh --reinstall"
+    else
+        reinstall_cmd="curl -fsSL https://aipbx.bid/i | sudo bash -s -- --reinstall"
+    fi
+    echo -e "   ${RED}${BOLD}${I_ERR} AiPBX is already installed here (/etc/ai-pbx.env).${NC}"
+    echo -e "     To update it (backup first, rolls back on failure):  ${CYAN}sudo aipbx-update${NC}"
+    echo -e "     To install over it (new admin password and secrets): ${CYAN}${reinstall_cmd}${NC}"
+    exit 1
 fi
 is_upgrade() { [[ "$AIPBX_MODE" == "upgrade" ]]; }
 # A value for inside '...' in SQL: a password an admin set may hold a quote or a backslash.

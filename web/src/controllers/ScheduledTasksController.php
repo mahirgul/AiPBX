@@ -6,6 +6,7 @@ require_once __DIR__ . '/../services/ScheduledTaskService.php';
 require_once __DIR__ . '/../services/ScheduledTaskRunner.php';
 require_once __DIR__ . '/../services/CronScheduleHelper.php';
 require_once __DIR__ . '/../repositories/ScheduledTaskRepository.php';
+require_once __DIR__ . '/../repositories/ExternalDbRepository.php';
 
 /**
  * Controller for /scheduled-tasks (Roadmap 2.1).
@@ -125,6 +126,7 @@ class ScheduledTasksController extends BaseController
             'tasks' => $tasks,
             'isEnabled' => ScheduledTaskService::isEnabled(),
             'presets' => CronScheduleHelper::PRESETS,
+            'externalDbs' => array_values(array_filter(ExternalDbRepository::findAll('name ASC'), fn (array $d): bool => !empty($d['is_active']))),
         ];
     }
 }

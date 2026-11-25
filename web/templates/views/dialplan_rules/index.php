@@ -33,6 +33,7 @@ $deviceBadge = static function (string $type): string {
                 </button>
             <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
+<?php $dirTabs = ['/inbound-normalization', 'did_routes', '/dialplan-rules', 'outbound_routes']; $dirActive = 'out'; require dirname(__DIR__, 2) . '/direction_tabs.php'; ?>
 
     <?php echo uiHelpBoxOpen('dialplanRulesHelpBox', t('dialplan_rules.help_title')); ?>
         <p><?php echo t('dialplan_rules.help_body'); ?></p>

@@ -3,6 +3,7 @@
  */
 function openCreateQueueModal() {
     document.getElementById('modal_callback_enabled').checked = false;
+    document.getElementById('modal_callback_auto_enabled').checked = false;
     document.getElementById('modal_callback_announce').value = '';
     const title = document.getElementById('queueModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-plus-circle" style="color: var(--primary);"></i> ' + __('js.queues.new_title') + '';
@@ -23,6 +24,8 @@ function openCreateQueueModal() {
     const ringEl = document.getElementById('modal_ringinuse');
     const supEl = document.getElementById('modal_supervisor_extension');
     const maxWaitEl = document.getElementById('modal_max_wait_seconds');
+    const defPrioEl = document.getElementById('modal_default_priority');
+    if (defPrioEl) defPrioEl.value = '0';
     const fbActionEl = document.getElementById('modal_fallback_action');
     const fbTargetEl = document.getElementById('modal_fallback_target');
     const recModeEl = document.getElementById('modal_record_mode');
@@ -79,9 +82,10 @@ function openCreateQueueModal() {
 }
 
 function openEditQueueModal(item) {
-    document.getElementById('modal_callback_enabled').checked = parseInt(item.callback_enabled) === 1;
-    document.getElementById('modal_callback_announce').value = item.callback_announce || '';
     if (!item) return;
+    document.getElementById('modal_callback_enabled').checked = parseInt(item.callback_enabled) === 1;
+    document.getElementById('modal_callback_auto_enabled').checked = parseInt(item.callback_auto_enabled) === 1;
+    document.getElementById('modal_callback_announce').value = item.callback_announce || '';
 
     const title = document.getElementById('queueModalTitle');
     if (title) title.innerHTML = '<i class="fas fa-edit" style="color: var(--primary);"></i> ' + __('js.queues.edit_title') + '' + escapeHtml(item.title || item.queue_name || '');
@@ -102,6 +106,8 @@ function openEditQueueModal(item) {
     const ringEl = document.getElementById('modal_ringinuse');
     const supEl = document.getElementById('modal_supervisor_extension');
     const maxWaitEl = document.getElementById('modal_max_wait_seconds');
+    const defPrioEl = document.getElementById('modal_default_priority');
+    if (defPrioEl) defPrioEl.value = item.default_priority !== undefined && item.default_priority !== null ? String(item.default_priority) : '0';
     const fbActionEl = document.getElementById('modal_fallback_action');
     const fbTargetEl = document.getElementById('modal_fallback_target');
     const recModeEl = document.getElementById('modal_record_mode');

@@ -1,9 +1,9 @@
 {
     "slug": "web-widgets",
-    "name": "Website Call Widgets & WordPress Plugin",
+    "name": "Web Widgets",
     "name_i18n": {
-        "tr": "Web Çağrı Widget'ı ve WordPress Eklentisi",
-        "en": "Website Call Widgets & WordPress Plugin"
+        "en": "Web Widgets",
+        "tr": "Web Widget"
     },
     "version": "1.2.0",
     "author": "AiPBX Official Team",

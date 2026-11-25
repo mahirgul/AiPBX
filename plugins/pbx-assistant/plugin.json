@@ -1,5 +1,5 @@
 {
-    "slug": "ai-assistant",
+    "slug": "pbx-assistant",
     "name": "PBX Assistant",
     "name_i18n": {
         "tr": "PBX Asistan",
@@ -18,7 +18,7 @@
     "experimental": true,
     "hooks": {
         "admin_page": {
-            "route": "/ai-assistant",
+            "route": "/pbx-assistant",
             "group": "ai"
         }
     },

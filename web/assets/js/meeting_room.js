@@ -246,6 +246,7 @@
                     eventHandlers: {
                         peerconnection: (e) => {
                             const pc = e.peerconnection;
+                            if (window.AiPBXIce) AiPBXIce.capGathering(pc);
                             pc.addEventListener('track', (ev) => {
                                 handleRemoteTrack(ev);
                             });

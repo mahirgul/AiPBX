@@ -75,6 +75,11 @@ class PluginsController extends BaseController
 
         $manifests = PluginManager::discoverManifests();
         $manifest = $manifests[$slug] ?? [];
+        $adminRoute = (string)($manifest['hooks']['admin_page']['route'] ?? '');
+        if ($adminRoute !== '' && empty($manifest['settings_schema']) && (empty($manifest['dir']) || !is_file($manifest['dir'] . '/admin/page.php'))) {
+            header('Location: ' . $adminRoute);
+            exit;
+        }
         if (!empty($plugin['enabled']) && !empty($manifest['dir'])) {
             try {
                 PluginManager::applyPluginSchema($slug, (string)$manifest['dir']);
@@ -83,8 +88,10 @@ class PluginsController extends BaseController
             }
         }
 
+        $csrfValid = true;
         if (static::isPost()) {
             if (!static::verifyCsrf()) {
+                $csrfValid = false;
                 $error = t('common.invalid_csrf');
             } else {
                 $csrf = static::csrfToken();
@@ -96,7 +103,7 @@ class PluginsController extends BaseController
             }
         }
 
-        if (!empty($manifest['dir']) && is_file($manifest['dir'] . '/admin/action.php')) {
+        if ($csrfValid && !empty($manifest['dir']) && is_file($manifest['dir'] . '/admin/action.php')) {
             try {
                 $actionFn = require $manifest['dir'] . '/admin/action.php';
                 if (is_callable($actionFn)) {

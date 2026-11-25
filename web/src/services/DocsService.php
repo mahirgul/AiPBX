@@ -28,7 +28,6 @@ class DocsService
     private const PLUGINS = [
         'plugin-development',
         'auto-dialer',
-        'ai-apps',
         'ai-voicemail',
         'assistant',
         'cloud-ai',
@@ -38,7 +37,77 @@ class DocsService
         'provider-templates',
         'signaling',
         'sms',
+        'sso',
         'web-widgets',
+    ];
+
+    /** Deprecated documentation pages excluded from the Help sidebar. */
+    private const HIDDEN = ['ai-apps', 'ai-agents'];
+
+    /** Short, scannable sidebar titles (falls back to the document's H1). */
+    private const SHORT_TITLES = [
+        'system-map' => 'System Map',
+        'README' => 'Documentation',
+        'advanced-config' => 'Advanced Config',
+        'agi-scripts' => 'AGI Scripts',
+        'ai-gateway' => 'AI Gateway (v1)',
+        'ai-settings' => 'AI Architecture',
+        'backup-and-rollback' => 'Backup & Rollback',
+        'blacklist' => 'Caller Blacklist',
+        'blf' => 'BLF Keys',
+        'call-normalization' => 'Outbound Normalization',
+        'call-quality' => 'Call Quality',
+        'cisco-callmanager' => 'Cisco CallManager',
+        'cli' => 'Server CLI',
+        'connections' => 'Connections',
+        'crm-integrations' => 'CRM Integrations',
+        'custom-dialplan' => 'Custom Dialplan',
+        'external-databases' => 'External Databases',
+        'fax-users' => 'Fax Users',
+        'file-storage' => 'File Storage',
+        'health' => 'Health Checks',
+        'inbound-routes' => 'Inbound Routes',
+        'incus-lxd' => 'Incus / LXD',
+        'linux-tuning' => 'Linux Tuning',
+        'meetings' => 'Video Meetings',
+        'network-ports' => 'Ports & Firewall',
+        'network-services' => 'Network Services',
+        'network-settings' => 'Network Settings',
+        'number-normalization' => 'Number Normalization',
+        'outbound-routes' => 'Outbound Routes',
+        'pbx-tuning' => 'PBX Tuning',
+        'phones' => 'Desk Phones',
+        'portal' => 'Portal Basics',
+        'privacy' => 'Data Privacy',
+        'queue-callbacks' => 'Queue Callbacks',
+        'queues' => 'Queues & Agents',
+        'recordings' => 'Call Recordings',
+        'rest-api-v1' => 'REST API & Webhooks',
+        'reverse-proxy' => 'Reverse Proxy',
+        'root-log-paths' => 'Privileged Job Logs',
+        'root-state-paths' => 'Privileged Job State',
+        'scheduled-tasks' => 'Scheduled Tasks',
+        'security-regression-tests' => 'Security Tests',
+        'sounds' => 'Sounds & Languages',
+        'threat-model' => 'Threat Model',
+        'time-conditions' => 'Time & Holidays',
+        'users-and-roles' => 'Users & Roles',
+        'video-calls' => 'Video Calls',
+        'vpn' => 'VPN',
+        'webrtc-nat' => 'WebRTC & NAT',
+        'plugin-development' => 'Developer Guide',
+        'ai-voicemail' => 'AI Voicemail',
+        'assistant' => 'PBX Assistant',
+        'auto-dialer' => 'Auto Dialer',
+        'cloud-ai' => 'Cloud AI',
+        'cloud-tts' => 'Cloud TTS',
+        'cnam' => 'CNAM Lookup',
+        'local-ai' => 'Local AI',
+        'provider-templates' => 'SIP Templates',
+        'signaling' => 'Signaling Capture',
+        'sms' => 'SMS & MMS',
+        'sso' => 'SSO (OIDC & SAML)',
+        'web-widgets' => 'Web Widgets',
     ];
 
     /** Prefix of a link to another document: the portal uses /help?doc=, the website /docs/. */
@@ -64,9 +133,12 @@ class DocsService
         $out = [];
         foreach (glob(self::dir() . '/*.md') ?: [] as $file) {
             $name = basename($file, '.md');
+            if (in_array($name, self::HIDDEN, true)) {
+                continue;
+            }
             $out[$name] = [
                 'name' => $name,
-                'title' => self::title($file) ?: $name,
+                'title' => self::SHORT_TITLES[$name] ?? (self::title($file) ?: $name),
                 'plugin' => in_array($name, self::PLUGINS, true),
             ];
         }

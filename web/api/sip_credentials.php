@@ -45,22 +45,8 @@ $webrtc_suffix = getSystemSetting('webrtc_username_suffix', '-webrtc');
 // TURN REST API: a user-specific, time-limited credential valid for 1 hour
 // (HMAC-SHA1 with the coturn static-auth-secret) — no static TURN password ever
 // exists in code/JS; a fresh one is generated before every call.
-$turn = null;
-if (defined('TURN_SECRET') && TURN_SECRET !== '') {
-    $turn_username = (time() + 3600) . ':' . ($user['extension'] ?? 'guest');
-    $turn_password = base64_encode(hash_hmac('sha1', $turn_username, TURN_SECRET, true));
-    $turn = [
-        'username' => $turn_username,
-        'credential' => $turn_password,
-        // TURNS (TLS/TCP) only — plain STUN/TURN (UDP/plain TCP) was removed
-        // because the network edge filters it by protocol signature (verified
-        // with an external test, 2026-08-20). Extra candidate attempts slowed
-        // down ICE gathering; the single path verified to work was kept.
-        'urls' => [
-            'turns:' . TURN_HOST . ':' . TURNS_PORT . '?transport=tcp',
-        ]
-    ];
-}
+// A fresh, time-limited TURN credential before every call; no static TURN password exists.
+$turn = turnIceServer((string) ($user['extension'] ?? 'guest'));
 
 echo json_encode([
     'success' => true,

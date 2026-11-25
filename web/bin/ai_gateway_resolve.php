@@ -11,10 +11,16 @@ try {
     $data = json_decode((string) stream_get_contents(STDIN, 65536), true, 8, JSON_THROW_ON_ERROR);
     if (isset($data['caller_number'])) {
         require_once dirname(__DIR__) . '/src/services/PhonebookService.php';
+        require_once dirname(__DIR__) . '/src/services/DataSourceService.php';
         $number = $data['caller_number'];
-        $name = is_string($number) && preg_match('/^\+?[0-9(). -]{3,40}$/D', $number)
-            ? (PhonebookService::namesFor([$number])[$number] ?? '') : '';
-        $result = ['name' => $name];
+        $name = '';
+        $custId = '';
+        if (is_string($number) && preg_match('/^\+?[0-9(). -]{3,40}$/D', $number)) {
+            $name = PhonebookService::namesFor([$number])[$number] ?? '';
+            $resolved = DataSourceService::withDefaults(['caller_id' => $number]);
+            $custId = (string) ($resolved['customer_id'] ?? '');
+        }
+        $result = ['name' => $name, 'customer_id' => $custId];
     } elseif (isset($data['db_app'])) {
         require_once dirname(__DIR__) . '/src/services/ai/AiAppService.php';
         $result = AiAppDbLookup::run((int) $data['db_app'], (string) ($data['query_id'] ?? ''),

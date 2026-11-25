@@ -3,7 +3,7 @@ require_once __DIR__ . '/PhoneTemplate.php';
 
 /**
  * Cisco CallManager-series desk phones running **Cisco's SIP firmware**: the
- * 7900 (7941G/7942G/7945G/7961G/7962G/7965G/7975G) and 8800 (8841/8851/8861/
+ * 7841, 7900 (7941G/7942G/7945G/7961G/7962G/7965G/7975G) and 8800 (8841/8851/8861/
  * 8865) sets. Their configuration file is `SEP<MAC>.cnf.xml` (uppercase MAC) and
  * its shape is CUCM's, not the flat-profile the SPA models above use.
  *
@@ -133,7 +133,7 @@ final class CiscoCallManagerTemplate extends PhoneTemplate
         $model = PhoneModels::get((string) $ctx['model']) ?? ['keys' => 0];
         $tls = $ctx['transport'] === 'tls';
         $port = (int) $ctx['port'];
-        $series = str_starts_with((string) $ctx['model'], 'cisco-cm-8') ? '8800' : '7900';
+        $series = str_starts_with((string) $ctx['model'], 'cisco-cm-79') ? '7900' : '8800';
         // 7900 series: 3 = enabled and the user may change it; 8800: 1.
         $callWaiting = $series === '8800' ? 1 : 3;
         $maxCalls = self::MAX_CALLS[$series];

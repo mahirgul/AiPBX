@@ -323,7 +323,10 @@ class AiAppService
                 throw new \Exception(t('ai_apps.err_knowledge'));
             }
         }
-        $dbLookups = AiAppDbLookup::parse((string) ($d['db_lookups'] ?? ''));
+        $rawLookups = is_array($d['db_lookups'] ?? null)
+            ? implode("\n", array_map('strval', $d['db_lookups']))
+            : (string) ($d['db_lookups'] ?? '');
+        $dbLookups = AiAppDbLookup::parse($rawLookups);
         if ($dbLookups && isset($tools['get_db_value'])) {
             throw new InvalidArgumentException(sprintf(t('ai_apps.err_tool'), 'get_db_value'));
         }
@@ -631,7 +634,16 @@ class AiAppService
         $c = self::config($app);
         $builtin = ($app['app_type'] ?? '') === self::BUILTIN_AGENT;
         if ($builtin) {
-            $c = ($app['agent_tools'] ?? []) + $c;
+            $agentTools = is_array($app['agent_tools'] ?? null) ? $app['agent_tools'] : [];
+            $mergedLookups = [];
+            foreach (array_merge($c['db_lookups'] ?? [], $agentTools['db_lookups'] ?? []) as $lu) {
+                $id = (string) ($lu['id'] ?? '');
+                if ($id !== '' && !isset($mergedLookups[$id])) {
+                    $mergedLookups[$id] = $lu;
+                }
+            }
+            $c = $agentTools + $c;
+            $c['db_lookups'] = array_values($mergedLookups);
         }
         $appId = (int) ($app['id'] ?? 0);
         $cloudAllowed = !self::isPrivacyCloudBlocked() && self::isScopeEnabled('cloud');
@@ -658,6 +670,47 @@ class AiAppService
                 $extra['stt_fallback'] = $sttFallback;
             }
         }
+        $rtAccount = (string) ($c['realtime_account'] ?? '');
+        if ($cloudAllowed && $rtAccount !== '' && str_starts_with($rtAccount, 'cloud:')) {
+            $rtId = substr($rtAccount, 6);
+            $rtType = CloudAiService::typeIfKnown($rtId);
+            $pc = CloudAiService::config($rtId);
+            $hasAuth = !empty($pc['api_key']) || ($rtType === 'openai_compat' && !empty($pc['base_url']));
+            if (isset(CloudAiService::REALTIME_MODELS[$rtType]) && $hasAuth) {
+                $protocol = (string) ($pc['realtime_protocol'] ?? '');
+                $model = trim((string) ($pc['realtime_model'] ?? ''));
+                if ($model === '') {
+                    $model = $rtType === 'openai_compat'
+                        ? ($protocol === 'openai_ga' ? 'gpt-realtime' : (trim((string) ($pc['model'] ?? '')) ?: 'gpt-4o-realtime-preview'))
+                        : CloudAiService::REALTIME_MODELS[$rtType];
+                }
+                $rtPayload = [
+                    'provider' => $rtType,
+                    'api_key' => (string) ($pc['api_key'] ?? ''),
+                    'model' => $model,
+                    'voice' => (string) ($c['realtime_voice'] ?? 'alloy'),
+                    'lang' => $lang,
+                ];
+                if (!empty($pc['base_url'])) {
+                    $rtPayload['base_url'] = (string) $pc['base_url'];
+                }
+                if ($rtType === 'openai_compat') {
+                    $rtPayload['protocol'] = $protocol;
+                    if (!empty($pc['realtime_ws_url'])) {
+                        $rtPayload['ws_url'] = (string) $pc['realtime_ws_url'];
+                    }
+                }
+                $extra['realtime_cloud'] = $rtPayload;
+            }
+        }
+        if (!empty($c['pbx_tools']) && is_array($c['pbx_tools'])) {
+            require_once __DIR__ . '/PbxToolRegistry.php';
+            $enabledPbx = PbxToolRegistry::forEnabled(array_map('strval', $c['pbx_tools']));
+            if ($enabledPbx !== []) {
+                $extra['pbx_tools'] = $enabledPbx;
+                $extra['pbx_tools_key'] = self::dialplanKey();
+            }
+        }
         $understandRaw = (string) ($c['understand'] ?? 'auto');
         $understand = self::resolveTaskBinding($appId, 'llm', $understandRaw, $lang, $cloudAllowed);
         if ($understand === '' && ($understandRaw === 'cloud_default' || str_starts_with($understandRaw, 'cloud:'))) {
@@ -678,7 +731,7 @@ class AiAppService
             $extra['local_chat_app'] = $appId;
             $understand = 'local';
         }
-        if (!empty($c['conversation']) && (isset($extra['llm_cloud']) || isset($extra['local_chat_app']))) {
+        if (!empty($c['conversation']) && (isset($extra['llm_cloud']) || isset($extra['local_chat_app']) || isset($extra['realtime_cloud']))) {
             $extra += ['conversation' => true, 'instructions' => (string) ($c['instructions'] ?? ''),
                 'max_turns' => (int) ($c['max_turns'] ?? 6), 'tools' => $c['tools'] ?? [],
                 'knowledge' => ($app['agent_has_knowledge'] ?? ((int) ($c['knowledge_collection'] ?? 0) > 0))

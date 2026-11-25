@@ -437,16 +437,43 @@ final class PrivacyDataSubjectHelper
         $digits = $info['digits'];
         [$like, $cidLike, $uriLike] = self::subjectPatterns($digits);
 
-        $deletedRecs = 0;
+        $allRecordingFiles = [];
         foreach ($info['recording_files'] as $file) {
             if (is_string($file) && $file !== '') {
-                if (str_starts_with($file, 's3:')) {
-                    RecordingStorage::delete(BucketFiles::key($file));
+                $allRecordingFiles[$file] = $file;
+            }
+        }
+        try {
+            $stmtRec = $db->prepare("SELECT userfield FROM asteriskcdr WHERE (src = ? OR dst = ? OR src LIKE ? OR dst LIKE ?) AND userfield IS NOT NULL AND userfield <> ''");
+            $stmtRec->execute([$clean, $clean, $like, $like]);
+            foreach ($stmtRec->fetchAll(PDO::FETCH_COLUMN) as $uf) {
+                $uf = trim((string)$uf);
+                if ($uf !== '' && (str_starts_with($uf, 's3:') || (str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)))) {
+                    $allRecordingFiles[$uf] = $uf;
+                }
+            }
+        } catch (\Throwable $e) {
+        }
+        try {
+            $stmtRec2 = $db->prepare("SELECT recording_path FROM cdrs WHERE (caller_num = ? OR agent_extension = ? OR caller_num LIKE ?) AND recording_path IS NOT NULL AND recording_path <> ''");
+            $stmtRec2->execute([$clean, $digits, $like]);
+            foreach ($stmtRec2->fetchAll(PDO::FETCH_COLUMN) as $uf) {
+                $uf = trim((string)$uf);
+                if ($uf !== '' && (str_starts_with($uf, 's3:') || (str_starts_with($uf, '/var/spool/asterisk/monitor/') && is_file($uf)))) {
+                    $allRecordingFiles[$uf] = $uf;
+                }
+            }
+        } catch (\Throwable $e) {
+        }
+
+        $deletedRecs = 0;
+        foreach ($allRecordingFiles as $file) {
+            if (str_starts_with($file, 's3:')) {
+                RecordingStorage::delete(BucketFiles::key($file));
+                $deletedRecs++;
+            } elseif (str_starts_with($file, '/var/spool/asterisk/monitor/') && is_file($file)) {
+                if (@unlink($file)) {
                     $deletedRecs++;
-                } elseif (str_starts_with($file, '/var/spool/asterisk/monitor/') && is_file($file)) {
-                    if (@unlink($file)) {
-                        $deletedRecs++;
-                    }
                 }
             }
         }
@@ -536,13 +563,36 @@ final class PrivacyDataSubjectHelper
         }
 
         $delFax = 0;
+        $faxFilePaths = [];
         foreach ($info['faxes'] as $fax) {
             foreach (['file_path', 'pdf_path', 'tif_path'] as $col) {
                 $p = (string)($fax[$col] ?? '');
                 if ($p !== '') {
-                    FaxStorage::remove($p);
+                    $faxFilePaths[$p] = $p;
                 }
             }
+        }
+        foreach ([
+            ['SELECT tif_path, pdf_path FROM fax_received WHERE caller_id LIKE ? OR did_extension LIKE ?', ['tif_path', 'pdf_path']],
+            ['SELECT tif_path, pdf_path FROM fax_sent WHERE sender_extension LIKE ? OR destination_number LIKE ?', ['tif_path', 'pdf_path']],
+            ['SELECT file_path, pdf_path FROM pbx_fax_log WHERE caller_id LIKE ? OR destination LIKE ?', ['file_path', 'pdf_path']],
+        ] as [$sql, $cols]) {
+            try {
+                $stmtFax = $db->prepare($sql);
+                $stmtFax->execute([$like, $like]);
+                foreach ($stmtFax->fetchAll(PDO::FETCH_ASSOC) as $faxRow) {
+                    foreach ($cols as $col) {
+                        $p = (string)($faxRow[$col] ?? '');
+                        if ($p !== '') {
+                            $faxFilePaths[$p] = $p;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+        foreach ($faxFilePaths as $p) {
+            FaxStorage::remove($p);
         }
         try {
             $stmt = $db->prepare("DELETE FROM fax_received WHERE caller_id LIKE ? OR did_extension LIKE ?");

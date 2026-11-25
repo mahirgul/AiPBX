@@ -81,7 +81,7 @@ try {
         $res = MailTemplateService::send('ai_request', $intent['email'], $lang, [
             'request' => $intent['name'], 'caller' => trim($callerName . ' ' . $caller), 'caller_name' => $callerName,
             'caller_number' => $caller, 'transcript' => $transcript !== '' ? $transcript : '—', 'app' => (string) $app['title'],
-            'date' => date('d.m.Y H:i'), 'portal_link' => 'https://' . $domain . '/ai-apps',
+            'date' => date('d.m.Y H:i'), 'portal_link' => 'https://' . $domain . '/ai-agent',
         ], [], $attachments);
         if ($tmp) {
             @unlink($tmp);

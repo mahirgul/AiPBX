@@ -1,4 +1,4 @@
-<form method="POST" autocomplete="off" enctype="multipart/form-data">
+<form method="POST" autocomplete="off" enctype="multipart/form-data" data-no-spa="true">
     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
     <input type="hidden" name="save_brand_settings" value="1">
 
@@ -124,6 +124,15 @@
                     <label class="u-d-flex u-ai-center u-gap-6 u-mt-10 u-fs-13 u-pointer">
                         <input type="checkbox" name="theme_locked" value="1" <?php echo ($s['theme_locked'] ?? '0') === '1' ? 'checked' : ''; ?>> <?php echo t('brand_settings.theme_locked'); ?>
                     </label>
+                </div>
+
+                <div class="form-group u-mt-20">
+                    <label class="form-label" for="sidebar_layout"><i class="fas fa-columns"></i> <?php echo t('brand_settings.sidebar_layout'); ?></label>
+                    <select name="sidebar_layout" id="sidebar_layout" class="form-control" aria-describedby="sidebar_layout_help">
+                        <option value="split" <?php echo $s['sidebar_layout'] !== 'single' ? 'selected' : ''; ?>><?php echo t('brand_settings.sidebar_layout_split'); ?></option>
+                        <option value="single" <?php echo $s['sidebar_layout'] === 'single' ? 'selected' : ''; ?>><?php echo t('brand_settings.sidebar_layout_single'); ?></option>
+                    </select>
+                    <small id="sidebar_layout_help" class="u-hint u-fs-11"><?php echo t('brand_settings.sidebar_layout_help'); ?></small>
                 </div>
 
                 <div class="form-group u-mt-20">

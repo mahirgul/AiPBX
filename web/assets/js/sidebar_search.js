@@ -3,14 +3,22 @@
         var input = document.getElementById('sidebar-menu-search');
         var sidebar = document.getElementById('app-sidebar');
         if (!input || !sidebar) return;
-        var groups = Array.prototype.slice.call(sidebar.querySelectorAll('.nav-menu > .nav-group'));
-        var initialOpen = groups.map(function (g) { return g.classList.contains('open'); });
+        function currentGroups() {
+            var list = Array.prototype.slice.call(sidebar.querySelectorAll('.nav-menu > .nav-group'));
+            list.forEach(function (g) {
+                if (!g.hasAttribute('data-initial-open')) {
+                    g.setAttribute('data-initial-open', g.classList.contains('open') ? '1' : '0');
+                }
+            });
+            return list;
+        }
+        currentGroups();
         input.addEventListener('input', function () {
             // Looked up each time: the link goes away and comes back with the Assistant.
             var aiLink = document.getElementById('sidebar-ai-ask-link');
             var aiText = document.getElementById('sidebar-ai-ask-text');
             var q = (input.value || '').trim().toLowerCase();
-            groups.forEach(function (group, idx) {
+            currentGroups().forEach(function (group) {
                 var items = Array.prototype.slice.call(group.querySelectorAll('.nav-submenu > li'));
                 var groupTitle = (group.querySelector('.toggle-title')?.textContent || '').toLowerCase();
                 var anyMatch = false;
@@ -22,11 +30,15 @@
                 });
                 group.style.display = (!q || anyMatch) ? '' : 'none';
                 if (q) {
+                    group.hidden = false;
                     group.classList.toggle('open', anyMatch);
                 } else {
-                    group.classList.toggle('open', !!initialOpen[idx]);
+                    group.classList.toggle('open', group.getAttribute('data-initial-open') === '1');
                 }
             });
+            if (!q && typeof window.applySidebarSection === 'function') {
+                window.applySidebarSection();
+            }
             if (aiLink && aiText) {
                 if (q) {
                     aiLink.classList.add('is-visible');

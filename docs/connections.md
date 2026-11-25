@@ -1,7 +1,8 @@
-# Connections (Odoo, CRM, n8n)
+# Connections (Odoo, ERPNext, CRM, n8n)
 
 **Integration → Connections** connects one outside system to the PBX: the
-[AiPBX Connector for Odoo](https://github.com/mahirgul/AiPBX-Odoo), a CRM, n8n or your own script.
+[AiPBX Connector for Odoo](https://github.com/mahirgul/AiPBX-Odoo), the
+[AiPBX Connector for ERPNext](https://github.com/mahirgul/AiPBX-Frappe), a CRM, n8n or your own script.
 Each connection gets its **own API key** and its **own signed webhook**. Removing the connection
 removes exactly those two (and its undelivered events); other keys and webhooks are not touched.
 
@@ -10,10 +11,16 @@ removes exactly those two (and its undelivered events); other keys and webhooks 
 1. **New connection**: a name, the kind and the address.
    - **Odoo**: the address of Odoo (`https://odoo.example.com`). The PBX sends the events to
      `https://odoo.example.com/aipbx/webhook/<connection id>`.
+   - **ERPNext / Frappe**: the address of the ERPNext site (`https://erp.example.com`). The PBX sends
+     the events to `https://erp.example.com/api/method/aipbx_connector.api.webhook?connection=<connection id>`.
    - **Other**: the full address that receives the webhooks.
    - Optionally the IP addresses or networks the key may be used from.
 2. The page shows the **connection pack** once. Paste it into the other system (in Odoo:
-   Settings → AiPBX). It is not shown again and not stored readable on the PBX.
+   Settings → AiPBX; in ERPNext: AiPBX Settings → Paste connection pack). It is not shown again and
+   not stored readable on the PBX.
+
+**On / off:** the switch in a connection's row turns it off without deleting it: its webhook sends
+nothing and its API key is refused (401). Turned on again, it works as before with the same pack.
 
 ```json
 {

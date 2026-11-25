@@ -574,15 +574,8 @@ class WebWidgetService
     /** TURN credential for one call (the same TURN REST scheme as the web phone). */
     private static function iceServers(string $user): array
     {
-        if (!defined('TURN_SECRET') || TURN_SECRET === '') {
-            return [];
-        }
-        $username = (time() + 600) . ':' . $user;
-        return [[
-            'urls' => ['turns:' . TURN_HOST . ':' . TURNS_PORT . '?transport=tcp'],
-            'username' => $username,
-            'credential' => base64_encode(hash_hmac('sha1', $username, TURN_SECRET, true)),
-        ]];
+        $turn = turnIceServer($user, 600);
+        return $turn ? [$turn] : [];
     }
 
     /**

@@ -3,9 +3,8 @@
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $csrf = '<input type="hidden" name="csrf_token" value="' . $h($csrf_token) . '">';
 $tabs = [
-    'settings'  => ['label' => t('ai_voicemail.tab_settings', 'Settings & Bindings'), 'icon' => 'fa-sliders'],
-    'languages' => ['label' => t('ai_settings.tab_languages', 'Languages'), 'icon' => 'fa-language'],
-    'jobs'      => ['label' => t('ai_voicemail.tab_jobs', 'Recent Jobs'), 'icon' => 'fa-list-check'],
+    'settings' => ['label' => t('ai_voicemail.tab_settings', 'Settings'), 'icon' => 'fa-sliders'],
+    'jobs'     => ['label' => t('ai_voicemail.tab_jobs', 'Jobs'), 'icon' => 'fa-list-check', 'badge' => (string) count($jobs)],
 ];
 $modes = [
     'off'           => t('ai_selector.off', 'Off'),
@@ -18,27 +17,24 @@ $disabledAttr = ($plugin_enabled && $can_edit) ? '' : ' disabled';
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-voicemail', t('ai_voicemail.title', 'Voicemail AI'), 'aiVoicemailHelpBox'); ?>
         <?php echo uiPageHeaderActions([
-            ['label' => t('ai_local.title', 'Local AI'), 'href' => '/ai-local', 'icon' => 'fa-microchip', 'class' => 'btn-secondary'],
-            ['label' => t('ai_cloud.title', 'Cloud AI'), 'href' => '/ai-cloud', 'icon' => 'fa-cloud', 'class' => 'btn-secondary'],
+            ['label' => t('ai_local.title', 'Local AI'), 'href' => '/ai-local', 'icon' => 'fa-microchip', 'class' => 'btn-secondary btn-sm'],
+            ['label' => t('ai_cloud.title', 'Cloud AI'), 'href' => '/ai-cloud', 'icon' => 'fa-cloud', 'class' => 'btn-secondary btn-sm'],
         ]); ?>
     <?php echo uiPageHeaderClose(); ?>
+    <?php echo uiTabs($tabs, $active_tab); ?>
     <?php echo uiHelpBoxOpen('aiVoicemailHelpBox', t('ai_voicemail.title', 'Voicemail AI')); ?>
-        <?php echo $h(t('ai_voicemail.help_body', 'Configure automatic speech-to-text transcription and one-sentence summaries for voicemail messages. Choose local default, cloud default, explicit model, or off without silent local-to-cloud fallback.')); ?>
+        <?php echo $h(t('ai_voicemail.help_body', 'Transcribe new voicemail messages and optionally summarize them in e-mail notifications.')); ?>
     <?php echo uiHelpBoxClose(); ?>
-</div>
 
-<?php if (!$plugin_enabled): ?>
-    <div class="alert alert-warning u-mb-12">
-        <i class="fas fa-plug-circle-xmark"></i>
-        <?php echo $h(t('ai_voicemail.plugin_disabled', 'Voicemail AI plugin (ai-voicemail) is currently disabled. Enable it from Plugins to process voicemails.')); ?>
-    </div>
-<?php endif; ?>
+    <?php if (!$plugin_enabled): ?>
+        <div class="alert alert-warning u-mb-12">
+            <i class="fas fa-plug-circle-xmark"></i>
+            <?php echo $h(t('ai_voicemail.plugin_disabled', 'Voicemail AI plugin is disabled.')); ?>
+        </div>
+    <?php endif; ?>
 
-<?php echo uiTabs($tabs, $active_tab); ?>
-
-<!-- TAB: SETTINGS & BINDINGS -->
-<div data-tab-pane="settings"<?php echo $active_tab === 'settings' ? '' : ' hidden'; ?>>
-    <div class="card">
+    <!-- TAB: SETTINGS -->
+    <div data-tab-pane="settings"<?php echo $active_tab === 'settings' ? '' : ' hidden'; ?>>
         <form method="POST">
             <?php echo $csrf; ?>
             <input type="hidden" name="_tab" value="settings">
@@ -51,11 +47,8 @@ $disabledAttr = ($plugin_enabled && $can_edit) ? '' : ' disabled';
                 </label>
                 <label class="u-d-flex u-ai-center u-gap-8">
                     <input type="checkbox" name="ai_vm_summary" value="1"<?php echo $summary_on ? ' checked' : ''; ?><?php echo $disabledAttr; ?>>
-                    <span><strong><?php echo $h(t('ai_voicemail.enable_summary', 'Generate one-sentence voicemail summary')); ?></strong></span>
+                    <span><strong><?php echo $h(t('ai_voicemail.enable_summary', 'Summarize voicemail transcripts')); ?></strong></span>
                 </label>
-                <div class="u-muted u-fs-12 u-mt-4">
-                    <?php echo $h(t('ai_voicemail.notify_note', 'Voicemail e-mail and push notifications remain independent and are always delivered even if AI fails or is disabled.')); ?>
-                </div>
             </div>
 
             <?php
@@ -76,9 +69,9 @@ $disabledAttr = ($plugin_enabled && $can_edit) ? '' : ' disabled';
             ?>
             <?php echo uiTableOpen([
                 ['label' => t('ai_voicemail.col_task', 'Task')],
-                ['label' => t('ai_voicemail.col_mode', 'Binding Mode')],
+                ['label' => t('ai_voicemail.col_mode', 'Mode')],
                 ['label' => t('ai_voicemail.col_explicit', 'Explicit Model')],
-                ['label' => t('ai_voicemail.col_resolved', 'Effective Engine')],
+                ['label' => t('ai_voicemail.col_resolved', 'Resolved Model')],
             ], ['search' => false]); ?>
                 <?php foreach ($bindingRows as $task => $info):
                     $mode = (string) ($info['binding']['mode'] ?? 'off');
@@ -112,80 +105,64 @@ $disabledAttr = ($plugin_enabled && $can_edit) ? '' : ' disabled';
                 <?php endforeach; ?>
             <?php echo uiTableClose(); ?>
 
-            <div class="u-d-flex u-jc-space-between u-ai-center u-wrap u-gap-8 u-mt-12">
-                <div class="u-fs-12 u-muted">
-                    <?php echo $h(t('ai_voicemail.defaults_hint', 'Default local and cloud models are managed on')); ?>
-                    <a href="/ai-local"><?php echo $h(t('ai_local.title', 'Local AI')); ?></a>
-                    (<?php echo $local_enabled ? $h(t('common.enabled', 'Enabled')) : $h(t('common.disabled', 'Disabled')); ?>)
-                    ·
-                    <a href="/ai-cloud"><?php echo $h(t('ai_cloud.title', 'Cloud AI')); ?></a>
-                    (<?php echo $cloud_enabled ? $h(t('common.enabled', 'Enabled')) : $h(t('common.disabled', 'Disabled')); ?>)
+            <div class="u-d-flex u-jc-flex-end u-mt-12">
+                <button type="submit" class="btn btn-primary"<?php echo $disabledAttr; ?>>
+                    <i class="fas fa-save"></i> <?php echo $h(t('common.save', 'Save')); ?>
+                </button>
+            </div>
+        </form>
+
+        <details class="u-mt-16">
+            <summary class="u-pointer u-fw-600 u-fs-13"><i class="fas fa-language u-primary"></i> <?php echo $h(t('ai_settings.tab_languages', 'Languages')); ?></summary>
+            <form method="POST" class="u-mt-12">
+                <?php echo $csrf; ?>
+                <input type="hidden" name="_tab" value="settings">
+                <input type="hidden" name="save_voicemail_languages" value="1">
+                <?php echo uiTableOpen([
+                    ['label' => t('ai_cloud.lang_name', 'Language')],
+                    ['label' => 'STT'],
+                    ['label' => t('ai_voicemail.col_explicit', 'Explicit Model')],
+                    ['label' => 'LLM'],
+                    ['label' => t('ai_voicemail.col_explicit', 'Explicit Model')],
+                ], ['search' => false]); ?>
+                    <?php foreach ($languages as $code => $langInfo): ?>
+                        <tr>
+                            <td><strong><?php echo $h($langInfo['name']); ?></strong> <span class="u-muted u-fs-11 u-mono">(<?php echo $h($code); ?>)</span></td>
+                            <?php foreach (['stt' => $stt_options, 'chat' => $chat_options] as $task => $opts):
+                                $lb = $lang_bindings[$code][$task] ?? ['mode' => 'off', 'model_ref_id' => ''];
+                                $lMode = (string) ($lb['mode'] ?? 'off');
+                                $lRef = (string) ($lb['model_ref_id'] ?? '');
+                            ?>
+                                <td>
+                                    <select name="lang_mode[<?php echo $h($code); ?>][<?php echo $h($task); ?>]" class="form-control form-control-sm"<?php echo $disabledAttr; ?>>
+                                        <?php foreach ($modes as $mKey => $mLabel): ?>
+                                            <option value="<?php echo $h($mKey); ?>"<?php echo $lMode === $mKey ? ' selected' : ''; ?>><?php echo $h($mLabel); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="lang_model[<?php echo $h($code); ?>][<?php echo $h($task); ?>]" class="form-control form-control-sm"<?php echo $disabledAttr; ?>>
+                                        <option value="">-- <?php echo $h(t('ai_cloud.engine_none', 'Use default')); ?> --</option>
+                                        <?php foreach ($opts as $opt): ?>
+                                            <option value="<?php echo $h($opt['ref']); ?>"<?php echo $lRef === $opt['ref'] ? ' selected' : ''; ?>><?php echo $h($opt['label']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                            <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php echo uiTableClose(); ?>
+                <div class="u-d-flex u-jc-flex-end u-mt-12">
+                    <button type="submit" class="btn btn-primary btn-sm"<?php echo $disabledAttr; ?>>
+                        <i class="fas fa-save"></i> <?php echo $h(t('common.save', 'Save')); ?>
+                    </button>
                 </div>
-                <button type="submit" class="btn btn-primary"<?php echo $disabledAttr; ?>>
-                    <i class="fas fa-save"></i> <?php echo $h(t('common.save', 'Save')); ?>
-                </button>
-            </div>
-        </form>
+            </form>
+        </details>
     </div>
-</div>
 
-<!-- TAB: LANGUAGES -->
-<div data-tab-pane="languages"<?php echo $active_tab === 'languages' ? '' : ' hidden'; ?>>
-    <div class="card">
-        <form method="POST">
-            <?php echo $csrf; ?>
-            <input type="hidden" name="_tab" value="languages">
-            <input type="hidden" name="save_voicemail_languages" value="1">
-            <p class="u-muted u-fs-12 u-mt-0 u-mb-10">
-                <?php echo $h(t('ai_voicemail.languages_help', 'Optional per-language overrides for voicemail STT and summary models. Leave as Off to use the default binding above.')); ?>
-            </p>
-            <?php echo uiTableOpen([
-                ['label' => t('ai_cloud.lang_name', 'Language')],
-                ['label' => 'STT Mode'],
-                ['label' => 'STT Model'],
-                ['label' => 'Summary Mode'],
-                ['label' => 'Summary Model'],
-            ], ['search' => false]); ?>
-                <?php foreach ($languages as $code => $langInfo): ?>
-                    <tr>
-                        <td><strong><?php echo $h($langInfo['name']); ?></strong> <span class="u-muted u-fs-11 u-mono">(<?php echo $h($code); ?>)</span></td>
-                        <?php foreach (['stt' => $stt_options, 'chat' => $chat_options] as $task => $opts):
-                            $lb = $lang_bindings[$code][$task] ?? ['mode' => 'off', 'model_ref_id' => ''];
-                            $lMode = (string) ($lb['mode'] ?? 'off');
-                            $lRef = (string) ($lb['model_ref_id'] ?? '');
-                        ?>
-                            <td>
-                                <select name="lang_mode[<?php echo $h($code); ?>][<?php echo $h($task); ?>]" class="form-control form-control-sm"<?php echo $disabledAttr; ?>>
-                                    <?php foreach ($modes as $mKey => $mLabel): ?>
-                                        <option value="<?php echo $h($mKey); ?>"<?php echo $lMode === $mKey ? ' selected' : ''; ?>><?php echo $h($mLabel); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </td>
-                            <td>
-                                <select name="lang_model[<?php echo $h($code); ?>][<?php echo $h($task); ?>]" class="form-control form-control-sm"<?php echo $disabledAttr; ?>>
-                                    <option value="">-- <?php echo $h(t('ai_cloud.engine_none', 'Use default')); ?> --</option>
-                                    <?php foreach ($opts as $opt): ?>
-                                        <option value="<?php echo $h($opt['ref']); ?>"<?php echo $lRef === $opt['ref'] ? ' selected' : ''; ?>><?php echo $h($opt['label']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </td>
-                        <?php endforeach; ?>
-                    </tr>
-                <?php endforeach; ?>
-            <?php echo uiTableClose(); ?>
-            <div class="u-mt-12">
-                <button type="submit" class="btn btn-primary"<?php echo $disabledAttr; ?>>
-                    <i class="fas fa-save"></i> <?php echo $h(t('common.save', 'Save')); ?>
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- TAB: RECENT JOBS -->
-<div data-tab-pane="jobs"<?php echo $active_tab === 'jobs' ? '' : ' hidden'; ?>>
-    <div class="card">
-        <h3 class="card-title u-mb-12"><i class="fas fa-list-check u-primary"></i> <?php echo $h(t('ai_voicemail.tab_jobs', 'Recent Voicemail AI Jobs')); ?></h3>
+    <!-- TAB: RECENT JOBS -->
+    <div data-tab-pane="jobs"<?php echo $active_tab === 'jobs' ? '' : ' hidden'; ?>>
         <?php echo uiTableOpen([
             ['label' => 'ID'],
             ['label' => t('ai_jobs.col_entity', 'Voicemail')],

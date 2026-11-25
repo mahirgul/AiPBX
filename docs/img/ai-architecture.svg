@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 320" width="860" height="320">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <rect width="860" height="320" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="430" y="28" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="700" fill="#0f172a">AiPBX AI Architecture</text>
+
+  <!-- Asterisk -->
+  <rect x="28" y="64" width="180" height="84" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="118" y="96" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#1e3a8a">Asterisk 22</text>
+  <text x="118" y="116" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">AudioSocket · AMI</text>
+  <text x="118" y="133" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Voicemail · MixMonitor</text>
+
+  <!-- Web Portal -->
+  <rect x="28" y="196" width="180" height="84" rx="10" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5"/>
+  <text x="118" y="226" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#14532d">Web Portal (PHP)</text>
+  <text x="118" y="246" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">/ai-agent · /ai-local</text>
+  <text x="118" y="263" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">/ai-cloud · /ai-tts</text>
+
+  <!-- aipbx-ai -->
+  <rect x="310" y="112" width="220" height="116" rx="10" fill="#faf5ff" stroke="#9333ea" stroke-width="1.8"/>
+  <text x="420" y="142" text-anchor="middle" font-family="system-ui, sans-serif" font-size="14" font-weight="700" fill="#581c87">aipbx-ai Service</text>
+  <text x="420" y="164" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Cascade (STT → LLM → TTS)</text>
+  <text x="420" y="182" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Realtime Voice WebSocket</text>
+  <text x="420" y="200" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">AI Gateway &amp; PII Redactor</text>
+
+  <!-- Local & Cloud -->
+  <rect x="620" y="54" width="212" height="92" rx="10" fill="#fff7ed" stroke="#f97316" stroke-width="1.5"/>
+  <text x="726" y="82" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#7c2d12">Local &amp; Cloud Models</text>
+  <text x="726" y="102" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Local: Ollama · Whisper · Piper</text>
+  <text x="726" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Cloud: OpenAI · Gemini · Groq</text>
+  <text x="726" y="136" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Deepgram · ElevenLabs · Azure</text>
+
+  <!-- Tools -->
+  <rect x="620" y="190" width="212" height="92" rx="10" fill="#fefce8" stroke="#eab308" stroke-width="1.5"/>
+  <text x="726" y="218" text-anchor="middle" font-family="system-ui, sans-serif" font-size="13" font-weight="700" fill="#713f12">Agent Runtime Tools</text>
+  <text x="726" y="238" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Knowledge Base (RAG)</text>
+  <text x="726" y="255" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">External DB Saved Queries</text>
+  <text x="726" y="272" text-anchor="middle" font-family="system-ui, sans-serif" font-size="11" fill="#334155">Phonebook · DTMF · Transfer</text>
+
+  <!-- Arrows -->
+  <line x1="208" y1="106" x2="306" y2="148" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <text x="256" y="114" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#475569">PCM + DTMF</text>
+
+  <line x1="208" y1="238" x2="306" y2="196" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)"/>
+  <text x="256" y="232" text-anchor="middle" font-family="system-ui, sans-serif" font-size="10" fill="#475569">HTTP /v1/*</text>
+
+  <line x1="530" y1="146" x2="616" y2="104" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+  <line x1="530" y1="194" x2="616" y2="232" stroke="#475569" stroke-width="1.6" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+</svg>

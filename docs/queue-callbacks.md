@@ -1,12 +1,12 @@
-# Manual queue callbacks
+# Queue callbacks
 
-Available in **AiPBX 1.75.0 and newer**. See [Queues and the agent screen](queues.md) for queue setup
+Manual callbacks are available in **AiPBX 1.75.0 and newer**. See [Queues and the agent screen](queues.md) for queue setup
 and agent access. On an older installation, follow [Installation & updating](../INSTALL.md).
 
 An alternative to holding: the caller presses **1** while waiting in an enabled queue,
 the request is saved using their current caller number, and the call ends after confirmation.
-Agents decide when to call back; the PBX does not automatically dial customers or reserve a
-virtual place in the queue.
+Agents can call back from the Agent Screen. A queue can also start callbacks automatically when
+an agent is available. Callback requests are handled separately from live calls waiting in the queue.
 
 ## Enable a queue
 
@@ -49,8 +49,22 @@ Number matching treats `+` and `00` as equivalent international prefixes; it doe
 codes or compare only the last digits. Configure consistent caller-number normalization on trunks
 if a carrier presents the same person with different national/international number formats.
 
-The list refreshes every five seconds. No provider message or paid external call is made when a caller
-requests a callback; the external call starts only when an agent presses **Call**.
+The list refreshes every five seconds. The outbound call starts when an agent presses **Call** or
+when the automatic dispatcher reaches the request and the selected agent answers.
+
+## Automatic callbacks
+
+In the queue editor, enable **Call back automatically when an agent is available** along with
+callback requests. It is off by default. The dispatcher checks once a minute and takes the oldest
+available request. Live callers take priority. The agent must be logged in to the queue or be a static
+member, idle, unpaused and past the queue's wrap-up time.
+
+The PBX rings the agent's registered devices first. When the agent answers, it dials the customer
+using that agent's normal outbound route group and restrictions. An unanswered attempt keeps the
+request on the list. The dispatcher waits at least two minutes before retrying and makes up to
+three automatic attempts. Agents can still call the customer manually after that. The Agent Screen shows the automatic
+attempt count, last observed result and the earliest retry time when a retry is on hold. The
+dispatcher still needs an available agent before it starts the next attempt.
 
 ## Verify the setup
 

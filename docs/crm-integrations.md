@@ -6,6 +6,7 @@ signed webhook), the [live call events](rest-api-v1.md#live-call-events) and the
 | CRM | How |
 |---|---|
 | **Odoo 17 / 18 / 19** | The AiPBX Connector app from the Odoo App Store ([AiPBX Connector](https://apps.odoo.com/apps/modules/19.0/aipbx_connector), [AiPBX Connector - CRM](https://apps.odoo.com/apps/modules/19.0/aipbx_connector_crm); [source](https://github.com/mahirgul/AiPBX-Odoo)): paste the connection pack, done. With the CRM app installed, calls also land on opportunities (AiPBX Connector - CRM installs by itself). |
+| **ERPNext / Frappe** (self-hosted or Frappe Cloud) | The AiPBX Connector app ([source](https://github.com/mahirgul/AiPBX-Frappe)): **Connections → Add**, kind **ERPNext / Frappe**, paste the pack in ERPNext's **AiPBX Settings**. ERPNext's own caller pop-up, every call in Call Log with its recording and AI summary, click-to-call from every phone field, a call-back ToDo for missed calls, Contacts and Leads in the PBX address book. |
 | HubSpot, Zoho CRM, Pipedrive, Bitrix24, Salesforce, … | A connection of kind **Other** pointing at a small receiver, usually an [n8n](https://n8n.io) (or Make / Zapier) workflow, that turns the events into the CRM's call records. |
 | Your own program | A connection of kind **Other** pointing at your receiver; see [the receiver below](#a-receiver-in-20-lines). |
 

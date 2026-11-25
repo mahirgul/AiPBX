@@ -1,6 +1,6 @@
-# Cisco 7900 / 8800 series (CallManager firmware)
+# Cisco 7841, 7900 and 8800 series (CallManager firmware)
 
-Cisco's **enterprise desk phones** — 7941G, 7942G, 7945G, 7961G, 7962G, 7965G, 7975G and 8841, 8851,
+Cisco's **enterprise desk phones** — 7841, 7941G, 7942G, 7945G, 7961G, 7962G, 7965G, 7975G and 8841, 8851,
 8861, 8865 — are not the [Cisco SPA sets](phones.md) AiPBX supports alongside Yealink and the rest.
 They ship with *CallManager* (CUCM) firmware, they speak a Cisco-flavoured SIP, and they are configured by
 one big XML file called `SEP<MAC>.cnf.xml`.
@@ -103,7 +103,7 @@ What AiPBX checks, and what it will not do:
   on this server* with the missing names in the tooltip, and the phone keeps the firmware it has when it
   restarts. Copy the rest of the package in and run the command below, which rewrites the phone's file. This
   applies to the per-model list; the single load field is written as you typed it.
-- **Only the 7900 series is switched.** The 8800 series (8841/8851/8861/8865) has no SCCP enterprise
+- **Only the 7900 series is switched.** The 7841 and 8800 series (8841/8851/8861/8865) has no SCCP enterprise
   firmware to leave: its enterprise firmware is SIP already.
 - **Enterprise ↔ Multiplatform (MPP) is not automated.** Converting an 8800 to MPP firmware is a licensed
   Cisco migration with its own image and licence, not a load name — do it by Cisco's procedure or not at all.

@@ -77,8 +77,8 @@ if ($action === 'logout') {
 }
 
 if ($action === 'pause') {
-    $reason = trim($_POST['reason'] ?? 'Mola');
-    if (empty($reason)) $reason = 'Mola';
+    $reason = trim($_POST['reason'] ?? 'Break');
+    if (empty($reason)) $reason = 'Break';
 
     if (!empty($user_ext)) {
         // "queue pause member X reason Y" used to be sent here — Asterisk
@@ -184,8 +184,27 @@ if ($action === 'get_status') {
     $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
     $auto_login = ($settings['cc_auto_queue_login'] ?? '1') === '1';
-    $raw_reasons = $settings['cc_break_reasons'] ?? t('api_cc.default_break_reasons');
-    $reasons = array_filter(array_map('trim', explode(',', $raw_reasons)));
+    $reasons = [];
+    $reason_icons = [];
+    if (class_exists('PauseReasonRepository')) {
+        try {
+            foreach (PauseReasonRepository::activeOrdered() as $br) {
+                $bName = trim((string) ($br['name'] ?? ''));
+                if ($bName === '') {
+                    continue;
+                }
+                $reasons[] = $bName;
+                $reason_icons[$bName] = !empty($br['icon']) ? (string) $br['icon'] : '☕';
+            }
+        } catch (\Throwable $e) {
+            $reasons = [];
+            $reason_icons = [];
+        }
+    }
+    if ($reasons === []) {
+        $raw_reasons = $settings['cc_break_reasons'] ?? t('api_cc.default_break_reasons');
+        $reasons = array_values(array_filter(array_map('trim', explode(',', $raw_reasons))));
+    }
 
     echo json_encode([
         'success' => true,
@@ -195,7 +214,8 @@ if ($action === 'get_status') {
         'pause_reason' => $current_reason ?: ($active_break['pause_reason'] ?? ''),
         'pause_start' => $active_break['start_time'] ?? null,
         'auto_login' => $auto_login,
-        'reasons' => array_values($reasons)
+        'reasons' => $reasons,
+        'reason_icons' => $reason_icons,
     ]);
     exit;
 }

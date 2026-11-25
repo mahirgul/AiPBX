@@ -25,23 +25,22 @@ $csrf = getCSRFToken();
 <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
 
+<?php echo uiTabs([
+    'connections' => ['label' => t('external_dbs.tab_connections'), 'href' => '/external-dbs'],
+    'queries' => ['label' => t('external_dbs.tab_queries'), 'href' => '/external-dbs?tab=queries'],
+], $query_tab ? 'queries' : 'connections'); ?>
+
     <?php echo uiHelpBoxOpen('externalDbsHelpBox', htmlspecialchars(t('external_dbs.help_title', 'External Database Connections'))); ?>
         <p class="u-m-4-0-0"><?php echo htmlspecialchars(t('external_dbs.help_body', 'Securely store encrypted credentials for external MySQL/MariaDB and PostgreSQL databases. Used by IVR Data Steps for caller lookups and routing, as well as by custom plugins.')); ?></p>
         <div style="margin-top: 8px; font-weight: 600; color: var(--warning, #d97706);">
             <i class="fas fa-shield-alt"></i> <?php echo htmlspecialchars(t('external_dbs.read_only_advice', 'Security Recommendation: Always configure dedicated read-only user accounts on your external database servers.')); ?>
         </div>
 <?php echo uiHelpBoxClose(); ?>
-</div>
-
-<?php echo uiTabs([
-    'connections' => ['label' => t('external_dbs.tab_connections'), 'href' => '/external-dbs'],
-    'queries' => ['label' => t('external_dbs.tab_queries'), 'href' => '/external-dbs?tab=queries'],
-], $query_tab ? 'queries' : 'connections'); ?>
 
 <?php if ($query_tab): ?>
     <?php require __DIR__ . '/queries.php'; ?>
 <?php else: ?>
-<div class="card">
+<div class="u-mt-12">
     <!-- Create / Edit Form Box -->
     <div id="dbFormBox" style="display: none; padding: 20px; border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); background: var(--card-bg, #fff);">
         <h4 id="dbFormTitle" class="u-mt-0 u-mb-16">
@@ -305,3 +304,4 @@ function testSavedConnection(id) {
 }
 </script>
 <?php endif; ?>
+</div>

@@ -1,9 +1,9 @@
 {
     "slug": "ai-knowledge",
-    "name": "Knowledge Base (TXT RAG)",
+    "name": "Knowledge Base",
     "name_i18n": {
-        "tr": "Bilgi Tabanı (TXT RAG)",
-        "en": "Knowledge Base (TXT RAG)"
+        "en": "Knowledge Base",
+        "tr": "Bilgi Tabanı"
     },
     "version": "1.0.0",
     "author": "AiPBX Official Team",

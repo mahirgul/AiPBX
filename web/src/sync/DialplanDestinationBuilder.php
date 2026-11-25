@@ -62,6 +62,9 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
                     if (in_array($lang, getAvailableLanguages(), true)) {
                         $lines[] = " same => n,Set(CHANNEL(language)={$lang})";
                     }
+                } elseif (($mod['mod_type'] ?? '') === 'queue_priority') {
+                    $prio = max(0, min(100, (int) ($mod['mod_value'] ?? 0)));
+                    $lines[] = " same => n,Set(QUEUE_PRIO={$prio})";
                 } elseif (($mod['mod_type'] ?? '') === 'cid_prefix') {
                     $prefix = dialplanText((string) ($mod['mod_value'] ?? ''));
                     if ($prefix !== '') {
@@ -148,13 +151,18 @@ function buildDestinationLines($dest_type, $dest_id, $orig_did = '', $depth = 0)
             if ($join_file !== '') {
                 $lines[] = " same => n,Playback({$join_file})";
             }
-            $lines[] = " same => n,ExecIf(\$[\"\${AI_SUMMARY}\" != \"\"]?Set(AIPBX_AI_HANDOVER=\${FILTER(A-Za-z0-9 ._-:,\${AI_SUMMARY})}))";
+            $lines[] = " same => n,ExecIf(\$[\"\${AI_SUMMARY}\" != \"\"]?Set(AIPBX_AI_HANDOVER=\${FILTER(A-Za-z0-9 ._:,\${AI_SUMMARY})}))";
             $lines[] = " same => n,ExecIf(\$[\"\${AIPBX_AI_HANDOVER}\" != \"\"]?Set(CALLERID(name)=\${CALLERID(name)} | \${AIPBX_AI_HANDOVER:0:60}))";
             $queueAgi = $recordQueue ? ",/usr/local/bin/queue_record.php" : '';
             // After-call survey: with "c" the caller stays when the agent hangs up and is asked to rate.
             $survey = !empty($q['survey_enabled']) ? FileHelper::sanitizeAudioPath((string) ($q['survey_announce'] ?? '')) : '';
             if ($survey !== '') {
                 $lines[] = " same => n,Set(MEMBERINTERFACE=)";
+            }
+            $lines[] = ' same => n,ExecIf($["${QUEUE_PRIO}" = "" & "${AIPBX_PHONEBOOK_VIP}" = "1"]?Set(QUEUE_PRIO=100))';
+            $defaultPrio = max(0, min(100, (int) ($q['default_priority'] ?? 0)));
+            if ($defaultPrio > 0) {
+                $lines[] = " same => n,ExecIf(\$[\"\${QUEUE_PRIO}\" = \"\"]?Set(QUEUE_PRIO={$defaultPrio}))";
             }
             $lines[] = " same => n,Queue({$q_name}," . ($survey !== '' ? 'tTc' : 'tT') . ",,,{$queue_timeout}{$queueAgi})";
             $lines[] = " same => n,Set(__SKIP_VM=0)";

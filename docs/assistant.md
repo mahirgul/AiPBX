@@ -1,6 +1,6 @@
 # PBX Assistant (Plugin, experimental)
 
-> **Official plugin (`ai-assistant`), experimental.** Enable it under **Integration → Plugin Catalog**; its settings are on **AI Settings → PBX Assistant Settings** (`/ai-assistant`). The chat is **Panel → PBX Assistant** (`/assistant`). Its answers and behaviour may still change: check what it proposes before you apply it.
+> **Official plugin (`pbx-assistant`), experimental.** Enable it under **Integration → Plugin Catalog**; its settings are on **AI Settings → PBX Assistant Settings** (`/pbx-assistant`). The chat is **Panel → PBX Assistant** (`/assistant`). Its answers and behaviour may still change: check what it proposes before you apply it.
 
 The page at **AI → Dialplan editor** turns a plain-language sentence into a
 PBX change — with three hard rules that are not excuses, they are the design:

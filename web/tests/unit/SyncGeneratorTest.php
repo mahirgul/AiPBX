@@ -919,6 +919,85 @@ final class SyncGeneratorTest extends TestCase
         $this->assertStringContainsString('same => n,GotoIf($[$[${LEN(${EXTEN})} > 4] & $[${DIALPLAN_EXISTS(from-trunk-inbound,${EXTEN:-4},1)}]]?from-trunk-inbound,${EXTEN:-4},1)', $conf);
         $this->assertStringContainsString('same => n,GotoIf($[$[${LEN(${EXTEN})} > 5] & $[${DIALPLAN_EXISTS(from-trunk-inbound,${EXTEN:-5},1)}]]?from-trunk-inbound,${EXTEN:-5},1)', $conf);
     }
+
+    public function testUsePtimeAndEqualCodecPlcConfiguration(): void
+    {
+        require_once __DIR__ . '/../../src/sync/SyncRtpSettings.php';
+
+        $db = getDB();
+        $prevPtime = getSystemSetting('pjsip_use_ptime', 'no');
+        try {
+            $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('pjsip_use_ptime', 'yes') ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)")
+               ->execute();
+            syncAllExtensions();
+            $extConf = (string) file_get_contents(ASTERISK_PBX_DIR . '/pjsip_endpoints.conf');
+            $this->assertStringContainsString("use_ptime=yes\n", $extConf);
+
+            syncAllTrunks();
+            $trunkConf = (string) file_get_contents(ASTERISK_PBX_DIR . '/pjsip_trunks.conf');
+            $this->assertStringContainsString("use_ptime=yes\n", $trunkConf);
+        } finally {
+            $db->prepare("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('pjsip_use_ptime', ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)")
+               ->execute([$prevPtime]);
+        }
+
+        $sample = "[plc]\ngenericplc => true\ngenericplc_on_equal_codecs => false\n\n[opus]\ntype=opus\n";
+        $enabled = updateCodecsPlcConf($sample, true);
+        $this->assertStringContainsString("genericplc => true\ngenericplc_on_equal_codecs => true", $enabled);
+        $this->assertStringContainsString("[opus]\ntype=opus", $enabled);
+
+        $disabled = updateCodecsPlcConf($enabled, false);
+        $this->assertStringContainsString("genericplc => true\ngenericplc_on_equal_codecs => false", $disabled);
+    }
+
+    public function testBlankInternalCidDefaultsToExtensionAndExternalCidAllowsTrunkFallback(): void
+    {
+        $_SESSION['csrf_token'] = 'test-csrf';
+        $db = getDB();
+        $uname = 'cid_default_test_' . substr(uniqid(), -5);
+        $ext = '97' . random_int(10, 89);
+
+        try {
+            $res = UserService::saveUser([
+                'csrf_token' => 'test-csrf',
+                'username' => $uname,
+                'full_name' => 'CID Default Test',
+                'extension' => $ext,
+                'cid_internal' => '',
+                'cid_external' => '',
+                'role' => 'user',
+            ]);
+            $this->assertTrue((bool) ($res['success'] ?? false), $res['error'] ?? '');
+
+            $row = $db->prepare('SELECT id, cid_internal, cid_external FROM sys_users WHERE username = ?');
+            $row->execute([$uname]);
+            $u = $row->fetch(\PDO::FETCH_ASSOC);
+            $this->assertSame($ext, $u['cid_internal']);
+            $this->assertSame('', $u['cid_external']);
+
+            $resExt = ExtensionService::saveExtension([
+                'csrf_token' => 'test-csrf',
+                'user_id' => $u['id'],
+                'extension' => $ext,
+                'full_name' => 'CID Default Test',
+                'sip_password' => 'StrongPass!99',
+                'cid_internal' => '',
+                'cid_external' => '',
+                'is_active' => 1,
+            ]);
+            $this->assertTrue((bool) ($resExt['success'] ?? false), $resExt['error'] ?? '');
+
+            $row->execute([$uname]);
+            $u2 = $row->fetch(\PDO::FETCH_ASSOC);
+            $this->assertSame($ext, $u2['cid_internal']);
+            $this->assertSame('', $u2['cid_external']);
+        } finally {
+            if (!empty($u['id'])) {
+                $db->prepare('DELETE FROM sys_pending_sync WHERE entity_type IN ("user_account", "extension") AND entity_id = ?')->execute([(string) $u['id']]);
+            }
+            $db->prepare('DELETE FROM sys_users WHERE username = ?')->execute([$uname]);
+        }
+    }
 }
 
 

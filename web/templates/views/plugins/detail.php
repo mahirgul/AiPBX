@@ -9,10 +9,44 @@
  * @var string $csrf_token
  */
 
-$schema = ($plugin['slug'] ?? '') === 'ai-assistant' ? [] : ($plugin['settings_schema'] ?? []);
+$slug = (string) ($plugin['slug'] ?? '');
+$isUnifiedTabbed = in_array($slug, ['cnam', 'sms', 'auto-dialer'], true) && $custom_view_path !== null && is_file($custom_view_path);
+$schema = ($slug === 'pbx-assistant' || $isUnifiedTabbed) ? [] : ($plugin['settings_schema'] ?? []);
 $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
 ?>
 
+<?php if ($isUnifiedTabbed): ?>
+<div class="card">
+    <?php echo uiPageHeaderOpen(htmlspecialchars(str_replace('fas ', '', (string) $plugin['icon'])), htmlspecialchars($plugin['name']), 'pluginDetailHelpBox'); ?>
+        <span class="badge badge-secondary u-fs-11 u-ml-8">v<?php echo htmlspecialchars($plugin['version']); ?></span>
+        <?php if ($plugin['enabled']): ?>
+            <span class="badge badge-success u-fs-11 u-ml-4"><?php echo htmlspecialchars(t('common.active', 'Enabled')); ?></span>
+        <?php else: ?>
+            <span class="badge badge-warning u-fs-11 u-ml-4"><?php echo htmlspecialchars(t('common.passive', 'Disabled')); ?></span>
+        <?php endif; ?>
+    <?php echo uiPageHeaderActions(); ?>
+        <a href="/plugins" class="btn btn-secondary btn-sm">
+            <i class="fas fa-arrow-left"></i> <?php echo htmlspecialchars(t('plugins.back_to_catalog', 'Back to Plugin Catalog')); ?>
+        </a>
+    <?php echo uiPageHeaderClose(); ?>
+
+    <?php echo uiHelpBoxOpen('pluginDetailHelpBox', htmlspecialchars($plugin['name'])); ?>
+        <?php echo htmlspecialchars($plugin['description']); ?>
+    <?php echo uiHelpBoxClose(); ?>
+
+    <?php
+    ob_start();
+    try {
+        require $custom_view_path;
+        echo ob_get_clean();
+    } catch (\Throwable $pluginUiErr) {
+        ob_end_clean();
+        echo '<div class="alert alert-danger"><i class="fas fa-exclamation-triangle"></i> Plugin UI Error: '
+            . htmlspecialchars($pluginUiErr->getMessage()) . '</div>';
+    }
+    ?>
+</div>
+<?php else: ?>
 <div class="card u-mb-20">
     <div class="card-header">
         <div class="card-title">
@@ -117,4 +151,5 @@ $lang = function_exists('getUserLanguage') ? getUserLanguage() : 'en';
             . htmlspecialchars($pluginUiErr->getMessage()) . '</div>';
     }
     ?>
+<?php endif; ?>
 <?php endif; ?>

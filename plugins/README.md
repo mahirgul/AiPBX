@@ -24,7 +24,7 @@ This directory contains the **official plugins** bundled with AiPBX. Community p
 | [`ai-voicemail`](./ai-voicemail/plugin.json) | `ai` | AiPBX Official Team | Automatic speech-to-text transcription and one-sentence summaries for voicemail messages |
 | [`ai-call-analysis`](./ai-call-analysis/plugin.json) | `ai` | AiPBX Official Team | Call recording transcription, AI summaries, and automatic quality review (Auto-QA) |
 | [`ai-knowledge`](./ai-knowledge/plugin.json) | `ai` | AiPBX Official Team | Upload TXT documents, index chunks via AI Gateway embeddings, and ground Assistant & Voice Apps answers with role-based access control |
-| [`ai-assistant`](./ai-assistant/plugin.json) | `ai` | AiPBX Official Team | Experimental. Chat with the PBX: plain-language changes with a preview and undo |
+| [`pbx-assistant`](./pbx-assistant/plugin.json) | `ai` | AiPBX Official Team | Experimental. Chat with the PBX: plain-language changes with a preview and undo |
 
 ## Community Plugins (`type: "community"`)
 
@@ -62,4 +62,4 @@ call-path timeouts, compatibility, lifecycle and required test evidence.
 
 Auto-dialer is maintained in the [community plugin repository](https://github.com/mahirgul/aipbx-plugins/tree/main/plugins/community/auto-dialer); existing installations migrate on upgrade with their campaign data and enabled state preserved.
 
-The PBX Assistant (`ai-assistant/`) is an official, experimental plugin: the chat at `/assistant`, its settings at `/ai-assistant`. An upgrade removes an older community copy of `ai-assistant`.
+The PBX Assistant (`pbx-assistant/`, id `ai-assistant` until 1.80) is an official, experimental plugin: the chat at `/assistant`, its settings at `/pbx-assistant`. An upgrade removes an older community copy of `ai-assistant`.

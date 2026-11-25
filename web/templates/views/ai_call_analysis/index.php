@@ -22,10 +22,10 @@ $qaDailyMax = (int) ($qa_settings['daily_max'] ?? 30);
             ['href' => '/ai-cloud?tab=models', 'icon' => 'fa-cloud', 'label' => t('ai_cloud.title', 'Cloud AI'), 'class' => 'btn-secondary btn-sm'],
         ]); ?>
     <?php echo uiPageHeaderClose(); ?>
+    <?php echo uiTabs($tabs, $active_tab); ?>
     <?php echo uiHelpBoxOpen('aiCallAnalysisHelpBox', t('ai_call_analysis.title', 'Call Analysis')); ?>
         <?php echo $h(t('ai_call_analysis.help_body', 'Configure speech-to-text and language model bindings for call recording transcription, summaries, and automatic quality review (Auto-QA).')); ?>
     <?php echo uiHelpBoxClose(); ?>
-</div>
 
 <?php if (!$plugin_enabled): ?>
     <div class="alert alert-warning u-mb-12">
@@ -34,10 +34,7 @@ $qaDailyMax = (int) ($qa_settings['daily_max'] ?? 30);
     </div>
 <?php endif; ?>
 
-<?php echo uiTabs($tabs, $active_tab); ?>
-
 <div data-tab-pane="settings"<?php echo $active_tab === 'settings' ? '' : ' hidden'; ?>>
-    <div class="card">
         <form method="POST">
             <?php echo $csrf; ?>
             <input type="hidden" name="_tab" value="settings">
@@ -111,10 +108,8 @@ $qaDailyMax = (int) ($qa_settings['daily_max'] ?? 30);
             </button>
         </form>
     </div>
-</div>
 
 <div data-tab-pane="jobs"<?php echo $active_tab === 'jobs' ? '' : ' hidden'; ?>>
-    <div class="card">
         <h3 class="card-title u-mb-12"><?php echo $h(t('ai_call_analysis.jobs_title', 'Recent Call Analysis Jobs')); ?></h3>
         <?php echo uiTableOpen([
             ['label' => 'ID'],

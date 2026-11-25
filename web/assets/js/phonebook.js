@@ -23,6 +23,7 @@ function openPhonebookModal(c, number) {
     const cfg = window.PHONEBOOK || { fields: [] };
     document.getElementById('pb_id').value = c ? c.id : '';
     cfg.fields.forEach(f => { document.getElementById('pb_' + f).value = c ? (c[f] || '') : ''; });
+    document.getElementById('pb_is_vip').checked = Number(c?.is_vip) === 1;
     document.getElementById('pb_numbers').replaceChildren();
     (c && c.numbers && c.numbers.length ? c.numbers : [{ label: 'mobile', number: number || '' }])
         .forEach(n => phonebookAddNumber(n.label, n.number));

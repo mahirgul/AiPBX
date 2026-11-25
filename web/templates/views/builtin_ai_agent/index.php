@@ -56,7 +56,8 @@ $collectionNames = array_column($collections, 'name', 'id');
                             <option value="" selected><?php echo $h($current); ?></option>
                         <?php endif; ?>
                         <?php foreach ($models[$kind] as $ref => $name): ?>
-                            <option value="<?php echo $h($ref); ?>"<?php echo $selected($ref, $current); ?>><?php echo $h($name); ?></option>
+                            <?php $mTag = (str_starts_with((string) $ref, 'cloud:') && in_array(CloudAiService::typeIfKnown(substr((string) $ref, 6)), BuiltinAiAgentService::REALTIME_PROVIDER_TYPES, true)) ? ' [Cascade + Realtime]' : ' [Cascade]'; ?>
+                            <option value="<?php echo $h($ref); ?>"<?php echo $selected($ref, $current); ?>><?php echo $h($name . $mTag); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -95,6 +96,78 @@ $collectionNames = array_column($collections, 'name', 'id');
                 </label>
                 <small class="u-hint" id="builtinAgentAnnouncementsHelp"><?php echo $h(t('builtin_ai_agent.automatic_announcements_help')); ?></small>
             </div>
+            <?php $rtAccounts = BuiltinAiAgentService::realtimeAccounts(); ?>
+            <div class="form-group">
+                <label class="form-label" for="builtin_agent_realtime_account"><?php echo $h(t('builtin_ai_agent.realtime_account')); ?></label>
+                <select class="form-control" id="builtin_agent_realtime_account" name="realtime_account">
+                    <option value=""><?php echo $h(t('builtin_ai_agent.realtime_off') . ' [Cascade]'); ?></option>
+                    <?php foreach ($rtAccounts as $ref => $label): ?>
+                        <option value="<?php echo $h($ref); ?>"<?php echo $selected($ref, $edit['realtime_account'] ?? ''); ?>><?php echo $h($label . ' [Realtime]'); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="builtin_agent_realtime_voice"><?php echo $h(t('builtin_ai_agent.realtime_voice')); ?></label>
+                <select class="form-control" id="builtin_agent_realtime_voice" name="realtime_voice">
+                    <?php foreach (BuiltinAiAgentService::REALTIME_VOICES as $rv): ?>
+                        <option value="<?php echo $h($rv); ?>"<?php echo $selected($rv, $edit['realtime_voice'] ?? 'alloy'); ?>><?php echo $h(ucfirst($rv)); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php $enabledPbx = is_array($edit['pbx_tools'] ?? null) ? $edit['pbx_tools'] : []; ?>
+            <div class="form-group">
+                <label class="form-label"><?php echo $h(t('builtin_ai_agent.pbx_tools')); ?></label>
+                <div class="u-d-grid u-gtc-1fr-1fr u-gap-8">
+                    <?php foreach (PbxToolRegistry::all() as $pt): ?>
+                        <label class="u-check-label">
+                            <input type="checkbox" class="u-accent" name="pbx_tools[]" value="<?php echo $h($pt['name']); ?>"<?php echo in_array($pt['name'], $enabledPbx, true) ? ' checked' : ''; ?>>
+                            <span><?php echo $h($pt['name']); ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <?php
+            $enabledQueries = is_array($edit['db_queries'] ?? null) ? array_map('strval', $edit['db_queries']) : [];
+            if ($enabledQueries === [] && !empty($edit['db_lookups']) && is_array($edit['db_lookups'])) {
+                $enabledQueries = array_values(array_filter(array_map(
+                    static fn ($lu): string => is_array($lu) ? (string) ($lu['id'] ?? '') : '',
+                    $edit['db_lookups']
+                )));
+            }
+            ?>
+            <div class="form-group u-grid-column-1-1">
+                <label class="form-label"><?php echo $h(t('builtin_ai_agent.db_queries')); ?></label>
+                <?php if (empty($saved_queries)): ?>
+                    <div class="u-fs-12 text-muted"><a href="/external-dbs?tab=queries"><?php echo $h(t('external_dbs.tab_queries')); ?></a></div>
+                <?php else: ?>
+                    <div class="u-d-grid u-gtc-1fr-1fr u-gap-8">
+                        <?php foreach ($saved_queries as $sq): $qKey = (string) $sq['query_key']; ?>
+                            <label class="u-check-label">
+                                <input type="checkbox" class="u-accent" name="db_queries[]" value="<?php echo $h($qKey); ?>"<?php echo in_array($qKey, $enabledQueries, true) ? ' checked' : ''; ?>>
+                                <span><code class="u-mono"><?php echo $h($qKey); ?></code> — <?php echo $h($sq['description']); ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php $instrValue = array_key_exists('instructions', $edit) ? (string) $edit['instructions'] : ($default_instructions ?? ''); ?>
+        <div class="form-group u-mt-12 ai-editor-box" id="builtinAgentInstrBox">
+            <div class="u-flex-between u-mb-6 u-wrap u-gap-8">
+                <label class="form-label u-mb-0" for="builtin_agent_instructions"><?php echo $h(t('builtin_ai_agent.instructions')); ?></label>
+                <div class="u-flex-gap">
+                    <button type="button" class="btn btn-secondary btn-xs" onclick="toggleAgentInstrFullscreen()"><i class="fas fa-expand"></i> <?php echo $h(t('builtin_ai_agent.btn_fullscreen')); ?></button>
+                    <button type="button" class="btn btn-secondary btn-xs" onclick="copyAgentInstructions()"><i class="fas fa-copy"></i> <?php echo $h(t('builtin_ai_agent.btn_copy')); ?></button>
+                    <button type="button" class="btn btn-secondary btn-xs" onclick="resetAgentInstructions()"><i class="fas fa-rotate-left"></i> <?php echo $h(t('builtin_ai_agent.btn_reset')); ?></button>
+                </div>
+            </div>
+            <div class="u-d-flex u-wrap u-gap-6 u-mb-6" id="agentInstrVars">
+                <?php foreach (BuiltinAiAgentService::INSTRUCTION_VARS as $vChip): ?>
+                    <button type="button" class="btn btn-secondary btn-xs u-mono" data-insert-var="<?php echo $h($vChip); ?>">+ <?php echo $h(trim($vChip, '{}')); ?></button>
+                <?php endforeach; ?>
+            </div>
+            <small class="u-hint u-mb-6"><?php echo $h(t('builtin_ai_agent.instructions_help')); ?></small>
+            <textarea class="form-control u-mono" id="builtin_agent_instructions" name="instructions" rows="12" maxlength="4000"><?php echo $h($instrValue); ?></textarea>
         </div>
         <div class="u-flex-gap">
             <?php echo uiSaveButton(null, 'name="save_agent" value="1"'); ?>
@@ -102,4 +175,35 @@ $collectionNames = array_column($collections, 'name', 'id');
         </div>
     </form>
 </div>
+<script>
+const AGENT_DEFAULT_INSTRUCTIONS = <?php echo json_encode((string) ($default_instructions ?? ''), JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP); ?>;
+function insertAtCursor(ta, token) {
+    if (!ta) return;
+    const start = ta.selectionStart ?? ta.value.length;
+    const end = ta.selectionEnd ?? ta.value.length;
+    ta.value = ta.value.slice(0, start) + token + ta.value.slice(end);
+    ta.focus();
+    ta.selectionStart = ta.selectionEnd = start + token.length;
+}
+document.querySelectorAll('#agentInstrVars [data-insert-var]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+        insertAtCursor(document.getElementById('builtin_agent_instructions'), btn.getAttribute('data-insert-var') || '');
+    });
+});
+function toggleAgentInstrFullscreen() {
+    const box = document.getElementById('builtinAgentInstrBox');
+    if (box) box.classList.toggle('ai-editor-fs');
+}
+function copyAgentInstructions() {
+    const ta = document.getElementById('builtin_agent_instructions');
+    if (ta && navigator.clipboard) navigator.clipboard.writeText(ta.value);
+}
+function resetAgentInstructions() {
+    const ta = document.getElementById('builtin_agent_instructions');
+    if (ta) {
+        ta.value = AGENT_DEFAULT_INSTRUCTIONS;
+        ta.focus();
+    }
+}
+</script>
 <?php endif; ?>

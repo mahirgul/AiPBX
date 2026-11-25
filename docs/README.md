@@ -94,20 +94,19 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 
 | Page | Plugin slug | What it covers |
 |------|-------------|----------------|
-| 🧩 [Plugin system & developer guide](plugin-development.md) | — | The bundled plugin catalog (`plugins/`), `plg_*` database tables, enabling/disabling integrations (`google-auth`, `ms-teams`, …), and building custom `.zip` plugins |
-| 🔑 [Corporate SSO: OpenID Connect & SAML 2.0 (Plugins)](sso.md) | `oidc-auth`, `saml-auth` | Enterprise Single Sign-On (SSO) with Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, Google Workspace, and ADFS with JIT auto-provisioning |
+| 🧩 [Plugin system & developer guide](plugin-development.md) | — | The bundled plugin catalog (`plugins/`), `plg_*` database tables, enabling/disabling integrations (`google-auth`, `microsoft-auth`, `ms-teams`, …), and building custom `.zip` plugins |
+| 🔑 [Corporate SSO: OpenID Connect, Microsoft & SAML 2.0 (Plugins)](sso.md) | `microsoft-auth`, `oidc-auth`, `saml-auth` | Enterprise Single Sign-On (SSO) with Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, Google Workspace, and ADFS with JIT auto-provisioning |
 | 🤖 [Auto dialer & AMD campaigns (Plugin)](auto-dialer.md) | `auto-dialer` | Automated outbound calling campaigns with Answering Machine Detection (`AMD`), queue free-agent pacing, voicemail drop, and CSV call results |
 | 🪪 [Caller Name (CNAM) Lookup (Plugin)](cnam.md) | `cnam` | Inbound caller name lookup: local phonebook & extensions first, then BulkVS, Telnyx, Twilio, Vonage, OpenCNAM, SignalWire, NumVerify, AbstractAPI or Custom URL with 30-day cache |
 | 💬 [SMS & MMS Messaging (Plugin)](sms.md) | `sms` | Two-way text and multimedia messaging via Twilio, Vonage, Plivo, Telnyx, Bandwidth, Sinch, VoIP.ms or BulkVS with multi-user team inboxes, contacts, and SSRF-shielded attachments |
 | 🎙️ [AI Voicemail Transcription & Summary (Plugin)](ai-voicemail.md) | `ai-voicemail` | Automated Whisper audio transcription and LLM executive summaries, urgency classification, action-item extraction, and PCI-DSS PII masking |
 | 🌐 [SIP Provider Templates (Plugin)](provider-templates.md) | `provider-templates` | 1-click SIP trunk creation from community carrier profiles (Twilio, Telnyx, A1, Drei, etc.) with pre-configured PJSIP NAT, timers, and codec flags |
 | 🌐 [Website call widget (Plugin)](web-widgets.md) | `web-widgets` | "Call us" button for websites (WebRTC in the browser), call-back form, allowed websites and limits, WordPress plugin |
-| ☁️ [Cloud AI services (Plugin)](cloud-ai.md) | `ai-cloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
+| ☁️ [Cloud AI services (Plugin)](cloud-ai.md) | `aicloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
 | 🗣️ [Cloud TTS (Plugin)](cloud-tts.md) | `ai-tts` | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |
-| 🧠 [Local AI models (Plugin)](local-ai.md) | `ai-models` | AI models on the PBX itself (EMA Lightning Turkish TTS): the runtime, downloading models, the `aipbx-ai` service and its API |
-| 🎛️ [AI applications (Plugin)](ai-apps.md) | `ai-apps` | AI features with their own numbers that take calls: announcements with values (caller, lookup address) |
-| 🛰️ [External AI agents](ai-agents.md) | AI → External agents | A voice agent of another service at a SIP address as a call destination; hand-over to a person by REFER, call limit, fallback |
-| ✨ [PBX Assistant (experimental)](assistant.md) | `ai-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base |
+| 🧠 [Local AI models (Plugin)](local-ai.md) | `ailocal` | Local AI runtime (`aipbx-ai`), Ollama LLMs, Whisper STT, Piper TTS, and ONNX embeddings |
+| 🤖 [AI Voice Agent & Settings](ai-settings.md) | Built-in `/ai-agent` | Built-in Cascade & Realtime voice agents over AudioSocket, External DB tools, DTMF, outbound IVR navigation, and architecture diagrams |
+| ✨ [PBX Assistant (experimental)](assistant.md) | `pbx-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base |
 | 📡 [Signaling capture](signaling.md) | Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
 | 📮 [Voicemail](voicemail.md) | PBX settings → Voicemail | Mailboxes, listening (\*97/\*98, portal, apps, e-mail), message limits and PIN rules |
 | 📈 [Call quality](call-quality.md) | Troubleshooting → Call quality | Packet loss in both directions and jitter per trunk and extension from RTCP; a health check alarms when audio is lost |

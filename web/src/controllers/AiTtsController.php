@@ -35,7 +35,13 @@ class AiTtsController extends BaseController
             }
         }
 
+        $activeTab = (string) ($_POST['_tab'] ?? $_GET['tab'] ?? 'tts');
+        if (!in_array($activeTab, ['tts', 'history'], true)) {
+            $activeTab = 'tts';
+        }
+
         static::renderPage('ai_tts/index', [
+            'active_tab' => $activeTab,
             'providers' => AiTtsService::providersForPage(),
             'history' => AiTtsService::history(100),
             'csrf_token' => getCSRFToken(),

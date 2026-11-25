@@ -349,6 +349,7 @@ class CallSession:
         self.prepare_ms = 0            # /v1/calls/start: lookup + synthesis
         # From the caller (later application types listen to it).
         self.dtmf = []
+        self._last_dtmf = ("", 0.0)
         self.inbound_bytes = 0
         self.inbound_frames = 0
         self.inbound_rate = 0
@@ -370,11 +371,16 @@ class CallSession:
             q.put(("audio", time.monotonic(), payload))
 
     def digit_in(self, digit):
+        now = time.monotonic()
+        last_d, last_t = self._last_dtmf
+        if digit == last_d and (now - last_t) < 0.08:
+            return
+        self._last_dtmf = (digit, now)
         self.dtmf.append(digit)
         self.dtmf_event.set()
         q = self.listen_q
         if q is not None:
-            q.put(("dtmf", time.monotonic(), digit))
+            q.put(("dtmf", now, digit))
 
     def seconds(self):
         end = self.ended_mono if self.ended_mono is not None else time.monotonic()
@@ -405,6 +411,9 @@ class CallRegistry:
         self._mu = threading.Lock()
         self._live = {}                # uuid -> CallSession (prepared or playing)
         self._finished = deque(maxlen=FINISHED_KEEP)
+        self.on_finish = None
+        self.ari_manager = None
+        self.outbound_navigator = None
         self._stop = threading.Event()
         self._sweeper = threading.Thread(target=self._sweep_loop, name="call-sweeper", daemon=True)
         self._sweeper.start()
@@ -416,6 +425,17 @@ class CallRegistry:
         """Constant-time check of a dialplan key (any case)."""
         given = (given or "").strip().lower().encode("ascii", "replace")
         return hmac.compare_digest(given, self.key)
+
+    def digit_from_ari(self, call_uuid, digit):
+        with self._mu:
+            session = self._live.get(call_uuid)
+        if session is not None:
+            session.digit_in(digit)
+
+    def register_listen_session(self, session):
+        with self._mu:
+            self._live[session.uuid] = session
+        return session
 
     # ---- start --------------------------------------------------------
 
@@ -526,14 +546,14 @@ class CallRegistry:
             session.verified_customer = customer
         self._reserve(session, limit)
         try:
-            session.caller_name = display_name(secret_refs.caller_name(session.caller))
+            raw_name, _ = secret_refs.caller_info(session.caller)
+            session.caller_name = display_name(raw_name)
             try:
                 template = random.choice(config["greetings"]) if config.get("greetings") else config["greeting"]
                 greeting = self.apps.greeting_text({"greeting": template}, session.caller_name, session.caller, session.did)
-                if greeting == self.apps.greeting_text(config):
-                    session.pcm = self.apps.prompt(app, version, config, "greeting")
-                else:
-                    session.pcm = self.apps.speech(app, config, greeting)
+                session.pcm = self.apps.greeting_speech(
+                    app, version, config, template, session.caller_name, session.caller, session.did
+                )
             except NotReady:
                 raise Refused(f"model {config['tts_model']} is not ready") from None
             except ServiceBusy:
@@ -642,6 +662,12 @@ class CallRegistry:
                  "lookup=%s dtmf=%s result=%s",
                  session.app, session.caller or "-", session.chars, session.audio_seconds,
                  session.prepare_ms, played, wall, session.lookup or "-", "".join(session.dtmf) or "-", result)
+        cb = self.on_finish
+        if cb is not None:
+            try:
+                cb(session.uuid)
+            except Exception as e:
+                log.debug("on_finish(%s) failed: %s", session.uuid, e)
 
     # ---- housekeeping and the live view -----------------------------
 
@@ -852,12 +878,35 @@ class AudioSocketServer:
         try:
             if session.kind == VOICE_REQUESTS:
                 result = VoiceRequestsCall(self.registry, conn, session, reader).run()
+            elif session.kind == "listen":
+                result = self._listen_only(conn, session, reader)
             else:
                 result = self._play(conn, session, reader)
         finally:
             reader.done.set()
             reader.thread.join(2.0)
             self.registry.finish(session, result)
+
+    def _listen_only(self, conn, session, reader):
+        """Keeps a listen-only AudioSocket alive with 20ms silence while inbound audio queues into listen_q."""
+        t0 = time.monotonic()
+        i = 0
+        try:
+            while not reader.gone.is_set() and session.state != DONE:
+                now = time.monotonic()
+                wait = t0 + i * FRAME_SECONDS - LEAD_SECONDS - now
+                if wait < -LEAD_SECONDS:
+                    t0 = now - i * FRAME_SECONDS
+                    wait = 0.0
+                if wait > 0 and reader.gone.wait(wait):
+                    break
+                if reader.gone.is_set() or session.state == DONE:
+                    break
+                conn.sendall(message(KIND_AUDIO, SILENCE_FRAME))
+                i += 1
+            return "hangup" if reader.gone.is_set() else "done"
+        except OSError:
+            return "hangup"
 
     def _play(self, conn, session, reader):
         pcm = session.pcm
@@ -967,9 +1016,11 @@ class VoiceRequestsCall:
                     self.session.sent_bytes += len(chunk)
                 i += 1
         except OSError:
-            pass
-        finally:
             self._broken.set()
+
+    def _send_pcm(self, frame):
+        self.conn.sendall(message(KIND_AUDIO, frame))
+        self.session.sent_bytes += len(frame)
 
     def gone(self):
         # DONE: the sweeper ended the call (max call time); the turn stops and the socket closes.
@@ -1139,7 +1190,7 @@ class VoiceRequestsCall:
             if not text:
                 text, attempt["stt_ms"] = self.transcribe(pcm)
             attempt["transcript"] = text
-            if text:
+            if text and not cfg.get("conversation"):
                 m = self.understand(text, cfg)
                 attempt.update(intent=m["intent"], score=m["score"], second=m["second"], scores=m["scores"],
                                method=m["method"])
@@ -1232,6 +1283,10 @@ class VoiceRequestsCall:
         session, cfg = self.session, self.config
         try:
             if cfg.get("conversation"):
+                if cfg.get("realtime_cloud"):
+                    from .realtime import RealtimeCall
+                    if RealtimeCall(self).run():
+                        return self.session.result or "matched"
                 return self._converse()
             played, pre = self.play_interruptible(session.pcm)
             if not played:
@@ -1333,10 +1388,95 @@ class VoiceRequestsCall:
             result = secret_refs.db_value(s.app, query, s.verified_customer, {
                 "caller_id": s.caller, "caller_name": s.caller_name, "did": s.did,
                 "uniqueid": s.uniqueid, "linkedid": s.linkedid, "lang": self.config.get("language") or "",
+                "customer_id": s.verified_customer,
             })
             if self.config.get("builtin_agent") and json.loads(result)["status"] == "unavailable":
                 raise ValueError("database lookup unavailable")
             return result
+        if tool == "collect_dtmf":
+            args = {}
+            if isinstance(query, dict):
+                args = query
+            elif isinstance(query, str) and query.strip().startswith("{"):
+                try:
+                    args = json.loads(query)
+                except ValueError:
+                    args = {}
+            try:
+                max_digits = max(1, min(32, int(args.get("max_digits") or 11)))
+            except (ValueError, TypeError):
+                max_digits = 11
+            try:
+                timeout_sec = max(2, min(20, int(args.get("timeout_sec") or 8)))
+            except (ValueError, TypeError):
+                timeout_sec = 8
+            terminator = str(args.get("terminator") if args.get("terminator") is not None else "#")[:1]
+            collected = self._collect_dtmf_live(max_digits=max_digits, timeout_sec=timeout_sec, terminator=terminator)
+            return json.dumps({"ok": True, "digits": collected}, ensure_ascii=False)
+        if tool == "send_dtmf" and getattr(self.registry, "ari_manager", None) is not None:
+            args = {}
+            if isinstance(query, dict):
+                args = query
+            elif isinstance(query, str) and query.strip().startswith("{"):
+                try:
+                    args = json.loads(query)
+                except ValueError:
+                    args = {}
+            else:
+                args = {"digits": str(query or "")}
+            digits = re.sub(r"[^0-9*#ABCDwW]", "", str(args.get("digits") or ""))
+            try:
+                pause_ms = max(50, min(500, int(args.get("pause_ms") or 100)))
+            except (ValueError, TypeError):
+                pause_ms = 100
+            if not digits:
+                return json.dumps({"ok": False, "text": "Invalid DTMF digits."})
+            try:
+                if self.registry.ari_manager.send_dtmf_for_call(s.uuid, digits, between=pause_ms):
+                    return json.dumps({"ok": True, "text": f"Sent DTMF digits: {digits}"})
+            except Exception as e:
+                return json.dumps({"ok": False, "text": f"Could not send DTMF: {e}"})
+            return json.dumps({"ok": False, "text": "Active call channel not found for DTMF."})
+        pbx_map = {t["name"]: t for t in (self.config.get("pbx_tools") or []) if isinstance(t, dict) and t.get("name")}
+        if tool in pbx_map:
+            from .pbx_tools import PbxToolsClient
+            args = {}
+            if isinstance(query, dict):
+                args = query
+            elif isinstance(query, str) and query.strip().startswith("{"):
+                try:
+                    args = json.loads(query)
+                except ValueError:
+                    args = {}
+            if not args and isinstance(query, str) and query.strip():
+                props = list(((pbx_map[tool].get("parameters") or {}).get("properties") or {}).keys())
+                key_name = props[0] if props else "query"
+                args = {key_name: query.strip()}
+            client = PbxToolsClient(key=str(self.config.get("pbx_tools_key") or ""))
+            res = client.execute(tool, args, caller={
+                "app_id": s.app,
+                "call_uuid": s.uuid,
+                "caller": s.caller,
+                "caller_name": s.caller_name,
+                "did": s.did,
+                "verified_customer": s.verified_customer,
+            })
+            action = res.get("action") or {}
+            if res.get("ok") and isinstance(action, dict):
+                atype = action.get("type")
+                if atype == "transfer":
+                    target = str(action.get("target") or "")
+                    if target:
+                        intent = next((i for i in (self.config.get("intents") or []) if i.get("id") == target), None)
+                        if intent is None:
+                            intent = {"id": target, "name": target}
+                            if action.get("route_id"):
+                                intent["route_id"] = str(action["route_id"])
+                        self.matched = intent
+                        s.intent = target
+                elif atype in ("hangup", "end"):
+                    s.intent = "_end"
+            return str(res.get("text") or json.dumps(res, ensure_ascii=False))
         t = next(t for t in self.config["tools"] if t["name"] == tool)
         url = lookup_url(t["url"], s.caller, s.did, s.app)
         url += ("&" if "?" in url else "?") + urllib.parse.urlencode({"q": query})
@@ -1379,11 +1519,44 @@ class VoiceRequestsCall:
             log.info("call app=%d: automatic greeting ready", self.session.app)
         return pcm or self.session.pcm
 
+    def _collect_dtmf_live(self, max_digits=11, timeout_sec=8, terminator="#"):
+        """Collects DTMF keypad input from the caller over listen_q."""
+        s = self.session
+        q = queue.Queue()
+        digits = []
+        s.listen_q = q
+        deadline = time.monotonic() + float(timeout_sec)
+        try:
+            while len(digits) < max_digits and not self.gone():
+                rem = deadline - time.monotonic()
+                if rem <= 0:
+                    break
+                try:
+                    kind, _at, data = q.get(timeout=min(0.2, rem))
+                except queue.Empty:
+                    continue
+                if kind == "dtmf":
+                    ch = str(data)
+                    if terminator and ch == terminator:
+                        break
+                    digits.append(ch)
+                    # Give caller up to 3s per subsequent digit
+                    deadline = max(deadline, time.monotonic() + 3.0)
+        finally:
+            s.listen_q = None
+        return "".join(digits)
+
     def _converse(self):
         """greeting -> (listen -> model step -> answer)* -> transfer, goodbye or the application's destination."""
         session, cfg = self.session, self.config
+        cfg = {
+            **cfg,
+            "caller": session.caller,
+            "did": session.did,
+            "verified_customer": session.verified_customer,
+        }
         if session.caller_name:
-            cfg = {**cfg, "caller_name": session.caller_name}
+            cfg["caller_name"] = session.caller_name
         lang = cfg.get("language") or "tr"
         if session.context:
             self.history.append(("context", session.context))
@@ -1427,6 +1600,20 @@ class VoiceRequestsCall:
             attempt["step"] = step["action"]
             log.info("call app=%d: conversation step %s in %d ms", session.app, step["action"],
                      int((time.monotonic() - started) * 1000))
+            if self.matched is not None and not (step["action"] == "transfer" and step.get("intent")):
+                if step["say"]:
+                    self.history.append(("assistant", step["say"]))
+                pcm = self.speak(step["say"]) if step["say"] else b""
+                if cfg.get("builtin_agent") and step["say"] and not pcm:
+                    break
+                return self._finish(pcm or self.prompt("reply:" + session.intent), "matched")
+            if session.intent == "_end" and step["action"] != "end":
+                if step["say"]:
+                    self.history.append(("assistant", step["say"]))
+                pcm = self.speak(step["say"]) if step["say"] else b""
+                if cfg.get("builtin_agent") and step["say"] and not pcm:
+                    break
+                return self._finish(pcm, "ended")
             if step["action"] == "reply":
                 self.history.append(("assistant", step["say"]))
                 pcm = self.speak(step["say"])
@@ -1477,7 +1664,7 @@ class VoiceRequestsCall:
             "uniqueid": s.uniqueid, "started": int(s.started), "ended": int(time.time()),
             "intent": intent["id"] if intent else None,
             "intent_name": (intent["name"] or intent["id"]) if intent else None,
-            "score": self.attempts[-1]["score"] if self.attempts else 0.0,
+            "score": 1.0 if (cfg.get("conversation") and intent) else (self.attempts[-1]["score"] if self.attempts else 0.0),
             "transcripts": [a["transcript"] for a in self.attempts],
             "dtmf": "".join(s.dtmf), "result": result, "audio": False,
             "attempts": self.attempts, "timings": timings,

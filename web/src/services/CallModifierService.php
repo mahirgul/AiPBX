@@ -10,7 +10,7 @@ require_once dirname(__DIR__, 2) . '/modules/destinations/DestinationRegistry.ph
  */
 class CallModifierService
 {
-    public const TYPES = ['language', 'cid_prefix'];
+    public const TYPES = ['language', 'cid_prefix', 'queue_priority'];
 
     /** @return list<array<string, mixed>> */
     public static function all(): array
@@ -39,6 +39,11 @@ class CallModifierService
                 if ($modValue === '' || !in_array($modValue, getAvailableLanguages(), true)) {
                     throw new \Exception(t('call_modifiers.err_language'));
                 }
+            } elseif ($modType === 'queue_priority') {
+                if (!preg_match('/^\d{1,3}$/', $modValue) || (int) $modValue > 100) {
+                    throw new \Exception(t('call_modifiers.err_priority'));
+                }
+                $modValue = (string) (int) $modValue;
             } else {
                 $modValue = dialplanText($modValue);
                 if ($modValue === '' || mb_strlen($modValue) > 40) {

@@ -95,6 +95,9 @@
     --danger: #ef4444;
     --purple: #a78bfa;
     --teal: #2dd4bf;
+    --pink: #f472b6;
+    --orange: #fb923c;
+    --indigo: #818cf8;
     --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     --nav-active-bg: rgba(0, 242, 254, 0.1);
     --nav-hover-bg: rgba(255, 255, 255, 0.06);
@@ -124,6 +127,9 @@
     --danger: #dc2626;
     --purple: #7c3aed;
     --teal: #0d9488;
+    --pink: #db2777;
+    --orange: #ea580c;
+    --indigo: #4f46e5;
     --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
     --nav-active-bg: rgba(2, 132, 199, 0.1);
     --nav-hover-bg: rgba(2, 132, 199, 0.06);

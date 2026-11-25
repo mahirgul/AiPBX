@@ -42,6 +42,7 @@ def main():
     port = int(os.environ.get("AIPBX_AI_PORT", "8790"))
     audiosocket_port = int(os.environ.get("AIPBX_AI_AUDIOSOCKET_PORT", "8791"))
 
+    from .ari import AriClient, AriRunner, AriSessionManager
     from .calls import AudioSocketServer, CallRegistry
     from .custom import Catalog
     from .models import REGISTRY, ModelManager
@@ -55,6 +56,7 @@ def main():
     calls = CallRegistry(manager, token, data_dir=data_dir)
     server = AiServer((HOST, port), token, manager, catalog, calls=calls)
     audiosocket = AudioSocketServer((HOST, audiosocket_port), server.calls).start()
+    ari_runner = _start_ari_if_configured(audiosocket_port, server.calls)
     manager.start()
     logging.info("listening on %s:%d (AudioSocket %s:%d)", HOST, port, HOST, audiosocket_port)
     signal.signal(signal.SIGTERM, lambda *_: threading.Thread(target=server.shutdown, daemon=True).start())
@@ -63,10 +65,41 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        if ari_runner is not None:
+            ari_runner.close()
         audiosocket.shutdown()
         server.calls.close()
         server.server_close()
     return 0
+
+
+def _start_ari_if_configured(audiosocket_port: int, calls=None):
+    from .ari import AriClient, AriRunner, AriSessionManager
+    from .outbound_navigator import OutboundNavigator
+
+    creds = os.environ.get("CREDENTIALS_DIRECTORY")
+    ari_path = Path(creds) / "ari_token" if creds else Path(os.environ.get("AIPBX_ARI_PASSWORD_FILE", "/etc/aipbx/ari.token"))
+    password = os.environ.get("AIPBX_ARI_PASSWORD", "").strip()
+    if not password and ari_path.is_file():
+        try:
+            password = ari_path.read_text(encoding="ascii").strip()
+        except OSError:
+            password = ""
+    if not password:
+        return None
+    base_url = os.environ.get("AIPBX_ARI_URL", "http://127.0.0.1:8088/ari")
+    username = os.environ.get("AIPBX_ARI_USER", "aipbx_ai")
+    client = AriClient(base_url, username, password)
+    mgr = AriSessionManager(client, app_name="aipbx-ai", audiosocket_host=HOST, audiosocket_port=audiosocket_port)
+    if calls is not None:
+        calls.ari_manager = mgr
+        calls.on_finish = lambda call_uuid: mgr.release_call(call_uuid, continue_dialplan=True)
+        calls.on_dtmf = None
+        mgr.on_dtmf = calls.digit_from_ari
+        nav = OutboundNavigator(mgr, calls)
+        mgr.outbound_navigator = nav
+        calls.outbound_navigator = nav
+    return AriRunner(base_url, username, password, mgr).start()
 
 
 if __name__ == "__main__":

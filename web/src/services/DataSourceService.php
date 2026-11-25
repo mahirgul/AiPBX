@@ -24,11 +24,12 @@ final class DataSourceService
     public const TYPES = ['database', 'http', 'agi', 'value'];
 
     /** The variables every source can use (docs/dynamic-routing.md lists them). */
-    public const VARS = ['input', 'caller_id', 'caller_name', 'did', 'uniqueid', 'linkedid', 'lang', 'date', 'time'];
+    public const VARS = ['input', 'caller_id', 'caller_name', 'customer_id', 'external_id', 'did', 'uniqueid', 'linkedid', 'lang', 'date', 'time'];
 
     /** The dialplan expression that gives each variable's value. */
     public const DIALPLAN_VALUES = [
         'input' => '${DR_INPUT}', 'caller_id' => '${CALLERID(num)}', 'caller_name' => '${CALLERID(name)}',
+        'customer_id' => '${AIPBX_VERIFIED_CUSTOMER_ID}', 'external_id' => '${AIPBX_VERIFIED_CUSTOMER_ID}',
         'did' => '${NORMALIZED_DID}', 'uniqueid' => '${UNIQUEID}', 'linkedid' => '${CHANNEL(linkedid)}',
         'lang' => '${CHANNEL(language)}', 'date' => '${STRFTIME(${EPOCH},,%Y-%m-%d)}', 'time' => '${STRFTIME(${EPOCH},,%H:%M)}',
     ];
@@ -39,18 +40,20 @@ final class DataSourceService
     public const VALUE_MAX = 128;
 
     private const NAME_RE = '(?:var_[A-Za-z][A-Za-z0-9_]{0,39}|[a-z][a-z_]{1,19})';
+    private static bool $resolvingCustomer = false;
 
     /**
      * Scans SQL outside string literals, backtick identifiers, and comments.
      */
     private static function scanSqlPlaceholders(string $sql, string $namePattern, callable $onParam): string
     {
-        $re = "~'(?:\\\\.|''|[^'\\\\])*'|\"(?:\\\\.|\"\"|[^\"\\\\])*\"|`(?:``|[^`])*`|--[^\\r\\n]*|#[^\\r\\n]*|/\\*[\\s\\S]*?\\*/|(?<![:\\w]):({$namePattern})\\b~";
+        $re = "~'(?:\\\\.|''|[^'\\\\])*'|\"(?:\\\\.|\"\"|[^\"\\\\])*\"|`(?:``|[^`])*`|--[^\\r\\n]*|#[^\\r\\n]*|/\\*[\\s\\S]*?\\*/|\\{({$namePattern})\\}|(?<!\\w)\\$({$namePattern})\\b|(?<![:\\w]):({$namePattern})\\b~";
         return (string) preg_replace_callback($re, static function (array $m) use ($onParam): string {
-            if (!isset($m[1]) || $m[1] === '') {
+            $name = ($m[1] ?? '') !== '' ? $m[1] : (($m[2] ?? '') !== '' ? $m[2] : ($m[3] ?? ''));
+            if ($name === '') {
                 return $m[0];
             }
-            return $onParam($m[0], $m[1]);
+            return $onParam($m[0], $name);
         }, $sql);
     }
 
@@ -129,10 +132,68 @@ final class DataSourceService
         return [$sql, $params];
     }
 
-    /** Date and time when the caller did not give them. */
+    /** Date, time and customer ID (resolved from the phonebook, CRM connection, or saved lookup query by caller number). */
     public static function withDefaults(array $values): array
     {
-        return $values + ['date' => date('Y-m-d'), 'time' => date('H:i')];
+        $callerNum = trim((string) ($values['caller_id'] ?? $values['caller'] ?? ''));
+        $custId = trim((string) ($values['customer_id'] ?? $values['external_id'] ?? $values['var_AIPBX_VERIFIED_CUSTOMER_ID'] ?? $values['var_CUSTOMER_ID'] ?? ''));
+        if ($custId === '' && $callerNum !== '') {
+            require_once __DIR__ . '/PhonebookService.php';
+            $contact = PhonebookService::findByNumber($callerNum);
+            if ($contact !== null) {
+                $custId = trim((string) ($contact['external_id'] ?? ''));
+                if (trim((string) ($values['caller_name'] ?? '')) === '') {
+                    $values['caller_name'] = PhonebookService::callerIdName($contact);
+                }
+            }
+            if ($custId === '') {
+                require_once __DIR__ . '/ConnectionService.php';
+                $crm = ConnectionService::lookupCaller($callerNum);
+                if ($crm !== null) {
+                    $custId = trim($crm['customer_id']);
+                    if (trim((string) ($values['caller_name'] ?? '')) === '' && $crm['display_name'] !== '') {
+                        $values['caller_name'] = PhonebookService::callerIdName([
+                            'display_name' => $crm['display_name'],
+                            'company' => $crm['company'],
+                        ]);
+                    }
+                }
+            }
+            if ($custId === '' && !self::$resolvingCustomer) {
+                self::$resolvingCustomer = true;
+                try {
+                    require_once __DIR__ . '/ExternalDbQueryService.php';
+                    $q = ExternalDbQueryService::find('customer_lookup');
+                    if ($q && ExternalDbQueryService::available($q)) {
+                        [$boundSql, $params] = self::bindSql((string) $q['query_sql'], [
+                            'caller_id' => $callerNum,
+                            'input' => $callerNum,
+                            'date' => date('Y-m-d'),
+                            'time' => date('H:i'),
+                        ]);
+                        $rows = ExternalDbService::executeQuery((int) $q['external_db_id'], $boundSql, $params);
+                        if ($rows) {
+                            $first = $rows[0];
+                            $custId = trim((string) ($first['customer_id'] ?? $first['external_id'] ?? reset($first) ?? ''));
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // Fail-open when optional external customer_lookup is offline.
+                } finally {
+                    self::$resolvingCustomer = false;
+                }
+            }
+        }
+        if ($custId !== '') {
+            $values['customer_id'] = $custId;
+            $values['external_id'] = $custId;
+        }
+        return $values + [
+            'customer_id' => $custId,
+            'external_id' => $custId,
+            'date' => date('Y-m-d'),
+            'time' => date('H:i'),
+        ];
     }
 
     /**
@@ -234,6 +295,10 @@ final class DataSourceService
                 default => throw new InvalidArgumentException('source type'),
             };
             $error = '';
+            $resolvedCust = trim((string) ($vars['CUSTOMER_ID'] ?? $vars['EXTERNAL_ID'] ?? ($values['customer_id'] ?? '')));
+            if ($status === 'found' && $resolvedCust !== '' && !isset($vars['CUSTOMER_ID'])) {
+                $vars['CUSTOMER_ID'] = self::clean($resolvedCust);
+            }
         } catch (\Throwable $e) {
             [$status, $value, $vars, $error] = ['timeout', '', [], $e->getMessage()];
         }
@@ -412,11 +477,12 @@ final class DataSourceService
         if (empty($conn['allow_write'])) {
             throw new RuntimeException(t('data_source.err_write_off'));
         }
+        $values = self::withDefaults($values);
         $problem = self::writeProblem($sql, array_keys($values));
         if ($problem !== null) {
             throw new InvalidArgumentException($problem);
         }
-        [$sql, $params] = self::bindSql(rtrim(trim($sql), ';'), self::withDefaults($values));
+        [$sql, $params] = self::bindSql(rtrim(trim($sql), ';'), $values);
         $stmt = ExternalDbService::connect($conn, true)->prepare($sql);
         $stmt->execute($params);
         return $stmt->rowCount();

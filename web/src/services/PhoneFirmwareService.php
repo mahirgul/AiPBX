@@ -55,7 +55,7 @@ final class PhoneFirmwareService
      */
     public static function needsSwitch(string $model): bool
     {
-        return PhoneModels::vendorOf($model) === 'cisco-cm' && !str_starts_with($model, 'cisco-cm-8');
+        return PhoneModels::vendorOf($model) === 'cisco-cm' && str_starts_with($model, 'cisco-cm-79');
     }
 
     /**

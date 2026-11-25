@@ -266,6 +266,23 @@ class WebhookService
     /**
      * @return array<string, mixed>
      */
+    public static function toggleStatus(int $id, string $csrfToken): array
+    {
+        return PBXHelper::handleAction($csrfToken, function () use ($id) {
+            $row = DBHelper::fetchOne('SELECT id, name, is_active FROM sys_webhooks WHERE id = ?', [$id]);
+            if (!$row) {
+                throw new \Exception(t('common.not_found', 'Webhook not found.'));
+            }
+            $newStatus = ((int)$row['is_active'] === 1) ? 0 : 1;
+            getDB()->prepare('UPDATE sys_webhooks SET is_active = ? WHERE id = ?')->execute([$newStatus, $id]);
+            writeAuditLog('webhooks', 'webhook', $id, "Webhook: {$row['name']} -> " . ($newStatus ? 'active' : 'passive'), 'update', $_SESSION['user_id'] ?? null);
+            return t('common.saved', 'Saved.');
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public static function delete(int $id, string $csrfToken): array
     {
         return PBXHelper::handleAction($csrfToken, function () use ($id) {

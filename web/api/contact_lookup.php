@@ -5,6 +5,7 @@
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/PhonebookService.php';
+require_once __DIR__ . '/../src/services/ConnectionService.php';
 
 header('Content-Type: application/json; charset=utf-8');
 session_write_close();
@@ -14,10 +15,29 @@ if (!hasModulePermission('phonebook', 'view')) {
     return;
 }
 $canAccess = hasModulePermission('phonebook', 'access');
-$c = PhonebookService::findByNumber((string) ($_GET['number'] ?? ''));
-echo json_encode(['success' => true, 'contact' => $c ? [
+$num = (string) ($_GET['number'] ?? '');
+$c = PhonebookService::findByNumber($num);
+$out = $c ? [
     'id' => (int) $c['id'],
+    'customer_id' => (string) ($c['external_id'] ?? ''),
+    'external_id' => (string) ($c['external_id'] ?? ''),
     'display_name' => (string) $c['display_name'],
     'company' => (string) $c['company'],
     'numbers' => $c['numbers'],
-] : null, 'can_access' => $canAccess, 'can_add' => $canAccess && hasModulePermission('phonebook', 'edit')], JSON_UNESCAPED_UNICODE);
+] : null;
+if ($out === null) {
+    $ext = ConnectionService::lookupCaller($num);
+    if ($ext !== null) {
+        $out = [
+            'id' => 0,
+            'customer_id' => $ext['customer_id'],
+            'external_id' => $ext['external_id'],
+            'display_name' => $ext['display_name'],
+            'company' => $ext['company'],
+            'numbers' => [],
+            'external_url' => $ext['external_url'],
+            'source' => $ext['source'],
+        ];
+    }
+}
+echo json_encode(['success' => true, 'contact' => $out, 'can_access' => $canAccess, 'can_add' => $canAccess && hasModulePermission('phonebook', 'edit')], JSON_UNESCAPED_UNICODE);

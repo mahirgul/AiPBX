@@ -17,10 +17,17 @@ function loadCallbacks() {
         if (!data.success) return;
         body.innerHTML = (data.callbacks || []).map(row => `<tr>
             <td>${escapeHtml(row.queue_title)}</td><td>${escapeHtml(row.dial_number)}</td>
-            <td>${escapeHtml(row.requested_at)}</td><td><button type="button" class="btn btn-primary btn-xs"
+            <td>${escapeHtml(row.requested_at)}</td>
+            <td>${Number(row.auto_attempts) || 0}</td>
+            <td>${escapeHtml(row.last_auto_result ? __('js.agent.callback_result_' + row.last_auto_result) : '—')}
+            ${row.last_auto_attempt_at ? `<br><small class="u-muted">${escapeHtml(row.last_auto_attempt_at)}</small>` : ''}</td>
+            <td>${escapeHtml(!Number(row.automatic_enabled) ? '—' : (row.last_auto_result === 'customer_answered' && Number(row.calling) ? '—' : (Number(row.automatic_remaining) === 0 ?
+                __('js.agent.callback_manual_only') : (row.next_auto_at && Number(row.calling) ?
+                    row.next_auto_at : __('js.agent.callback_waiting_agent')))))}</td>
+            <td><button type="button" class="btn btn-primary btn-xs"
             ${Number(row.calling) ? 'disabled' : ''} onclick="callCallback(${Number(row.id)}, this)">
             <i class="fas fa-phone"></i> ${Number(row.calling) ? __('js.agent.callback_calling') : __('js.agent.callback_call')}</button></td>
-            </tr>`).join('') || `<tr><td colspan="4">${escapeHtml(__('js.agent.callbacks_empty'))}</td></tr>`;
+            </tr>`).join('') || `<tr><td colspan="7">${escapeHtml(__('js.agent.callbacks_empty'))}</td></tr>`;
     }).catch(() => {}).finally(() => { _loadCallbacksInFlight = false; });
 }
 

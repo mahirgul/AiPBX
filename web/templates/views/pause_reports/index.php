@@ -111,8 +111,14 @@
                         </td>
                     </tr>
                 <?php else: ?>
-                    <?php foreach ($logs as $l):
+                    <?php
+                    $reasonMetaMap = class_exists('PauseReasonRepository') ? PauseReasonRepository::mapByName() : [];
+                    foreach ($logs as $l):
                         $is_active = ($l['status'] === 'PAUSED');
+                        $rMeta = $reasonMetaMap[(string) ($l['pause_reason'] ?? '')] ?? null;
+                        $maxSec = ($rMeta && !empty($rMeta['max_minutes'])) ? ((int) $rMeta['max_minutes'] * 60) : 0;
+                        $isExceeded = ($maxSec > 0 && (int) $l['duration_sec'] > $maxSec && !empty($rMeta['warn_on_exceed']));
+                        $rIcon = ($rMeta && !empty($rMeta['icon'])) ? (string) $rMeta['icon'] : '☕';
                     ?>
                         <tr>
                             <td>#<?php echo $l['id']; ?></td>
@@ -122,15 +128,18 @@
                             </td>
                             <td>
                                 <span class="badge badge-warning u-fs-13">
-                                    <i class="fas fa-coffee"></i> <?php echo htmlspecialchars($l['pause_reason']); ?>
+                                    <?php echo htmlspecialchars($rIcon . ' ' . $l['pause_reason']); ?>
                                 </span>
                             </td>
                             <td><?php echo date('d.m.Y H:i:s', strtotime($l['start_time'])); ?></td>
                             <td>
-                                <?php echo $l['end_time'] ? date('d.m.Y H:i:s', strtotime($l['end_time'])) : '<span class="u-warning u-fw-700">' . t('pause_reports.ongoing') . '</span>'; ?>
+                                <?php echo $endTimeFormatted = $l['end_time'] ? date('d.m.Y H:i:s', strtotime($l['end_time'])) : '<span class="u-warning u-fw-700">' . t('pause_reports.ongoing') . '</span>'; ?>
                             </td>
                             <td class="u-fw-700">
                                 <?php echo PauseReportRepository::formatSeconds($l['duration_sec']); ?>
+                                <?php if ($isExceeded): ?>
+                                    <span class="badge badge-danger u-fs-11 u-ml-6" title="<?php echo (int) $rMeta['max_minutes']; ?> <?php echo htmlspecialchars(t('common.min_short')); ?>"><i class="fas fa-exclamation-triangle"></i> +<?php echo (int) ceil(((int) $l['duration_sec'] - $maxSec) / 60); ?> <?php echo htmlspecialchars(t('common.min_short')); ?></span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <?php if ($is_active): ?>

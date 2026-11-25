@@ -177,4 +177,43 @@ final class Faz1AsteriskLogsAndCallModifiersTest extends TestCase
             $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'call_modifier' AND entity_id IN ('" . $langId . "', '" . $prefixId . "')");
         }
     }
+
+    public function testQueuePriorityModifierAndQueueDefaultPriority(): void
+    {
+        $db = getDB();
+        $_SESSION['csrf_token'] = 'test_csrf_prio';
+        $saveMod = CallModifierService::saveModifier([
+            'csrf_token' => 'test_csrf_cm_invalid',
+        ]);
+        $this->assertFalse($saveMod['success']);
+
+        $res = CallModifierService::saveModifier([
+            'csrf_token' => 'test_csrf_prio',
+            'title' => 'VIP Prio',
+            'mod_type' => 'queue_priority',
+            'mod_value' => '25',
+            'dest_type' => 'hangup',
+            'dest_id' => '',
+            'is_active' => 1,
+        ]);
+        $this->assertTrue($res['success']);
+        $prioId = (int) $db->query("SELECT id FROM pbx_call_modifiers WHERE title = 'VIP Prio' ORDER BY id DESC LIMIT 1")->fetchColumn();
+        try {
+            $dial = buildDestinationLines('call_modifier', (string) $prioId);
+            $this->assertStringContainsString('Set(QUEUE_PRIO=25)', $dial);
+
+            $bad = CallModifierService::saveModifier([
+                'csrf_token' => 'test_csrf_prio',
+                'title' => 'Bad Prio',
+                'mod_type' => 'queue_priority',
+                'mod_value' => '999',
+                'dest_type' => 'hangup',
+                'dest_id' => '',
+            ]);
+            $this->assertFalse($bad['success']);
+        } finally {
+            CallModifierService::deleteModifier($prioId, 'test_csrf_prio');
+            $db->exec("DELETE FROM sys_pending_sync WHERE entity_type = 'call_modifier' AND entity_id = '" . $prioId . "'");
+        }
+    }
 }

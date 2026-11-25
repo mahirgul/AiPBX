@@ -9,6 +9,7 @@
                 </button>
             <?php endif; ?>
 <?php echo uiPageHeaderClose(); ?>
+<?php $dirTabs = ['/did-routes', 'did_routes', '/outbound-routes', 'outbound_routes']; $dirActive = 'out'; require dirname(__DIR__, 2) . '/direction_tabs.php'; ?>
 
         <?php echo uiHelpBoxOpen('outboundHelpBox', t('outbound.help_title')); ?>
         <?php echo t('outbound.help_body'); ?><br>

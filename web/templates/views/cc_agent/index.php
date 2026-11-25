@@ -61,9 +61,10 @@
         <div class="card-title"><i class="fas fa-phone-volume"></i> <?php echo t('cc_agent.callbacks'); ?></div>
         <small class="u-hint"><?php echo t('cc_agent.callbacks_help'); ?></small>
         <?php echo uiTableOpen([
-            t('cc_agent.col_queue'), t('cc_agent.col_caller'), t('cc_agent.col_date'), t('cc_agent.col_action'),
+            t('cc_agent.col_queue'), t('cc_agent.col_caller'), t('cc_agent.col_date'),
+            t('cc_agent.callback_attempts'), t('cc_agent.callback_last_result'), t('cc_agent.callback_next'), t('cc_agent.col_action'),
         ], ['body_id' => 'callbacks-tbody', 'search' => false]); ?>
-        <tr><td colspan="4"><?php echo t('cc_agent.callbacks_empty'); ?></td></tr>
+        <tr><td colspan="7"><?php echo t('cc_agent.callbacks_empty'); ?></td></tr>
         <?php echo uiTableClose(); ?>
     </div>
 

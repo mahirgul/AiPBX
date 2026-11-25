@@ -112,6 +112,13 @@ final class ScheduledTasksTest extends TestCase
         }
         $net = ScheduledTaskRunner::sandboxCommand(['id' => 7, 'network_access' => 1], 3, '/d', '/d/s.sh', '/bin/bash');
         $this->assertStringNotContainsString('PrivateNetwork', $net, 'network access asked for');
+
+        $withEnv = ScheduledTaskRunner::sandboxCommand(['id' => 7, 'network_access' => 1], 3, '/d', '/d/s.sh', '/bin/bash', 'aipbx-task-', '/run/aipbx-tasks/test.env');
+        $this->assertStringContainsString("'EnvironmentFile=/run/aipbx-tasks/test.env'", $withEnv);
+
+        $bad = ScheduledTaskService::saveTask(['name' => 'BadDB', 'cron_expression' => '0 3 * * *', 'script_type' => 'shell', 'script_content' => 'true', 'external_db_id' => 999999]);
+        $this->assertFalse($bad['ok']);
+        $this->assertArrayHasKey('external_db_id', $bad['errors']);
     }
 
     public function testRunNowIsOnlyARequest(): void

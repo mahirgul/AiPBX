@@ -60,6 +60,7 @@ $bRef = (string) ($b['model_ref_id'] ?? '');
                 $h(t('ai_settings.ast_col_ask', 'Ask')),
                 $h(t('ai_settings.ast_col_change', 'Apply Changes')),
                 $h(t('ai_settings.ast_col_home', 'Home Page')),
+                $h(t('ai_apps.field_knowledge', 'Knowledge Base')),
             ], ['search' => false]); ?>
                 <?php foreach (($assistant_roles ?? []) as $r):
                     $rk = (string) ($r['role_key'] ?? '');
@@ -67,6 +68,7 @@ $bRef = (string) ($b['model_ref_id'] ?? '');
                     $isAdm = ($rk === 'admin');
                     $rp = $ast['roles'][$rk] ?? ['ask' => $isAdm, 'change' => $isAdm];
                     $hr = $ast['home_roles'][$rk] ?? ($isAdm ? 'assistant' : 'default');
+                    $rkb = (int) ($ast['role_kb'][$rk] ?? 0);
                 ?>
                     <tr>
                         <td><strong><?php echo $h($r['role_name'] ?? $rk); ?></strong> <span class="u-muted u-fs-11 u-mono"><?php echo $h($rk); ?></span></td>
@@ -76,6 +78,15 @@ $bRef = (string) ($b['model_ref_id'] ?? '');
                             <select name="home_role[<?php echo $h($rk); ?>]" class="form-control u-maxw-260">
                                 <option value="default"<?php echo $hr !== 'assistant' ? ' selected' : ''; ?>><?php echo $h(t('ai_settings.ast_home_default', 'Role default')); ?></option>
                                 <option value="assistant"<?php echo $hr === 'assistant' ? ' selected' : ''; ?>><?php echo $h(t('ai_settings.ast_home_assistant', 'Assistant')); ?></option>
+                            </select>
+                        </td>
+                        <td>
+                            <select name="role_kb[<?php echo $h($rk); ?>]" class="form-control u-maxw-260">
+                                <option value="0"<?php echo $rkb === 0 ? ' selected' : ''; ?>><?php echo $h(t('common.all', 'All')); ?></option>
+                                <option value="-1"<?php echo $rkb === -1 ? ' selected' : ''; ?>><?php echo $h(t('ai_apps.knowledge_none', 'None')); ?></option>
+                                <?php foreach (($knowledge_collections ?? []) as $kc): ?>
+                                    <option value="<?php echo (int) $kc['id']; ?>"<?php echo $rkb === (int) $kc['id'] ? ' selected' : ''; ?>><?php echo $h($kc['name']); ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </td>
                     </tr>

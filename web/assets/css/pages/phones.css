@@ -26,3 +26,7 @@
 .phone-key.is-set { border-color: var(--primary); }
 .phone-key .phone-key-no { font-size: 11px; font-weight: 700; color: var(--text-muted); }
 .phone-key select, .phone-key input { font-size: 12px; padding: 4px 6px; }
+
+/* Seen in the last 30 minutes: green; otherwise grey. */
+.seen-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; vertical-align: middle; background: var(--text-muted); opacity: 0.5; }
+.seen-dot.is-on { background: var(--success); opacity: 1; }

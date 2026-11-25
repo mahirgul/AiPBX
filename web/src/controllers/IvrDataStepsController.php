@@ -66,6 +66,7 @@ class IvrDataStepsController extends BaseController
         require_once __DIR__ . '/../services/ExternalDbQueryService.php';
         static::renderPage('ivr_data_steps/index', [
             'steps' => array_map([self::class, 'forPage'], IvrDataStepRepository::findAll('name ASC')),
+            'stats' => IvrDataStepService::statsMap(),
             'dbs' => ExternalDbRepository::findActive(),
             'saved_queries' => array_filter(ExternalDbQueryService::all(), static fn ($q) => ExternalDbQueryService::available($q) && $q['access_mode'] === 'public'),
             'agi_choices' => AgiScriptService::choices(),

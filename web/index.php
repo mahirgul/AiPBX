@@ -174,6 +174,9 @@ $LEGACY = [
     '/cc/supervisor.php'       => '/cc-supervisor',
     '/ai-models'               => '/ai-local',
     '/ai-settings'             => '/ai-local',
+    '/ai-assistant'            => '/pbx-assistant',
+    '/ai-agents'               => '/external-voice-ai',
+    '/ai-apps'                 => '/ai-agent',
 ];
 if (isset($LEGACY[$path])) {
     $target = $LEGACY[$path];
@@ -181,7 +184,7 @@ if (isset($LEGACY[$path])) {
         $tab = (string) ($_GET['tab'] ?? '');
         $target = match ($tab) {
             'cloud' => '/ai-cloud',
-            'assistant' => '/ai-assistant',
+            'assistant' => '/pbx-assistant',
             'voicemail' => '/ai-voicemail',
             'cdr' => '/ai-call-analysis',
             default => '/ai-local',

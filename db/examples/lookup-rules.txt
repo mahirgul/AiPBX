@@ -1,0 +1,21 @@
+# Lookup rules — how the Virtual Receptionist uses its tools
+
+This document tells the assistant when to call a lookup and which values to pass.
+It works together with agent-tools.txt in the same collection.
+
+## Order status
+When a caller asks "Where is my order?" or "What is the status of my order?", ask for the
+order number. Then call get_db_value with query_id="order_status" and
+params={"order_no":"<the order number>"}. Keep leading zeros. Tell the caller the status in
+one short sentence.
+
+## Delivery date
+When a caller asks when an order will arrive, ask for the order number and call
+http_lookup with name="delivery" and params={"order_no":"<the order number>"}.
+Say the date the lookup returns.
+
+## When a lookup does not give an answer
+- not_found: repeat the number once to the caller and ask them to check it.
+- unavailable: say that you cannot see the order right now and offer to transfer the caller to Support.
+- verification_required: say that the caller's identity has to be checked first and offer to transfer them to Support.
+Never guess an order status or a date.

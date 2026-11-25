@@ -29,17 +29,24 @@ def _ask(request, timeout=10):
     return json.loads(data)
 
 
-def caller_name(number):
-    """The shared phonebook's display name, over the local resolver's UTF-8 JSON."""
+def caller_info(number):
+    """(display_name, customer_id) over the local resolver's UTF-8 JSON."""
     if not number:
-        return ""
+        return "", ""
     try:
         result = _ask({'caller_number': number}, timeout=0.75)
-        if result.get('ok') and isinstance(result.get('name'), str):
-            return result['name']
+        if result.get('ok'):
+            name = result['name'] if isinstance(result.get('name'), str) else ""
+            cust = result['customer_id'] if isinstance(result.get('customer_id'), str) else ""
+            return name, cust
     except (OSError, ValueError, AttributeError):
         pass
-    return ""
+    return "", ""
+
+
+def caller_name(number):
+    """The shared phonebook's display name, over the local resolver's UTF-8 JSON."""
+    return caller_info(number)[0]
 
 
 def knowledge(app_id, query):
@@ -62,6 +69,8 @@ def db_value(app_id, query, verified_customer, call_context=None):
             answer = {'status': result['status']}
             if result['status'] == 'found':
                 answer['value'] = result['value']
+                if isinstance(result.get('data'), dict):
+                    answer['data'] = result['data']
             return json.dumps(answer, ensure_ascii=False)
     except (OSError, ValueError, KeyError, TypeError):
         pass

@@ -79,4 +79,34 @@ final class BrandMailLogoTest extends TestCase
         $this->assertSame('', (string) getSystemSetting('site_logo_image_dark', ''));
         $this->assertSame('/assets/images/brand/logo.png?v=1', (string) getSystemSetting('site_logo_image', ''));
     }
+
+    public function testSidebarLayoutSettingIsSavedAndReset(): void
+    {
+        $_SESSION['user_id'] = null;
+        $this->assertSame('split', BrandSettingsService::defaults()['sidebar_layout']);
+
+        $res = BrandSettingsService::saveSettings([
+            'csrf_token' => getCSRFToken(),
+            'site_title' => 'AiPBX',
+            'brand_title' => 'Acme',
+            'brand_sub' => 'PBX',
+            'sidebar_layout' => 'single',
+        ]);
+        $this->assertTrue($res['success'], $res['error'] ?? '');
+        $this->assertSame('single', (string) getSystemSetting('sidebar_layout', ''));
+
+        $resInvalid = BrandSettingsService::saveSettings([
+            'csrf_token' => getCSRFToken(),
+            'site_title' => 'AiPBX',
+            'brand_title' => 'Acme',
+            'brand_sub' => 'PBX',
+            'sidebar_layout' => 'invalid',
+        ]);
+        $this->assertTrue($resInvalid['success'], $resInvalid['error'] ?? '');
+        $this->assertSame('split', (string) getSystemSetting('sidebar_layout', ''));
+
+        $resReset = BrandSettingsService::resetToDefaults(['csrf_token' => getCSRFToken()]);
+        $this->assertTrue($resReset['success'], $resReset['error'] ?? '');
+        $this->assertSame('split', (string) getSystemSetting('sidebar_layout', ''));
+    }
 }

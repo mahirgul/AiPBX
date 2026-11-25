@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/AiAppService.php';
 require_once __DIR__ . '/AiKnowledgeService.php';
 require_once __DIR__ . '/OllamaService.php';
+require_once __DIR__ . '/PbxToolRegistry.php';
 
 use PBX\Destinations\DestinationRegistry;
 
@@ -12,6 +13,43 @@ final class BuiltinAiAgentService
 {
     public const TOOL_FILE = AiKnowledgeService::AGENT_TOOLS_FILE;
     public const TARGET_TYPES = ['extension', 'queue', 'ring_group'];
+    public const REALTIME_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
+    public const REALTIME_PROVIDER_TYPES = ['openai', 'google_ai', 'qwen', 'openai_compat'];
+    public const INSTRUCTION_VARS = ['{caller_name}', '{caller_id}', '{customer_id}', '{did}', '{date}', '{time}', '{language}'];
+
+    public static function defaultInstructionsTemplate(): string
+    {
+        return "# Role\n"
+            . "- You serve as the AI voice assistant operating the virtual front desk.\n"
+            . "- Greet callers politely, understand their intent, answer from the knowledge base or database tools, and assist or route them.\n"
+            . "- Communicate clearly and concisely in a natural telephone tone.\n\n"
+            . "# Caller Information\n"
+            . "- Caller Name: {caller_name}\n"
+            . "- Caller Phone: {caller_id}\n"
+            . "- Customer ID: {customer_id}\n"
+            . "- Dialed Number (DID): {did}\n"
+            . "- Date / Time: {date} {time}\n"
+            . "- Language: {language}\n\n"
+            . "# Tool & Routing Guidelines\n"
+            . "- Use `get_db_value` when the caller asks about their invoice, order, or technical service status.\n"
+            . "- Use `collect_dtmf` or ask the caller to dial digits when a numerical ID is required, and `send_dtmf` when pressing keys on a channel.\n"
+            . "- When asked to reach an external company representative or sub-extension, call `find_person` and then `dial_and_navigate`.";
+    }
+
+    /** @return array<string, string> */
+    public static function realtimeAccounts(): array
+    {
+        if (!AiAppService::isScopeEnabled('cloud')) {
+            return [];
+        }
+        $out = [];
+        foreach (CloudAiService::withCap('llm') as $provider) {
+            if (in_array(CloudAiService::typeOf($provider), self::REALTIME_PROVIDER_TYPES, true)) {
+                $out['cloud:' . $provider] = CloudAiService::provider($provider)['title'];
+            }
+        }
+        return $out;
+    }
 
     public static function models(): array
     {
@@ -66,6 +104,34 @@ final class BuiltinAiAgentService
         $lang = CloudAiService::language((string) ($collection['assistant_language'] ?? getUserLanguage()));
         $greeting = langStrings($lang)['ai_apps.default_agent_greeting'] ?? langStrings('en')['ai_apps.default_agent_greeting'];
         $greeting = preg_replace('/^([^,.!?]{1,16}),/u', '$1 {caller_name},', $greeting) ?? $greeting;
+        $realtimeAccount = trim((string) ($data['realtime_account'] ?? ''));
+        if ($realtimeAccount !== '' && !isset(self::realtimeAccounts()[$realtimeAccount])) {
+            throw new InvalidArgumentException(t('builtin_ai_agent.err_model'));
+        }
+        $realtimeVoice = trim((string) ($data['realtime_voice'] ?? 'alloy'));
+        if (!in_array($realtimeVoice, self::REALTIME_VOICES, true)) {
+            $realtimeVoice = 'alloy';
+        }
+        $validToolNames = array_column(PbxToolRegistry::all(), 'name');
+        $pbxTools = array_values(array_intersect($validToolNames, array_map('strval', (array) ($data['pbx_tools'] ?? []))));
+        $instructions = trim((string) ($data['instructions'] ?? ''));
+        if (mb_strlen($instructions) > 4000) {
+            throw new InvalidArgumentException(sprintf(t('ai_apps.err_text'), 4000));
+        }
+        $dbLookups = [];
+        $seenQueries = [];
+        foreach ((array) ($data['db_queries'] ?? []) as $qKey) {
+            $qKey = trim((string) $qKey);
+            if ($qKey === '' || isset($seenQueries[$qKey])) {
+                continue;
+            }
+            $qRow = ExternalDbQueryService::find($qKey);
+            if (!$qRow || !ExternalDbQueryService::available($qRow) || count($dbLookups) >= AiAppDbLookup::MAX_QUERIES) {
+                throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
+            }
+            $seenQueries[$qKey] = true;
+            $dbLookups[] = ['id' => $qKey, 'saved' => true];
+        }
         return [
             'id' => (int) ($data['id'] ?? 0), 'title' => (string) ($data['title'] ?? ''),
             'internal_number' => (string) ($data['internal_number'] ?? ''), 'app_type' => AiAppService::BUILTIN_AGENT,
@@ -76,6 +142,11 @@ final class BuiltinAiAgentService
                 'automatic_announcements' => !empty($data['automatic_announcements']),
                 'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => $lang, 'stt_model' => (string) $data['stt_model'],
                 'understand' => (string) $data['understand'], 'knowledge_collection' => $collectionId,
+                'realtime_account' => $realtimeAccount, 'realtime_voice' => $realtimeVoice,
+                'pbx_tools' => $pbxTools,
+                'instructions' => $instructions,
+                'db_queries' => array_keys($seenQueries),
+                'db_lookups' => $dbLookups,
             ],
         ];
     }

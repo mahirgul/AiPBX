@@ -52,6 +52,9 @@ class ExtensionService {
             if (!preg_match('/^\d{3,6}$/', $extension)) {
                 throw new \Exception(t('srv_ext.err_number'));
             }
+            if ($cid_internal === '') {
+                $cid_internal = $extension;
+            }
             if (empty($full_name)) {
                 throw new \Exception(t('srv_user.err_required'));
             }

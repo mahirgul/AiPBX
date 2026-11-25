@@ -31,14 +31,20 @@ if ($queue === '' || $score < 1 || $score > 5) {
     exit(0);
 }
 try {
+    $agent = substr((string) preg_replace('/[^0-9]/', '', (string) ($_GET['a'] ?? '')), 0, 20);
+    $caller = substr((string) preg_replace('/[^0-9]/', '', (string) ($_GET['c'] ?? '')), 0, 32);
+    $uniqueid = substr((string) preg_replace('/[^0-9.]/', '', (string) ($_GET['u'] ?? '')), 0, 64);
+
     // The caller is kept so a privacy request (or the retention job) can clear it with the call data.
-    getDB()->prepare('INSERT IGNORE INTO queue_survey_results (queue_name, agent, caller, score, uniqueid) VALUES (?, ?, ?, ?, ?)')->execute([
+    $db = getDB();
+    $db->prepare('INSERT IGNORE INTO queue_survey_results (queue_name, agent, caller, score, uniqueid) VALUES (?, ?, ?, ?, ?)')->execute([
         $queue,
-        substr((string) preg_replace('/[^0-9]/', '', (string) ($_GET['a'] ?? '')), 0, 20),
-        substr((string) preg_replace('/[^0-9]/', '', (string) ($_GET['c'] ?? '')), 0, 32),
+        $agent,
+        $caller,
         $score,
-        substr((string) preg_replace('/[^0-9.]/', '', (string) ($_GET['u'] ?? '')), 0, 64),
+        $uniqueid,
     ]);
+
     echo 'OK';
 } catch (\Throwable $e) {
     error_log('[queue_survey] ' . $e->getMessage());

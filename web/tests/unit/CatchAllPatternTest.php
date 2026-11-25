@@ -136,8 +136,10 @@ final class CatchAllPatternTest extends TestCase
         syncInboundDialplan();
         $conf = $this->read('extensions_inbound.conf');
         $this->assertStringContainsString('[sub-phonebook-name]', $conf);
-        $this->assertStringContainsString('${CURL(http://127.0.0.1/api/phonebook_name.php?num=${URIENCODE(${CALLERID(num)})})}', $conf);
-        $this->assertStringContainsString('GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:5})}" = "NAME:"]?set:done)', $conf, 'an error page is no name');
+        $this->assertStringContainsString('${CURL(http://127.0.0.1/api/phonebook_name.php?num=${URIENCODE(${CALLERID(num)})}&include_vip=1)}', $conf);
+        $this->assertStringContainsString('GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:5})}" = "NAME:"]?set)', $conf);
+        $this->assertStringContainsString('GotoIf($["${FILTER(A-Z:,${PB_ANSWER:0:4})}" != "VIP:"]?done)', $conf, 'an error page is no name');
+        $this->assertStringContainsString('Set(__AIPBX_PHONEBOOK_VIP=1)', $conf);
         $this->assertStringContainsString('Set(CALLERID(name)=${PB_ANSWER:5})', $conf);
         $trunk = substr($conf, (int) strpos($conf, '[from-trunk-' . Fixtures::TRUNK_NAME . ']'));
         $this->assertLessThan(strpos($trunk, 'sub-cnam-lookup'), strpos($trunk, 'Gosub(sub-phonebook-name,s,1)'), 'before the CNAM plugin');

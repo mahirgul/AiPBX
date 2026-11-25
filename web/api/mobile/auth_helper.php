@@ -189,21 +189,9 @@ function buildMobileLoginResponse(array $user): array
     }
     $mobil_allowed = in_array('mobil', parsePhoneModes($user['allowed_phone_mode'] ?? null), true);
 
-    // Coturn TURNS (TLS/TCP)
-    $turn = null;
-    if ($mobil_allowed && defined('TURN_SECRET') && TURN_SECRET !== '') {
-        $turn_username = (time() + 2592000) . ':' . $user['extension'];
-        $turn_password = base64_encode(hash_hmac('sha1', $turn_username, TURN_SECRET, true));
-        $turn_host = defined('TURN_HOST') && TURN_HOST !== '' ? TURN_HOST : ($_SERVER['HTTP_HOST'] ?? '127.0.0.1');
-        $turn_port = defined('TURNS_PORT') && TURNS_PORT !== '' ? TURNS_PORT : '443';
-        $turn = [
-            'username' => $turn_username,
-            'credential' => $turn_password,
-            'urls' => [
-                'turns:' . $turn_host . ':' . $turn_port . '?transport=tcp'
-            ]
-        ];
-    }
+    // TURN over UDP 3478 and TURNS over 443, valid for 30 days (the app keeps it).
+    $turn_host = defined('TURN_HOST') && TURN_HOST !== '' ? TURN_HOST : ($_SERVER['HTTP_HOST'] ?? '127.0.0.1');
+    $turn = $mobil_allowed ? turnIceServer((string) $user['extension'], 2592000, $turn_host) : null;
 
     $host = $_SERVER['HTTP_HOST'] ?? getSystemSetting('portal_domain', 'localhost');
     $host_parts = explode(':', $host);

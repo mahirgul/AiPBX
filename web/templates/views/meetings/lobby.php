@@ -9,16 +9,9 @@ $roomNumber = (string)($meeting['room_number'] ?? '');
 $videoMode = (string)($meeting['video_mode'] ?? 'sfu');
 $hasPin = !empty($meeting['pin']) || !empty($meeting['user_pin']) || !empty($meeting['host_pin']);
 
-// STUN/TURN ice servers
-$iceServers = [];
-if (defined('TURN_SECRET') && TURN_SECRET !== '' && defined('TURN_HOST') && defined('TURNS_PORT')) {
-    $uname = (time() + 3600) . ':guest_' . $token;
-    $iceServers[] = [
-        'urls' => ['turns:' . TURN_HOST . ':' . TURNS_PORT . '?transport=tcp'],
-        'username' => $uname,
-        'credential' => base64_encode(hash_hmac('sha1', $uname, TURN_SECRET, true)),
-    ];
-}
+// TURN servers
+$turn = turnIceServer('guest_' . $token);
+$iceServers = $turn ? [$turn] : [];
 
 $meetingConfig = [
     'token' => $token,
@@ -446,6 +439,7 @@ $meetingConfig = [
         window.MEETING_CONFIG = <?php echo json_encode($meetingConfig, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
     </script>
     <script src="/assets/js/jssip.min.js"></script>
+    <script src="<?php echo asset('/assets/js/webrtc_ice.js'); ?>"></script>
     <script src="/assets/js/meeting_room.js"></script>
 </body>
 </html>

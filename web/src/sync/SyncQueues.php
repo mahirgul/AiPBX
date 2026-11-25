@@ -5,6 +5,7 @@
  */
 
 require_once __DIR__ . '/../queue_helper.php';
+require_once __DIR__ . '/../services/QueueCallbackService.php';
 
 function syncQueue($queue_id) {
     return syncAllQueues();
@@ -28,6 +29,32 @@ function __syncAllQueuesBody() {
     $conf .= "monitor-type = MixMonitor\n";
     $conf .= "queue_log = yes\n\n";
     $callbacks = "; Queue callback requests (generated)\n";
+
+    // Ring registered devices only. A forward or extension voicemail must not answer on the agent's behalf.
+    $callbacks .= '[' . QueueCallbackService::AUTO_AGENT_CONTEXT . "]\n" . <<<'DIALPLAN'
+exten => _X!,1,Set(CHANNEL(hangup_handler_push)=aipbx-auto-callback-result,s,1(agent_unanswered))
+ same => n,Set(CB_AGENT=${FILTER(0-9,${CUT(EXTEN,-,2)})})
+ same => n,GotoIf($["${CB_AGENT}" = ""]?done)
+ same => n,GotoIf($["${EXTENSION_STATE(${CB_AGENT}@from-internal-pbx-ortak)}" != "NOT_INUSE"]?done)
+ same => n,Set(C_SIP=${PJSIP_DIAL_CONTACTS(${CB_AGENT}-sip)})
+ same => n,Set(C_WEB=${PJSIP_DIAL_CONTACTS(${CB_AGENT}-webrtc)})
+ same => n,Set(C_MOB=${PJSIP_DIAL_CONTACTS(${CB_AGENT}-mob-webrtc)})
+ same => n,Set(DIAL_CONTACTS=${C_SIP}${IF($["${C_SIP}" != "" & "${C_WEB}" != ""]?&)}${C_WEB})
+ same => n,Set(DIAL_CONTACTS=${DIAL_CONTACTS}${IF($["${DIAL_CONTACTS}" != "" & "${C_MOB}" != ""]?&)}${C_MOB})
+ same => n,GotoIf($["${DIAL_CONTACTS}" = ""]?done)
+ same => n,Dial(${DIAL_CONTACTS},20,i)
+ same => n(done),Hangup()
+
+[aipbx-auto-callback-out]
+exten => _[+0-9]X!,1,Set(CHANNEL(hangup_handler_push)=aipbx-auto-callback-result,s,1(customer_unanswered))
+ same => n,Gosub(aipbx-auto-callback-result,s,1(calling_customer))
+ same => n,Goto(${AIPBX_AUTO_CB_CONTEXT},${EXTEN},1)
+
+[aipbx-auto-callback-result]
+exten => s,1,ExecIf($["${FILTER(0-9,${AIPBX_AUTO_CB_ID})}" != ""]?System(/usr/local/bin/queue_callback.php result '${FILTER(0-9,${AIPBX_AUTO_CB_ID})}' '${FILTER(0-9,${AIPBX_AUTO_CB_ATTEMPT})}' '${FILTER(a-z_,${ARG1})}'))
+ same => n,Return()
+DIALPLAN;
+    $callbacks .= "\n\n";
 
     foreach ($queues as $q) {
         $q_name = $q['queue_name'];

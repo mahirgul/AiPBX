@@ -34,6 +34,25 @@ fi
 chown root:www-data /etc/aipbx/ai.token
 chmod 640 /etc/aipbx/ai.token
 
+if [[ ! -s /etc/aipbx/ari.token ]]; then
+    (umask 077; openssl rand -hex 24 > /etc/aipbx/ari.token)
+fi
+chown root:asterisk /etc/aipbx/ari.token 2>/dev/null || chown root:root /etc/aipbx/ari.token
+chmod 640 /etc/aipbx/ari.token
+
+if [[ -f /etc/asterisk/ari.conf ]] && ! grep -q '^\[aipbx_ai\]' /etc/asterisk/ari.conf; then
+    ARI_PW=$(cat /etc/aipbx/ari.token)
+    sed -i 's/^enabled = no/enabled = yes/' /etc/asterisk/ari.conf
+    cat >> /etc/asterisk/ari.conf << ARIEOF
+
+[aipbx_ai]
+type = user
+read_only = no
+password = ${ARI_PW}
+password_format = plain
+ARIEOF
+fi
+
 cat > /etc/systemd/system/aipbx-ai.service << 'AIUNIT'
 [Unit]
 Description=AiPBX local AI models (AI -> Local models)
@@ -47,6 +66,7 @@ Group=aipbx-ai
 WorkingDirectory=/opt/aipbx-ai/app
 ExecStart=/usr/local/sbin/aipbx-ai-run
 LoadCredential=token:/etc/aipbx/ai.token
+LoadCredential=ari_token:/etc/aipbx/ari.token
 Environment=HOME=/var/lib/aipbx-ai AIPBX_AI_DATA=/var/lib/aipbx-ai
 Environment=PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 Restart=on-failure

@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../services/LoginService.php';
 require_once __DIR__ . '/../services/SsoOnlyService.php';
 require_once __DIR__ . '/../services/GoogleAuthService.php';
+require_once __DIR__ . '/../services/MicrosoftAuthService.php';
 require_once __DIR__ . '/../services/OidcAuthService.php';
 require_once __DIR__ . '/../services/SamlAuthService.php';
 
@@ -63,6 +64,7 @@ class LoginController extends BaseController
         $site_title = getSystemSetting('site_title', 'AiPBX');
         $site_favicon_url = getSystemSetting('site_favicon_url', '');
         $googleLoginEnabled = GoogleAuthService::isEnabled();
+        $microsoftLoginEnabled = MicrosoftAuthService::isEnabled();
         $oidcLoginEnabled = OidcAuthService::isEnabled();
         $oidcPublicSettings = $oidcLoginEnabled ? OidcAuthService::getPublicSettings() : [];
         $samlLoginEnabled = SamlAuthService::isEnabled();
@@ -76,6 +78,7 @@ class LoginController extends BaseController
             'site_title' => $site_title,
             'site_favicon_url' => $site_favicon_url,
             'googleLoginEnabled' => $googleLoginEnabled,
+            'microsoftLoginEnabled' => $microsoftLoginEnabled,
             'oidcLoginEnabled' => $oidcLoginEnabled,
             'oidcPublicSettings' => $oidcPublicSettings,
             'samlLoginEnabled' => $samlLoginEnabled,
