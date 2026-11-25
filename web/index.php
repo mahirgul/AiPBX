@@ -175,7 +175,6 @@ $LEGACY = [
     '/ai-models'               => '/ai-local',
     '/ai-settings'             => '/ai-local',
     '/ai-assistant'            => '/pbx-assistant',
-    '/ai-agents'               => '/external-voice-ai',
     '/ai-apps'                 => '/ai-agent',
 ];
 if (isset($LEGACY[$path])) {

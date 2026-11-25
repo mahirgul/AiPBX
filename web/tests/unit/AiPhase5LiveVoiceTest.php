@@ -7,10 +7,8 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/asterisk_sync.php';
 require_once __DIR__ . '/../../src/services/ai/AiAppService.php';
-require_once __DIR__ . '/../../src/services/ai/AiAgentService.php';
 require_once __DIR__ . '/../../src/services/PrivacyService.php';
 require_once __DIR__ . '/../../src/sync/SyncAiApps.php';
-require_once __DIR__ . '/../../src/sync/SyncAiAgents.php';
 
 final class AiPhase5LiveVoiceTest extends TestCase
 {
@@ -34,7 +32,6 @@ final class AiPhase5LiveVoiceTest extends TestCase
         $val = $db->query("SELECT setting_value FROM sys_settings WHERE setting_key = 'privacy_block_cloud_ai'")->fetchColumn();
         $this->origPrivacy = $val === false ? null : (string) $val;
         $db->exec("DELETE FROM pbx_ai_apps WHERE title LIKE 'Phase5App%'");
-        $db->exec("DELETE FROM pbx_ai_agents WHERE title LIKE 'Phase5Agent%'");
         $db->exec("DELETE FROM ai_bindings WHERE feature = 'ai_app' OR (feature = 'panel_default' AND scope_ref IN ('local','cloud'))");
         $db->exec("DELETE FROM sys_pending_sync WHERE entity_type IN ('ai_app','ai_agent','privacy')");
     }
@@ -43,7 +40,6 @@ final class AiPhase5LiveVoiceTest extends TestCase
     {
         $db = getDB();
         $db->exec("DELETE FROM pbx_ai_apps WHERE title LIKE 'Phase5App%'");
-        $db->exec("DELETE FROM pbx_ai_agents WHERE title LIKE 'Phase5Agent%'");
         $db->exec("DELETE FROM ai_bindings WHERE feature = 'ai_app' OR (feature = 'panel_default' AND scope_ref IN ('local','cloud'))");
         $db->exec("DELETE FROM sys_pending_sync WHERE entity_type IN ('ai_app','ai_agent','privacy')");
         if ($this->origPrivacy === null) {
@@ -114,34 +110,8 @@ final class AiPhase5LiveVoiceTest extends TestCase
         $this->assertSame('auto', $cfg['understand']);
     }
 
-    public function testExternalSipAgentPrivacyBlockRoutesToHandoverWithoutDialingOut(): void
-    {
-        $id = AiAgentService::save([
-            'title' => 'Phase5Agent 1',
-            'sip_uri' => 'sip:bot@voice.example.com:5060',
-            'transport' => 'udp',
-            'max_concurrent' => 2,
-            'max_minutes' => 10,
-            'ring_seconds' => 15,
-            'handover_dest_type' => 'hangup',
-            'handover_dest_id' => '',
-            'fallback_dest_type' => 'hangup',
-            'fallback_dest_id' => '',
-            'is_active' => '1',
-        ]);
-        $agent = AiAgentService::get($id);
-        $this->assertNotNull($agent);
 
-        $normal = buildAiAgentDialplan([$agent], false);
-        $this->assertStringContainsString('Dial(PJSIP/aiagent-' . $id . '/sip:bot@voice.example.com:5060', $normal);
-        $this->assertStringContainsString('GROUP_COUNT(a' . $id . '@aipbx_ai_agent)', $normal);
-
-        $blocked = buildAiAgentDialplan([$agent], true);
-        $this->assertStringContainsString('external data transfer blocked by privacy policy', $blocked);
-        $this->assertStringNotContainsString('Dial(PJSIP/aiagent-' . $id, $blocked);
-    }
-
-    public function testPrivacyComplianceMarksAiAppsAndAgentsPendingSync(): void
+    public function testPrivacyComplianceMarksAiAppsPendingSync(): void
     {
         $res = PrivacyService::saveCompliance([
             'csrf_token' => 'phase5_csrf',
@@ -150,6 +120,6 @@ final class AiPhase5LiveVoiceTest extends TestCase
         $this->assertTrue($res['success']);
         $domains = getDB()->query("SELECT domain FROM sys_pending_sync WHERE entity_type = 'privacy'")->fetchAll(PDO::FETCH_COLUMN);
         $this->assertContains('ai_apps', $domains);
-        $this->assertContains('ai_agents', $domains);
+        $this->assertNotContains('ai_agents', $domains);
     }
 }

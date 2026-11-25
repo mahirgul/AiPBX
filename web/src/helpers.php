@@ -224,7 +224,6 @@ function markCallModifierPendingSync(int $modifierId, string $label, string $act
         'internal_numbers',
         'widgets',
         'ai_apps',
-        'ai_agents',
     ];
     foreach ($domains as $domain) {
         markPendingSync($domain, 'call_modifier', $modifierId, $label, $action, $userId);

@@ -98,7 +98,7 @@ final class Faz1AsteriskLogsAndCallModifiersTest extends TestCase
             $pendingStmt = $db->prepare("SELECT domain FROM sys_pending_sync WHERE entity_type = 'call_modifier' AND entity_id = ?");
             $pendingStmt->execute([(string) $langId]);
             $domains = $pendingStmt->fetchAll(PDO::FETCH_COLUMN);
-            foreach (['inbound_dialplan', 'ivrs', 'time_conditions', 'ring_groups', 'general_dialplan', 'internal_numbers', 'widgets', 'ai_apps', 'ai_agents'] as $d) {
+            foreach (['inbound_dialplan', 'ivrs', 'time_conditions', 'ring_groups', 'general_dialplan', 'internal_numbers', 'widgets', 'ai_apps'] as $d) {
                 $this->assertContains($d, $domains, "domain {$d} must be marked dirty");
             }
 

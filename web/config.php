@@ -598,7 +598,7 @@ function dialplanText($str): string {
  * config-injection vector.
  */
 function sanitizeDestType($type) {
-    $valid = ['queue', 'ivr', 'ivr_data', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app', 'ai_agent', 'builtin_ai_agent', 'call_modifier'];
+    $valid = ['queue', 'ivr', 'ivr_data', 'time_condition', 'extension', 'fax', 'announcement', 'hangup', 'ring_group', 'conference', 'voicemail', 'outbound_route', 'ai_app', 'builtin_ai_agent', 'call_modifier'];
     $type = trim((string)$type);
     return in_array($type, $valid, true) ? $type : 'hangup';
 }

@@ -302,6 +302,9 @@ elif ! timeout 150 systemctl restart asterisk; then
 fi
 systemctl enable asterisk
 
+# External AI agents were removed in 1.82: their files would still be loaded by the pbx/*.conf includes.
+rm -f /etc/asterisk/pbx/{pjsip,extensions}_ai_agents.conf{,.written}
+
 # Sync initial endpoints, dialplans, and transports from DB to Asterisk
 info "Syncing database endpoints and dialplan to Asterisk..."
 # Not silent: phones point at generated contexts (from-internal-desktop/-mobile/-web);

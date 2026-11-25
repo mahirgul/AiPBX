@@ -353,7 +353,6 @@ final class PrivacyService
         if (function_exists('markPendingSync')) {
             $uid = $_SESSION['user_id'] ?? null;
             markPendingSync('ai_apps', 'privacy', 'block_cloud_ai', "Cloud AI lock: {$blockCloudAi}", 'update', $uid);
-            markPendingSync('ai_agents', 'privacy', 'block_cloud_ai', "Cloud AI lock: {$blockCloudAi}", 'update', $uid);
         }
 
         if (function_exists('writeAuditLog')) {

@@ -59,7 +59,7 @@ class DestinationRegistry {
         'pbx_time_conditions' => ['match_dest', 'nomatch_dest'], 'pbx_announcements' => ['post_dest'],
         'pbx_boss_secretary_groups' => ['fallback_dest'], 'pbx_ring_groups' => ['fallback_dest'],
         'pbx_ivr_data_steps' => ['found_dest', 'not_found_dest', 'timeout_dest'], 'pbx_web_widgets' => ['dest'],
-        'pbx_ai_apps' => ['dest'], 'pbx_ai_agents' => ['handover_dest', 'fallback_dest'],
+        'pbx_ai_apps' => ['dest'],
         'pbx_call_modifiers' => ['dest'],
     ];
 

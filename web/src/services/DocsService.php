@@ -42,7 +42,7 @@ class DocsService
     ];
 
     /** Deprecated documentation pages excluded from the Help sidebar. */
-    private const HIDDEN = ['ai-apps', 'ai-agents'];
+    private const HIDDEN = ['ai-apps'];
 
     /** Short, scannable sidebar titles (falls back to the document's H1). */
     private const SHORT_TITLES = [
