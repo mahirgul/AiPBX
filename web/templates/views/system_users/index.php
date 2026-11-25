@@ -165,7 +165,14 @@
                 <?php else: ?>
                     <?php foreach ($users as $u):
                         $role_label = htmlspecialchars($u['role_name'] ?? $u['role']);
-                        $role_class = 'role-' . preg_replace('/[^a-zA-Z0-9_-]/', '', $u['role']);
+                        $role_class = match ($u['role']) {
+                            'admin' => 'badge-warning',
+                            'read_only_admin' => 'badge-primary',
+                            'fax_user' => 'badge-info',
+                            'cc_agent' => 'badge-success',
+                            'cc_manager' => 'badge-purple',
+                            default => 'badge-secondary',
+                        };
                     ?>
                         <tr>
                             <td class="u-text-center">
@@ -178,7 +185,7 @@
                             <td><?php echo htmlspecialchars($u['full_name']); ?></td>
                             <td class="col-hide-mobile"><?php echo htmlspecialchars($u['email'] ?? ''); ?></td>
                             <td>
-                                <span class="role-badge <?php echo $role_class; ?>">
+                                <span class="badge <?php echo $role_class; ?>">
                                     <?php echo $role_label; ?>
                                 </span>
                                 <?php $role_names = $role_names ?? array_column($all_roles ?? [], 'role_name', 'role_key'); ?>
