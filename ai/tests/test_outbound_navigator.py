@@ -1,4 +1,4 @@
-import threading
+import time
 import unittest
 from unittest.mock import MagicMock
 
@@ -66,6 +66,13 @@ class _FakeAriMgr:
 
 
 class OutboundNavigatorTest(unittest.TestCase):
+    def wait_for(self, condition, description: str) -> None:
+        deadline = time.monotonic() + 8
+        while not condition():
+            if time.monotonic() >= deadline:
+                self.fail(f"Timed out waiting for {description}")
+            time.sleep(0.02)
+
     def test_parse_and_fallback_ivr_decision(self) -> None:
         self.assertEqual({"action": "dtmf", "digits": "0"}, parse_ivr_decision('{"action": "dtmf", "digits": "0"}'))
         self.assertEqual({"action": "connected", "digits": ""}, parse_ivr_decision('{"action": "connected"}'))
@@ -93,32 +100,16 @@ class OutboundNavigatorTest(unittest.TestCase):
             self.assertTrue(res["ok"])
             job_id = res["job_id"]
 
-            # Simulate remote channel answering via StasisStart, then hanging up right after bridge
-            def drive_ari():
-                import time
-                time.sleep(0.05)
-                nav.on_ari_event({
-                    "type": "StasisStart",
-                    "args": ["outbound_nav", job_id],
-                    "channel": {"id": "out-ch-1"},
-                })
-                for _ in range(80):
-                    st = (nav.get_job(job_id) or {}).get("state")
-                    if st == "bridged":
-                        break
-                    time.sleep(0.1)
-                nav.on_ari_event({
-                    "type": "ChannelDestroyed",
-                    "channel": {"id": "out-ch-1"},
-                })
-
-            dt = threading.Thread(target=drive_ari, daemon=True)
-            dt.start()
-            dt.join(timeout=8.0)
-
+            nav.on_ari_event({
+                "type": "StasisStart",
+                "args": ["outbound_nav", job_id],
+                "channel": {"id": "out-ch-1"},
+            })
+            self.wait_for(lambda: nav.get_job(job_id)["state"] == "bridged", "the caller to join the bridge")
+            nav.on_ari_event({"type": "ChannelDestroyed", "channel": {"id": "out-ch-1"}})
+            self.wait_for(lambda: ("hangup", "caller-ch-1") in mgr.client.calls, "the caller channel to hang up")
             self.assertIn(("send_dtmf", "out-ch-1", "1000"), mgr.client.calls)
             self.assertIn(("caller-uuid-1", "br-1"), mgr.rebridged)
-            self.assertIn(("hangup", "caller-ch-1"), mgr.client.calls)
         finally:
             reg.close()
 
@@ -136,29 +127,14 @@ class OutboundNavigatorTest(unittest.TestCase):
             self.assertTrue(res["ok"])
             job_id = res["job_id"]
 
-            def drive_ari():
-                import time
-                time.sleep(0.05)
-                nav.on_ari_event({
-                    "type": "StasisStart",
-                    "args": ["outbound_nav", job_id],
-                    "channel": {"id": "out-ch-wait"},
-                })
-                for _ in range(80):
-                    if (nav.get_job(job_id) or {}).get("state") == "bridged":
-                        break
-                    time.sleep(0.1)
-                nav.on_ari_event({
-                    "type": "ChannelDestroyed",
-                    "channel": {"id": "caller-ch-1"},
-                })
-                time.sleep(0.1)
-
-            dt = threading.Thread(target=drive_ari, daemon=True)
-            dt.start()
-            dt.join(timeout=8.0)
-
-            self.assertIn(("hangup", "out-ch-wait"), mgr.client.calls)
+            nav.on_ari_event({
+                "type": "StasisStart",
+                "args": ["outbound_nav", job_id],
+                "channel": {"id": "out-ch-wait"},
+            })
+            self.wait_for(lambda: nav.get_job(job_id)["state"] == "bridged", "the caller to join the bridge")
+            nav.on_ari_event({"type": "ChannelDestroyed", "channel": {"id": "caller-ch-1"}})
+            self.wait_for(lambda: ("hangup", "out-ch-wait") in mgr.client.calls, "the remote channel to hang up")
             self.assertNotIn(("hangup", "caller-ch-1"), mgr.client.calls)
         finally:
             reg.close()
@@ -176,37 +152,24 @@ class OutboundNavigatorTest(unittest.TestCase):
             self.assertTrue(res["ok"])
             job_id = res["job_id"]
 
-            def drive_ari():
-                import time
-                time.sleep(0.05)
-                nav.on_ari_event({
-                    "type": "StasisStart",
-                    "args": ["outbound_nav", job_id],
-                    "channel": {"id": "out-ch-2"},
-                })
-                for _ in range(50):
-                    if any(c[0] == "originate" and "outbound_bridge" in c[1].get("app_args", "") for c in mgr.client.calls):
-                        break
-                    time.sleep(0.05)
-                nav.on_ari_event({
-                    "type": "StasisStart",
-                    "args": ["outbound_bridge", job_id],
-                    "channel": {"id": "cb-ch-2"},
-                })
-                for _ in range(50):
-                    if (nav.get_job(job_id) or {}).get("state") == "bridged":
-                        break
-                    time.sleep(0.05)
-                nav.on_ari_event({
-                    "type": "ChannelDestroyed",
-                    "channel": {"id": "out-ch-2"},
-                })
-                time.sleep(0.1)
-
-            dt = threading.Thread(target=drive_ari, daemon=True)
-            dt.start()
-            dt.join(timeout=6.0)
-            self.assertIn(("hangup", "cb-ch-2"), mgr.client.calls)
+            nav.on_ari_event({
+                "type": "StasisStart",
+                "args": ["outbound_nav", job_id],
+                "channel": {"id": "out-ch-2"},
+            })
+            self.wait_for(
+                lambda: any(kind == "originate" and "outbound_bridge" in args[0].get("app_args", "")
+                            for kind, *args in mgr.client.calls),
+                "the callback to start",
+            )
+            nav.on_ari_event({
+                "type": "StasisStart",
+                "args": ["outbound_bridge", job_id],
+                "channel": {"id": "cb-ch-2"},
+            })
+            self.wait_for(lambda: nav.get_job(job_id)["state"] == "bridged", "the callback to join the bridge")
+            nav.on_ari_event({"type": "ChannelDestroyed", "channel": {"id": "out-ch-2"}})
+            self.wait_for(lambda: ("hangup", "cb-ch-2") in mgr.client.calls, "the callback channel to hang up")
         finally:
             reg.close()
 

@@ -187,6 +187,8 @@ jobs:
       # Fake model backend: no torch or model download needed.
       - name: Unit tests
         run: python -m unittest discover -v ai/tests
+        env:
+          PYTHONPATH: ai
       # The signaling capture daemon (HEP parser, row shape); stdlib only.
       - name: Signaling capture tests
         run: python -m unittest discover -v -s tests
