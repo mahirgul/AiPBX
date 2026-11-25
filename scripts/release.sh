@@ -41,7 +41,7 @@ ci_passed() {
     local wf="$1" head line
     head="$(git rev-parse HEAD)"
     line="$(gh run list --workflow "$wf" --commit "$head" --limit 1 --json status,conclusion \
-        --jq '.[0] | .status + " " + (.conclusion // "")' 2>/dev/null || true)"
+        --jq '.[0] // empty | .status + " " + (.conclusion // "")' 2>/dev/null || true)"
     if [[ -z "$line" ]]; then
         # Only fall back to the last run on main when this commit truly changes no files matched by $wf.
         local changed_files="" matching=0
