@@ -215,6 +215,17 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
         <?php endif; ?>
 </div>
 
+<?php if (!empty($dependencies)): ?>
+    <div class="card u-mt-12">
+        <div class="u-fs-12 u-fw-700 u-mb-6"><i class="fas fa-link u-primary"></i> <?php echo $h(t('ai_cloud.active_deps', 'Active cloud consumers')); ?></div>
+        <div class="u-d-flex u-wrap u-gap-6">
+            <?php foreach ($dependencies as $dep): ?>
+                <span class="badge badge-info u-fs-11"><?php echo $h($dep['label'] . ' → ' . $dep['target']); ?></span>
+            <?php endforeach; ?>
+        </div>
+    </div>
+<?php endif; ?>
+
 <!-- Add / edit one account -->
 <div class="modal-overlay" id="aiCloudAccountModal">
     <div class="modal-card u-maxw-800">
@@ -286,22 +297,11 @@ $cloudOptions = static function (string $task, string $selected, string $emptyLa
         </form>
         <?php if ($try_output !== ''): ?>
             <div class="u-mt-12 u-p-12 u-r-8 u-bd-1-solid-border-color u-bg-bg-input">
-                <strong><?php echo $h(t('ai_models.try_result', 'Result')); ?>:</strong>
+                <strong><?php echo $h(t('ai_models.try_answer', 'Answer')); ?>:</strong>
                 <div class="u-mt-6 u-white-space-pre-wrap"><?php echo $h($try_output); ?></div>
             </div>
         <?php endif; ?>
 </div>
 </div>
-
-<?php if (!empty($dependencies)): ?>
-    <div class="card u-mt-12">
-        <div class="u-fs-12 u-fw-700 u-mb-6"><i class="fas fa-link u-primary"></i> <?php echo $h(t('ai_cloud.active_deps', 'Active cloud consumers')); ?></div>
-        <div class="u-d-flex u-wrap u-gap-6">
-            <?php foreach ($dependencies as $dep): ?>
-                <span class="badge badge-info u-fs-11"><?php echo $h($dep['label'] . ' → ' . $dep['target']); ?></span>
-            <?php endforeach; ?>
-        </div>
-    </div>
-<?php endif; ?>
 
 <script src="<?php echo asset('/assets/js/ai_cloud.js'); ?>"></script>
