@@ -172,6 +172,43 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
         </div>
         <details class="u-mt-12" id="builtinAgentAdvanced">
             <summary class="u-fw-600"><i class="fas fa-sliders u-primary"></i> <?php echo $h(t('builtin_ai_agent.advanced')); ?></summary>
+            <?php $listen = BuiltinAiAgentService::listening(is_array($edit) ? $edit : []);
+            $seconds = static fn (int $n): string => sprintf(t('builtin_ai_agent.seconds'), $n); ?>
+            <div class="u-d-grid u-gtc-1fr-1fr u-gap-8 u-mt-6">
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_line_profile"><?php echo $h(t('builtin_ai_agent.line_profile')); ?></label>
+                    <select class="form-control" id="builtin_agent_line_profile" name="line_profile">
+                        <?php foreach (BuiltinAiAgentService::LINE_PROFILES as $lp): ?>
+                            <option value="<?php echo $h($lp); ?>"<?php echo $selected($lp, $listen['line_profile']); ?>><?php echo $h(t('builtin_ai_agent.line_' . $lp)); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_retries"><?php echo $h(t('builtin_ai_agent.retries')); ?></label>
+                    <select class="form-control" id="builtin_agent_retries" name="retries">
+                        <?php foreach ([0 => 'retries_0', 1 => 'retries_1', 2 => 'retries_2'] as $n => $key): ?>
+                            <option value="<?php echo $n; ?>"<?php echo $selected($n, $listen['retries']); ?>><?php echo $h(t('builtin_ai_agent.' . $key)); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_silence_seconds"><?php echo $h(t('builtin_ai_agent.silence_seconds')); ?></label>
+                    <select class="form-control" id="builtin_agent_silence_seconds" name="silence_seconds">
+                        <?php foreach ([3, 4, 6, 8, 10] as $n): ?>
+                            <option value="<?php echo $n; ?>"<?php echo $selected($n, $listen['silence_seconds']); ?>><?php echo $h($seconds($n)); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_listen_seconds"><?php echo $h(t('builtin_ai_agent.listen_seconds')); ?></label>
+                    <select class="form-control" id="builtin_agent_listen_seconds" name="listen_seconds">
+                        <?php foreach ([5, 8, 10, 12, 15] as $n): ?>
+                            <option value="<?php echo $n; ?>"<?php echo $selected($n, $listen['listen_seconds']); ?>><?php echo $h($seconds($n)); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <small class="u-hint"><?php echo $h(t('builtin_ai_agent.listening_help')); ?></small>
             <p class="u-muted u-fs-12 u-mt-6"><?php echo $h(t('builtin_ai_agent.advanced_help')); ?></p>
             <div class="u-mt-6">
             <?php $allPbxTools = array_column(PbxToolRegistry::all(), 'name');

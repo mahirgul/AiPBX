@@ -71,7 +71,7 @@ from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
-from .voice_requests import CALIBRATION_FRAMES, PRE_ROLL_FRAMES
+from .voice_requests import CALIBRATION_FRAMES, NO_SPEECH_SECONDS, PRE_ROLL_FRAMES
 from .voice_requests import AppStore, Listener, ResultStore, pick_local_fallback
 
 log = logging.getLogger("aipbx_ai.calls")
@@ -88,6 +88,13 @@ LOOKUP_PROMPT_DELAY = 0.7     # let fast lookups finish without playing a waitin
 AUTOMATIC_GREETING_TIMEOUT = 3.0
 SILENCE_FRAME = b"\x00" * FRAME_BYTES
 NO_FRAMES_GAP = 0.2          # listening: after this long without inbound frames, count silence
+# What the model is told when a turn brought no words (attempt["outcome"]).
+LINE_NOTES = {
+    "no_audio": "no sound at all came from the caller's line; they may not hear you either",
+    "silence": "the caller said nothing",
+    "quiet": "the caller's voice was too faint to understand",
+    "unclear": "the caller spoke but it could not be understood (noise or a broken line)",
+}
 
 MAX_TEXT = 2000
 MAX_FILLED = 4000            # rendered text (template plus lookup values)
@@ -1102,7 +1109,8 @@ class VoiceRequestsCall:
             return self.play(pcm), None
         session = self.session
         q = queue.Queue()
-        probe = Listener(3600)          # only its speech detection is used here
+        # only its speech detection is used here; a faint profile would let line noise stop prompts
+        probe = Listener(3600, profile="noisy" if self.config.get("line_profile") == "noisy" else "normal")
         cur = {"pcm": pcm, "pos": 0, "sent": threading.Event(), "started": None, "ends": None}
         handed_over = False
         session.listen_q = q
@@ -1127,7 +1135,7 @@ class VoiceRequestsCall:
                     if self._current is cur:
                         self._current = None
                 started = time.monotonic()
-                listener = Listener(self.config["listen_seconds"])
+                listener = self.new_listener()
                 reason = None
                 if kind == "dtmf":
                     digits, reason = [data], "dtmf"
@@ -1156,6 +1164,10 @@ class VoiceRequestsCall:
 
     # ---- audio in -------------------------------------------------------
 
+    def new_listener(self):
+        cfg = self.config
+        return Listener(cfg["listen_seconds"], cfg.get("silence_seconds", NO_SPEECH_SECONDS), cfg.get("line_profile", "normal"))
+
     def listen(self, pre=None):
         """One attempt: the attempt dict, or None when the caller hung up.
 
@@ -1164,7 +1176,7 @@ class VoiceRequestsCall:
         if pre is not None:
             q, listener, started, digits, reason = pre
         else:
-            q, listener, started, digits, reason = queue.Queue(), Listener(cfg["listen_seconds"]), time.monotonic(), [], None
+            q, listener, started, digits, reason = queue.Queue(), self.new_listener(), time.monotonic(), [], None
         # Collect the caller's audio before the Deepgram connection is made: opening it
         # may take up to its connect timeout, and audio not queued by then was lost.
         session.listen_q = q
@@ -1188,6 +1200,7 @@ class VoiceRequestsCall:
                         dg_stream.close()
                     dg_stream = None
         wall_limit = started + cfg["listen_seconds"] + 2.0   # Asterisk stopped sending audio
+        signal = False
         try:
             while reason is None:
                 if self.gone():
@@ -1209,6 +1222,7 @@ class VoiceRequestsCall:
                     digits.append(data)
                     reason = "dtmf"
                 else:
+                    signal = True                # frames from the line, not our silence fill
                     if dg_stream is not None:
                         dg_stream.send_audio(data)
                     reason = listener.feed(data, at)
@@ -1241,6 +1255,10 @@ class VoiceRequestsCall:
                                method=m["method"])
         else:
             self.speech_end = None
+        if not attempt["transcript"] and not attempt["dtmf"]:
+            attempt["outcome"] = ("unclear" if listener.heard else
+                                  "quiet" if listener.faint() else
+                                  "silence" if signal or pre is not None else "no_audio")
         return attempt
 
     def understand(self, text, cfg):
@@ -1624,18 +1642,22 @@ class VoiceRequestsCall:
             text = attempt["transcript"]
             if attempt["dtmf"]:
                 text = (text + " " if text else "") + f"(pressed the key {attempt['dtmf']})"
-            if not text:
+            silent = not text
+            if silent:
+                # Nothing usable: the model hears why (line note) and asks again in its own words;
+                # the fixed retry prompt stays the fallback, `retries` the hard limit.
                 quiet += 1
+                outcome = attempt.get("outcome") or "silence"
+                session.note(f"caller turn: {outcome} ({quiet} of {cfg['retries'] + 1})")
                 if quiet > cfg["retries"]:
                     break
-                played, pre = self.play_interruptible(self.prompt("retry"))
-                if not played:
-                    return self.save("hangup")
-                continue
-            quiet = 0
-            session.transcript = text
-            session.hear(text)
-            self.history.append(("caller", text))
+                self.history.append(("line", f"{LINE_NOTES[outcome]} (time {quiet}; "
+                                             f"the call leaves you after {cfg['retries'] + 1})"))
+            else:
+                quiet = 0
+                session.transcript = text
+                session.hear(text)
+                self.history.append(("caller", text))
             self.waiting_spoken = False
             started = time.monotonic()
             try:
@@ -1646,6 +1668,12 @@ class VoiceRequestsCall:
                 pre = interrupted.pre
                 continue
             except cloud_llm.CloudLlmError as e:
+                if silent:
+                    log.info("call app=%d: model failed on a silent turn (%s): fixed retry prompt", session.app, e)
+                    played, pre = self.play_interruptible(self.prompt("retry"))
+                    if not played:
+                        return self.save("hangup")
+                    continue
                 log.warning("call app=%d: conversation model failed (%s): to the destination", session.app, e)
                 session.note(f"conversation model failed ({e}): the call went to its destination")
                 break
@@ -1669,7 +1697,9 @@ class VoiceRequestsCall:
             if step["action"] == "reply":
                 self.history.append(("assistant", step["say"]))
                 pcm = self.speak(step["say"])
-                if cfg.get("builtin_agent") and not pcm:
+                if silent and not pcm:
+                    pcm = self.prompt("retry")
+                elif cfg.get("builtin_agent") and not pcm:
                     break
                 played, pre = self.play_interruptible(pcm)
                 if not played:

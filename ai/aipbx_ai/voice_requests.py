@@ -46,6 +46,7 @@ MAX_WORDS = 30               # keywords, and examples, per intent
 MAX_TEXT = 1000
 LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT = 2, 15, 7
 RETRIES_MAX, RETRIES_DEFAULT = 2, 1
+SILENCE_MIN, SILENCE_MAX = 3, 10   # silence_seconds: nothing said by then is silence
 THRESHOLD_DEFAULT = 0.5
 SPEED_MIN, SPEED_MAX = 0.5, 2.0
 
@@ -66,6 +67,11 @@ PRE_ROLL_FRAMES = 15         # 300 ms kept before the detected start
 TAIL_FRAMES = 15             # 300 ms kept after the last loud frame
 SPEECH_FACTOR = 3.0          # speech: RMS at least 3x (about +10 dB) the floor ...
 MIN_SPEECH_RMS = 250         # ... and at least this (about -42 dBFS)
+# line_profile: (speech factor over the floor, lowest speech RMS). "noisy" ignores more line noise,
+# "faint" hears quieter callers; barge-in keeps the normal level on a faint profile (noise would stop prompts).
+PROFILES = {"normal": (SPEECH_FACTOR, MIN_SPEECH_RMS), "noisy": (4.5, 400), "faint": (2.2, 150)}
+FAINT_FACTOR, MIN_FAINT_RMS = 1.8, 60.0   # below speech level but clearly above the floor ...
+FAINT_FRAMES = 10            # ... for 200 ms in all: a voice too quiet to use
 MIN_FLOOR, MAX_FLOOR = 20.0, 800.0   # RMS; 800 is about -32 dBFS, louder line noise is capped
 FLOOR_FALL = 0.3            # the floor falls quickly to quieter frames ...
 FLOOR_ADAPT = 0.05           # ... and rises slowly to louder ones (before speech)
@@ -172,6 +178,8 @@ def validate_config(data, manager=None):
         "not_understood": _text(data, "not_understood"),
         "listen_seconds": _number(data, "listen_seconds", LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT, integer=True),
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
+        "silence_seconds": _number(data, "silence_seconds", SILENCE_MIN, SILENCE_MAX, int(NO_SPEECH_SECONDS), integer=True),
+        "line_profile": data.get("line_profile") if data.get("line_profile") in PROFILES else "normal",
         "threshold": _number(data, "threshold", 0.0, 1.0, THRESHOLD_DEFAULT),
         # The caller may talk over the greeting and the "say it again" prompt:
         # the prompt stops and what they say is the request. Off by default, as
@@ -733,12 +741,13 @@ class Listener:
     "speech", "timeout" (speech cut at listen_seconds) or "silence".
     """
 
-    def __init__(self, listen_seconds):
+    def __init__(self, listen_seconds, silence_seconds=NO_SPEECH_SECONDS, profile="normal"):
         self.max_frames = int(round(listen_seconds / FRAME_SECONDS))
-        self.no_speech_frames = int(round(min(NO_SPEECH_SECONDS, listen_seconds) / FRAME_SECONDS))
+        self.no_speech_frames = int(round(min(silence_seconds, listen_seconds) / FRAME_SECONDS))
+        self.speech_factor, self.min_speech_rms = PROFILES.get(profile, PROFILES["normal"])
         self.frames = []             # every frame since listening started
         self.levels = []
-        self.floor = None
+        self.floor = self.base_floor = None
         self.loud_run = 0
         self.start = None            # index of the first frame of the utterance (with pre-roll)
         self.last_loud = None        # index of the last frame at speech level
@@ -747,7 +756,7 @@ class Listener:
 
     @property
     def threshold(self):
-        return max(SPEECH_FACTOR * (self.floor or MIN_FLOOR), MIN_SPEECH_RMS)
+        return max(self.speech_factor * (self.floor or MIN_FLOOR), self.min_speech_rms)
 
     def feed(self, data, now=None):
         """Feeds inbound audio (any length); returns None or the stop reason."""
@@ -769,6 +778,7 @@ class Listener:
             if index + 1 >= CALIBRATION_FRAMES:
                 quiet = sorted(self.levels)[:max(1, len(self.levels) // 2)]
                 self.floor = min(MAX_FLOOR, max(MIN_FLOOR, sum(quiet) / len(quiet)))
+                self.base_floor = self.floor   # faint(): the floor before a faint voice pulls it up
                 # frames of the calibration window may already be speech
                 for j, lv in enumerate(self.levels):
                     if self._level(lv, j, now):
@@ -806,6 +816,13 @@ class Listener:
     @property
     def heard(self):
         return self.start is not None
+
+    def faint(self):
+        """No speech, but sound clearly above the floor for a while: a voice too quiet to use."""
+        if self.start is not None or self.floor is None:
+            return False
+        level = max(FAINT_FACTOR * min(self.floor, self.base_floor), MIN_FAINT_RMS)
+        return sum(lv >= level for lv in self.levels) >= FAINT_FRAMES
 
     def utterance(self):
         """The caller's speech as PCM (b"" when nothing was said)."""

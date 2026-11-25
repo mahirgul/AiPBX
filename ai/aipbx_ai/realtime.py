@@ -27,6 +27,8 @@ log = logging.getLogger("aipbx_ai.realtime")
 
 _FRAME_BYTES = 320  # 20 ms at 8 kHz 16-bit mono = 160 samples = 320 bytes
 _SILENCE_PCM = b"\x00" * _FRAME_BYTES
+SILENCE_NUDGE_SECONDS = 8.0   # caller quiet this long after the model finished: tell the model
+_SPEECH_RMS = 250             # as voice_requests.MIN_SPEECH_RMS: a frame this loud is the caller talking
 _BIAS = 0x84
 _CLIP = 32635
 
@@ -58,6 +60,14 @@ def _ulaw_to_linear_sample(u: int) -> int:
 
 
 _ULAW_DECODE = [_ulaw_to_linear_sample(i) for i in range(256)]
+
+
+def _rms(pcm: bytes) -> float:
+    n = len(pcm) // 2
+    if not n:
+        return 0.0
+    samples = struct.unpack(f"<{n}h", pcm[: n * 2])
+    return (sum(x * x for x in samples) / n) ** 0.5
 
 
 def pcm16_to_ulaw(pcm: bytes) -> bytes:
@@ -265,6 +275,10 @@ class RealtimeCall:
         self._audio_played_ms = 0
         self._last_item_id = ""
         self._transcript_lines: list[str] = []
+        self._last_activity = time.monotonic()   # caller speech, model audio or a tool: restarts the silence clock
+        self._last_frame = 0.0                   # last audio frame from the line
+        self._nudges = 0
+        self._gave_up = False
 
     def _build_tools(self) -> list[dict[str, Any]]:
         tools: list[dict[str, Any]] = [
@@ -399,6 +413,7 @@ class RealtimeCall:
             try:
                 frame = self._out_q.get_nowait()
                 self._audio_played_ms += 20
+                self._last_activity = time.monotonic()
             except queue.Empty:
                 frame = _SILENCE_PCM
             try:
@@ -419,10 +434,56 @@ class RealtimeCall:
                 return True
         return False
 
+    def _heard(self, pcm: bytes) -> None:
+        """Notes an inbound audio chunk for the silence clock."""
+        now = time.monotonic()
+        self._last_frame = now
+        if pcm and _rms(pcm) >= _SPEECH_RMS:
+            self._last_activity = now
+
+    def _nudge_seconds(self) -> float:
+        """Twice the listening silence (default 4 s -> 8 s): server VAD and a caller who thinks need longer."""
+        try:
+            return max(SILENCE_NUDGE_SECONDS, 2.0 * float(self.cfg.get("silence_seconds") or 0))
+        except (TypeError, ValueError):
+            return SILENCE_NUDGE_SECONDS
+
+    def _silence_note(self) -> str | None:
+        """The note for the model when the caller has been silent too long; None otherwise.
+        Past `retries` notes it stops the session: the call goes to its not-understood destination."""
+        now = time.monotonic()
+        wait = self._nudge_seconds()
+        if not self._out_q.empty() or now - self._last_activity < wait:
+            return None
+        self._last_activity = now
+        self._nudges += 1
+        limit = int(self.cfg.get("retries", 2)) + 1
+        line = "no sound at all came from the caller's line; they may not hear you either" \
+            if now - self._last_frame > wait else "the caller said nothing"
+        note = getattr(self.call.session, "note", None)
+        if note:
+            note(f"caller turn: {'no_audio' if 'no sound' in line else 'silence'} ({self._nudges} of {limit})")
+        if self._nudges >= limit:
+            self._gave_up = True
+            self._stop.set()
+            return None
+        return (f"[Phone line note, not the caller: {line} for {int(wait)} seconds "
+                f"(time {self._nudges}; the call leaves you after {limit}). In one short sentence, ask again: "
+                "repeat your last question in fewer words, or ask whether they can hear you.]")
+
     def _pump_upstream(self, ws: RealtimeSocket, in_q: queue.Queue[Any]) -> None:
         if not self._wait_upstream_ready():
             return
         while not self._stop.is_set() and not self.call.gone():
+            note = self._silence_note()
+            if note:
+                try:
+                    ws.send_json({"type": "conversation.item.create", "item": {
+                        "type": "message", "role": "user", "content": [{"type": "input_text", "text": note}]}})
+                    ws.send_json({"type": "response.create"})
+                except OSError:
+                    self._stop.set()
+                    break
             try:
                 item = in_q.get(timeout=0.1)
             except queue.Empty:
@@ -430,6 +491,7 @@ class RealtimeCall:
             if isinstance(item, tuple):
                 if len(item) >= 3 and item[0] == "dtmf":
                     digit = str(item[2])
+                    self._last_activity = time.monotonic()
                     self._dtmf_q.put(digit)
                     if hasattr(self.call.session, "dtmf") and (
                         not self.call.session.dtmf or self.call.session.dtmf[-1] != digit
@@ -457,6 +519,7 @@ class RealtimeCall:
                 pcm = bytes(item)
             else:
                 continue
+            self._heard(pcm)
             ulaw = pcm16_to_ulaw(pcm)
             if not ulaw:
                 continue
@@ -587,7 +650,9 @@ class RealtimeCall:
             args = json.loads(str(ev.get("arguments") or "{}"))
         except json.JSONDecodeError:
             args = {}
+        self._last_activity = time.monotonic()
         ended, output = self._execute_tool(name, args if isinstance(args, dict) else {})
+        self._last_activity = time.monotonic()
         ws.send_json({
             "type": "conversation.item.create",
             "item": {"type": "function_call_output", "call_id": call_id, "output": output},
@@ -605,7 +670,9 @@ class RealtimeCall:
             name = str(fc.get("name") or "")
             call_id = str(fc.get("id") or "")
             args = fc.get("args") if isinstance(fc.get("args"), dict) else {}
+            self._last_activity = time.monotonic()
             ended, output = self._execute_tool(name, args)
+            self._last_activity = time.monotonic()
             should_end = should_end or ended
             responses.append({
                 "id": call_id,
@@ -620,6 +687,14 @@ class RealtimeCall:
         if not self._wait_upstream_ready():
             return
         while not self._stop.is_set() and not self.call.gone():
+            note = self._silence_note()
+            if note:
+                try:
+                    ws.send_json({"clientContent": {"turns": [{"role": "user", "parts": [{"text": note}]}],
+                                                    "turnComplete": True}})
+                except OSError:
+                    self._stop.set()
+                    break
             try:
                 item = in_q.get(timeout=0.1)
             except queue.Empty:
@@ -627,6 +702,7 @@ class RealtimeCall:
             if isinstance(item, tuple):
                 if len(item) >= 3 and item[0] == "dtmf":
                     digit = str(item[2])
+                    self._last_activity = time.monotonic()
                     self._dtmf_q.put(digit)
                     if hasattr(self.call.session, "dtmf") and (
                         not self.call.session.dtmf or self.call.session.dtmf[-1] != digit
@@ -651,6 +727,7 @@ class RealtimeCall:
                 pcm = bytes(item)
             else:
                 continue
+            self._heard(pcm)
             pcm16k = resample_pcm16(pcm, 8000, 16000)
             if not pcm16k:
                 continue
@@ -718,6 +795,7 @@ class RealtimeCall:
                     pcm = ulaw_to_pcm16(base64.b64decode(b64))
                     self._enqueue_pcm(pcm)
             elif etype == "input_audio_buffer.speech_started":
+                self._last_activity = time.monotonic()
                 self._clear_playback()
                 if self._last_item_id:
                     ws.send_json({
@@ -856,7 +934,7 @@ class RealtimeCall:
             if self._transcript_lines:
                 self.call.session.transcript = "\n".join(self._transcript_lines)
             intent = self.call.session.intent
-            result = "ended" if intent == "_end" else "matched" if intent else "hangup"
+            result = "ended" if intent == "_end" else "matched" if intent else "silence" if self._gave_up else "hangup"
             self.call.save(result)
             self.call.session.result = result
             return True

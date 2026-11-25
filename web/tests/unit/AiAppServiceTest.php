@@ -318,6 +318,16 @@ final class AiAppServiceTest extends TestCase
         $this->assertStringNotContainsString('Stasis(aipbx-ai,', $legacyDialplan);
     }
 
+    public function testBuiltinAgentListeningSettingsAreClamped(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
+        $this->assertSame(['retries' => 2, 'silence_seconds' => 4, 'listen_seconds' => 10, 'line_profile' => 'normal'],
+            BuiltinAiAgentService::listening([]));
+        $this->assertSame(['retries' => 0, 'silence_seconds' => 10, 'listen_seconds' => 5, 'line_profile' => 'faint'],
+            BuiltinAiAgentService::listening(['retries' => '0', 'silence_seconds' => '99', 'listen_seconds' => '1', 'line_profile' => 'faint']));
+        $this->assertSame('normal', BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'loud'])['line_profile']);
+    }
+
     public function testRealtimeConfigPayloadWhenOpenAiEnabled(): void
     {
         $db = getDB();
@@ -335,6 +345,9 @@ final class AiAppServiceTest extends TestCase
             ]);
             $this->assertTrue($cfg['builtin_agent']);
             $this->assertTrue($cfg['conversation']);
+            // saved before the listening settings: asks again twice, with a retry prompt
+            $this->assertSame([2, 4, 10, 'normal'], [$cfg['retries'], $cfg['silence_seconds'], $cfg['listen_seconds'], $cfg['line_profile']]);
+            $this->assertNotSame('', $cfg['retry']);
             $this->assertSame('openai', $cfg['realtime_cloud']['provider'] ?? null);
             $this->assertSame('gpt-realtime', $cfg['realtime_cloud']['model'] ?? null);
             $this->assertSame('coral', $cfg['realtime_cloud']['voice'] ?? null);

@@ -171,7 +171,8 @@ def prompt(config, history, lang):
     lines = []
     for role, text in history:
         lines.append({"caller": "Caller", "assistant": "You", "lookup": "Lookup result",
-                      "context": "Before you (another assistant's summary)"}[role] + ": " + text)
+                      "context": "Before you (another assistant's summary)",
+                      "line": "Phone line note"}[role] + ": " + text)
     caller_name = config.get("caller_name")
     verified_cust = config.get("verified_customer")
     caller_context = ""
@@ -204,7 +205,12 @@ def prompt(config, history, lang):
         "phone: no lists, no markdown, no emoji.\n"
         "Use only the company's instructions and lookup results below; never invent facts, prices, "
         "times or promises. When you cannot help, the caller asks for a person, or you are unsure, "
-        f'{transfer} when no listed destination fits.\n\n'
+        f'{transfer} when no listed destination fits.\n'
+        "A \"Phone line note\" is from the phone system, not the caller: when it says nothing usable was "
+        "heard, reply with one short sentence that fits the reason (ask them to speak up, to move somewhere "
+        "quieter, or whether they can hear you) and repeat your last question in fewer words; from the second "
+        "time on, offer pressing a key when the answer is a simple choice. Follow the company's instructions "
+        "for this if they say otherwise.\n\n"
         + caller_context
         + "Company instructions:\n" + (rendered_instructions or "(none)") + "\n\n"
         "Destinations you may transfer the call to (use only these IDs):\n" + (requests or "(none)") + "\n\n"

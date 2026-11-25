@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 from aipbx_ai.calls import CallSession, VoiceRequestsCall
 
-from aipbx_ai.realtime import RealtimeCall, _resolve_ws_endpoint, pcm16_to_ulaw, resample_pcm16, ulaw_to_pcm16
+from aipbx_ai.realtime import SILENCE_NUDGE_SECONDS, RealtimeCall, _resolve_ws_endpoint, pcm16_to_ulaw, resample_pcm16, ulaw_to_pcm16
 
 _WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -95,6 +95,42 @@ class RealtimeTest(unittest.TestCase):
         self.assertEqual(0, restored[0])
         self.assertAlmostEqual(1000, restored[1], delta=100)
         self.assertAlmostEqual(-8000, restored[4], delta=300)
+
+    def test_silence_clock_tells_the_model_then_gives_up(self) -> None:
+        call = _FakeCall("ws://localhost/")
+        call.config["retries"] = 1
+        notes: list[str] = []
+        call.session.note = notes.append
+        rt = RealtimeCall(call)
+        self.assertIsNone(rt._silence_note())                       # the clock has just started
+        rt._last_activity -= SILENCE_NUDGE_SECONDS + 1
+        rt._out_q.put(b"x")
+        self.assertIsNone(rt._silence_note())                       # the model is still speaking
+        rt._out_q.get()
+        rt._last_frame = time.monotonic()                           # frames arrive, nobody talks
+        note = rt._silence_note()
+        self.assertIn("Phone line note, not the caller: the caller said nothing", note)
+        self.assertIsNone(rt._silence_note())                       # the clock restarted
+        rt._heard(struct.pack("<160h", *([3000, -3000] * 80)))       # speech restarts it too
+        self.assertLess(time.monotonic() - rt._last_activity, 1)
+        rt._last_activity -= SILENCE_NUDGE_SECONDS + 1
+        rt._last_frame = 0.0                                        # and now no frames at all
+        self.assertIsNone(rt._silence_note())                       # second time: the limit
+        self.assertTrue(rt._gave_up and rt._stop.is_set())
+        self.assertEqual(notes, ["caller turn: silence (1 of 2)", "caller turn: no_audio (2 of 2)"])
+
+    def test_given_up_on_silence_goes_to_the_not_understood_destination(self) -> None:
+        session = CallSession(1, "test", "100", "200", "test-call")
+        session.config = {"conversation": True, "intents": [],
+                          "realtime_cloud": {"api_key": "test", "ws_url": "ws://localhost/"}}
+        registry = SimpleNamespace(results=Mock())
+        call = VoiceRequestsCall(registry, Mock(), session, SimpleNamespace(audio=queue.Queue(), gone=threading.Event()))
+        realtime = RealtimeCall(call)
+        call._pump_thread.start()
+        with patch("aipbx_ai.realtime.RealtimeSocket"), \
+                patch.object(realtime, "_run_openai_protocol", side_effect=lambda _ws: setattr(realtime, "_gave_up", True)):
+            self.assertTrue(realtime.run())
+        self.assertEqual("silence", registry.results.save.call_args.args[0]["result"])
 
     def test_silence_pump_handover_preserves_call_and_saves_dialplan_result(self) -> None:
         for tool, arguments, status, route in (

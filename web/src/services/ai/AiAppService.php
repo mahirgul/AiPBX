@@ -744,6 +744,11 @@ class AiAppService
             $extra['announcement_tone'] = (string) ($c['announcement_tone'] ?? '');
             $extra['greetings'] = $c['greetings'] ?? [];
             $extra['waiting_phrases'] = $c['waiting_phrases'] ?? [];
+            require_once __DIR__ . '/BuiltinAiAgentService.php';
+            $extra += BuiltinAiAgentService::listening($c);
+            if (trim((string) ($c['retry'] ?? '')) === '') {    // saved before the agent had a retry prompt
+                $extra['retry'] = langStrings($lang)['ai_apps.default_agent_retry'] ?? langStrings('en')['ai_apps.default_agent_retry'] ?? '';
+            }
         }
         if (!$resolveCredentials) {
             foreach (['tts', 'stt', 'llm'] as $task) {

@@ -132,6 +132,7 @@ class Caller:
         self.rng = random.Random(7)
         self.stop = threading.Event()
         self.mute_after_speech = False
+        self.floor_amplitude = 60       # 300: a voice too faint for speech
         self.spoke = False
         threading.Thread(target=self._read, daemon=True).start()
         threading.Thread(target=self._send, daemon=True).start()
@@ -171,7 +172,7 @@ class Caller:
         return b"".join(struct.pack("<h", self.rng.randint(-amplitude, amplitude)) for _ in range(160))
 
     def _send(self):
-        quiet = [self._frame(60) for _ in range(8)]
+        quiet = [self._frame(self.floor_amplitude) for _ in range(8)]
         loud = [self._frame(9000) for _ in range(8)]
         n = 0
         while not self.stop.is_set():
@@ -688,6 +689,13 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertFalse(validate_config(hotel_config(), self.manager)["barge_in"])
         self.assertFalse(validate_config(hotel_config(barge_in="yes"), self.manager)["barge_in"])
         self.assertTrue(validate_config(hotel_config(barge_in=True), self.manager)["barge_in"])
+        config = validate_config(hotel_config(), self.manager)
+        self.assertEqual((config["silence_seconds"], config["line_profile"]), (4, "normal"))
+        config = validate_config(hotel_config(silence_seconds=8, line_profile="faint"), self.manager)
+        self.assertEqual((config["silence_seconds"], config["line_profile"]), (8, "faint"))
+        self.assertEqual(validate_config(hotel_config(line_profile="loud"), self.manager)["line_profile"], "normal")
+        with self.assertRaises(ConfigError):
+            validate_config(hotel_config(silence_seconds=30), self.manager)
 
     def test_without_barge_in_the_greeting_plays_out(self):
         self.long_prompts()
@@ -791,6 +799,35 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertIn("Before you (another assistant's summary): Kemal Bey faturasını soruyor.", prompts[0])
         self.assertEqual(self.result(u), "_end")
 
+    def test_conversation_silence_asks_the_model_with_the_reason(self):
+        u, c, prompts = self.conversation_call([
+            {"action": "reply", "say": "Sizi duyamadım, kahvaltı saatini mi soruyorsunuz?"}], retries=1)
+        self.wait_done(c)
+        cfg = hotel_config()
+        self.assertEqual(c.prompts(), [self.value(cfg["greeting"]),
+                                       self.value("Sizi duyamadım, kahvaltı saatini mi soruyorsunuz?"),
+                                       self.value(cfg["not_understood"])])
+        self.assertEqual(len(prompts), 1)                  # the second silence is the limit: no model call
+        self.assertIn("Phone line note: the caller said nothing (time 1;", prompts[0])
+        self.assertEqual((self.result(u), self.details(u)[1]["result"]), ("none", "silence"))
+        self.assertTrue(self.poll(lambda: self.registry.log.recent(1)))
+        notes = [n[1] for n in self.registry.log.recent(1)[0]["notes"]]
+        self.assertIn("caller turn: silence (2 of 2)", notes)
+
+    def test_conversation_model_may_end_on_a_silent_turn(self):
+        u, c, prompts = self.conversation_call([{"action": "end", "say": "Hoşça kalın."}], retries=1)
+        self.wait_done(c)
+        self.assertIn("Phone line note: the caller said nothing", prompts[0])
+        self.assertEqual(self.result(u), "_end")           # the model's decision on a silent turn holds
+
+    def test_conversation_silence_falls_back_to_the_fixed_retry(self):
+        u, c, _ = self.conversation_call([cloud_llm_error()], retries=1)
+        self.wait_done(c)
+        cfg = hotel_config()
+        self.assertEqual(c.prompts(), [self.value(cfg["greeting"]), self.value(cfg["retry"]),
+                                       self.value(cfg["not_understood"])])
+        self.assertEqual(self.details(u)[1]["result"], "silence")
+
     def test_conversation_needs_a_cloud_model(self):
         self.assertEqual(self.put_app(conversation=True)[0], 400)
 
@@ -889,6 +926,28 @@ class ListenerTest(unittest.TestCase):
         self.assertEqual(reason, "silence")
         self.assertEqual(lst.utterance(), b"")
         self.assertEqual(len(lst.frames), 200)
+
+    def test_faint_voice_below_speech_level(self):
+        lst = Listener(7)
+        self.assertEqual(lst.feed(self.frames(50, 25) + self.frames(400, 40) + self.frames(50, 200)), "silence")
+        self.assertTrue(lst.faint())                       # too quiet for speech, clearly not line noise
+        lst = Listener(7)
+        self.assertEqual(lst.feed(self.frames(50, 25) + self.frames(400, 5) + self.frames(50, 200)), "silence")
+        self.assertFalse(lst.faint())                      # a short click is not a voice
+        lst = Listener(7)
+        lst.feed(self.frames(50, 15) + self.frames(8000, 50) + self.frames(50, 60))
+        self.assertFalse(lst.faint())                      # speech was heard
+
+    def test_silence_seconds_and_line_profiles(self):
+        lst = Listener(10, silence_seconds=6)
+        self.assertIsNone(lst.feed(self.frames(50, 250)))                # 5 s: still listening
+        self.assertEqual(lst.feed(self.frames(50, 50)), "silence")       # 6 s
+        voice = self.frames(50, 25) + self.frames(500, 40) + self.frames(50, 60)   # RMS about 290
+        self.assertEqual(Listener(7).feed(voice), "speech")
+        self.assertEqual(Listener(7, profile="noisy").feed(voice + self.frames(50, 200)), "silence")
+        quiet = self.frames(50, 25) + self.frames(300, 40) + self.frames(50, 60)   # RMS about 170
+        self.assertEqual(Listener(7, profile="faint").feed(quiet), "speech")
+        self.assertEqual(Listener(7).feed(quiet + self.frames(50, 200)), "silence")
 
     def test_listen_seconds_cut_speech(self):
         lst = Listener(2)

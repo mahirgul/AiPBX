@@ -13,6 +13,8 @@ final class BuiltinAiAgentService
 {
     public const TOOL_FILE = AiKnowledgeService::AGENT_TOOLS_FILE;
     public const TARGET_TYPES = ['extension', 'queue', 'ring_group'];
+    public const RETRIES_DEFAULT = 2;
+    public const LINE_PROFILES = ['normal', 'noisy', 'faint'];
     public const REALTIME_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
     public const REALTIME_PROVIDER_TYPES = ['openai', 'google_ai', 'qwen', 'openai_compat'];
     public const INSTRUCTION_VARS = ['{caller_name}', '{caller_id}', '{customer_id}', '{did}', '{date}', '{time}', '{language}'];
@@ -138,7 +140,9 @@ final class BuiltinAiAgentService
             'dest_type' => $type, 'dest_id' => $target, 'is_active' => 1,
             'model_id' => (string) $data['model_id'], 'text_template' => $greeting,
             'agent_config' => [
-                'conversation' => true, 'barge_in' => !empty($data['barge_in']), 'listen_seconds' => 10, 'retries' => 0,
+                'conversation' => true, 'barge_in' => !empty($data['barge_in']),
+                'retry' => langStrings($lang)['ai_apps.default_agent_retry'] ?? langStrings('en')['ai_apps.default_agent_retry'],
+            ] + self::listening($data) + [
                 'automatic_announcements' => !empty($data['automatic_announcements']),
                 'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => $lang, 'stt_model' => (string) $data['stt_model'],
                 'understand' => (string) $data['understand'], 'knowledge_collection' => $collectionId,
@@ -148,6 +152,23 @@ final class BuiltinAiAgentService
                 'db_queries' => array_keys($seenQueries),
                 'db_lookups' => $dbLookups,
             ],
+        ];
+    }
+
+    /**
+     * Advanced listening settings, each clamped to what the gateway accepts. An agent saved before
+     * they existed has no `silence_seconds` and gets these defaults (it was saved with retries 0).
+     */
+    public static function listening(array $data): array
+    {
+        $int = static fn (string $key, int $lo, int $hi, int $default): int =>
+            isset($data[$key]) && is_numeric($data[$key]) ? max($lo, min($hi, (int) $data[$key])) : $default;
+        $legacy = !isset($data['silence_seconds']);
+        return [
+            'retries' => $legacy ? self::RETRIES_DEFAULT : $int('retries', 0, 2, self::RETRIES_DEFAULT),
+            'silence_seconds' => $int('silence_seconds', 3, 10, 4),
+            'listen_seconds' => $int('listen_seconds', 5, 15, 10),
+            'line_profile' => in_array($data['line_profile'] ?? '', self::LINE_PROFILES, true) ? (string) $data['line_profile'] : 'normal',
         ];
     }
 
