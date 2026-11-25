@@ -1,0 +1,42 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+%% @classes
+  start["`**Call to an outside number**
+  from an extension, the app or the web phone`"]:::client
+  transit{"Came in from another trunk?"}:::core
+  keep["`**Caller kept**
+  a transferred or forwarded
+  outside call shows the caller`"]:::svc
+  internal{"Route marked internal?"}:::core
+  iovr["`**Internal route**
+  route override, else the user's
+  Internal Call CID, else the phone's own`"]:::svc
+  ovr{"Route: caller ID override for this trunk?"}:::core
+  user{"User: External Call CID?"}:::core
+  tcid{"Trunk: Default Outbound Caller ID, or From User?"}:::core
+  own["`the number the phone sent`"]:::svc
+  fmt["`**Trunk format**
+  keep the last N digits, then Prepend
+  (again for every trunk tried)`"]:::edge
+  name{"Trunk: send display name?"}:::core
+  clear["`name cleared`"]:::svc
+  inv["`**INVITE to the carrier**
+  From / P-Asserted-Identity`"]:::edge
+
+  start --> transit
+  transit -->|yes| keep --> fmt
+  transit -->|no| internal
+  internal -->|yes| iovr --> fmt
+  internal -->|no| ovr
+  ovr -->|set| fmt
+  ovr -->|empty| user
+  user -->|set| fmt
+  user -->|empty| tcid
+  tcid -->|set| fmt
+  tcid -->|empty| own --> fmt
+  fmt --> name
+  name -->|no| clear --> inv
+  name -->|yes| inv

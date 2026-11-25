@@ -1,0 +1,41 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+%% @classes
+  you["`**Administrator types a sentence**
+  'forward 101 to 203'`"]:::client
+  rules{"Rules sure?"}:::core
+  local["`**Local model**
+  (aipbx-ai), if running`"]:::svc
+  cloud["`**Cloud model**
+  from Cloud AI services`"]:::svc
+  refuse["`**Refused**, with the reason
+  (no model, or an action
+  outside the fixed list)`"]:::db
+  plan["`**Plan**
+  one action from a fixed list;
+  every value checked against
+  this server's data`"]:::core
+  preview["`**Preview**
+  nothing changes yet`"]:::client
+  apply["`**Apply** (you confirm)
+  the plan is checked again
+  on the server`"]:::client
+  svc["`**The portal's own services**
+  same validation as the forms`"]:::svc
+  sync["`**Pending sync** → Asterisk`"]:::edge
+  audit["`**Audit trail**
+  who, what, rules or model;
+  undo for forwards and voicemail`"]:::db
+
+  you --> rules
+  rules -->|yes| plan
+  rules -->|no| local
+  local -->|unsure or none| cloud
+  local -->|names an action| plan
+  cloud -->|names an action| plan
+  cloud -->|none or invalid| refuse
+  plan --> preview --> apply --> svc --> sync
+  svc --> audit

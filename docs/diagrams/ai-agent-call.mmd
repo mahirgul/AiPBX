@@ -1,0 +1,44 @@
+flowchart TB
+%% @classes
+  start["`**Call reaches the agent**
+  ARI bridge + AudioSocket
+  (or AudioSocket alone)`"]:::edge
+  greet["`**Greeting**`"]:::svc
+  listen["`**Listen**
+  energy level or Silero VAD; line profile;
+  turn ends after 0.8 s of silence,
+  or when Smart Turn says so (0.4 … 1.6 s)`"]:::svc
+  silent{"Words heard?"}:::core
+  note["`**Phone line note** to the model
+  silent / too quiet / unclear / no audio`"]:::svc
+  limit{"Retries used up?"}:::core
+  stt["`**Speech to text**`"]:::svc
+  bye{"Only a goodbye?"}:::core
+  model["`**Language model**
+  instructions, knowledge base,
+  lookups, PBX tools`"]:::core
+  reply["`**Reply** spoken`"]:::svc
+  agentbye{"Ends with goodbye?"}:::core
+  transfer["`**Transfer**
+  with a summary`"]:::edge
+  dest["`**Fallback destination**
+  not understood / silence`"]:::edge
+  hang["`**Goodbye**, call ends`"]:::edge
+  log["`**AI call log**
+  timings, notes, report`"]:::db
+
+  start --> greet --> listen --> silent
+  silent -->|no| limit
+  limit -->|yes| dest
+  limit -->|no| note --> model
+  silent -->|yes| stt --> bye
+  bye -->|yes| hang
+  bye -->|no| model
+  model -->|reply| reply --> agentbye
+  agentbye -->|no| listen
+  agentbye -->|yes| hang
+  model -->|transfer| transfer
+  model -->|end| hang
+  hang -.-> log
+  transfer -.-> log
+  dest -.-> log

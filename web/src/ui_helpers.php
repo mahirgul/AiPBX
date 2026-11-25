@@ -77,7 +77,8 @@ function uiHelpBoxOpen(string $id, string $title): string {
 }
 
 function uiHelpBoxClose(): string {
-    return '</div>';
+    require_once __DIR__ . '/doc_links.php';
+    return uiDocLink() . '</div>';                 // the page's documentation, when it has one (doc_links.php)
 }
 
 /**

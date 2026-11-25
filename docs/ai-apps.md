@@ -51,6 +51,69 @@ call `call_transfer`, or say goodbye and `end_call`. The PBX runs the configured
 fallback when the selected services are unavailable or when no target fits.
 The built-in agent is available independently of the AI Applications plugin.
 
+### How a call goes
+
+![What the built-in AI agent does on a call: listening, silence, goodbye, the model and where the call ends](img/ai-agent-call.svg)
+
+### Setup wizard
+
+**AI → AI setup wizard** (`/ai-wizard`) lists what an agent needs, in order: plugins, speech recognition and
+language model, voice, knowledge base, the agent, a phone number and a test call. Every step is ticked from the
+system as it is now, so a setting made on its own page ticks it too. The open step is the next one to do; its
+button opens the page that does it, and that page shows a bar with the progress and **Back to the wizard**. The
+test-call step ticks itself after a call in which the caller spoke to the agent (or a handed-over or finished
+Realtime call).
+
+### Advanced settings
+
+The folded **Advanced settings** of the agent form:
+
+| Setting | What it does | Default |
+|---|---|---|
+| **Phone line** | *Normal*; *Noisy line* ignores background noise; *Quiet callers* hears soft voices | Normal |
+| **When nothing is understood** | Go to the fallback destination at once, or ask again once or twice | Twice |
+| **Silence before asking again** | 3–10 seconds; Realtime models wait twice as long | 4 s |
+| **Longest answer** | 5–15 seconds of caller speech per turn | 10 s |
+| **Interrupting the agent** | how easily the caller stops a prompt (barge-in needs 240 ms of voice in any case) | Normal |
+| **Local model memory** | the context size of a local (Ollama) model; long instructions need more | model default |
+| **Speech detection**, **When the caller has finished** | optional detectors, see below | Standard |
+| **End the call when the caller says goodbye** | see below | on |
+| **Send each call to (e-mail)** | the conversation of every call, with the summary and the caller's last recording | empty |
+| **PBX tools**, **Saved database queries** | what the model may use; a new agent gets all of them except `dial_and_navigate`, which dials any number | — |
+
+Agents saved before these settings existed ask again twice and end the call on a goodbye.
+
+### Silence, a quiet voice, noise
+
+When a turn brings no words, the agent tells the model why, as a *phone line note*: the caller said nothing, the
+voice was too faint, it spoke but could not be understood, or no sound at all came from the line. The model
+answers in its own words: it repeats its last question in fewer words, asks the caller to speak up or to move
+somewhere quieter, or whether they can hear it, and from the second time on offers pressing a key. The fixed
+*say it again* sentence plays when the model fails. After the last try the call goes to the fallback destination.
+Each silent turn is noted in the AI call log (`caller turn: quiet (1 of 3)`).
+
+### Goodbye
+
+With **End the call when the caller says goodbye**, a short goodbye or thank you ends the call even when a small
+model would carry on: *thanks, goodbye*, or *no, thank you* after *anything else?*. A thank you after another
+question, or a longer sentence (*thanks, and one more thing…*), still goes to the model. A reply of the agent that
+**ends** with a goodbye ends the call too. English, Turkish and German; other languages use the English words.
+
+### Optional detectors
+
+Two small models change how the agent listens; they are installed with one click on **Local AI → Hugging Face**
+and chosen per agent. *Silero VAD* tells a voice from line noise; *Smart Turn* decides from the sound whether the
+caller has finished. See [Optional call detectors](local-ai.md#optional-call-detectors-advanced) for what was
+measured and what was not.
+
+### AI call log, reports, statistics
+
+The AI Agent page lists the newest AI calls (7 days): how each ended, how long the audio took to prepare and to
+play, late audio (choppy speech), what was said and what went wrong. Each row downloads as a **report** for a
+support request: the settings that handled the call (names and numbers only, no keys), timings and notes. The
+agent list shows the last 30 days (calls, handed over, finished, not understood, hung up, average turns), and
+**CSV** downloads the last 90 days.
+
 ## Announcement with values
 
 A text read to the caller by a voice model of this server

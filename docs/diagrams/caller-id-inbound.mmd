@@ -1,0 +1,32 @@
+---
+config:
+  layout: elk
+---
+flowchart TB
+%% @classes
+  carrier["`**Call from the carrier**
+  caller number and name as sent`"]:::edge
+  norm["`**Inbound Call Normalization**
+  caller rules: one form for every carrier`"]:::svc
+  bl{"On the blacklist?"}:::core
+  drop["`rejected`"]:::db
+  pb["`**Phonebook**
+  name of the contact (1 s at most)
+  VIP contact: queue priority`"]:::svc
+  cnam["`**CNAM plugin** (if installed)
+  skipped when a name is there,
+  unless Overwrite is on`"]:::svc
+  route["`**Inbound route**
+  by the DID (after the trunk trim
+  and the DID rules)`"]:::core
+  mod["`**Call modifiers, Dynamic Routing**
+  name prefix such as VIP,
+  language, queue priority`"]:::svc
+  ai["`**AI agent before a queue**
+  hands over: name | summary`"]:::svc
+  show["`**Phones, apps, queue screen**
+  show number and name`"]:::client
+
+  carrier --> norm --> bl
+  bl -->|listed| drop
+  bl -->|not listed| pb --> cnam --> route --> mod --> ai --> show

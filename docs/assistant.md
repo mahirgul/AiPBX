@@ -18,6 +18,8 @@ PBX change — with three hard rules that are not excuses, they are the design:
    list of actions is refused outright. A wrong model produces a refusal,
    never a broken phone system.
 
+![From a sentence to a change: rules, models, the plan, your confirmation and the audit trail](img/assistant.svg)
+
 ## What it understands
 
 Without any AI configured (English and Turkish, rule-based, offline):

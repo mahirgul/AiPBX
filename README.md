@@ -49,13 +49,14 @@
 
 ---
 
-## What's new in v1.81.0
+## What's new in v1.82.0
 
-- [Queue callbacks](docs/queue-callbacks.md) can start automatically by calling an available agent first. [VIP contacts](docs/phonebook.md#contacts) get priority when they reach a queue.
-- [AI voice agents](docs/ai-settings.md#realtime-voice-and-the-asterisk-media-bridge) support OpenAI Realtime and Gemini Live. Asterisk can connect calls to the AI service through ARI.
-- [Appearance](docs/portal.md#finding-your-way) lets administrators choose a single sidebar or the default Operations and Settings sections. [Cisco CP-7841 provisioning](docs/cisco-callmanager.md) is available.
+- **[AI setup wizard](docs/ai-apps.md#setup-wizard)**: the steps an AI agent needs as a checklist ticked from the system's real state, with a way back from every page it opens.
+- **[Smarter AI calls](docs/ai-apps.md#how-a-call-goes)**: the agent knows why a turn brought no words and asks again in its own words, a short goodbye ends the call, barge-in ignores a cough, and [advanced settings](docs/ai-apps.md#advanced-settings) tune the line, silences and interruptions per agent.
+- **[Optional call detectors](docs/local-ai.md#optional-call-detectors-advanced)**: Silero VAD and Smart Turn, one click on Local AI, chosen per agent.
+- **AI call log, reports, statistics and e-mail**, voice settings and GPU support for local models, and diagrams of [caller ID](docs/caller-id.md), the [AI agent](docs/ai-apps.md#how-a-call-goes) and the [PBX Assistant](docs/assistant.md); every help box links to its documentation.
 
-[Full v1.81.0 release notes](https://github.com/mahirgul/AiPBX/releases/tag/v1.81.0)
+[Full release notes](CHANGELOG.md)
 
 ## 💡 Why AiPBX?
 
@@ -188,7 +189,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
   with different number formats, copy and ordering, duplicate patterns rejected
 - **Inbound and outbound call normalization** — per-device rules (desk phone, mobile app, browser) turn what users dial
   (`+90…`, `000…`) into one format before the outbound routes, per-trunk rules do the same for incoming numbers;
-  ready-made rules per country loaded on request, simulators, and a [guide to the order of all number settings](docs/number-normalization.md)
+  ready-made rules per country loaded on request, simulators, and a [guide to the order of all number settings](docs/number-normalization.md) and to [caller ID](docs/caller-id.md), with diagrams
 - **DID routing, time conditions, multi-level IVR** — optional menu repeat when no key is pressed, and
   **IVR data steps**: look up the entered digits or the caller's number in an external database or over
   HTTP and route on *found* / *not found* / *timeout* ([docs](docs/external-databases.md))
@@ -293,6 +294,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 ### 🤖 AI Voice Agent, Local/Cloud AI & Dialplan Assistant
 - **Built-in AI Voice Agent (`/ai-agent`)** — **Cascade (STT → LLM → TTS)** and **Realtime** voice, with ARI or AudioSocket media, structured prompts, Knowledge Base RAG, saved external DB queries, DTMF and outbound IVR navigation. [AI settings](docs/ai-settings.md)
 - **Local AI (`/ai-local`) & Cloud AI (`/ai-cloud`)** — run Ollama LLMs, Faster-Whisper STT, Piper TTS, and ONNX embeddings locally via `aipbx-ai`, or connect OpenAI, Google Gemini, Groq, Deepgram, ElevenLabs, Azure, Amazon Polly, and OpenAI-compatible endpoints with encrypted secrets and quota tracking
+- **AI setup wizard (`/ai-wizard`), call log & reports** — a checklist from plugins to the first test call; the AI call log with timings, choppy-audio detection and a downloadable report per call, 30-day statistics and CSV, and an e-mail of every conversation. The agent handles silence, a quiet voice and noise in its own words, ends the call on a goodbye, and can use the optional Silero VAD and Smart Turn detectors ([how a call goes](docs/ai-apps.md#how-a-call-goes))
 - **AI TTS Studio (`/ai-tts`)**, **Voicemail AI (`/ai-voicemail`)** & **Call Analysis (`/ai-call-analysis`)** — generate and save audio announcements, transcribe/summarize voicemails, and run automated call quality scoring
 - **Dialplan Editor (`/assistant`) & Echo Reporter** — plain-language PBX change planner with dry-run preview before apply, safety validation, audit trail and one-click undo (`pbx_ai_changes`), plus the Echo diagnostic box backed by an opt-in local HEPv3 SIP signaling capture daemon (`aipbx-signaling` → `pbx_signaling_events`)
 

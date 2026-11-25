@@ -34,6 +34,8 @@ Steps 3 and 4 start again from the result of step 2 for every trunk tried, so on
 
 ## Outgoing call: the caller ID
 
+[Caller ID](caller-id.md) has the same order as a diagram, and the incoming side (address book, CNAM, prefixes).
+
 1. **One number is chosen**, the first that is set:
    1. the route's Caller ID override for that trunk,
    2. the user's External Call CID,

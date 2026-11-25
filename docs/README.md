@@ -41,6 +41,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 📠 [Fax users and numbers](fax-users.md) | Fax Units, the number a fax goes out with, several and shared numbers, Fax Settings, who can delete |
 | 📠 [Fax cover page](fax-cover-page.md) | One cover template for the organisation, logo, preview as a fax |
 | 🔢 [How numbers change on a call](number-normalization.md) | The order of every number setting on routes, trunks and normalization pages, with a diagram |
+| 🪪 [Caller ID](caller-id.md) | Which number and name a call shows, outgoing and incoming, with diagrams |
 | 💻 [Custom Dialplan](custom-dialplan.md) | Custom Asterisk context injection, syntax validator, internal aggregator, recipe templates (Intercom, Spy, Paging, DISA) |
 | ☎️ [Desk phones](phones.md) | Provisioning Yealink, Grandstream, Fanvil, Snom, Cisco SPA and Poly phones over HTTPS, CSV import, waiting phones, phones found on the network, key layouts (BLF, speed dial, park), re-provision, regions, SIP over TLS on port 443 |
 | 📒 [Phonebook](phonebook.md) | Shared company contacts, VIP queue priority, LDAP phonebook, Active Directory and OpenLDAP contacts |
