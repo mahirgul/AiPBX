@@ -11,6 +11,13 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.82.1
+
+### Fixes
+
+- **Mobile portal:** align the top-bar controls and use consistent button sizes while keeping the quick dial field usable on narrow screens.
+- **Sidebar:** restore the previous Font Awesome icons for menu groups and pages.
+
 ## 1.82.0
 
 ### New
