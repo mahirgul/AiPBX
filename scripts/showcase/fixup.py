@@ -8,6 +8,7 @@ REG_LABELS = {
     'tr': ('Kayıtlı', 'Yanıt veriyor'),
     'de': ('Registriert', 'Antwortet'),
 }
+IDLE_LABELS = {'en': 'Registered (Idle)', 'tr': 'Kayıtlı (Boşta)', 'de': 'Registriert (frei)'}
 TRUNK_RTT = {
     'carrier_main': '6.4 ms',
     'carrier_backup': '4.1 ms',
@@ -83,17 +84,15 @@ def main():
     for lang in langs:
         p = os.path.join(out, lang, 'extensions', 'index.html')
         s = open(p, encoding='utf-8').read()
-        online = re.search(r'<span class="badge badge-success">[^<]+</span>', s).group(0)
-        warnings = re.findall(r'<span class="badge badge-warning">[^<]+</span>', s)
-        limit = max(0, len(warnings) - 1) if len(warnings) > 1 else 0
-        n = 0
+        online = f'<span class="badge badge-success">{IDLE_LABELS[lang]}</span>'
 
-        def swap(m):
-            nonlocal n
-            n += 1
-            return online if n <= limit else m.group(0)
+        def mark_online(match):
+            row = match.group()
+            if not re.search(r'fa-phone-alt"></i>\s*100[0-7]\s*</span>', row):
+                return row
+            return re.sub(r'<span class="badge badge-(?:warning|secondary)">[^<]+</span>', online, row, count=1)
 
-        s = re.sub(r'<span class="badge badge-warning">[^<]+</span>', swap, s)
+        s = re.sub(r'<tr\b[^>]*>.*?</tr>', mark_online, s, flags=re.S)
         open(p, 'w', encoding='utf-8').write(s)
         d = os.path.join(out, lang, 'dashboard', 'index.html')
         s = open(d, encoding='utf-8').read()

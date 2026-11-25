@@ -8,6 +8,8 @@
     'use strict';
     const API = window.DEMO_API || {};
     const realFetch = window.fetch.bind(window);
+    const demoRoot = location.pathname.match(/^\/demo\/(en|tr|de)(?:\/|$)/)?.[1];
+    const languages = new Set(['en', 'tr', 'de']);
 
     // --- a small call centre that keeps moving ---
     const agents = [
@@ -54,6 +56,15 @@
     const active = () => calls.filter((c) => c.agent).map((c) => ({ caller: c.caller, caller_num: c.caller, channel: 'PJSIP/' + c.agent + '-' + c.id, exten: c.agent, queue: c.queue, queue_name: c.queue, queue_title: queues[c.queue], duration: now() - c.answered }));
 
     const live = {
+        '/chat/api/conversations': () => ({ success: true, conversations: [
+            { id: 1, type: 'group', title: 'Dispatch', last_message_text: 'The afternoon schedule is ready.',
+                last_message_at: new Date().toISOString(), unread_count: 1, member_count: 5, my_role: 'member' },
+            { id: 2, type: 'group', title: 'Customer support', last_message_text: 'Thanks for the update.',
+                last_message_at: new Date().toISOString(), unread_count: 0, member_count: 3, my_role: 'member' },
+        ] }),
+        '/chat/api/contacts': () => ({ success: true, contacts: agents.map(agent => ({
+            extension: agent.extension, full_name: agent.full_name, role: 'cc_agent', is_online: true, unread_count: 0,
+        })) }),
         '/api/dashboard_live.php': () => {
             const n = calls.length;
             return { success: true, active_calls: n, active_channels: n * 2 + 1, calls_processed: stats.processed, queue_waiting: waiting().length,
@@ -95,33 +106,41 @@
         if (near) return API[near];
         return { success: true, data: [], items: [], rows: [] };
     }
-    const own = (url, method) => {
+    const localRead = (url, method) => {
         const u = new URL(url, location.href);
-        if (u.origin !== location.origin) return false;
-        if (u.searchParams.has('poll')) return true;
-        // The demo's own files (pages fetched by the page router, scripts, styles) are real.
-        return !(method === 'GET' && u.pathname.startsWith('/demo/') && !u.pathname.includes('/api/'));
+        return demoRoot && u.origin === location.origin && (method === 'GET' || method === 'HEAD')
+            && u.pathname.startsWith('/demo/' + demoRoot + '/') && !u.pathname.includes('/api/')
+            && !u.searchParams.has('poll');
     };
     const body = (a) => (typeof a === 'string' ? a : JSON.stringify(a));
+    function canned(method, url) {
+        const read = method === 'GET' || method === 'HEAD';
+        const local = new URL(url, location.href).origin === location.origin;
+        return read && local
+            ? { status: 200, text: body(answer(method, url)) }
+            : { status: 403, text: body({ success: false, error: 'Read-only demo' }) };
+    }
 
     window.fetch = function (input, init) {
-        const url = typeof input === 'string' ? input : input.url;
+        const url = input instanceof Request ? input.url : String(input);
         const method = ((init && init.method) || (input && input.method) || 'GET').toUpperCase();
-        if (!own(url, method)) return realFetch(input, init);
-        return Promise.resolve(new Response(body(answer(method, url)), { status: 200, headers: { 'Content-Type': 'application/json' } }));
+        if (localRead(url, method)) return realFetch(input, { ...init, cache: 'no-cache' });
+        const { status, text } = canned(method, url);
+        return Promise.resolve(new Response(method === 'HEAD' ? null : text, { status, headers: { 'Content-Type': 'application/json' } }));
     };
 
     const xOpen = XMLHttpRequest.prototype.open;
     const xSend = XMLHttpRequest.prototype.send;
     XMLHttpRequest.prototype.open = function (method, url) {
-        this._demo = own(url, String(method).toUpperCase()) ? { method: String(method).toUpperCase(), url } : null;
+        method = String(method).toUpperCase();
+        this._demo = localRead(url, method) ? null : { method, url };
         return xOpen.apply(this, arguments);
     };
     XMLHttpRequest.prototype.send = function () {
         if (!this._demo) return xSend.apply(this, arguments);
-        const text = body(answer(this._demo.method, this._demo.url));
+        const { status, text } = canned(this._demo.method, this._demo.url);
         const def = (k, v) => Object.defineProperty(this, k, { value: v, configurable: true });
-        def('readyState', 4); def('status', 200); def('responseText', text); def('response', text);
+        def('readyState', 4); def('status', status); def('responseText', text); def('response', text);
         setTimeout(() => { this.onreadystatechange && this.onreadystatechange(); this.onload && this.onload(); this.dispatchEvent(new Event('load')); this.dispatchEvent(new Event('loadend')); }, 30);
     };
 
@@ -132,10 +151,30 @@
     }
     window.WebSocket = Quiet;
     window.EventSource = Quiet;
+    navigator.sendBeacon = () => false;
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.user-lang-form option').forEach(option => {
+            if (!languages.has(option.value)) option.remove();
+        });
+    });
+    function changeLanguage(form) {
+        const lang = form.matches('.user-lang-form') && form.elements.lang?.value;
+        if (languages.has(lang) && lang !== demoRoot) {
+            const path = location.pathname.replace(/^\/demo\/(?:en|tr|de)/, '');
+            location.assign('/demo/' + lang + path + location.search);
+        }
+    }
+    HTMLFormElement.prototype.submit = function () { changeLanguage(this); };
 
     // Forms that would save do nothing; a search form (GET) still works on the page it is on.
     document.addEventListener('submit', function (e) {
         const f = e.target;
+        if (f.matches('.user-lang-form')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            changeLanguage(f);
+            return;
+        }
         if ((f.method || 'get').toLowerCase() !== 'get') { e.preventDefault(); e.stopImmediatePropagation(); }
     }, true);
     // Sign-out and downloads stay where they are.

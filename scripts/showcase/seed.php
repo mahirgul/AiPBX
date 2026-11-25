@@ -70,6 +70,8 @@ $ins('pbx_announcements', [
     ['title' => 'Holiday closure', 'audio_file' => 'custom/holiday', 'post_dest_type' => 'hangup', 'post_dest_id' => '', 'is_active' => 1],
     ['title' => 'All agents busy', 'audio_file' => 'custom/busy', 'post_dest_type' => 'voicemail', 'post_dest_id' => '1001', 'is_active' => 1],
     ['title' => 'After hours', 'audio_file' => 'custom/closed', 'post_dest_type' => 'voicemail', 'post_dest_id' => '1004', 'is_active' => 1],
+    ['title' => 'Callback invitation', 'audio_file' => 'custom/callback-invitation', 'post_dest_type' => 'hangup', 'post_dest_id' => '', 'is_active' => 1],
+    ['title' => 'Callback confirmation', 'audio_file' => 'custom/callback-confirmation', 'post_dest_type' => 'hangup', 'post_dest_id' => '', 'is_active' => 1],
 ]);
 $ins('pbx_ivrs', [
     ['title' => 'Main menu', 'prompt_file' => 'custom/main-menu', 'language' => 'en', 'timeout_seconds' => 8, 'max_failures' => 3, 'allow_direct_dial' => 1, 'timeout_dest_type' => 'queue', 'timeout_dest_id' => '1', 'invalid_dest_type' => 'queue', 'invalid_dest_id' => '1', 'is_active' => 1, 'internal_number' => '7001'],
@@ -91,6 +93,9 @@ $ins('pbx_queues', [
     ['queue_name' => 'billing', 'title' => 'Billing', 'strategy' => 'ringall', 'timeout' => 20, 'max_wait_seconds' => 240, 'members_json' => $members(['1001', '1005']), 'is_active' => 1, 'internal_number' => '6003'],
     ['queue_name' => 'vip', 'title' => 'Key accounts', 'strategy' => 'fewestcalls', 'timeout' => 30, 'max_wait_seconds' => 120, 'members_json' => $members(['1003']), 'supervisor_extension' => '1004', 'is_active' => 1, 'internal_number' => '6004'],
 ]);
+$db->exec("UPDATE pbx_queues SET callback_enabled=1, callback_auto_enabled=1,
+    periodic_announce='custom/callback-invitation', periodic_frequency=30,
+    callback_announce='custom/callback-confirmation' WHERE queue_name='sales'");
 $ins('pbx_ring_groups', [
     ['group_number' => '600', 'internal_number' => '600', 'name' => 'Reception', 'numbers_list' => '1001,1007', 'ring_strategy' => 'ringall', 'ring_timeout' => 25, 'fallback_dest_type' => 'voicemail', 'fallback_dest_id' => '1001', 'is_active' => 1],
     ['group_number' => '601', 'internal_number' => '601', 'name' => 'Warehouse', 'numbers_list' => '1005,1007', 'ring_strategy' => 'sequential', 'ring_timeout' => 30, 'fallback_dest_type' => 'hangup', 'fallback_dest_id' => '', 'is_active' => 1],
@@ -323,6 +328,7 @@ $ins('pbx_ai_apps', [
     ['title' => 'Order status bot', 'app_type' => 'announcement', 'internal_number' => '7501', 'model_id' => 'engine:en', 'text_template' => 'Your order {order} is {status}.', 'lookup_url' => 'https://erp.northwind.example/api/order', 'dest_type' => 'queue', 'dest_id' => '2', 'max_concurrent' => 4, 'is_active' => 1],
     ['title' => 'After-hours receptionist', 'app_type' => 'speech_routing', 'internal_number' => '7502', 'model_id' => 'engine:en', 'text_template' => 'Thank you for calling Northwind.', 'dest_type' => 'voicemail', 'dest_id' => '1001', 'max_concurrent' => 2, 'is_active' => 1],
     ['title' => 'Callback taker', 'app_type' => 'voice_requests', 'internal_number' => '7503', 'model_id' => 'engine:en', 'text_template' => 'Tell us your name and number.', 'dest_type' => 'hangup', 'dest_id' => '', 'max_concurrent' => 2, 'is_active' => 1],
+    ['title' => 'Dispatch assistant', 'app_type' => 'builtin_agent', 'internal_number' => '7504', 'model_id' => 'engine:en', 'text_template' => 'Help callers reach the dispatch desk.', 'dest_type' => 'queue', 'dest_id' => '2', 'max_concurrent' => 2, 'is_active' => 1],
 ]);
 $audit = [['extensions', 'extension', '1006', 'Extension: 1006 (Sofia Rossi)', 'create'], ['queues', 'queue', 'sales', 'Queue: Sales', 'update'], ['trunks', 'trunk', 'sbc_tls', 'Trunk: SBC over TLS', 'create'],
     ['did_routes', 'did', '+15550101', 'Inbound: Support line', 'update'], ['ivrs', 'ivr', '1', 'IVR: Main menu', 'update'], ['system', 'apply', '', 'Apply: 6 changes', 'update'], ['phones', 'phone', '00:15:65:a1:b2:01', 'Phone: Yealink T54W (1001)', 'create']];
@@ -343,6 +349,7 @@ $ins('phonebook_contacts', [
     ['source' => 'ldap-sync', 'external_id' => 'ldap-emp-902', 'display_name' => 'Elena Novak (Customs)', 'first_name' => 'Elena', 'last_name' => 'Novak', 'company' => 'Northwind Logistics', 'phone_work' => '+447700900456', 'phone_mobile' => '+447700900457', 'phone_other' => '', 'email' => 'elena.novak@northwind.example'],
 ]);
 PhonebookService::saveLdapSettings(true, false);
+$db->exec("UPDATE phonebook_contacts SET is_vip=1 WHERE phone_work='+15550142'");
 
 // --- signaling, call quality & SIP pcaps ---
 setSystemSetting('signaling_capture', '1');
@@ -724,7 +731,7 @@ $ins('pbx_advanced_pjsip', [
 ]);
 
 // --- plugins: a few official ones on, and the SMS plugin with conversations ---
-foreach (['web-widgets', 'auto-dialer', 'ai-apps', 'ai-tts', 'ai', 'ms-teams', 'google-auth'] as $slug) {
+foreach (['web-widgets', 'auto-dialer', 'ai-tts', 'pbx-assistant', 'ai-knowledge', 'ailocal', 'aicloud', 'ms-teams', 'google-auth', 'microsoft-auth'] as $slug) {
     PluginManager::enable($slug, 't');
 }
 $ins('plg_autodial_campaigns', [
