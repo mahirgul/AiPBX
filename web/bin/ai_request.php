@@ -58,10 +58,13 @@ try {
     $transcript = PrivacyService::redactTranscriptIfEnabled(AiAppService::callText($call, $builtin, MailTemplateService::systemLanguage()));
     $caller = mb_substr((string) ($call['caller'] ?? ''), 0, 40);
     $callerName = mb_substr((string) ($call['caller_name'] ?? ''), 0, 80);
-    getDB()->prepare('INSERT IGNORE INTO ai_requests (app_id, call_uuid, caller, caller_name, intent_id, intent_name, transcript, score)
-                      VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    $result = preg_replace('/[^a-z_]/', '', (string) ($call['result'] ?? '')) ?? '';
+    $turns = count(array_filter((array) ($call['conversation'] ?? []), static fn ($t) => is_array($t) && ($t['role'] ?? '') === 'caller'))
+        ?: count(array_filter(array_map('strval', (array) ($call['transcripts'] ?? []))));
+    getDB()->prepare('INSERT IGNORE INTO ai_requests (app_id, call_uuid, caller, caller_name, intent_id, intent_name, transcript, score, result, turns)
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
         ->execute([$appId, $uuid, $caller, $callerName, $intent ? $intentId : 'none',
-                   $intent['name'] ?? '', $transcript, (float) ($call['score'] ?? 0)]);
+                   $intent['name'] ?? '', $transcript, (float) ($call['score'] ?? 0), substr($result, 0, 20), min(255, $turns)]);
 
     $to = (string) ($intent['email'] ?? '');
     if ($to === '' && $builtin) {                                  // the agent's "send each call to" address

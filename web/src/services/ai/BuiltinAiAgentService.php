@@ -15,6 +15,7 @@ final class BuiltinAiAgentService
     public const TARGET_TYPES = ['extension', 'queue', 'ring_group'];
     public const RETRIES_DEFAULT = 2;
     public const LINE_PROFILES = ['normal', 'noisy', 'faint'];
+    public const LOCAL_CONTEXTS = [0, 2048, 4096, 8192, 16384];
     public const REALTIME_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
     public const REALTIME_PROVIDER_TYPES = ['openai', 'google_ai', 'qwen', 'openai_compat'];
     public const INSTRUCTION_VARS = ['{caller_name}', '{caller_id}', '{customer_id}', '{did}', '{date}', '{time}', '{language}'];
@@ -160,6 +161,85 @@ final class BuiltinAiAgentService
         ];
     }
 
+    public const STATS_DAYS = 30;
+    /** Plugins the wizard may turn on: the knowledge base (an agent needs one) and the two model sources. */
+    public const WIZARD_PLUGINS = ['ai-knowledge', 'ailocal', 'aicloud'];
+
+    /**
+     * The setup wizard's steps, each read from the system as it is now (so settings made by hand tick
+     * their step too): key => ['done' => bool, 'optional' => bool, 'info' => string, 'links' => [href => label key]].
+     */
+    public static function wizardSteps(): array
+    {
+        $on = static fn (string $slug): bool => PluginManager::isEnabled($slug);
+        $models = self::models();
+        $realtime = $on('aicloud') ? self::realtimeAccounts() : [];
+        $names = static fn (array $list): string => implode(', ', array_slice(array_values($list), 0, 3));
+        $collections = $on('ai-knowledge') ? array_filter(AiKnowledgeService::collections(), static fn ($c) => (int) $c['doc_count'] > 0) : [];
+        $agents = AiAppService::all(true);
+        $numbered = array_values(array_filter($agents, static fn ($a) => trim((string) ($a['internal_number'] ?? '')) !== ''));
+        $last = null;
+        if ($agents) {
+            $last = getDB()->query("SELECT r.created_at, r.result, r.turns, a.title FROM ai_requests r JOIN pbx_ai_apps a ON a.id = r.app_id
+                WHERE a.app_type = '" . AiAppService::BUILTIN_AGENT . "' ORDER BY r.id DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC) ?: null;
+        }
+        $sources = array_filter(['/ai-local' => $on('ailocal') ? 'builtin_ai_agent.wizard_go_local' : null,
+                                 '/ai-cloud' => $on('aicloud') ? 'builtin_ai_agent.wizard_go_cloud' : null]);
+        return [
+            'plugins' => ['done' => $on('ai-knowledge') && ($on('ailocal') || $on('aicloud')), 'optional' => false,
+                'info' => implode(', ', array_filter(self::WIZARD_PLUGINS, $on)), 'links' => ['/plugins' => 'builtin_ai_agent.wizard_go_plugins']],
+            'models' => ['done' => ($models['llm'] && $models['stt']) || $realtime !== [], 'optional' => false,
+                'info' => $names($models['llm'] + $models['stt'] + $realtime), 'links' => $sources],
+            'voice' => ['done' => $models['tts'] !== [] || $realtime !== [], 'optional' => false,
+                'info' => $names($models['tts']), 'links' => $sources],
+            'knowledge' => ['done' => $collections !== [], 'optional' => false,
+                'info' => $names(array_column($collections, 'name')), 'links' => ['/ai-knowledge' => 'builtin_ai_agent.wizard_go_knowledge']],
+            'agent' => ['done' => $agents !== [], 'optional' => false, 'info' => $names(array_column($agents, 'title')),
+                'links' => ['/ai-agent?new=1' => 'builtin_ai_agent.wizard_go_agent']],
+            'number' => ['done' => $numbered !== [], 'optional' => false,
+                'info' => $numbered ? $numbered[0]['title'] . ': ' . $numbered[0]['internal_number'] : '',
+                'links' => $agents ? ['/ai-agent?edit=' . (int) $agents[0]['id'] => 'builtin_ai_agent.wizard_go_number'] : []],
+            'test' => ['done' => $last !== null && (int) $last['turns'] > 0, 'optional' => false,
+                'info' => $last ? sprintf('%s · %s · %s · %d', $last['created_at'], $last['title'], $last['result'], (int) $last['turns']) : '',
+                'number' => $numbered[0]['internal_number'] ?? '', 'links' => ['/ai-agent' => 'builtin_ai_agent.wizard_go_calls']],
+        ];
+    }
+
+    /**
+     * Per agent over the last STATS_DAYS days: calls, how they ended (handed over, finished by the agent,
+     * not understood or silent, hung up) and the caller's turns on average. Keyed by app id.
+     */
+    public static function stats(): array
+    {
+        $stmt = getDB()->prepare("SELECT r.app_id, COUNT(*) AS calls,
+                SUM(r.result = 'matched') AS handed, SUM(r.result = 'ended') AS ended,
+                SUM(r.result IN ('not_understood', 'silence')) AS missed, SUM(r.result = 'hangup') AS hangup,
+                ROUND(AVG(NULLIF(r.turns, 0)), 1) AS turns
+            FROM ai_requests r JOIN pbx_ai_apps a ON a.id = r.app_id
+            WHERE a.app_type = ? AND r.created_at >= NOW() - INTERVAL " . self::STATS_DAYS . " DAY GROUP BY r.app_id");
+        $stmt->execute([AiAppService::BUILTIN_AGENT]);
+        $out = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $out[(int) $row['app_id']] = array_map(static fn ($v) => $v === null ? 0 : $v + 0, $row);
+        }
+        return $out;
+    }
+
+    /** The calls of every agent (newest first, at most 90 days) as CSV rows, header first. */
+    public static function callsCsv(): array
+    {
+        $stmt = getDB()->prepare("SELECT r.created_at, a.title, r.caller, r.caller_name, r.result, r.intent_name, r.turns, r.transcript
+            FROM ai_requests r JOIN pbx_ai_apps a ON a.id = r.app_id
+            WHERE a.app_type = ? AND r.created_at >= NOW() - INTERVAL 90 DAY ORDER BY r.id DESC LIMIT 20000");
+        $stmt->execute([AiAppService::BUILTIN_AGENT]);
+        $rows = [['time', 'agent', 'caller', 'caller_name', 'result', 'handed_to', 'turns', 'conversation']];
+        foreach ($stmt->fetchAll(PDO::FETCH_NUM) as $row) {
+            // A cell starting with = + - @ would run as a formula in a spreadsheet.
+            $rows[] = array_map(static fn ($v) => preg_match('/^[=+\-@\t\r]/', (string) $v) ? "'" . $v : (string) $v, $row);
+        }
+        return $rows;
+    }
+
     /**
      * Advanced listening settings, each clamped to what the gateway accepts. An agent saved before
      * they existed has no `silence_seconds` and gets these defaults (it was saved with retries 0).
@@ -169,11 +249,16 @@ final class BuiltinAiAgentService
         $int = static fn (string $key, int $lo, int $hi, int $default): int =>
             isset($data[$key]) && is_numeric($data[$key]) ? max($lo, min($hi, (int) $data[$key])) : $default;
         $legacy = !isset($data['silence_seconds']);
+        $line = in_array($data['line_profile'] ?? '', self::LINE_PROFILES, true) ? (string) $data['line_profile'] : 'normal';
         return [
             'retries' => $legacy ? self::RETRIES_DEFAULT : $int('retries', 0, 2, self::RETRIES_DEFAULT),
             'silence_seconds' => $int('silence_seconds', 3, 10, 4),
             'listen_seconds' => $int('listen_seconds', 5, 15, 10),
-            'line_profile' => in_array($data['line_profile'] ?? '', self::LINE_PROFILES, true) ? (string) $data['line_profile'] : 'normal',
+            'line_profile' => $line,
+            'local_context' => in_array((int) ($data['local_context'] ?? 0), self::LOCAL_CONTEXTS, true) ? (int) ($data['local_context'] ?? 0) : 0,
+            // a noisy line makes barge-in harder too, unless set; a faint one does not make it easier
+            'barge_profile' => in_array($data['barge_profile'] ?? '', self::LINE_PROFILES, true)
+                ? (string) $data['barge_profile'] : ($line === 'noisy' ? 'noisy' : 'normal'),
         ];
     }
 

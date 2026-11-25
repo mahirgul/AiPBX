@@ -55,13 +55,14 @@ class OllamaBackend(CustomWeightsBackend):
         request("POST", "/api/generate", {"model": self.name, "prompt": "", "stream": False, "keep_alive": -1})
         self.loaded = True
 
-    def chat(self, prompt, max_tokens=300, timeout=600):
+    def chat(self, prompt, max_tokens=300, timeout=600, num_ctx=None):
         if not self.loaded:
             raise RuntimeError("model not loaded")
         reply = request("POST", "/api/chat", {
             "model": self.name, "messages": [{"role": "user", "content": prompt}],
             "stream": False, "keep_alive": -1, "think": False,   # thinking would eat the token budget
-            "options": {"num_predict": max_tokens, "temperature": 0}}, timeout=timeout)
+            "options": {"num_predict": max_tokens, "temperature": 0, **({"num_ctx": num_ctx} if num_ctx else {})}},
+            timeout=timeout)
         return str((reply.get("message") or {}).get("content") or "")
 
     def unload(self):

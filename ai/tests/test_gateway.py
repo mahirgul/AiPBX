@@ -39,6 +39,18 @@ class GatewayTest(unittest.TestCase):
         self.assertEqual(result['resolved_model_ref'],'local:test')
         self.assertEqual(result['usage']['amount'],12)
 
+    def test_chat_passes_the_local_context_size(self):
+        sent = []
+        post = lambda url, headers, body, deadline, *a: sent.append(body) or {'message': {'content': 'hi'}}
+        g.chat({'adapter': 'ollama', 'model': 'm', 'num_ctx': 8192}, 'p', 50, time.monotonic() + 5, post=post)
+        g.chat({'adapter': 'ollama', 'model': 'm'}, 'p', 50, time.monotonic() + 5, post=post)
+        self.assertEqual(sent[0]['options']['num_ctx'], 8192)
+        self.assertNotIn('num_ctx', sent[1]['options'])
+        manager = Mock()
+        manager.chat.return_value = 'ok'
+        g.chat({'adapter': 'runtime', 'model': 'x', 'num_ctx': 4096}, 'p', 50, time.monotonic() + 5, manager)
+        self.assertEqual(manager.chat.call_args.kwargs['num_ctx'], 4096)
+
     def test_empty_answer_and_provider_exception_are_sanitized(self):
         ctx = {'connection':{}, 'model_ref':'test', 'config_revision':'v1'}
         for runner in [Mock(return_value=('',0)),Mock(side_effect=RuntimeError('secret-key-123'))]:

@@ -139,6 +139,7 @@ return [
         'id' => 'ai', 'section' => 'ops', 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);', 'label' => ['sidebar.group_ai_apps', 'AI Apps'],
         'items' => [
             ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts') && $pluginOn('ai-tts'), 'pages' => ['ai_tts.php']],
+            ['href' => '/ai-wizard', 'icon' => 'fas fa-list-check', 'label' => 'builtin_ai_agent.wizard_title', 'show' => $isAdmin, 'pages' => ['ai_wizard.php']],
             ['href' => '/ai-agent', 'icon' => 'fas fa-headset', 'label' => 'builtin_ai_agent.title', 'show' => $isAdmin, 'pages' => ['builtin_ai_agent.php']],
             ...PluginManager::dynamicSidebarItems($isAdmin, 'ai'),
         ],

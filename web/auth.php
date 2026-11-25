@@ -249,6 +249,7 @@ function getModuleKeyForPage($page = null) {
         'ai_local.php'              => 'ai_local',
         'ai_cloud.php'              => 'ai_cloud',
         'builtin_ai_agent.php'      => 'builtin_ai_agent',
+        'ai_wizard.php'             => 'builtin_ai_agent',   // the agent's setup wizard
         'ai_voicemail.php'          => 'ai_voicemail',
         'ai_call_analysis.php'      => 'ai_call_analysis',
         'ai_assistant.php'          => 'ai_assistant',

@@ -116,6 +116,7 @@ return [
     '/ai-local'        => ['controller' => AiLocalController::class, 'action' => 'index', 'module' => 'ai_local.php'],
     '/ai-cloud'        => ['controller' => AiCloudController::class, 'action' => 'index', 'module' => 'ai_cloud.php'],
     '/ai-agent'        => ['controller' => BuiltinAiAgentController::class, 'action' => 'index', 'module' => 'builtin_ai_agent.php'],
+    '/ai-wizard'       => ['controller' => BuiltinAiAgentController::class, 'action' => 'wizard', 'module' => 'ai_wizard.php'],
     '/ai-voicemail'     => ['controller' => AiVoicemailController::class, 'action' => 'index', 'module' => 'ai_voicemail.php'],
     '/ai-call-analysis' => ['controller' => AiCallAnalysisController::class, 'action' => 'index', 'module' => 'ai_call_analysis.php'],
     '/ai-knowledge'     => ['controller' => AiKnowledgeController::class, 'action' => 'index', 'module' => 'ai_knowledge.php'],

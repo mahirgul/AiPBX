@@ -46,6 +46,7 @@ MAX_WORDS = 30               # keywords, and examples, per intent
 MAX_TEXT = 1000
 LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT = 2, 15, 7
 RETRIES_MAX, RETRIES_DEFAULT = 2, 1
+LOCAL_CONTEXTS = (2048, 4096, 8192, 16384)
 SILENCE_MIN, SILENCE_MAX = 3, 10   # silence_seconds: nothing said by then is silence
 THRESHOLD_DEFAULT = 0.5
 SPEED_MIN, SPEED_MAX = 0.5, 2.0
@@ -180,6 +181,10 @@ def validate_config(data, manager=None):
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
         "silence_seconds": _number(data, "silence_seconds", SILENCE_MIN, SILENCE_MAX, int(NO_SPEECH_SECONDS), integer=True),
         "line_profile": data.get("line_profile") if data.get("line_profile") in PROFILES else "normal",
+        # A local model's memory in tokens (Ollama num_ctx); 0 = the model's own default.
+        "local_context": data.get("local_context") if data.get("local_context") in LOCAL_CONTEXTS else 0,
+        # How easily the caller's voice stops a prompt (barge-in): noisy = harder, faint = easier.
+        "barge_profile": data.get("barge_profile") if data.get("barge_profile") in PROFILES else None,
         "threshold": _number(data, "threshold", 0.0, 1.0, THRESHOLD_DEFAULT),
         # The caller may talk over the greeting and the "say it again" prompt:
         # the prompt stops and what they say is the request. Off by default, as

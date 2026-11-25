@@ -677,10 +677,9 @@ class ModelManager:
             with self._mu:
                 entry.pending -= 1
 
-    def chat(self, model_id, prompt, max_tokens=300, timeout=None):
-        if timeout is None:
-            return self._run_job(model_id, "llm", lambda b: b.chat(prompt, max_tokens))
-        return self._run_job(model_id, "llm", lambda b: b.chat(prompt, max_tokens, timeout=timeout))
+    def chat(self, model_id, prompt, max_tokens=300, timeout=None, num_ctx=None):
+        kwargs = {**({"timeout": timeout} if timeout is not None else {}), **({"num_ctx": num_ctx} if num_ctx else {})}
+        return self._run_job(model_id, "llm", lambda b: b.chat(prompt, max_tokens, **kwargs))
 
     def transcribe(self, model_id, wav):
         return self._run_job(model_id, "stt", lambda b: b.transcribe(wav))

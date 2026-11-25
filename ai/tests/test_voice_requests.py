@@ -696,6 +696,10 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual(validate_config(hotel_config(line_profile="loud"), self.manager)["line_profile"], "normal")
         with self.assertRaises(ConfigError):
             validate_config(hotel_config(silence_seconds=30), self.manager)
+        config = validate_config(hotel_config(local_context=8192, barge_profile="noisy"), self.manager)
+        self.assertEqual((config["local_context"], config["barge_profile"]), (8192, "noisy"))
+        config = validate_config(hotel_config(local_context=999, barge_profile="x"), self.manager)
+        self.assertEqual((config["local_context"], config["barge_profile"]), (0, None))
 
     def test_without_barge_in_the_greeting_plays_out(self):
         self.long_prompts()

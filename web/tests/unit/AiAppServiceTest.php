@@ -331,11 +331,44 @@ final class AiAppServiceTest extends TestCase
     public function testBuiltinAgentListeningSettingsAreClamped(): void
     {
         require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
-        $this->assertSame(['retries' => 2, 'silence_seconds' => 4, 'listen_seconds' => 10, 'line_profile' => 'normal'],
-            BuiltinAiAgentService::listening([]));
-        $this->assertSame(['retries' => 0, 'silence_seconds' => 10, 'listen_seconds' => 5, 'line_profile' => 'faint'],
-            BuiltinAiAgentService::listening(['retries' => '0', 'silence_seconds' => '99', 'listen_seconds' => '1', 'line_profile' => 'faint']));
+        $this->assertSame(['retries' => 2, 'silence_seconds' => 4, 'listen_seconds' => 10, 'line_profile' => 'normal',
+                           'local_context' => 0, 'barge_profile' => 'normal'], BuiltinAiAgentService::listening([]));
+        $this->assertSame(['retries' => 0, 'silence_seconds' => 10, 'listen_seconds' => 5, 'line_profile' => 'faint',
+                           'local_context' => 8192, 'barge_profile' => 'normal'],
+            BuiltinAiAgentService::listening(['retries' => '0', 'silence_seconds' => '99', 'listen_seconds' => '1',
+                                              'line_profile' => 'faint', 'local_context' => '8192']));
+        $noisy = BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'noisy', 'local_context' => '999']);
+        $this->assertSame(['noisy', 'noisy', 0], [$noisy['line_profile'], $noisy['barge_profile'], $noisy['local_context']]);
+        $this->assertSame('faint', BuiltinAiAgentService::listening(['line_profile' => 'noisy', 'barge_profile' => 'faint'])['barge_profile']);
         $this->assertSame('normal', BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'loud'])['line_profile']);
+    }
+
+    public function testBuiltinAgentStatsCsvAndWizard(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_ai_apps (title, app_type, model_id, dest_type, dest_id, is_active, config)
+                       VALUES ('Stats agent', 'builtin_agent', 'local:x', 'hangup', '', 1, '{}')");
+            $id = (int) $db->lastInsertId();
+            $insert = $db->prepare('INSERT INTO ai_requests (app_id, call_uuid, caller, transcript, result, turns) VALUES (?, ?, ?, ?, ?, ?)');
+            foreach ([['matched', 3, 'a'], ['ended', 2, 'b'], ['silence', 0, 'c'], ['matched', 1, 'd']] as $i => [$result, $turns, $said]) {
+                $insert->execute([$id, sprintf('00000000-0000-0000-0000-%012d', 900 + $i), $i === 1 ? '=1+2' : '100', $said, $result, $turns]);
+            }
+            $s = BuiltinAiAgentService::stats()[$id];
+            $this->assertSame([4, 2, 1, 1, 0], [$s['calls'], $s['handed'], $s['ended'], $s['missed'], $s['hangup']]);
+            $this->assertEquals(2.0, $s['turns']);                          // the silent call does not count
+            $csv = BuiltinAiAgentService::callsCsv();
+            $this->assertSame('conversation', $csv[0][7]);
+            $this->assertContains("'=1+2", array_column($csv, 2));          // no spreadsheet formula
+            $steps = BuiltinAiAgentService::wizardSteps();
+            $this->assertSame(['plugins', 'models', 'voice', 'knowledge', 'agent', 'number', 'test'], array_keys($steps));
+            $this->assertTrue($steps['agent']['done']);
+            $this->assertTrue($steps['test']['done']);                      // a call with turns
+        } finally {
+            $db->rollBack();
+        }
     }
 
     public function testRealtimeConfigPayloadWhenOpenAiEnabled(): void

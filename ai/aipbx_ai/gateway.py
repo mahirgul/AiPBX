@@ -125,7 +125,8 @@ def chat(connection, prompt, max_tokens, deadline, manager=None, post=post_json)
             raise GatewayError('model_not_ready')
         rem = remaining(deadline)
         try:
-            text = manager.chat(connection['model'], prompt, max_tokens, timeout=rem)
+            extra = {'num_ctx': connection['num_ctx']} if connection.get('num_ctx') else {}
+            text = manager.chat(connection['model'], prompt, max_tokens, timeout=rem, **extra)
         except TypeError:
             text = manager.chat(connection['model'], prompt, max_tokens)
         return text, 0
@@ -133,6 +134,8 @@ def chat(connection, prompt, max_tokens, deadline, manager=None, post=post_json)
         body = {'model': connection['model'], 'messages': [{'role': 'user', 'content': prompt}],
                 # Thinking models would spend the whole token budget thinking and answer nothing.
                 'stream': False, 'think': False, 'options': {'temperature': 0, 'num_predict': max_tokens}}
+        if connection.get('num_ctx'):          # the model's memory in tokens: long instructions need more
+            body['options']['num_ctx'] = connection['num_ctx']
         if connection.get('json_output'):
             body['format'] = 'json'
         result = post('http://127.0.0.1:11434/api/chat', {}, body, deadline, True)

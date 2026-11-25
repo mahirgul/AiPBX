@@ -1109,8 +1109,10 @@ class VoiceRequestsCall:
             return self.play(pcm), None
         session = self.session
         q = queue.Queue()
-        # only its speech detection is used here; a faint profile would let line noise stop prompts
-        probe = Listener(3600, profile="noisy" if self.config.get("line_profile") == "noisy" else "normal")
+        # only its speech detection is used here; without its own setting a faint line profile does not
+        # carry over (line noise would stop prompts)
+        cfg = self.config
+        probe = Listener(3600, profile=cfg.get("barge_profile") or ("noisy" if cfg.get("line_profile") == "noisy" else "normal"))
         cur = {"pcm": pcm, "pos": 0, "sent": threading.Event(), "started": None, "ends": None}
         handed_over = False
         session.listen_q = q
@@ -1727,6 +1729,8 @@ class VoiceRequestsCall:
     def local_completion(self, text):
         try:
             connection = {**secret_refs.local_chat(self.session.app), "json_output": True}
+            if self.config.get("local_context"):
+                connection["num_ctx"] = self.config["local_context"]
             result, _ = gateway.chat(connection, text, 384, time.monotonic() + 15, self.registry.manager)
             return result
         except Exception as exc:  # provider errors go to the call's fallback

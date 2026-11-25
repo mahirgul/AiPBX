@@ -7,6 +7,8 @@ $collectionNames = array_column($collections, 'name', 'id');
     <?php echo uiPageHeaderOpen('fa-headset', t('builtin_ai_agent.title'), 'builtinAgentHelp'); ?>
     <?php echo uiPageHeaderActions(); ?>
     <button type="button" class="btn btn-secondary btn-sm" id="builtinAgentClearCache" title="<?php echo $h(t('builtin_ai_agent.clear_cache_help')); ?>"><i class="fas fa-eraser"></i> <?php echo $h(t('builtin_ai_agent.clear_cache')); ?></button>
+    <a href="/ai-wizard" class="btn btn-secondary btn-sm"><i class="fas fa-list-check"></i> <?php echo $h(t('builtin_ai_agent.wizard_title')); ?></a>
+    <a href="/ai-agent?export=csv" class="btn btn-secondary btn-sm" title="<?php echo $h(t('builtin_ai_agent.export_help')); ?>"><i class="fas fa-file-csv"></i> CSV</a>
     <a href="/ai-agent?new=1" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> <?php echo $h(t('ai_agents.btn_new')); ?></a>
     <?php echo uiPageHeaderClose(); ?>
     <?php echo uiHelpBoxOpen('builtinAgentHelp', t('builtin_ai_agent.title')); ?>
@@ -14,9 +16,11 @@ $collectionNames = array_column($collections, 'name', 'id');
     <code><?php echo $h(t('builtin_ai_agent.tool_example')); ?></code>
     <?php echo uiHelpBoxClose(); ?>
     <?php echo uiTableOpen([
-        t('ai_apps.col_title'), t('ai_apps.col_number'), t('ai_apps.field_knowledge'), t('ai_agents.col_fallback'), '',
+        t('ai_apps.col_title'), t('ai_apps.col_number'), t('ai_apps.field_knowledge'), t('ai_agents.col_fallback'),
+        sprintf(t('builtin_ai_agent.stats_col'), BuiltinAiAgentService::STATS_DAYS), '',
     ], ['frame' => 'u-card-pad']); ?>
-    <?php if (!$agents): ?><?php echo uiTableEmptyRow(5, t('common.no_records')); ?><?php endif; ?>
+    <?php if (!$agents): ?><?php echo uiTableEmptyRow(6, t('common.no_records')); ?><?php endif; ?>
+    <?php $pct = static fn (array $s, string $k): string => $s['calls'] > 0 ? (string) round(100 * $s[$k] / $s['calls']) : '0'; ?>
     <?php foreach ($agents as $agent): ?>
         <?php $cfg = AiAppService::config($agent); ?>
         <tr>
@@ -24,6 +28,13 @@ $collectionNames = array_column($collections, 'name', 'id');
             <td><?php echo $h($agent['internal_number'] ?? '—'); ?></td>
             <td><?php echo $h($collectionNames[$cfg['knowledge_collection'] ?? 0] ?? '—'); ?></td>
             <td><?php echo $h($targets[$agent['dest_type']][$agent['dest_id']] ?? $agent['dest_id']); ?></td>
+            <td class="u-fs-12">
+                <?php $s = $stats[(int) $agent['id']] ?? null; ?>
+                <?php if ($s === null): ?>—<?php else: ?>
+                    <strong><?php echo (int) $s['calls']; ?></strong>
+                    <span class="u-muted"><?php echo $h(sprintf(t('builtin_ai_agent.stats_line'), $pct($s, 'handed'), $pct($s, 'ended'), $pct($s, 'missed'), $pct($s, 'hangup'), (string) $s['turns'])); ?></span>
+                <?php endif; ?>
+            </td>
             <td class="u-ta-right u-nowrap">
                 <a href="/ai-agent?edit=<?php echo (int) $agent['id']; ?>" class="btn btn-icon btn-secondary btn-sm" title="<?php echo $h(t('common.edit')); ?>"><i class="fas fa-pen"></i></a>
                 <?php echo uiDeleteForm((int) $agent['id'], 'agent_id', 'delete_agent', t('ai_agents.confirm_delete')); ?>
@@ -184,6 +195,14 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
                     </select>
                 </div>
                 <div class="form-group">
+                    <label class="form-label" for="builtin_agent_barge_profile"><?php echo $h(t('builtin_ai_agent.barge_profile')); ?></label>
+                    <select class="form-control" id="builtin_agent_barge_profile" name="barge_profile">
+                        <?php foreach (['noisy' => 'barge_low', 'normal' => 'barge_normal', 'faint' => 'barge_high'] as $bp => $key): ?>
+                            <option value="<?php echo $h($bp); ?>"<?php echo $selected($bp, $listen['barge_profile']); ?>><?php echo $h(t('builtin_ai_agent.' . $key)); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label class="form-label" for="builtin_agent_retries"><?php echo $h(t('builtin_ai_agent.retries')); ?></label>
                     <select class="form-control" id="builtin_agent_retries" name="retries">
                         <?php foreach ([0 => 'retries_0', 1 => 'retries_1', 2 => 'retries_2'] as $n => $key): ?>
@@ -198,6 +217,15 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
                             <option value="<?php echo $n; ?>"<?php echo $selected($n, $listen['silence_seconds']); ?>><?php echo $h($seconds($n)); ?></option>
                         <?php endforeach; ?>
                     </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_local_context"><?php echo $h(t('builtin_ai_agent.local_context')); ?></label>
+                    <select class="form-control" id="builtin_agent_local_context" name="local_context" aria-describedby="builtinAgentContextHelp">
+                        <?php foreach (BuiltinAiAgentService::LOCAL_CONTEXTS as $n): ?>
+                            <option value="<?php echo $n; ?>"<?php echo $selected($n, $listen['local_context']); ?>><?php echo $h($n === 0 ? t('builtin_ai_agent.local_context_default') : sprintf(t('builtin_ai_agent.tokens'), number_format($n, 0, ',', '.'))); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <small class="u-hint" id="builtinAgentContextHelp"><?php echo $h(t('builtin_ai_agent.local_context_help')); ?></small>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="builtin_agent_listen_seconds"><?php echo $h(t('builtin_ai_agent.listen_seconds')); ?></label>
