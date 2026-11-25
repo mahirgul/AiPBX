@@ -781,6 +781,27 @@ class AiAppService
         ];
     }
 
+    /**
+     * What a finished AI call said, for the request log and its mail: a conversation's summary first
+     * (what the person taking the call needs), then the caller's words, or for a built-in agent the
+     * whole conversation with both sides named in the mail's language.
+     */
+    public static function callText(array $call, bool $builtin, string $lang): string
+    {
+        $lines = array_map('strval', (array) ($call['transcripts'] ?? []));
+        if ($builtin && is_array($call['conversation'] ?? null)) {
+            $str = langStrings($lang) + langStrings('en');
+            $label = ['caller' => $str['builtin_ai_agent.mail_caller'], 'assistant' => $str['builtin_ai_agent.mail_agent']];
+            $lines = [];
+            foreach ($call['conversation'] as $turn) {
+                if (is_array($turn) && isset($label[$turn['role'] ?? ''])) {
+                    $lines[] = $label[$turn['role']] . ': ' . (string) ($turn['text'] ?? '');
+                }
+            }
+        }
+        return implode(' / ', array_filter([(string) ($call['summary'] ?? ''), ...$lines]));
+    }
+
     // ------------------------------------------------------------ request log
 
     public static function requests(int $limit = 100, bool $openOnly = false): array

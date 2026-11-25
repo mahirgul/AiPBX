@@ -318,6 +318,16 @@ final class AiAppServiceTest extends TestCase
         $this->assertStringNotContainsString('Stasis(aipbx-ai,', $legacyDialplan);
     }
 
+    public function testCallTextForTheRequestLogAndMail(): void
+    {
+        $call = ['summary' => 'Wants a room', 'transcripts' => ['hello', ''],
+                 'conversation' => [['role' => 'caller', 'text' => 'hello'], ['role' => 'line', 'text' => 'the caller said nothing'],
+                                    ['role' => 'assistant', 'text' => 'How can I help?'], ['role' => 'lookup', 'text' => 'x']]];
+        $this->assertSame('Wants a room / hello', AiAppService::callText($call, false, 'en'));
+        $this->assertSame('Wants a room / Caller: hello / Agent: How can I help?', AiAppService::callText($call, true, 'en'));
+        $this->assertSame('Arayan: hello / Ajan: How can I help?', AiAppService::callText(['conversation' => $call['conversation']], true, 'tr'));
+    }
+
     public function testBuiltinAgentListeningSettingsAreClamped(): void
     {
         require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';

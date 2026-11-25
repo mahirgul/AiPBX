@@ -54,10 +54,8 @@ try {
             $intent = $i;
         }
     }
-    // A conversation's summary first: what the person taking the call needs to know.
-    $transcript = PrivacyService::redactTranscriptIfEnabled(
-        implode(' / ', array_filter(array_map('strval', [(string) ($call['summary'] ?? ''), ...(array) ($call['transcripts'] ?? [])])))
-    );
+    $builtin = ($app['app_type'] ?? '') === AiAppService::BUILTIN_AGENT;
+    $transcript = PrivacyService::redactTranscriptIfEnabled(AiAppService::callText($call, $builtin, MailTemplateService::systemLanguage()));
     $caller = mb_substr((string) ($call['caller'] ?? ''), 0, 40);
     $callerName = mb_substr((string) ($call['caller_name'] ?? ''), 0, 80);
     getDB()->prepare('INSERT IGNORE INTO ai_requests (app_id, call_uuid, caller, caller_name, intent_id, intent_name, transcript, score)
@@ -65,7 +63,11 @@ try {
         ->execute([$appId, $uuid, $caller, $callerName, $intent ? $intentId : 'none',
                    $intent['name'] ?? '', $transcript, (float) ($call['score'] ?? 0)]);
 
-    if ($intent && ($intent['email'] ?? '') !== '') {
+    $to = (string) ($intent['email'] ?? '');
+    if ($to === '' && $builtin) {                                  // the agent's "send each call to" address
+        $to = (string) (AiAppService::config($app)['summary_email'] ?? '');
+    }
+    if ($to !== '') {
         $attachments = [];
         $tmp = null;
         if (!empty($call['audio'])) {
@@ -78,8 +80,8 @@ try {
         }
         $lang = MailTemplateService::systemLanguage();
         $domain = getSystemSetting('pjsip_external_domain', '') ?: portalEnv('PORTAL_DOMAIN', gethostname() ?: 'localhost');
-        $res = MailTemplateService::send('ai_request', $intent['email'], $lang, [
-            'request' => $intent['name'], 'caller' => trim($callerName . ' ' . $caller), 'caller_name' => $callerName,
+        $res = MailTemplateService::send('ai_request', $to, $lang, [
+            'request' => $intent['name'] ?? (string) $app['title'], 'caller' => trim($callerName . ' ' . $caller), 'caller_name' => $callerName,
             'caller_number' => $caller, 'transcript' => $transcript !== '' ? $transcript : '—', 'app' => (string) $app['title'],
             'date' => date('d.m.Y H:i'), 'portal_link' => 'https://' . $domain . '/ai-agent',
         ], [], $attachments);

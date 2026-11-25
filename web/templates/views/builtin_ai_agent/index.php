@@ -209,6 +209,12 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
                 </div>
             </div>
             <small class="u-hint"><?php echo $h(t('builtin_ai_agent.listening_help')); ?></small>
+            <div class="form-group u-mt-12">
+                <label class="form-label" for="builtin_agent_summary_email"><?php echo $h(t('builtin_ai_agent.summary_email')); ?></label>
+                <input type="email" class="form-control" id="builtin_agent_summary_email" name="summary_email" maxlength="254"
+                       value="<?php echo $h($edit['summary_email'] ?? ''); ?>" placeholder="calls@example.com" aria-describedby="builtinAgentSummaryEmailHelp">
+                <small class="u-hint" id="builtinAgentSummaryEmailHelp"><?php echo $h(t('builtin_ai_agent.summary_email_help')); ?></small>
+            </div>
             <p class="u-muted u-fs-12 u-mt-6"><?php echo $h(t('builtin_ai_agent.advanced_help')); ?></p>
             <div class="u-mt-6">
             <?php $allPbxTools = array_column(PbxToolRegistry::all(), 'name');

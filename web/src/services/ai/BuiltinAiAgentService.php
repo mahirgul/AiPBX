@@ -120,6 +120,10 @@ final class BuiltinAiAgentService
         if (mb_strlen($instructions) > 4000) {
             throw new InvalidArgumentException(sprintf(t('ai_apps.err_text'), 4000));
         }
+        $summaryEmail = trim((string) ($data['summary_email'] ?? ''));
+        if ($summaryEmail !== '' && (mb_strlen($summaryEmail) > 254 || filter_var($summaryEmail, FILTER_VALIDATE_EMAIL) === false)) {
+            throw new InvalidArgumentException(t('builtin_ai_agent.err_summary_email'));
+        }
         $dbLookups = [];
         $seenQueries = [];
         foreach ((array) ($data['db_queries'] ?? []) as $qKey) {
@@ -149,6 +153,7 @@ final class BuiltinAiAgentService
                 'realtime_account' => $realtimeAccount, 'realtime_voice' => $realtimeVoice,
                 'pbx_tools' => $pbxTools,
                 'instructions' => $instructions,
+                'summary_email' => $summaryEmail,
                 'db_queries' => array_keys($seenQueries),
                 'db_lookups' => $dbLookups,
             ],
