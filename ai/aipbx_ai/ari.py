@@ -23,6 +23,10 @@ from .ws_reader import WebSocketReader
 
 log = logging.getLogger("aipbx_ai.ari")
 
+# How long a new external media channel may take to enter Stasis before the caller goes back to the dialplan.
+JOIN_TIMEOUT = 3.0
+
+
 class AriError(RuntimeError):
     """Raised when an ARI REST call fails."""
 
@@ -219,6 +223,8 @@ class AriSessionManager:
         self._by_uuid: dict[str, AriCallState] = {}
         self._ext_channels: set[str] = set()
         self._pending_xfers: dict[str, dict[str, Any]] = {}
+        # external media channels created but not yet in Stasis: ext id -> (bridge, call uuid, caller, timer)
+        self._pending_join: dict[str, tuple[str, str, str, Any]] = {}
         self.on_dtmf: Any = None
         self.on_error: Any = None      # (call_uuid, text): shown in the call log
         self.outbound_navigator: Any = None
@@ -306,8 +312,12 @@ class AriSessionManager:
         args = [str(a) for a in (event.get("args") or [])]
 
         with self._lock:
-            if ch_id in self._ext_channels:
-                return
+            is_ext = ch_id in self._ext_channels
+            pending = self._pending_join.pop(ch_id, None) if is_ext else None
+        if is_ext:
+            if pending is not None:          # our media channel has entered Stasis: now it can join its bridge
+                self._join_pending(ch_id, pending)
+            return
 
         if args and args[0] == "xfer" and len(args) >= 2:
             self._on_xfer_stasis_start(ch_id, args[1])
@@ -370,7 +380,7 @@ class AriSessionManager:
                 self._by_caller[caller_channel_id] = state
                 self._by_uuid[call_uuid] = state
 
-            self._add_when_in_stasis(bridge_id, ext_id)
+            self._join_or_wait(bridge_id, ext_id, call_uuid, caller_channel_id)
             return state
         except AriError:
             if state is not None:
@@ -386,20 +396,59 @@ class AriSessionManager:
                     log.exception("Could not clean up ARI bridge %s", bridge_id)
             raise
 
-    def _add_when_in_stasis(self, bridge_id: str, channel_id: str) -> None:
-        """The external media channel is created before it has entered the Stasis application;
-        Asterisk 22 then answers addChannel with 422 "Channel not in Stasis application".
-        A few short retries cover that gap."""
-        for attempt in range(30):
+    def _join_or_wait(self, bridge_id: str, ext_id: str, call_uuid: str, caller_id: str) -> None:
+        """The external media channel can still be outside the Stasis application when externalMedia
+        returns; Asterisk 22 then answers addChannel with 422 "Channel not in Stasis application".
+        Its own StasisStart event comes next on this same event thread, so waiting here would only hold up
+        every other call: the channel joins when that event arrives (_on_stasis_start), and a timer sends the
+        caller back to the dialplan if it never does."""
+        try:
+            self.client.add_channel(bridge_id, ext_id)
+            return
+        except AriError as e:
+            if "not in Stasis" not in str(e):
+                raise
+        timer = threading.Timer(JOIN_TIMEOUT, self._join_timed_out, args=(ext_id,))
+        timer.daemon = True
+        with self._lock:
+            self._pending_join[ext_id] = (bridge_id, call_uuid, caller_id, timer)
+        timer.start()
+
+    def _join_pending(self, ext_id: str, pending: tuple[str, str, str, Any]) -> None:
+        bridge_id, call_uuid, caller_id, timer = pending
+        timer.cancel()
+        try:
+            self.client.add_channel(bridge_id, ext_id)
+            log.info("ARI channel %s joined bridge %s on its StasisStart", ext_id, bridge_id)
+        except AriError:
+            log.exception("ARI channel %s could not join bridge %s", ext_id, bridge_id)
+            self._join_failed(call_uuid, caller_id, "ARI could not join the call to the media channel")
+
+    def _join_timed_out(self, ext_id: str) -> None:
+        with self._lock:
+            pending = self._pending_join.pop(ext_id, None)
+        if pending is not None:
+            log.warning("ARI channel %s did not enter Stasis within %.0f s", ext_id, JOIN_TIMEOUT)
+            self._join_failed(pending[1], pending[2], f"the media channel did not enter Stasis within {JOIN_TIMEOUT:.0f} s")
+
+    def _join_failed(self, call_uuid: str, caller_id: str, text: str) -> None:
+        """As a failed attach: the call log says why, the bridge goes, the caller returns to the dialplan."""
+        if self.on_error is not None:
             try:
-                self.client.add_channel(bridge_id, channel_id)
-                if attempt:
-                    log.info("ARI channel %s joined bridge %s after %d retries (%.1f s)", channel_id, bridge_id, attempt, attempt * 0.1)
-                return
-            except AriError as e:
-                if "not in Stasis" not in str(e) or attempt == 29:
-                    raise
-                time.sleep(0.1)
+                self.on_error(call_uuid, text)
+            except Exception:  # noqa: BLE001 - a log entry must never keep the caller from the dialplan
+                pass
+        with self._lock:
+            state = self._by_uuid.pop(call_uuid, None)
+            if state is not None:
+                self._by_caller.pop(state.caller_channel_id, None)
+                self._ext_channels.discard(state.ext_channel_id)
+        if state is not None:
+            self._teardown_bridge_and_ext(state)
+        try:
+            self.client.continue_in_dialplan(caller_id)
+        except AriError:
+            log.exception("Could not resume dialplan for ARI caller %s", caller_id)
 
     def _on_xfer_stasis_start(self, xfer_ch_id: str, call_uuid: str) -> None:
         with self._lock:
@@ -436,6 +485,9 @@ class AriSessionManager:
             if state is not None:
                 self._by_uuid.pop(state.call_uuid, None)
                 self._ext_channels.discard(state.ext_channel_id)
+                pending = self._pending_join.pop(state.ext_channel_id, None)
+                if pending is not None:      # the caller hung up before the media channel joined
+                    pending[3].cancel()
         if state is None:
             return
         self._teardown_bridge_and_ext(state)

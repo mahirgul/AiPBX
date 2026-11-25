@@ -176,4 +176,16 @@ else
     ok "AI gateway active (local ML runtime optional)"
 fi
 
+# 09-asterisk.sh sent the AI applications to the service while it still ran the old code, which keeps only the
+# fields it knows: send them again to the new code, or this release's settings would wait for the next save.
+if systemctl is-active --quiet aipbx-ai.service; then
+    for _ in $(seq 1 30); do
+        [[ "$(curl -s -m 2 -o /dev/null -w '%{http_code}' http://127.0.0.1:8790/v1/health 2>/dev/null)" != 000 ]] && break
+        sleep 0.5
+    done
+    php -r "require '/var/www/html/src/asterisk_sync.php'; exit(syncAiApps() === false ? 1 : 0);" >/dev/null 2>&1 \
+        && ok "AI applications sent to the AI service" \
+        || warn "AI applications could not be sent to the AI service — open the portal and apply the pending changes"
+fi
+
 # ============================================================================

@@ -84,24 +84,65 @@ class AriSessionManagerTest(unittest.TestCase):
         self.assertIn(("destroy_bridge", "br-1"), cli.calls)
         self.assertIn(("continue", "PJSIP/100-0001", "", "", 1), cli.calls)
 
-    def test_external_media_channel_joins_the_bridge_once_it_is_in_stasis(self) -> None:
-        cli = FakeAriClient()
-        left = {"n": 3}
+    UUID = "11111111-2222-3333-4444-555555555555"
+
+    def not_yet_in_stasis(self, cli: "FakeAriClient") -> dict:
+        """addChannel of the media channel answers 422 until the test lets it in."""
+        gate = {"open": False}
         plain_add = cli.add_channel
 
         def add(bridge_id: str, channel_id: str) -> None:
-            if channel_id == "11111111-2222-3333-4444-555555555555" and left["n"]:
-                left["n"] -= 1
+            if channel_id == self.UUID and not gate["open"]:
                 raise AriError('ARI POST /bridges/x/addChannel -> 422: {"message":"Channel not in Stasis application"}')
             plain_add(bridge_id, channel_id)
 
         cli.add_channel = add
+        return gate
+
+    def test_media_channel_joins_on_its_own_stasis_start_without_holding_the_event_thread(self) -> None:
+        cli = FakeAriClient()
+        gate = self.not_yet_in_stasis(cli)
         mgr = AriSessionManager(cli, app_name="aipbx-ai", audiosocket_port=8791)
-        with patch("aipbx_ai.ari.time.sleep"):
-            mgr.handle_event({"type": "StasisStart", "args": ["7", "11111111-2222-3333-4444-555555555555"],
-                              "channel": {"id": "PJSIP/100-0001"}})
-        self.assertEqual(0, left["n"])
-        self.assertIn(("add_channel", "br-1", "11111111-2222-3333-4444-555555555555"), cli.calls)
+        with patch("aipbx_ai.ari.time.sleep") as sleep:
+            mgr.handle_event({"type": "StasisStart", "args": ["7", self.UUID], "channel": {"id": "PJSIP/100-0001"}})
+        sleep.assert_not_called()                                   # no waiting on the event thread
+        self.assertNotIn(("add_channel", "br-1", self.UUID), cli.calls)
+        self.assertIn(self.UUID, mgr._pending_join)
+        gate["open"] = True
+        mgr.handle_event({"type": "StasisStart", "args": [], "channel": {"id": self.UUID}})
+        self.assertIn(("add_channel", "br-1", self.UUID), cli.calls)
+        self.assertEqual({}, mgr._pending_join)
+        self.assertNotIn(("continue", "PJSIP/100-0001", "", "", 1), cli.calls)
+        self.assertTrue(mgr.release_call(self.UUID))
+
+    def test_media_channel_that_never_enters_stasis_sends_the_caller_back(self) -> None:
+        cli = FakeAriClient()
+        self.not_yet_in_stasis(cli)
+        mgr = AriSessionManager(cli)
+        errors: list[tuple] = []
+        mgr.on_error = lambda uuid, text: errors.append((uuid, text))
+        with patch("aipbx_ai.ari.JOIN_TIMEOUT", 0.05), patch("aipbx_ai.ari.log.warning"):
+            mgr.handle_event({"type": "StasisStart", "args": ["7", self.UUID], "channel": {"id": "caller"}})
+            for _ in range(100):
+                if ("continue", "caller", "", "", 1) in cli.calls:
+                    break
+                threading.Event().wait(0.02)
+        self.assertIn(("continue", "caller", "", "", 1), cli.calls)
+        self.assertIn(("destroy_bridge", "br-1"), cli.calls)
+        self.assertEqual(self.UUID, errors[0][0])
+        self.assertIn("did not enter Stasis", errors[0][1])
+        self.assertFalse(mgr.release_call(self.UUID))
+
+    def test_caller_hanging_up_before_the_join_stops_the_timer(self) -> None:
+        cli = FakeAriClient()
+        self.not_yet_in_stasis(cli)
+        mgr = AriSessionManager(cli)
+        mgr.handle_event({"type": "StasisStart", "args": ["7", self.UUID], "channel": {"id": "caller"}})
+        timer = mgr._pending_join[self.UUID][3]
+        mgr.handle_event({"type": "ChannelDestroyed", "channel": {"id": "caller"}})
+        self.assertEqual({}, mgr._pending_join)
+        self.assertFalse(timer.is_alive() and not timer.finished.is_set())
+        self.assertNotIn(("continue", "caller", "", "", 1), cli.calls)
 
     def test_media_setup_failure_releases_bridge_and_resumes_dialplan(self) -> None:
         cli = FakeAriClient()
