@@ -242,6 +242,15 @@ html:not([data-theme="light"]) .brand-logo-dark { display: block !important; }
     text-align: center;
 }
 
+.nav-emoji {
+    width: 20px;
+    flex-shrink: 0;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
 .nav-toggle-btn .nav-text {
     white-space: nowrap;
     overflow: hidden;

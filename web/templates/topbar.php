@@ -19,39 +19,39 @@ $is_collapsed_cookie = $is_collapsed_cookie ?? (isset($_COOKIE['sidebar_collapse
         </div>
 
 
-        <!-- Header Break Selection Dropdown (STRICTLY FOR CALL CENTER AGENTS) -->
-        <?php if (!empty($is_cc_agent)): ?>
-            <div style="flex-shrink: 0;">
-                <select id="header-break-select" onchange="handleHeaderBreakChange(this.value)" class="form-control" style="padding: 2px 8px; font-size: 11px; font-weight: 600; height: 26px; border-radius: 13px; background: var(--bg-input); border: 1px solid var(--border-color); color: var(--text-main); cursor: pointer;" title="<?php echo t('topbar.break_selector_tooltip'); ?>">
-                    <option value="" class="u-success u-fw-700"><?php echo t('topbar.break_working'); ?></option>
-                    <?php
+        <!-- Break: a pill like the phone status (icon only on a phone); the native list lies over it, invisible -->
+        <?php if (!empty($is_cc_agent)):
+            $breakWorking = trim((string) preg_replace('/^[^\p{L}\p{N}]+/u', '', t('topbar.break_working')));
+            $breakOptions = [];
+            $breakRows = [];
+            if (class_exists('PauseReasonRepository')) {
+                try {
+                    $breakRows = PauseReasonRepository::activeOrdered();
+                } catch (\Throwable $e) {
                     $breakRows = [];
-                    if (class_exists('PauseReasonRepository')) {
-                        try {
-                            $breakRows = PauseReasonRepository::activeOrdered();
-                        } catch (\Throwable $e) {
-                            $breakRows = [];
-                        }
-                    }
-                    if (!empty($breakRows)):
-                        foreach ($breakRows as $br):
-                            $bName = (string) ($br['name'] ?? '');
-                            $bIcon = !empty($br['icon']) ? (string) $br['icon'] : '☕';
-                            if ($bName === '') continue;
-                    ?>
-                        <option value="<?php echo htmlspecialchars($bName); ?>"><?php echo htmlspecialchars($bIcon . ' ' . $bName); ?></option>
-                    <?php
-                        endforeach;
-                    else:
-                        foreach (array_filter(array_map('trim', explode(',', getSystemSetting('cc_break_reasons', t('api_cc.default_break_reasons'))))) as $reason):
-                    ?>
-                        <option value="<?php echo htmlspecialchars($reason); ?>">⏸️ <?php echo htmlspecialchars($reason); ?></option>
-                    <?php
-                        endforeach;
-                    endif;
-                    ?>
+                }
+            }
+            foreach ($breakRows as $br) {
+                if ((string) ($br['name'] ?? '') !== '') {
+                    $breakOptions[] = [(string) $br['name'], !empty($br['icon']) ? (string) $br['icon'] : '☕'];
+                }
+            }
+            if ($breakOptions === []) {
+                foreach (array_filter(array_map('trim', explode(',', getSystemSetting('cc_break_reasons', t('api_cc.default_break_reasons'))))) as $reason) {
+                    $breakOptions[] = [$reason, '⏸️'];
+                }
+            }
+        ?>
+            <label class="header-phone-status-pill header-break-pill" id="header-break-pill" title="<?php echo t('topbar.break_selector_tooltip'); ?>">
+                <span class="header-break-emoji" id="header-break-emoji" aria-hidden="true">✅</span>
+                <span class="status-text" id="header-break-text"><?php echo htmlspecialchars($breakWorking); ?></span>
+                <select id="header-break-select" class="header-break-select" onchange="handleHeaderBreakChange(this.value)" aria-label="<?php echo htmlspecialchars(t('topbar.break_selector_tooltip')); ?>">
+                    <option value="" data-emoji="✅"><?php echo htmlspecialchars('✅ ' . $breakWorking); ?></option>
+                    <?php foreach ($breakOptions as [$bName, $bIcon]): ?>
+                        <option value="<?php echo htmlspecialchars($bName); ?>" data-emoji="<?php echo htmlspecialchars($bIcon); ?>"><?php echo htmlspecialchars($bIcon . ' ' . $bName); ?></option>
+                    <?php endforeach; ?>
                 </select>
-            </div>
+            </label>
         <?php endif; ?>
 
         <!-- Quick Phone Call & Dynamic Call Control Group -->

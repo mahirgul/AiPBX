@@ -185,6 +185,18 @@ function handleHeaderBreakChange(reason) {
 }
 
 var _syncHeaderBreakStatusInFlight = false;
+/** The pill shows the chosen option's icon and name (only the icon on a phone). */
+function showHeaderBreak(selectEl, paused, reason) {
+    const opt = selectEl.options[selectEl.selectedIndex];
+    const known = opt && (!paused || opt.value === reason);   // a reason no longer in the list still shows
+    const emoji = document.getElementById("header-break-emoji");
+    const text = document.getElementById("header-break-text");
+    const pill = document.getElementById("header-break-pill");
+    if (emoji) emoji.textContent = known ? (opt.dataset.emoji || "⏸️") : "⏸️";
+    if (text) text.textContent = known ? opt.textContent.replace(/^\S+\s+/, "") : reason;
+    if (pill) pill.classList.toggle("is-paused", paused);
+}
+
 function syncHeaderBreakStatus() {
     if (!window.IS_CC_AGENT || !document.getElementById("header-break-select")) return;
     // The 15 s polling loop did not check whether the previous request had
@@ -199,15 +211,9 @@ function syncHeaderBreakStatus() {
             if (!data.success) return;
             const selectEl = document.getElementById("header-break-select");
             if (selectEl) {
-                if (data.is_paused && data.pause_reason) {
-                    selectEl.value = data.pause_reason;
-                    selectEl.style.borderColor = "var(--warning)";
-                    selectEl.style.background = "rgba(245, 158, 11, 0.15)";
-                } else {
-                    selectEl.value = "";
-                    selectEl.style.borderColor = "var(--border-color)";
-                    selectEl.style.background = "var(--bg-input)";
-                }
+                const reason = data.is_paused && data.pause_reason ? data.pause_reason : "";
+                selectEl.value = reason;
+                showHeaderBreak(selectEl, !!data.is_paused, reason);
             }
         }).catch(e => {}).finally(() => { _syncHeaderBreakStatusInFlight = false; });
 }

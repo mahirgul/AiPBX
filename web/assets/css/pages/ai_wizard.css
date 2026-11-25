@@ -1,0 +1,128 @@
+/* AI setup wizard (/ai-wizard): the steps as a timeline; the next step is open and highlighted. */
+.aiw-progress {
+    appearance: none;
+    width: 100%;
+    height: 8px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--bg-input);
+    margin-bottom: 18px;
+}
+.aiw-progress::-webkit-progress-bar { background: var(--bg-input); border-radius: 999px; }
+.aiw-progress::-webkit-progress-value { background: var(--success); border-radius: 999px; }
+.aiw-progress::-moz-progress-bar { background: var(--success); border-radius: 999px; }
+
+.aiw-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.aiw-step {
+    position: relative;
+    display: flex;
+    gap: 14px;
+    padding-bottom: 14px;
+}
+
+/* the line between the markers */
+.aiw-step:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 15px;
+    top: 34px;
+    bottom: 0;
+    width: 2px;
+    background: var(--border-color);
+}
+.aiw-step.is-done:not(:last-child)::before { background: var(--success); }
+
+.aiw-marker {
+    flex: 0 0 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-card);
+    color: var(--text-muted);
+    position: relative;
+    z-index: 1;
+}
+.is-done .aiw-marker { background: var(--success); border-color: var(--success); color: var(--bg-card); }
+.is-current .aiw-marker { border-color: var(--primary); color: var(--primary); }
+
+.aiw-card {
+    flex: 1;
+    min-width: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 10px 14px;
+    background: var(--bg-card);
+}
+.is-current .aiw-card {
+    border-color: var(--primary);
+    background: var(--nav-active-bg);
+    padding: 14px 16px;
+}
+.is-todo .aiw-card { opacity: 0.75; }
+
+.aiw-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.aiw-emoji {
+    font-size: 18px;
+    line-height: 1;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+.aiw-title { flex: 1; min-width: 0; font-size: 14px; color: var(--text-main); }
+.aiw-chip {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--bg-input);
+    color: var(--text-muted);
+}
+.is-done .aiw-chip { color: var(--success); }
+.is-current .aiw-chip { background: var(--primary); color: var(--bg-card); }
+
+.aiw-info {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+.aiw-help {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--text-main);
+}
+.aiw-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+.is-done .aiw-actions, .is-todo .aiw-actions { gap: 4px; margin-top: 4px; }
+.aiw-actions:empty { display: none; }
+
+.aiw-finished {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    border: 1px solid var(--success);
+    color: var(--success);
+    font-weight: 600;
+}

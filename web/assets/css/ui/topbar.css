@@ -60,6 +60,32 @@
     letter-spacing: 0.4px;
 }
 
+.header-break-pill {
+    position: relative;
+    gap: 6px;
+}
+
+.header-break-pill.is-paused {
+    border-color: var(--warning);
+    color: var(--warning);
+}
+
+.header-break-emoji {
+    font-size: 14px;
+    line-height: 1;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}
+
+/* The native list covers the pill: one tap opens it, on a phone too. */
+.header-break-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: 0;
+}
+
 .header-quick-dial-wrapper {
     position: relative;
     display: flex;
