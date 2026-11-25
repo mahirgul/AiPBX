@@ -307,13 +307,14 @@
         const rows = [];
         // 1. Models the service knows: built-in (recommended) and ones added before. Ollama models are on their own tab.
         for (const m of localModels) {
-            if (!['tts', 'stt', 'embedding'].includes(m.kind) || String(m.id || '').startsWith('ollama-')) continue;
+            if (!['tts', 'stt', 'embedding', 'vad', 'turn'].includes(m.kind) || String(m.id || '').startsWith('ollama-')) continue;
             if (kind && m.kind !== kind) continue;
             if (!match(m.title, m.id, (m.languages || []).join(' '))) continue;
             const st = m.state || 'absent';
             const licUrl = safeHttpUrl(m.license_url);
             const sub = esc(HF_TXT.license) + ': ' + (licUrl ? `<a href="${esc(licUrl)}" target="_blank" rel="noopener">${esc(m.license || '?')}</a>` : esc(m.license || '?'))
-                + (m.commercial === false ? ' · ' + esc(HF_TXT.noncommercial) : '');
+                + (m.commercial === false ? ' · ' + esc(HF_TXT.noncommercial) : '')
+                + (m.kind === 'vad' || m.kind === 'turn' ? `<div class="u-fs-11 u-muted">${esc(m.note || '')}</div>` : '');
             const hfOrder = st === 'ready' || st === 'loading' ? 0
                 : (st === 'installed' || st === 'downloading' ? 1 : (st === 'error' ? 2 : 3));
             rows.push({ order: hfOrder, html: `<tr>

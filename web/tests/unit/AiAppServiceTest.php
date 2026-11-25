@@ -331,16 +331,25 @@ final class AiAppServiceTest extends TestCase
     public function testBuiltinAgentListeningSettingsAreClamped(): void
     {
         require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
-        $this->assertSame(['retries' => 2, 'silence_seconds' => 4, 'listen_seconds' => 10, 'line_profile' => 'normal',
-                           'local_context' => 0, 'barge_profile' => 'normal'], BuiltinAiAgentService::listening([]));
-        $this->assertSame(['retries' => 0, 'silence_seconds' => 10, 'listen_seconds' => 5, 'line_profile' => 'faint',
-                           'local_context' => 8192, 'barge_profile' => 'normal'],
-            BuiltinAiAgentService::listening(['retries' => '0', 'silence_seconds' => '99', 'listen_seconds' => '1',
-                                              'line_profile' => 'faint', 'local_context' => '8192']));
+        // an agent saved before these settings: asks twice, the standard detectors, and a goodbye ends the call
+        $this->assertEquals(['retries' => 2, 'silence_seconds' => 4, 'listen_seconds' => 10, 'line_profile' => 'normal',
+                             'local_context' => 0, 'barge_profile' => 'normal', 'end_on_goodbye' => true,
+                             'speech_detection' => 'standard', 'end_of_turn' => 'fixed'], BuiltinAiAgentService::listening([]));
+        $saved = BuiltinAiAgentService::listening(['retries' => '0', 'silence_seconds' => '99', 'listen_seconds' => '1',
+                                                    'line_profile' => 'faint', 'local_context' => '8192',
+                                                    'speech_detection' => 'silero', 'end_of_turn' => 'smart', 'end_on_goodbye' => '1']);
+        $this->assertEquals(['retries' => 0, 'silence_seconds' => 10, 'listen_seconds' => 5, 'line_profile' => 'faint',
+                             'local_context' => 8192, 'barge_profile' => 'normal', 'end_on_goodbye' => true,
+                             'speech_detection' => 'silero', 'end_of_turn' => 'smart'], $saved);
         $noisy = BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'noisy', 'local_context' => '999']);
         $this->assertSame(['noisy', 'noisy', 0], [$noisy['line_profile'], $noisy['barge_profile'], $noisy['local_context']]);
         $this->assertSame('faint', BuiltinAiAgentService::listening(['line_profile' => 'noisy', 'barge_profile' => 'faint'])['barge_profile']);
         $this->assertSame('normal', BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'loud'])['line_profile']);
+        // a saved form with the box cleared keeps it off; unknown detector names fall back to the standard ones
+        $off = BuiltinAiAgentService::listening(['silence_seconds' => '4']);
+        $this->assertSame([false, 'standard', 'fixed'], [$off['end_on_goodbye'], $off['speech_detection'], $off['end_of_turn']]);
+        $odd = BuiltinAiAgentService::listening(['silence_seconds' => '4', 'speech_detection' => 'x', 'end_of_turn' => 'y']);
+        $this->assertSame(['standard', 'fixed'], [$odd['speech_detection'], $odd['end_of_turn']]);
     }
 
     public function testBuiltinAgentStatsCsvAndWizard(): void
@@ -388,9 +397,11 @@ final class AiAppServiceTest extends TestCase
             ]);
             $this->assertTrue($cfg['builtin_agent']);
             $this->assertTrue($cfg['conversation']);
-            // saved before the listening settings: asks again twice, with a retry prompt
+            // saved before the listening settings: asks again twice, with a retry and a goodbye sentence
             $this->assertSame([2, 4, 10, 'normal'], [$cfg['retries'], $cfg['silence_seconds'], $cfg['listen_seconds'], $cfg['line_profile']]);
             $this->assertNotSame('', $cfg['retry']);
+            $this->assertNotSame('', $cfg['goodbye']);
+            $this->assertTrue($cfg['end_on_goodbye']);
             $this->assertSame('openai', $cfg['realtime_cloud']['provider'] ?? null);
             $this->assertSame('gpt-realtime', $cfg['realtime_cloud']['model'] ?? null);
             $this->assertSame('coral', $cfg['realtime_cloud']['voice'] ?? null);

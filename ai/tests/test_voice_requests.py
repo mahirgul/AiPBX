@@ -696,6 +696,10 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual(validate_config(hotel_config(line_profile="loud"), self.manager)["line_profile"], "normal")
         with self.assertRaises(ConfigError):
             validate_config(hotel_config(silence_seconds=30), self.manager)
+        config = validate_config(hotel_config(speech_detection="silero", end_of_turn="smart"), self.manager)
+        self.assertEqual((config["speech_detection"], config["end_of_turn"]), ("silero", "smart"))
+        config = validate_config(hotel_config(speech_detection="x", end_of_turn=1), self.manager)
+        self.assertEqual((config["speech_detection"], config["end_of_turn"]), ("standard", "fixed"))
         config = validate_config(hotel_config(local_context=8192, barge_profile="noisy"), self.manager)
         self.assertEqual((config["local_context"], config["barge_profile"]), (8192, "noisy"))
         config = validate_config(hotel_config(local_context=999, barge_profile="x"), self.manager)
@@ -770,6 +774,58 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertIn("caller=101", asked[0])
         self.assertTrue(asked[0].endswith("&q=12"))
         self.assertIn('oda("12") -> {"temiz": "evet"}', prompts[1])
+
+    def test_conversation_goodbye_ends_the_call_without_the_model(self):
+        self.stt.texts = ["kahvaltı saat kaçta", "hayır teşekkürler"]
+        u, c, prompts = self.conversation_call([
+            {"action": "reply", "say": "Kahvaltı yedi ile on arası. Başka bir isteğiniz var mı?"}],
+            end_on_goodbye=True, goodbye="Hoşça kalın.")
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.assertTrue(c.wait_prompts(2))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(len(prompts), 1)                           # the goodbye never reached the model
+        self.assertEqual(c.prompts()[-1], self.value("Hoşça kalın."))
+        self.assertEqual((self.result(u), self.details(u)[1]["result"]), ("_end", "ended"))
+        self.assertTrue(self.poll(lambda: self.registry.log.recent(1)))
+        self.assertTrue(any("the caller said goodbye" in n[1] for n in self.registry.log.recent(1)[0]["notes"]))
+
+    def test_conversation_goodbye_needs_the_setting_and_a_fitting_question(self):
+        self.stt.texts = ["merhaba", "teşekkürler"]
+        u, c, prompts = self.conversation_call([
+            {"action": "reply", "say": "Adınızı söyler misiniz?"},
+            {"action": "end", "say": "Görüşürüz."}], end_on_goodbye=True, goodbye="Hoşça kalın.")
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.assertTrue(c.wait_prompts(2))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(len(prompts), 2)                           # thanks for a question's answer: the model decides
+        self.assertEqual(self.result(u), "_end")
+
+    def test_conversation_agent_goodbye_ends_the_call(self):
+        self.stt.texts = ["teşekkür ederim ama bir şey soracağım"]
+        u, c, prompts = self.conversation_call([
+            {"action": "reply", "say": "Rica ederim, iyi günler dilerim."}], end_on_goodbye=True)
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(len(prompts), 1)
+        self.assertEqual((self.result(u), self.details(u)[1]["result"]), ("_end", "ended"))
+
+    def test_chosen_detectors_that_are_not_installed_are_noted_and_the_call_goes_on(self):
+        self.stt.texts = ["merhaba"]
+        u, c, prompts = self.conversation_call([{"action": "end", "say": "Görüşürüz."}],
+                                               speech_detection="silero", end_of_turn="smart")
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(self.result(u), "_end")
+        self.assertTrue(self.poll(lambda: self.registry.log.recent(1)))
+        notes = [n[1] for n in self.registry.log.recent(1)[0]["notes"]]
+        self.assertEqual(sum("Silero VAD is chosen but not installed" in n for n in notes), 1)      # once per call
+        self.assertEqual(sum("Smart Turn is chosen but not installed" in n for n in notes), 1)
 
     def test_conversation_model_failure_goes_to_the_destination(self):
         self.stt.texts = ["merhaba"]
@@ -952,6 +1008,87 @@ class ListenerTest(unittest.TestCase):
         quiet = self.frames(50, 25) + self.frames(300, 40) + self.frames(50, 60)   # RMS about 170
         self.assertEqual(Listener(7, profile="faint").feed(quiet), "speech")
         self.assertEqual(Listener(7).feed(quiet + self.frames(50, 200)), "silence")
+
+    def test_barge_in_needs_a_longer_voice_than_listening(self):
+        click = self.frames(50, 25) + self.frames(8000, 6) + self.frames(50, 200)       # 120 ms of sound: a cough
+        self.assertEqual(Listener(3).feed(click), "speech")
+        self.assertEqual(Listener(3, start_frames=12).feed(click), "silence")
+        word = self.frames(50, 25) + self.frames(8000, 20) + self.frames(50, 60)        # 400 ms: someone speaking
+        self.assertEqual(Listener(7, start_frames=12).feed(word), "speech")
+
+    # ---- optional detectors (Silero VAD, Smart Turn), here with fakes --------------------------------
+
+    class FakeVad:
+        def __init__(self, probability):
+            self.probability = probability
+
+        def feed(self, frame):
+            return self.probability
+
+    class FakeTurn:
+        def __init__(self, probabilities):
+            self.probabilities, self.calls = list(probabilities), 0
+
+        def complete(self, pcm):
+            self.calls += 1
+            value = self.probabilities.pop(0) if len(self.probabilities) > 1 else self.probabilities[0]
+            if isinstance(value, Exception):
+                raise value
+            return value
+
+    def speech_then_silence(self, seconds=3):
+        return self.frames(50, 25) + self.frames(8000, 50) + self.frames(50, 50 * seconds)
+
+    def test_voice_detector_gates_loud_noise(self):
+        noise = self.frames(50, 25) + self.frames(8000, 50) + self.frames(50, 250)
+        self.assertEqual(Listener(3, vad=self.FakeVad(0.9)).feed(noise), "speech")
+        lst = Listener(3, vad=self.FakeVad(0.1))
+        self.assertEqual(lst.feed(noise), "silence")              # loud, but not a voice: no turn starts
+        self.assertFalse(lst.heard)
+
+    def test_failing_voice_detector_falls_back_to_the_energy_level(self):
+        class Broken:
+            def feed(self, frame):
+                raise RuntimeError("boom")
+        lst = Listener(7, vad=Broken())
+        self.assertEqual(lst.feed(self.speech_then_silence()), "speech")
+        self.assertIn("voice detector failed", lst.turn_notes[0])
+
+    def test_smart_turn_ends_a_finished_sentence_early(self):
+        fixed = Listener(7)
+        fixed.feed(self.speech_then_silence())
+        turn = self.FakeTurn([0.9])
+        smart = Listener(7, turn=turn)
+        self.assertEqual(smart.feed(self.speech_then_silence()), "speech")
+        self.assertEqual(len(fixed.frames) - len(smart.frames), 20)      # 400 ms instead of 800 ms of silence
+        self.assertEqual(turn.calls, 1)
+        self.assertIn("complete (p=0.90) after 400 ms", smart.turn_notes[0])
+
+    def test_smart_turn_waits_for_an_unfinished_sentence_then_ends(self):
+        fixed = Listener(7)
+        fixed.feed(self.speech_then_silence())
+        turn = self.FakeTurn([0.1])
+        smart = Listener(7, turn=turn)
+        self.assertEqual(smart.feed(self.speech_then_silence()), "speech")
+        self.assertEqual(len(smart.frames) - len(fixed.frames), 40)      # 1.6 s instead of 0.8 s, then it ends anyway
+        self.assertEqual(turn.calls, 3)                                  # looked at 400, 800 and 1200 ms
+        self.assertIn("no sign that the caller is done", smart.turn_notes[0])
+
+    def test_smart_turn_sees_the_caller_go_on_talking(self):
+        turn = self.FakeTurn([0.1])
+        lst = Listener(15, turn=turn)
+        audio = self.frames(50, 25) + self.frames(8000, 30) + self.frames(50, 30) + self.frames(8000, 30) + self.frames(50, 120)
+        self.assertEqual(lst.feed(audio), "speech")
+        self.assertEqual(lst.utterance()[:0], b"")
+        self.assertGreater(len(lst.utterance()), 60 * 320)               # the pause did not end the turn: both parts are in
+
+    def test_failing_turn_model_falls_back_to_the_fixed_silence(self):
+        fixed = Listener(7)
+        fixed.feed(self.speech_then_silence())
+        lst = Listener(7, turn=self.FakeTurn([RuntimeError("boom")]))
+        self.assertEqual(lst.feed(self.speech_then_silence()), "speech")
+        self.assertEqual(len(lst.frames), len(fixed.frames))
+        self.assertIn("end-of-turn model failed", lst.turn_notes[0])
 
     def test_listen_seconds_cut_speech(self):
         lst = Listener(2)

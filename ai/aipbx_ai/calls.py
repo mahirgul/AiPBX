@@ -65,13 +65,13 @@ import urllib.request
 import uuid
 from collections import deque
 
-from . import cloud_llm, conversation, gateway, secret_refs
-from .calllog import CallLog, clip, redact
+from . import cloud_llm, conversation, farewell, gateway, secret_refs
+from .calllog import CallLog, clip, redact, settings
 from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
-from .voice_requests import CALIBRATION_FRAMES, NO_SPEECH_SECONDS, PRE_ROLL_FRAMES
+from .voice_requests import BARGE_FRAMES, CALIBRATION_FRAMES, NO_SPEECH_SECONDS, PRE_ROLL_FRAMES
 from .voice_requests import AppStore, Listener, ResultStore, pick_local_fallback
 
 log = logging.getLogger("aipbx_ai.calls")
@@ -399,7 +399,7 @@ class CallSession:
                 "audio_seconds": round(self.audio_seconds, 1), "played_seconds": round(played, 1),
                 "late_frames": self.late_frames, "max_late_ms": self.max_late_ms, "resyncs": self.resyncs,
                 "inbound_frames": self.inbound_frames, "intent": self.intent,
-                "transcripts": [clip(t) for t in tr[:8]], "notes": self.notes}
+                "transcripts": [clip(t) for t in tr[:8]], "notes": self.notes, "settings": settings(self.config)}
 
     def audio_in(self, kind, payload):
         self.inbound_bytes += len(payload)
@@ -1012,6 +1012,7 @@ class VoiceRequestsCall:
         self.reader = reader
         self.config = session.config
         self.attempts = []
+        self.missing_detectors = set()   # detectors chosen but not available: noted once per call
         self.audio = b""               # the caller's last utterance
         self.matched = None            # the intent dict
         self.reply_started = None      # monotonic
@@ -1112,7 +1113,8 @@ class VoiceRequestsCall:
         # only its speech detection is used here; without its own setting a faint line profile does not
         # carry over (line noise would stop prompts)
         cfg = self.config
-        probe = Listener(3600, profile=cfg.get("barge_profile") or ("noisy" if cfg.get("line_profile") == "noisy" else "normal"))
+        probe = Listener(3600, profile=cfg.get("barge_profile") or ("noisy" if cfg.get("line_profile") == "noisy" else "normal"),
+                         start_frames=BARGE_FRAMES, vad=self.detectors()[0])
         cur = {"pcm": pcm, "pos": 0, "sent": threading.Event(), "started": None, "ends": None}
         handed_over = False
         session.listen_q = q
@@ -1166,9 +1168,29 @@ class VoiceRequestsCall:
 
     # ---- audio in -------------------------------------------------------
 
+    def detectors(self):
+        """(a Silero stream or None, the Smart Turn backend or None): what the agent asked for and the models
+        that run. The call log says once when a chosen one is missing; the call goes on without it."""
+        cfg = self.config
+        ready = getattr(self.registry.manager, "ready_backend", None)
+        found = {}
+        for setting, wanted, kind, title in (("speech_detection", "silero", "vad", "Silero VAD"),
+                                             ("end_of_turn", "smart", "turn", "Smart Turn")):
+            if cfg.get(setting) != wanted:
+                continue
+            backend = ready(kind) if ready else None
+            if backend is None and kind not in self.missing_detectors:
+                self.missing_detectors.add(kind)
+                self.session.note(f"{title} is chosen but not installed or not running: the standard detection is used")
+            found[kind] = backend
+        vad = found.get("vad")
+        return (vad.new_stream() if vad else None), found.get("turn")
+
     def new_listener(self):
         cfg = self.config
-        return Listener(cfg["listen_seconds"], cfg.get("silence_seconds", NO_SPEECH_SECONDS), cfg.get("line_profile", "normal"))
+        vad, turn = self.detectors()
+        return Listener(cfg["listen_seconds"], cfg.get("silence_seconds", NO_SPEECH_SECONDS), cfg.get("line_profile", "normal"),
+                        vad=vad, turn=turn)
 
     def listen(self, pre=None):
         """One attempt: the attempt dict, or None when the caller hung up.
@@ -1234,6 +1256,9 @@ class VoiceRequestsCall:
                 dg_stream.close()
                 dg_stream = None
         ended = time.monotonic()
+        for line in listener.turn_notes:
+            session.note(line)
+        listener.turn_notes.clear()
         attempt = {"reason": reason, "transcript": "", "intent": None, "score": 0.0, "second": 0.0,
                    "scores": {}, "dtmf": "".join(digits), "listened_seconds": round(ended - started, 2),
                    "speech_seconds": 0.0, "stt_ms": 0}
@@ -1659,7 +1684,11 @@ class VoiceRequestsCall:
                 quiet = 0
                 session.transcript = text
                 session.hear(text)
+                last_said = next((t for r, t in reversed(self.history) if r == "assistant"), "")
                 self.history.append(("caller", text))
+                if cfg.get("end_on_goodbye") and farewell.caller_says_goodbye(text, lang, last_said):
+                    session.note("the caller said goodbye: the call ends")
+                    return self._finish(self.speak(cfg["goodbye"]) if cfg.get("goodbye") else b"", "ended")
             self.waiting_spoken = False
             started = time.monotonic()
             try:
@@ -1699,6 +1728,9 @@ class VoiceRequestsCall:
             if step["action"] == "reply":
                 self.history.append(("assistant", step["say"]))
                 pcm = self.speak(step["say"])
+                if cfg.get("end_on_goodbye") and pcm and farewell.assistant_says_goodbye(step["say"], lang):
+                    session.note("the agent said goodbye: the call ends")
+                    return self._finish(pcm, "ended")
                 if silent and not pcm:
                     pcm = self.prompt("retry")
                 elif cfg.get("builtin_agent") and not pcm:

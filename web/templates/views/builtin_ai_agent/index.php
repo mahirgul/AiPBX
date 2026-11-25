@@ -73,7 +73,7 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
     <p class="u-muted u-fs-12 u-mt-0"><?php echo $h(t('builtin_ai_agent.calls_help')); ?></p>
     <?php echo uiTableOpen([
         t('builtin_ai_agent.calls_time'), t('ai_apps.col_title'), t('builtin_ai_agent.calls_caller'), t('builtin_ai_agent.calls_result'),
-        t('builtin_ai_agent.calls_timing'), t('builtin_ai_agent.calls_said'), t('builtin_ai_agent.calls_problems'),
+        t('builtin_ai_agent.calls_timing'), t('builtin_ai_agent.calls_said'), t('builtin_ai_agent.calls_problems'), '',
     ], ['frame' => 'u-card-pad', 'attrs' => 'data-no-dt="true"']); ?>
     <?php foreach ($ai_calls as $c): ?>
         <?php $late = (int) ($c['late_frames'] ?? 0); $notes = (array) ($c['notes'] ?? []); ?>
@@ -89,6 +89,7 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
             </td>
             <td class="u-fs-12"><?php echo $h(implode(' · ', array_map('strval', (array) ($c['transcripts'] ?? []))) ?: '—'); ?></td>
             <td class="u-fs-12"><?php foreach ($notes as $n): ?><div class="u-danger"><?php echo $h(($n[0] ?? 0) . ' s: ' . ($n[1] ?? '')); ?></div><?php endforeach; ?><?php echo $notes ? '' : '—'; ?></td>
+            <td class="u-ta-right"><?php if (preg_match('/^[0-9a-f-]{36}$/', (string) ($c['uuid'] ?? ''))): ?><a href="/ai-agent?diag=<?php echo $h($c['uuid']); ?>" class="btn btn-icon btn-secondary btn-sm" title="<?php echo $h(t('builtin_ai_agent.calls_report_help')); ?>"><i class="fas fa-file-arrow-down"></i></a><?php endif; ?></td>
         </tr>
     <?php endforeach; ?>
     <?php echo uiTableClose(); ?>
@@ -237,6 +238,31 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
                 </div>
             </div>
             <small class="u-hint"><?php echo $h(t('builtin_ai_agent.listening_help')); ?></small>
+            <?php $missing = ' — ' . t('builtin_ai_agent.detector_missing'); ?>
+            <div class="u-d-grid u-gtc-1fr-1fr u-gap-8 u-mt-12">
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_speech_detection"><?php echo $h(t('builtin_ai_agent.speech_detection')); ?></label>
+                    <select class="form-control" id="builtin_agent_speech_detection" name="speech_detection">
+                        <option value="standard"<?php echo $selected('standard', $listen['speech_detection']); ?>><?php echo $h(t('builtin_ai_agent.speech_standard')); ?></option>
+                        <option value="silero"<?php echo $selected('silero', $listen['speech_detection']); echo ($detectors['vad'] || $listen['speech_detection'] === 'silero') ? '' : ' disabled'; ?>><?php echo $h(t('builtin_ai_agent.speech_silero') . ($detectors['vad'] ? '' : $missing)); ?></option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="builtin_agent_end_of_turn"><?php echo $h(t('builtin_ai_agent.end_of_turn')); ?></label>
+                    <select class="form-control" id="builtin_agent_end_of_turn" name="end_of_turn">
+                        <option value="fixed"<?php echo $selected('fixed', $listen['end_of_turn']); ?>><?php echo $h(t('builtin_ai_agent.turn_fixed')); ?></option>
+                        <option value="smart"<?php echo $selected('smart', $listen['end_of_turn']); echo ($detectors['turn'] || $listen['end_of_turn'] === 'smart') ? '' : ' disabled'; ?>><?php echo $h(t('builtin_ai_agent.turn_smart') . ($detectors['turn'] ? '' : $missing)); ?></option>
+                    </select>
+                </div>
+            </div>
+            <small class="u-hint"><?php echo $h(t('builtin_ai_agent.detectors_help')); ?> <a href="/ai-local?tab=huggingface"><?php echo $h(t('builtin_ai_agent.detectors_link')); ?></a></small>
+            <div class="form-group u-mt-12">
+                <label class="u-check-label">
+                    <input type="checkbox" class="u-accent" name="end_on_goodbye" value="1" aria-describedby="builtinAgentGoodbyeHelp"<?php echo !empty($listen['end_on_goodbye']) ? ' checked' : ''; ?>>
+                    <?php echo $h(t('builtin_ai_agent.end_on_goodbye')); ?>
+                </label>
+                <small class="u-hint" id="builtinAgentGoodbyeHelp"><?php echo $h(t('builtin_ai_agent.end_on_goodbye_help')); ?></small>
+            </div>
             <div class="form-group u-mt-12">
                 <label class="form-label" for="builtin_agent_summary_email"><?php echo $h(t('builtin_ai_agent.summary_email')); ?></label>
                 <input type="email" class="form-control" id="builtin_agent_summary_email" name="summary_email" maxlength="254"

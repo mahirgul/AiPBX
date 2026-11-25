@@ -27,6 +27,26 @@ def redact(text, limit=NOTE_CHARS):
 _DIGITS = re.compile(r"(?:\d[ -]?){6,}")
 
 
+# The settings that handled a call, for a support report: names and numbers only, never a key or a text.
+SETTING_KEYS = ("language", "stt_lang", "stt_model", "tts_model", "understand", "speed", "listen_seconds", "retries",
+                "silence_seconds", "line_profile", "barge_profile", "barge_in", "speech_detection", "end_of_turn",
+                "end_on_goodbye", "local_context", "max_turns", "conversation", "builtin_agent", "knowledge",
+                "automatic_announcements")
+
+
+def settings(config):
+    """A call's settings as plain values; providers and models of cloud accounts by name, without credentials."""
+    config = config or {}
+    out = {k: config[k] for k in SETTING_KEYS if isinstance(config.get(k), (str, int, float, bool))}
+    for key in ("realtime_cloud", "llm_cloud", "stt_cloud", "tts_cloud"):
+        account = config.get(key)
+        if isinstance(account, dict) and account.get("provider"):
+            out[key] = "/".join(str(account[k]) for k in ("provider", "model") if account.get(k))
+    if config.get("local_chat_app"):
+        out["local_chat"] = True
+    return out
+
+
 def clip(text, limit=120):
     """For what a caller said: a long unbroken string (a pasted key) and any run of 6 or more digits
     (card, ID or phone numbers) are hidden, as in the other transcripts under a strict privacy preset."""

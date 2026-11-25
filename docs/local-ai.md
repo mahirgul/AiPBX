@@ -543,6 +543,31 @@ beni uyandırır mısınız?" → `… uyandır musunuz` → wakeup 0.8; a silen
 not_understood → `none`. From the end of speech to the start of the reply: 1.25–1.43 s (0.8 s of
 it is the VAD's end-of-speech wait, 0.42–0.58 s the transcription).
 
+### Optional call detectors (advanced)
+
+Two small models change how an AI agent listens. They are not installed by default and do not grow the
+installation: with the runtime installed, *Local AI → Hugging Face* lists them (kinds *VAD* and *Turn*) and
+*Download* fetches them (pinned revision, SHA-256 checked). An agent chooses them under *Advanced settings*; the
+default is the standard detection, and without the model a chosen detector is noted once in the AI call log and the
+call goes on with the standard detection.
+
+| Model | Size | Licence | What it does |
+|---|---|---|---|
+| Silero VAD (v5, ONNX) | 2.2 MB | MIT | Tells a voice from line noise. A frame starts a turn or stops a prompt only if it is loud enough **and** a voice. About 0.08 ms per 32 ms window. |
+| Smart Turn v3.2 (Pipecat, ONNX int8) | 8.7 MB | BSD-2-Clause | Listens to the last 8 seconds of the turn and says whether the caller is finished. The first look is after 0.4 s of silence (instead of a fixed 0.8 s): complete ends the turn at once, incomplete waits and looks again every 0.4 s, and after 1.6 s the turn ends anyway. About 100 ms per look. |
+
+Both run on the CPU through onnxruntime. Silero reads 8 kHz audio directly. Smart Turn expects 16 kHz: the call's
+8 kHz audio is widened by interpolation, and its features (Whisper log-mel) are computed in numpy, identical to
+Pipecat's own implementation.
+
+**What is measured, and what is not.** The Smart Turn authors report 96.8 % accuracy for Turkish (966 samples) and
+92.6 % over all languages on their test set of 16 kHz recordings. Telephone audio is 8 kHz, so this is not a measure
+of your lines. On synthetic speech here it separated some finished and unfinished sentences and not others, and
+a telephone number (digits) scored low as a finished turn. Try it on test calls: every decision is written to the call
+log ("end of turn: complete (p=0.83) after 400 ms of silence"). If it ends turns too early or too late, switch the
+agent back to *After 0.8 seconds of silence*. Silero separated speech from white noise, hum and speech with noise on
+synthetic audio; speech-like noise (voices in the background, music) can still fool it.
+
 ## Removing
 
 - One model: *Remove* on the page (`POST /v1/models/{id}/remove`) unloads it and deletes its files.

@@ -36,6 +36,7 @@ from .ema import EmaLightningBackend
 from .kokoro_backend import KokoroBackend
 from .piper_backend import PiperBackend
 from .embedding import EmbeddingBackend
+from .onnx_models import SileroBackend, SmartTurnBackend
 from .vosk_backend import VoskBackend
 from .whisper_backend import WhisperBackend
 
@@ -51,7 +52,7 @@ ABSENT, DOWNLOADING, INSTALLED, LOADING, READY, ERROR = (
 class ModelSpec:
     id: str
     title: str
-    kind: str              # "tts" now; "embedding" later
+    kind: str              # "tts", "stt", "llm", "embedding"; "vad" and "turn" (optional call detectors)
     languages: tuple
     license: str
     license_url: str
@@ -134,6 +135,15 @@ E5_SMALL = {
                            "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"},
     },
 }
+
+
+# Optional call detectors: one pinned file each (SHA-256 checked before every load).
+SILERO = {"repo": "onnx-community/silero-vad", "revision": "e71cae966052b992a7eca6b17738916ce0eca4ec",
+          "files": {"model.onnx": {"path": "onnx/model.onnx", "bytes": 2243022,
+                                   "sha256": "a4a068cd6cf1ea8355b84327595838ca748ec29a25bc91fc82e6c299ccdc5808"}}}
+SMART_TURN = {"repo": "pipecat-ai/smart-turn-v3", "revision": "f766f81d3cfdf7737ac64aad813d91bbfd56bf93",
+              "files": {"model.onnx": {"path": "smart-turn-v3.2-cpu.onnx", "bytes": 8679182,
+                                       "sha256": "2bb026316b14a660486a75b1733cd3fbab8c2fd0314dc9af7be49f8cca967e4f"}}}
 
 
 # Kokoro-82M voices: onnx-community/Kokoro-82M-v1.0-ONNX at a pinned revision.
@@ -236,6 +246,22 @@ REGISTRY = (
             "c4b235a4c1f2cd3b939fed08b899ce9385638b763f7b73a59616c4fc9bd6c9bc", ("en-GB",), "male", "C",
             measured={"realtime_factor": 1.65, "memory_mb": 460, "load_s": 1.6}),
     # Sentence meaning for the voice requests (embedding.py), every language.
+    # Optional detectors of the call path (onnx_models.py), pinned and checked like every model.
+    ModelSpec(id="silero-vad", title="Speech detection: Silero VAD", kind="vad", languages=(), license="MIT",
+              license_url=f"https://huggingface.co/onnx-community/silero-vad/blob/{SILERO['revision']}/LICENSE",
+              homepage="https://github.com/snakers4/silero-vad", download_mb=3, backend=SileroBackend,
+              engine="silero", measured={"ms_per_window": 0.08, "memory_mb": 20, "load_s": 0.1},
+              note="Tells a voice from line noise, so noise does not start a turn or stop a prompt. "
+                   "Optional: choose it in an agent's advanced settings.",
+              source={"repo": SILERO["repo"], "revision": SILERO["revision"], "files": SILERO["files"]}),
+    ModelSpec(id="smart-turn-v3", title="End of turn: Smart Turn v3", kind="turn", languages=(), license="BSD-2-Clause",
+              license_url=f"https://huggingface.co/{SMART_TURN['repo']}/blob/{SMART_TURN['revision']}/README.md",
+              homepage="https://github.com/pipecat-ai/smart-turn", download_mb=9, backend=SmartTurnBackend,
+              engine="smart-turn", measured={"ms_per_check": 100, "memory_mb": 60, "load_s": 0.3},
+              note="Decides from the sound whether the caller has finished, so a pause to think does not cut "
+                   "them off and a finished sentence does not wait a full 800 ms. Trained on 16 kHz speech; "
+                   "how well it does on your lines is yours to try (it is off until an agent selects it).",
+              source={"repo": SMART_TURN["repo"], "revision": SMART_TURN["revision"], "files": SMART_TURN["files"]}),
     ModelSpec(id="e5-small-multilingual", title="Sentence meaning: multilingual-e5-small", kind="embedding",
               languages=("tr-TR", "de-DE", "en-US", "en-GB"), license="MIT",
               license_url=f"https://huggingface.co/intfloat/multilingual-e5-small/blob/{E5_SMALL['upstream']}/README.md",
@@ -686,6 +712,16 @@ class ModelManager:
 
     def embed(self, model_id, texts):
         return self._run_job(model_id, "embedding", lambda b: b.embed(texts))
+
+    def ready_backend(self, kind):
+        """The loaded backend of a ready model of this kind, or None. For the detectors of the call path,
+        which run beside the job queue (a call must never wait behind a synthesis)."""
+        for entry in self._snapshot():
+            if entry.spec.kind == kind:
+                with self._mu:
+                    if self._state(entry) == READY and not entry.unloading:
+                        return entry.backend
+        return None
 
     def ready_embedding(self):
         """Id of a running sentence-meaning model, or None."""

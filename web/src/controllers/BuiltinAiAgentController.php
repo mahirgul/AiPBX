@@ -27,6 +27,19 @@ final class BuiltinAiAgentController extends BaseController
     public static function index(): void
     {
         static::requireRole('admin');
+        if (isset($_GET['diag'])) {                               // one call's report for a support request
+            $uuid = strtolower((string) $_GET['diag']);
+            $entry = preg_match('/^[0-9a-f-]{36}$/', $uuid)
+                ? current(array_filter(LocalAiService::callLog(100), static fn ($c) => ($c['uuid'] ?? '') === $uuid)) : false;
+            if (!$entry) {
+                http_response_code(404);
+                exit;
+            }
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="ai-call-' . $uuid . '.json"');
+            echo json_encode(['report' => 'aipbx ai call', 'created' => date('c'), 'call' => $entry], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+            exit;
+        }
         if (($_GET['export'] ?? '') === 'csv') {
             header('Content-Type: text/csv; charset=utf-8');
             header('Content-Disposition: attachment; filename="ai-agent-calls-' . date('Ymd') . '.csv"');
@@ -74,6 +87,7 @@ final class BuiltinAiAgentController extends BaseController
             'default_instructions' => BuiltinAiAgentService::defaultInstructionsTemplate(),
             'targets' => BuiltinAiAgentService::targets(true), 'csrf_token' => getCSRFToken(),
             'stats' => $edit === null ? BuiltinAiAgentService::stats() : [],
+            'detectors' => $edit !== null ? BuiltinAiAgentService::detectors() : ['vad' => false, 'turn' => false],
             'ai_calls' => $edit === null ? LocalAiService::callLog(30) : [],
         ], ['title' => t('builtin_ai_agent.title')] + $notices);
     }

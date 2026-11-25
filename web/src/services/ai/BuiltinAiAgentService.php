@@ -147,6 +147,7 @@ final class BuiltinAiAgentService
             'agent_config' => [
                 'conversation' => true, 'barge_in' => !empty($data['barge_in']),
                 'retry' => langStrings($lang)['ai_apps.default_agent_retry'] ?? langStrings('en')['ai_apps.default_agent_retry'],
+                'goodbye' => langStrings($lang)['ai_apps.default_agent_goodbye'] ?? langStrings('en')['ai_apps.default_agent_goodbye'],
             ] + self::listening($data) + [
                 'automatic_announcements' => !empty($data['automatic_announcements']),
                 'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => $lang, 'stt_model' => (string) $data['stt_model'],
@@ -240,6 +241,25 @@ final class BuiltinAiAgentService
         return $rows;
     }
 
+    /** Which optional detectors are installed (Local AI plugin on and the model downloaded): ['vad' => bool, 'turn' => bool]. */
+    public static function detectors(): array
+    {
+        $ready = ['vad' => false, 'turn' => false];
+        if (!PluginManager::isEnabled('ailocal')) {
+            return $ready;
+        }
+        try {
+            foreach (LocalAiService::models() as $model) {
+                if (isset($ready[$model['kind'] ?? '']) && in_array($model['state'] ?? '', ['ready', 'installed', 'loading'], true)) {
+                    $ready[$model['kind']] = true;
+                }
+            }
+        } catch (\Throwable) {
+            // the AI service is not running: nothing is installed as far as the form can tell
+        }
+        return $ready;
+    }
+
     /**
      * Advanced listening settings, each clamped to what the gateway accepts. An agent saved before
      * they existed has no `silence_seconds` and gets these defaults (it was saved with retries 0).
@@ -255,6 +275,11 @@ final class BuiltinAiAgentService
             'silence_seconds' => $int('silence_seconds', 3, 10, 4),
             'listen_seconds' => $int('listen_seconds', 5, 15, 10),
             'line_profile' => $line,
+            // optional detectors (small models installed on the Local AI page); the standard detection is the default
+            'speech_detection' => ($data['speech_detection'] ?? '') === 'silero' ? 'silero' : 'standard',
+            'end_of_turn' => ($data['end_of_turn'] ?? '') === 'smart' ? 'smart' : 'fixed',
+            // a goodbye from the caller (or the agent) ends the call; agents saved before this setting get it
+            'end_on_goodbye' => $legacy ? true : !empty($data['end_on_goodbye']),
             'local_context' => in_array((int) ($data['local_context'] ?? 0), self::LOCAL_CONTEXTS, true) ? (int) ($data['local_context'] ?? 0) : 0,
             // a noisy line makes barge-in harder too, unless set; a faint one does not make it easier
             'barge_profile' => in_array($data['barge_profile'] ?? '', self::LINE_PROFILES, true)

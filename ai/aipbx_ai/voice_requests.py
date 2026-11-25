@@ -62,7 +62,12 @@ FRAME_SECONDS = 0.02
 # Voice activity detection (see Listener).
 CALIBRATION_FRAMES = 15      # 300 ms: the first noise floor
 START_FRAMES = 3             # 60 ms above the speech level start an utterance
+BARGE_FRAMES = 12            # 240 ms: a caller talking over a prompt; a cough or a "mm-hm" does not stop it
 END_FRAMES = 40              # 800 ms below it end the utterance
+# With the optional Smart Turn model: first look after 400 ms of silence, again every 400 ms, and end the
+# turn when it says "complete" or after 1.6 s anyway; Silero VAD: a frame is a voice at this probability.
+TURN_CHECK_FRAMES, TURN_RECHECK_FRAMES, TURN_CAP_FRAMES = 20, 20, 80
+TURN_THRESHOLD = SILERO_THRESHOLD = 0.5
 NO_SPEECH_SECONDS = 4.0      # nothing said by then: silence
 PRE_ROLL_FRAMES = 15         # 300 ms kept before the detected start
 TAIL_FRAMES = 15             # 300 ms kept after the last loud frame
@@ -177,6 +182,13 @@ def validate_config(data, manager=None):
         "greeting": _text(data, "greeting", required=True),
         "retry": _text(data, "retry"),
         "not_understood": _text(data, "not_understood"),
+        # What the agent says when the caller says goodbye (end_on_goodbye), and whether a goodbye ends the call.
+        "goodbye": _text(data, "goodbye"),
+        "end_on_goodbye": data.get("end_on_goodbye") is True,
+        # Optional detectors, installed from the Local AI page: "silero" tells a voice from noise, "smart" asks
+        # the Smart Turn model whether the caller is done. Without the model the standard detection runs.
+        "speech_detection": "silero" if data.get("speech_detection") == "silero" else "standard",
+        "end_of_turn": "smart" if data.get("end_of_turn") == "smart" else "fixed",
         "listen_seconds": _number(data, "listen_seconds", LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT, integer=True),
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
         "silence_seconds": _number(data, "silence_seconds", SILENCE_MIN, SILENCE_MAX, int(NO_SPEECH_SECONDS), integer=True),
@@ -746,7 +758,14 @@ class Listener:
     "speech", "timeout" (speech cut at listen_seconds) or "silence".
     """
 
-    def __init__(self, listen_seconds, silence_seconds=NO_SPEECH_SECONDS, profile="normal"):
+    def __init__(self, listen_seconds, silence_seconds=NO_SPEECH_SECONDS, profile="normal", start_frames=START_FRAMES,
+                 vad=None, turn=None):
+        self.start_frames = start_frames     # frames in a row at speech level that start the utterance
+        self.vad = vad                       # onnx_models.SileroStream: a frame needs a voice, not only energy
+        self.turn = turn                     # onnx_models.SmartTurnBackend: decides when the turn is over
+        self.voices = []                     # per frame: did the VAD hear a voice
+        self.turn_notes = []                 # what the detectors decided, for the call log
+        self._next_check = TURN_CHECK_FRAMES
         self.max_frames = int(round(listen_seconds / FRAME_SECONDS))
         self.no_speech_frames = int(round(min(silence_seconds, listen_seconds) / FRAME_SECONDS))
         self.speech_factor, self.min_speech_rms = PROFILES.get(profile, PROFILES["normal"])
@@ -779,6 +798,8 @@ class Listener:
         self.frames.append(frame)
         level = frame_rms(frame)
         self.levels.append(level)
+        voice = self._voice(frame)
+        self.voices.append(voice)
         if self.floor is None:
             if index + 1 >= CALIBRATION_FRAMES:
                 quiet = sorted(self.levels)[:max(1, len(self.levels) // 2)]
@@ -786,30 +807,64 @@ class Listener:
                 self.base_floor = self.floor   # faint(): the floor before a faint voice pulls it up
                 # frames of the calibration window may already be speech
                 for j, lv in enumerate(self.levels):
-                    if self._level(lv, j, now):
+                    if self._level(lv, j, now, self.voices[j]):
                         return "speech"
                 return self._limits(index)
             return None
-        if self._level(level, index, now):
+        if self._level(level, index, now, voice):
             return "speech"
         return self._limits(index)
 
-    def _level(self, level, index, now):
+    def _voice(self, frame):
+        if self.vad is None:
+            return True
+        try:
+            return self.vad.feed(frame) >= SILERO_THRESHOLD
+        except Exception as e:  # noqa: BLE001 - a failing detector never costs a call: back to the energy level alone
+            self.vad = None
+            self.turn_notes.append(f"voice detector failed ({type(e).__name__}): the energy level alone decides")
+            return True
+
+    def _level(self, level, index, now, voice=True):
         """Updates the speech state with one frame; True when the utterance ended."""
-        loud = level >= self.threshold
+        loud = level >= self.threshold and voice
         if loud:
+            self._next_check = TURN_CHECK_FRAMES
             self.loud_run += 1
-            if self.start is not None or self.loud_run >= START_FRAMES:
+            if self.start is not None or self.loud_run >= self.start_frames:
                 self.last_loud = index
                 self.last_loud_time = now if now is not None else time.monotonic()
-            if self.start is None and self.loud_run >= START_FRAMES:
-                self.start = max(0, index - START_FRAMES + 1 - PRE_ROLL_FRAMES)
+            if self.start is None and self.loud_run >= self.start_frames:
+                self.start = max(0, index - self.start_frames + 1 - PRE_ROLL_FRAMES)
         else:
             self.loud_run = 0
             if self.start is None:
                 rate = FLOOR_FALL if level < self.floor else FLOOR_ADAPT
                 self.floor = min(MAX_FLOOR, max(MIN_FLOOR, (1 - rate) * self.floor + rate * level))
-        return self.start is not None and index - self.last_loud >= END_FRAMES
+        return self.start is not None and self._ended(index)
+
+    def _ended(self, index):
+        """The silence after the last loud frame ends the turn: 800 ms, or the Smart Turn model's say."""
+        quiet = index - self.last_loud
+        if self.turn is None:
+            return quiet >= END_FRAMES
+        if quiet < self._next_check:
+            return False
+        ms = quiet * 20
+        if quiet >= TURN_CAP_FRAMES:
+            self.turn_notes.append(f"end of turn: {ms} ms of silence and no sign that the caller is done: ended")
+            return True
+        try:
+            probability = self.turn.complete(b"".join(self.frames[self.start:index + 1]))
+        except Exception as e:  # noqa: BLE001 - back to the fixed silence
+            self.turn = None
+            self.turn_notes.append(f"end-of-turn model failed ({type(e).__name__}): the fixed silence decides")
+            return quiet >= END_FRAMES
+        if probability >= TURN_THRESHOLD:
+            self.turn_notes.append(f"end of turn: complete (p={probability:.2f}) after {ms} ms of silence")
+            return True
+        self._next_check = quiet + TURN_RECHECK_FRAMES
+        return False
 
     def _limits(self, index):
         if index + 1 >= self.max_frames:

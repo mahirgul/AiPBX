@@ -98,7 +98,7 @@ $olRunning = in_array($olState, ['installed', 'ready', 'running'], true);
                 <input type="search" id="ail-hf-query" class="form-control form-control-sm u-maxw-260" placeholder="<?php echo $h(t('ai_local.hf_search_placeholder', 'Name, language (tr, de, en) or Hub search...')); ?>" value="" onkeydown="if(event.key==='Enter'){event.preventDefault();ailLoadHf(false);}">
                 <select id="ail-hf-kind" class="form-control form-control-sm u-w-auto" onchange="ailRenderHf()">
                     <option value=""><?php echo $h(t('ai_models.filter_all_kinds', 'All kinds')); ?></option>
-                    <option value="tts">TTS</option><option value="stt">STT</option><option value="embedding">Embedding</option>
+                    <option value="tts">TTS</option><option value="stt">STT</option><option value="embedding">Embedding</option><option value="vad">VAD</option><option value="turn">Turn</option>
                 </select>
                 <button type="button" class="btn btn-secondary btn-sm" onclick="ailLoadHf(false)"><i class="fas fa-search"></i></button>
             </div>

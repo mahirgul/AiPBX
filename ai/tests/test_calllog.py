@@ -68,6 +68,23 @@ class SessionRecordTest(unittest.TestCase):
         reg.close()
 
 
+class SettingsTest(unittest.TestCase):
+    def test_a_support_report_holds_names_and_numbers_never_credentials(self):
+        from aipbx_ai.calllog import settings
+        config = {"language": "tr", "retries": 2, "line_profile": "noisy", "end_of_turn": "smart", "greeting": "Merhaba, ben Ali",
+                  "realtime_cloud": {"provider": "openai", "model": "gpt-realtime", "api_key": "sk-secret-1234567890"},
+                  "llm_cloud": {"provider": "google", "secret_ref": "app:1:llm:google"}, "tools": [{"url": "https://x/?k=secret"}],
+                  "local_chat_app": 7, "intents": [{"id": "a"}]}
+        out = settings(config)
+        self.assertEqual(out["retries"], 2)
+        self.assertEqual((out["realtime_cloud"], out["llm_cloud"]), ("openai/gpt-realtime", "google"))
+        self.assertTrue(out["local_chat"])
+        flat = repr(out)
+        for secret in ("sk-secret", "secret_ref", "Merhaba", "https://x", "intents"):
+            self.assertNotIn(secret, flat)
+        self.assertEqual(settings(None), {})
+
+
 class EndpointTest(unittest.TestCase):
     def test_bearer_only_never_the_application_key(self):
         d = tempfile.mkdtemp()
