@@ -62,7 +62,7 @@ echo '--- 0. the SSH advisory cannot fail a finished install'
 # a finished install reported failure and aipbx-update rolled the box back over
 # an advisory. The block is extracted from install.sh rather than copied, so a
 # revert to the bare `sshd -T` fails here.
-advisory="$(awk '/^ssh_cfg=/{p=1} p&&/All credentials saved to/{exit} p{print}' "${INSTALL_FILES[@]}")"
+advisory="$(awk '/^ssh_cfg=/{p=1} p&&(/^TOOK=/ || /All credentials saved to/){exit} p{print}' "${INSTALL_FILES[@]}")"
 if [ -z "$advisory" ]; then
     bad 'the SSH advisory is gone from install.sh (deleting it is not a fix)'
 else
