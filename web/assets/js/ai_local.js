@@ -155,22 +155,6 @@
             + `<button type="button" class="btn btn-danger btn-xs" data-ail-action="model_remove" data-id="${id}"><i class="fas fa-trash"></i></button>`;
     }
 
-    function ailModelActions(m) {
-        const id = esc(m.id), st = m.state || 'absent';
-        if (st === 'absent' || st === 'error') {
-            return `<button type="button" class="btn btn-primary btn-xs" data-ail-action="model_install" data-id="${id}"><i class="fas fa-download"></i> ${esc(HF_TXT.download)}</button>`
-                + (st === 'error' ? ` <button type="button" class="btn btn-danger btn-xs" data-ail-action="model_remove" data-id="${id}"><i class="fas fa-trash"></i></button>` : '');
-        }
-        if (st === 'downloading') {
-            return `<button type="button" class="btn btn-warning btn-xs" data-ail-action="model_cancel" data-id="${id}"><i class="fas fa-ban"></i> ${esc(HF_TXT.cancel)}</button>`;
-        }
-        if (st === 'loading') return '';
-        return (st === 'ready'
-            ? `<button type="button" class="btn btn-warning btn-xs" data-ail-action="model_stop" data-id="${id}"><i class="fas fa-stop"></i> ${esc(HF_TXT.stop)}</button> `
-            : `<button type="button" class="btn btn-success btn-xs" data-ail-action="model_run" data-id="${id}"><i class="fas fa-play"></i> ${esc(HF_TXT.run)}</button> `)
-            + `<button type="button" class="btn btn-danger btn-xs" data-ail-action="model_remove" data-id="${id}"><i class="fas fa-trash"></i></button>`;
-    }
-
     // One table: the voices and detectors of the service plus the whole Piper catalogue (not added yet).
     window.ailRender = function () {
         const tbody = document.getElementById('ail-tbody');

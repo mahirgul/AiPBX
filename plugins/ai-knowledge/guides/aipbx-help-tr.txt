@@ -63,8 +63,8 @@ C: Dış Hat → Arama Yetkileri sayfasında hangi dahilinin hangi numaraları a
 S: Yapay zekâ ile telefona cevap veren bir asistan nasıl kurulur?
 C: AI Uygulamaları → Uygulamalar sayfasında bir uygulama oluşturun: bilgiyi okuyan anons, arayanın isteğini anlayıp yönlendiren sesli talep, sesle yönlendirme ya da bulut dil modeliyle konuşma modu. Sonra uygulamayı gelen rotada hedef olarak seçin.
 
-S: Yerel ya da bulut AI modelleri nereden ayarlanır?
-C: AI Ayarları → Yerel AI sunucunun kendisinde çalışan küçük modelleri (Ollama, Piper sesleri, Whisper ve Vosk) yönetir. AI Ayarları → Bulut servisleri OpenAI, Gemini, Claude, Azure, ElevenLabs gibi sağlayıcıları bağlar. Her iş için varsayılan model Bağlantılar sekmesinden seçilir.
+S: Yerel sesler ya da bulut AI hesapları nereden ayarlanır?
+C: AI Ayarları → Yerel TTS bu sunucuda çalışan seslendirme modellerini (EMA, Piper, Kokoro) ve küçük çağrı algılayıcılarını (Silero VAD, Smart Turn) yönetir. AI Ayarları → Bulut AI ise OpenAI, Gemini, Claude, Deepgram, Azure, ElevenLabs veya Ollama/OpenAI uyumlu sunucu hesaplarını bağlar; her ajan ya da özellik kullanacağı hesabı doğrudan seçer.
 
 S: Sesli mesajlar yazıya dökülebilir mi?
 C: Evet. AI Ayarları → Sesli Mesaj AI sayfasında yazıya dökme ve özet açılır; metin e-postada ve uygulamada görünür.

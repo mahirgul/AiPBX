@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Φωνητικό ταχυδρομείο ως κείμενο',
     'mail_templates.vm_ai_summary' => 'Περίληψη',
     'mail_templates.vm_ai_transcript' => 'Τι ειπώθηκε',
-    'ai_cloud.accounts_title' => 'Υπηρεσίες',
     'ai_cloud.account_add' => 'Προσθήκη',
     'ai_cloud.err_engine' => 'Αυτή η μηχανή δεν μπορεί να εκτελέσει αυτήν την εργασία.',
     'ai_cloud.test_ok' => 'Η σύνδεση λειτουργεί.',

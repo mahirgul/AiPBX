@@ -123,7 +123,7 @@ final class AiKnowledgeService
             throw new \InvalidArgumentException(t('ai_knowledge.err_text'));
         }
         $id = self::saveCollection($id, $name, $description, $roles, $embeddingBinding);
-        $st = getDB()->prepare('SELECT id, version, sha256 FROM ai_knowledge_docs WHERE collection_id = ? ORDER BY id ASC LIMIT 1');
+        $st = getDB()->prepare('SELECT id, filename, version, sha256 FROM ai_knowledge_docs WHERE collection_id = ? ORDER BY id ASC LIMIT 1');
         $st->execute([$id]);
         $doc = $st->fetch(PDO::FETCH_ASSOC);
         if ($text === '') {
@@ -131,7 +131,8 @@ final class AiKnowledgeService
                 self::deleteDocument((int) $doc['id']);
             }
         } elseif (!$doc || $doc['sha256'] !== hash('sha256', $text)) {
-            self::addDocument($id, $name, self::TEXT_FILE, $text, $doc ? (int) $doc['id'] : 0, $doc ? (int) $doc['version'] : null);
+            $filename = ($doc && !empty($doc['filename'])) ? (string) $doc['filename'] : self::TEXT_FILE;
+            self::addDocument($id, $name, $filename, $text, $doc ? (int) $doc['id'] : 0, $doc ? (int) $doc['version'] : null);
         }
         return $id;
     }

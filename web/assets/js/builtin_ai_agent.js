@@ -166,13 +166,17 @@
         const first = pal.querySelector('[data-palette="' + word + '"] input, [data-palette="' + word + '"] select');
         if (first) first.focus();
     }));
-    pal.querySelector('[data-palette-close]').addEventListener('click', () => { pal.hidden = true; });
+    const clearPalette = () => {
+        pal.querySelectorAll('input[data-p]').forEach(inp => { inp.value = ''; });
+    };
+    pal.querySelector('[data-palette-close]').addEventListener('click', () => { clearPalette(); pal.hidden = true; });
     pal.querySelector('[data-palette-insert]').addEventListener('click', function () {
         const box = pal.querySelector('[data-palette="' + word + '"]');
         const v = k => (box.querySelector('[data-p="' + k + '"]') || {}).value || '';
         const sel = box.querySelector('select[data-p="target"]');
+        const selLabel = (sel && sel.selectedIndex >= 0 && sel.options[sel.selectedIndex]) ? sel.options[sel.selectedIndex].text.split('·').pop() : '';
         let token = '';
-        if (word === 'transfer') token = '{transfer, ' + (v('name') || slug(sel ? sel.options[sel.selectedIndex].text.split('·').pop() : '')) + ', ' + v('target') + '}';
+        if (word === 'transfer') token = '{transfer, ' + (v('name') || slug(selLabel)) + ', ' + v('target') + '}';
         if (word === 'greeting') {
             const lang = v('lang');
             const n = tokens(ta.value).filter(t => t.word === 'greeting' && (t.parts[2] || '').toLowerCase() === lang).length + 1;
@@ -196,6 +200,7 @@
         if (word === 'announcements') token = '{announcements, ' + v('on') + '}';
         if (word === 'email') token = '{email, ' + (v('mail') || 'calls@example.com') + '}';
         if (token) insert(token);
+        clearPalette();
         pal.hidden = true;
     });
 

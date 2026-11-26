@@ -466,7 +466,7 @@ final class AiAppServiceTest extends TestCase
                 'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:google_ai', 'realtime_voice' => 'coral']),
             ]);
             $this->assertSame('google_ai', $gCfg['realtime_cloud']['provider'] ?? null);
-            $this->assertSame('gemini-3.8-live', $gCfg['realtime_cloud']['model'] ?? null);
+            $this->assertSame('gemini-3.1-flash-live-preview', $gCfg['realtime_cloud']['model'] ?? null);
         } finally {
             SecretBox::useKey(null);
             $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_tts.google_ai.%'");

@@ -22,6 +22,7 @@ class AiCallAnalysisController extends BaseController
         }
 
         $pluginEnabled = PluginManager::isEnabled('ai-call-analysis');
+        $canEdit = hasModulePermission('ai_call_analysis', 'edit') || userHasRole('admin');
         $message = '';
         $error = '';
 
@@ -33,8 +34,8 @@ class AiCallAnalysisController extends BaseController
         if (static::isPost()) {
             if (!static::verifyCsrf()) {
                 $error = t('common.invalid_csrf');
-            } elseif (!$pluginEnabled) {
-                $error = t('ai_gateway.error_permission');
+            } elseif (!$canEdit || !$pluginEnabled) {
+                $error = t('ai_gateway.error_permission', 'Permission denied.');
             } else {
                 try {
                     if (isset($_POST['save_call_analysis'])) {
@@ -47,7 +48,7 @@ class AiCallAnalysisController extends BaseController
                         $activeTab = 'settings';
                     } elseif (isset($_POST['cancel_job'])) {
                         $jobId = (int) $_POST['cancel_job'];
-                        if ($jobId > 0 && AiJobService::cancel($jobId)) {
+                        if ($jobId > 0 && AiJobService::cancel($jobId, 'ai_call_analysis')) {
                             $message = t('ai_call_analysis.msg_job_cancelled', 'Job cancelled.');
                         }
                         $activeTab = 'jobs';

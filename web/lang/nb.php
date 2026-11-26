@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Talepost som tekst',
     'mail_templates.vm_ai_summary' => 'Sammendrag',
     'mail_templates.vm_ai_transcript' => 'Det som ble sagt',
-    'ai_cloud.accounts_title' => 'Tjenester',
     'ai_cloud.account_add' => 'Legg til',
     'ai_cloud.err_engine' => 'Denne motoren kan ikke utføre den jobben.',
     'ai_cloud.test_ok' => 'Tilkoblingen fungerer.',

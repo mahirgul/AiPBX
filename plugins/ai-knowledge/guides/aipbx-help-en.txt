@@ -63,8 +63,8 @@ A: Trunk → Calling Permissions sets which extension may dial which numbers.
 Q: How do I set up an AI that answers the phone?
 A: Create an application on AI Apps → Applications: an announcement that reads values, voice requests that understand what the caller wants and route the call, routing by speech, or conversation mode with a cloud language model. Then choose the application as the destination of an inbound route.
 
-Q: Where do I set up local or cloud AI models?
-A: AI Settings → Local AI manages small models that run on this server (Ollama, Piper voices, Whisper and Vosk). AI Settings → Cloud services connects providers such as OpenAI, Gemini, Claude, Azure and ElevenLabs. The default model for each job is chosen on the Connections tab.
+Q: Where do I set up local voices or cloud AI accounts?
+A: AI Settings → Local TTS manages text-to-speech voices and small call detectors (Silero VAD, Smart Turn) that run on this server. AI Settings → Cloud AI connects accounts such as OpenAI, Gemini, Claude, Deepgram, Azure, ElevenLabs, or an OpenAI-compatible/Ollama server; each AI agent or feature selects its own account directly.
 
 Q: Can voicemail be turned into text?
 A: Yes. Turn on transcription and summaries on AI Settings → Voicemail AI; the text appears in the e-mail and in the apps.

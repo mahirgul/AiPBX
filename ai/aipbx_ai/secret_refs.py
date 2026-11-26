@@ -8,7 +8,7 @@ import socket
 # The per-account settings that travel beside a credential reference (validated by cloud_llm/stt/tts).
 SETTINGS = ('model', 'base_url', 'temperature', 'max_tokens', 'voice', 'format')
 # Set by a call for its own language, over what the resolver returns.
-CALL_KEYS = ('lang', 'locale', 'lang_name')
+CALL_KEYS = ('lang', 'locale', 'lang_name', 'keyterms')
 
 
 def validate_reference(cfg, task):
@@ -115,7 +115,7 @@ def reference_config(app_id, config):
         if isinstance(out.get(key), dict) and out[key].get('provider'):
             provider = out[key]['provider']
             kept = {k: out[key][k] for k in SETTINGS if out[key].get(k) is not None}
-            if provider not in ('openai_compat', 'qwen'):      # only these have an address of their own
+            if provider not in ('openai_compat', 'qwen', 'ollama', 'nvidia_local'):      # only these have an address of their own
                 kept.pop('base_url', None)
             out[key] = {**kept, 'provider': provider, 'secret_ref': f'app:{app_id}:{task}:{provider}'}
     return out

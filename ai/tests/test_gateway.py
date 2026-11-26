@@ -131,19 +131,43 @@ class GatewayTest(unittest.TestCase):
         seen = []
         def fake_post(url, headers, body, deadline, allow_private=False):
             seen.append((url, headers, body))
-            return {'content': [{'text': 'OK'}], 'usage': {'input_tokens': 12, 'output_tokens': 3}}
+            return {'content': [{'type': 'thinking', 'thinking': ''}, {'type': 'text', 'text': 'OK'}],
+                    'usage': {'input_tokens': 12, 'output_tokens': 3}}
         ans, tokens = g.chat({'adapter': 'anthropic', 'url': 'https://api.anthropic.com/v1/messages',
-                              'model': 'claude-sonnet-4-20250514', 'api_key': 'sk-ant-123'}, 'Hello', 100, 9999999999.0, post=fake_post)
+                              'model': 'claude-haiku-5-5', 'api_key': 'sk-ant-123'}, 'Hello', 100, 9999999999.0, post=fake_post)
         self.assertEqual((ans, tokens), ('OK', 15))
         self.assertEqual(seen[0][1]['x-api-key'], 'sk-ant-123')
         self.assertEqual(seen[0][1]['anthropic-version'], '2023-06-01')
+        self.assertNotIn('temperature', seen[0][2])
+        self.assertEqual(seen[0][2]['output_config'], {'effort': 'low'})
 
-    def test_embed_and_local_adapters_are_gone(self):
-        res = g.execute(self.payload(operation='embed'), resolver=Mock())
-        self.assertEqual(res['error']['code'], 'capability_unsupported')
+    def test_local_adapters_are_gone(self):
         for adapter in ('runtime', 'ollama'):
             with self.assertRaises(g.GatewayError):
                 g.chat({'adapter': adapter, 'model': 'm'}, 'p', 50, time.monotonic() + 5)
+
+    def test_embed_succeeds_for_openai_and_rejects_unsupported_adapters(self):
+        ctx = {'connection': {'adapter': 'openai', 'model': 'text-embedding-3-small', 'url': 'https://api.openai.com/v1/embeddings', 'api_key': 'sk-test'},
+               'model_ref': 'cloud:openai', 'config_revision': 'v1'}
+        seen = []
+        def fake_post(url, headers, body, deadline, allow_private=False):
+            seen.append((url, headers, body, allow_private))
+            return {'data': [{'embedding': [0.25, -0.5, 0.75]}], 'usage': {'total_tokens': 7}}
+        res = g.execute(self.payload(operation='embed', max_tokens=1),
+                        resolver=Mock(return_value=ctx),
+                        embedder=lambda conn, text, dl: g.embed(conn, text, dl, post=fake_post))
+        self.assertEqual(res['status'], 'succeeded')
+        self.assertEqual(res['embedding'], [0.25, -0.5, 0.75])
+        self.assertEqual(res['dimensions'], 3)
+        self.assertEqual(res['usage']['amount'], 7)
+        self.assertEqual(seen[0][0], 'https://api.openai.com/v1/embeddings')
+        self.assertEqual(seen[0][2], {'model': 'text-embedding-3-small', 'input': 'Hello'})
+
+        bad_ctx = {'connection': {'adapter': 'google', 'model': 'gemini-3.5-flash-lite', 'url': 'https://example.com'},
+                   'model_ref': 'cloud:google_ai', 'config_revision': 'v1'}
+        bad_res = g.execute(self.payload(operation='embed', max_tokens=1), resolver=Mock(return_value=bad_ctx))
+        self.assertEqual(bad_res['status'], 'failed')
+        self.assertEqual(bad_res['error']['code'], 'capability_unsupported')
 
 
 if __name__ == '__main__':unittest.main()

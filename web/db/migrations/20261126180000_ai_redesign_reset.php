@@ -17,7 +17,7 @@ final class AiRedesignReset extends AbstractMigration
         // An agent's instructions may now be long (60,000 characters).
         if ($this->hasTable('pbx_ai_apps')) {
             $this->execute('ALTER TABLE pbx_ai_apps MODIFY config MEDIUMTEXT NULL, MODIFY text_template MEDIUMTEXT NOT NULL DEFAULT \'\'');
-            $this->execute("UPDATE pbx_ai_apps SET config = NULL, model_id = ''");
+            $this->execute("UPDATE pbx_ai_apps SET config = NULL, model_id = CASE WHEN app_type = 'announcement' AND model_id NOT LIKE 'cloud:%' THEN model_id ELSE '' END");
         }
         if ($this->hasTable('ai_bindings')) {
             $this->execute('DELETE FROM ai_bindings');

@@ -33,8 +33,16 @@ class AiKnowledgeController extends BaseController
                         if (!empty($_FILES['txt_file']['tmp_name']) && is_uploaded_file($_FILES['txt_file']['tmp_name'])) {
                             $text = (string) file_get_contents($_FILES['txt_file']['tmp_name']);     // "fill from a TXT file"
                         }
-                        $roles = is_array($_POST['allowed_roles'] ?? null) ? array_map('strval', $_POST['allowed_roles']) : ['*'];
-                        $changed = AiKnowledgeService::saveWithText((int) ($_POST['id'] ?? 0), (string) ($_POST['name'] ?? ''),
+                        $id = (int) ($_POST['id'] ?? 0);
+                        if (is_array($_POST['allowed_roles'] ?? null)) {
+                            $roles = array_map('strval', $_POST['allowed_roles']);
+                        } elseif ($id > 0 && ($existingCol = AiKnowledgeService::collection($id)) !== null) {
+                            $decodedRoles = json_decode((string) ($existingCol['allowed_roles_json'] ?? ''), true);
+                            $roles = is_array($decodedRoles) && $decodedRoles !== [] ? array_map('strval', $decodedRoles) : ['*'];
+                        } else {
+                            $roles = ['*'];
+                        }
+                        $changed = AiKnowledgeService::saveWithText($id, (string) ($_POST['name'] ?? ''),
                             (string) ($_POST['description'] ?? ''), $text, (string) ($_POST['embedding_binding'] ?? ''), $roles);
                         $message = t('common.saved', 'Saved.');
                     } elseif ($action === 'delete_collection') {

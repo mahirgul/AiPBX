@@ -173,6 +173,33 @@ class OutboundNavigatorTest(unittest.TestCase):
         finally:
             reg.close()
 
+    def test_wait_mode_give_up_never_hangs_up_caller(self) -> None:
+        from unittest.mock import patch
+        mgr = _FakeAriMgr()
+        reg = CallRegistry(MagicMock(), "a" * 32)
+        nav = OutboundNavigator(mgr, reg)
+        try:
+            res = nav.start_navigation(
+                target_number="02125550000",
+                requester_ext="1001",
+                caller_call_uuid="caller-uuid-1",
+                goal="Reach support",
+                mode="wait",
+            )
+            job_id = res["job_id"]
+            with patch.object(nav, "_wait_audio_turn", return_value=b"\x00\x10" * 160), \
+                 patch.object(nav, "_transcribe", return_value="Lütfen sinyal sesinden sonra mesaj bırakın"), \
+                 patch("aipbx_ai.outbound_navigator.decide_ivr_action", return_value={"action": "voicemail", "digits": "", "reason": "vm"}):
+                nav.on_ari_event({
+                    "type": "StasisStart",
+                    "args": ["outbound_nav", job_id],
+                    "channel": {"id": "out-ch-3"},
+                })
+                self.wait_for(lambda: nav.get_job(job_id)["state"] == "failed", "navigation to give up")
+            self.assertNotIn(("hangup", "caller-ch-1"), mgr.client.calls)
+        finally:
+            reg.close()
+
 
 if __name__ == "__main__":
     unittest.main()

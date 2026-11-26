@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Buzón de voz como texto',
     'mail_templates.vm_ai_summary' => 'Resumen',
     'mail_templates.vm_ai_transcript' => 'Lo que se dijo',
-    'ai_cloud.accounts_title' => 'Servicios',
     'ai_cloud.account_add' => 'Añadir',
     'ai_cloud.err_engine' => 'Este motor no puede realizar esa tarea.',
     'ai_cloud.test_ok' => 'La conexión funciona.',

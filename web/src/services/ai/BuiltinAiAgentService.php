@@ -384,6 +384,32 @@ final class BuiltinAiAgentService
         return $out;
     }
 
+    /**
+     * Names the caller may say that speech recognition should not miss (Deepgram keyterm prompting, Nova-3):
+     * the transfer targets' names and the knowledge bases' names. Numbers and duplicates are left out.
+     * @return list<string>
+     */
+    public static function keyterms(array $c, array $sources): array
+    {
+        $targets = self::targets();
+        $names = [];
+        foreach ((array) ($c['transfers'] ?? []) as $t) {
+            $names[] = (string) ($targets[$t['type'] ?? ''][(string) ($t['target'] ?? '')] ?? '');
+        }
+        foreach ($sources as $source) {
+            $names[] = (string) $source['name'];
+        }
+        $out = [];
+        foreach ($names as $name) {
+            $name = trim((string) preg_replace('/^[\d\s<>()#:.\/-]+|[<>()#]+/u', ' ', $name));
+            $name = trim((string) preg_replace('/\s+/u', ' ', $name));
+            if (mb_strlen($name) >= 3 && mb_strlen($name) <= 40 && preg_match('/\pL/u', $name)) {
+                $out[mb_strtolower($name)] = $name;
+            }
+        }
+        return array_slice(array_values($out), 0, 30);
+    }
+
     /** Transfers whose target no longer exists (deleted after the agent was saved): their ids. @return list<string> */
     public static function brokenTransfers(array $c): array
     {
@@ -516,14 +542,23 @@ final class BuiltinAiAgentService
                 $out['tts_model'] = substr($tts, 6);
             }
             $stt = (string) ($c['stt_model'] ?? '');
-            if (str_starts_with($stt, 'cloud:') && !CloudAiService::overLimit(substr($stt, 6), 'stt')) {
-                $out['stt_model'] = $stt;
-                $out['stt_cloud'] = AiAppService::cloudSttPayload(substr($stt, 6), $lang);
+            if (str_starts_with($stt, 'cloud:')) {
+                $sttId = substr($stt, 6);
+                if (CloudAiService::typeIfKnown($sttId) !== '' && CloudAiService::configured($sttId) && !CloudAiService::overLimit($sttId, 'stt')) {
+                    $out['stt_model'] = $stt;
+                    $out['stt_cloud'] = AiAppService::cloudSttPayload($sttId, $lang);
+                }
+            }
+            if (($out['stt_cloud']['provider'] ?? '') === 'deepgram' && isset($out['stt_cloud'])) {
+                $out['stt_keyterms'] = self::keyterms($c, $sources);
             }
             $llm = (string) ($c['understand'] ?? '');
-            if (str_starts_with($llm, 'cloud:') && !CloudAiService::overLimit(substr($llm, 6), 'llm')) {
-                $out['understand'] = 'cloud';
-                $out['llm_cloud'] = CloudAiService::llmSettings(substr($llm, 6));
+            if (str_starts_with($llm, 'cloud:')) {
+                $llmId = substr($llm, 6);
+                if (CloudAiService::typeIfKnown($llmId) !== '' && CloudAiService::configured($llmId) && !CloudAiService::overLimit($llmId, 'llm')) {
+                    $out['understand'] = 'cloud';
+                    $out['llm_cloud'] = CloudAiService::llmSettings($llmId);
+                }
             }
         } elseif ($mode === 'cascade') {          // cloud blocked or off: only a local voice can still speak
             $tts = (string) ($app['model_id'] ?? '');
@@ -552,9 +587,12 @@ final class BuiltinAiAgentService
         }
         $id = substr($account, 6);
         $type = CloudAiService::typeIfKnown($id);
+        if ($type === '' || !isset(CloudAiService::REALTIME_MODELS[$type]) || !CloudAiService::configured($id) || CloudAiService::overLimit($id, 'llm')) {
+            return null;
+        }
         $pc = CloudAiService::config($id);
         $hasAuth = !empty($pc['api_key']) || ($type === 'openai_compat' && !empty($pc['base_url']));
-        if (!isset(CloudAiService::REALTIME_MODELS[$type]) || !$hasAuth) {
+        if (!$hasAuth) {
             return null;
         }
         $protocol = (string) ($pc['realtime_protocol'] ?? '');

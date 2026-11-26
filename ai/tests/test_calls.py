@@ -531,6 +531,62 @@ class CallsTest(unittest.TestCase):
         self.assertEqual(len(body["calls"]), calls.FINISHED_KEEP)
         self.assertEqual(body["calls"][0]["app"], calls.FINISHED_KEEP + 5)   # newest first
 
+    def test_deepgram_stream_resolves_secret_ref_and_collect_dtmf_skips_thinking_sound(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        import queue
+
+        vcall = calls.VoiceRequestsCall.__new__(calls.VoiceRequestsCall)
+        vcall.session = SimpleNamespace(app=1, version=1, lang="tr", listen_q=None, notes=[],
+                                        note=lambda msg: vcall.session.notes.append(msg))
+        vcall.reader = SimpleNamespace()
+        vcall.config = {
+            "listen_seconds": 1,
+            "silence_seconds": 1,
+            "stt_model": "cloud:deepgram_b",
+            "stt_cloud": {"provider": "deepgram", "secret_ref": "app:1:stt:deepgram", "model": "nova-3"},
+            "stt_keyterms": ["destek"],
+            "waiting_phrases": [],
+        }
+        vcall.registry = SimpleNamespace(apps=SimpleNamespace(cached=lambda *_: b""), manager=None)
+        vcall.missing_detectors = set()
+        vcall.waiting_spoken = False
+        vcall.automatic_waiting_pcm = b""
+        vcall.automatic_waiting_key = ""
+        vcall.lookup_seconds = 0.0
+        vcall.gone = lambda: False
+        vcall.detectors = lambda: (None, None)
+
+        seen_dg = []
+
+        class _FakeDg:
+            def __init__(self, api_key, lang="tr", sample_rate=8000, keyterms=(), model="nova-3"):
+                seen_dg.append((api_key, lang, sample_rate, list(keyterms), model))
+            def connect(self):
+                pass
+            def send_audio(self, data):
+                pass
+            def finish(self, timeout=1.5):
+                return ""
+            def close(self):
+                pass
+
+        with patch("aipbx_ai.secret_refs.resolve", return_value={"provider": "deepgram", "api_key": "dg-resolved", "model": "nova-3"}), \
+             patch("aipbx_ai.deepgram_stream.DeepgramStream", _FakeDg), \
+             patch.object(calls.VoiceRequestsCall, "new_listener", lambda self: calls.VoiceRequestsCall.__dict__["new_listener"](self) if False else None):
+            # Supply pre-cancelled reason so listen() exits immediately after opening DeepgramStream
+            fake_listener = SimpleNamespace(frames=[], turn_notes=[], heard=False, faint=lambda: False)
+            pre = (queue.Queue(), fake_listener, time.monotonic(), [], "silence")
+            vcall.listen(pre=pre)
+        self.assertEqual(seen_dg, [("dg-resolved", "tr", calls.SAMPLE_RATE, ["destek"], "nova-3")])
+
+        # collect_dtmf must bypass play_interruptible/thinking_sound
+        played = []
+        vcall.play_interruptible = lambda *a, **k: played.append(a) or (True, None)
+        vcall.resolve_lookup = lambda tool, query, source=None: "1234"
+        self.assertEqual(vcall.lookup("collect_dtmf", {"max_digits": 4}), "1234")
+        self.assertEqual(played, [])
+
 
 if __name__ == "__main__":
     unittest.main()

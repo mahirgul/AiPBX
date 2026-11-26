@@ -22,13 +22,18 @@ final class RetireCommunityAiVoicemail extends AbstractMigration
         $this->execute("DELETE FROM sys_plugin_settings WHERE plugin_slug = 'ai-voicemail'");
         $this->execute("DELETE FROM sys_plugin_kv WHERE plugin_slug = 'ai-voicemail'");
         $dir = '/var/lib/aipbx/plugins/ai-voicemail';
-        $manifest = is_file($dir . '/plugin.json') ? json_decode((string) file_get_contents($dir . '/plugin.json'), true) : null;
-        if (is_array($manifest) && ($manifest['type'] ?? '') === 'community') {
-            $items = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
-            foreach ($items as $item) {
-                $item->isDir() && !$item->isLink() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+        if (!is_link($dir) && is_dir($dir)) {
+            $manifest = is_file($dir . '/plugin.json') ? json_decode((string) file_get_contents($dir . '/plugin.json'), true) : null;
+            if (is_array($manifest) && ($manifest['type'] ?? '') === 'community') {
+                try {
+                    $items = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+                    foreach ($items as $item) {
+                        $item->isDir() && !$item->isLink() ? @rmdir($item->getPathname()) : @unlink($item->getPathname());
+                    }
+                    @rmdir($dir);
+                } catch (\Throwable $e) {
+                }
             }
-            @rmdir($dir);
         }
     }
 

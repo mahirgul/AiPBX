@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Govorna pošta kao tekst',
     'mail_templates.vm_ai_summary' => 'Sažetak',
     'mail_templates.vm_ai_transcript' => 'Šta je rečeno',
-    'ai_cloud.accounts_title' => 'Servisi',
     'ai_cloud.account_add' => 'Dodaj',
     'ai_cloud.err_engine' => 'Ovaj mehanizam ne može obaviti taj zadatak.',
     'ai_cloud.test_ok' => 'Povezivanje radi.',

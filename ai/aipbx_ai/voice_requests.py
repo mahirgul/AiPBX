@@ -143,17 +143,29 @@ def _words(intent, name, where):
     return out
 
 
+_CLOUD_ACCOUNT = re.compile(r"^[a-z0-9_]{2,40}$")
+
+
+def _cloud_account_ok(account_id, section, providers):
+    if account_id in providers:
+        return True
+    if not _CLOUD_ACCOUNT.fullmatch(account_id) or not isinstance(section, dict):
+        return False
+    prov = section.get("provider")
+    return isinstance(prov, str) and prov in providers and account_id.startswith(prov + "_")
+
+
 def _model(data, name, kind, manager):
     value = data.get(name)
-    # Speech to text is a cloud provider ("cloud:<provider>"); text to speech may be one too.
+    # Speech to text is a cloud provider or named account ("cloud:<id>"); text to speech may be one too.
     if kind == "stt":
         if not isinstance(value, str) or not value.startswith("cloud:"):
             raise ConfigError(f"{name}: speech to text uses a cloud provider (cloud:<provider>)")
-        if value[6:] not in cloud_stt.PROVIDERS:
+        if not _cloud_account_ok(value[6:], data.get("stt_cloud"), cloud_stt.PROVIDERS):
             raise ConfigError(f"{name}: unknown cloud provider")
         return value
     if kind == "tts" and isinstance(value, str) and value.startswith("cloud:"):
-        if value[6:] not in cloud_tts.PROVIDERS:
+        if not _cloud_account_ok(value[6:], data.get("tts_cloud"), cloud_tts.PROVIDERS):
             raise ConfigError(f"{name}: unknown cloud provider")
         return value
     if not isinstance(value, str) or not _MODEL_ID.match(value):
@@ -225,6 +237,7 @@ def validate_config(data, manager=None):
         config["automatic_announcements"] = data.get("automatic_announcements") is True
         config["announcement_tone"] = _text(data, "announcement_tone")
         config["greetings_by_lang"] = _greetings_by_lang(data.get("greetings_by_lang"))
+        config["stt_keyterms"] = _keyterms(data.get("stt_keyterms"))
         own = _greeting_items(data.get("greetings", []), "greetings")
         config["greeting_orders"] = [o for o, _ in own]
         for key, limit in (("greetings", 250), ("waiting_phrases", 120)):
@@ -245,14 +258,18 @@ def validate_config(data, manager=None):
             config["stt_cloud"] = cloud_stt.validate(data.get("stt_cloud"))
         except ValueError as e:
             raise ConfigError(str(e)) from None
-        if config["stt_cloud"]["provider"] != config["stt_model"][6:]:
+        stt_acct = config["stt_model"][6:]
+        stt_prov = config["stt_cloud"]["provider"]
+        if not (stt_acct == stt_prov or stt_acct.startswith(stt_prov + "_")):
             raise ConfigError("stt_cloud.provider does not match stt_model")
     if config["tts_model"].startswith("cloud:"):
         try:
             config["tts_cloud"] = cloud_tts.validate(data.get("tts_cloud"))
         except ValueError as e:
             raise ConfigError(str(e)) from None
-        if config["tts_cloud"]["provider"] != config["tts_model"][6:]:
+        tts_acct = config["tts_model"][6:]
+        tts_prov = config["tts_cloud"]["provider"]
+        if not (tts_acct == tts_prov or tts_acct.startswith(tts_prov + "_")):
             raise ConfigError("tts_cloud.provider does not match tts_model")
     if data.get("language") not in (None, ""):
         try:
@@ -343,6 +360,17 @@ def _greeting_items(phrases, label):
             raise ConfigError(f"{label}: at most 250 characters per greeting")
         out.append((order, text))
     return out
+
+
+def _keyterms(value):
+    """Names speech recognition should not miss (Deepgram Nova-3 keyterm prompting): at most 30, 3-40 chars."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise ConfigError("stt_keyterms must be a list")
+    # only a hint: a name that does not fit is left out, never the agent
+    out = [t.strip() for t in value if isinstance(t, str) and 3 <= len(t.strip()) <= 40 and t.isprintable()]
+    return out[:30]
 
 
 def _greetings_by_lang(value):
@@ -807,7 +835,7 @@ class AppStore:
             if cached_pcm is not None:
                 return cached_pcm
             if config["tts_model"].startswith("cloud:"):
-                lang = config.get("language") or config.get("tts_cloud", {}).get("lang") or "tr"
+                lang = config.get("call_language") or config.get("language") or config.get("tts_cloud", {}).get("lang") or "tr"
                 try:
                     pcm = bytes(cloud_tts.synthesize(config["tts_cloud"], text, lang=lang, speed=config["speed"]))
                 except Exception as e:  # noqa: BLE001
@@ -859,6 +887,32 @@ def frame_rms(frame):
     return math.sqrt(sum(s * s for s in samples) / len(samples))
 
 
+class Endpointing:
+    """The end-of-turn silence learned from one caller (the idea of LiveKit's dynamic endpointing).
+
+    Pauses inside an utterance (a quiet gap of at least 200 ms that did not end it) feed an exponential
+    moving average. A caller who pauses long in mid-sentence gets a longer wait before the turn ends, one
+    who speaks in one go a shorter one: 1.5 x the average plus 200 ms, between 500 ms and 1.4 s, starting
+    at the fixed 800 ms. One instance lives for the whole call, so it learns across turns."""
+
+    MIN_PAUSE, LOW, HIGH, ALPHA = 10, 25, 70, 0.3   # frames (200 ms, 500 ms, 1.4 s); EMA weight of a new pause
+
+    def __init__(self):
+        self.average = None
+        self.pauses = 0
+
+    def pause(self, frames):
+        self.pauses += 1
+        base = (END_FRAMES - 10) / 1.5 if self.average is None else self.average
+        self.average = (1 - self.ALPHA) * base + self.ALPHA * frames
+
+    @property
+    def frames(self):
+        if self.average is None:
+            return END_FRAMES
+        return int(max(self.LOW, min(self.HIGH, 1.5 * self.average + 10)))
+
+
 class Listener:
     """Energy VAD over 20 ms frames of 8 kHz 16-bit audio.
 
@@ -878,8 +932,9 @@ class Listener:
     """
 
     def __init__(self, listen_seconds, silence_seconds=NO_SPEECH_SECONDS, profile="normal", start_frames=START_FRAMES,
-                 vad=None, turn=None):
+                 vad=None, turn=None, endpointing=None):
         self.start_frames = start_frames     # frames in a row at speech level that start the utterance
+        self.endpointing = endpointing       # Endpointing: the end silence learned from this caller (or the fixed one)
         self.vad = vad                       # onnx_models.SileroStream: a frame needs a voice, not only energy
         self.turn = turn                     # onnx_models.SmartTurnBackend: decides when the turn is over
         self.voices = []                     # per frame: did the VAD hear a voice
@@ -892,6 +947,7 @@ class Listener:
         self.levels = []
         self.floor = self.base_floor = None
         self.loud_run = 0
+        self._pending_pause = 0
         self.start = None            # index of the first frame of the utterance (with pre-roll)
         self.last_loud = None        # index of the last frame at speech level
         self.last_loud_time = None   # monotonic arrival time of it
@@ -949,7 +1005,13 @@ class Listener:
         loud = level >= self.threshold and voice
         if loud:
             self._next_check = TURN_CHECK_FRAMES
+            if self.endpointing is not None and self.start is not None and self.last_loud is not None \
+                    and self.loud_run == 0 and index - self.last_loud - 1 >= Endpointing.MIN_PAUSE:
+                self._pending_pause = index - self.last_loud - 1
             self.loud_run += 1
+            if self.endpointing is not None and self.loud_run == self.start_frames and self._pending_pause >= Endpointing.MIN_PAUSE:
+                self.endpointing.pause(self._pending_pause)
+                self._pending_pause = 0
             if self.start is not None or self.loud_run >= self.start_frames:
                 self.last_loud = index
                 self.last_loud_time = now if now is not None else time.monotonic()
@@ -957,6 +1019,7 @@ class Listener:
                 self.start = max(0, index - self.start_frames + 1 - PRE_ROLL_FRAMES)
         else:
             self.loud_run = 0
+            self._pending_pause = 0
             if self.start is None:
                 rate = FLOOR_FALL if level < self.floor else FLOOR_ADAPT
                 self.floor = min(MAX_FLOOR, max(MIN_FLOOR, (1 - rate) * self.floor + rate * level))
@@ -966,7 +1029,7 @@ class Listener:
         """The silence after the last loud frame ends the turn: 800 ms, or the Smart Turn model's say."""
         quiet = index - self.last_loud
         if self.turn is None:
-            return quiet >= END_FRAMES
+            return quiet >= (self.endpointing.frames if self.endpointing is not None else END_FRAMES)
         if quiet < self._next_check:
             return False
         ms = quiet * 20
@@ -978,7 +1041,7 @@ class Listener:
         except Exception as e:  # noqa: BLE001 - back to the fixed silence
             self.turn = None
             self.turn_notes.append(f"end-of-turn model failed ({type(e).__name__}): the fixed silence decides")
-            return quiet >= END_FRAMES
+            return quiet >= (self.endpointing.frames if self.endpointing is not None else END_FRAMES)
         if probability >= TURN_THRESHOLD:
             self.turn_notes.append(f"end of turn: complete (p={probability:.2f}) after {ms} ms of silence")
             return True

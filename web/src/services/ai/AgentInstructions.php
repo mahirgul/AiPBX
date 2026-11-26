@@ -61,7 +61,7 @@ final class AgentInstructions
             $raw = substr($instructions, $start, $end - $start);
             $fail = static fn (string $reason): InvalidArgumentException => new InvalidArgumentException(
                 sprintf(t('builtin_ai_agent.err_instruction_tool'), $line, mb_substr($raw, 0, 80), t('builtin_ai_agent.why_' . $reason)));
-            if (++$count[$word] > self::MAX[$word]) {
+            if ($word !== 'greeting' && ++$count[$word] > self::MAX[$word]) {
                 throw $fail('limit');
             }
             $label = '';
@@ -87,15 +87,16 @@ final class AgentInstructions
                     }
                     $name = self::name($parts[1], $fail);
                     $url = $rest(2);
+                    $httpDesc = mb_substr(str_replace('|', '-', $sentence), 0, 300);
                     try {
-                        AiAppService::parseHttpTools($name . ' | ' . mb_substr($sentence, 0, 300) . ' | ' . $url);
+                        AiAppService::parseHttpTools($name . ' | ' . $httpDesc . ' | ' . $url);
                     } catch (\Exception $e) {
                         throw $fail('url');
                     }
                     if (isset($out['http'][$name])) {
                         throw $fail('duplicate');
                     }
-                    $out['http'][$name] = $name . ' | ' . mb_substr($sentence, 0, 300) . ' | ' . $url;
+                    $out['http'][$name] = $name . ' | ' . $httpDesc . ' | ' . $url;
                     $label = $name;
                     $out['found'][] = ['word' => $word, 'line' => $line, 'name' => $name, 'resolved' => $url];
                     break;

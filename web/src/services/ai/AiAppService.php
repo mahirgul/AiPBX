@@ -385,7 +385,11 @@ class AiAppService
         }
         if (str_starts_with($rawValue, 'cloud:') && $allowCloud && self::isScopeEnabled('cloud')) {
             $account = substr($rawValue, 6);
-            if ($task === 'tts' ? self::isCloudTtsReady($account) : !CloudAiService::overLimit($account, $task)) {
+            if ($task === 'tts') {
+                if (self::isCloudTtsReady($account)) {
+                    return $rawValue;
+                }
+            } elseif (CloudAiService::typeIfKnown($account) !== '' && CloudAiService::configured($account) && !CloudAiService::overLimit($account, $task)) {
                 return $rawValue;
             }
         }
@@ -523,7 +527,7 @@ class AiAppService
         }
         if ($cloudAllowed && str_starts_with($understand, 'cloud:')) {
             $prov = substr($understand, 6);
-            if (!CloudAiService::overLimit($prov, 'llm')) {
+            if (CloudAiService::typeIfKnown($prov) !== '' && CloudAiService::configured($prov) && !CloudAiService::overLimit($prov, 'llm')) {
                 // The service asks the provider itself: it gets the key with the settings.
                 $extra['llm_cloud'] = CloudAiService::llmSettings($prov);
             } else {

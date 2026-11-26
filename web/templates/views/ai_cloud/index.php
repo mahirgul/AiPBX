@@ -7,6 +7,7 @@ $realtimeTypes = array_keys(CloudAiService::REALTIME_MODELS);
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-cloud', t('ai_cloud.title', 'Cloud AI'), 'aiCloudHelpBox'); ?>
     <?php echo uiPageHeaderActions(); ?>
+        <button type="button" class="btn btn-primary btn-sm" onclick="aiCloudOpenAccount('')"<?php echo $plugin_enabled ? '' : ' disabled'; ?>><i class="fas fa-plus"></i> <?php echo $h(t('ai_cloud.account_add')); ?></button>
     <?php echo uiPageHeaderClose(); ?>
     <?php echo uiHelpBoxOpen('aiCloudHelpBox', t('ai_cloud.title', 'Cloud AI')); ?>
         <?php echo $h(t('ai_cloud.help_body', 'One account is one provider with one set of settings. Every AI feature picks its own account.')); ?>
@@ -32,10 +33,6 @@ $realtimeTypes = array_keys(CloudAiService::REALTIME_MODELS);
     $capLabels = ['llm' => 'LLM', 'stt' => 'STT', 'tts' => 'TTS', 'embed' => 'Embed'];
     $fmtNum = fn($n) => number_format((float) $n, 0, ',', '.');
     ?>
-        <div class="u-d-flex u-jc-space-between u-ai-center u-wrap u-gap-8 u-mb-10">
-            <h3 class="card-title u-m-0"><i class="fas fa-cloud u-primary"></i> <?php echo $h(t('ai_cloud.accounts_title')); ?></h3>
-            <button type="button" class="btn btn-primary btn-sm" onclick="aiCloudOpenAccount('')"<?php echo $plugin_enabled ? '' : ' disabled'; ?>><i class="fas fa-plus"></i> <?php echo $h(t('ai_cloud.account_add')); ?></button>
-        </div>
         <?php if ($providers === []): ?>
             <p class="u-muted u-fs-13 u-m-0"><?php echo $h(t('ai_cloud.accounts_empty')); ?></p>
         <?php else: ?>
@@ -137,6 +134,7 @@ $realtimeTypes = array_keys(CloudAiService::REALTIME_MODELS);
                     </div>
                 </div>
                 <div id="aiCloudAccountFields" class="u-grid-2"></div>
+                <div id="aiCloudModelsStatus" class="u-fs-12 u-mt-6 u-muted"></div>
                 <details class="u-mt-10">
                     <summary class="u-pointer u-fs-12 u-fw-600"><?php echo $h(t('ai_cloud.account_limits')); ?></summary>
                     <div class="u-d-flex u-wrap u-gap-8 u-mt-8">

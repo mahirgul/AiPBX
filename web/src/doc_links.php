@@ -16,7 +16,6 @@ const DOC_LINKS = [
     'ai_local' => 'local-ai',
     'ai_tts' => 'cloud-tts',
     'ai_voicemail' => 'ai-voicemail',
-    'ai_wizard' => 'ai-apps#setup-wizard',
     'builtin_ai_agent' => 'ai-apps#built-in-ai-agent',
     'api_keys' => 'rest-api-v1',
     'asterisk_logs' => 'troubleshooting',

@@ -11,6 +11,33 @@ final class BundledPluginMigrationService
             ['plugin.json', 'admin/page.php', 'events/handler.php']);
     }
 
+    public static function retireCommunityVoicemail(PDO $db, string $customDir): void
+    {
+        $target = rtrim($customDir, '/') . '/ai-voicemail';
+        if (is_link($customDir) || is_link($target)) {
+            throw new RuntimeException('Unsafe plugin directory');
+        }
+        if (is_dir($target)) {
+            $manifestPath = $target . '/plugin.json';
+            $manifest = is_file($manifestPath) ? json_decode((string) file_get_contents($manifestPath), true) : null;
+            if (is_array($manifest) && ($manifest['type'] ?? '') === 'community') {
+                try {
+                    self::removeTree($target);
+                } catch (\Throwable $e) {
+                }
+            }
+        }
+        $q = $db->prepare("SELECT source FROM sys_plugins WHERE slug = 'ai-voicemail'");
+        $q->execute();
+        if ($q->fetchColumn() !== 'custom') {
+            return;
+        }
+        $db->prepare("UPDATE sys_plugins SET source = 'official', name = 'Voicemail AI', version = '1.0.0', updated_at = NOW() WHERE slug = 'ai-voicemail'")
+            ->execute();
+        $db->prepare("DELETE FROM sys_plugin_settings WHERE plugin_slug = 'ai-voicemail'")->execute();
+        $db->prepare("DELETE FROM sys_plugin_kv WHERE plugin_slug = 'ai-voicemail'")->execute();
+    }
+
     public static function migrateAutoDialer(PDO $db, string $customDir): void
     {
         self::migrate($db, $customDir, 'auto-dialer', '9d2766c72faa418700aa756a0f42d29b964cbb7986af9bca7f40ba65be2da08f',

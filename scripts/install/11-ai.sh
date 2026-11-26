@@ -164,15 +164,18 @@ if [[ -f "$AI_READY_MARK" ]] && ! command -v espeak-ng >/dev/null 2>&1; then
     DEBIAN_FRONTEND=noninteractive apt-get -o DPkg::Lock::Timeout="$APT_LOCK_WAIT" install -y -qq espeak-ng >/dev/null 2>&1 \
         || warn "espeak-ng could not be installed: Piper voices will not load"
 fi
+rm -f /usr/local/sbin/aipbx-ollama-setup
 if [[ -f "$AI_READY_MARK" ]]; then
     if [[ "$(cat "$AI_READY_MARK")" != "$(sha256sum "$AI_BASE/app/requirements.txt" | cut -d' ' -f1)" ]] \
        && ! systemctl is-active --quiet aipbx-ai-setup.service; then
         # This release needs other packages: refresh the venv in the background
-        # (downloads; it restarts the service when done).
+        # (downloads; it restarts the service when done), and restart now so
+        # the new Python code is in memory before syncAiApps() below.
         systemctl reset-failed aipbx-ai-setup.service >/dev/null 2>&1 || true
         systemd-run --quiet --collect --unit=aipbx-ai-setup \
             --description="AiPBX AI runtime: install" /usr/local/sbin/aipbx-ai-setup install \
             && info "Local AI runtime is being updated in the background (/var/log/aipbx-ai-setup.log)"
+        systemctl is-enabled --quiet aipbx-ai.service && systemctl restart aipbx-ai.service 2>/dev/null || true
     elif ! is_upgrade || systemctl is-enabled --quiet aipbx-ai.service; then
         # Upgrade: only a service the admin had running is restarted.
         systemctl enable aipbx-ai.service >/dev/null 2>&1 || true

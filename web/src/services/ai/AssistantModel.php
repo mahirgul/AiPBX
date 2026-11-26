@@ -54,7 +54,7 @@ class AssistantModel
         try {
             $baseUrl = (string) (CloudAiService::config($id)['base_url'] ?? '');
             $host = strtolower((string) parse_url($baseUrl, PHP_URL_HOST));
-            return in_array($host, ['localhost', '127.0.0.1', '::1'], true);
+            return in_array($host, ['localhost', '127.0.0.1', '::1', '[::1]'], true);
         } catch (\Throwable $e) {
             return false;
         }

@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Гласова поща като текст',
     'mail_templates.vm_ai_summary' => 'Обобщение',
     'mail_templates.vm_ai_transcript' => 'Какво е казано',
-    'ai_cloud.accounts_title' => 'Услуги',
     'ai_cloud.account_add' => 'Добави',
     'ai_cloud.err_engine' => 'Този модул не може да извърши тази задача.',
     'ai_cloud.test_ok' => 'Връзката работи.',

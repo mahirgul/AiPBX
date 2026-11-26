@@ -1279,6 +1279,81 @@ class ListenerTest(unittest.TestCase):
         self.assertIsNone(lst.feed(noise[:320 * 100]))
         self.assertEqual(lst.feed(self.frames(12000, 30) + self.frames(1000, 45)), "speech")
 
+    def test_wav_pcm16_from_wav_works_without_numpy(self):
+        import builtins
+        import struct
+        from aipbx_ai import wav as wav_mod
+
+        orig_import = builtins.__import__
+
+        def fake_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "numpy":
+                raise ImportError("No module named 'numpy'")
+            return orig_import(name, globals, locals, fromlist, level)
+
+        mono_8k = wav_mod.wav_bytes(b"\x00\x10\x00\x20" * 400, 8000)
+        # Build a 16 kHz stereo WAV cleanly.
+        stereo_frames = b"".join(struct.pack("<hh", 1000, 3000) for _ in range(160))
+        stereo_header = struct.pack("<4sI4s4sIHHIIHH4sI", b"RIFF", 36 + len(stereo_frames), b"WAVE",
+                                    b"fmt ", 16, 1, 2, 16000, 16000 * 4, 4, 16, b"data", len(stereo_frames))
+        orig_np = builtins.__import__
+        try:
+            builtins.__import__ = fake_import
+            pcm_m, sec_m = wav_mod.pcm16_from_wav(mono_8k)
+            pcm_s, sec_s = wav_mod.pcm16_from_wav(stereo_header + stereo_frames)
+        finally:
+            builtins.__import__ = orig_np
+        self.assertGreater(len(pcm_m), 1600)
+        self.assertAlmostEqual(sec_m, 0.1, places=2)
+        self.assertEqual(len(pcm_s), 320)
+        self.assertAlmostEqual(sec_s, 0.01, places=3)
+
+    def test_named_cloud_accounts_validate_and_speech_uses_call_language(self):
+        from unittest.mock import patch
+        from aipbx_ai.voice_requests import AppStore, ConfigError, validate_config
+
+        cfg = validate_config({
+            "type": "voice_requests",
+            "tts_model": "cloud:openai_b",
+            "tts_cloud": {"provider": "openai", "api_key": "sk-test-0123456789"},
+            "stt_model": "cloud:deepgram_b",
+            "stt_cloud": {"provider": "deepgram", "api_key": "dg-test-0123456789"},
+            "greeting": "Merhaba",
+            "intents": [{"id": "sales", "name": "Sales", "keywords": ["sales"]}],
+        })
+        self.assertEqual(cfg["stt_model"], "cloud:deepgram_b")
+        with self.assertRaises(ConfigError):
+            validate_config({
+                "type": "voice_requests",
+                "tts_model": "cloud:openai",
+                "tts_cloud": {"provider": "openai", "api_key": "sk-test-0123456789"},
+                "stt_model": "cloud:openai_b",
+                "stt_cloud": {"provider": "deepgram", "api_key": "dg-test-0123456789"},
+                "greeting": "Merhaba",
+                "intents": [{"id": "sales", "name": "Sales", "keywords": ["sales"]}],
+            })
+
+        store = AppStore(manager=None)
+        seen = []
+        with patch("aipbx_ai.cloud_tts.synthesize", side_effect=lambda tc, text, lang, speed: seen.append(lang) or (b"\x00\x01" * 160)):
+            store.speech(1, {**cfg, "language": "tr", "call_language": "en"}, "Hello")
+        self.assertEqual(seen, ["en"])
+
+    def test_endpointing_adapts_gradually_and_ignores_single_click(self):
+        from aipbx_ai.voice_requests import END_FRAMES, Endpointing, Listener
+
+        ep = Endpointing()
+        self.assertEqual(ep.frames, END_FRAMES)
+        ep.pause(10)
+        self.assertEqual(ep.frames, 35)  # 700 ms, not snapped down to 500 ms
+
+        ep2 = Endpointing()
+        lst = Listener(7, endpointing=ep2)
+        # Speech (15), 25 frames quiet (500 ms), single 20 ms loud click, then silence again: no pause recorded
+        audio = self.frames(50, 15) + self.frames(6000, 10) + self.frames(50, 25) + self.frames(6000, 1) + self.frames(50, 50)
+        lst.feed(audio)
+        self.assertEqual(ep2.pauses, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

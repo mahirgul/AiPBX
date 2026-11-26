@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Poczta głosowa jako tekst',
     'mail_templates.vm_ai_summary' => 'Streszczenie',
     'mail_templates.vm_ai_transcript' => 'Co zostało powiedziane',
-    'ai_cloud.accounts_title' => 'Usługi',
     'ai_cloud.account_add' => 'Dodaj',
     'ai_cloud.err_engine' => 'Ten silnik nie może wykonać tego zadania.',
     'ai_cloud.test_ok' => 'Połączenie działa.',

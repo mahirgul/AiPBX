@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Mesagerie vocală ca text',
     'mail_templates.vm_ai_summary' => 'Rezumat',
     'mail_templates.vm_ai_transcript' => 'Ce s-a spus',
-    'ai_cloud.accounts_title' => 'Servicii',
     'ai_cloud.account_add' => 'Adaugă',
     'ai_cloud.err_engine' => 'Acest motor nu poate îndeplini această sarcină.',
     'ai_cloud.test_ok' => 'Conexiunea funcționează.',

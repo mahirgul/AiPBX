@@ -288,20 +288,24 @@ final class AiJobService
     }
 
     /**
-     * Cancels a `pending` or `running` job. Returns true if a row was cancelled.
+     * Cancels a `pending` or `running` job, optionally scoped to `$feature`. Returns true if a row was cancelled.
      */
-    public static function cancel(int $jobId): bool
+    public static function cancel(int $jobId, ?string $feature = null): bool
     {
-        $st = getDB()->prepare(
-            "UPDATE ai_jobs
-             SET status = 'cancelled',
-                 lease_owner = NULL,
-                 lease_expires_at = NULL,
-                 updated_at = NOW(),
-                 finished_at = NOW()
-             WHERE id = ? AND status IN ('pending', 'running')"
-        );
-        $st->execute([$jobId]);
+        $sql = "UPDATE ai_jobs
+                SET status = 'cancelled',
+                    lease_owner = NULL,
+                    lease_expires_at = NULL,
+                    updated_at = NOW(),
+                    finished_at = NOW()
+                WHERE id = ? AND status IN ('pending', 'running')";
+        $params = [$jobId];
+        if ($feature !== null && $feature !== '') {
+            $sql .= ' AND feature = ?';
+            $params[] = $feature;
+        }
+        $st = getDB()->prepare($sql);
+        $st->execute($params);
         return $st->rowCount() > 0;
     }
 

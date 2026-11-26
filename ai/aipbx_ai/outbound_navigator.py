@@ -16,6 +16,7 @@ from .voice_requests import Listener, SAMPLE_RATE
 from .wav import pcm16_from_wav, wav_bytes
 
 log = logging.getLogger("aipbx_ai.outbound_nav")
+MAX_MENU_REPEATS = 2      # an announcement heard a fourth time: the navigator gives up
 
 
 def _clean_number(value: str) -> str:
@@ -42,7 +43,7 @@ def parse_ivr_decision(raw: str) -> dict[str, str]:
     if not isinstance(data, dict):
         return {"action": "wait", "digits": ""}
     action = str(data.get("action") or "wait").lower()
-    if action not in ("dtmf", "connected", "wait"):
+    if action not in ("dtmf", "connected", "wait", "voicemail", "unreachable"):
         action = "wait"
     digits = _clean_dtmf(str(data.get("digits") or ""))
     if action == "dtmf" and not digits:
@@ -57,17 +58,25 @@ def decide_ivr_action(
     target_dtmf: str,
     history: list[str],
     app_id: int = 0,
+    repeats: int = 0,
 ) -> dict[str, str]:
-    """Decides whether to send DTMF, mark connected to a live person, or keep listening."""
+    """Decides whether to send DTMF, mark connected to a live person, give up (voicemail, unreachable
+    number) or keep listening. `repeats`: how often this announcement was heard before (a looping menu)."""
+    loop_note = (f"This announcement has now been heard {repeats + 1} times: the menu is going round in circles, "
+                 "so do not press the same key again; choose another key, or the operator key when there is one.\n"
+                 if repeats else "")
     prompt = (
         "You are an AI telephone assistant navigating an automated company IVR or PBX greeting.\n"
         f"Goal: {goal or 'Reach the requested person or representative'}\n"
         f"Known direct sub-extension/DTMF (if any): {target_dtmf or '(none)'}\n"
         f"Steps taken so far: {json.dumps(history[-6:], ensure_ascii=False)}\n"
         f"What was just heard on the remote line: {json.dumps(transcript, ensure_ascii=False)}\n\n"
+        + loop_note +
         "Decide the next action and reply with JSON only:\n"
         '- {"action": "dtmf", "digits": "<keys>"} when the announcement mentions a menu key or asks for an extension.\n'
         '- {"action": "connected"} when a live human representative or target person has answered.\n'
+        '- {"action": "voicemail"} when it is an answering machine or voicemail greeting (leave a message, after the tone).\n'
+        '- {"action": "unreachable"} when the network says the number cannot be reached, is switched off or does not exist.\n'
         '- {"action": "wait"} when still ringing, hold music, or unclear announcement.\n'
     )
     cfg = app_cfg or {}
@@ -82,11 +91,43 @@ def decide_ivr_action(
         return parse_ivr_decision(raw)
     # Deterministic fallback when no LLM is attached
     low = transcript.casefold()
+    if any(k in low for k in _VOICEMAIL_WORDS):
+        return {"action": "voicemail", "digits": ""}
+    if any(k in low for k in _UNREACHABLE_WORDS):
+        return {"action": "unreachable", "digits": ""}
     if target_dtmf and any(k in low for k in ("dahili", "extension", "tuşla", "hoş", "welcome")):
         return {"action": "dtmf", "digits": target_dtmf}
     if any(k in low for k in ("efendim", "buyurun", "nasıl yardımcı", "hello", "speaking", "alô", "alo")):
         return {"action": "connected", "digits": ""}
     return {"action": "wait", "digits": ""}
+
+
+# Words of answering machines and network announcements (the fallback without a language model).
+_VOICEMAIL_WORDS = ("sesli mesaj", "mesajınızı bırak", "mesaj bırak", "sinyal sesinden sonra", "bip sesinden sonra",
+                    "leave a message", "leave your message", "after the tone", "after the beep", "voicemail",
+                    "nachricht nach dem", "hinterlassen sie")
+_UNREACHABLE_WORDS = ("ulaşılamıyor", "kapalı veya kapsama", "kapsama alanı dışında", "numara kullanılmamaktadır",
+                      "cannot be reached", "is not available at the moment", "switched off", "does not exist",
+                      "nicht erreichbar", "kein anschluss")
+_WORD = re.compile(r"\w+", re.U)
+
+
+def repeats_of(transcript: str, history: list[str]) -> int:
+    """How often nearly the same announcement (word overlap >= 0.7) came back after keys were pressed: a menu
+    going round in circles (the idea of LiveKit's IVR loop detection). `history`: the steps so far
+    ("remote:<text>", "dtmf:<keys>"). An announcement that repeats while we only waited is a hold queue, not a loop."""
+    words = set(_WORD.findall(transcript.casefold()))
+    if len(words) < 4:
+        return 0
+    count = 0
+    for i, step in enumerate(history):
+        if not step.startswith("remote:"):
+            continue
+        other = set(_WORD.findall(step[7:].casefold()))
+        pressed = any(s.startswith("dtmf:") for s in history[i + 1:])
+        if pressed and other and len(words & other) / len(words | other) >= 0.7:
+            count += 1
+    return count
 
 
 class OutboundJob:
@@ -303,11 +344,13 @@ class OutboundNavigator:
             self.ari.client.add_channel(job.bridge_id, job.outbound_channel_id)
 
             app_cfg, _ = self.calls.apps.get(job.app_id) if job.app_id > 0 else (None, None)
+            if app_cfg is not None and (not app_cfg.get("stt_model") or app_cfg.get("mode") == "realtime"):
+                app_cfg = None
             if app_cfg is None:
-                # Pick first active app config with STT/LLM if app_id wasn't given
+                # Pick first active cascade app config with STT/LLM if app_id wasn't given or uses Realtime
                 for item in self.calls.apps.list():
                     c, _ = self.calls.apps.get(int(item["id"]))
-                    if c:
+                    if c and c.get("stt_model") and c.get("mode") != "realtime":
                         app_cfg = c
                         break
 
@@ -328,6 +371,7 @@ class OutboundNavigator:
             )
             self.ari.client.add_channel(job.bridge_id, job.nav_uuid)
             job.state = "navigating"
+            give_up = ""
 
             if job.target_dtmf and not job.goal:
                 # Direct sub-extension mode (e.g. AFM Mehmet Bey -> ext 1000): wait briefly for remote PBX greeting onset then dial
@@ -360,12 +404,20 @@ class OutboundNavigator:
                     transcript = self._transcribe(app_cfg or {}, pcm)
                     if not transcript:
                         continue
+                    repeats = repeats_of(transcript, history)
                     history.append(f"remote:{transcript}")
+                    if repeats > MAX_MENU_REPEATS:
+                        give_up = "The menu kept repeating itself: nobody reached"
+                        break
                     decision = decide_ivr_action(
                         app_cfg, transcript, job.goal,
                         "" if sent_initial_dtmf else job.target_dtmf,
-                        history, app_id=job.app_id,
+                        history, app_id=job.app_id, repeats=repeats,
                     )
+                    if decision["action"] in ("voicemail", "unreachable"):
+                        give_up = ("Answering machine: nobody to connect" if decision["action"] == "voicemail"
+                                   else "The number cannot be reached")
+                        break
                     if decision["action"] == "dtmf" and decision["digits"]:
                         self.ari.client.send_dtmf(job.outbound_channel_id, decision["digits"])
                         history.append(f"dtmf:{decision['digits']}")
@@ -379,6 +431,14 @@ class OutboundNavigator:
             # Tear down listener leg before bridging requester
             self._detach_nav_listener(job, nav_session)
             nav_session = None
+            if give_up:
+                if job.mode == "wait":
+                    with self._lock:
+                        job.caller_channel_id = ""
+                job.state = "failed"
+                job.detail = give_up
+                log.info("outbound job %s: %s", job.job_id, give_up)
+                return
             if job.ended_ev.is_set():
                 job.state = "failed"
                 job.detail = job.detail or "Remote party disconnected before bridge"

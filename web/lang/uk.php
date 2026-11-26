@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Голосова пошта текстом',
     'mail_templates.vm_ai_summary' => 'Стисло',
     'mail_templates.vm_ai_transcript' => 'Що було сказано',
-    'ai_cloud.accounts_title' => 'Служби',
     'ai_cloud.account_add' => 'Додати',
     'ai_cloud.err_engine' => 'Цей рушій не може виконувати це завдання.',
     'ai_cloud.test_ok' => 'З\'єднання працює.',

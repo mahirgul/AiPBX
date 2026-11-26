@@ -25,7 +25,7 @@ $csrf = '<input type="hidden" name="csrf_token" value="' . $h($csrf_token) . '">
         <p class="u-mt-8 u-mb-0"><strong><?php echo $h(t('ai_local.help_gpu_title', 'GPU or CPU')); ?>:</strong>
             <?php echo $h(t('ai_local.help_gpu', 'The models use an NVIDIA GPU when the server has one, otherwise the CPU. Install the NVIDIA driver first (nvidia-smi must list the GPU), then install the runtime: the GPU packages (a few GB) are added automatically. If the GPU is added or the driver installed later, click Install Runtime again (your models are kept). If the GPU does not work, the models fall back to the CPU. To force the CPU, run systemctl edit aipbx-ai, add Environment=AIPBX_AI_DEVICE=cpu under [Service], and restart the service.')); ?></p>
         <p class="u-mt-8 u-mb-0"><strong><?php echo $h(t('ai_models.tts_settings', 'Voice settings')); ?>:</strong>
-            <?php echo $h(t('ai_local.help_tts', 'On the Hugging Face tab, open "Voice settings" under a downloaded voice to set its speed, its speaker (voices with several speakers) and the pause between sentences.')); ?></p>
+            <?php echo $h(t('ai_local.help_tts', 'Open "Voice settings" under a downloaded voice to set its speed, its speaker (voices with several speakers) and the pause between sentences.')); ?></p>
     <?php echo uiHelpBoxClose(); ?>
 
 <?php if (!$plugin_enabled): ?>

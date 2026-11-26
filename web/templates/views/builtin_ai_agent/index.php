@@ -170,7 +170,7 @@ $instrValue = array_key_exists('instructions', $edit) ? (string) $edit['instruct
             </div>
             <div class="agent-palette" id="agentPalette" hidden>
                 <div data-palette="transfer" hidden>
-                    <input class="form-control form-control-sm" data-p="name" placeholder="<?php echo $h(t('builtin_ai_agent.tr_id')); ?>" pattern="[a-z][a-z0-9_]{0,29}">
+                    <input class="form-control form-control-sm" data-p="name" placeholder="<?php echo $h(t('builtin_ai_agent.tr_id')); ?>">
                     <select class="form-control form-control-sm" data-p="target">
                         <?php foreach ($targetOptions as $o): ?><option value="<?php echo $h($o['value']); ?>"><?php echo $h($o['label']); ?></option><?php endforeach; ?>
                     </select>
@@ -192,7 +192,7 @@ $instrValue = array_key_exists('instructions', $edit) ? (string) $edit['instruct
                     </select>
                 </div>
                 <div data-palette="http" hidden>
-                    <input class="form-control form-control-sm" data-p="name" placeholder="<?php echo $h(t('builtin_ai_agent.tr_id')); ?>" pattern="[a-z][a-z0-9_]{0,29}">
+                    <input class="form-control form-control-sm" data-p="name" placeholder="<?php echo $h(t('builtin_ai_agent.tr_id')); ?>">
                     <input class="form-control form-control-sm" data-p="url" placeholder="https://crm.example.com/api?no={order_no}">
                 </div>
                 <div data-palette="pbx" hidden>
@@ -213,7 +213,7 @@ $instrValue = array_key_exists('instructions', $edit) ? (string) $edit['instruct
                     <select class="form-control form-control-sm" data-p="on"><option value="on"><?php echo $h(t('builtin_ai_agent.opt_announcements_on')); ?></option><option value="off"><?php echo $h(t('builtin_ai_agent.opt_announcements_off')); ?></option></select>
                 </div>
                 <div data-palette="email" hidden>
-                    <input type="email" class="form-control form-control-sm" data-p="mail" maxlength="254" placeholder="calls@example.com">
+                    <input type="text" class="form-control form-control-sm" data-p="mail" maxlength="254" placeholder="calls@example.com">
                 </div>
                 <div data-palette="waiting" hidden>
                     <input class="form-control form-control-sm" data-p="text" maxlength="120" placeholder="<?php echo $h(t('builtin_ai_agent.waiting_placeholder')); ?>">
@@ -228,6 +228,7 @@ $instrValue = array_key_exists('instructions', $edit) ? (string) $edit['instruct
                  data-unknown="<?php echo $h(t('builtin_ai_agent.why_target')); ?>" data-ambiguous="<?php echo $h(t('builtin_ai_agent.why_ambiguous')); ?>"
                  data-format="<?php echo $h(t('builtin_ai_agent.why_format')); ?>" data-name="<?php echo $h(t('builtin_ai_agent.why_name')); ?>"
                  data-reserved="<?php echo $h(t('builtin_ai_agent.why_reserved')); ?>" data-language="<?php echo $h(t('builtin_ai_agent.why_language')); ?>"
+                 data-email="<?php echo $h(t('builtin_ai_agent.why_email')); ?>"
                  data-unknown-item="<?php echo $h(t('builtin_ai_agent.why_unknown')); ?>" data-line="<?php echo $h(t('builtin_ai_agent.found_line')); ?>"></div>
         </div>
             </div>
@@ -366,6 +367,11 @@ $resultClass = static fn (string $r, bool $notes): string => match (true) {
             <td class="u-fs-11 u-mono">
                 <?php echo $h(t('builtin_ai_agent.calls_prepared')); ?> <?php echo (int) ($c['prepare_ms'] ?? 0); ?> ms ·
                 <?php echo $h(t('builtin_ai_agent.calls_played')); ?> <?php echo $h($c['played_seconds'] ?? 0); ?>/<?php echo $h($c['audio_seconds'] ?? 0); ?> s
+                <?php $turns = array_filter((array) ($c['turns'] ?? []), 'is_array'); ?>
+                <?php if ($turns !== []): ?>
+                    <?php $avg = static function (string $k) use ($turns): string { $v = array_values(array_filter(array_column($turns, $k), static fn($x): bool => $x !== null)); return $v !== [] ? (string) (int) round(array_sum($v) / count($v)) : '—'; }; ?>
+                    <br><span title="<?php echo $h(t('builtin_ai_agent.calls_turns_help')); ?>"><?php echo $h(sprintf(t('builtin_ai_agent.calls_turns'), count($turns), $avg('stt_ms'), $avg('llm_ms'), $avg('tts_ms'), $avg('first_audio_ms'))); ?></span>
+                <?php endif; ?>
                 <?php if ($late > 0): ?><br><span class="u-danger"><?php echo $h(sprintf(t('builtin_ai_agent.calls_late'), $late, (int) ($c['max_late_ms'] ?? 0), (int) ($c['resyncs'] ?? 0))); ?></span><?php endif; ?>
             </td>
             <td class="u-fs-12"><?php echo $h(implode(' · ', array_map('strval', (array) ($c['transcripts'] ?? []))) ?: '—'); ?></td>

@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Segreteria come testo',
     'mail_templates.vm_ai_summary' => 'Riassunto',
     'mail_templates.vm_ai_transcript' => 'Cosa è stato detto',
-    'ai_cloud.accounts_title' => 'Servizi',
     'ai_cloud.account_add' => 'Aggiungi',
     'ai_cloud.err_engine' => 'Questo motore non può eseguire questa operazione.',
     'ai_cloud.test_ok' => 'La connessione funziona.',

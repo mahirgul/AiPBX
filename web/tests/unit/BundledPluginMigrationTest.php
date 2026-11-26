@@ -140,4 +140,40 @@ final class BundledPluginMigrationTest extends TestCase
             foreach (['/ai-voicemail/admin','/ai-voicemail/events','/ai-voicemail',''] as $d) { if(is_dir($dir.$d)){rmdir($dir.$d);} }
         }
     }
+
+    public function testCommunityVoicemailIsRetiredToBundledOfficialPlugin(): void
+    {
+        $db = getDB();
+        $dir = sys_get_temp_dir() . '/aipbx-voicemail-retire-' . bin2hex(random_bytes(6));
+        mkdir($dir . '/ai-voicemail/admin', 0700, true);
+        file_put_contents($dir . '/ai-voicemail/plugin.json', '{"slug":"ai-voicemail","version":"1.1.0","type":"community"}');
+        file_put_contents($dir . '/ai-voicemail/admin/page.php', '<?php');
+        $db->beginTransaction();
+        try {
+            foreach ([0, 1] as $enabled) {
+                $db->prepare("INSERT INTO sys_plugins (slug,name,version,source,enabled) VALUES ('ai-voicemail','AI Voicemail Transcription & Executive Summary','1.1.0','custom',?) ON DUPLICATE KEY UPDATE source='custom',name='AI Voicemail Transcription & Executive Summary',version='1.1.0',enabled=VALUES(enabled)")->execute([$enabled]);
+                PluginManager::setSetting('ai-voicemail', 'api_key', 'vm-secret', true);
+                PluginManager::kvSet('ai-voicemail', 'summaries', 's1', ['summary' => 'Test summary']);
+                BundledPluginMigrationService::retireCommunityVoicemail($db, $dir);
+                BundledPluginMigrationService::retireCommunityVoicemail($db, $dir);
+                PluginManager::resetCache();
+                $this->assertDirectoryDoesNotExist($dir . '/ai-voicemail');
+                $row = $db->query("SELECT source,name,version,enabled FROM sys_plugins WHERE slug='ai-voicemail'")->fetch(PDO::FETCH_ASSOC);
+                $this->assertSame(['source' => 'official', 'name' => 'Voicemail AI', 'version' => '1.0.0', 'enabled' => $enabled],
+                    ['source' => $row['source'], 'name' => $row['name'], 'version' => $row['version'], 'enabled' => (int) $row['enabled']]);
+                $this->assertSame(0, (int) $db->query("SELECT COUNT(*) FROM sys_plugin_settings WHERE plugin_slug='ai-voicemail'")->fetchColumn());
+                $this->assertSame(0, (int) $db->query("SELECT COUNT(*) FROM sys_plugin_kv WHERE plugin_slug='ai-voicemail'")->fetchColumn());
+                mkdir($dir . '/ai-voicemail/admin', 0700, true);
+                file_put_contents($dir . '/ai-voicemail/plugin.json', '{"slug":"ai-voicemail","version":"1.1.0","type":"community"}');
+            }
+        } finally {
+            $db->rollBack();
+            PluginManager::resetCache();
+            if (is_dir($dir)) {
+                $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+                foreach ($it as $f) { $f->isDir() ? @rmdir($f->getPathname()) : @unlink($f->getPathname()); }
+                @rmdir($dir);
+            }
+        }
+    }
 }

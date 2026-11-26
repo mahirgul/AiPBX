@@ -56,8 +56,7 @@ their own calls.
 ## Transcript and summary
 
 In the player of a recording (Reports → CDR), **Transcribe & Summarize** writes the call down with
-the speech-to-text engine of the language ([Cloud AI services](cloud-ai.md#engine-for-each-job), or
-a local Whisper/Vosk model) and, when a cloud language model is set, adds a one- or two-sentence
+the speech-to-text engine chosen for Call Analysis ([Cloud AI](cloud-ai.md)), and when a cloud language model is set, adds a one- or two-sentence
 summary. Only on request, one recording at a time; **Re-transcribe** makes it again. Who may do it
 follows the rules of *Access* above, and each one is written to the audit log (who, which call,
 which engine) — with a cloud engine the audio goes to that provider.

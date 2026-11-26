@@ -66,13 +66,14 @@ import uuid
 from collections import deque
 
 from . import cloud_llm, conversation, farewell, langs, secret_refs
+from .conversation import speakable
 from .calllog import CallLog, clip, redact, settings
 from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
 from .voice_requests import BARGE_FRAMES, CALIBRATION_FRAMES, NO_SPEECH_SECONDS, PRE_ROLL_FRAMES
-from .voice_requests import AppStore, Listener, ResultStore, call_language, choose_greeting
+from .voice_requests import AppStore, Endpointing, Listener, ResultStore, call_language, choose_greeting
 
 log = logging.getLogger("aipbx_ai.calls")
 
@@ -85,6 +86,7 @@ LEAD_SECONDS = 0.06          # how far ahead of real time we may send
 TAIL_SECONDS = 0.2           # after the last frame, before "terminate"
 BARGE_FRAMES = 10            # 200 ms of speech over a prompt stop it (barge_in)
 LOOKUP_PROMPT_DELAY = 0.7     # let fast lookups finish without playing a waiting phrase
+MAX_TURN_LOG = 12            # conversation turns whose timings the call log keeps
 AUTOMATIC_GREETING_TIMEOUT = 3.0
 SILENCE_FRAME = b"\x00" * FRAME_BYTES
 NO_FRAMES_GAP = 0.2          # listening: after this long without inbound frames, count silence
@@ -378,10 +380,16 @@ class CallSession:
         self.late_frames = 0           # 20 ms frames sent more than 20 ms late
         self.max_late_ms = 0
         self.resyncs = 0               # the pacing fell so far behind that it started over
+        self.turns = []                # conversation: per turn {stt_ms, llm_ms, lookup_ms, tts_ms, first_audio_ms, end_silence_ms}
 
     def note(self, text):
         if len(self.notes) < 25:
             self.notes.append([round(time.monotonic() - self.created, 1), redact(text)])
+
+    def turn(self, timings):
+        """One conversation turn's timings (milliseconds) for the call log; the first MAX_TURN_LOG turns."""
+        if len(self.turns) < MAX_TURN_LOG:
+            self.turns.append({k: int(v) for k, v in timings.items() if v is not None})
 
     def hear(self, text):
         if text and len(self.heard) < 8:
@@ -404,7 +412,7 @@ class CallSession:
                 "late_frames": self.late_frames, "max_late_ms": self.max_late_ms, "resyncs": self.resyncs,
                 "inbound_frames": self.inbound_frames, "intent": self.intent,
                 "transcripts": [clip(t) for t in tr[:8]], "notes": self.notes, "settings": settings(self.config),
-                "language": self.lang}
+                "language": self.lang, "turns": self.turns}
 
     def audio_in(self, kind, payload):
         self.inbound_bytes += len(payload)
@@ -1029,6 +1037,9 @@ class VoiceRequestsCall:
         self.waiting_spoken = False
         self.automatic_waiting_pcm = b""
         self.automatic_waiting_key = ""
+        self.endpointing = Endpointing()   # the end-of-turn silence learned from this caller
+        self.lookup_seconds = 0.0      # time spent in lookups (kept apart from the model's time)
+        self._turn = None              # the timings of the turn being answered, until its speech is made
         self._mu = threading.Lock()
         self._current = None           # the prompt being sent by the pump
         self._stop_pump = threading.Event()
@@ -1085,7 +1096,7 @@ class VoiceRequestsCall:
         # DONE: the sweeper ended the call (max call time); the turn stops and the socket closes.
         return self.reader.gone.is_set() or self._broken.is_set() or self.session.state == DONE
 
-    def play(self, pcm, mark_reply=False):
+    def play(self, pcm, mark_reply=False, stop_when=None):
         """Plays PCM in real time; True when it has played out, False when the peer is gone."""
         if not pcm:
             return not self.gone()
@@ -1095,17 +1106,27 @@ class VoiceRequestsCall:
         while not cur["sent"].wait(0.05):
             if self.gone():
                 return False
+            if stop_when is not None and stop_when.is_set():
+                with self._mu:
+                    if self._current is cur:
+                        self._current = None
+                return not self.gone()
         if mark_reply:
             self.reply_started = cur["started"]
         # Wait until the caller has heard the end (the pump sends 60 ms ahead).
         while time.monotonic() < cur["ends"]:
             if self.gone():
                 return False
+            if stop_when is not None and stop_when.is_set():
+                with self._mu:
+                    if self._current is cur:
+                        self._current = None
+                return not self.gone()
             if self.reader.gone.wait(min(0.05, max(0.0, cur["ends"] - time.monotonic()))):
                 return False
         return not self.gone()
 
-    def play_interruptible(self, pcm):
+    def play_interruptible(self, pcm, stop_when=None):
         """Plays a prompt the caller may talk over (barge_in).
 
         (False, None): the caller hung up. (True, None): it played out.
@@ -1114,7 +1135,7 @@ class VoiceRequestsCall:
         audio before and since the speech, the digits, a stop reason or None.
         """
         if not self.config.get("barge_in") or not pcm:
-            return self.play(pcm), None
+            return self.play(pcm, stop_when=stop_when), None
         session = self.session
         q = queue.Queue()
         # only its speech detection is used here; without its own setting a faint line profile does not
@@ -1131,6 +1152,11 @@ class VoiceRequestsCall:
             while True:
                 if self.gone():
                     return False, None
+                if stop_when is not None and stop_when.is_set():
+                    with self._mu:
+                        if self._current is cur:
+                            self._current = None
+                    return not self.gone(), None
                 if cur["ends"] is not None and time.monotonic() >= cur["ends"]:
                     return True, None
                 try:
@@ -1196,8 +1222,9 @@ class VoiceRequestsCall:
     def new_listener(self):
         cfg = self.config
         vad, turn = self.detectors()
+        # A conversation learns this caller's pauses over the whole call (one Endpointing per call).
         return Listener(cfg["listen_seconds"], cfg.get("silence_seconds", NO_SPEECH_SECONDS), cfg.get("line_profile", "normal"),
-                        vad=vad, turn=turn)
+                        vad=vad, turn=turn, endpointing=self.endpointing if cfg.get("conversation") else None)
 
     def listen(self, pre=None):
         """One attempt: the attempt dict, or None when the caller hung up.
@@ -1212,16 +1239,21 @@ class VoiceRequestsCall:
         # may take up to its connect timeout, and audio not queued by then was lost.
         session.listen_q = q
         dg_stream = None
-        if cfg.get("stt_model") == "cloud:deepgram":
-            sc = cfg.get("stt_cloud") or {}
-            if sc.get("api_key"):
+        sc = cfg.get("stt_cloud") or {}
+        if sc.get("provider") == "deepgram":
+            try:
+                resolved_sc = secret_refs.resolve(sc) if "secret_ref" in sc else sc
+            except Exception:  # noqa: BLE001
+                resolved_sc = {}
+            if resolved_sc.get("api_key"):
                 try:
                     from .deepgram_stream import DeepgramStream
                     dg_stream = DeepgramStream(
-                        sc["api_key"],
-                        lang=self.session.lang or sc.get("lang") or cfg.get("language") or "tr",
+                        resolved_sc["api_key"],
+                        lang=self.session.lang or resolved_sc.get("lang") or cfg.get("language") or "tr",
                         sample_rate=SAMPLE_RATE,
-                        **({"model": sc["model"]} if sc.get("model") else {}),
+                        keyterms=cfg.get("stt_keyterms") or (),
+                        **({"model": resolved_sc["model"]} if resolved_sc.get("model") else {}),
                     )
                     dg_stream.connect()
                     if listener.frames:
@@ -1318,6 +1350,8 @@ class VoiceRequestsCall:
         s, cfg = self.session, dict(self.config["stt_cloud"])
         if s.lang:
             cfg.update(lang=s.lang, locale=s.lang_locale or langs.locale(s.lang), lang_name=s.lang_name or langs.name(s.lang))
+        if self.config.get("stt_keyterms"):
+            cfg["keyterms"] = list(self.config["stt_keyterms"])
         return cfg
 
     def transcribe(self, pcm):
@@ -1417,20 +1451,46 @@ class VoiceRequestsCall:
 
     # ---- conversation mode ----------------------------------------------
 
-    def speak(self, text):
-        """A text of the conversation in the application's voice; b"" when it cannot be made."""
+    def speak(self, text, *, record_turn=True, cfg=None):
+        """A text of the conversation in the application's voice; b"" when it cannot be made.
+        The first speech of a turn closes its timings (synthesis, and the caller's wait for the first sound)."""
+        started = time.monotonic()
+        pcm = b""
+        use_cfg = cfg or getattr(self, "_active_cfg", None) or self.config
         try:
-            return self.registry.apps.speech(self.session.app, self.config, text)
+            pcm = self.registry.apps.speech(self.session.app, use_cfg, speakable(text))
+            return pcm
         except Exception as e:  # noqa: BLE001
             log.warning("call app=%d: speech failed (%s)", self.session.app, type(e).__name__)
             self.session.note("speech synthesis failed: " + type(e).__name__)
             return b""
+        finally:
+            if record_turn:
+                turn, self._turn = self._turn, None
+                if turn is not None and pcm:
+                    now = time.monotonic()
+                    turn["tts_ms"] = (now - started) * 1000
+                    if self.speech_end is not None:
+                        turn["first_audio_ms"] = (now - self.speech_end) * 1000
+                    self.session.turn(turn)
 
-    def lookup(self, tool, query, source=None):
+    def _flush_silent_turn(self):
+        turn, self._turn = self._turn, None
+        if turn is not None:
+            turn["tts_ms"] = None
+            turn["first_audio_ms"] = None
+            self.session.turn(turn)
+
+    def lookup(self, tool, query, source=None, _acc=None):
         """One of the application's lookups, as the text the model reads; ValueError on failure."""
+        if tool == "collect_dtmf" or self.waiting_spoken:
+            t0 = time.monotonic()
+            try:
+                return self.resolve_lookup(tool, query, source)
+            finally:
+                if _acc is not None:
+                    _acc[0] += time.monotonic() - t0
         phrases = self.config.get("waiting_phrases", [])
-        if self.waiting_spoken:
-            return self.resolve_lookup(tool, query, source)
         s = self.session
         clips = [self.registry.apps.cached(s.app, s.version, f"waiting:{i}") for i in range(len(phrases))]
         clips = [pcm for pcm in clips if pcm]
@@ -1439,16 +1499,24 @@ class VoiceRequestsCall:
             preferred = self.registry.apps.cached(s.app, s.version, self.automatic_waiting_key) or preferred
         if preferred:
             clips = [preferred]
+        used_thinking = False
         if not clips:
-            return self.resolve_lookup(tool, query, source)
+            clips = [thinking_sound()]     # no waiting phrase: a quiet typing sound tells the caller we are on it
+            used_thinking = True
 
         done = queue.Queue(maxsize=1)
+        done_ev = threading.Event()
 
         def run():
+            t0 = time.monotonic()
             try:
                 done.put((self.resolve_lookup(tool, query, source), None))
             except Exception as exc:
                 done.put((None, exc))
+            finally:
+                if _acc is not None:
+                    _acc[0] += time.monotonic() - t0
+                done_ev.set()
 
         threading.Thread(target=run, name="agent-lookup", daemon=True).start()
         try:
@@ -1456,7 +1524,8 @@ class VoiceRequestsCall:
         except queue.Empty:
             self.waiting_spoken = True
             log.info("call app=%d: playing a lookup waiting phrase", s.app)
-            played, pre = self.play_interruptible(random.choice(clips))
+            pcm_wait = random.choice(clips)
+            played, pre = self.play_interruptible(pcm_wait, stop_when=done_ev) if used_thinking else self.play_interruptible(pcm_wait)
             if not played or pre is not None:
                 raise LookupInterrupted(pre)
             result, error = done.get()
@@ -1465,6 +1534,13 @@ class VoiceRequestsCall:
         return result
 
     def resolve_lookup(self, tool, query, source=None):
+        started = time.monotonic()
+        try:
+            return self._resolve_lookup(tool, query, source)
+        finally:
+            self.lookup_seconds += time.monotonic() - started
+
+    def _resolve_lookup(self, tool, query, source=None):
         s = self.session
         if tool == conversation.KNOWLEDGE_TOOL and self.config.get("knowledge"):
             return conversation.knowledge_lookup(self.config, s.app, query, source, secret_refs.knowledge)
@@ -1596,7 +1672,7 @@ class VoiceRequestsCall:
                 self.automatic_waiting_key = f"waiting:{options.index(waiting)}"
             else:
                 def prepare_waiting():
-                    self.automatic_waiting_pcm = self.speak(waiting)
+                    self.automatic_waiting_pcm = self.speak(waiting, record_turn=False, cfg=cfg)
 
                 threading.Thread(target=prepare_waiting, name="agent-waiting-prompt", daemon=True).start()
         if pcm:
@@ -1642,111 +1718,137 @@ class VoiceRequestsCall:
         if session.caller_name:
             cfg["caller_name"] = session.caller_name
         lang = session.lang or cfg.get("language") or "tr"
+        cfg["call_language"] = lang
         if session.lang:
             cfg["language"], cfg["language_name"] = session.lang, session.lang_name
-        if session.context:
-            self.history.append(("context", session.context))
-        played, pre = self.play_interruptible(self.opening_audio(cfg))
-        if not played:
-            return self.save("hangup")
-        quiet = 0
-        for _ in range(cfg["max_turns"]):
-            attempt = self.listen(pre)
-            pre = None
-            if attempt is None:
+        self._active_cfg = cfg
+        try:
+            if session.context:
+                self.history.append(("context", session.context))
+            played, pre = self.play_interruptible(self.opening_audio(cfg))
+            if not played:
                 return self.save("hangup")
-            self.attempts.append(attempt)
-            text = attempt["transcript"]
-            if attempt["dtmf"]:
-                text = (text + " " if text else "") + f"(pressed the key {attempt['dtmf']})"
-            silent = not text
-            if silent:
-                # Nothing usable: the model hears why (line note) and asks again in its own words;
-                # the fixed retry prompt stays the fallback, `retries` the hard limit.
-                quiet += 1
-                outcome = attempt.get("outcome") or "silence"
-                session.note(f"caller turn: {outcome} ({quiet} of {cfg['retries'] + 1})")
-                if quiet > cfg["retries"]:
-                    break
-                self.history.append(("line", f"{LINE_NOTES[outcome]} (time {quiet}; "
-                                             f"the call leaves you after {cfg['retries'] + 1})"))
-            else:
-                quiet = 0
-                session.transcript = text
-                session.hear(text)
-                last_said = next((t for r, t in reversed(self.history) if r == "assistant"), "")
-                self.history.append(("caller", text))
-                if cfg.get("end_on_goodbye") and farewell.caller_says_goodbye(text, lang, last_said):
-                    session.note("the caller said goodbye: the call ends")
-                    return self._finish(self.speak(cfg["goodbye"]) if cfg.get("goodbye") else b"", "ended")
-            self.waiting_spoken = False
-            started = time.monotonic()
-            try:
-                step = conversation.next_step(cfg, self.history, lang, self.lookup)
-            except LookupInterrupted as interrupted:
-                if interrupted.pre is None:
+            quiet = 0
+            for _ in range(cfg["max_turns"]):
+                attempt = self.listen(pre)
+                pre = None
+                if attempt is None:
                     return self.save("hangup")
-                pre = interrupted.pre
-                continue
-            except cloud_llm.CloudLlmError as e:
+                self.attempts.append(attempt)
+                text = attempt["transcript"]
+                if attempt["dtmf"]:
+                    text = (text + " " if text else "") + f"(pressed the key {attempt['dtmf']})"
+                silent = not text
                 if silent:
-                    log.info("call app=%d: model failed on a silent turn (%s): fixed retry prompt", session.app, e)
-                    played, pre = self.play_interruptible(self.prompt("retry"))
+                    # Nothing usable: the model hears why (line note) and asks again in its own words;
+                    # the fixed retry prompt stays the fallback, `retries` the hard limit.
+                    quiet += 1
+                    outcome = attempt.get("outcome") or "silence"
+                    session.note(f"caller turn: {outcome} ({quiet} of {cfg['retries'] + 1})")
+                    if quiet > cfg["retries"]:
+                        break
+                    self.history.append(("line", f"{LINE_NOTES[outcome]} (time {quiet}; "
+                                                 f"the call leaves you after {cfg['retries'] + 1})"))
+                else:
+                    quiet = 0
+                    session.transcript = text
+                    session.hear(text)
+                    last_said = next((t for r, t in reversed(self.history) if r == "assistant"), "")
+                    self.history.append(("caller", text))
+                    if cfg.get("end_on_goodbye") and farewell.caller_says_goodbye(text, lang, last_said):
+                        session.note("the caller said goodbye: the call ends")
+                        return self._finish(self.speak(cfg["goodbye"]) if cfg.get("goodbye") else b"", "ended")
+                self.waiting_spoken = False
+                started = time.monotonic()
+                turn_lookup = [0.0]
+                try:
+                    step = conversation.next_step(
+                        cfg, self.history, lang,
+                        lambda tool, query, source=None, _acc=turn_lookup: self.lookup(tool, query, source, _acc=_acc),
+                    )
+                except LookupInterrupted as interrupted:
+                    if interrupted.pre is None:
+                        return self.save("hangup")
+                    pre = interrupted.pre
+                    continue
+                except cloud_llm.CloudLlmError as e:
+                    if silent:
+                        log.info("call app=%d: model failed on a silent turn (%s): fixed retry prompt", session.app, e)
+                        played, pre = self.play_interruptible(self.prompt("retry"))
+                        if not played:
+                            return self.save("hangup")
+                        continue
+                    log.warning("call app=%d: conversation model failed (%s): to the destination", session.app, e)
+                    session.note(f"conversation model failed ({e}): the call went to its destination")
+                    break
+                attempt["step"] = step["action"]
+                lookup_ms = turn_lookup[0] * 1000
+                llm_ms = max(0.0, (time.monotonic() - started) * 1000 - lookup_ms)
+                self._turn = {"stt_ms": attempt.get("stt_ms") or None, "llm_ms": llm_ms, "lookup_ms": lookup_ms or None,
+                              "end_silence_ms": self.endpointing.frames * 20}
+                log.info("call app=%d: conversation step %s in %d ms (lookups %d ms)", session.app, step["action"],
+                         int(llm_ms), int(lookup_ms))
+                if self.matched is not None and not (step["action"] == "transfer" and step.get("intent")):
+                    if step["say"]:
+                        self.history.append(("assistant", step["say"]))
+                        pcm = self.speak(step["say"])
+                    else:
+                        pcm = b""
+                        self._flush_silent_turn()
+                    if cfg.get("builtin_agent") and step["say"] and not pcm:
+                        break
+                    return self._finish(pcm or self.prompt("reply:" + session.intent), "matched")
+                if session.intent == "_end" and step["action"] != "end":
+                    if step["say"]:
+                        self.history.append(("assistant", step["say"]))
+                        pcm = self.speak(step["say"])
+                    else:
+                        pcm = b""
+                        self._flush_silent_turn()
+                    if cfg.get("builtin_agent") and step["say"] and not pcm:
+                        break
+                    return self._finish(pcm, "ended")
+                if step["action"] == "reply":
+                    self.history.append(("assistant", step["say"]))
+                    pcm = self.speak(step["say"])
+                    if cfg.get("end_on_goodbye") and pcm and farewell.assistant_says_goodbye(step["say"], lang):
+                        session.note("the agent said goodbye: the call ends")
+                        return self._finish(pcm, "ended")
+                    if silent and not pcm:
+                        pcm = self.prompt("retry")
+                    elif cfg.get("builtin_agent") and not pcm:
+                        break
+                    played, pre = self.play_interruptible(pcm)
                     if not played:
                         return self.save("hangup")
                     continue
-                log.warning("call app=%d: conversation model failed (%s): to the destination", session.app, e)
-                session.note(f"conversation model failed ({e}): the call went to its destination")
-                break
-            attempt["step"] = step["action"]
-            log.info("call app=%d: conversation step %s in %d ms", session.app, step["action"],
-                     int((time.monotonic() - started) * 1000))
-            if self.matched is not None and not (step["action"] == "transfer" and step.get("intent")):
                 if step["say"]:
                     self.history.append(("assistant", step["say"]))
-                pcm = self.speak(step["say"]) if step["say"] else b""
-                if cfg.get("builtin_agent") and step["say"] and not pcm:
-                    break
-                return self._finish(pcm or self.prompt("reply:" + session.intent), "matched")
-            if session.intent == "_end" and step["action"] != "end":
-                if step["say"]:
-                    self.history.append(("assistant", step["say"]))
-                pcm = self.speak(step["say"]) if step["say"] else b""
-                if cfg.get("builtin_agent") and step["say"] and not pcm:
-                    break
-                return self._finish(pcm, "ended")
-            if step["action"] == "reply":
-                self.history.append(("assistant", step["say"]))
-                pcm = self.speak(step["say"])
-                if cfg.get("end_on_goodbye") and pcm and farewell.assistant_says_goodbye(step["say"], lang):
-                    session.note("the agent said goodbye: the call ends")
+                if step["action"] == "end":
+                    pcm = self.speak(step["say"]) if step["say"] else b""
+                    if not step["say"]:
+                        self._flush_silent_turn()
+                    if cfg.get("builtin_agent") and step["say"] and not pcm:
+                        break
                     return self._finish(pcm, "ended")
-                if silent and not pcm:
-                    pcm = self.prompt("retry")
-                elif cfg.get("builtin_agent") and not pcm:
-                    break
-                played, pre = self.play_interruptible(pcm)
-                if not played:
-                    return self.save("hangup")
-                continue
-            if step["say"]:
-                self.history.append(("assistant", step["say"]))
-            if step["action"] == "end":
-                pcm = self.speak(step["say"])
-                if cfg.get("builtin_agent") and not pcm:
-                    break
-                return self._finish(pcm, "ended")
-            self.summary = step.get("summary", "")
-            if step["intent"]:
-                pcm = self.speak(step["say"])
-                if cfg.get("builtin_agent") and step["say"] and not pcm:
-                    break
-                self.matched = next(i for i in cfg["intents"] if i["id"] == step["intent"])
-                session.intent = self.matched["id"]
-                return self._finish(pcm or self.prompt("reply:" + session.intent), "matched")
-            return self._finish(self.speak(step["say"]) or self.prompt("not_understood"), "not_understood")
-        heard = any(a["speech_seconds"] for a in self.attempts)
-        return self._finish(self.prompt("not_understood"), "not_understood" if heard else "silence")
+                self.summary = step.get("summary", "")
+                if step["intent"]:
+                    pcm = self.speak(step["say"]) if step["say"] else b""
+                    if not step["say"]:
+                        self._flush_silent_turn()
+                    if cfg.get("builtin_agent") and step["say"] and not pcm:
+                        break
+                    self.matched = next(i for i in cfg["intents"] if i["id"] == step["intent"])
+                    session.intent = self.matched["id"]
+                    return self._finish(pcm or self.prompt("reply:" + session.intent), "matched")
+                pcm = self.speak(step["say"]) if step["say"] else b""
+                if not step["say"]:
+                    self._flush_silent_turn()
+                return self._finish(pcm or self.prompt("not_understood"), "not_understood")
+            heard = any(a["speech_seconds"] for a in self.attempts)
+            return self._finish(self.prompt("not_understood"), "not_understood" if heard else "silence")
+        finally:
+            self._active_cfg = None
 
     saved = False
 
@@ -1780,6 +1882,26 @@ class VoiceRequestsCall:
                  json.dumps(record["transcripts"], ensure_ascii=False)[:300],
                  " ".join(f"{k}={v}" for k, v in timings.items()))
         return result
+
+
+_THINKING = None
+
+
+def thinking_sound(seconds=2.4, seed=7):
+    """Quiet keyboard typing (8 kHz 16-bit PCM) for a lookup without a waiting phrase (the idea of LiveKit's
+    background "thinking" audio). Made once: short decaying clicks at uneven intervals, with a pause or two."""
+    global _THINKING
+    if _THINKING is None:
+        rng = random.Random(seed)
+        samples = [0] * int(seconds * SAMPLE_RATE)
+        at = int(0.15 * SAMPLE_RATE)
+        while at < len(samples) - 80:
+            peak = rng.uniform(900, 1700)
+            for i in range(48):                     # 6 ms: a key going down
+                samples[at + i] += int(rng.uniform(-1, 1) * peak * math.exp(-i / 9))
+            at += int(rng.uniform(0.08, 0.22) * SAMPLE_RATE) + (int(0.45 * SAMPLE_RATE) if rng.random() < 0.08 else 0)
+        _THINKING = struct.pack(f"<{len(samples)}h", *(max(-32768, min(32767, v)) for v in samples))
+    return _THINKING
 
 
 def _close(conn):

@@ -146,7 +146,11 @@ def transcribe(cfg, wav, request=_request):
             d = request(url, headers, body)
         return str(d.get("text") or "").strip()
     if p == "deepgram":
-        d = request(f"https://api.deepgram.com/v1/listen?model={cfg.get('model') or 'nova-3'}&smart_format=true&language={lang}",
+        from .deepgram_stream import keyterms_for
+        model = cfg.get("model") or "nova-3"
+        query = urllib.parse.urlencode({"model": model, "smart_format": "true", "language": lang,
+                                        "keyterm": keyterms_for(model, cfg.get("keyterms") or [])}, doseq=True)
+        d = request(f"https://api.deepgram.com/v1/listen?{query}",
                     {"Authorization": "Token " + key, "Content-Type": "audio/wav"}, wav)
         try:
             return str(d["results"]["channels"][0]["alternatives"][0]["transcript"] or "").strip()

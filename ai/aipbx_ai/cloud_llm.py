@@ -40,6 +40,8 @@ ENDPOINTS = {
     "cohere": "https://api.cohere.com/compatibility/v1/chat/completions",
     "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
     "qwen": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
+    "ollama": None,                 # base_url + /chat/completions
+    "nvidia_local": None,           # base_url + /chat/completions
     "openai_compat": None,          # base_url + /chat/completions
 }
 # Small, fast and cheap models that follow a JSON instruction reliably.
@@ -48,17 +50,19 @@ DEFAULT_MODELS = {
     "groq": "llama-3.3-70b-versatile",
     "openrouter": "google/gemini-2.5-flash",
     "google_ai": "gemini-3.5-flash-lite",
-    "claude": "claude-sonnet-4-20250514",
+    "claude": "claude-haiku-5-5",
     "mistral": "mistral-small-latest",
     "cohere": "command-a-03-2025",
     "nvidia": "meta/llama-3.3-70b-instruct",
     "qwen": "qwen-plus",
+    "ollama": "llama3.2",
+    "nvidia_local": "meta/llama-3.3-70b-instruct",
 }
 # Providers known to accept response_format {"type": "json_object"}; for the
 # others the prompt asks for JSON and the answer is searched for it.
 JSON_MODE = ("openai", "groq", "openrouter", "mistral", "qwen")
 # Providers whose address may be given (Qwen: international or mainland China).
-OWN_ADDRESS = ("qwen", "openai_compat")
+OWN_ADDRESS = ("qwen", "openai_compat", "ollama", "nvidia_local")
 PROVIDERS = tuple(ENDPOINTS)
 _BASE_URL = re.compile(r"^https?://[^\s/?#@]+(/[^\s?#]*)?$")
 TIMEOUT = 6           # the caller is waiting on the line
@@ -163,7 +167,7 @@ def validate(cfg):
     if provider not in PROVIDERS:
         raise ValueError("llm_cloud.provider is not supported")
     key = cfg.get("api_key") or ""
-    keyless = provider == "openai_compat"          # e.g. an Ollama server on the LAN
+    keyless = provider in ("openai_compat", "ollama", "nvidia_local")
     if not isinstance(key, str) or any(c in key for c in "\r\n") or len(key.strip()) > 400 \
             or (not keyless and len(key.strip()) < 8):
         raise ValueError("llm_cloud.api_key is missing")
@@ -174,7 +178,7 @@ def validate(cfg):
     base = cfg.get("base_url")
     if provider in OWN_ADDRESS and base:
         out["base_url"] = _check_base(base, provider)
-    elif provider == "openai_compat":
+    elif provider in ("openai_compat", "ollama", "nvidia_local"):
         raise ValueError("llm_cloud.base_url is missing")
     return out
 
@@ -182,7 +186,7 @@ def validate(cfg):
 def _check_base(base, provider):
     if not isinstance(base, str) or len(base) > 200 or not _BASE_URL.match(base.rstrip("/")):
         raise ValueError("llm_cloud.base_url is not valid")
-    allow = ALLOW_PRIVATE_URLS or provider == "openai_compat"
+    allow = ALLOW_PRIVATE_URLS or provider in ("openai_compat", "ollama", "nvidia_local")
     try:
         assert_public_url(base.rstrip("/"), resolve=False, allow_private=allow, allow_loopback=allow)
     except ValueError:
@@ -209,6 +213,30 @@ def prompt(transcript, intents):
         "are too unclear to decide. Reply with JSON only: "
         "{\"intent\": \"<id or none>\", \"confidence\": <0 to 1>}"
     )
+
+
+# Current Claude models (the 5 family) refuse temperature 0, think before they answer and count that
+# thinking toward max_tokens: no temperature, room for the thinking, and the lowest effort, because a
+# caller is waiting on the line. Older Claude models accept the same body without the effort field.
+_CLAUDE_EFFORT = re.compile(r"^claude-(haiku|sonnet|opus|fable|mythos)-5")
+CLAUDE_MIN_TOKENS = 2048
+
+
+def claude_body(model, text, max_tokens):
+    """The Messages API body for one instruction."""
+    body = {"model": model, "max_tokens": max(CLAUDE_MIN_TOKENS, int(max_tokens or 0)),
+            "messages": [{"role": "user", "content": text}]}
+    if _CLAUDE_EFFORT.match(model or ""):
+        body["output_config"] = {"effort": "low"}
+    return body
+
+
+def claude_text(d):
+    """The first text block of a Messages API answer (thinking blocks come first); None when there is none."""
+    try:
+        return next(b["text"] for b in d["content"] if isinstance(b, dict) and b.get("type", "text") == "text")
+    except (KeyError, TypeError, StopIteration):
+        return None
 
 
 def _post(url, headers, body, allow_private=ALLOW_PRIVATE_URLS):
@@ -246,12 +274,11 @@ def _answer_text(cfg, text, post):
             raise CloudLlmError("no answer") from None
     if provider == "claude":
         d = post(ENDPOINTS[provider], {"x-api-key": cfg["api_key"], "anthropic-version": "2023-06-01"},
-                 {"model": model, "max_tokens": cfg.get("max_tokens", 512), "temperature": temperature,
-                  "messages": [{"role": "user", "content": text}]})
-        try:
-            return d["content"][0]["text"]
-        except (KeyError, IndexError, TypeError):
-            raise CloudLlmError("no answer") from None
+                 claude_body(model, text, cfg.get("max_tokens") or 512))
+        answer = claude_text(d)
+        if answer is None:
+            raise CloudLlmError("no answer")
+        return answer
     url = cfg["base_url"] + "/chat/completions" if cfg.get("base_url") else ENDPOINTS[provider]
     body = {"model": model, "temperature": temperature, "messages": [{"role": "user", "content": text}]}
     if cfg.get("max_tokens"):
@@ -260,7 +287,7 @@ def _answer_text(cfg, text, post):
         body["response_format"] = {"type": "json_object"}
     req_headers = {"Authorization": "Bearer " + cfg["api_key"]} if cfg["api_key"] else {}
     if post is _post:
-        d = _post(url, req_headers, body, allow_private=(ALLOW_PRIVATE_URLS or provider == "openai_compat"))
+        d = _post(url, req_headers, body, allow_private=(ALLOW_PRIVATE_URLS or provider in ("openai_compat", "ollama", "nvidia_local")))
     else:
         d = post(url, req_headers, body)
     try:

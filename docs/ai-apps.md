@@ -100,6 +100,18 @@ somewhere quieter, or whether they can hear it, and from the second time on offe
 *say it again* sentence plays when the model fails. After the last try the call goes to the fallback destination.
 Each silent turn is noted in the AI call log (`caller turn: quiet (1 of 3)`).
 
+### How long the agent waits, names, what is spoken
+
+- **End of turn learned per caller.** Without Smart Turn the agent waits 0.8 s of silence before it answers. It
+  learns from the pauses the caller makes in mid-sentence: someone who pauses long gets a longer wait, someone who
+  speaks in one go a shorter one (between 0.5 and 1.4 s). The wait used is in each turn's timings in the report.
+- **Names for speech recognition.** With a Deepgram account (Nova-3 or Flux models), the names of the transfer
+  targets and of the knowledge bases are sent as *key terms*, so that a department or product name is not misheard.
+- **Spoken text.** Markdown marks, list marks, link addresses and emoji in an answer are removed before it is
+  spoken; lines are joined into sentences.
+- **While a lookup runs.** A lookup that takes longer than 0.7 s plays a waiting phrase (`{waiting, …}`), or a quiet
+  typing sound when the agent has none.
+
 ### Goodbye
 
 With **End the call when the caller says goodbye**, a short goodbye or thank you ends the call even when a small
@@ -117,7 +129,10 @@ measured and what was not.
 ### AI call log, reports, statistics
 
 The AI Agent page lists the newest AI calls (7 days): how each ended, how long the audio took to prepare and to
-play, late audio (choppy speech), what was said and what went wrong. Each row downloads as a **report** for a
+play, late audio (choppy speech), what was said and what went wrong. A conversation also shows its turns and
+their average times: speech recognition, the language model (lookups not counted), the voice, and the *first
+sound*, from the end of the caller's speech to the first sound of the answer (Realtime: OpenAI protocol only). The
+report has every turn's times. Each row downloads as a **report** for a
 support request: the settings that handled the call (names and numbers only, no keys), timings and notes. The
 agent list shows the last 30 days (calls, handed over, finished, not understood, hung up, average turns), and
 **CSV** downloads the last 90 days.

@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Голосовая почта текстом',
     'mail_templates.vm_ai_summary' => 'Кратко',
     'mail_templates.vm_ai_transcript' => 'Что было сказано',
-    'ai_cloud.accounts_title' => 'Службы',
     'ai_cloud.account_add' => 'Добавить',
     'ai_cloud.err_engine' => 'Этот движок не может выполнять данную задачу.',
     'ai_cloud.test_ok' => 'Подключение работает.',

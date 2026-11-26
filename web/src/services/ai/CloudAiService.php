@@ -34,7 +34,6 @@ class CloudAiService
 {
     public const CAPS = ['tts', 'stt', 'llm', 'embed'];
     private const GOOGLE_AI_MODEL = 'gemini-3.5-flash-lite';
-    private const GOOGLE_AI_GENERATE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' . self::GOOGLE_AI_MODEL . ':generateContent';
     /** Language models used when the account names none (cloud_llm.DEFAULT_MODELS). */
     public const LLM_DEFAULTS = ['nvidia' => 'meta/llama-3.3-70b-instruct', 'qwen' => 'qwen-plus'];
     /** International (Singapore) endpoint; mainland China: https://dashscope.aliyuncs.com/compatible-mode/v1 */
@@ -43,9 +42,30 @@ class CloudAiService
     public const LLM_FIELDS_OWN = ['nvidia', 'qwen', 'openai_compat', 'ollama', 'nvidia_local', 'claude', 'mistral', 'cohere'];
     /** What the AI service uses when an account leaves its model empty (cloud_stt.py / cloud_llm.py defaults). */
     public const STT_MODEL_DEFAULTS = ['openai' => 'gpt-4o-mini-transcribe', 'groq' => 'whisper-large-v3-turbo', 'deepgram' => 'nova-3', 'elevenlabs' => 'scribe_v1'];
+    /**
+     * The model lists the account form offers before the provider's own list is loaded (that needs the key):
+     * the defaults of the AI service and a few common ones, by what they are for. The provider's list replaces them.
+     */
+    public const KNOWN_MODELS = [
+        'openai' => ['llm' => ['gpt-4.1-mini', 'gpt-4.1', 'gpt-4o-mini', 'gpt-4o'],
+                     'stt' => ['gpt-4o-mini-transcribe', 'gpt-4o-transcribe', 'whisper-1'],
+                     'tts' => ['gpt-4o-mini-tts', 'tts-1', 'tts-1-hd'], 'realtime' => ['gpt-realtime']],
+        'groq' => ['llm' => ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+                   'stt' => ['whisper-large-v3-turbo', 'whisper-large-v3']],
+        'google_ai' => ['llm' => ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'], 'realtime' => ['gemini-3.1-flash-live-preview']],
+        'claude' => ['llm' => ['claude-haiku-5-5', 'claude-sonnet-5-5', 'claude-opus-5-5']],
+        'mistral' => ['llm' => ['mistral-small-latest', 'mistral-medium-latest', 'mistral-large-latest']],
+        'cohere' => ['llm' => ['command-a-03-2025']],
+        'nvidia' => ['llm' => ['meta/llama-3.3-70b-instruct']],
+        'qwen' => ['llm' => ['qwen-plus', 'qwen-turbo', 'qwen-max'], 'realtime' => ['qwen-omni-turbo-realtime']],
+        'openrouter' => ['llm' => ['google/gemini-2.5-flash']],
+        'ollama' => ['llm' => ['llama3.2']],
+        'deepgram' => ['stt' => ['nova-3', 'nova-2']],
+        'elevenlabs' => ['stt' => ['scribe_v1'], 'tts' => ['eleven_multilingual_v2', 'eleven_flash_v2_5', 'eleven_turbo_v2_5']],
+    ];
     public const REALTIME_MODELS = [
         'openai' => 'gpt-realtime',
-        'google_ai' => 'gemini-3.8-live',
+        'google_ai' => 'gemini-3.1-flash-live-preview',
         'qwen' => 'qwen-omni-turbo-realtime',
         'openai_compat' => '',
     ];
@@ -86,15 +106,63 @@ class CloudAiService
         return AiLanguages::TABLE[self::language($lang)]['locale'];
     }
 
+    private static function isBlockedIp(string $ip, bool $allowPrivate): bool
+    {
+        if ($ip === '') {
+            return false;
+        }
+        $lower = strtolower($ip);
+        if (str_starts_with($lower, '169.254.') || str_starts_with($lower, 'fe80:') || str_starts_with($lower, '0.') || $lower === '::') {
+            return true;
+        }
+        if ($allowPrivate) {
+            return false;
+        }
+        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false
+            || $lower === '127.0.0.1' || $lower === '::1';
+    }
+
+    private static function assertSafeEndpoint(string $url, bool $allowPrivate): void
+    {
+        $host = strtolower(trim((string) parse_url($url, PHP_URL_HOST), '[]'));
+        if ($host === '' || $host === 'metadata.google.internal') {
+            throw new CloudAiException(t('ai_cloud.err_base_url'));
+        }
+        if (!$allowPrivate && ($host === 'localhost' || str_ends_with($host, '.localhost') || str_ends_with($host, '.local') || str_ends_with($host, '.internal'))) {
+            throw new CloudAiException(t('ai_cloud.err_base_url'));
+        }
+        if (filter_var($host, FILTER_VALIDATE_IP) !== false) {
+            if (self::isBlockedIp($host, $allowPrivate)) {
+                throw new CloudAiException(t('ai_cloud.err_base_url'));
+            }
+            return;
+        }
+        $ips = @gethostbynamel($host);
+        if (is_array($ips)) {
+            foreach ($ips as $ip) {
+                if (self::isBlockedIp($ip, $allowPrivate)) {
+                    throw new CloudAiException(t('ai_cloud.err_base_url'));
+                }
+            }
+        }
+    }
+
     /**
      * Address of an OpenAI-compatible chat API, or null: http(s), no
      * credentials or fragments in it, at most 200 characters.
      */
-    public static function validBaseUrl(string $url): ?string
+    public static function validBaseUrl(string $url, bool $allowPrivate = true): ?string
     {
         $url = rtrim(trim($url), '/');
         if ($url === '' || strlen($url) > 200 || !preg_match('~^https?://[^\s/?#@]+(/[^\s?#]*)?$~', $url)
             || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return null;
+        }
+        $host = strtolower(trim((string) parse_url($url, PHP_URL_HOST), '[]'));
+        if ($host === 'metadata.google.internal' || (filter_var($host, FILTER_VALIDATE_IP) !== false && self::isBlockedIp($host, $allowPrivate))) {
+            return null;
+        }
+        if (!$allowPrivate && ($host === 'localhost' || str_ends_with($host, '.localhost') || str_ends_with($host, '.local') || str_ends_with($host, '.internal'))) {
             return null;
         }
         return $url;
@@ -158,7 +226,7 @@ class CloudAiService
             'openrouter' => ['title' => 'OpenRouter', 'caps' => ['llm'], 'fields' => $key,
                              'url' => 'https://openrouter.ai/keys', 'free' => true],
             'claude' => ['title' => 'Anthropic Claude', 'caps' => ['llm'],
-                         'fields' => [$key[0], $model('claude-sonnet-4-20250514')],
+                         'fields' => [$key[0], $model('claude-haiku-5-5')],
                          'url' => 'https://console.anthropic.com/settings/keys', 'free' => false],
             'mistral' => ['title' => 'Mistral AI', 'caps' => ['llm', 'embed'],
                           'fields' => [$key[0], $model('mistral-small-latest')],
@@ -201,7 +269,9 @@ class CloudAiService
                 if (!in_array($type, self::LLM_FIELDS_OWN, true)) {
                     $p['fields'][] = ['key' => 'llm_model', 'label' => 'LLM Model', 'secret' => false, 'optional' => true, 'advanced' => true];
                 }
-                $p['fields'][] = ['key' => 'llm_temperature', 'label' => 'Temperature (0-2)', 'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => '0'];
+                if ($type !== 'claude') {   // current Claude models refuse temperature
+                    $p['fields'][] = ['key' => 'llm_temperature', 'label' => 'Temperature (0-2)', 'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => '0'];
+                }
                 $p['fields'][] = ['key' => 'llm_max_tokens', 'label' => 'Max tokens', 'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => '512'];
             }
             if (in_array('stt', $p['caps'], true) && !in_array('stt_model', $own, true)) {
@@ -452,9 +522,18 @@ class CloudAiService
         return $cfg;
     }
 
+    public static function isLoopbackOllama(string $id): bool
+    {
+        if (self::typeIfKnown($id) !== 'ollama') {
+            return false;
+        }
+        $host = strtolower((string) parse_url((string) (self::config($id)['base_url'] ?? ''), PHP_URL_HOST));
+        return in_array($host, ['127.0.0.1', 'localhost', '::1', '[::1]'], true);
+    }
+
     public static function configured(string $id, array $post = []): bool
     {
-        if (function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1') {
+        if (function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1' && !self::isLoopbackOllama($id)) {
             return false;
         }
         $a = self::registry()[$id] ?? null;
@@ -464,11 +543,29 @@ class CloudAiService
         return self::fieldsComplete($id, $post);
     }
 
-    /** Whether the account's required fields are filled (stored, or typed in $post). */
-    private static function fieldsComplete(string $id, array $post = []): bool
+    /** Completeness check for interactive Test / Discover (allows disabled accounts and fresh 2nd accounts). */
+    public static function configuredForTest(string $id, array $post = [], bool $isNew = false): bool
     {
-        $cfg = self::config($id);
+        if (function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1' && !self::isLoopbackOllama($id)) {
+            return false;
+        }
+        return self::fieldsComplete($id, $post, $isNew);
+    }
+
+    /** Whether the account's required fields are filled (stored, or typed in $post). */
+    private static function fieldsComplete(string $id, array $post = [], bool $isNew = false): bool
+    {
         $fields = self::provider($id)['fields'];
+        if ($isNew) {
+            $cfg = [];
+            foreach ($fields as $f) {
+                if (empty($f['secret']) && array_key_exists('default', $f)) {
+                    $cfg[$f['key']] = (string) $f['default'];
+                }
+            }
+        } else {
+            $cfg = self::config($id);
+        }
         foreach ($fields as $f) {
             $k = $f['key'];
             if (isset($post[$k]) && trim((string) $post[$k]) !== '') {
@@ -532,6 +629,7 @@ class CloudAiService
         $out = [];
         foreach (self::providers() as $type => $p) {
             $out[] = ['type' => $type, 'title' => $p['title'], 'caps' => $p['caps'], 'url' => $p['url'], 'free' => $p['free'],
+                      'models' => (object) (self::KNOWN_MODELS[$type] ?? []),
                       'fields' => array_map(fn($f) => $f + ['value' => $f['secret'] ? '' : (string) ($f['default'] ?? ''), 'masked' => ''], $p['fields'])];
         }
         usort($out, static fn ($a, $b) => strcasecmp($a['title'], $b['title']));      // the "Add a provider account" list: by name
@@ -620,9 +718,9 @@ class CloudAiService
      * with a freshly pasted key sent no key at all and the provider's own
      * "no credentials" error read like a bad key.
      */
-    public static function test(string $id, array $post = []): string
+    public static function test(string $id, array $post = [], bool $isNew = false): string
     {
-        $cfg = self::config($id);
+        $cfg = $isNew ? [] : self::config($id);
         $k = $cfg['api_key'] ?? '';
         $typedKey = trim((string) ($post['api_key'] ?? ''));
         if ($typedKey !== '') {
@@ -649,7 +747,7 @@ class CloudAiService
             case 'mistral':
             case 'cohere':
             case 'openai_compat':
-                return self::testChat($id, $post);
+                return self::testChat($id, $post, $isNew);
             case 'deepgram':
                 $d = self::json(TtsHttp::request('GET', 'https://api.deepgram.com/v1/projects', ['Authorization' => 'Token ' . $k], null, 20), $id);
                 return sprintf(t('ai_cloud.test_projects'), count($d['projects'] ?? []));
@@ -664,44 +762,55 @@ class CloudAiService
      * One tiny chat request: proves address, key and model together
      * (listing models would not show a wrong model name).
      */
-    private static function testChat(string $id, array $post = []): string
+    private static function testChat(string $id, array $post = [], bool $isNew = false): string
     {
         require_once __DIR__ . '/AiGateway.php';
         $started = microtime(true);
-        AiGateway::chat('cloud:' . $id, 'Reply with OK.', 'panel', 300, $post);
-        $cfg = self::gatewayConfig($id, $post);
+        $draft = $post + ($isNew ? ['_is_new' => true] : []);
+        AiGateway::chat('cloud:' . $id, 'Reply with OK.', 'panel', 300, $draft);
+        $cfg = self::gatewayConfig($id, $draft);
         return sprintf(t('ai_cloud.test_chat'), $cfg['model'], (int) round((microtime(true) - $started) * 1000));
     }
 
     /**
      * Discovers available models for a configured LLM/embedding provider, cached for 15 minutes.
-     * @return array{models: list<string>, cached: bool}
+     * `kinds`: what each model is for (llm, stt, tts, realtime, embed, other), so that the account form offers
+     * each model field only the models that fit it.
+     * @return array{models: list<string>, kinds: array<string, string>, cached: bool}
      */
-    public static function discoverModels(string $id, array $post = [], bool $refresh = false): array
+    public static function discoverModels(string $id, array $post = [], bool $refresh = false, bool $isNew = false): array
     {
-        self::provider($id);
+        if (!in_array('llm', self::provider($id)['caps'], true)) {
+            return ['models' => [], 'kinds' => [], 'cached' => false];      // no model list to ask (speech-only providers)
+        }
         $cacheKey = 'ai_cloud_cache.' . $id;
-        [$base, , $key] = self::llmTarget($id, $post);
-        $fingerprint = hash('sha256', $id . '|' . $base);
-        if (!$refresh && function_exists('getSystemSetting')) {
+        [$base, , $key] = self::llmTarget($id, $post, $isNew);
+        $fingerprint = hash('sha256', $id . '|' . $base . '|' . $key);     // another key: another list
+        if (!$isNew && !$refresh && function_exists('getSystemSetting')) {
             $raw = json_decode((string) getSystemSetting($cacheKey, ''), true);
-            if (is_array($raw) && ($raw['fp'] ?? '') === $fingerprint && (int) ($raw['exp'] ?? 0) > time() && is_array($raw['models'] ?? null)) {
-                return ['models' => array_values($raw['models']), 'cached' => true];
+            if (is_array($raw) && ($raw['fp'] ?? '') === $fingerprint && (int) ($raw['exp'] ?? 0) > time()
+                && is_array($raw['models'] ?? null) && is_array($raw['kinds'] ?? null)) {
+                return ['models' => array_values($raw['models']), 'kinds' => $raw['kinds'], 'cached' => true];
             }
         }
 
         $models = [];
+        $methods = [];      // Google: what each model supports (generateContent, bidiGenerateContent, embedContent)
         $type = self::typeOf($id);
+        $allowPrivate = in_array($type, ['ollama', 'nvidia_local', 'openai_compat'], true);
         if ($type === 'google_ai') {
-            $k = trim((string) ($post['api_key'] ?? '')) ?: (self::config($id)['api_key'] ?? '');
-            $d = self::json(TtsHttp::request('GET', 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=50', ['x-goog-api-key' => $k], null, 20), $id);
+            $k = trim((string) ($post['api_key'] ?? '')) ?: ($isNew ? '' : (self::config($id)['api_key'] ?? ''));
+            $d = self::json(TtsHttp::request('GET', 'https://generativelanguage.googleapis.com/v1beta/models?pageSize=1000', ['x-goog-api-key' => $k], null, 20), $id);
             foreach ((array) ($d['models'] ?? []) as $m) {
                 $name = (string) ($m['name'] ?? '');
                 if ($name !== '') {
-                    $models[] = str_starts_with($name, 'models/') ? substr($name, 7) : $name;
+                    $name = str_starts_with($name, 'models/') ? substr($name, 7) : $name;
+                    $models[] = $name;
+                    $methods[$name] = array_map('strval', (array) ($m['supportedGenerationMethods'] ?? []));
                 }
             }
         } elseif ($type === 'claude') {
+            self::assertSafeEndpoint($base, false);
             $d = self::json(TtsHttp::request('GET', $base . '/models', ['x-api-key' => $key, 'anthropic-version' => '2023-06-01'], null, 20), $id);
             foreach ((array) ($d['data'] ?? []) as $m) {
                 if (!empty($m['id'])) {
@@ -709,6 +818,7 @@ class CloudAiService
                 }
             }
         } else {
+            self::assertSafeEndpoint($base, $allowPrivate);
             $headers = $key !== '' ? ['Authorization' => 'Bearer ' . $key] : [];
             $d = self::json(TtsHttp::request('GET', rtrim($base, '/') . '/models', $headers, null, 20), $id);
             foreach ((array) ($d['data'] ?? $d['models'] ?? []) as $m) {
@@ -722,24 +832,52 @@ class CloudAiService
 
         $models = array_values(array_unique(array_filter($models, fn($v) => $v !== '')));
         sort($models, SORT_STRING);
-        if (function_exists('setSystemSetting')) {
-            setSystemSetting($cacheKey, json_encode(['fp' => $fingerprint, 'exp' => time() + 900, 'models' => $models], JSON_UNESCAPED_UNICODE));
+        $kinds = [];
+        foreach ($models as $m) {
+            $kinds[$m] = self::modelKind($m, $methods[$m] ?? null);
         }
-        return ['models' => $models, 'cached' => false];
+        if (!$isNew && function_exists('setSystemSetting')) {
+            setSystemSetting($cacheKey, json_encode(['fp' => $fingerprint, 'exp' => time() + 900, 'models' => $models, 'kinds' => $kinds], JSON_UNESCAPED_UNICODE));
+        }
+        return ['models' => $models, 'kinds' => $kinds, 'cached' => false];
+    }
+
+    /**
+     * What a listed model is for, from Google's supported methods or else from its name (the providers' lists do
+     * not say): realtime, stt, tts, embed, other (images, moderation ...) or llm.
+     * @param list<string>|null $methods
+     */
+    public static function modelKind(string $model, ?array $methods = null): string
+    {
+        $m = strtolower($model);
+        return match (true) {
+            str_contains($m, 'realtime') || str_contains($m, '-live') || in_array('bidiGenerateContent', (array) $methods, true) => 'realtime',
+            (bool) preg_match('/whisper|transcribe|distil-|-asr|\bstt\b/', $m) => 'stt',
+            (bool) preg_match('/(^|[-_])tts|text-to-speech|playai|orpheus/', $m) => 'tts',
+            (bool) preg_match('/embed|rerank/', $m) || in_array('embedContent', (array) $methods, true) => 'embed',
+            (bool) preg_match('/dall-e|gpt-image|imagen|veo|moderation|guard|babbage|davinci|aqa|computer-use|search/', $m)
+                || ($methods !== null && !in_array('generateContent', $methods, true)) => 'other',
+            default => 'llm',
+        };
     }
 
     /** Credential resolver bridge; never expose this array to browser/worker job JSON. */
     public static function gatewayConfig(string $id, array $post = []): array
     {
+        $isNew = !empty($post['_is_new']);
         $type = self::typeOf($id);
         if ($type === 'google_ai') {
-            $cfg = self::config($id);
-            if (trim((string) ($post['api_key'] ?? '')) !== '') { $cfg['api_key'] = trim((string) $post['api_key']); }
-            return ['adapter' => 'google', 'model' => self::GOOGLE_AI_MODEL,
-                'url' => self::GOOGLE_AI_GENERATE_URL,
+            $cfg = $isNew ? [] : self::config($id);
+            if (trim((string) ($post['api_key'] ?? '')) !== '') { $cfg['api_key'] = trim((string) ($post['api_key'] ?? '')); }
+            $gModel = trim((string) ($post['llm_model'] ?? '')) ?: (trim((string) ($cfg['llm_model'] ?? '')) ?: self::GOOGLE_AI_MODEL);
+            if (!preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#D', $gModel)) {
+                throw new CloudAiException(t('ai_cloud.err_model'));
+            }
+            return ['adapter' => 'google', 'model' => $gModel,
+                'url' => 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($gModel) . ':generateContent',
                 'api_key' => $cfg['api_key'] ?? ''];
         }
-        [$base, $model, $key] = self::llmTarget($id, $post);
+        [$base, $model, $key] = self::llmTarget($id, $post, $isNew);
         if ($type === 'claude') {
             return ['adapter' => 'anthropic', 'model' => $model, 'url' => $base . '/messages',
                 'api_key' => $key, 'allow_private' => false];
@@ -774,20 +912,24 @@ class CloudAiService
         $lang = self::language($lang);
         $cfg = self::config($id);
         $k = $cfg['api_key'] ?? '';
+        $cfgSttModel = trim((string) ($cfg['stt_model'] ?? ''));
+        if ($cfgSttModel !== '' && !preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#D', $cfgSttModel)) {
+            throw new CloudAiException(t('ai_cloud.err_model'));
+        }
         $started = microtime(true);
         $type = self::typeOf($id);
         switch ($type) {
             case 'openai':
             case 'groq':
                 $url = $type === 'openai' ? 'https://api.openai.com/v1/audio/transcriptions' : 'https://api.groq.com/openai/v1/audio/transcriptions';
-                $model = $type === 'openai' ? 'gpt-4o-mini-transcribe' : 'whisper-large-v3-turbo';
+                $model = $cfgSttModel !== '' ? $cfgSttModel : self::STT_MODEL_DEFAULTS[$type];
                 [$body, $type] = self::multipart(['model' => $model, 'language' => $lang, 'response_format' => 'json'], 'file', 'speech.wav', $wav);
                 $d = self::json(TtsHttp::request('POST', $url, ['Authorization' => 'Bearer ' . $k, 'Content-Type' => $type], $body, 120), $id);
                 $text = (string) ($d['text'] ?? '');
                 break;
             case 'openai_compat':
                 $base = rtrim((string) ($cfg['base_url'] ?? ''), '/');
-                $model = trim((string) ($cfg['stt_model'] ?? '')) ?: (trim((string) ($cfg['model'] ?? '')) ?: 'whisper-1');
+                $model = $cfgSttModel ?: (trim((string) ($cfg['model'] ?? '')) ?: 'whisper-1');
                 [$body, $type] = self::multipart(['model' => $model, 'language' => $lang, 'response_format' => 'json'], 'file', 'speech.wav', $wav);
                 $headers = ['Content-Type' => $type];
                 if ($k !== '') {
@@ -797,7 +939,8 @@ class CloudAiService
                 $text = (string) ($d['text'] ?? '');
                 break;
             case 'deepgram':
-                $d = self::json(TtsHttp::request('POST', 'https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&language=' . $lang,
+                $dgModel = $cfgSttModel !== '' ? $cfgSttModel : self::STT_MODEL_DEFAULTS['deepgram'];
+                $d = self::json(TtsHttp::request('POST', 'https://api.deepgram.com/v1/listen?model=' . rawurlencode($dgModel) . '&smart_format=true&language=' . rawurlencode($lang),
                     ['Authorization' => 'Token ' . $k, 'Content-Type' => 'audio/wav'], $wav, 120), $id);
                 $text = (string) ($d['results']['channels'][0]['alternatives'][0]['transcript'] ?? '');
                 break;
@@ -811,16 +954,18 @@ class CloudAiService
                 $text = (string) ($d['DisplayText'] ?? '');
                 break;
             case 'elevenlabs':
-                [$body, $type] = self::multipart(['model_id' => 'scribe_v1', 'language_code' => $lang], 'file', 'speech.wav', $wav);
+                $elModel = $cfgSttModel !== '' ? $cfgSttModel : self::STT_MODEL_DEFAULTS['elevenlabs'];
+                [$body, $type] = self::multipart(['model_id' => $elModel, 'language_code' => $lang], 'file', 'speech.wav', $wav);
                 $d = self::json(TtsHttp::request('POST', 'https://api.elevenlabs.io/v1/speech-to-text', ['xi-api-key' => $k, 'Content-Type' => $type], $body, 120), $id);
                 $text = (string) ($d['text'] ?? '');
                 break;
             case 'google_ai':
+                $gSttModel = $cfgSttModel !== '' ? $cfgSttModel : self::GOOGLE_AI_MODEL;
                 $prompt = 'Transcribe this telephone audio word for word in ' . self::languageName($lang)
                     . '. Output only the transcript, nothing else. If nothing is said, output nothing.';
                 $req = ['contents' => [['parts' => [['text' => $prompt], ['inline_data' => ['mime_type' => 'audio/wav', 'data' => base64_encode($wav)]]]]],
                         'generationConfig' => ['temperature' => 0]];
-                $d = self::json(TtsHttp::request('POST', self::GOOGLE_AI_GENERATE_URL,
+                $d = self::json(TtsHttp::request('POST', 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($gSttModel) . ':generateContent',
                     ['x-goog-api-key' => $k, 'Content-Type' => 'application/json'], json_encode($req), 120), $id);
                 $text = trim((string) ($d['candidates'][0]['content']['parts'][0]['text'] ?? ''));
                 break;
@@ -835,35 +980,55 @@ class CloudAiService
     // ------------------------------------------------------------ language models
 
     /** Chat endpoint and model of a provider's language model. */
-    private static function llmTarget(string $id, array $post = []): array
+    private static function llmTarget(string $id, array $post = [], bool $isNew = false): array
     {
-        $s = self::llmSettings($id);
+        $type = self::typeOf($id);
+        $s = $isNew ? [] : self::llmSettings($id);
         $fixed = ['openai' => ['https://api.openai.com/v1', 'gpt-4.1-mini'],
                   'groq' => ['https://api.groq.com/openai/v1', 'llama-3.3-70b-versatile'],
                   'openrouter' => ['https://openrouter.ai/api/v1', 'google/gemini-2.5-flash'],
-                  'claude' => ['https://api.anthropic.com/v1', 'claude-sonnet-4-20250514'],
+                  'claude' => ['https://api.anthropic.com/v1', 'claude-haiku-5-5'],
                   'mistral' => ['https://api.mistral.ai/v1', 'mistral-small-latest'],
                   'cohere' => ['https://api.cohere.com/compatibility/v1', 'command-a-03-2025'],
                   'nvidia' => ['https://integrate.api.nvidia.com/v1', self::LLM_DEFAULTS['nvidia']],
-                  'qwen' => [self::QWEN_ENDPOINT, self::LLM_DEFAULTS['qwen']]];
-        [$base, $model] = $fixed[self::typeOf($id)] ?? ['', ''];
-        $base = $s['base_url'] ?? $base;
-        $model = $s['model'] ?? $model;
-        $key = $s['api_key'];
+                  'qwen' => [self::QWEN_ENDPOINT, self::LLM_DEFAULTS['qwen']],
+                  'ollama' => ['http://127.0.0.1:11434/v1', 'llama3.2'],
+                  'nvidia_local' => ['http://127.0.0.1:8000/v1', 'meta/llama-3.1-8b-instruct']];
+        [$base, $model] = $fixed[$type] ?? ['', ''];
+        $storedBase = (string) ($s['base_url'] ?? '');
+        if ($storedBase !== '') {
+            $base = $storedBase;
+        }
+        if (!empty($s['model'])) {
+            $model = (string) $s['model'];
+        }
+        $key = $isNew ? '' : (string) ($s['api_key'] ?? '');
+        $ownAddress = in_array($type, ['qwen', 'openai_compat', 'ollama', 'nvidia_local'], true);
+        $allowPrivate = in_array($type, ['ollama', 'nvidia_local', 'openai_compat'], true);
         // Form fields typed but not yet saved win over the stored account,
         // validated exactly as Save validates them.
-        $typedBase = trim((string) ($post['base_url'] ?? ''));
+        $typedBase = $ownAddress ? trim((string) ($post['base_url'] ?? '')) : '';
+        $typedKey = trim((string) ($post['api_key'] ?? ''));
         if ($typedBase !== '') {
-            $base = self::validBaseUrl($typedBase) ?? throw new CloudAiException(t('ai_cloud.err_base_url'));
+            $typedBase = self::validBaseUrl($typedBase, $allowPrivate) ?? throw new CloudAiException(t('ai_cloud.err_base_url'));
+            if (!$isNew && $typedKey === '' && rtrim($typedBase, '/') !== rtrim($base, '/')) {
+                $key = '';
+            }
+            $base = $typedBase;
         }
-        $typedModel = trim((string) ($post['model'] ?? ''));
+        if (in_array($type, self::LLM_FIELDS_OWN, true)) {
+            $typedModel = trim((string) ($post['model'] ?? ''));
+        } elseif (array_key_exists('llm_model', $post) || $type === 'openai') {
+            $typedModel = trim((string) ($post['llm_model'] ?? ''));
+        } else {
+            $typedModel = trim((string) ($post['model'] ?? ''));
+        }
         if ($typedModel !== '') {
             if (!preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#', $typedModel)) {
                 throw new CloudAiException(t('ai_cloud.err_model'));
             }
             $model = $typedModel;
         }
-        $typedKey = trim((string) ($post['api_key'] ?? ''));
         if ($typedKey !== '') {
             $key = $typedKey;
         }
@@ -871,7 +1036,7 @@ class CloudAiService
     }
 
     /**
-     * One answer of a cloud language model (temperature 0). Google AI uses
+     * One answer of a cloud language model (temperature 0, except Claude). Google AI uses
      * Gemini's own API, every other provider the OpenAI chat API.
      */
     public static function chat(string $id, string $prompt, int $maxTokens = 300, int $timeout = 30): string
@@ -879,13 +1044,18 @@ class CloudAiService
         if (!in_array('llm', self::provider($id)['caps'], true) || !self::configured($id)) {
             throw new CloudAiException(t('ai_cloud.err_no_llm'));
         }
-        if (self::overLimit($id, 'llm')) {
+        if (!self::isLoopbackOllama($id) && self::overLimit($id, 'llm')) {
             throw new CloudAiException(t('ai_cloud.err_quota_exceeded'));
         }
         $type = self::typeOf($id);
         if ($type === 'google_ai') {
-            $d = self::json(TtsHttp::request('POST', self::GOOGLE_AI_GENERATE_URL,
-                ['x-goog-api-key' => self::config($id)['api_key'] ?? '', 'Content-Type' => 'application/json'],
+            $gCfg = self::config($id);
+            $gModel = trim((string) ($gCfg['llm_model'] ?? '')) ?: self::GOOGLE_AI_MODEL;
+            if (!preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#D', $gModel)) {
+                throw new CloudAiException(t('ai_cloud.err_model'));
+            }
+            $d = self::json(TtsHttp::request('POST', 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode($gModel) . ':generateContent',
+                ['x-goog-api-key' => $gCfg['api_key'] ?? '', 'Content-Type' => 'application/json'],
                 (string) json_encode(['contents' => [['parts' => [['text' => $prompt]]]],
                                       'generationConfig' => ['temperature' => 0, 'maxOutputTokens' => $maxTokens]]), $timeout), $id);
             self::count($id, 'llm_tokens', (float) ($d['usageMetadata']['totalTokenCount'] ?? 0));
@@ -898,14 +1068,20 @@ class CloudAiService
                 'anthropic-version' => '2023-06-01',
                 'Content-Type' => 'application/json',
             ], (string) json_encode([
+                // Current Claude models refuse temperature 0 and count their thinking toward max_tokens.
                 'model' => $model,
-                'max_tokens' => $maxTokens,
-                'temperature' => 0,
+                'max_tokens' => max(2048, $maxTokens),
                 'messages' => [['role' => 'user', 'content' => $prompt]],
-            ]), $timeout), $id);
+            ] + (preg_match('/^claude-(haiku|sonnet|opus|fable|mythos)-5/', $model) ? ['output_config' => ['effort' => 'low']] : [])),
+                $timeout), $id);
             $usage = (float) (($d['usage']['input_tokens'] ?? 0) + ($d['usage']['output_tokens'] ?? 0));
             self::count($id, 'llm_tokens', $usage);
-            return trim((string) ($d['content'][0]['text'] ?? ''));
+            foreach ((array) ($d['content'] ?? []) as $block) {
+                if (is_array($block) && ($block['type'] ?? 'text') === 'text') {
+                    return trim((string) ($block['text'] ?? ''));
+                }
+            }
+            return '';
         }
         $headers = ['Content-Type' => 'application/json'];
         if ($key !== '') {

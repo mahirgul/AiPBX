@@ -64,7 +64,10 @@ function pushAiAppConfigs(array $apps): void {
     try {
         $wanted = [];
         foreach ($apps as $a) {
-            if (AiAppService::listens((string) ($a['app_type'] ?? ''))) {
+            if (!AiAppService::listens((string) ($a['app_type'] ?? ''))) {
+                continue;
+            }
+            try {
                 $config = AiAppService::serviceConfig($a);
                 require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
                 // Only what can answer: an app without its models is not ready, its calls go to its destination.
@@ -73,6 +76,8 @@ function pushAiAppConfigs(array $apps): void {
                 if ($ready) {
                     $wanted[(int) $a['id']] = $config;
                 }
+            } catch (\Throwable $e) {
+                error_log('AI application ' . (int) ($a['id'] ?? 0) . ' config skipped: ' . $e->getMessage());
             }
         }
         LocalAiService::pushApps($wanted);
@@ -162,11 +167,17 @@ function buildVoiceRequestsContext(array $a, string $key, ?bool $useAri = null):
     $max = max(1, min(50, (int) $a['max_concurrent']));
     $builtin = ($a['app_type'] ?? '') === AiAppService::BUILTIN_AGENT;
     $intents = $builtin ? ($a['agent_tools']['intents'] ?? []) : (AiAppService::config($a)['intents'] ?? []);
-    $svcCfg = AiAppService::serviceConfig($a);
-    $voiceReady = ($svcCfg['tts_model'] ?? '') !== '' && ($svcCfg['stt_model'] ?? '') !== '';
-    if ($builtin) {
-        require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
-        $voiceReady = BuiltinAiAgentService::ready($svcCfg);      // by mode: Realtime needs its account, cascade its three
+    $svcCfg = [];
+    $voiceReady = false;
+    try {
+        $svcCfg = AiAppService::serviceConfig($a);
+        $voiceReady = ($svcCfg['tts_model'] ?? '') !== '' && ($svcCfg['stt_model'] ?? '') !== '';
+        if ($builtin) {
+            require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
+            $voiceReady = BuiltinAiAgentService::ready($svcCfg);      // by mode: Realtime needs its account, cascade its three
+        }
+    } catch (\Throwable $e) {
+        error_log("AI application {$id} dialplan config skipped: " . $e->getMessage());
     }
     $post = 'app=' . $id . '&key=' . $key . '&max=' . $max
         . '&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}'

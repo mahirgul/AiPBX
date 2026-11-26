@@ -19,7 +19,7 @@ This directory contains the **official plugins** bundled with AiPBX. Community p
 | [`web-widgets`](./web-widgets/plugin.json) | `integration` | AiPBX Official Team | Embed click-to-call WebRTC audio buttons and callback forms on any website or WordPress site with origin allowlists and daily rate limits |
 | [`ailocal`](./ailocal/plugin.json) | `ai` | AiPBX Official Team | Local text-to-speech voices and small call detectors that run on this server |
 | [`aicloud`](./aicloud/plugin.json) | `ai` | AiPBX Official Team | Cloud AI provider accounts, models, usage limits, and cloud inference testing |
-| [`ai-apps`](./ai-apps/plugin.json) | `ai` | AiPBX Official Team | Build voice-driven AI IVR applications that greet callers, transcribe speech via Cloud/OpenAI-compatible STT, query external HTTP webhooks, and route calls dynamically |
+| [`microsoft-auth`](./microsoft-auth/plugin.json) | `integration` | AiPBX Official Team | Allow portal users to sign in with their Microsoft 365 / Entra ID accounts via OAuth 2.0 |
 | [`ai-tts`](./ai-tts/plugin.json) | `ai` | AiPBX Official Team | Synthesize natural IVR and queue announcements from text using Cloud TTS or lightweight local TTS engines and save directly to Asterisk sounds |
 | [`ai-voicemail`](./ai-voicemail/plugin.json) | `ai` | AiPBX Official Team | Automatic speech-to-text transcription and one-sentence summaries for voicemail messages |
 | [`ai-call-analysis`](./ai-call-analysis/plugin.json) | `ai` | AiPBX Official Team | Call recording transcription, AI summaries, and automatic quality review (Auto-QA) |

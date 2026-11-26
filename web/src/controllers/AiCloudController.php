@@ -17,6 +17,7 @@ class AiCloudController extends BaseController
         }
 
         $pluginEnabled = PluginManager::isEnabled('aicloud');
+        $canEdit = hasModulePermission('ai_cloud', 'edit') || userHasRole('admin');
         $privacyBlocked = getSystemSetting('privacy_block_cloud_ai', '0') === '1';
         $message = '';
         $error = '';
@@ -30,6 +31,9 @@ class AiCloudController extends BaseController
             } else {
                 try {
                     if (isset($_POST['save_account'])) {
+                        if (!$canEdit) {
+                            throw new \RuntimeException(t('ai_gateway.error_permission', 'Permission denied.'));
+                        }
                         // Add (no id) or edit one account from the dialog.
                         $post = $_POST;
                         $up = $_FILES['service_account_file'] ?? null;
@@ -44,22 +48,31 @@ class AiCloudController extends BaseController
                         } else {
                             CloudAiService::save($id, $post);
                             CloudAiService::renameAccount($id, $name);
-                            if (isset(CloudAiService::REALTIME_MODELS[CloudAiService::typeOf($id)])) {
-                                markPendingSync('ai_apps', 'ai_cloud_provider', $id, CloudAiService::label($id), 'update', $_SESSION['user_id'] ?? null);
-                            }
+                            markPendingSync('ai_apps', 'ai_cloud_provider', $id, CloudAiService::label($id), 'update', $_SESSION['user_id'] ?? null);
                             $message = t('ai_tts.msg_provider_saved');
                         }
                     } elseif (isset($_POST['copy_account'])) {
+                        if (!$canEdit) {
+                            throw new \RuntimeException(t('ai_gateway.error_permission', 'Permission denied.'));
+                        }
                         CloudAiService::copyAccount((string) $_POST['copy_account']);
                         $message = t('ai_cloud.msg_account_added');
                     } elseif (isset($_POST['toggle_account'])) {
-                        CloudAiService::setEnabled((string) $_POST['toggle_account'], !empty($_POST['enable']));
+                        if (!$canEdit) {
+                            throw new \RuntimeException(t('ai_gateway.error_permission', 'Permission denied.'));
+                        }
+                        $toggleId = (string) $_POST['toggle_account'];
+                        CloudAiService::setEnabled($toggleId, !empty($_POST['enable']));
+                        markPendingSync('ai_apps', 'ai_cloud_provider', $toggleId, CloudAiService::label($toggleId), 'update', $_SESSION['user_id'] ?? null);
                         $message = t('ai_tts.msg_provider_saved');
                     } elseif (isset($_POST['delete_account'])) {
                         if (!hasModulePermission('ai_cloud', 'delete') && !userHasRole('admin')) {
                             throw new \RuntimeException(t('auth.no_delete_module'));
                         }
-                        CloudAiService::deleteAccount((string) $_POST['delete_account']);
+                        $delId = (string) $_POST['delete_account'];
+                        $delLabel = CloudAiService::label($delId);
+                        CloudAiService::deleteAccount($delId);
+                        markPendingSync('ai_apps', 'ai_cloud_provider', $delId, $delLabel, 'delete', $_SESSION['user_id'] ?? null);
                         $message = t('ai_cloud.msg_account_deleted');
                     }
                 } catch (\Throwable $e) {

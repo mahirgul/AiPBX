@@ -12,8 +12,8 @@
     "icon_style": "color: var(--purple);",
     "description": "Local text-to-speech voices and small call detectors that run on this server.",
     "description_i18n": {
-        "tr": "Yerel AI modelleri, Ollama / yerel runtime bağlantıları ve yerel çıkarım denemesi.",
-        "en": "Local AI models, Ollama / local runtime connections, and local inference testing."
+        "tr": "Bu sunucuda çalışan yerel metinden sese (TTS) sesleri ve küçük çağrı algılayıcıları.",
+        "en": "Local text-to-speech voices and small call detectors that run on this server."
     },
     "scopes": [
         "calls:read",

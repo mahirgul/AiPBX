@@ -10,6 +10,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 import socket
 import ssl
 import struct
@@ -69,13 +70,19 @@ def _read_ws_frame(sock):
     return fin, opcode, payload
 
 
+def keyterms_for(model, terms):
+    """The keyterm values to send: only Nova-3 and Flux models take them (older ones use "keywords")."""
+    return list(terms)[:30] if str(model or "").startswith(("nova-3", "flux")) else []
+
+
 class DeepgramStream:
     """Real-time Deepgram /v1/listen WebSocket session."""
 
     def __init__(self, api_key: str, lang: str = "tr", model: str = "nova-3",
-                 sample_rate: int = 8000, connect_timeout: float = 2.0):
+                 sample_rate: int = 8000, connect_timeout: float = 2.0, keyterms=()):
         self.api_key = api_key.strip()
-        self.lang = (lang or "tr").strip().lower()[:2]
+        self.keyterms = list(keyterms or ())
+        self.lang = re.split(r"[-_]", (lang or "tr").strip().lower())[0] or "tr"
         self.model = model
         self.sample_rate = int(sample_rate)
         self.connect_timeout = connect_timeout
@@ -98,7 +105,8 @@ class DeepgramStream:
             "channels": "1",
             "interim_results": "true",
             "endpointing": "300",
-        })
+            "keyterm": keyterms_for(self.model, self.keyterms),
+        }, doseq=True)
         ws_key = base64.b64encode(os.urandom(16)).decode("ascii")
         expected_accept = base64.b64encode(
             hashlib.sha1((ws_key + _WS_GUID).encode("ascii")).digest()

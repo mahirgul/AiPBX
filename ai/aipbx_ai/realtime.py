@@ -9,6 +9,7 @@ function-calling tools (transfer_call, end_call, lookup).
 from __future__ import annotations
 
 import base64
+import copy
 import json
 import logging
 import os
@@ -284,16 +285,18 @@ class RealtimeCall:
         self._last_frame = 0.0                   # last audio frame from the line
         self._nudges = 0
         self._gave_up = False
+        self._speech_stopped = None     # monotonic: the provider heard the caller stop (OpenAI protocol)
 
     def _build_tools(self) -> list[dict[str, Any]]:
         tools: list[dict[str, Any]] = [
             {
                 "type": "function",
                 "name": "end_call",
-                "description": "End the phone call politely when the caller is done.",
+                "description": "End the phone call when the caller has nothing more to ask; say goodbye first.",
                 "parameters": {
                     "type": "object",
-                    "properties": {"summary": {"type": "string"}},
+                    "properties": {"summary": {"type": "string", "description": "One sentence: what the call was about "
+                                                                               "and how it ended"}},
                     "required": ["summary"],
                 },
             }
@@ -303,12 +306,16 @@ class RealtimeCall:
             tools.append({
                 "type": "function",
                 "name": "transfer_call",
-                "description": "Transfer the caller to one of the configured targets.",
+                "description": "Transfer the caller to one of the company's targets; your part of the call ends. "
+                               "Use it when a target fits what the caller wants, or when you cannot help. Targets: "
+                               + "; ".join(f'{i["id"]}: {i.get("name") or i["id"]}'
+                                           for i in (self.cfg.get("intents") or []) if i.get("id")),
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "target": {"type": "string", "enum": intents},
-                        "summary": {"type": "string"},
+                        "summary": {"type": "string", "description": "One sentence for whoever takes the call: "
+                                                                     "who calls, what they want, what you found"},
                     },
                     "required": ["target"],
                 },
@@ -335,8 +342,18 @@ class RealtimeCall:
                     },
                 })
         if self.cfg.get("tools") or self.cfg.get("knowledge"):
-            properties: dict[str, Any] = {"tool": {"type": "string"}, "query": {"type": "string"}}
-            description = "Look up information in the knowledge base or connected database/API."
+            lookups = [(str(t.get("name") or ""), str(t.get("description") or "")) for t in (self.cfg.get("tools") or [])
+                       if isinstance(t, dict) and t.get("name")]
+            if self.cfg.get("knowledge"):
+                lookups.append(("knowledge", "the company's own documents (policies, prices, opening hours, products)"))
+            properties: dict[str, Any] = {
+                "tool": {"type": "string", "description": "Which lookup to run",
+                         **({"enum": [name for name, _ in lookups]} if lookups else {})},
+                "query": {"type": "string", "description": "What to look up, in the caller's own words and language"},
+            }
+            description = ("Look something up in the company's own sources and get text back to answer from. "
+                           "It returns only what the source says; when nothing relevant comes back, say so "
+                           "instead of guessing. Lookups: " + "; ".join(f"{n}: {d}" for n, d in lookups))
             sources = self.cfg.get("knowledge_sources") or []
             if self.cfg.get("knowledge") and sources:
                 properties["source"] = {"type": "integer", "enum": [s["id"] for s in sources],
@@ -814,6 +831,13 @@ class RealtimeCall:
                 if b64:
                     pcm = ulaw_to_pcm16(base64.b64decode(b64))
                     self._enqueue_pcm(pcm)
+                    if self._speech_stopped is not None:     # the caller's wait for the first sound of the answer
+                        turn = getattr(self.call.session, "turn", None)
+                        if turn is not None:
+                            turn({"first_audio_ms": (time.monotonic() - self._speech_stopped) * 1000})
+                        self._speech_stopped = None
+            elif etype == "input_audio_buffer.speech_stopped":
+                self._speech_stopped = time.monotonic()
             elif etype == "input_audio_buffer.speech_started":
                 self._last_activity = time.monotonic()
                 self._nudges = 0
@@ -851,11 +875,19 @@ class RealtimeCall:
         voice_key = str(self.rc.get("voice") or "alloy")
         # An OpenAI voice name maps to a Gemini one; a Gemini voice name (Kore, Puck ...) is used as it is.
         voice_name = _GEMINI_VOICES.get(voice_key) or (voice_key if re.fullmatch(r"[A-Z][A-Za-z]{2,20}", voice_key) else "Puck")
+        def _gemini_params(params: dict[str, Any] | None) -> dict[str, Any]:
+            out = copy.deepcopy(params) if params else {"type": "object", "properties": {}}
+            for prop in (out.get("properties") or {}).values():
+                if isinstance(prop, dict) and prop.get("type") == "integer" and isinstance(prop.get("enum"), list):
+                    prop["type"] = "string"
+                    prop["enum"] = [str(v) for v in prop["enum"]]
+            return out
+
         decls = [
             {
                 "name": t["name"],
                 "description": t.get("description") or "",
-                "parameters": t.get("parameters") or {"type": "object", "properties": {}},
+                "parameters": _gemini_params(t.get("parameters")),
             }
             for t in self._build_tools()
         ]

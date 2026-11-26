@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Səsli mesaj mətni',
     'mail_templates.vm_ai_summary' => 'Xülasə',
     'mail_templates.vm_ai_transcript' => 'Deyilənlər',
-    'ai_cloud.accounts_title' => 'Xidmətlər',
     'ai_cloud.account_add' => 'Əlavə et',
     'ai_cloud.err_engine' => 'Bu mühərrik bu tapşırığı yerinə yetirə bilmir.',
     'ai_cloud.test_ok' => 'Əlaqə işləyir.',

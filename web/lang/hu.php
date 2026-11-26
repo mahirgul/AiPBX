@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Hangposta szövegként',
     'mail_templates.vm_ai_summary' => 'Összefoglaló',
     'mail_templates.vm_ai_transcript' => 'Ami elhangzott',
-    'ai_cloud.accounts_title' => 'Szolgáltatások',
     'ai_cloud.account_add' => 'Hozzáadás',
     'ai_cloud.err_engine' => 'Ez a motor nem tudja elvégezni ezt a feladatot.',
     'ai_cloud.test_ok' => 'A kapcsolat működik.',

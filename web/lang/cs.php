@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Hlasová pošta jako text',
     'mail_templates.vm_ai_summary' => 'Shrnutí',
     'mail_templates.vm_ai_transcript' => 'Co zaznělo',
-    'ai_cloud.accounts_title' => 'Služby',
     'ai_cloud.account_add' => 'Přidat',
     'ai_cloud.err_engine' => 'Tento modul nemůže tuto úlohu provést.',
     'ai_cloud.test_ok' => 'Připojení funguje.',

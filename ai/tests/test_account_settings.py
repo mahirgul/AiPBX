@@ -40,14 +40,16 @@ class LlmSettingsTest(unittest.TestCase):
         self.assertEqual(seen[0]["temperature"], 0)
         self.assertNotIn("max_tokens", seen[0])
         self.assertEqual(seen[1]["generationConfig"]["temperature"], 0)
-        self.assertEqual((seen[2]["temperature"], seen[2]["max_tokens"]), (0, 512))
+        self.assertNotIn("temperature", seen[2], "current Claude models refuse temperature 0")
+        self.assertEqual((seen[2]["max_tokens"], seen[2]["output_config"]), (2048, {"effort": "low"}), "room for thinking")
         seen.clear()
         for provider in ("openai", "google_ai", "claude"):
             cloud_llm.answer_text({"provider": provider, "api_key": KEY, "temperature": 0.4, "max_tokens": 100}, "x", post=post)
         self.assertEqual((seen[0]["temperature"], seen[0]["max_tokens"]), (0.4, 100))
         self.assertEqual(seen[1]["generationConfig"]["temperature"], 0.4)
         self.assertEqual(seen[1]["generationConfig"]["maxOutputTokens"], 100)
-        self.assertEqual((seen[2]["temperature"], seen[2]["max_tokens"]), (0.4, 100))
+        self.assertNotIn("temperature", seen[2])
+        self.assertEqual(seen[2]["max_tokens"], 2048)
 
 
 class SttSettingsTest(unittest.TestCase):
@@ -96,6 +98,36 @@ class TtsSettingsTest(unittest.TestCase):
         cloud_tts.synthesize({"provider": "openai", "api_key": KEY, "format": "wav", "model": "tts-x"}, "hi", request=post)
         self.assertEqual([b["response_format"] for b in bodies], ["pcm", "wav", "wav"])
         self.assertEqual(bodies[2]["model"], "tts-x")
+
+    def test_ollama_nvidia_local_and_secret_ref_precedence(self):
+        from unittest.mock import patch
+        from aipbx_ai import secret_refs
+
+        for prov in ("ollama", "nvidia_local"):
+            cfg = cloud_llm.validate({"provider": prov, "base_url": "http://127.0.0.1:11434/v1"})
+            self.assertEqual(cfg["provider"], prov)
+            ref = secret_refs.reference_config(1, {"llm_cloud": {"provider": prov, "base_url": "http://127.0.0.1:11434/v1"}})
+            self.assertEqual(ref["llm_cloud"]["base_url"], "http://127.0.0.1:11434/v1")
+            seen = []
+            ans = cloud_llm.answer_text(cfg, "hi", post=lambda u, h, b: seen.append(u) or {"choices": [{"message": {"content": "ok"}}]})
+            self.assertEqual(ans, "ok")
+            self.assertEqual(seen[0], "http://127.0.0.1:11434/v1/chat/completions")
+
+        with patch("aipbx_ai.secret_refs._ask", return_value={
+            "ok": True,
+            "credential": {"provider": "openai", "api_key": KEY, "model": "gpt-4.1", "voice": "nova"},
+        }):
+            resolved = secret_refs.resolve({
+                "provider": "openai",
+                "secret_ref": "app:1:tts:openai",
+                "model": "tts-app",
+                "voice": "alloy",
+                "lang": "en",
+            })
+        self.assertEqual(resolved["api_key"], KEY)
+        self.assertEqual(resolved["model"], "tts-app")
+        self.assertEqual(resolved["voice"], "alloy")
+        self.assertEqual(resolved["lang"], "en")
 
 
 if __name__ == "__main__":

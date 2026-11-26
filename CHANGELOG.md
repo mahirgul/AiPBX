@@ -20,15 +20,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **The call's language:** the agent speaks the language of the call (`CHANNEL(language)`, set by the inbound route or the IVR) and greets, listens and answers in it; the agent's own `{language}` is used when the call has none. Greetings have an order number (the lowest is used, randomly among equals; a greeting with `{caller_name}` is skipped when the name is unknown). The portal admin's language no longer decides it. A built-in table of 84 languages replaces the AI languages list.
 - **Safer transfers:** a destination an agent transfers to cannot be deleted while the agent uses it; if one disappears anyway, only that transfer is left out at Apply and the agent list shows *Target missing*.
 - **No default model.** Every AI feature (agent, voicemail, call analysis, PBX Assistant, reminders, TTS Studio) picks its own account; unselected means off.
-- **Cloud AI:** a page of accounts only. One account is one provider with one set of settings; the rarely changed ones (model, temperature, max tokens, and for Realtime the voice, speech detection, noise reduction) are under *Advanced*, *Copy* makes a second account for a second model or voice. The provider list is sorted by name.
+- **Cloud AI:** a page of accounts only. One account is one provider with one set of settings; the rarely changed ones (model, temperature, max tokens, and for Realtime the voice, speech detection, noise reduction) are under *Advanced*, *Copy* makes a second account for a second model or voice. Model selectors are dropdowns pre-populated with common models that refresh from the provider when an API key is entered, and the provider list is sorted by name.
 - **Voicemail AI is one page:** the community plugin page of the same name is gone (an upgrade keeps the plugin enabled as the bundled one and removes the community copy); the page has two tabs, *Settings* (with the language of the summary) and *History*: one table of jobs (queued, running, failed, with the reason) and finished transcripts and summaries, one row per voicemail.
 - **Knowledge base:** optional; one text and a required description per base; an agent can use several bases through one `knowledge` tool.
+- **Faster, clearer conversations** (ideas from LiveKit Agents): the end-of-turn wait is learned from each caller's pauses (0.5–1.4 s instead of a fixed 0.8 s); Deepgram (Nova-3) gets the names of the transfer targets and knowledge bases as key terms; markdown, list marks and emoji are removed before an answer is spoken; a lookup without a waiting phrase plays a quiet typing sound. The AI call log shows each conversation's turns with the time of speech recognition, model, voice and the caller's wait for the first sound.
+- **Outbound navigation** (`dial_and_navigate`): an answering machine or an unreachable-number announcement ends the attempt instead of connecting the requester; a menu that repeats itself makes it try another key, and it stops after the fourth time.
+- **Anthropic Claude accounts** work with the current models: no temperature is sent (they refuse it), room is left for their thinking and the lowest effort is asked for; the default model is `claude-haiku-5-5`.
 - **Local TTS** (was Local AI): one table of voices (EMA, the whole Piper catalogue, Kokoro) and the Silero VAD / Smart Turn detectors.
 
 ### Removed
 
 - Local speech to text (Whisper, Vosk), local language models and Ollama, the sentence-meaning model, the Hugging Face browser, the default-model and per-language layers, the AI languages list, the separate `/ai-wizard` page.
 - **Upgrade resets AI settings** (no data migration): AI agents keep their number and destination but need their settings again, knowledge-base tool files and default bindings are removed, old model files are deleted. PBX data is untouched.
+
+### Fixes
+
+- **Security & permissions:** validate Cloud AI custom endpoints against private/link-local addresses (SSRF protection), enforce edit permissions (`ai_cloud`, `ai_call_analysis`) across endpoints and controllers, scope AI job cancellation to the active feature, and preserve collection roles/filenames on edits.
+- **Sync & reliability:** prevent `SyncAiApps` crashes when an AI account has been disabled or removed, restrict Deepgram `stt_keyterms` forwarding to Deepgram streams, trigger `ai_apps` sync on every Cloud AI account change, and harden community `ai-voicemail` retirement while preserving local-TTS `announcement` models.
+- **AI call pipeline & gateway:** restore the OpenAI-compatible `embed` gateway operation and stdlib WAV fallback without NumPy, support named cloud accounts (`cloud:<name>`) in voice requests, validate Ollama/NVIDIA NIM local endpoints cleanly, handle `collect_dtmf` without playing the thinking sound, avoid stripping ordinal numbers in `speakable()`, and complete missing Turkish UI translations.
 
 ## 1.82.1
 

@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Vastaajaviesti tekstinä',
     'mail_templates.vm_ai_summary' => 'Tiivistelmä',
     'mail_templates.vm_ai_transcript' => 'Mitä sanottiin',
-    'ai_cloud.accounts_title' => 'Palvelut',
     'ai_cloud.account_add' => 'Lisää',
     'ai_cloud.err_engine' => 'Tämä moottori ei pysty suorittamaan tätä tehtävää.',
     'ai_cloud.test_ok' => 'Yhteys toimii.',

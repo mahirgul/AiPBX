@@ -46,7 +46,7 @@ class AiVoicemailController extends BaseController
                         $message = t('ai_cloud.msg_engines_saved', 'Settings saved.');
                     } elseif (isset($_POST['cancel_job_id'])) {
                         $jobId = (int) $_POST['cancel_job_id'];
-                        if ($jobId > 0 && AiJobService::cancel($jobId)) {
+                        if ($jobId > 0 && AiJobService::cancel($jobId, 'ai_voicemail')) {
                             $message = t('ai_jobs.msg_cancelled', 'Job cancelled.');
                         }
                     }

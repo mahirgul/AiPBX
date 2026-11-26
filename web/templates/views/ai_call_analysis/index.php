@@ -14,8 +14,8 @@ $qaDailyMax = (int) ($qa_settings['daily_max'] ?? 30);
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-chart-line', t('ai_call_analysis.title', 'Call Analysis'), 'aiCallAnalysisHelpBox'); ?>
         <?php echo uiPageHeaderActions([
-            ['href' => '/ai-local?tab=connections', 'icon' => 'fa-microchip', 'label' => t('ai_local.title', 'Local AI'), 'class' => 'btn-secondary btn-sm'],
-            ['href' => '/ai-cloud?tab=models', 'icon' => 'fa-cloud', 'label' => t('ai_cloud.title', 'Cloud AI'), 'class' => 'btn-secondary btn-sm'],
+            ['href' => '/ai-local', 'icon' => 'fa-microchip', 'label' => t('ai_local.title', 'Local AI'), 'class' => 'btn-secondary btn-sm'],
+            ['href' => '/ai-cloud', 'icon' => 'fa-cloud', 'label' => t('ai_cloud.title', 'Cloud AI'), 'class' => 'btn-secondary btn-sm'],
         ]); ?>
     <?php echo uiPageHeaderClose(); ?>
     <?php echo uiTabs($tabs, $active_tab); ?>

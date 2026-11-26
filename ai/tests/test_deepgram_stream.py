@@ -170,6 +170,10 @@ class DeepgramStreamTest(unittest.TestCase):
         self.assertEqual(text, "")
         self.assertTrue(dg.failed)
 
+    def test_preserves_three_letter_language_codes(self):
+        self.assertEqual(DeepgramStream("dg-secret", lang="fil").lang, "fil")
+        self.assertEqual(DeepgramStream("dg-secret", lang="tr-TR").lang, "tr")
+
 
 if __name__ == "__main__":
     unittest.main()

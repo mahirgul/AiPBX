@@ -61,4 +61,5 @@ Searching a phone number or extension lists all matching CDRs (across `asteriskc
 
 - **Live Transcript PII / Payment Card Masking:** When PCI-DSS pause/resume or a strict privacy preset (`pci_dss`, `gdpr`, `kvkk`, `hipaa`) is active, `PrivacyService::redactTranscriptPii()` automatically masks Luhn-validated payment card numbers (13–19 digits → `[REDACTED-CARD]`), CVV/CVC sequences (`[REDACTED-CVV]`), and 11-digit National IDs (`[REDACTED-ID]`) in live AGI voice transcripts and voicemail transcriptions before database storage or external LLM synthesis.
 - **Cross-Border Cloud AI Lock:** Checking **Lock outbound Cloud AI services** immediately disables all external Cloud AI providers (`CloudAiService::configured() === false`), ensuring call audio and transcripts never leave the local PBX server.
+- **What a cloud speech account receives besides the audio:** with a Deepgram account, an AI agent also sends the names of its transfer targets (for example extension or queue names) and of its knowledge bases as *key terms*, so that they are recognised. The lock stops this too.
 

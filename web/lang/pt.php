@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Correio de voz em texto',
     'mail_templates.vm_ai_summary' => 'Resumo',
     'mail_templates.vm_ai_transcript' => 'O que foi dito',
-    'ai_cloud.accounts_title' => 'Serviços',
     'ai_cloud.account_add' => 'Adicionar',
     'ai_cloud.err_engine' => 'Este motor não pode desempenhar essa função.',
     'ai_cloud.test_ok' => 'A ligação funciona.',

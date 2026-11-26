@@ -623,6 +623,30 @@ class RealtimeSettingsTest(unittest.TestCase):
         self.assertEqual("hangup", call.session.result)
         self.assertTrue(any("Realtime provider unreachable" in n for n in call.session.notes))
 
+    def test_gemini_setup_converts_integer_enums_to_strings(self) -> None:
+        from unittest.mock import patch
+        call = _FakeCall("ws://127.0.0.1:1/rt")
+        call.config["realtime_cloud"]["provider"] = "google_ai"
+        call.config["realtime_cloud"]["model"] = "gemini-3.1-flash-live-preview"
+        call.config.update(knowledge=True, knowledge_sources=[{"id": 3, "name": "Prices", "description": ""}])
+        sent = []
+
+        class _FakeWs:
+            def send_json(self, obj):
+                sent.append(obj)
+            def recv_json(self):
+                return {"setupComplete": {}}
+
+        rt = RealtimeCall(call)
+        rt._stop.set()
+        with patch.object(rt, "_pump_upstream"):
+            rt._run_gemini(_FakeWs())
+        decls = sent[0]["setup"]["tools"][0]["functionDeclarations"]
+        lookup_decl = next(d for d in decls if d["name"] == "lookup")
+        source_prop = lookup_decl["parameters"]["properties"]["source"]
+        self.assertEqual(source_prop["type"], "string")
+        self.assertEqual(source_prop["enum"], ["3"])
+
 
 if __name__ == "__main__":
     unittest.main()

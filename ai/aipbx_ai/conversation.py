@@ -38,6 +38,24 @@ SUMMARY_CHARS = 300          # of the summary handed over with a transfer
 ACTIONS = ("reply", "lookup", "transfer", "end")
 _TOOL_NAME = re.compile(r"^[a-z0-9_]{1,30}$")
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+# What a model may write that must not be read aloud: markdown marks, list marks, link targets, emoji.
+_MD_LINK = re.compile(r"\[([^\]]{1,200})\]\([^)\s]{1,500}\)")
+_MD_MARKS = re.compile(r"\*\*(?=\S)(.+?)(?<=\S)\*\*|__(?=\S)(.+?)(?<=\S)__|(?<![\w*#])\*(?=[^\s*\d#])([^*\n]+?)(?<=[^\s*])\*(?![\w*#])|`+([^`]*)`+|~~(.+?)~~")
+_LINE_MARKS = re.compile(r"(?m)^\s*(?:#{1,6}\s+|[-*\u2022]\s+)")
+_LIST_NUMBERS = re.compile(r"(?m)^\s*\d{1,2}[.)]\s+")
+_EMOJI = re.compile("[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D\u20E3]")
+
+
+def speakable(text):
+    """The text as it should be spoken: no markdown, list marks or emoji; lines joined into sentences."""
+    text = _MD_LINK.sub(r"\1", str(text or ""))
+    text = _LINE_MARKS.sub("", text)
+    if "\n" in text and len(_LIST_NUMBERS.findall(text)) >= 2:
+        text = _LIST_NUMBERS.sub("", text)
+    text = _EMOJI.sub("", _MD_MARKS.sub(lambda m: next(g for g in m.groups() if g is not None), text))
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    joined = " ".join(ln if ln[-1] in ".!?:;," else ln + "." for ln in lines[:-1]) + (" " if len(lines) > 1 else "")
+    return re.sub(r"\s{2,}", " ", joined + (lines[-1] if lines else "")).strip()
 KNOWLEDGE_TOOL = "knowledge"   # built in: the application's knowledge base collection (via the portal)
 DB_TOOL = "get_db_value"
 _PARAM_NAME = re.compile(r"^[A-Za-z][A-Za-z0-9_]{0,39}$")

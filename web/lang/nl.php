@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Voicemail als tekst',
     'mail_templates.vm_ai_summary' => 'Samenvatting',
     'mail_templates.vm_ai_transcript' => 'Wat er gezegd werd',
-    'ai_cloud.accounts_title' => 'Diensten',
     'ai_cloud.account_add' => 'Toevoegen',
     'ai_cloud.err_engine' => 'Deze engine kan die taak niet uitvoeren.',
     'ai_cloud.test_ok' => 'Verbinding werkt.',

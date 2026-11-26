@@ -1,6 +1,8 @@
 """WAV container for 16-bit mono PCM."""
+from array import array
 import io
 import struct
+import sys
 import wave
 
 RATE = 16000
@@ -22,10 +24,37 @@ def wav_bytes(pcm, sample_rate):
     return header + bytes(pcm)
 
 
+def _pcm16_stdlib(raw_frames, rate, channels):
+    """Pure-stdlib stereo-to-mono + linear resampler to 16 kHz for cloud-only installs without numpy."""
+    samples = array("h")
+    samples.frombytes(raw_frames)
+    if sys.byteorder == "big":
+        samples.byteswap()
+    if channels == 2:
+        mono = array("h")
+        for i in range(0, len(samples) - 1, 2):
+            mono.append((samples[i] + samples[i + 1]) // 2)
+        samples = mono
+    if rate != RATE and len(samples) >= 2:
+        out_len = max(1, int(round(len(samples) * RATE / rate)))
+        step = (len(samples) - 1) / max(1, out_len - 1) if out_len > 1 else 0.0
+        resampled = array("h")
+        for i in range(out_len):
+            pos = i * step
+            idx = int(pos)
+            frac = pos - idx
+            s0 = samples[idx]
+            s1 = samples[idx + 1] if idx + 1 < len(samples) else s0
+            val = int(round(s0 + (s1 - s0) * frac))
+            resampled.append(max(-32768, min(32767, val)))
+        samples = resampled
+    if sys.byteorder == "big":
+        samples.byteswap()
+    return samples.tobytes()
+
+
 def pcm16_from_wav(data):
     """(16-bit mono PCM at 16 kHz, seconds) from WAV bytes (8/16/22.05/24/44.1/48 kHz, mono or stereo)."""
-    import numpy as np
-
     try:
         w = wave.open(io.BytesIO(data))
     except (wave.Error, EOFError) as e:
@@ -46,10 +75,14 @@ def pcm16_from_wav(data):
         raw_frames = raw_frames[:-(len(raw_frames) % frame_bytes)]
     if not raw_frames:
         raise ValueError("empty or corrupted WAV audio")
-    x = np.frombuffer(raw_frames, dtype="<i2").astype(np.float32) / 32768.0
-    if channels == 2:
-        x = x.reshape(-1, 2).mean(axis=1)
-    if rate != RATE:
-        from .engines.piper import resample
-        x = resample(x, rate, RATE)
-    return (np.clip(x, -1.0, 1.0) * 32767.0).round().astype("<i2").tobytes(), frames / rate
+    try:
+        import numpy as np
+        x = np.frombuffer(raw_frames, dtype="<i2").astype(np.float32) / 32768.0
+        if channels == 2:
+            x = x.reshape(-1, 2).mean(axis=1)
+        if rate != RATE:
+            from .engines.piper import resample
+            x = resample(x, rate, RATE)
+        return (np.clip(x, -1.0, 1.0) * 32767.0).round().astype("<i2").tobytes(), frames / rate
+    except ImportError:
+        return _pcm16_stdlib(raw_frames, rate, channels), frames / rate

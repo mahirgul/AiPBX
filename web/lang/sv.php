@@ -3274,7 +3274,6 @@ return [
     'mail_templates.vm_ai_title' => 'Röstbrevlåda som text',
     'mail_templates.vm_ai_summary' => 'Sammanfattning',
     'mail_templates.vm_ai_transcript' => 'Det som sades',
-    'ai_cloud.accounts_title' => 'Tjänster',
     'ai_cloud.account_add' => 'Lägg till',
     'ai_cloud.err_engine' => 'Denna motor klarar inte det jobbet.',
     'ai_cloud.test_ok' => 'Anslutningen fungerar.',

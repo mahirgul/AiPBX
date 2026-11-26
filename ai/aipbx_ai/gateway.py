@@ -15,12 +15,12 @@ import ssl
 import time
 import threading
 import urllib.parse
-from .cloud_llm import _is_forbidden_ip
+from .cloud_llm import _is_forbidden_ip, claude_body, claude_text
 
 LOG = logging.getLogger(__name__)
 
 VERSION = 1
-OPERATIONS = ('chat',)
+OPERATIONS = ('chat', 'embed')
 MAX_RESPONSE = 1024 * 1024
 
 
@@ -128,11 +128,13 @@ def chat(connection, prompt, max_tokens, deadline, post=post_json):
         return result['candidates'][0]['content']['parts'][0]['text'], result.get('usageMetadata', {}).get('totalTokenCount', 0)
     if adapter == 'anthropic':
         result = post(connection['url'], {'x-api-key': key, 'anthropic-version': '2023-06-01'},
-                      {'model': connection['model'], 'max_tokens': max_tokens, 'temperature': 0,
-                       'messages': [{'role': 'user', 'content': prompt}]}, deadline)
+                      claude_body(connection['model'], prompt, max_tokens), deadline)
         usage = result.get('usage', {})
         tokens = int(usage.get('input_tokens', 0)) + int(usage.get('output_tokens', 0))
-        return result['content'][0]['text'], tokens
+        text = claude_text(result)
+        if text is None:
+            raise KeyError('content')
+        return text, tokens
     if adapter != 'openai':
         raise GatewayError('capability_unsupported')
     result = post(connection['url'], {'Authorization': 'Bearer ' + key} if key else {},
@@ -141,7 +143,17 @@ def chat(connection, prompt, max_tokens, deadline, post=post_json):
     return result['choices'][0]['message']['content'], result.get('usage', {}).get('total_tokens', 0)
 
 
-def _execute(raw, resolver=resolve, runner=chat):
+def embed(connection, text, deadline, post=post_json):
+    if connection.get('adapter') != 'openai':
+        raise GatewayError('capability_unsupported')
+    key = connection.get('api_key', '')
+    result = post(connection['url'], {'Authorization': 'Bearer ' + key} if key else {},
+                  {'model': connection['model'], 'input': text}, deadline, connection.get('allow_private', False))
+    vec = [float(v) for v in result['data'][0]['embedding']]
+    return vec, int(result.get('usage', {}).get('total_tokens', 0))
+
+
+def _execute(raw, resolver=resolve, runner=chat, embedder=embed):
     request_id = ''
     started = time.monotonic()
     try:
@@ -154,7 +166,7 @@ def _execute(raw, resolver=resolve, runner=chat):
         if type(body.get('protocol_version')) is not int or body['protocol_version'] != VERSION:
             raise GatewayError('protocol_mismatch')
         op = body.get('operation')
-        if op != 'chat':
+        if op not in OPERATIONS:
             raise GatewayError('capability_unsupported')
         if set(body) != {'protocol_version', 'request_id', 'operation', 'input', 'max_tokens', 'deadline_at'}:
             raise GatewayError('invalid_request')
@@ -169,6 +181,18 @@ def _execute(raw, resolver=resolve, runner=chat):
         deadline = started + seconds
         context = resolver(request_id, hashlib.sha256(raw).hexdigest(), deadline)
         remaining(deadline)
+        if op == 'embed':
+            vec, usage = embedder(context['connection'], prompt, deadline)
+            remaining(deadline)
+            if not isinstance(vec, list) or not vec:
+                raise GatewayError('empty_response')
+            if not isinstance(usage, (int, float)) or not math.isfinite(usage) or usage < 0:
+                usage = 0
+            return {'protocol_version': VERSION, 'request_id': request_id, 'status': 'succeeded',
+                    'resolved_model_ref': context['model_ref'], 'config_revision': context['config_revision'],
+                    'embedding': vec, 'dimensions': len(vec),
+                    'usage': {'unit': 'tokens', 'amount': usage, 'source': 'provider'},
+                    'timings': {'total_ms': round((time.monotonic() - started) * 1000)}}
         answer, usage = runner(context['connection'], prompt, tokens, deadline)
         remaining(deadline)
         if not isinstance(answer, str) or not answer.strip():
@@ -194,7 +218,7 @@ def _execute(raw, resolver=resolve, runner=chat):
 _SLOTS = threading.BoundedSemaphore(4)
 
 
-def execute(raw, resolver=resolve, runner=chat):
+def execute(raw, resolver=resolve, runner=chat, embedder=embed):
     if not _SLOTS.acquire(blocking=False):
         try:
             request_id = json.loads(raw).get('request_id', '')
@@ -203,6 +227,6 @@ def execute(raw, resolver=resolve, runner=chat):
         return {'protocol_version': VERSION, 'request_id': request_id, 'status': 'failed',
                 'error': {'code': 'capacity_exceeded', 'retryable': False}}
     try:
-        return _execute(raw, resolver, runner)
+        return _execute(raw, resolver, runner, embedder=embedder)
     finally:
         _SLOTS.release()

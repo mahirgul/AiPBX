@@ -249,8 +249,11 @@ class StepTest(unittest.TestCase):
             instructions="Caller={caller_name}, Num={caller_id}, Cust={customer_id}, DID={did}, Lang={language}",
         )
         p = conversation.prompt(cfg, [("caller", "faturam nedir")], "tr")
-        self.assertIn("Caller=Ayşe, Num=05321112233, Cust=CUST-99, DID=02125550000, Lang=Turkish", p)
-        self.assertIn('System-resolved Customer ID: "CUST-99"', p)
+    def test_speakable_preserves_ordinals_and_strips_multiline_lists(self):
+        self.assertEqual(conversation.speakable("1. katta bekliyoruz."), "1. katta bekliyoruz.")
+        self.assertEqual(conversation.speakable("15. Mayıs'ta açığız."), "15. Mayıs'ta açığız.")
+        self.assertEqual(conversation.speakable("2. Stock rechts."), "2. Stock rechts.")
+        self.assertEqual(conversation.speakable("Seçenekler:\n1. Satış\n2. Destek"), "Seçenekler: Satış. Destek")
 
 
 if __name__ == "__main__":

@@ -82,7 +82,7 @@ final class AiGateway
     }
 
     /** Transitional references preserve existing selections until the provider split. */
-    public static function connection(string $selection, array $draft = [], string $operation = 'chat'): array
+    public static function connection(string $selection, array $draft = [], string $operation = 'chat', bool $allowDisabled = false): array
     {
         $requiredCap = $operation === 'embed' ? 'embed' : 'llm';
         if (!preg_match('/^cloud:([a-z_]{2,20})$/', $selection, $m)) {
@@ -104,7 +104,7 @@ final class AiGateway
         if ($scope === 'cloud' && $policy === '1') {
             throw new AiGatewayException('policy_blocked');
         }
-        if ($scope !== 'local' && !CloudAiService::configured($id, $draft)) {
+        if ($scope !== 'local' && !($allowDisabled ? CloudAiService::configuredForTest($id, $draft, !empty($draft['_is_new'])) : CloudAiService::configured($id, $draft))) {
             throw new AiGatewayException('connection_unavailable');
         }
         if (CloudAiService::overLimit($id, 'llm')) {
@@ -143,14 +143,14 @@ final class AiGateway
         } else {
             $user = self::authorize((int) ($_SESSION['user_id'] ?? 0), $feature);
         }
-        $draft = array_intersect_key($draft, array_flip(['api_key', 'model', 'base_url']));
+        $draft = array_intersect_key($draft, array_flip(['api_key', 'model', 'llm_model', 'base_url', '_is_new']));
         if (!in_array($operation, ['chat', 'embed'], true)) {
             throw new AiGatewayException('capability_unsupported');
         }
         if ($input === '' || strlen($input) > 100000 || $maxTokens < 1 || $maxTokens > 2048 || ($draft !== [] && $feature !== 'panel')) {
             throw new AiGatewayException('invalid_request');
         }
-        $connection = self::connection($selection, $draft, $operation);
+        $connection = self::connection($selection, $draft, $operation, $feature === 'panel');
         $requestId = bin2hex(random_bytes(16));
         $payload = json_encode(['protocol_version' => self::VERSION, 'request_id' => $requestId,
             'operation' => $operation, 'input' => $input, 'max_tokens' => $maxTokens,
@@ -291,7 +291,7 @@ final class AiGateway
             $mismatch = false;
             foreach ($ops as $op) {
                 try {
-                    $candidate = self::connection($row['selection'], $draft, $op);
+                    $candidate = self::connection($row['selection'], $draft, $op, $row['feature'] === 'panel');
                 } catch (AiGatewayException $e) {
                     if (in_array($e->errorCode, ['model_not_ready', 'capability_unsupported'], true)) {
                         $lastErr = $e;
