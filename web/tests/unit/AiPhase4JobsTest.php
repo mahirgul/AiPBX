@@ -249,7 +249,7 @@ final class AiPhase4JobsTest extends TestCase
             $db->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug = 'ai-voicemail'");
             $db->exec("INSERT INTO sys_settings (setting_key, setting_value) VALUES ('ai_vm_transcribe', '1')
                 ON DUPLICATE KEY UPDATE setting_value = '1'");
-            AiBindingService::saveBinding('ai_voicemail', 'stt', 'off', null, 'default', 'global');
+            AiBindingService::save('ai_voicemail', 'stt', '');
             $origtime = 1700000880;
             file_put_contents($base . '.txt', "origtime={$origtime}\n");
             file_put_contents($base . '.WAV', 'test audio');
@@ -273,35 +273,15 @@ final class AiPhase4JobsTest extends TestCase
         }
     }
 
-    public function testLocalDefaultBindingNeverFallsBackToCloud(): void
+    public function testAFeatureLeftOffUsesNoModel(): void
     {
-        // Configure legacy cloud engines as a trap: when ai_bindings has local_default,
-        // neither VoicemailAiService nor CdrAiService may fall back to cloud.
-        CloudAiService::saveEngines([
-            'engine_stt_tr' => 'cloud:deepgram',
-            'engine_llm_tr' => 'cloud:openai',
-        ]);
-
-        AiBindingService::saveBinding('ai_voicemail', 'stt', 'local_default', null, 'default', 'global');
-        AiBindingService::saveBinding('ai_voicemail', 'chat', 'local_default', null, 'default', 'global');
-        AiBindingService::saveBinding('ai_call_analysis', 'stt', 'local_default', null, 'default', 'global');
-        AiBindingService::saveBinding('ai_call_analysis', 'chat', 'local_default', null, 'default', 'global');
-
-        $vmStt = VoicemailAiService::resolveEngine('stt', 'tr', 'vm_stt');
-        $vmChat = VoicemailAiService::resolveEngine('chat', 'tr', 'vm_llm');
-        $cdrStt = CdrAiService::resolveSelection('stt', 'tr', 'cdr_stt');
-        $cdrChat = CdrAiService::resolveSelection('chat', 'tr', 'cdr_llm');
-
-        foreach ([$vmStt, $vmChat, $cdrStt, $cdrChat] as $resolved) {
-            if ($resolved !== null) {
-                $this->assertFalse(str_starts_with($resolved, 'cloud:'), "local_default must never fall back to cloud, got {$resolved}");
-            }
-        }
-
-        // Also verify 'off' mode returns null even when legacy cloud engines are configured
-        AiBindingService::saveBinding('ai_voicemail', 'stt', 'off', null, 'default', 'global');
-        AiBindingService::saveBinding('ai_call_analysis', 'stt', 'off', null, 'default', 'global');
-        $this->assertNull(VoicemailAiService::resolveEngine('stt', 'tr', 'vm_stt'));
-        $this->assertNull(CdrAiService::resolveSelection('stt', 'tr', 'cdr_stt'));
+        AiBindingService::save('ai_voicemail', 'stt', '');
+        AiBindingService::save('ai_voicemail', 'chat', '');
+        AiBindingService::save('ai_call_analysis', 'stt', '');
+        AiBindingService::save('ai_call_analysis', 'chat', '');
+        $this->assertNull(VoicemailAiService::resolveEngine('stt'));
+        $this->assertNull(VoicemailAiService::resolveEngine('chat'));
+        $this->assertNull(CdrAiService::resolveSelection('stt'));
+        $this->assertNull(CdrAiService::resolveSelection('chat'));
     }
 }

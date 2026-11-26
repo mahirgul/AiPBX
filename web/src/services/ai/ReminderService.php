@@ -230,8 +230,8 @@ final class ReminderService
             require_once __DIR__ . '/AiAppService.php';
             $key = AiAppService::dialplanKey();
             $lang = MailTemplateService::systemLanguage();
-            $model = AiAppService::resolveTaskBinding(0, 'tts', 'local_default', $lang, true)
-                ?: AiAppService::resolveTaskBinding(0, 'tts', 'cloud_default', $lang, true);
+            require_once __DIR__ . '/AiBindingService.php';
+            $model = AiAppService::resolveTaskBinding(0, 'tts', (string) AiBindingService::resolve('reminders', 'tts'), $lang, true);
             if ($key === '' || $model === '') {
                 return '';
             }

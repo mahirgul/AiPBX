@@ -60,7 +60,14 @@ final class AiAppServiceTest extends TestCase
                 $this->assertNotSame('', $e->getMessage());
             }
         }
-        $this->assertSame('engine:tr', AiAppService::validate(self::form(['model_id' => 'engine:tr']))['model_id']);
+        foreach (['engine:tr', 'local_default', 'cloud_default'] as $gone) {       // the default and per-language layers are gone
+            try {
+                AiAppService::validate(self::form(['model_id' => $gone]));
+                $this->fail("accepted {$gone}");
+            } catch (\Exception $e) {
+                $this->assertNotSame('', $e->getMessage());
+            }
+        }
     }
 
     public function testDialplanEncodingKeepsTheParserSafe(): void
@@ -114,8 +121,10 @@ final class AiAppServiceTest extends TestCase
 
     private static function requestsForm(array $over = []): array
     {
+        SecretBox::useKey(str_repeat('k', 32));
+        CloudAiService::save('openai', ['api_key' => 'sk-requests-test-123']);        // speech to text is a cloud account now
         return self::form($over + ['app_type' => 'voice_requests', 'greeting' => 'Merhaba, nasıl yardımcı olabilirim?',
-            'retry_text' => 'Tekrar söyler misiniz?', 'not_understood_text' => 'Resepsiyona aktarıyorum.', 'stt_model' => 'vosk-tr-small',
+            'retry_text' => 'Tekrar söyler misiniz?', 'not_understood_text' => 'Resepsiyona aktarıyorum.', 'stt_model' => 'cloud:openai',
             'listen_seconds' => '7', 'retries' => '1', 'threshold' => '0.5', 'text_template' => '',
             'intents' => [
                 ['name' => 'Havlu', 'keywords' => 'havlu', 'examples' => "İki havlu daha alabilir miyim?", 'reply' => 'Havlu talebiniz alındı.', 'email' => 'kat@example.com'],
@@ -162,7 +171,7 @@ final class AiAppServiceTest extends TestCase
 
         $cfg = AiAppService::serviceConfig($app);
         $this->assertSame('voice_requests', $cfg['type']);
-        $this->assertSame('vosk-tr-small', $cfg['stt_model']);
+        $this->assertSame('cloud:openai', $cfg['stt_model']);
         $this->assertSame(['id', 'name', 'keywords', 'examples', 'reply'], array_keys($cfg['intents'][0]));
         $this->assertFalse($cfg['barge_in']);
         $barge = AiAppService::serviceConfig(['id' => 9, 'title' => 'Resepsiyon'] + AiAppService::validate(self::requestsForm() + ['barge_in' => '1']));
@@ -195,7 +204,7 @@ final class AiAppServiceTest extends TestCase
 
         // Without a usable cloud model (not set up, or over its limit) the service gets no conversation.
         $app = ['id' => 9, 'title' => 'Resepsiyon', 'model_id' => 'ema-lightning', 'speed' => '1', 'dest_type' => 'hangup', 'dest_id' => '', 'max_concurrent' => 4,
-            'app_type' => 'voice_requests', 'config' => json_encode(['greeting' => 'Hi', 'stt_model' => 'vosk-tr-small', 'understand' => 'auto',
+            'app_type' => 'voice_requests', 'config' => json_encode(['greeting' => 'Hi', 'stt_model' => 'cloud:openai', 'understand' => 'auto',
             'intents' => [], 'conversation' => true, 'tools' => []])];
         $this->assertArrayNotHasKey('conversation', AiAppService::serviceConfig($app));
         $conf = buildAiAppsDialplan([$app], str_repeat('cd', 32));
@@ -274,16 +283,15 @@ final class AiAppServiceTest extends TestCase
             $this->assertSame('cloud:openai', $cfg['tts_model']);
             $this->assertSame('tr', $cfg['language']);
             $this->assertSame(['provider' => 'openai', 'secret_ref' => 'app:2:tts:openai'], $cfg['tts_cloud']);
-            $this->assertSame('piper-tr-fahrettin', $cfg['tts_fallback']);
 
-            // Announcement resolveModel($model) keeps $allowCloud = false and resolves to local.
-            $this->assertSame('piper-tr-fahrettin', AiAppService::resolveModel('cloud:openai'));
+            // Announcement resolveModel($model) keeps $allowCloud = false: no cloud voice, and no other voice instead.
+            $this->assertSame('', AiAppService::resolveModel('cloud:openai'));
 
-            // When OpenAI TTS quota is exhausted, serviceConfig falls back to local Piper voice.
+            // When OpenAI TTS quota is exhausted the app has no voice (it is not ready), never another one.
             CloudAiService::save('openai', ['limit_tts_chars' => '100']);
             CloudAiService::count('openai', 'tts_chars', 100);
             $fallbackCfg = AiAppService::serviceConfig(['id' => 2, 'title' => 'CloudApp', 'speed' => '1'] + $v);
-            $this->assertSame('piper-tr-fahrettin', $fallbackCfg['tts_model']);
+            $this->assertSame('', $fallbackCfg['tts_model']);
             $this->assertArrayNotHasKey('tts_cloud', $fallbackCfg);
 
             $this->expectException(\Exception::class);
@@ -359,16 +367,16 @@ final class AiAppServiceTest extends TestCase
         require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
         // an agent saved before these settings: asks twice, the standard detectors, and a goodbye ends the call
         $this->assertEquals(['retries' => 2, 'silence_seconds' => 4, 'listen_seconds' => 10, 'line_profile' => 'normal',
-                             'local_context' => 0, 'barge_profile' => 'normal', 'end_on_goodbye' => true,
+                             'barge_profile' => 'normal', 'end_on_goodbye' => true,
                              'speech_detection' => 'standard', 'end_of_turn' => 'fixed'], BuiltinAiAgentService::listening([]));
         $saved = BuiltinAiAgentService::listening(['retries' => '0', 'silence_seconds' => '99', 'listen_seconds' => '1',
-                                                    'line_profile' => 'faint', 'local_context' => '8192',
+                                                    'line_profile' => 'faint',
                                                     'speech_detection' => 'silero', 'end_of_turn' => 'smart', 'end_on_goodbye' => '1']);
         $this->assertEquals(['retries' => 0, 'silence_seconds' => 10, 'listen_seconds' => 5, 'line_profile' => 'faint',
-                             'local_context' => 8192, 'barge_profile' => 'normal', 'end_on_goodbye' => true,
+                             'barge_profile' => 'normal', 'end_on_goodbye' => true,
                              'speech_detection' => 'silero', 'end_of_turn' => 'smart'], $saved);
-        $noisy = BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'noisy', 'local_context' => '999']);
-        $this->assertSame(['noisy', 'noisy', 0], [$noisy['line_profile'], $noisy['barge_profile'], $noisy['local_context']]);
+        $noisy = BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'noisy']);
+        $this->assertSame(['noisy', 'noisy'], [$noisy['line_profile'], $noisy['barge_profile']]);
         $this->assertSame('faint', BuiltinAiAgentService::listening(['line_profile' => 'noisy', 'barge_profile' => 'faint'])['barge_profile']);
         $this->assertSame('normal', BuiltinAiAgentService::listening(['silence_seconds' => '6', 'line_profile' => 'loud'])['line_profile']);
         // a saved form with the box cleared keeps it off; unknown detector names fall back to the standard ones
@@ -412,14 +420,14 @@ final class AiAppServiceTest extends TestCase
         $before = $db->query("SELECT setting_key, setting_value FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_tts.google_ai.%'")->fetchAll(\PDO::FETCH_KEY_PAIR);
         SecretBox::useKey(str_repeat('k', 32));
         try {
-            CloudAiService::save('openai', ['api_key' => 'sk-test-realtime-123']);
+            CloudAiService::save('openai', ['api_key' => 'sk-test-realtime-123', 'realtime_voice' => 'coral']);   // the voice is the account's
             $cfg = AiAppService::serviceConfig([
                 'id' => 99,
                 'title' => 'RT Agent',
                 'app_type' => AiAppService::BUILTIN_AGENT,
                 'model_id' => 'local:piper-tr-fahrettin',
                 'speed' => '1',
-                'config' => json_encode(['conversation' => true, 'realtime_account' => 'cloud:openai', 'realtime_voice' => 'coral']),
+                'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:openai', 'realtime_voice' => 'coral']),
             ]);
             $this->assertTrue($cfg['builtin_agent']);
             $this->assertTrue($cfg['conversation']);
@@ -438,9 +446,9 @@ final class AiAppServiceTest extends TestCase
             $this->assertSame('sk-test-realtime-123', $cfg['realtime_cloud']['api_key'] ?? null);
             CloudAiService::save('openai', ['realtime_model' => 'gpt-realtime-mini']);
             $overridden = AiAppService::serviceConfig([
-                'id' => 99, 'title' => 'RT Agent', 'model_id' => 'local:piper-tr-fahrettin',
+                'id' => 99, 'title' => 'RT Agent', 'app_type' => AiAppService::BUILTIN_AGENT, 'model_id' => 'realtime',
                 'speed' => '1',
-                'config' => json_encode(['realtime_account' => 'cloud:openai']),
+                'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:openai']),
             ]);
             $this->assertSame('gpt-realtime-mini', $overridden['realtime_cloud']['model']);
             $this->assertSame('sk-test-realtime-123', $overridden['realtime_cloud']['api_key']);
@@ -453,9 +461,9 @@ final class AiAppServiceTest extends TestCase
             $gCfg = AiAppService::serviceConfig([
                 'id' => 100,
                 'title' => 'Gemini RT Agent',
-                'model_id' => 'local:piper-tr-fahrettin',
+                'app_type' => AiAppService::BUILTIN_AGENT, 'model_id' => 'realtime',
                 'speed' => '1',
-                'config' => json_encode(['realtime_account' => 'cloud:google_ai', 'realtime_voice' => 'coral']),
+                'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:google_ai', 'realtime_voice' => 'coral']),
             ]);
             $this->assertSame('google_ai', $gCfg['realtime_cloud']['provider'] ?? null);
             $this->assertSame('gemini-3.8-live', $gCfg['realtime_cloud']['model'] ?? null);

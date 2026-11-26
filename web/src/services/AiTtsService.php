@@ -57,21 +57,12 @@ class AiTtsService
     }
 
     /**
-     * Faz 3: Resolves a binding mode/ref ('local_default', 'cloud_default', 'local:...', 'cloud:...',
+     * Resolves a model ref ('local:...', 'cloud:...',
      * or raw provider id) into a concrete AiTtsService provider id and enforces ailocal/aicloud policy.
      */
     public static function resolveProvider(string $selection, string $language = 'default'): string
     {
         $sel = trim($selection);
-        if ($sel === 'local_default' || $sel === 'cloud_default') {
-            require_once __DIR__ . '/ai/AiBindingService.php';
-            $scope = $sel === 'local_default' ? 'local' : 'cloud';
-            $resolved = AiBindingService::resolve('panel_default', 'tts', $language !== '' && $language !== '*' ? $language : 'default', $scope);
-            if ($resolved === null) {
-                throw new TtsException(t('ai_tts.no_provider'));
-            }
-            $sel = $resolved;
-        }
         if (str_starts_with($sel, 'local:')) {
             $sel = 'local';
         } elseif (str_starts_with($sel, 'cloud:')) {

@@ -1,5 +1,5 @@
 <?php
-/** @var bool $plugin_enabled @var string $active_tab @var array $stt_binding @var array $chat_binding @var array $stt_options @var array $chat_options @var array $qa_settings @var array $jobs @var string $csrf_token */
+/** @var bool $plugin_enabled @var string $active_tab @var array $qa_settings @var array $jobs @var string $csrf_token */
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $csrf = '<input type="hidden" name="csrf_token" value="' . $h($csrf_token) . '">';
 $tabs = [
@@ -7,10 +7,6 @@ $tabs = [
     'jobs'     => ['label' => t('ai_call_analysis.tab_jobs', 'Recent Jobs'), 'icon' => 'fa-list-check'],
 ];
 
-$sttMode = (string) ($stt_binding['mode'] ?? 'off');
-$sttRef = (string) ($stt_binding['model_ref_id'] ?? '');
-$chatMode = (string) ($chat_binding['mode'] ?? 'off');
-$chatRef = (string) ($chat_binding['model_ref_id'] ?? '');
 $qaCriteria = (string) ($qa_settings['criteria'] ?? '');
 $qaAuto = !empty($qa_settings['auto']);
 $qaDailyMax = (int) ($qa_settings['daily_max'] ?? 30);
@@ -44,42 +40,12 @@ $qaDailyMax = (int) ($qa_settings['daily_max'] ?? 30);
 
             <div class="form-group u-mb-12">
                 <label class="form-label"><?php echo $h(t('ai_call_analysis.stt_binding', 'Transcription (STT)')); ?></label>
-                <div class="u-d-flex u-gap-8 u-wrap u-ai-center">
-                    <select name="stt_mode" class="form-control u-w-auto" onchange="document.getElementById('ca-stt-ref').style.display=this.value==='explicit'?'':'none'">
-                        <option value="local_default"<?php echo $sttMode === 'local_default' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.local_default', 'Local default')); ?></option>
-                        <option value="cloud_default"<?php echo $sttMode === 'cloud_default' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.cloud_default', 'Cloud default')); ?></option>
-                        <option value="explicit"<?php echo $sttMode === 'explicit' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.explicit', 'Specific model')); ?></option>
-                        <option value="off"<?php echo $sttMode === 'off' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.off', 'Off')); ?></option>
-                    </select>
-                    <select name="stt_model_ref" id="ca-stt-ref" class="form-control u-w-auto" style="<?php echo $sttMode === 'explicit' ? '' : 'display:none;'; ?>">
-                        <option value="">--</option>
-                        <?php foreach ($stt_options as $opt): ?>
-                            <option value="<?php echo $h($opt['ref']); ?>"<?php echo $sttRef === $opt['ref'] ? ' selected' : ''; ?>><?php echo $h($opt['label']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <span class="u-fs-12 u-muted">
-                        <a href="/ai-local?tab=connections"><?php echo $h(t('ai_local.title', 'Local AI')); ?></a> ·
-                        <a href="/ai-cloud?tab=models"><?php echo $h(t('ai_cloud.title', 'Cloud AI')); ?></a>
-                    </span>
-                </div>
+                <?php echo AiBindingService::select('ai_call_analysis', 'stt', 'stt_model_ref'); ?>
             </div>
-
             <div class="form-group u-mb-16">
                 <label class="form-label"><?php echo $h(t('ai_call_analysis.chat_binding', 'Summary & Auto-QA (Chat / LLM)')); ?></label>
-                <div class="u-d-flex u-gap-8 u-wrap u-ai-center">
-                    <select name="chat_mode" class="form-control u-w-auto" onchange="document.getElementById('ca-chat-ref').style.display=this.value==='explicit'?'':'none'">
-                        <option value="local_default"<?php echo $chatMode === 'local_default' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.local_default', 'Local default')); ?></option>
-                        <option value="cloud_default"<?php echo $chatMode === 'cloud_default' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.cloud_default', 'Cloud default')); ?></option>
-                        <option value="explicit"<?php echo $chatMode === 'explicit' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.explicit', 'Specific model')); ?></option>
-                        <option value="off"<?php echo $chatMode === 'off' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.off', 'Off')); ?></option>
-                    </select>
-                    <select name="chat_model_ref" id="ca-chat-ref" class="form-control u-w-auto" style="<?php echo $chatMode === 'explicit' ? '' : 'display:none;'; ?>">
-                        <option value="">--</option>
-                        <?php foreach ($chat_options as $opt): ?>
-                            <option value="<?php echo $h($opt['ref']); ?>"<?php echo $chatRef === $opt['ref'] ? ' selected' : ''; ?>><?php echo $h($opt['label']); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
+                <?php echo AiBindingService::select('ai_call_analysis', 'chat', 'chat_model_ref'); ?>
+                <small class="u-hint"><a href="/ai-cloud"><?php echo $h(t('ai_cloud.title', 'Cloud AI')); ?></a></small>
             </div>
 
             <hr class="u-mt-12 u-mb-16">

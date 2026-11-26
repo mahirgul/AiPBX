@@ -34,25 +34,15 @@ final class AiPhase3AssistantTtsTest extends TestCase
         PluginManager::resetCache();
     }
 
-    public function testBindingResolveHandlesLocalCloudExplicitOffAndLanguageOverride(): void
+    public function testBindingResolveReturnsTheChosenModelOrNullWhenOff(): void
     {
-        AiBindingService::saveBinding('panel_default', 'chat', 'explicit', 'local:llama3', 'default', 'local');
-        AiBindingService::saveBinding('panel_default', 'chat', 'explicit', 'local:llama3-de', 'de', 'local');
-        AiBindingService::saveBinding('panel_default', 'chat', 'explicit', 'cloud:openai', 'default', 'cloud');
+        getDB()->exec("INSERT INTO ai_bindings (feature, scope_ref, task, language, mode, model_ref_id, updated_at)
+            VALUES ('test_p3', 'global', 'chat', 'default', 'explicit', 'cloud:openai', NOW())
+            ON DUPLICATE KEY UPDATE mode = 'explicit', model_ref_id = 'cloud:openai'");
+        $this->assertSame('cloud:openai', AiBindingService::resolve('test_p3', 'chat'));
 
-        AiBindingService::saveBinding('test_p3', 'chat', 'local_default', null, 'default', 'global');
-        $this->assertSame('local:llama3', AiBindingService::resolve('test_p3', 'chat', 'tr', 'global'));
-        $this->assertSame('local:llama3-de', AiBindingService::resolve('test_p3', 'chat', 'de', 'global'));
-
-        // Local default never falls back to cloud when local is unset
-        getDB()->exec("DELETE FROM ai_bindings WHERE feature = 'panel_default' AND scope_ref = 'local'");
-        $this->assertNull(AiBindingService::resolve('test_p3', 'chat', 'tr', 'global'));
-
-        AiBindingService::saveBinding('test_p3', 'chat', 'cloud_default', null, 'default', 'global');
-        $this->assertSame('cloud:openai', AiBindingService::resolve('test_p3', 'chat', 'tr', 'global'));
-
-        AiBindingService::saveBinding('test_p3', 'chat', 'off', null, 'default', 'global');
-        $this->assertNull(AiBindingService::resolve('test_p3', 'chat', 'tr', 'global'));
+        AiBindingService::save('test_p3', 'chat', '');
+        $this->assertNull(AiBindingService::resolve('test_p3', 'chat'));
     }
 
     public function testAssistantRulesOnlyAndPermissionSeparation(): void
@@ -61,7 +51,7 @@ final class AiPhase3AssistantTtsTest extends TestCase
         $this->assertTrue(AssistantChatService::canChange('admin'));
         $this->assertFalse(AssistantChatService::canChange('read_only_admin'));
 
-        AiBindingService::saveBinding('assistant', 'chat', 'off', null, 'default', 'global');
+        AiBindingService::save('assistant', 'chat', '');
         $this->assertSame('rules_only', AssistantModel::resolvedMode());
 
         getDB()->exec("DELETE FROM ai_bindings WHERE feature = 'assistant'");
@@ -70,17 +60,14 @@ final class AiPhase3AssistantTtsTest extends TestCase
     public function testTtsResolveProviderEnforcesLocalAndCloudPluginState(): void
     {
         $db = getDB();
-        AiBindingService::saveBinding('panel_default', 'tts', 'explicit', 'local:piper-tr', 'default', 'local');
-        AiBindingService::saveBinding('panel_default', 'tts', 'explicit', 'cloud:openai', 'default', 'cloud');
-
         $db->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug IN ('ailocal', 'aicloud')");
         PluginManager::resetCache();
-        $this->assertSame('local', AiTtsService::resolveProvider('local_default', 'tr'));
-        $this->assertSame('openai', AiTtsService::resolveProvider('cloud_default', 'tr'));
+        $this->assertSame('local', AiTtsService::resolveProvider('local:piper-tr', 'tr'));
+        $this->assertSame('openai', AiTtsService::resolveProvider('cloud:openai', 'tr'));
 
         $db->exec("UPDATE sys_plugins SET enabled = 0 WHERE slug = 'aicloud'");
         PluginManager::resetCache();
         $this->expectException(TtsException::class);
-        AiTtsService::resolveProvider('cloud_default', 'tr');
+        AiTtsService::resolveProvider('cloud:openai', 'tr');
     }
 }

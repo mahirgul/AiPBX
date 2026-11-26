@@ -24,6 +24,7 @@ require_once dirname(__DIR__, 2) . '/secret_box.php';
 require_once dirname(__DIR__, 2) . '/audit_log.php';
 require_once dirname(__DIR__) . '/AiTtsService.php';
 require_once dirname(__DIR__) . '/LocalAiService.php';
+require_once __DIR__ . '/AiLanguages.php';
 
 final class CloudAiException extends RuntimeException
 {
@@ -32,13 +33,6 @@ final class CloudAiException extends RuntimeException
 class CloudAiService
 {
     public const CAPS = ['tts', 'stt', 'llm', 'embed'];
-    /** Languages until the administrator changes the list (setting ai_languages). */
-    public const DEFAULT_LANGUAGES = [
-        'tr' => ['locale' => 'tr-TR', 'name' => 'Turkish'],
-        'de' => ['locale' => 'de-DE', 'name' => 'German'],
-        'en' => ['locale' => 'en-US', 'name' => 'English'],
-    ];
-    public const MAX_LANGUAGES = 30;
     private const GOOGLE_AI_MODEL = 'gemini-3.5-flash-lite';
     private const GOOGLE_AI_GENERATE_URL = 'https://generativelanguage.googleapis.com/v1beta/models/' . self::GOOGLE_AI_MODEL . ':generateContent';
     /** Language models used when the account names none (cloud_llm.DEFAULT_MODELS). */
@@ -46,7 +40,9 @@ class CloudAiService
     /** International (Singapore) endpoint; mainland China: https://dashscope.aliyuncs.com/compatible-mode/v1 */
     public const QWEN_ENDPOINT = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
     /** Accounts whose Model / address fields are for their language model. */
-    public const LLM_FIELDS_OWN = ['nvidia', 'qwen', 'openai_compat', 'ollama'];
+    public const LLM_FIELDS_OWN = ['nvidia', 'qwen', 'openai_compat', 'ollama', 'nvidia_local', 'claude', 'mistral', 'cohere'];
+    /** What the AI service uses when an account leaves its model empty (cloud_stt.py / cloud_llm.py defaults). */
+    public const STT_MODEL_DEFAULTS = ['openai' => 'gpt-4o-mini-transcribe', 'groq' => 'whisper-large-v3-turbo', 'deepgram' => 'nova-3', 'elevenlabs' => 'scribe_v1'];
     public const REALTIME_MODELS = [
         'openai' => 'gpt-realtime',
         'google_ai' => 'gemini-3.8-live',
@@ -57,135 +53,37 @@ class CloudAiService
     // ------------------------------------------------------------ languages
 
     /**
-     * The languages AI jobs run in: code => locale and name (the name is also
-     * what language models are told to speak or write, so "French" or
-     * "Français" both work).
+     * The languages AI jobs run in (AiLanguages::TABLE): code => locale and name. The name is what language models are
+     * told to speak or write, the locale goes to speech recognition and synthesis.
      * @return array<string, array{locale: string, name: string}>
      */
     public static function languages(): array
     {
-        $raw = function_exists('getSystemSetting') ? (string) getSystemSetting('ai_languages', '') : '';
-        $list = $raw !== '' ? json_decode($raw, true) : null;
-        if (!is_array($list) || $list === []) {
-            return self::DEFAULT_LANGUAGES;
-        }
-        $out = [];
-        foreach ($list as $code => $l) {
-            if (is_string($code) && is_array($l) && self::validLanguage($code, (string) ($l['locale'] ?? ''), (string) ($l['name'] ?? '')) === null) {
-                $out[$code] = ['locale' => (string) $l['locale'], 'name' => (string) $l['name']];
-            }
-        }
-        return $out ?: self::DEFAULT_LANGUAGES;
+        return AiLanguages::TABLE;
     }
 
-    /** $lang when it is in the list, else the first language of the list. */
+    /** The language of a code ("tr", "tr_TR", "pt-BR", an alias) when the table has it; else the PBX's own language, else English. */
     public static function language(string $lang): string
     {
-        $all = self::languages();
-        $lang = strtolower(substr(trim($lang), 0, 3));
-        if (isset($all[$lang])) {
-            return $lang;
+        $lang = strtolower(str_replace('_', '-', trim($lang)));
+        foreach ([substr($lang, 0, 3), substr($lang, 0, 2)] as $code) {
+            $code = AiLanguages::ALIASES[$code] ?? $code;
+            if (isset(AiLanguages::TABLE[$code])) {
+                return $code;
+            }
         }
-        $two = substr($lang, 0, 2);
-        return isset($all[$two]) ? $two : (string) array_key_first($all);
+        $own = class_exists('MailTemplateService') ? (string) MailTemplateService::systemLanguage() : '';
+        return isset(AiLanguages::TABLE[$own]) ? $own : 'en';
     }
 
     public static function languageName(string $lang): string
     {
-        return self::languages()[self::language($lang)]['name'];
+        return AiLanguages::TABLE[self::language($lang)]['name'];
     }
 
     public static function languageLocale(string $lang): string
     {
-        return self::languages()[self::language($lang)]['locale'];
-    }
-
-    /** null when valid, else the error text. */
-    public static function validLanguage(string $code, string $locale, string $name): ?string
-    {
-        if (!preg_match('/^[a-z]{2,3}$/', $code)) {
-            return t('ai_cloud.err_lang_code');
-        }
-        if (!preg_match('/^[a-z]{2,3}(-[A-Za-z0-9]{2,8}){0,2}$/', $locale) || !str_starts_with($locale, $code)) {
-            return t('ai_cloud.err_lang_locale');
-        }
-        $name = trim($name);
-        if ($name === '' || mb_strlen($name) > 40 || preg_match('/[\x00-\x1f\x7f<>"]/', $name)) {
-            return t('ai_cloud.err_lang_name');
-        }
-        return null;
-    }
-
-    public static function addLanguage(array $post): string
-    {
-        $code = strtolower(trim((string) ($post['lang_code'] ?? '')));
-        $locale = trim((string) ($post['lang_locale'] ?? ''));
-        $locale = $locale !== '' ? $locale : $code;
-        $name = trim((string) ($post['lang_name'] ?? ''));
-        $err = self::validLanguage($code, $locale, $name);
-        if ($err !== null) {
-            throw new CloudAiException($err);
-        }
-        $all = self::languages();
-        if (isset($all[$code])) {
-            throw new CloudAiException(t('ai_cloud.err_lang_exists'));
-        }
-        if (count($all) >= self::MAX_LANGUAGES) {
-            throw new CloudAiException(sprintf(t('ai_cloud.err_lang_max'), self::MAX_LANGUAGES));
-        }
-        $all[$code] = ['locale' => $locale, 'name' => $name];
-        self::storeLanguages($all);
-        writeAuditLog('ai_cloud', 'language', 0, "AI language {$code} ({$name}) added", 'create', $_SESSION['user_id'] ?? null);
-        return $code;
-    }
-
-    public static function deleteLanguage(string $code): void
-    {
-        $all = self::languages();
-        if (!isset($all[$code])) {
-            return;
-        }
-        if (count($all) === 1) {
-            throw new CloudAiException(t('ai_cloud.err_lang_last'));
-        }
-        $used = self::languageUsedBy($code);
-        if ($used !== []) {
-            throw new CloudAiException(sprintf(t('ai_cloud.err_lang_used'), implode(', ', $used)));
-        }
-        unset($all[$code]);
-        self::storeLanguages($all);
-        $st = getDB()->prepare('DELETE FROM sys_settings WHERE setting_key = ?');
-        foreach (['tts', 'stt', 'llm'] as $job) {
-            $st->execute(["ai_engine.{$job}.{$code}"]);
-        }
-        writeAuditLog('ai_cloud', 'language', 0, "AI language {$code} deleted", 'delete', $_SESSION['user_id'] ?? null);
-    }
-
-    /**
-     * AI applications that speak or listen in $code (their titles).
-     * @return list<string>
-     */
-    public static function languageUsedBy(string $code): array
-    {
-        $out = [];
-        try {
-            foreach (getDB()->query('SELECT title, model_id, config FROM pbx_ai_apps')->fetchAll(PDO::FETCH_ASSOC) as $a) {
-                $c = json_decode((string) ($a['config'] ?? ''), true);
-                if ((is_array($c) && ($c['stt_lang'] ?? '') === $code) || ($a['model_id'] ?? '') === 'engine:' . $code
-                    || (is_array($c) && ($c['stt_model'] ?? '') === 'engine:' . $code)) {
-                    $out[] = (string) $a['title'];
-                }
-            }
-        } catch (\Throwable $e) {
-            // AI applications not installed: nothing uses the language.
-        }
-        return $out;
-    }
-
-    private static function storeLanguages(array $all): void
-    {
-        getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
-            ->execute(['ai_languages', (string) json_encode($all, JSON_UNESCAPED_UNICODE)]);
+        return AiLanguages::TABLE[self::language($lang)]['locale'];
     }
 
     /**
@@ -212,14 +110,20 @@ class CloudAiService
         $type = self::typeOf($id);
         // The AI service picks the endpoint by provider: it gets the type, not the account.
         $out = ['provider' => $type, 'api_key' => (string) ($cfg['api_key'] ?? '')];
-        // Only these accounts' "Model" field names a language model; OpenAI's
-        // and ElevenLabs' name their speech model (Cloud TTS).
-        if (!in_array($type, self::LLM_FIELDS_OWN, true)) {
-            return $out;
+        // OpenAI's and ElevenLabs' "Model" field names their speech model (Cloud TTS): their language model is llm_model.
+        $model = trim((string) ($cfg['llm_model'] ?? ''));
+        if (in_array($type, self::LLM_FIELDS_OWN, true)) {
+            $model = $model ?: trim((string) ($cfg['model'] ?? ''));
+            if (trim((string) ($cfg['base_url'] ?? '')) !== '') {
+                $out['base_url'] = trim((string) $cfg['base_url']);
+            }
         }
-        foreach (['model', 'base_url'] as $k) {
-            if (trim((string) ($cfg[$k] ?? '')) !== '') {
-                $out[$k] = trim((string) $cfg[$k]);
+        if ($model !== '') {
+            $out['model'] = $model;
+        }
+        foreach (['llm_temperature' => 'temperature', 'llm_max_tokens' => 'max_tokens'] as $key => $name) {
+            if (is_numeric($cfg[$key] ?? null)) {
+                $out[$name] = $name === 'temperature' ? (float) $cfg[$key] : (int) $cfg[$key];
             }
         }
         return $out;
@@ -290,15 +194,42 @@ class CloudAiService
                                              ['key' => 'api_key', 'label' => 'API key', 'secret' => true, 'optional' => true]],
                                 'url' => 'https://platform.openai.com/docs/api-reference/chat', 'free' => false],
         ];
+        // The settings of one account that most people never change (marked advanced: the dialog folds them).
+        foreach ($providers as $type => &$p) {
+            $own = array_column($p['fields'], 'key');
+            if (in_array('llm', $p['caps'], true)) {
+                if (!in_array($type, self::LLM_FIELDS_OWN, true)) {
+                    $p['fields'][] = ['key' => 'llm_model', 'label' => 'LLM Model', 'secret' => false, 'optional' => true, 'advanced' => true];
+                }
+                $p['fields'][] = ['key' => 'llm_temperature', 'label' => 'Temperature (0-2)', 'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => '0'];
+                $p['fields'][] = ['key' => 'llm_max_tokens', 'label' => 'Max tokens', 'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => '512'];
+            }
+            if (in_array('stt', $p['caps'], true) && !in_array('stt_model', $own, true)) {
+                $p['fields'][] = ['key' => 'stt_model', 'label' => 'STT Model', 'secret' => false, 'optional' => true, 'advanced' => true,
+                                  'placeholder' => self::STT_MODEL_DEFAULTS[$type] ?? ''];
+            }
+        }
+        unset($p);
         foreach (self::REALTIME_MODELS as $type => $modelName) {
             $providers[$type]['fields'][] = [
                 'key' => 'realtime_model', 'label' => t('ai_cloud.realtime_model'),
-                'secret' => false, 'optional' => true, 'placeholder' => $modelName,
+                'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => $modelName,
             ];
+            // The Realtime session of this account: a different voice or detection is a second account ("Copy").
+            $rt = static fn (string $key, string $label, string $placeholder, array $extra = []): array =>
+                ['key' => $key, 'label' => t($label), 'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => $placeholder] + $extra;
+            $providers[$type]['fields'][] = $rt('realtime_voice', 'ai_cloud.realtime_voice', $type === 'google_ai' ? 'Kore' : 'alloy');
+            $providers[$type]['fields'][] = $rt('realtime_vad_threshold', 'builtin_ai_agent.rt_vad_threshold', '0.5');
+            $providers[$type]['fields'][] = $rt('realtime_silence_ms', 'builtin_ai_agent.rt_vad_silence_ms', '500');
+            $providers[$type]['fields'][] = $rt('realtime_temperature', 'builtin_ai_agent.rt_temperature', '');
+            if ($type === 'openai' || $type === 'openai_compat') {
+                $providers[$type]['fields'][] = $rt('realtime_noise_reduction', 'builtin_ai_agent.rt_noise_reduction', '', ['options' => [
+                    '' => t('builtin_ai_agent.nr_off'), 'near_field' => t('builtin_ai_agent.nr_near_field'), 'far_field' => t('builtin_ai_agent.nr_far_field')]]);
+            }
         }
         $providers['openai_compat']['fields'][] = [
             'key' => 'realtime_protocol', 'label' => t('ai_cloud.realtime_protocol'),
-            'secret' => false, 'optional' => true,
+            'secret' => false, 'optional' => true, 'advanced' => true,
             'options' => [
                 '' => t('ai_cloud.realtime_automatic'),
                 'openai_ga' => 'OpenAI Realtime GA',
@@ -307,7 +238,7 @@ class CloudAiService
         ];
         $providers['openai_compat']['fields'][] = [
             'key' => 'realtime_ws_url', 'label' => t('ai_cloud.realtime_ws_url'),
-            'secret' => false, 'optional' => true, 'placeholder' => 'wss://example.com/v1/realtime',
+            'secret' => false, 'optional' => true, 'advanced' => true, 'placeholder' => 'wss://example.com/v1/realtime',
         ];
         return $providers;
     }
@@ -343,11 +274,6 @@ class CloudAiService
     }
 
     /** An engine choice may name any listed account, or a provider's own account not yet set up. */
-    private static function knownAccount(string $id): bool
-    {
-        return isset(self::accounts()[$id]) || (isset(self::providers()[$id]) && empty(self::registry()[$id]['removed']));
-    }
-
     /** typeOf() for a reference that may be stale: '' instead of an error. */
     public static function typeIfKnown(string $id): string
     {
@@ -438,6 +364,21 @@ class CloudAiService
             throw $e;
         }
         return $id;
+    }
+
+    /** A new account with the same provider, key and settings under another name ("Copy account": a second model of one provider). */
+    public static function copyAccount(string $id): string
+    {
+        $cfg = self::config($id);
+        $post = [];
+        foreach (self::provider($id)['fields'] as $f) {
+            $v = (string) ($cfg[$f['key']] ?? '');
+            // An unset field answers its default: do not store that as a choice.
+            if ($v !== '' && ($f['secret'] || $v !== (string) ($f['default'] ?? ''))) {
+                $post[$f['key']] = $v;
+            }
+        }
+        return self::addAccount(self::typeOf($id), mb_substr(self::label($id), 0, 52) . ' 2', $post);
     }
 
     public static function renameAccount(string $id, string $name): void
@@ -593,6 +534,7 @@ class CloudAiService
             $out[] = ['type' => $type, 'title' => $p['title'], 'caps' => $p['caps'], 'url' => $p['url'], 'free' => $p['free'],
                       'fields' => array_map(fn($f) => $f + ['value' => $f['secret'] ? '' : (string) ($f['default'] ?? ''), 'masked' => ''], $p['fields'])];
         }
+        usort($out, static fn ($a, $b) => strcasecmp($a['title'], $b['title']));      // the "Add a provider account" list: by name
         return $out;
     }
 
@@ -614,8 +556,24 @@ class CloudAiService
             if ($v !== '' && $field === 'base_url') {
                 $v = self::validBaseUrl($v) ?? throw new CloudAiException(t('ai_cloud.err_base_url'));
             }
-            if ($v !== '' && in_array($field, ['model', 'realtime_model'], true) && !preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#D', $v)) {
+            if ($v !== '' && in_array($field, ['model', 'realtime_model', 'llm_model', 'stt_model'], true) && !preg_match('#^[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}$#D', $v)) {
                 throw new CloudAiException(t('ai_cloud.err_model'));
+            }
+            if ($v !== '' && $field === 'llm_temperature' && (!is_numeric($v) || $v < 0 || $v > 2)) {
+                throw new CloudAiException(t('ai_cloud.err_number'));
+            }
+            $ranges = ['realtime_vad_threshold' => [0.1, 0.99], 'realtime_silence_ms' => [200, 3000], 'realtime_temperature' => [0.2, 1.2]];
+            if ($v !== '' && isset($ranges[$field]) && (!is_numeric($v) || $v < $ranges[$field][0] || $v > $ranges[$field][1])) {
+                throw new CloudAiException(t('ai_cloud.err_number'));
+            }
+            if ($v !== '' && $field === 'realtime_voice' && !preg_match('/^[A-Za-z0-9_-]{1,40}$/', $v)) {
+                throw new CloudAiException(t('ai_cloud.err_model'));
+            }
+            if ($v !== '' && $field === 'realtime_noise_reduction' && !array_key_exists($v, $f['options'])) {
+                throw new CloudAiException(t('ai_cloud.err_number'));
+            }
+            if ($v !== '' && $field === 'llm_max_tokens' && (!ctype_digit($v) || (int) $v < 16 || (int) $v > 4096)) {
+                throw new CloudAiException(t('ai_cloud.err_number'));
             }
             if ($v !== '' && $field === 'realtime_protocol' && !array_key_exists($v, $f['options'])) {
                 throw new CloudAiException(t('ai_cloud.err_realtime_protocol'));
@@ -1111,123 +1069,5 @@ class CloudAiService
             return $st['jobs'][$job];
         }
         return $st['exceeded'];
-    }
-
-    public static function localFallback(string $job, string $lang): string
-    {
-        if (!in_array($job, ['tts', 'stt'], true)) {
-            return '';
-        }
-        $lang = strtolower(str_replace('_', '-', $lang));
-        $matches = static function (array $m) use ($lang): bool {
-            foreach ((array) ($m['languages'] ?? []) as $ml) {
-                if (str_starts_with(strtolower(str_replace('_', '-', (string) $ml)), $lang)) {
-                    return true;
-                }
-            }
-            return false;
-        };
-        $models = LocalAiService::models();
-        foreach (['ready', 'installed'] as $state) {
-            foreach ($models as $m) {
-                if (($m['kind'] ?? '') === $job && ($m['state'] ?? '') === $state && $matches($m)) {
-                    return 'local:' . $m['id'];
-                }
-            }
-        }
-        return '';
-    }
-
-    // ------------------------------------------------------------ engine per job
-
-    /** Jobs with a choice of engine: speech and speech to text per language. */
-    public static function jobs(): array
-    {
-        $out = [];
-        foreach (array_keys(self::languages()) as $lang) {
-            $out[] = ['job' => 'tts', 'lang' => $lang];
-            $out[] = ['job' => 'stt', 'lang' => $lang];
-            $out[] = ['job' => 'llm', 'lang' => $lang];
-        }
-        return $out;
-    }
-
-    /** Features that may use their own engine instead of the one of the language: feature => job. */
-    public const FEATURES = ['vm_stt' => 'stt', 'vm_llm' => 'llm', 'cdr_stt' => 'stt', 'cdr_llm' => 'llm', 'qa_llm' => 'llm'];
-
-    /** The feature's own engine ("local:…" / "cloud:…"), '' = the engine of the language. */
-    public static function featureEngine(string $feature): string
-    {
-        return isset(self::FEATURES[$feature]) ? (string) getSystemSetting("ai_use.{$feature}", '') : '';
-    }
-
-    /**
-     * Engine a feature uses: its own choice, else the engine of the job and
-     * language. A cloud account over its limit falls back to a local model.
-     */
-    public static function engineFor(string $feature, string $lang): string
-    {
-        $job = self::FEATURES[$feature] ?? throw new CloudAiException('Unknown feature.');
-        $v = self::featureEngine($feature);
-        if ($v === '' || (str_starts_with($v, 'cloud:') && !self::configured(substr($v, 6)))) {
-            return self::engine($job, $lang);
-        }
-        if (str_starts_with($v, 'cloud:') && self::overLimit(substr($v, 6), $job)) {
-            return self::localFallback($job, $lang);
-        }
-        return $v;
-    }
-
-    /** Saves the engine chosen for each feature in $post (use_<feature>); '' = by language. */
-    public static function saveFeatureEngines(array $post): void
-    {
-        $set = getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
-        foreach (self::FEATURES as $feature => $job) {
-            if (!array_key_exists("use_{$feature}", $post)) {
-                continue;
-            }
-            $v = (string) $post["use_{$feature}"];
-            if ($v !== '' && !self::validEngineValue($v, $job)) {
-                throw new CloudAiException(t('ai_cloud.err_engine'));
-            }
-            $set->execute(["ai_use.{$feature}", $v]);
-        }
-    }
-
-    /** "local:<model id>" (speech jobs only) or "cloud:<provider that can do $job>". */
-    private static function validEngineValue(string $v, string $job): bool
-    {
-        if (preg_match('/^cloud:([a-z_]{2,20})$/', $v, $m)) {
-            return self::knownAccount($m[1]) && in_array($job, self::provider($m[1])['caps'], true);
-        }
-        return $job !== 'llm' && (bool) preg_match('/^local:[a-z0-9][a-z0-9._-]{1,63}$/', $v);
-    }
-
-    public static function engine(string $job, string $lang, bool $fallback = true): string
-    {
-        $v = (string) getSystemSetting("ai_engine.{$job}.{$lang}", '');
-        if ($fallback && str_starts_with($v, 'cloud:') && self::overLimit(substr($v, 6), $job)) {
-            return self::localFallback($job, $lang);
-        }
-        return $v;
-    }
-
-    /** Values: "local:<model id>" or "cloud:<provider>". */
-    public static function saveEngines(array $post): void
-    {
-        $db = getDB();
-        $set = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
-        foreach (self::jobs() as $j) {
-            $field = "engine_{$j['job']}_{$j['lang']}";
-            $v = (string) ($post[$field] ?? '');
-            if ($v !== '' && !preg_match('/^(local:[a-z0-9][a-z0-9._-]{1,63}|cloud:[a-z_]{2,20})$/', $v)) {
-                continue;
-            }
-            if (str_starts_with($v, 'cloud:') && !self::knownAccount(substr($v, 6))) {
-                continue;
-            }
-            $set->execute(["ai_engine.{$j['job']}.{$j['lang']}", $v]);
-        }
-        writeAuditLog('ai_cloud', 'engines', 0, 'AI engines per job', 'update', $_SESSION['user_id'] ?? null);
     }
 }

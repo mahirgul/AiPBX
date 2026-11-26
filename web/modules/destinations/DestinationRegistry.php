@@ -101,6 +101,20 @@ class DestinationRegistry {
                 }
             }
         }
+        // An AI agent's transfer targets live in its settings ({transfer, …} in the instructions), not in a column.
+        if (in_array($type, ['extension', 'queue', 'ring_group'], true) && !array_key_exists('pbx_ai_apps', $except)) {
+            try {
+                foreach ($db->query("SELECT config FROM pbx_ai_apps WHERE app_type = 'builtin_agent'")->fetchAll(\PDO::FETCH_COLUMN) as $json) {
+                    foreach ((array) (json_decode((string) $json, true)['transfers'] ?? []) as $t) {
+                        if (($t['type'] ?? '') === $type && in_array((string) ($t['target'] ?? ''), $ids, true)) {
+                            $n++;
+                            break;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {
+            }
+        }
         return $n;
     }
 

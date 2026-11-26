@@ -102,7 +102,7 @@ class DocsService
         'cloud-ai' => 'Cloud AI',
         'cloud-tts' => 'Cloud TTS',
         'cnam' => 'CNAM Lookup',
-        'local-ai' => 'Local AI',
+        'local-ai' => 'Local TTS',
         'provider-templates' => 'SIP Templates',
         'signaling' => 'Signaling Capture',
         'sms' => 'SMS & MMS',

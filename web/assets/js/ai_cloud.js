@@ -49,7 +49,7 @@ function aiCloudRenderFields() {
     }
     signup.innerHTML = def.url ? '<a href="' + escapeHtml(def.url) + '" target="_blank" rel="noopener">' + escapeHtml(__('js.ai_cloud.get_key')) + '</a>' : '';
     const fields = acc && acc.type === type ? acc.fields : def.fields;
-    box.innerHTML = fields.map(f => {
+    const render = f => {
         const name = escapeHtml(f.key);
         const label = escapeHtml(f.label || f.key) + (f.optional ? ' <span class="u-muted u-fs-11">(' + escapeHtml(__('js.ai_cloud.optional')) + ')</span>' : '');
         let input;
@@ -68,7 +68,12 @@ function aiCloudRenderFields() {
             input = '<input type="text" name="' + name + '" class="form-control" value="' + escapeHtml(f.value || '') + '" placeholder="' + escapeHtml(f.placeholder || f.default || '') + '">';
         }
         return '<div class="form-group u-mb-8' + (f.json ? ' u-grid-column-1-1' : '') + '"><label class="form-label">' + label + '</label>' + input + '</div>';
-    }).join('');
+    };
+    const basic = fields.filter(f => !f.advanced).map(render).join('');
+    const advanced = fields.filter(f => f.advanced).map(render).join('');
+    box.innerHTML = basic + (advanced
+        ? '<details class="u-grid-column-1-1 u-mt-6"><summary class="u-pointer u-fs-12 u-fw-600">' + escapeHtml(__('js.ai_cloud.advanced')) + '</summary><div class="u-grid-2 u-mt-8">' + advanced + '</div></details>'
+        : '');
 }
 
 /** Tests what is typed in the dialog (a stored secret is used when its field is left empty). */

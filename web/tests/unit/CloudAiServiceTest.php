@@ -48,67 +48,27 @@ final class CloudAiServiceTest extends TestCase
         return 'RIFF' . pack('V', 36 + strlen($pcm)) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, $rate, $rate * 2, 2, 16) . 'data' . pack('V', strlen($pcm)) . $pcm;
     }
 
-    public function testLanguagesCanBeAddedAndDeleted(): void
+    public function testLanguagesComeFromTheBuiltInTable(): void
     {
-        getDB()->exec("DELETE FROM sys_settings WHERE setting_key = 'ai_languages'");
-        $this->assertSame(['tr', 'de', 'en'], array_keys(CloudAiService::languages()), 'built-in list until changed');
-        $this->assertSame('tr', CloudAiService::language('xx'), 'unknown: the first language');
+        $this->assertGreaterThan(80, count(CloudAiService::languages()), 'the whole table, not three languages');
         $this->assertSame('de', CloudAiService::language('de-AT'));
-
-        CloudAiService::addLanguage(['lang_code' => 'fr', 'lang_locale' => 'fr-CA', 'lang_name' => 'French']);
-        $this->assertSame(['locale' => 'fr-CA', 'name' => 'French'], CloudAiService::languages()['fr']);
-        $this->assertSame('French', CloudAiService::languageName('fr'));
-        $jobs = array_filter(CloudAiService::jobs(), fn($j) => $j['lang'] === 'fr');
-        $this->assertSame(['tts', 'stt', 'llm'], array_column(array_values($jobs), 'job'), 'every job gets a row for the new language');
-
-        foreach ([['lang_code' => 'FR1', 'lang_name' => 'x'], ['lang_code' => 'fr', 'lang_name' => 'Again'],
-                  ['lang_code' => 'it', 'lang_locale' => 'fr-FR', 'lang_name' => 'Italian'], ['lang_code' => 'it', 'lang_name' => '<b>']] as $bad) {
-            try {
-                CloudAiService::addLanguage($bad);
-                $this->fail('accepted: ' . json_encode($bad));
-            } catch (CloudAiException $e) {
-                $this->addToAssertionCount(1);
-            }
+        $this->assertSame('pt', CloudAiService::language('pt_BR'));
+        $this->assertSame('nb', CloudAiService::language('no'), 'an alias');
+        $this->assertSame('fil', CloudAiService::language('tl'));
+        $this->assertSame(CloudAiService::language(''), CloudAiService::language('xx-unknown'), 'an unknown code is the PBX default');
+        $this->assertSame('Turkish', CloudAiService::languageName('tr'));
+        $this->assertSame('pt-BR', CloudAiService::languageLocale('pt'));
+        foreach (AiLanguages::TABLE as $code => $l) {                         // every locale starts with its code
+            $this->assertStringStartsWith($code, $l['locale']);
         }
-
-        getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
-            ->execute(['ai_engine.stt.fr', 'cloud:groq']);
-        CloudAiService::deleteLanguage('fr');
-        $this->assertArrayNotHasKey('fr', CloudAiService::languages());
-        $this->assertSame('', (string) getSystemSetting('ai_engine.stt.fr', ''), 'its engines go with it');
     }
 
-    public function testAzureSpeechToTextUsesTheLocaleOfAnAddedLanguage(): void
+    public function testAzureSpeechToTextUsesTheLocaleOfTheLanguage(): void
     {
-        CloudAiService::addLanguage(['lang_code' => 'pt', 'lang_locale' => 'pt-BR', 'lang_name' => 'Portuguese']);
-        CloudAiService::save('azure', ['api_key' => 'az-key-123', 'region' => 'westeurope']);
+                CloudAiService::save('azure', ['api_key' => 'az-key-123', 'region' => 'westeurope']);
         $this->fake(['DisplayText' => 'Olá']);
         $this->assertSame('Olá', CloudAiService::stt('azure', self::wav(1), 'pt')['text']);
         $this->assertStringContainsString('language=pt-BR', $this->calls[0]['url']);
-    }
-
-    public function testAFeatureCanUseItsOwnService(): void
-    {
-        CloudAiService::save('groq', ['api_key' => 'gsk-test-key']);
-        CloudAiService::save('openai', ['api_key' => 'sk-test-key']);
-        getDB()->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)')
-            ->execute(['ai_engine.stt.tr', 'cloud:openai']);
-        $this->assertSame('cloud:openai', CloudAiService::engineFor('vm_stt', 'tr'), 'by language until chosen');
-
-        CloudAiService::saveFeatureEngines(['use_vm_stt' => 'cloud:groq', 'use_cdr_llm' => '']);
-        $this->assertSame('cloud:groq', CloudAiService::engineFor('vm_stt', 'tr'));
-        $this->assertSame('cloud:openai', CloudAiService::engineFor('cdr_stt', 'tr'), 'other features unchanged');
-
-        foreach ([['use_vm_stt' => 'cloud:polly'], ['use_qa_llm' => 'local:ema-lightning'], ['use_vm_llm' => 'cloud:../x']] as $bad) {
-            try {
-                CloudAiService::saveFeatureEngines($bad);
-                $this->fail('accepted: ' . json_encode($bad));
-            } catch (CloudAiException $e) {
-                $this->addToAssertionCount(1);
-            }
-        }
-        CloudAiService::save('groq', ['clear' => '1']);
-        $this->assertSame('cloud:openai', CloudAiService::engineFor('vm_stt', 'tr'), 'a removed account falls back to the language engine');
     }
 
     public function testWavSeconds(): void
@@ -167,9 +127,9 @@ final class CloudAiServiceTest extends TestCase
                 'realtime_ws_url' => 'wss://voice.example.test/realtime',
             ]);
             $app = [
-                'id' => 99, 'title' => 'RT Agent', 'model_id' => 'local:piper-tr-fahrettin',
+                'id' => 99, 'title' => 'RT Agent', 'app_type' => 'builtin_agent', 'model_id' => 'realtime',
                 'speed' => '1',
-                'config' => json_encode(['conversation' => true, 'realtime_account' => 'cloud:' . $id]),
+                'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:' . $id]),
             ];
             $cfg = AiAppService::serviceConfig($app)['realtime_cloud'];
             $this->assertSame('voice-model', $cfg['model']);
@@ -266,20 +226,6 @@ final class CloudAiServiceTest extends TestCase
         CloudAiService::typeOf('deepgram_b');
     }
 
-    public function testEnginesAreValidated(): void
-    {
-        CloudAiService::saveEngines([
-            'engine_tts_tr' => 'local:ema-lightning',
-            'engine_stt_tr' => 'cloud:deepgram',
-            'engine_stt_de' => 'cloud:nonexistent',
-            'engine_tts_en' => "local:../../etc",
-        ]);
-        $this->assertSame('local:ema-lightning', CloudAiService::engine('tts', 'tr'));
-        $this->assertSame('cloud:deepgram', CloudAiService::engine('stt', 'tr'));
-        $this->assertSame('', CloudAiService::engine('stt', 'de'));
-        $this->assertSame('', CloudAiService::engine('tts', 'en'));
-    }
-
     public function testSecretsAreEncryptedAndMasked(): void
     {
         CloudAiService::save('google_ai', ['api_key' => 'AIzaSyTestKey12345']);
@@ -316,7 +262,7 @@ final class CloudAiServiceTest extends TestCase
         $c = end($this->calls);
         $this->assertSame('http://10.0.0.5:11434/v1/chat/completions', $c['url']);
         $this->assertArrayNotHasKey('Authorization', $c['headers']);
-        $this->assertSame(['provider' => 'openai_compat', 'api_key' => '', 'model' => 'qwen2.5:7b', 'base_url' => 'http://10.0.0.5:11434/v1'],
+        $this->assertEqualsCanonicalizing(['provider' => 'openai_compat', 'api_key' => '', 'model' => 'qwen2.5:7b', 'base_url' => 'http://10.0.0.5:11434/v1'],
             CloudAiService::llmSettings('openai_compat'));
     }
 
@@ -394,34 +340,6 @@ final class CloudAiServiceTest extends TestCase
             $this->fail('LLM over limit must be refused');
         } catch (CloudAiException $e) {
             $this->assertSame(t('ai_cloud.err_quota_exceeded'), $e->getMessage());
-        }
-
-        // Engine configured as cloud:deepgram falls back to a matching local model when over limit.
-        CloudAiService::saveEngines(['engine_stt_tr' => 'cloud:deepgram']);
-        $this->assertSame('cloud:deepgram', CloudAiService::engine('stt', 'tr', false));
-
-        $tokFile = tempnam(sys_get_temp_dir(), 'ai_tok_');
-        file_put_contents($tokFile, '0123456789abcdef');
-        $prevEnv = getenv('AIPBX_AI_TOKEN_FILE');
-        putenv('AIPBX_AI_TOKEN_FILE=' . $tokFile);
-        $ref = new ReflectionProperty(LocalAiService::class, 'modelsCache');
-        $ref->setValue(null, null);
-        TtsHttp::$transport = function (string $method, string $url) {
-            if (str_contains($url, '/v1/models')) {
-                return ['status' => 200, 'body' => json_encode([
-                    'models' => [
-                        ['id' => 'vosk-tr-small', 'kind' => 'stt', 'state' => 'ready', 'languages' => ['tr']],
-                    ],
-                ]), 'type' => 'application/json'];
-            }
-            return ['status' => 404, 'body' => '{}', 'type' => 'application/json'];
-        };
-        try {
-            $this->assertSame('local:vosk-tr-small', CloudAiService::engine('stt', 'tr'));
-        } finally {
-            putenv($prevEnv === false ? 'AIPBX_AI_TOKEN_FILE' : 'AIPBX_AI_TOKEN_FILE=' . $prevEnv);
-            @unlink($tokFile);
-            $ref->setValue(null, null);
         }
 
         // Clearing provider removes its limits too.

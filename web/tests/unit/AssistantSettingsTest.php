@@ -4,6 +4,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../auth.php';
+require_once __DIR__ . '/../../src/services/ai/AiBindingService.php';
 require_once __DIR__ . '/../../src/services/ai/AssistantSettingsService.php';
 require_once __DIR__ . '/../../src/services/ai/AssistantModel.php';
 require_once __DIR__ . '/../../src/controllers/AssistantController.php';
@@ -78,7 +79,7 @@ final class AssistantSettingsTest extends TestCase
 
     public function testDefaults(): void
     {
-        $this->assertSame('', AssistantSettingsService::model());
+        $this->assertNull(AiBindingService::resolve('assistant', 'chat'));
         $this->assertTrue(AssistantSettingsService::canAsk('admin'));
         $this->assertTrue(AssistantSettingsService::canChange('admin'));
         $this->assertFalse(AssistantSettingsService::canAsk('user'));
@@ -97,7 +98,7 @@ final class AssistantSettingsTest extends TestCase
     public function testSaveAndHomeFallbackWhenAskDisabled(): void
     {
         AssistantSettingsService::save([
-            'assistant_model' => 'rules_only',
+            'assistant_model_ref' => '',
             'role_ask' => ['user' => '1'],
             'role_change' => ['cc_agent' => '1'],
             'home_role' => [
@@ -113,7 +114,7 @@ final class AssistantSettingsTest extends TestCase
             'suggestions' => "Line one\n\nLine two\nLine three",
         ], ['admin', 'user', 'cc_agent', 'fax_user']);
 
-        $this->assertSame('rules_only', AssistantSettingsService::model());
+        $this->assertNull(AiBindingService::resolve('assistant', 'chat'));
         $this->assertSame(5, AssistantSettingsService::roleCollection('user'));
         $this->assertSame(-1, AssistantSettingsService::roleCollection('cc_agent'));
         $this->assertSame(0, AssistantSettingsService::roleCollection('admin'));
@@ -154,16 +155,18 @@ final class AssistantSettingsTest extends TestCase
     public function testInvalidModelRejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        AssistantSettingsService::save(['assistant_model' => 'invalid:model!']);
+        AssistantSettingsService::save(['assistant_model_ref' => 'invalid:model!']);
     }
 
     public function testAssistantModelHonorsRulesOnlyAndPrivacyBlock(): void
     {
-        setSystemSetting('assistant.model', 'rules_only');
+        AiBindingService::save('assistant', 'chat', '');
         $this->assertSame('rules_only', AssistantModel::resolvedMode());
         $this->assertNull(AssistantModel::ask('hello'));
 
-        setSystemSetting('assistant.model', 'cloud:gemini');
+        getDB()->exec("INSERT INTO ai_bindings (feature, scope_ref, task, language, mode, model_ref_id, updated_at)
+            VALUES ('assistant', 'global', 'chat', 'default', 'explicit', 'cloud:gemini', NOW())
+            ON DUPLICATE KEY UPDATE mode = 'explicit', model_ref_id = 'cloud:gemini'");
         setSystemSetting('privacy_block_cloud_ai', '1');
         $this->assertSame('rules_only', AssistantModel::resolvedMode());
         $this->assertNull(AssistantModel::ask('hello'));
@@ -183,53 +186,4 @@ final class AssistantSettingsTest extends TestCase
         $this->assertTrue(AssistantSettingsService::canAsk('read_only_admin'));
         $this->assertFalse(AssistantSettingsService::canChange('read_only_admin'));
     }
-
-    public function testSelectedLocalModelRunsLocallyEvenWhenCloudIsBlocked(): void
-    {
-        $token = tempnam(sys_get_temp_dir(), 'asst-token-');
-        file_put_contents($token, str_repeat('ab', 32));
-        putenv('AIPBX_AI_TOKEN_FILE=' . $token);
-        setSystemSetting('assistant.model', 'local:hf-test-model');
-        setSystemSetting('privacy_block_cloud_ai', '1');
-        (new ReflectionProperty(LocalAiService::class, 'modelsCache'))->setValue(null, null);
-        $db = getDB();
-        $previousUser = $_SESSION['user_id'] ?? null;
-        $previousAi = $db->query("SELECT enabled FROM sys_plugins WHERE slug='ai'")->fetchColumn();
-        $previousLocal = $db->query("SELECT enabled FROM sys_plugins WHERE slug='ailocal'")->fetchColumn();
-        $db->exec("INSERT INTO sys_plugins (slug,enabled) VALUES ('ai',1),('ailocal',1) ON DUPLICATE KEY UPDATE enabled=1");
-        PluginManager::resetCache();
-        $db->exec("INSERT INTO sys_users (username,password_hash,full_name,email,role,is_active,is_device) VALUES ('asst_gateway_local','','Test','','admin',1,0)");
-        $uid = (int) $db->lastInsertId();
-        $_SESSION['user_id'] = $uid;
-        $urls = [];
-        TtsHttp::$transport = static function ($method, $url, $headers, $body) use (&$urls): array {
-            $urls[] = $url;
-            if (str_ends_with($url, '/v1/models')) {
-                $data = ['models' => [['id' => 'hf-test-model', 'kind' => 'llm', 'state' => 'ready']]];
-            } else {
-                $request = json_decode($body, true);
-                AiGateway::resolve($request['request_id'], hash('sha256', $body));
-                $data = ['protocol_version' => 1, 'request_id' => $request['request_id'], 'status' => 'succeeded', 'output' => 'Local answer'];
-            }
-            return ['status' => 200, 'body' => json_encode($data), 'type' => 'application/json'];
-        };
-        try {
-            $this->assertSame('local:hf-test-model', AssistantModel::resolvedMode());
-            $this->assertSame('Local answer', AssistantModel::ask('Question'));
-            $this->assertSame(['http://127.0.0.1:8790/v1/models', 'http://127.0.0.1:8790/v1/gateway/execute'], $urls);
-        } finally {
-            $db->prepare('DELETE FROM sys_users WHERE id=?')->execute([$uid]);
-            if ($previousUser === null) { unset($_SESSION['user_id']); } else { $_SESSION['user_id'] = $previousUser; }
-            if ($previousAi === false) { $db->exec("DELETE FROM sys_plugins WHERE slug='ai'"); }
-            else { $db->prepare("UPDATE sys_plugins SET enabled=? WHERE slug='ai'")->execute([$previousAi]); }
-            if ($previousLocal === false) { $db->exec("DELETE FROM sys_plugins WHERE slug='ailocal'"); }
-            else { $db->prepare("UPDATE sys_plugins SET enabled=? WHERE slug='ailocal'")->execute([$previousLocal]); }
-            PluginManager::resetCache();
-            TtsHttp::$transport = null;
-            (new ReflectionProperty(LocalAiService::class, 'modelsCache'))->setValue(null, null);
-            putenv('AIPBX_AI_TOKEN_FILE');
-            unlink($token);
-        }
-    }
-
 }

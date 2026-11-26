@@ -45,19 +45,24 @@ final class AiPhase2SplitTest extends TestCase
         $this->assertNotFalse($cloudEnabled);
     }
 
-    public function testBindingServiceSavesAndValidatesModes(): void
+    public function testBindingServiceChoosesOneModelPerFeatureOrOff(): void
     {
-        AiBindingService::saveBinding('test_feature', 'chat', 'local_default', null, 'default', 'global');
-        $b = AiBindingService::getBinding('test_feature', 'chat', 'default', 'global');
-        $this->assertSame('local_default', $b['mode']);
-        $this->assertNull($b['model_ref_id']);
+        AiBindingService::save('test_feature', 'chat', '');
+        $this->assertNull(AiBindingService::resolve('test_feature', 'chat'));
+        $this->assertTrue(AiBindingService::isConfigured('test_feature', 'chat'));
 
-        AiBindingService::saveBinding('test_feature', 'chat', 'explicit', 'cloud:openai', 'default', 'global');
-        $b2 = AiBindingService::getBinding('test_feature', 'chat', 'default', 'global');
-        $this->assertSame('explicit', $b2['mode']);
-        $this->assertSame('cloud:openai', $b2['model_ref_id']);
+        getDB()->exec("INSERT INTO ai_bindings (feature, scope_ref, task, language, mode, model_ref_id, updated_at)
+            VALUES ('test_feature', 'global', 'chat', 'default', 'explicit', 'cloud:openai', NOW())
+            ON DUPLICATE KEY UPDATE mode = 'explicit', model_ref_id = 'cloud:openai'");
+        $this->assertSame('cloud:openai', AiBindingService::resolve('test_feature', 'chat'));
 
-        getDB()->exec("DELETE FROM ai_bindings WHERE feature = 'test_feature'");
+        // Only a usable model can be chosen: nothing is configured in the test database.
+        $this->expectException(\InvalidArgumentException::class);
+        try {
+            AiBindingService::save('test_feature', 'chat', 'cloud:nonexistent');
+        } finally {
+            getDB()->exec("DELETE FROM ai_bindings WHERE feature = 'test_feature'");
+        }
     }
 
     public function testGatewayEnforcesFourLocalCloudPluginCombinations(): void
@@ -95,7 +100,7 @@ final class AiPhase2SplitTest extends TestCase
                 AiGateway::connection('local:nonexistent-model');
                 $this->fail('Expected feature_disabled or model_not_ready');
             } catch (AiGatewayException $e) {
-                $this->assertContains($e->errorCode, ['feature_disabled', 'model_not_ready']);
+                $this->assertContains($e->errorCode, ['feature_disabled', 'model_not_ready', 'binding_unresolved']);
             }
         } finally {
             foreach ($prev as $slug => $en) {

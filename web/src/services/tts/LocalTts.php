@@ -11,7 +11,7 @@ require_once dirname(__DIR__) . '/LocalAiService.php';
 final class LocalTts extends TtsProvider
 {
     public static function id(): string { return 'local'; }
-    public static function title(): string { return 'Local models (this server)'; }
+    public static function title(): string { return 'Local TTS (this server)'; }
     public static function local(): bool { return true; }
     // Shorter pieces: a CPU needs a fraction of the audio length per piece.
     public static function maxChars(): int { return 1000; }

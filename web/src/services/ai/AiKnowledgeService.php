@@ -15,7 +15,8 @@ final class AiKnowledgeService
     public const CHUNK_CHARS = 600;
     public const CHUNK_OVERLAP = 80;
     public const MIN_SCORE = 0.18;
-    public const AGENT_TOOLS_FILE = 'agent-tools.txt';
+    public const TEXT_FILE = 'knowledge.txt';
+    public const MAX_TEXT_CHARS = 200000;
 
     /** @var callable|null */
     public static $embedder = null;
@@ -97,6 +98,42 @@ final class AiKnowledgeService
         );
         $st->execute([$name, $slug, mb_substr(trim($description), 0, 255), $rolesJson, $binding, $lang, $now, $now]);
         return (int) $db->lastInsertId();
+    }
+
+    /** The one text of a collection: the content of its single document ('' when none yet). */
+    public static function text(int $collectionId): string
+    {
+        $st = getDB()->prepare('SELECT content_text FROM ai_knowledge_docs WHERE collection_id = ? AND is_active = 1 ORDER BY id ASC LIMIT 1');
+        $st->execute([$collectionId]);
+        return (string) ($st->fetchColumn() ?: '');
+    }
+
+    /**
+     * Saves a knowledge base: name, a description (the AI chooses a base by it), its one text and the account that
+     * builds the meaning index (empty: keyword search). Only chunks of a changed text are built again by the
+     * document update; a changed account re-indexes everything.
+     */
+    public static function saveWithText(int $id, string $name, string $description, string $text, string $embeddingBinding = '', array $roles = ['*']): int
+    {
+        if (trim($description) === '' || mb_strlen(trim($description)) > 200) {
+            throw new \InvalidArgumentException(t('ai_knowledge.err_description'));
+        }
+        $text = trim(str_replace(["\r\n", "\r"], "\n", $text));
+        if (mb_strlen($text) > self::MAX_TEXT_CHARS || str_contains($text, "\0") || !mb_check_encoding($text, 'UTF-8')) {
+            throw new \InvalidArgumentException(t('ai_knowledge.err_text'));
+        }
+        $id = self::saveCollection($id, $name, $description, $roles, $embeddingBinding);
+        $st = getDB()->prepare('SELECT id, version, sha256 FROM ai_knowledge_docs WHERE collection_id = ? ORDER BY id ASC LIMIT 1');
+        $st->execute([$id]);
+        $doc = $st->fetch(PDO::FETCH_ASSOC);
+        if ($text === '') {
+            if ($doc) {
+                self::deleteDocument((int) $doc['id']);
+            }
+        } elseif (!$doc || $doc['sha256'] !== hash('sha256', $text)) {
+            self::addDocument($id, $name, self::TEXT_FILE, $text, $doc ? (int) $doc['id'] : 0, $doc ? (int) $doc['version'] : null);
+        }
+        return $id;
     }
 
     /** The short AiPBX guides shipped for the PBX Assistant: slug => [language, name, file]. */
@@ -341,14 +378,10 @@ final class AiKnowledgeService
 
         // Embeddings first: when the provider fails, nothing has changed and the old
         // text stays searchable. Then the document and its chunks change together.
-        $isToolsFile = $safeName === self::AGENT_TOOLS_FILE;
-        $rows = $isToolsFile ? [] : self::buildChunks((string) ($col['embedding_binding'] ?? ''), $text);
+        $rows = self::buildChunks((string) ($col['embedding_binding'] ?? ''), $text);
         $db->beginTransaction();
         try {
             self::assertCurrentIndex($db, $col);
-            if ($isToolsFile) {
-                self::assertSingleAgentTools($db, $collectionId, $docId);
-            }
             if ($docId > 0) {
                 $st = $db->prepare(
                     'UPDATE ai_knowledge_docs SET title = ?, filename = ?, content_text = ?, sha256 = ?, version = version + 1, is_active = 1, updated_at = ?
@@ -401,14 +434,10 @@ final class AiKnowledgeService
         }
         $chunk = $db->prepare('SELECT 1 FROM ai_knowledge_chunks WHERE doc_id = ? AND index_version = ? LIMIT 1');
         $chunk->execute([$docId, $col['active_index_version']]);
-        $isToolsFile = $doc['filename'] === self::AGENT_TOOLS_FILE;
-        $rows = $isToolsFile ? [] : ($chunk->fetchColumn() ? null : self::buildChunks((string) ($col['embedding_binding'] ?? ''), (string) $doc['content_text']));
+        $rows = $chunk->fetchColumn() ? null : self::buildChunks((string) ($col['embedding_binding'] ?? ''), (string) $doc['content_text']);
         $db->beginTransaction();
         try {
             self::assertCurrentIndex($db, $col);
-            if ($isToolsFile) {
-                self::assertSingleAgentTools($db, (int) $col['id'], $docId);
-            }
             $current = $db->prepare('SELECT version FROM ai_knowledge_docs WHERE id = ? FOR UPDATE');
             $current->execute([$docId]);
             if ((int) $current->fetchColumn() !== (int) $doc['version']) {
@@ -453,9 +482,7 @@ final class AiKnowledgeService
         $docs = $st->fetchAll() ?: [];
         $built = [];
         foreach ($docs as $d) {
-            if ($d['filename'] !== self::AGENT_TOOLS_FILE) {
-                $built[(int) $d['id']] = self::buildChunks($binding, (string) $d['content_text']);
-            }
+            $built[(int) $d['id']] = self::buildChunks($binding, (string) $d['content_text']);
         }
 
         $db->beginTransaction();
@@ -492,16 +519,6 @@ final class AiKnowledgeService
         if (!$current || (int) $current['active_index_version'] !== (int) $snapshot['active_index_version']
             || $current['embedding_binding'] !== $snapshot['embedding_binding']) {
             throw new \RuntimeException('The collection changed while it was being indexed. Try again.');
-        }
-    }
-
-    /** Called while the collection row is locked. */
-    private static function assertSingleAgentTools(PDO $db, int $collectionId, int $docId): void
-    {
-        $stmt = $db->prepare('SELECT 1 FROM ai_knowledge_docs WHERE collection_id = ? AND filename = ? AND is_active = 1 AND id <> ?');
-        $stmt->execute([$collectionId, self::AGENT_TOOLS_FILE, $docId]);
-        if ($stmt->fetchColumn()) {
-            throw new InvalidArgumentException(t('builtin_ai_agent.err_duplicate_tools'));
         }
     }
 
@@ -633,11 +650,11 @@ final class AiKnowledgeService
                     d.title AS doc_title
              FROM ai_knowledge_chunks k
              JOIN ai_knowledge_docs d ON d.id = k.doc_id
-             WHERE k.collection_id = ? AND k.index_version = ? AND d.is_active = 1 AND d.filename <> ?'
+             WHERE k.collection_id = ? AND k.index_version = ? AND d.is_active = 1'
         );
 
         foreach ($allowedCols as $cid => $c) {
-            $st->execute([$cid, (int) $c['active_index_version'], self::AGENT_TOOLS_FILE]);
+            $st->execute([$cid, (int) $c['active_index_version']]);
             $b = trim((string) ($c['embedding_binding'] ?? ''));
             $qv = $b !== '' ? ($queryVectors[$b] ?? null) : null;
 

@@ -139,7 +139,6 @@ return [
         'id' => 'ai', 'section' => 'ops', 'icon' => 'fas fa-wand-magic-sparkles', 'icon_style' => 'color: var(--purple);', 'label' => ['sidebar.group_ai_apps', 'AI Apps'],
         'items' => [
             ['href' => '/ai-tts', 'icon' => 'fas fa-comment-dots', 'label' => 'sidebar.item_ai_tts', 'show' => $can('ai_tts') && $pluginOn('ai-tts'), 'pages' => ['ai_tts.php']],
-            ['href' => '/ai-wizard', 'icon' => 'fas fa-list-check', 'label' => 'builtin_ai_agent.wizard_title', 'show' => $isAdmin, 'pages' => ['ai_wizard.php']],
             ['href' => '/ai-agent', 'icon' => 'fas fa-headset', 'label' => 'builtin_ai_agent.title', 'show' => $isAdmin, 'pages' => ['builtin_ai_agent.php']],
             ...PluginManager::dynamicSidebarItems($isAdmin, 'ai'),
         ],
@@ -147,7 +146,7 @@ return [
     [
         'id' => 'ai_settings', 'section' => 'settings', 'icon' => 'fas fa-sliders', 'icon_style' => 'color: var(--purple);', 'label' => ['sidebar.group_ai_settings', 'AI Settings'],
         'items' => [
-            ['href' => '/ai-local', 'icon' => 'fas fa-microchip', 'label' => ['sidebar.item_ai_local', 'Local AI'], 'show' => $isAdmin && $pluginOn('ailocal'), 'pages' => ['ai_local.php']],
+            ['href' => '/ai-local', 'icon' => 'fas fa-microchip', 'label' => ['sidebar.item_ai_local', 'Local TTS'], 'show' => $isAdmin && $pluginOn('ailocal'), 'pages' => ['ai_local.php']],
             ['href' => '/ai-cloud', 'icon' => 'fas fa-cloud', 'label' => ['sidebar.item_ai_cloud', 'Cloud AI'], 'show' => $isAdmin && $pluginOn('aicloud'), 'pages' => ['ai_cloud.php']],
             ['href' => '/ai-voicemail', 'icon' => 'fas fa-voicemail', 'label' => 'sidebar.item_ai_voicemail', 'show' => $can('ai_voicemail') && $pluginOn('ai-voicemail'), 'pages' => ['ai_voicemail.php']],
             ['href' => '/ai-call-analysis', 'icon' => 'fas fa-chart-line', 'label' => 'sidebar.item_ai_call_analysis', 'show' => $can('ai_call_analysis') && $pluginOn('ai-call-analysis'), 'pages' => ['ai_call_analysis.php']],

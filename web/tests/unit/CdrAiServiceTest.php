@@ -2,6 +2,7 @@
 
 use PHPUnit\Framework\TestCase;
 
+require_once __DIR__ . '/../../src/services/ai/AiBindingService.php';
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../../src/services/CdrAiService.php';
 require_once __DIR__ . '/../../src/core/BaseRepository.php';
@@ -44,6 +45,15 @@ final class CdrAiServiceTest extends TestCase
         return 'RIFF' . pack('V', 36 + strlen($pcm)) . 'WAVEfmt ' . pack('VvvVVvv', 16, 1, 1, $rate, $rate * 2, 2, 16) . 'data' . pack('V', strlen($pcm)) . $pcm;
     }
 
+    /** A feature's model choice, written as the feature page does once the account is usable. */
+    private static function choose(string $task, string $ref): void
+    {
+        getDB()->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug = 'aicloud'");
+        getDB()->prepare("INSERT INTO ai_bindings (feature, scope_ref, task, language, mode, model_ref_id, updated_at)
+            VALUES ('ai_call_analysis', 'global', ?, 'default', 'explicit', ?, NOW())
+            ON DUPLICATE KEY UPDATE mode = 'explicit', model_ref_id = VALUES(model_ref_id)")->execute([$task, $ref]);
+    }
+
     public function testTranscribeSummarizeSearchAndDelete(): void
     {
         $db = getDB();
@@ -55,10 +65,8 @@ final class CdrAiServiceTest extends TestCase
 
         CloudAiService::save('deepgram', ['api_key' => 'dg-cdr-key']);
         CloudAiService::save('openai', ['api_key' => 'sk-cdr-key']);
-        CloudAiService::saveEngines([
-            'engine_stt_tr' => 'cloud:deepgram',
-            'engine_llm_tr' => 'cloud:openai',
-        ]);
+        self::choose('stt', 'cloud:deepgram');
+        self::choose('chat', 'cloud:openai');
 
         TtsHttp::$transport = function (string $method, string $url): array {
             if (str_contains($url, 'deepgram.com')) {
@@ -120,7 +128,7 @@ final class CdrAiServiceTest extends TestCase
         $this->assertNull(CdrAiService::review('Merhaba', 'tr', fn() => $this->fail('asked without criteria')));
 
         CloudAiService::save('openai', ['api_key' => 'sk-cdr-key']);
-        CloudAiService::saveEngines(['engine_llm_tr' => 'cloud:openai']);
+        self::choose('chat', 'cloud:openai');
         $_SESSION['csrf_token'] = 'qa';
         CdrAiService::saveQaSettings(['qa_criteria' => 'Greets with the company name.', 'qa_auto' => '1', 'qa_daily_max' => '5']);
         $this->assertSame(['criteria' => 'Greets with the company name.', 'auto' => true, 'daily_max' => 5], CdrAiService::qaSettings());

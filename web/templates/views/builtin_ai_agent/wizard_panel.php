@@ -1,5 +1,6 @@
 <?php
-$h = static fn ($value): string => htmlspecialchars((string) $value, ENT_QUOTES);
+/** The setup wizard: the agent's setup as a checklist inside the AI Agent page; every step links to the page that does it. */
+$steps = $wizard['steps'];
 $total = count($steps);
 $done = count(array_filter($steps, static fn ($s) => $s['done']));
 // The first open step is the one to work on: it is open and highlighted, the others are one line.
@@ -14,14 +15,7 @@ $icons = ['plugins' => '🧩', 'models' => '🧠', 'voice' => '🔊', 'knowledge
 $n = 0;
 ?>
 <link rel="stylesheet" href="<?php echo asset('/assets/css/pages/ai_wizard.css'); ?>">
-<div class="card">
-    <?php echo uiPageHeaderOpen('fa-list-check', t('builtin_ai_agent.wizard_title'), 'aiWizardHelp'); ?>
-    <span class="badge <?php echo $done === $total ? 'badge-success' : 'badge-secondary'; ?>"><?php echo $h(sprintf(t('builtin_ai_agent.wizard_progress'), $done, $total)); ?></span>
-    <?php echo uiPageHeaderActions(); ?>
-    <?php echo uiPageHeaderClose(); ?>
-    <?php echo uiHelpBoxOpen('aiWizardHelp', t('builtin_ai_agent.wizard_title')); ?>
     <p><?php echo $h(t('builtin_ai_agent.wizard_help')); ?></p>
-    <?php echo uiHelpBoxClose(); ?>
     <div class="u-card-pad">
         <progress class="aiw-progress" max="<?php echo $total; ?>" value="<?php echo $done; ?>" aria-label="<?php echo $h(sprintf(t('builtin_ai_agent.wizard_progress'), $done, $total)); ?>"></progress>
         <?php if ($current === null): ?>
@@ -65,4 +59,3 @@ $n = 0;
             <?php endforeach; ?>
         </ol>
     </div>
-</div>

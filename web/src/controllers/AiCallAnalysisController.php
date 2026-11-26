@@ -4,7 +4,6 @@ require_once __DIR__ . '/../services/LocalAiService.php';
 require_once __DIR__ . '/../services/ai/CloudAiService.php';
 require_once __DIR__ . '/../services/ai/AiBindingService.php';
 require_once __DIR__ . '/../services/ai/AiJobService.php';
-require_once __DIR__ . '/../services/ai/OllamaService.php';
 
 /**
  * /ai-call-analysis — AI -> Call Analysis (admin / ai_call_analysis RBAC):
@@ -39,27 +38,9 @@ class AiCallAnalysisController extends BaseController
             } else {
                 try {
                     if (isset($_POST['save_call_analysis'])) {
-                        $sttMode = (string) ($_POST['stt_mode'] ?? 'off');
-                        $sttRef = trim((string) ($_POST['stt_model_ref'] ?? ''));
-                        AiBindingService::saveBinding(
-                            'ai_call_analysis',
-                            'stt',
-                            $sttMode,
-                            $sttMode === 'explicit' ? $sttRef : null,
-                            'default',
-                            'global'
-                        );
-
-                        $chatMode = (string) ($_POST['chat_mode'] ?? 'off');
-                        $chatRef = trim((string) ($_POST['chat_model_ref'] ?? ''));
-                        AiBindingService::saveBinding(
-                            'ai_call_analysis',
-                            'chat',
-                            $chatMode,
-                            $chatMode === 'explicit' ? $chatRef : null,
-                            'default',
-                            'global'
-                        );
+                        foreach (['stt', 'chat'] as $task) {
+                            AiBindingService::save('ai_call_analysis', $task, (string) ($_POST[$task . '_model_ref'] ?? ''));
+                        }
 
                         CdrAiService::saveQaSettings($_POST);
                         $message = t('common.saved', 'Saved.');
@@ -77,43 +58,6 @@ class AiCallAnalysisController extends BaseController
             }
         }
 
-        $sttOptions = [];
-        $chatOptions = [];
-        try {
-            foreach (LocalAiService::models() as $m) {
-                $kind = (string) ($m['kind'] ?? '');
-                $state = (string) ($m['state'] ?? '');
-                if (!in_array($state, ['ready', 'installed'], true)) {
-                    continue;
-                }
-                if ($kind === 'stt') {
-                    $sttOptions[] = ['ref' => 'local:' . $m['id'], 'label' => 'Local · ' . ($m['title'] ?? $m['id'])];
-                } elseif ($kind === 'llm') {
-                    $chatOptions[] = ['ref' => 'local:' . $m['id'], 'label' => 'Local · ' . ($m['title'] ?? $m['id'])];
-                }
-            }
-            foreach (OllamaService::models() as $m) {
-                $state = (string) ($m['state'] ?? '');
-                if (($m['kind'] ?? '') === 'llm' && in_array($state, ['ready', 'installed'], true)) {
-                    $chatOptions[] = ['ref' => 'local:' . $m['id'], 'label' => 'Local · ' . ($m['title'] ?? $m['id'])];
-                }
-            }
-        } catch (\Throwable $e) {
-        }
-
-        foreach (CloudAiService::withCap('stt') as $pid) {
-            if (!CloudAiService::configured($pid)) {
-                continue;
-            }
-            $sttOptions[] = ['ref' => 'cloud:' . $pid, 'label' => 'Cloud · ' . CloudAiService::provider($pid)['title']];
-        }
-        foreach (CloudAiService::withCap('llm') as $pid) {
-            if (!CloudAiService::configured($pid)) {
-                continue;
-            }
-            $chatOptions[] = ['ref' => 'cloud:' . $pid, 'label' => 'Cloud · ' . CloudAiService::provider($pid)['title']];
-        }
-
         $jobs = [];
         try {
             $jobs = AiJobService::recent('ai_call_analysis', 50);
@@ -124,10 +68,6 @@ class AiCallAnalysisController extends BaseController
         static::renderPage('ai_call_analysis/index', [
             'plugin_enabled' => $pluginEnabled,
             'active_tab'     => $activeTab,
-            'stt_binding'    => AiBindingService::getBinding('ai_call_analysis', 'stt', 'default', 'global'),
-            'chat_binding'   => AiBindingService::getBinding('ai_call_analysis', 'chat', 'default', 'global'),
-            'stt_options'    => $sttOptions,
-            'chat_options'   => $chatOptions,
             'qa_settings'    => CdrAiService::qaSettings(),
             'jobs'           => $jobs,
             'csrf_token'     => getCSRFToken(),

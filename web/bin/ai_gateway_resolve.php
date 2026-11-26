@@ -25,10 +25,8 @@ try {
         require_once dirname(__DIR__) . '/src/services/ai/AiAppService.php';
         $result = AiAppDbLookup::run((int) $data['db_app'], (string) ($data['query_id'] ?? ''),
             $data['params'] ?? [], (string) ($data['verified_customer'] ?? ''), $data['call_context'] ?? []);
-    } elseif (isset($data['local_app'])) {
-        $result = AiGateway::localForApp((int) $data['local_app']);
     } elseif (isset($data['knowledge_app'])) {
-        $result = AiGateway::knowledgeForApp((int) $data['knowledge_app'], (string) ($data['query'] ?? ''));
+        $result = AiGateway::knowledgeForApp((int) $data['knowledge_app'], (string) ($data['query'] ?? ''), (int) ($data['source_id'] ?? 0));
     } elseif (isset($data['secret_ref'])) {
         $result = AiGateway::resolveApp((string) $data['secret_ref']);
     } else {

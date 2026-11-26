@@ -50,26 +50,6 @@ final class LocalAiServiceTest extends TestCase
         return ['status' => $status, 'body' => json_encode($data), 'type' => 'application/json'];
     }
 
-    public function testSavedHuggingFaceTokenIsSentWhenNoneIsTyped(): void
-    {
-        $before = (string) getSystemSetting('ai_hf_token', '');
-        try {
-            LocalAiService::saveHfToken('hf_' . str_repeat('A1', 15));
-            $this->assertNotSame('hf_' . str_repeat('A1', 15), (string) getSystemSetting('ai_hf_token', ''), 'stored encrypted');
-            $this->fake(fn() => self::json(['models' => []]));
-            LocalAiService::hfSearch('whisper');
-            $this->assertSame('hf_' . str_repeat('A1', 15), json_decode((string) $this->calls[0]['body'], true)['token'] ?? null);
-            LocalAiService::hfSearch('whisper', '', 'hf_typed000000000000000000');
-            $this->assertSame('hf_typed000000000000000000', json_decode((string) $this->calls[1]['body'], true)['token'] ?? null, 'a typed token wins');
-            LocalAiService::saveHfToken('');
-            $this->assertSame('', LocalAiService::hfToken());
-            $this->expectException(LocalAiException::class);
-            LocalAiService::saveHfToken("hf_x\nInjected");
-        } finally {
-            setSystemSetting('ai_hf_token', $before);
-        }
-    }
-
     public function testRuntimeStatusIsNormalised(): void
     {
         $this->assertSame('absent', LocalAiService::parseRuntime('')['state']);
@@ -181,29 +161,6 @@ final class LocalAiServiceTest extends TestCase
         $this->assertNotSame('RIFF', substr($mp3, 0, 4));
         $req = json_decode((string) $this->calls[0]['body'], true);
         $this->assertSame(['ema-lightning', 'Merhaba', 24000], [$req['model'], $req['text'], $req['sample_rate']]);
-    }
-
-    public function testOllamaInstallUsesOnlyTheFixedPrivilegedAction(): void
-    {
-        $seen = [];
-        PrivHelper::$fake = static function (array $args) use (&$seen): array {
-            $seen[] = $args;
-            return ['success' => true, 'output' => '{"state":"installing","step":"download"}'];
-        };
-        try {
-            LocalAiService::installOllama();
-            $this->assertSame('installing', LocalAiService::ollamaRuntime()['state']);
-            $this->assertSame([['ai', 'ollama-install'], ['ai', 'ollama-status']], $seen);
-        } finally {
-            PrivHelper::$fake = null;
-        }
-    }
-
-    public function testLocalLlmReachesLocalChatEndpoint(): void
-    {
-        $this->fake(fn() => self::json(['text' => '{"action":"extension.dnd"}']));
-        $this->assertSame('{"action":"extension.dnd"}', LocalAiService::chat('hf-org-model', 'Enable DND'));
-        $this->assertSame('http://127.0.0.1:8790/v1/chat', $this->calls[0]['url']);
     }
 
 }

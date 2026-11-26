@@ -1,11 +1,8 @@
 <?php
 /** PBX Assistant settings (admin): model binding, role permissions, history, suggestions. */
-/** @var string $csrf @var array $assistant_settings @var array $assistant_roles @var array $llm_options */
+/** @var string $csrf @var array $assistant_settings @var array $assistant_roles */
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $ast = $assistant_settings ?? [];
-$b = $ast['binding'] ?? ['mode' => 'local_default', 'model_ref_id' => ''];
-$bMode = (string) ($b['mode'] ?? 'local_default');
-$bRef = (string) ($b['model_ref_id'] ?? '');
 ?>
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-robot', t('ai_settings.ast_title', 'PBX Assistant Settings')); ?>
@@ -33,24 +30,8 @@ $bRef = (string) ($b['model_ref_id'] ?? '');
 
         <div class="form-group u-mb-12">
             <label class="form-label"><?php echo $h(t('ai_settings.ast_model', 'AI Model Binding')); ?></label>
-            <div class="u-d-flex u-gap-8 u-wrap u-ai-center">
-                <select name="assistant_mode" id="ast-mode" class="form-control u-w-auto" onchange="document.getElementById('ast-ref').style.display=this.value==='explicit'?'':'none'">
-                    <option value="local_default"<?php echo $bMode === 'local_default' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.local_default', 'Local default')); ?></option>
-                    <option value="cloud_default"<?php echo $bMode === 'cloud_default' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.cloud_default', 'Cloud default')); ?></option>
-                    <option value="explicit"<?php echo $bMode === 'explicit' ? ' selected' : ''; ?>><?php echo $h(t('ai_selector.explicit', 'Specific model')); ?></option>
-                    <option value="off"<?php echo $bMode === 'off' ? ' selected' : ''; ?>><?php echo $h(t('ai_settings.ast_model_rules_only', 'Rules only (Off)')); ?></option>
-                </select>
-                <select name="assistant_model_ref" id="ast-ref" class="form-control u-w-auto" style="<?php echo $bMode === 'explicit' ? '' : 'display:none;'; ?>">
-                    <option value="">--</option>
-                    <?php foreach (($llm_options ?? []) as $opt): ?>
-                        <option value="<?php echo $h($opt['ref']); ?>"<?php echo $bRef === $opt['ref'] ? ' selected' : ''; ?>><?php echo $h($opt['label']); ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <span class="u-fs-12 u-muted">
-                    <a href="/ai-local?tab=connections"><?php echo $h(t('ai_local.title', 'Local AI')); ?></a> ·
-                    <a href="/ai-cloud?tab=models"><?php echo $h(t('ai_cloud.title', 'Cloud AI')); ?></a>
-                </span>
-            </div>
+            <?php echo AiBindingService::select('assistant', 'chat', 'assistant_model_ref'); ?>
+            <small class="u-hint"><?php echo $h(t('ai_settings.ast_model_rules_only', 'Rules only (Off)')); ?> · <a href="/ai-cloud"><?php echo $h(t('ai_cloud.title', 'Cloud AI')); ?></a></small>
         </div>
 
         <div class="form-group u-mt-16">

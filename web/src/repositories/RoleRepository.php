@@ -76,7 +76,7 @@ class RoleRepository extends BaseRepository
             'fax_mail_settings'  => ['title' => 'Fax Settings', 'group' => 'Fax System', 'actions' => self::VAE],
             'ai_tts'             => ['title' => 'Cloud TTS', 'group' => 'AI', 'actions' => $all, 'plugin' => 'ai-tts'],
             'builtin_ai_agent'   => ['title' => 'AI Agent', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true],
-            'ai_local'           => ['title' => 'Local AI', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ailocal'],
+            'ai_local'           => ['title' => 'Local TTS', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ailocal'],
             'ai_cloud'           => ['title' => 'Cloud AI', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'aicloud'],
             'ai_voicemail'       => ['title' => 'AI Voicemail', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-voicemail'],
             'ai_call_analysis'   => ['title' => 'Call Analysis', 'group' => 'AI', 'actions' => self::VAE, 'admin_only' => true, 'plugin' => 'ai-call-analysis'],

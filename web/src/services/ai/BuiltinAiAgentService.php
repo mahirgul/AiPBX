@@ -4,41 +4,49 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/AiAppService.php';
 require_once __DIR__ . '/AiKnowledgeService.php';
-require_once __DIR__ . '/OllamaService.php';
 require_once __DIR__ . '/PbxToolRegistry.php';
+require_once __DIR__ . '/AgentInstructions.php';
 
 use PBX\Destinations\DestinationRegistry;
 
 final class BuiltinAiAgentService
 {
-    public const TOOL_FILE = AiKnowledgeService::AGENT_TOOLS_FILE;
+    public const MODES = ['realtime', 'cascade'];
+    public const MAX_INSTRUCTIONS = 60000;
+    public const WARN_TOKENS = 15000;
+    public const MAX_KNOWLEDGE_SOURCES = 8;
+    public const NOISE_REDUCTION = ['off', 'near_field', 'far_field'];
     public const TARGET_TYPES = ['extension', 'queue', 'ring_group'];
     public const RETRIES_DEFAULT = 2;
     /** Not selected for a new agent: dials any number for any caller without confirmation (toll fraud on a public line). */
     public const TOOLS_OFF_BY_DEFAULT = ['dial_and_navigate'];
     public const LINE_PROFILES = ['normal', 'noisy', 'faint'];
-    public const LOCAL_CONTEXTS = [0, 2048, 4096, 8192, 16384];
-    public const REALTIME_VOICES = ['alloy', 'ash', 'ballad', 'coral', 'echo', 'sage', 'shimmer', 'verse'];
     public const REALTIME_PROVIDER_TYPES = ['openai', 'google_ai', 'qwen', 'openai_compat'];
     public const INSTRUCTION_VARS = ['{caller_name}', '{caller_id}', '{customer_id}', '{did}', '{date}', '{time}', '{language}'];
 
     public static function defaultInstructionsTemplate(): string
     {
+        // A worked transfer example only with an extension that exists here: a missing target would refuse the save.
+        $extensions = array_keys(self::targets()['extension'] ?? []);
+        $transfer = $extensions ? "- When the caller asks for a person, transfer to {transfer, operator, " . $extensions[0] . "}.\n" : '';
+        // One greeting, in the PBX's own language: an agent speaks one language, others get their own agent or a greeting added by hand.
+        $own = CloudAiService::language('');
+        $say = langStrings($own)['ai_apps.default_agent_greeting'] ?? langStrings('en')['ai_apps.default_agent_greeting'];
+        $greetings = "{greeting, 1, {$own}, " . str_replace(['{', '}'], '', $say) . "}\n";
         return "# Role\n"
-            . "- You serve as the AI voice assistant operating the virtual front desk.\n"
-            . "- Greet callers politely, understand their intent, answer from the knowledge base or database tools, and assist or route them.\n"
-            . "- Communicate clearly and concisely in a natural telephone tone.\n\n"
-            . "# Caller Information\n"
-            . "- Caller Name: {caller_name}\n"
-            . "- Caller Phone: {caller_id}\n"
-            . "- Customer ID: {customer_id}\n"
-            . "- Dialed Number (DID): {did}\n"
-            . "- Date / Time: {date} {time}\n"
-            . "- Language: {language}\n\n"
-            . "# Tool & Routing Guidelines\n"
-            . "- Use `get_db_value` when the caller asks about their invoice, order, or technical service status.\n"
-            . "- Use `collect_dtmf` or ask the caller to dial digits when a numerical ID is required, and `send_dtmf` when pressing keys on a channel.\n"
-            . "- When asked to reach an external company representative or sub-extension, call `find_person` and then `dial_and_navigate`.";
+            . "You are the virtual front desk of the company. Greet callers politely, understand what they need, answer from the\n"
+            . "knowledge base and the tools, and route them. Speak short, natural sentences for the telephone.\n\n"
+            . "# Greetings (order, language, text; the call's language picks one)\n"
+            . $greetings . "\n"
+            . "{language, {$own}}\n\n"
+            . "# Caller\n"
+            . "Name {caller_name}, number {caller_id}, customer {customer_id}, dialled {did}, {date} {time}, language {language}.\n\n"
+            . "# What you can do (use the buttons above to add more)\n"
+            . $transfer
+            . "\n# Options\n"
+            . "{barge_in, on}\n"
+            . "\n# Said while a lookup runs\n"
+            . "{waiting, One moment please, I am checking.}\n";
     }
 
     /** @return array<string, string> */
@@ -56,23 +64,29 @@ final class BuiltinAiAgentService
         return $out;
     }
 
+    /**
+     * What an agent can be bound to: installed local voices (the only local AI left) and the configured
+     * cloud accounts per capability. Every feature chooses its own model: there is no default.
+     * @return array{llm: array<string,string>, stt: array<string,string>, tts: array<string,string>}
+     */
     public static function models(): array
     {
         $options = ['llm' => [], 'stt' => [], 'tts' => []];
         if (PluginManager::isEnabled('ailocal')) {
-            foreach (array_merge(LocalAiService::models(), OllamaService::chatModels()) as $model) {
-                $kind = $model['kind'] ?? '';
-                if (isset($options[$kind]) && in_array($model['state'] ?? '', ['ready', 'installed'], true)) {
-                    $options[$kind]['local:' . $model['id']] = $model['title'];
+            foreach (LocalAiService::models() as $model) {
+                if (($model['kind'] ?? '') === 'tts' && in_array($model['state'] ?? '', ['ready', 'installed', 'loading'], true)) {
+                    $options['tts']['local:' . $model['id']] = $model['title'];
                 }
             }
         }
         if (AiAppService::isScopeEnabled('cloud')) {
-            foreach (array_keys($options) as $kind) {
-                $providers = $kind === 'tts' ? AiAppService::cloudTtsAccounts() : CloudAiService::withCap($kind);
-                foreach ($providers as $provider) {
-                    $options[$kind]['cloud:' . $provider] = CloudAiService::provider($provider)['title'];
+            foreach (['llm', 'stt'] as $kind) {
+                foreach (CloudAiService::withCap($kind) as $account) {
+                    $options[$kind]['cloud:' . $account] = CloudAiService::provider($account)['title'];
                 }
+            }
+            foreach (AiAppService::cloudTtsAccounts() as $account) {
+                $options['tts']['cloud:' . $account] = CloudAiService::provider($account)['title'];
             }
         }
         return $options;
@@ -88,79 +102,96 @@ final class BuiltinAiAgentService
         return $targets;
     }
 
-    public static function validate(array $data): array
+
+    /**
+     * What the tool brackets of the instructions are resolved against now: transfer targets, available saved queries,
+     * knowledge bases (by name), PBX tools and the AI languages (AgentInstructions::parse()).
+     */
+    public static function instructionSources(): array
     {
-        $models = self::models();
-        foreach (['understand' => 'llm', 'stt_model' => 'stt', 'model_id' => 'tts'] as $key => $kind) {
-            if (!isset($models[$kind][(string) ($data[$key] ?? '')])) {
-                throw new InvalidArgumentException(t('builtin_ai_agent.err_model'));
+        $queries = [];
+        foreach (ExternalDbQueryService::all() as $q) {
+            if (ExternalDbQueryService::available($q)) {
+                $queries[(string) $q['query_key']] = (string) ($q['description'] ?? '');
             }
         }
-        [$type, $target] = array_pad(explode(':', (string) ($data['fallback'] ?? ''), 2), 2, '');
+        $bases = [];
+        if (PluginManager::isEnabled('ai-knowledge')) {
+            foreach (AiKnowledgeService::collections() as $c) {
+                $bases[(string) $c['name']] = ['id' => (int) $c['id'], 'description' => (string) ($c['description'] ?? '')];
+            }
+        }
+        return [self::targets(), $queries, $bases, array_column(PbxToolRegistry::all(), 'name'), array_keys(CloudAiService::languages())];
+    }
+
+    /** The instructions' tools resolved against the PBX as it is now (throws with the line of the first wrong bracket). */
+    public static function parseInstructions(string $instructions): array
+    {
+        return AgentInstructions::parse($instructions, ...self::instructionSources());
+    }
+
+    public static function validate(array $data): array
+    {
+        $mode = ($data['mode'] ?? '') === 'realtime' ? 'realtime' : 'cascade';
+        $models = self::models();
+        $realtimeAccount = trim((string) ($data['realtime_account'] ?? ''));
+        if ($mode === 'realtime') {
+            if (!isset(self::realtimeAccounts()[$realtimeAccount])) {
+                throw new InvalidArgumentException(t('builtin_ai_agent.err_model'));
+            }
+        } else {
+            foreach (['understand' => 'llm', 'stt_model' => 'stt', 'model_id' => 'tts'] as $key => $kind) {
+                if (!isset($models[$kind][(string) ($data[$key] ?? '')])) {
+                    throw new InvalidArgumentException(t('builtin_ai_agent.err_model'));
+                }
+            }
+        }
+        // Where a call goes when the AI cannot answer: optional, "hangup" unless chosen (the shared target selector).
+        $type = trim((string) ($data['dest_type'] ?? '')) ?: 'hangup';
+        $target = trim((string) ($data['dest_id'] ?? ''));
         if (!isset(self::targets(true)[$type][$target])) {
             throw new InvalidArgumentException(t('ai_apps.err_dest'));
         }
-        $collectionId = (int) ($data['knowledge_collection'] ?? 0);
-        $collection = PluginManager::isEnabled('ai-knowledge') && $collectionId > 0 ? AiKnowledgeService::collection($collectionId) : null;
-        if (!$collection) {
-            throw new InvalidArgumentException(t('ai_apps.err_knowledge'));
-        }
-        self::toolsForCollection($collectionId);
-        $lang = CloudAiService::language((string) ($collection['assistant_language'] ?? getUserLanguage()));
-        $greeting = langStrings($lang)['ai_apps.default_agent_greeting'] ?? langStrings('en')['ai_apps.default_agent_greeting'];
-        $greeting = preg_replace('/^([^,.!?]{1,16}),/u', '$1 {caller_name},', $greeting) ?? $greeting;
-        $realtimeAccount = trim((string) ($data['realtime_account'] ?? ''));
-        if ($realtimeAccount !== '' && !isset(self::realtimeAccounts()[$realtimeAccount])) {
-            throw new InvalidArgumentException(t('builtin_ai_agent.err_model'));
-        }
-        $realtimeVoice = trim((string) ($data['realtime_voice'] ?? 'alloy'));
-        if (!in_array($realtimeVoice, self::REALTIME_VOICES, true)) {
-            $realtimeVoice = 'alloy';
-        }
-        $validToolNames = array_column(PbxToolRegistry::all(), 'name');
-        $pbxTools = array_values(array_intersect($validToolNames, array_map('strval', (array) ($data['pbx_tools'] ?? []))));
         $instructions = trim((string) ($data['instructions'] ?? ''));
-        if (mb_strlen($instructions) > 4000) {
-            throw new InvalidArgumentException(sprintf(t('ai_apps.err_text'), 4000));
+        if (mb_strlen($instructions) > self::MAX_INSTRUCTIONS) {
+            throw new InvalidArgumentException(sprintf(t('ai_apps.err_text'), self::MAX_INSTRUCTIONS));
         }
-        $summaryEmail = trim((string) ($data['summary_email'] ?? ''));
-        if ($summaryEmail !== '' && (mb_strlen($summaryEmail) > 254 || filter_var($summaryEmail, FILTER_VALIDATE_EMAIL) === false)) {
-            throw new InvalidArgumentException(t('builtin_ai_agent.err_summary_email'));
+        // Every tool of the agent is written into its instructions (AgentInstructions); there is no other place.
+        $parsed = self::parseInstructions($instructions);
+        // {language, xx} in the instructions: the agent's own language (calls whose channel has none); else the first AI language
+        $lang = $parsed['options']['language'] ?: CloudAiService::language('');
+        $greetings = array_column($parsed['greetings_by_lang'][$lang] ?? [], 'text');
+        $greeting = $greetings[0] ?? (langStrings($lang)['ai_apps.default_agent_greeting'] ?? langStrings('en')['ai_apps.default_agent_greeting']);
+        if ($greetings === []) {
+            $greeting = preg_replace('/^([^,.!?]{1,16}),/u', '$1 {caller_name},', $greeting) ?? $greeting;
         }
-        $dbLookups = [];
-        $seenQueries = [];
-        foreach ((array) ($data['db_queries'] ?? []) as $qKey) {
-            $qKey = trim((string) $qKey);
-            if ($qKey === '' || isset($seenQueries[$qKey])) {
-                continue;
-            }
-            $qRow = ExternalDbQueryService::find($qKey);
-            if (!$qRow || !ExternalDbQueryService::available($qRow) || count($dbLookups) >= AiAppDbLookup::MAX_QUERIES) {
-                throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
-            }
-            $seenQueries[$qKey] = true;
-            $dbLookups[] = ['id' => $qKey, 'saved' => true];
+        $summaryEmail = $parsed['options']['email'];                                    // {email, …} in the instructions
+        if (count($parsed['db_queries']) > AiAppDbLookup::MAX_QUERIES) {
+            throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
         }
+        $config = [
+            'mode' => $mode, 'conversation' => true, 'barge_in' => $parsed['options']['barge_in'] ?? true,
+            'retry' => langStrings($lang)['ai_apps.default_agent_retry'] ?? langStrings('en')['ai_apps.default_agent_retry'],
+            'goodbye' => langStrings($lang)['ai_apps.default_agent_goodbye'] ?? langStrings('en')['ai_apps.default_agent_goodbye'],
+        ] + self::listening($data) + [
+            'automatic_announcements' => $parsed['options']['announcements'] ?? false,
+            'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => $lang,
+            'stt_model' => $mode === 'cascade' ? (string) $data['stt_model'] : '',
+            'understand' => $mode === 'cascade' ? (string) $data['understand'] : '',
+            'realtime_account' => $mode === 'realtime' ? $realtimeAccount : '',
+            'instructions' => $instructions, 'instructions_model' => $parsed['text'], 'summary_email' => $summaryEmail,
+            'transfers' => $parsed['transfers'], 'http_tools' => $parsed['http_tools'],
+            'greetings_by_lang' => $parsed['greetings_by_lang'], 'greetings' => $greetings,
+            'waiting_phrases' => $parsed['waiting_phrases'],
+            'db_queries' => $parsed['db_queries'], 'db_lookups' => array_map(static fn ($k) => ['id' => $k, 'saved' => true], $parsed['db_queries']),
+            'knowledge_collections' => $parsed['knowledge_collections'], 'pbx_tools' => $parsed['pbx_tools'],
+        ];
         return [
             'id' => (int) ($data['id'] ?? 0), 'title' => (string) ($data['title'] ?? ''),
             'internal_number' => (string) ($data['internal_number'] ?? ''), 'app_type' => AiAppService::BUILTIN_AGENT,
             'dest_type' => $type, 'dest_id' => $target, 'is_active' => 1,
-            'model_id' => (string) $data['model_id'], 'text_template' => $greeting,
-            'agent_config' => [
-                'conversation' => true, 'barge_in' => !empty($data['barge_in']),
-                'retry' => langStrings($lang)['ai_apps.default_agent_retry'] ?? langStrings('en')['ai_apps.default_agent_retry'],
-                'goodbye' => langStrings($lang)['ai_apps.default_agent_goodbye'] ?? langStrings('en')['ai_apps.default_agent_goodbye'],
-            ] + self::listening($data) + [
-                'automatic_announcements' => !empty($data['automatic_announcements']),
-                'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => $lang, 'stt_model' => (string) $data['stt_model'],
-                'understand' => (string) $data['understand'], 'knowledge_collection' => $collectionId,
-                'realtime_account' => $realtimeAccount, 'realtime_voice' => $realtimeVoice,
-                'pbx_tools' => $pbxTools,
-                'instructions' => $instructions,
-                'summary_email' => $summaryEmail,
-                'db_queries' => array_keys($seenQueries),
-                'db_lookups' => $dbLookups,
-            ],
+            'model_id' => $mode === 'cascade' ? (string) $data['model_id'] : 'realtime', 'text_template' => $greeting,
+            'agent_config' => $config,
         ];
     }
 
@@ -184,8 +215,12 @@ final class BuiltinAiAgentService
             unset($_SESSION['ai_wizard_return']);
             return null;
         }
-        if (!in_array(rtrim($path, '/') ?: '/', self::WIZARD_PAGES, true)) {
+        $path = rtrim($path, '/') ?: '/';
+        if (!in_array($path, self::WIZARD_PAGES, true)) {
             return null;
+        }
+        if ($path === '/ai-agent' && !isset($_GET['new']) && !isset($_GET['edit'])) {
+            return null;                                          // the AI Agent page holds the wizard itself (first tab)
         }
         $steps = self::wizardSteps();
         $open = array_keys(array_filter($steps, static fn ($s) => !$s['done']));
@@ -217,13 +252,13 @@ final class BuiltinAiAgentService
         $sources = array_filter(['/ai-local' => $on('ailocal') ? 'builtin_ai_agent.wizard_go_local' : null,
                                  '/ai-cloud' => $on('aicloud') ? 'builtin_ai_agent.wizard_go_cloud' : null]);
         return [
-            'plugins' => ['done' => $on('ai-knowledge') && ($on('ailocal') || $on('aicloud')), 'optional' => false,
+            'plugins' => ['done' => $on('aicloud') || $on('ailocal'), 'optional' => false,
                 'info' => implode(', ', array_filter(self::WIZARD_PLUGINS, $on)), 'links' => ['/plugins' => 'builtin_ai_agent.wizard_go_plugins']],
-            'models' => ['done' => ($models['llm'] && $models['stt']) || $realtime !== [], 'optional' => false,
+            'models' => ['done' => ($models['llm'] && $models['stt'] && $models['tts']) || $realtime !== [], 'optional' => false,
                 'info' => $names($models['llm'] + $models['stt'] + $realtime), 'links' => $sources],
-            'voice' => ['done' => $models['tts'] !== [] || $realtime !== [], 'optional' => false,
+            'voice' => ['done' => $models['tts'] !== [] || $realtime !== [], 'optional' => true,
                 'info' => $names($models['tts']), 'links' => $sources],
-            'knowledge' => ['done' => $collections !== [], 'optional' => false,
+            'knowledge' => ['done' => $collections !== [], 'optional' => true,
                 'info' => $names(array_column($collections, 'name')), 'links' => ['/ai-knowledge' => 'builtin_ai_agent.wizard_go_knowledge']],
             'agent' => ['done' => $agents !== [], 'optional' => false, 'info' => $names(array_column($agents, 'title')),
                 'links' => ['/ai-agent?new=1' => 'builtin_ai_agent.wizard_go_agent']],
@@ -233,7 +268,7 @@ final class BuiltinAiAgentService
             'test' => ['done' => $last !== null && ((int) $last['turns'] > 0 || in_array($last['result'], ['matched', 'ended'], true)),
                 'optional' => false,
                 'info' => $last ? sprintf('%s · %s · %s · %d', $last['created_at'], $last['title'], $last['result'], (int) $last['turns']) : '',
-                'number' => $numbered[0]['internal_number'] ?? '', 'links' => ['/ai-agent' => 'builtin_ai_agent.wizard_go_calls']],
+                'number' => $numbered[0]['internal_number'] ?? '', 'links' => ['/ai-agent?tab=calls' => 'builtin_ai_agent.wizard_go_calls']],
         ];
     }
 
@@ -311,7 +346,6 @@ final class BuiltinAiAgentService
             'end_of_turn' => ($data['end_of_turn'] ?? '') === 'smart' ? 'smart' : 'fixed',
             // a goodbye from the caller (or the agent) ends the call; agents saved before this setting get it
             'end_on_goodbye' => $legacy ? true : !empty($data['end_on_goodbye']),
-            'local_context' => in_array((int) ($data['local_context'] ?? 0), self::LOCAL_CONTEXTS, true) ? (int) ($data['local_context'] ?? 0) : 0,
             // a noisy line makes barge-in harder too, unless set; a faint one does not make it easier
             'barge_profile' => in_array($data['barge_profile'] ?? '', self::LINE_PROFILES, true)
                 ? (string) $data['barge_profile'] : ($line === 'noisy' ? 'noisy' : 'normal'),
@@ -319,110 +353,237 @@ final class BuiltinAiAgentService
     }
 
     /**
-     * The selected collection can publish one active agent-tools.txt document.
+     * The tools an agent's form defines, in the shape the dialplan builder and the AI service use:
+     * transfer targets as requests ("intents"), HTTP lookups, greetings, waiting phrases and the tone.
      */
-    public static function toolsForCollection(int $collectionId): array
+    public static function toolsFromConfig(array $c): array
     {
-        if ($collectionId < 1) {
-            return [];
+        $tools = [];
+        $broken = self::brokenTransfers($c);
+        foreach ((array) ($c['transfers'] ?? []) as $t) {
+            if (in_array($t['id'], $broken, true)) {
+                // the target was deleted after the agent was saved: only this transfer is left out, the agent works on
+                error_log('AI agent: transfer ' . $t['id'] . ' left out, its target ' . $t['type'] . ' ' . $t['target'] . ' no longer exists');
+                continue;
+            }
+            $tools[] = ['id' => $t['id'], 'name' => $t['usage'], 'keywords' => [], 'examples' => [], 'reply' => '',
+                'dest_type' => $t['type'], 'dest_id' => $t['target'],
+                'route_id' => substr(hash('sha256', "{$t['id']}:{$t['type']}:{$t['target']}"), 0, 16)];
         }
-        $stmt = getDB()->prepare('SELECT content_text FROM ai_knowledge_docs WHERE collection_id = ? AND is_active = 1 AND filename = ? LIMIT 2');
-        $stmt->execute([$collectionId, self::TOOL_FILE]);
-        $documents = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        if (count($documents) > 1) {
-            throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
+        try {
+            $http = AiAppService::parseHttpTools((string) ($c['http_tools'] ?? ''));
+        } catch (\Exception $e) {
+            $http = [];
+            error_log('AI agent: HTTP lookups left out: ' . $e->getMessage());
         }
-        if (!$documents) {
-            return [];
+        $out = ['waiting_phrases' => array_values((array) ($c['waiting_phrases'] ?? [])), 'intents' => $tools,
+            'tools' => array_values($http), 'db_lookups' => []];
+        if (!empty($c['greetings'])) {
+            $out += ['greeting' => $c['greetings'][0], 'greetings' => array_values($c['greetings'])];
         }
-        return self::parseTools($documents[0]);
+        return $out;
     }
 
-    public static function parseTools(string $text): array
+    /** Transfers whose target no longer exists (deleted after the agent was saved): their ids. @return list<string> */
+    public static function brokenTransfers(array $c): array
     {
-        $targets = null;
-        $tools = [];
-        $http = [];
-        $db = [];
-        $connections = [];
-        $voice = [];
-        $greetings = [];
-        $waiting = [];
-        foreach (preg_split('/\R/', $text) ?: [] as $line) {
-            $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#')) {
-                continue;
-            }
-            [$tool, $definition] = array_pad(array_map('trim', explode('|', $line, 2)), 2, '');
-            if ($tool === 'tone' && $definition !== '' && mb_strlen($definition) <= 300 && !isset($voice['announcement_tone'])) {
-                $voice['announcement_tone'] = $definition;
-                continue;
-            }
-            if ($tool === 'greeting' && $definition !== '' && mb_strlen($definition) <= 250 && count($greetings) < 5) {
-                $greetings[] = $definition;
-                continue;
-            }
-            if ($tool === 'waiting' && $definition !== '' && mb_strlen($definition) <= 120 && count($waiting) < 5) {
-                $waiting[] = $definition;
-                continue;
-            }
-            if ($tool === 'http_lookup' && $definition !== '') {
-                $http[] = $definition;
-                continue;
-            }
-            if ($tool === 'get_db_value' && $definition !== '') {
-                $db[] = $definition;
-                continue;
-            }
-            if ($tool === 'db_connection' && ctype_digit($definition)) {
-                $connection = ExternalDbRepository::findById((int) $definition);
-                if (!$connection) {
-                    throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
-                }
-                $connections[(int) $definition] = true;
-                continue;
-            }
-            [$id, $type, $target, $usage] = array_pad(array_map('trim', explode('|', $definition, 4)), 4, '');
-            $targets ??= self::targets();
-            if ($tool !== 'call_transfer' || !preg_match('/^[a-z][a-z0-9_]{0,29}$/D', $id)
-                || $id === 'none' || isset($tools[$id]) || !isset($targets[$type][$target])
-                || $usage === '' || mb_strlen($usage) > 200 || count($tools) >= AiAppService::MAX_INTENTS) {
-                throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
-            }
-            $tools[$id] = ['id' => $id, 'name' => $usage, 'keywords' => [], 'examples' => [], 'reply' => '',
-                'dest_type' => $type, 'dest_id' => $target,
-                'route_id' => substr(hash('sha256', "$id:$type:$target"), 0, 16)];
+        if (empty($c['transfers'])) {
+            return [];
         }
-        $httpTools = AiAppService::parseHttpTools(implode("\n", $http));
-        if (array_intersect(['knowledge', 'get_db_value', 'call_transfer', 'end_call'], array_keys($httpTools))) {
-            throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
+        $targets = self::targets();
+        $out = [];
+        foreach ((array) $c['transfers'] as $t) {
+            if (!isset($targets[$t['type'] ?? ''][(string) ($t['target'] ?? '')])) {
+                $out[] = (string) $t['id'];
+            }
         }
-        if ($greetings) {
-            $voice += ['greeting' => $greetings[0], 'greetings' => $greetings];
-        }
-        $lookups = AiAppDbLookup::parse(implode("\n", $db));
-        $seen = array_fill_keys(array_column($lookups, 'id'), true);
-        foreach (array_keys($connections) as $id) {
-            foreach (ExternalDbQueryService::keysForConnection($id) as $key) {
-                if (!isset($seen[$key])) {
-                    $lookups[] = ['id' => $key, 'saved' => true, 'connection_scope' => $id];
-                    $seen[$key] = true;
+        return $out;
+    }
+
+    /** The agents that transfer to a destination (deleting it is refused while they do): their titles. @return list<string> */
+    public static function agentsUsing(string $type, array $ids): array
+    {
+        $out = [];
+        foreach (AiAppService::all(true) as $agent) {
+            foreach ((array) (AiAppService::config($agent)['transfers'] ?? []) as $t) {
+                if (($t['type'] ?? '') === $type && in_array((string) ($t['target'] ?? ''), array_map('strval', $ids), true)) {
+                    $out[] = (string) $agent['title'];
+                    break;
                 }
             }
         }
-        if (count($lookups) > AiAppDbLookup::MAX_QUERIES) {
-            throw new InvalidArgumentException(t('builtin_ai_agent.err_tools'));
+        return $out;
+    }
+
+    /** The knowledge bases an agent may search: [{id, name, description}], the model chooses one by its description. */
+    public static function knowledgeSources(array $c): array
+    {
+        if (!PluginManager::isEnabled('ai-knowledge')) {
+            return [];
         }
-        return $voice + ['waiting_phrases' => $waiting, 'intents' => array_values($tools), 'tools' => array_values($httpTools),
-            'db_lookups' => $lookups];
+        $out = [];
+        foreach ((array) ($c['knowledge_collections'] ?? []) as $cid) {
+            $collection = AiKnowledgeService::collection((int) $cid);
+            if ($collection && trim((string) $collection['description']) !== '') {
+                $out[] = ['id' => (int) $collection['id'], 'name' => mb_substr((string) $collection['name'], 0, 60),
+                    'description' => mb_substr(trim((string) $collection['description']), 0, 200)];
+            }
+        }
+        return $out;
+    }
+
+    /** Whether the agent can answer at all: what its mode needs is chosen and usable. */
+    public static function ready(array $svcCfg): bool
+    {
+        if (empty($svcCfg['conversation'])) {
+            return false;
+        }
+        if (($svcCfg['mode'] ?? '') === 'realtime') {
+            return !empty($svcCfg['realtime_cloud']);
+        }
+        return ($svcCfg['mode'] ?? '') === 'cascade' && ($svcCfg['tts_model'] ?? '') !== '' && ($svcCfg['stt_model'] ?? '') !== ''
+            && !empty($svcCfg['llm_cloud']);
     }
 
     public static function markCollectionChanged(int $collectionId): void
     {
         foreach (AiAppService::all(true) as $agent) {
-            if ((int) (AiAppService::config($agent)['knowledge_collection'] ?? 0) === $collectionId) {
+            if (in_array($collectionId, array_map('intval', (array) (AiAppService::config($agent)['knowledge_collections'] ?? [])), true)) {
                 markPendingSync('ai_apps', 'ai_app', $agent['id'], 'AI agent: ' . $agent['title'], 'update', $_SESSION['user_id'] ?? null);
             }
         }
+    }
+
+    /**
+     * What PUT /v1/apps/<id> sends the AI service for a built-in agent. Explicit choices only: a model that is
+     * missing, over its limit or blocked by the privacy lock leaves the agent not ready (calls go to its
+     * destination); nothing falls back to another model or mode.
+     */
+    public static function serviceConfig(array $app, bool $resolveCredentials = false): array
+    {
+        $c = AiAppService::config($app);
+        $c = self::toolsFromConfig($c) + $c;
+        $appId = (int) ($app['id'] ?? 0);
+        $mode = in_array($c['mode'] ?? '', self::MODES, true) ? (string) $c['mode'] : '';
+        $cloudAllowed = !AiAppService::isPrivacyCloudBlocked() && AiAppService::isScopeEnabled('cloud');
+        $lang = CloudAiService::language((string) ($c['stt_lang'] ?? ''));
+        $out = [
+            'type' => 'voice_requests', 'builtin_agent' => true, 'mode' => $mode, 'conversation' => true,
+            'tts_model' => '', 'stt_model' => '', 'understand' => '',
+            'language' => $lang, 'language_name' => CloudAiService::languageName($lang), 'language_locale' => CloudAiService::languageLocale($lang),
+            'speed' => (float) ($app['speed'] ?? 1) ?: 1.0,
+            'greeting' => (string) ($c['greeting'] ?? ''), 'not_understood' => '', 'threshold' => 0.5,
+            'barge_in' => !empty($c['barge_in']),
+            'instructions' => (string) ($c['instructions_model'] ?? $c['instructions'] ?? ''), 'max_turns' => (int) ($c['max_turns'] ?? 12),
+            'tools' => $c['tools'] ?? [], 'db_queries' => AiAppDbLookup::metadata($c['db_lookups'] ?? []),
+            'automatic_announcements' => !empty($c['automatic_announcements']),
+            'greetings' => $c['greetings'] ?? [], 'waiting_phrases' => $c['waiting_phrases'] ?? [],
+            // every language's greetings: the AI service picks by the call's channel language (else the agent's)
+            'greetings_by_lang' => (object) ($c['greetings_by_lang'] ?? []),
+            'languages' => (object) array_map(static fn ($l) => ['name' => $l['name'], 'locale' => $l['locale']], CloudAiService::languages()),
+            'intents' => array_map(static fn ($i) => array_intersect_key($i, array_flip(['id', 'name', 'keywords', 'examples', 'reply', 'route_id'])),
+                $c['intents'] ?? []),
+        ] + self::listening($c);
+        foreach (['retry', 'goodbye'] as $phrase) {
+            $saved = trim((string) ($c[$phrase] ?? ''));
+            $out[$phrase] = $saved !== '' ? $saved
+                : (langStrings($lang)['ai_apps.default_agent_' . $phrase] ?? langStrings('en')['ai_apps.default_agent_' . $phrase] ?? '');
+        }
+        $sources = self::knowledgeSources($c);
+        $out['knowledge'] = $sources !== [];
+        if ($sources !== []) {
+            $out['knowledge_sources'] = $sources;
+        }
+        if (!empty($c['pbx_tools']) && is_array($c['pbx_tools'])) {
+            require_once __DIR__ . '/PbxToolRegistry.php';
+            $enabledPbx = PbxToolRegistry::forEnabled(array_map('strval', $c['pbx_tools']));
+            if ($enabledPbx !== []) {
+                $out['pbx_tools'] = $enabledPbx;
+                $out['pbx_tools_key'] = AiAppService::dialplanKey();
+            }
+        }
+        if ($mode === 'realtime' && $cloudAllowed) {
+            $payload = self::realtimePayload((string) ($c['realtime_account'] ?? ''), $c, $lang);
+            if ($payload !== null) {
+                $out['realtime_cloud'] = $payload;
+            }
+        } elseif ($mode === 'cascade' && $cloudAllowed) {
+            $tts = (string) ($app['model_id'] ?? '');
+            if (str_starts_with($tts, 'cloud:') && AiAppService::isCloudTtsReady(substr($tts, 6))) {
+                $out['tts_model'] = $tts;
+                $out['tts_cloud'] = AiAppService::cloudTtsPayload(substr($tts, 6), $lang);
+            } elseif (str_starts_with($tts, 'local:') && AiAppService::isScopeEnabled('local')) {
+                $out['tts_model'] = substr($tts, 6);
+            }
+            $stt = (string) ($c['stt_model'] ?? '');
+            if (str_starts_with($stt, 'cloud:') && !CloudAiService::overLimit(substr($stt, 6), 'stt')) {
+                $out['stt_model'] = $stt;
+                $out['stt_cloud'] = AiAppService::cloudSttPayload(substr($stt, 6), $lang);
+            }
+            $llm = (string) ($c['understand'] ?? '');
+            if (str_starts_with($llm, 'cloud:') && !CloudAiService::overLimit(substr($llm, 6), 'llm')) {
+                $out['understand'] = 'cloud';
+                $out['llm_cloud'] = CloudAiService::llmSettings(substr($llm, 6));
+            }
+        } elseif ($mode === 'cascade') {          // cloud blocked or off: only a local voice can still speak
+            $tts = (string) ($app['model_id'] ?? '');
+            if (str_starts_with($tts, 'local:') && AiAppService::isScopeEnabled('local')) {
+                $out['tts_model'] = substr($tts, 6);
+            }
+        }
+        if (!$resolveCredentials) {
+            foreach (['tts', 'stt', 'llm'] as $task) {
+                $key = $task . '_cloud';
+                if (isset($out[$key])) {
+                    $provider = (string) ($out[$key]['provider'] ?? '');
+                    $out[$key] = ['provider' => $provider, 'secret_ref' => 'app:' . $appId . ':' . $task . ':' . $provider]
+                        + array_diff_key($out[$key], ['api_key' => 1, 'secret_ref' => 1, 'provider' => 1]);
+                }
+            }
+        }
+        return $out;
+    }
+
+    /** The Realtime connection of an account: provider, key, model, the agent's voice and the speech-detection settings. */
+    private static function realtimePayload(string $account, array $c, string $lang): ?array
+    {
+        if (!str_starts_with($account, 'cloud:')) {
+            return null;
+        }
+        $id = substr($account, 6);
+        $type = CloudAiService::typeIfKnown($id);
+        $pc = CloudAiService::config($id);
+        $hasAuth = !empty($pc['api_key']) || ($type === 'openai_compat' && !empty($pc['base_url']));
+        if (!isset(CloudAiService::REALTIME_MODELS[$type]) || !$hasAuth) {
+            return null;
+        }
+        $protocol = (string) ($pc['realtime_protocol'] ?? '');
+        $model = trim((string) ($pc['realtime_model'] ?? ''));
+        if ($model === '') {
+            $model = $type === 'openai_compat'
+                ? ($protocol === 'openai_ga' ? 'gpt-realtime' : (trim((string) ($pc['model'] ?? '')) ?: 'gpt-4o-realtime-preview'))
+                : CloudAiService::REALTIME_MODELS[$type];
+        }
+        $payload = [
+            'provider' => $type, 'api_key' => (string) ($pc['api_key'] ?? ''), 'model' => $model,
+            // the voice and the speech detection are the account's (two settings = two accounts, "Copy")
+            'voice' => trim((string) ($pc['realtime_voice'] ?? '')) ?: 'alloy', 'lang' => $lang,
+            'vad' => ['threshold' => max(0.1, min(0.99, (float) ($pc['realtime_vad_threshold'] ?? '') ?: 0.5)),
+                      'silence_ms' => max(200, min(3000, (int) ($pc['realtime_silence_ms'] ?? '') ?: 500))],
+            'noise_reduction' => in_array($pc['realtime_noise_reduction'] ?? '', self::NOISE_REDUCTION, true) ? (string) $pc['realtime_noise_reduction'] : 'off',
+        ];
+        if (is_numeric($pc['realtime_temperature'] ?? null)) {
+            $payload['temperature'] = max(0.2, min(1.2, (float) $pc['realtime_temperature']));
+        }
+        if (!empty($pc['base_url'])) {
+            $payload['base_url'] = (string) $pc['base_url'];
+        }
+        if ($type === 'openai_compat') {
+            $payload['protocol'] = $protocol;
+            if (!empty($pc['realtime_ws_url'])) {
+                $payload['ws_url'] = (string) $pc['realtime_ws_url'];
+            }
+        }
+        return $payload;
     }
 }

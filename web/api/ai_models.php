@@ -42,61 +42,6 @@ if ($action === 'piper_catalog') {
     }
     exit;
 }
-if ($action === 'ollama_catalog') {
-    require_once __DIR__ . '/../src/services/ai/OllamaService.php';
-    $refresh = !empty($_GET['refresh']);
-    $installed = [];
-    foreach (OllamaService::models() as $m) {
-        $installed[$m['name']] = $m;
-    }
-    $catalog = OllamaService::runnableCatalog(OllamaService::catalog($refresh), $installed);
-    $byBase = [];
-    foreach ($installed as $name => $m) {
-        $byBase[strtolower(explode(':', (string) $name)[0])] ??= $m;
-    }
-    foreach ($catalog as &$item) {
-        $m = $installed[$item['name']] ?? $byBase[strtolower(explode(':', (string) $item['name'])[0])] ?? null;
-        $item['installed'] = $m !== null;
-        $item['id'] = $m['id'] ?? '';
-        $item['state'] = $m['state'] ?? 'absent';
-        if ($m !== null && !empty($m['disk_mb'])) {
-            $mb = (int) $m['disk_mb'];
-            $item['disk_label'] = $mb >= 1024 ? round($mb / 1024, 1) . ' GB' : $mb . ' MB';
-        }
-    }
-    unset($item);
-    echo json_encode(['success' => true, 'models' => $catalog], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-if ($action === 'ollama_tags') {
-    require_once __DIR__ . '/../src/services/ai/OllamaService.php';
-    $name = (string) ($_GET['name'] ?? '');
-    echo json_encode(['success' => true, 'tags' => OllamaService::tags($name)], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-if ($action === 'hf_catalog') {
-    $kind = preg_replace('/[^a-z]/', '', (string) ($_GET['kind'] ?? ''));
-    $query = trim((string) ($_GET['query'] ?? ''));
-    $refresh = !empty($_GET['refresh']);
-    $cacheKey = ($kind ?: 'all') . '_' . substr(md5($query), 0, 12);
-    $cacheFile = sys_get_temp_dir() . '/aipbx_hf_catalog_v6_' . $cacheKey . '.json';
-    if (!$refresh && is_file($cacheFile)) {
-        $cached = json_decode((string) @file_get_contents($cacheFile), true);
-        if (is_array($cached)) {
-            echo json_encode(['success' => true, 'models' => $cached, 'cached' => true], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-    }
-    try {
-        $models = LocalAiService::hfSearch($query, $kind, '');
-        @file_put_contents($cacheFile, json_encode($models, JSON_UNESCAPED_UNICODE));
-        echo json_encode(['success' => true, 'models' => $models, 'cached' => false], JSON_UNESCAPED_UNICODE);
-    } catch (LocalAiException $e) {
-        echo json_encode(['success' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
-    }
-    exit;
-}
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'error' => 'POST required']);
@@ -115,15 +60,6 @@ $id = (string) ($_POST['id'] ?? '');
 try {
     $out = ['success' => true];
     switch ($action) {
-        case 'ollama_install':
-            LocalAiService::installOllama();
-            $out['message'] = t('ai_models.msg_ollama_installing');
-            break;
-        case 'ollama_pull':
-            require_once __DIR__ . '/../src/services/ai/OllamaService.php';
-            OllamaService::pull((string) ($_POST['name'] ?? ''));
-            $out['message'] = t('ai_models.msg_downloading');
-            break;
         case 'runtime_install':
             LocalAiService::installRuntime();
             $out['message'] = t('ai_models.msg_runtime_installing');
@@ -133,7 +69,7 @@ try {
             $out['message'] = t('ai_models.msg_runtime_removed');
             break;
         case 'model_install':
-            if (!str_starts_with($id, 'ollama-') && !LocalAiService::ensureRuntimeReady()) {
+            if (!LocalAiService::ensureRuntimeReady()) {
                 $out['runtime_installing'] = true;
                 $out['message'] = t('ai_models.msg_runtime_auto_installing');
                 break;
@@ -157,61 +93,8 @@ try {
             $out['id'] = LocalAiService::addPiperVoice((string) ($_POST['key'] ?? ''), !empty($_POST['accept_license']));
             $out['message'] = t('ai_models.msg_downloading');
             break;
-        case 'hf_search':
-            $out['models'] = LocalAiService::hfSearch(
-                (string) ($_POST['query'] ?? ''),
-                (string) ($_POST['kind'] ?? ''),
-                (string) ($_POST['token'] ?? '')
-            );
-            break;
-        case 'hf_inspect':
-            $out['info'] = LocalAiService::hfInspect(
-                (string) ($_POST['repo'] ?? ''),
-                (string) ($_POST['revision'] ?? ''),
-                (string) ($_POST['token'] ?? '')
-            );
-            break;
-        case 'hf_add':
-            if (!LocalAiService::ensureRuntimeReady()) {
-                $out['runtime_installing'] = true;
-                $out['message'] = t('ai_models.msg_runtime_auto_installing');
-                break;
-            }
-            $out['id'] = LocalAiService::addHuggingFaceModel(
-                (string) ($_POST['repo'] ?? ''),
-                (string) ($_POST['revision'] ?? ''),
-                !empty($_POST['accept_license']),
-                (string) ($_POST['language'] ?? ''),
-                (string) ($_POST['token'] ?? '')
-            );
-            $out['message'] = t('ai_models.msg_downloading');
-            break;
-        case 'try_stt':
-            $up = $_FILES['audio'] ?? null;
-            if (!$up || ($up['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($up['tmp_name']) || $up['size'] > 4 * 1024 * 1024) {
-                throw new LocalAiException(t('ai_models.err_stt_audio'));
-            }
-            $wav = (string) file_get_contents($up['tmp_name']);
-            if (str_starts_with($id, 'cloud:')) {
-                require_once __DIR__ . '/../src/core/PluginManager.php';
-                require_once __DIR__ . '/../src/services/ai/CloudAiService.php';
-                if (!PluginManager::isEnabled('aicloud')) {
-                    throw new LocalAiException(t('ai_gateway.error_permission'));
-                }
-                if (function_exists('getSystemSetting') && getSystemSetting('privacy_block_cloud_ai', '0') === '1') {
-                    throw new LocalAiException(t('ai_gateway.error_privacy'));
-                }
-                try {
-                    $out['result'] = CloudAiService::stt(substr($id, 6), $wav, (string) ($_POST['lang'] ?? 'tr'));
-                } catch (CloudAiException $e) {
-                    throw new LocalAiException($e->getMessage());
-                }
-            } else {
-                $out['result'] = LocalAiService::stt($id, $wav);
-            }
-            break;
         case 'model_run':
-            if (!str_starts_with($id, 'ollama-') && !LocalAiService::ensureRuntimeReady()) {
+            if (!LocalAiService::ensureRuntimeReady()) {
                 $out['runtime_installing'] = true;
                 $out['message'] = t('ai_models.msg_runtime_auto_installing');
                 break;

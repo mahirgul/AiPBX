@@ -123,8 +123,8 @@ final class AiKnowledgeUseTest extends TestCase
     {
         $col = AiKnowledgeService::saveCollection(0, 'SSS', '', [], '');
         $c = AiAppService::validateConversation(['conversation' => 1, 'knowledge_collection' => $col], 'cloud:openai');
-        $this->assertSame($col, $c['knowledge_collection']);
-        $this->assertSame(0, AiAppService::validateConversation(['conversation' => 1], 'cloud:openai')['knowledge_collection']);
+        $this->assertSame([$col], $c['knowledge_collections']);
+        $this->assertSame([], AiAppService::validateConversation(['conversation' => 1], 'cloud:openai')['knowledge_collections']);
 
         foreach ([['knowledge_collection' => $col + 999],
                   ['knowledge_collection' => $col, 'tools' => 'knowledge | docs | https://crm.example.com/k']] as $bad) {

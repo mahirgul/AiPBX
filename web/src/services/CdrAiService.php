@@ -3,7 +3,7 @@
  * CDR Call Recording AI: on-demand transcription, LLM summary, and search storage.
  *
  * Uses the configured STT engine (local Whisper/Vosk or cloud via VoicemailAiService)
- * and optional cloud LLM summary (CloudAiService::engineFor('cdr_llm', $lang)), storing
+ * and optional cloud LLM summary , storing
  * results once per cdr_id in the `cdr_ai` table.
  */
 
@@ -185,46 +185,15 @@ class CdrAiService
         }
     }
 
-    /**
-     * Resolves the model ref ('local:...' or 'cloud:...') for `ai_call_analysis` via AiBindingService.
-     * Falls back to legacy CloudAiService::engineFor() only when no `ai_bindings` row exists yet.
-     * Never silently falls back from local to cloud.
-     *
-     * @return array{0: ?string, 1: bool} [selection, fromBinding]
-     */
-    private static function resolveSelectionWithSource(string $task, string $lang = 'default', string $legacyFeature = ''): array
+    /** The model call analysis uses for a task ('stt' or 'chat'); null when it is off. @return array{0: ?string, 1: bool} */
+    private static function resolveSelectionWithSource(string $task): array
     {
-        $lang = $lang !== '' ? $lang : 'default';
-        $hasRow = false;
-        try {
-            $st = getDB()->prepare(
-                'SELECT 1 FROM ai_bindings WHERE feature = ? AND scope_ref = ? AND task = ? AND language IN (?, ?) LIMIT 1'
-            );
-            $st->execute(['ai_call_analysis', 'global', $task, $lang, 'default']);
-            $hasRow = (bool) $st->fetchColumn();
-        } catch (\Throwable $e) {
-            $hasRow = false;
-        }
-
-        if ($hasRow) {
-            $resolved = AiBindingService::resolve('ai_call_analysis', $task, $lang, 'global');
-            return [$resolved !== null && $resolved !== '' ? $resolved : null, true];
-        }
-
-        if ($legacyFeature !== '') {
-            try {
-                $legacy = CloudAiService::engineFor($legacyFeature, $lang === 'default' ? 'tr' : $lang);
-                return [$legacy !== '' ? $legacy : null, false];
-            } catch (\Throwable $e) {
-                return [null, false];
-            }
-        }
-        return [null, false];
+        return [AiBindingService::resolve('ai_call_analysis', $task), true];
     }
 
-    public static function resolveSelection(string $task, string $lang = 'default', string $legacyFeature = ''): ?string
+    public static function resolveSelection(string $task): ?string
     {
-        return self::resolveSelectionWithSource($task, $lang, $legacyFeature)[0];
+        return self::resolveSelectionWithSource($task)[0];
     }
 
     private static function scopePluginEnabled(string $scope): bool
@@ -262,17 +231,11 @@ class CdrAiService
     /** @return array{0: string, 1: string} text and engine ref ('' when none) */
     public static function transcribeAudio(string $wav, string $lang): array
     {
-        [$selection, $fromBinding] = self::resolveSelectionWithSource('stt', $lang, 'cdr_stt');
+        [$selection, $fromBinding] = self::resolveSelectionWithSource('stt');
         if ($selection === null) {
             return ['', ''];
         }
         try {
-            if (str_starts_with($selection, 'local:')) {
-                if ($fromBinding && !self::scopePluginEnabled('local')) {
-                    return ['', ''];
-                }
-                return [trim(LocalAiService::stt(substr($selection, 6), $wav)['text']), $selection];
-            }
             if (str_starts_with($selection, 'cloud:')) {
                 $providerId = substr($selection, 6);
                 if (($fromBinding && !self::scopePluginEnabled('cloud')) || self::cloudBlocked()) {
@@ -297,12 +260,6 @@ class CdrAiService
 
     private static function runChat(string $selection, string $prompt, int $maxTokens, bool $enforcePlugin = true): string
     {
-        if (str_starts_with($selection, 'local:')) {
-            if ($enforcePlugin && !self::scopePluginEnabled('local')) {
-                throw new \RuntimeException('Local AI plugin is disabled.');
-            }
-            return LocalAiService::chat(substr($selection, 6), $prompt, $maxTokens);
-        }
         if (str_starts_with($selection, 'cloud:')) {
             $providerId = substr($selection, 6);
             $isLoopbackOllama = false;
@@ -341,7 +298,7 @@ class CdrAiService
             throw new \InvalidArgumentException('Invalid CDR ID');
         }
         $lang = (string) ($payload['lang'] ?? CloudAiService::language(strtolower(substr((string) getSystemSetting('default_lang', 'tr'), 0, 2))));
-        $bindingRef = self::resolveSelection('stt', $lang, 'cdr_stt');
+        $bindingRef = self::resolveSelection('stt');
         return AiJobService::enqueue(
             'ai_call_analysis',
             'analyze',
@@ -490,7 +447,7 @@ class CdrAiService
     /** Short 1-2 sentence summary of a call transcript when an LLM is configured. */
     public static function summarize(string $transcript, string $lang): string
     {
-        [$engine, $fromBinding] = self::resolveSelectionWithSource('chat', $lang, 'cdr_llm');
+        [$engine, $fromBinding] = self::resolveSelectionWithSource('chat');
         if ($engine === null) {
             return '';
         }
@@ -555,7 +512,7 @@ class CdrAiService
     public static function review(string $transcript, string $lang, ?callable $chat = null): ?array
     {
         $criteria = self::qaSettings()['criteria'];
-        [$engine, $fromBinding] = self::resolveSelectionWithSource('chat', $lang, 'qa_llm');
+        [$engine, $fromBinding] = self::resolveSelectionWithSource('chat');
         if ($criteria === '' || trim($transcript) === '' || $engine === null) {
             return null;
         }

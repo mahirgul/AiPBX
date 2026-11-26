@@ -43,6 +43,14 @@ final class RemindersController extends BaseController
                 }
                 return t('reminders.msg_created');
             }),
+            'save_voice' => fn () => PBXHelper::handleAction($token, static function () use ($isAdmin): string {
+                if (!$isAdmin) {
+                    throw new \RuntimeException(t('common.action_failed'));
+                }
+                require_once __DIR__ . '/../services/ai/AiBindingService.php';
+                AiBindingService::save('reminders', 'tts', (string) ($_POST['reminder_voice'] ?? ''));
+                return t('common.saved');
+            }),
             'cancel_reminder' => fn () => PBXHelper::handleAction($token, static function () use ($userId, $isAdmin, $canEdit): string {
                 if (!$canEdit) {
                     throw new \RuntimeException(t('common.action_failed'));
@@ -63,6 +71,7 @@ final class RemindersController extends BaseController
             }),
         ]);
 
+        require_once __DIR__ . '/../services/ai/AiBindingService.php';
         $extensions = [];
         if ($isAdmin) {
             $extensions = getDB()->query("SELECT extension, full_name FROM sys_users WHERE is_active = 1 AND extension IS NOT NULL AND extension <> '' ORDER BY extension ASC")->fetchAll(PDO::FETCH_ASSOC) ?: [];

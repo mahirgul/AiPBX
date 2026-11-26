@@ -17,6 +17,15 @@ $h = static fn ($v): string => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'
         <p class="u-m-0"><?php echo $h(t('reminders.help_desc')); ?></p>
     <?php echo uiHelpBoxClose(); ?>
 
+    <?php if (!empty($isAdmin)): ?>
+    <form method="POST" class="u-mb-16 u-d-flex u-gap-8 u-wrap u-ai-center">
+        <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token ?? ''); ?>">
+        <label class="form-label u-mb-0"><?php echo $h(t('reminders.voice')); ?></label>
+        <?php echo AiBindingService::select('reminders', 'tts', 'reminder_voice'); ?>
+        <button type="submit" name="save_voice" value="1" class="btn btn-secondary btn-sm"><i class="fas fa-save"></i> <?php echo $h(t('common.save')); ?></button>
+    </form>
+    <?php endif; ?>
+
     <?php if (!empty($canEdit)): ?>
     <form method="POST" class="u-mb-16" autocomplete="off">
         <input type="hidden" name="csrf_token" value="<?php echo $h($csrf_token ?? ''); ?>">

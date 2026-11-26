@@ -118,32 +118,39 @@ $cloudId = is_string($cloudId) ? $cloudId : 'openai';
 
 $collectionId = 0;
 if (PluginManager::isEnabled('ai-knowledge')) {
-    $collectionId = (int) $make('Knowledge collection "Company Info"', fn() => AiKnowledgeService::saveCollection(0, 'Company Info',
-        'Example knowledge for the Virtual Receptionist: replace it with your own.', [], '', 'en'));
     $dir = dirname(__DIR__, 2) . '/db/examples';
-    foreach (['company-info.txt' => 'Company information', 'agent-tools.txt' => 'Agent tools', 'lookup-rules.txt' => 'Lookup rules'] as $file => $title) {
-        $text = (string) file_get_contents("{$dir}/{$file}");
-        if ($file === 'agent-tools.txt' && $salesId !== '') {
-            $text = str_replace('| ring_group | 1 |', "| ring_group | {$salesId} |", $text);
-        }
-        $make("Knowledge document \"{$file}\"", fn() => $collectionId > 0 ? AiKnowledgeService::addDocument($collectionId, $title, $file, $text) : throw new RuntimeException('no collection'));
-    }
+    $text = trim((string) file_get_contents("{$dir}/company-info.txt")) . "\n\n" . trim((string) file_get_contents("{$dir}/lookup-rules.txt"));
+    $collectionId = (int) $make('Knowledge base "Company Info"', fn() => AiKnowledgeService::saveWithText(0, 'Company Info',
+        'Opening hours, products, prices and lookup rules of Example Company.', $text, '', ['*']));
 }
 
 // The models are the empty cloud account's: the agent works once its key is in, and until then
 // the call goes to the operator (the fallback). Built as the AI Agent page saves it, because the
 // page only offers accounts that already have a key.
 $agentId = 0;
-if ($collectionId > 0) {
+if ($cloudId !== '') {
     $greeting = 'Hello {caller_name}, thank you for calling Example Company. How can I help you?';
-    $agentId = (int) $make('AI Agent "Virtual Receptionist" (uses Company Info)', fn() => AiAppService::save([
+    $agentId = (int) $make('AI Agent "Virtual Receptionist"', fn() => AiAppService::save([
         'id' => 0, 'title' => 'Virtual Receptionist', 'internal_number' => '', 'app_type' => AiAppService::BUILTIN_AGENT,
         'dest_type' => 'extension', 'dest_id' => $adminExt, 'is_active' => 1, 'model_id' => "cloud:{$cloudId}", 'text_template' => $greeting,
-        'agent_config' => [
-            'conversation' => true, 'barge_in' => true, 'listen_seconds' => 10, 'retries' => 0, 'automatic_announcements' => false,
-            'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => 'en', 'stt_model' => "cloud:{$cloudId}",
-            'understand' => "cloud:{$cloudId}", 'knowledge_collection' => $collectionId,
-        ],
+        'agent_config' => (static function () use ($greeting, $salesId, $adminExt, $collectionId, $cloudId): array {
+            // Every tool of the agent is written into its instructions, as the AI Agent page saves them.
+            $base = $collectionId > 0 ? (string) (AiKnowledgeService::collection($collectionId)['name'] ?? '') : '';
+            $instructions = "You are the virtual receptionist of Example Company. Answer briefly and politely.\n"
+                . "{greeting, 1, en, {$greeting}}\n"
+                . ($salesId !== '' ? "Callers who want to order or ask for prices go to {transfer, sales, group:{$salesId}}.\n" : '')
+                . "Callers who ask for a person go to {transfer, operator, extension:{$adminExt}}.\n"
+                . ($base !== '' ? "Opening hours, products and prices are in {knowledge, {$base}}.\n" : '')
+                . "{waiting, One moment, please, I am checking.}";
+            $p = BuiltinAiAgentService::parseInstructions($instructions);
+            return ['mode' => 'cascade', 'conversation' => true, 'barge_in' => true, 'listen_seconds' => 10, 'retries' => 0,
+                'automatic_announcements' => false, 'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => 'en',
+                'stt_model' => "cloud:{$cloudId}", 'understand' => "cloud:{$cloudId}",
+                'instructions' => $instructions, 'instructions_model' => $p['text'], 'transfers' => $p['transfers'],
+                'greetings_by_lang' => $p['greetings_by_lang'], 'greetings' => array_column($p['greetings_by_lang']['en'] ?? [], 'text'),
+                'waiting_phrases' => $p['waiting_phrases'], 'knowledge_collections' => $p['knowledge_collections'],
+                'http_tools' => '', 'db_queries' => [], 'db_lookups' => [], 'pbx_tools' => []];
+        })(),
     ], true));
 }
 

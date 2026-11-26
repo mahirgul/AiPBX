@@ -6,25 +6,6 @@ require_once __DIR__ . '/../services/ExternalDbQueryService.php';
 
 final class BuiltinAiAgentController extends BaseController
 {
-    /** /ai-wizard: the agent's setup as a checklist; every step links to the page that does it. */
-    public static function wizard(): void
-    {
-        static::requireRole('admin');
-        $_SESSION['ai_wizard_return'] = 1;                        // the pages its steps open show a way back
-        $token = (string) ($_POST['csrf_token'] ?? '');
-        $notices = ['message' => '', 'error' => ''];
-        $slug = (string) ($_POST['enable_plugin'] ?? '');
-        if ($slug !== '' && in_array($slug, BuiltinAiAgentService::WIZARD_PLUGINS, true)) {
-            $res = PluginManager::enable($slug, $token);
-            $notices[!empty($res['success']) ? 'message' : 'error'] = (string) ($res['message'] ?? $res['error'] ?? '');
-            PluginManager::resetCache();
-        }
-        static::renderPage('builtin_ai_agent/wizard', [
-            'steps' => BuiltinAiAgentService::wizardSteps(), 'csrf_token' => getCSRFToken(),
-            'plugins' => array_combine(BuiltinAiAgentService::WIZARD_PLUGINS, array_map([PluginManager::class, 'isEnabled'], BuiltinAiAgentService::WIZARD_PLUGINS)),
-        ], ['title' => t('builtin_ai_agent.wizard_title')] + $notices);
-    }
-
     public static function index(): void
     {
         static::requireRole('admin');
@@ -54,6 +35,18 @@ final class BuiltinAiAgentController extends BaseController
         }
         $token = (string) ($_POST['csrf_token'] ?? '');
         $notices = static::handlePost([
+            'enable_plugin' => fn () => PBXHelper::handleAction($token, static function () {
+                $slug = (string) ($_POST['enable_plugin'] ?? '');
+                if (!in_array($slug, BuiltinAiAgentService::WIZARD_PLUGINS, true)) {
+                    throw new \RuntimeException(t('common.action_failed'));
+                }
+                $res = PluginManager::enable($slug, (string) ($_POST['csrf_token'] ?? ''));
+                PluginManager::resetCache();
+                if (empty($res['success'])) {
+                    throw new \RuntimeException((string) ($res['message'] ?? $res['error'] ?? t('common.action_failed')));
+                }
+                return (string) ($res['message'] ?? t('common.saved'));
+            }),
             'save_agent' => fn () => PBXHelper::handleAction($token, static function () {
                 AiAppService::save(BuiltinAiAgentService::validate($_POST), true);
                 return t('ai_apps.msg_saved');
@@ -72,7 +65,7 @@ final class BuiltinAiAgentController extends BaseController
         } elseif (isset($_GET['edit'])) {
             foreach ($agents as $agent) {
                 if ((int) $agent['id'] === (int) $_GET['edit']) {
-                    $edit = $agent + AiAppService::config($agent) + ['fallback' => $agent['dest_type'] . ':' . $agent['dest_id']];
+                    $edit = $agent + AiAppService::config($agent);
                     break;
                 }
             }
@@ -81,6 +74,17 @@ final class BuiltinAiAgentController extends BaseController
             ExternalDbQueryService::all(),
             [ExternalDbQueryService::class, 'available']
         ));
+        // Tabs: the wizard (first), the agents with their editor, the recent calls. The wizard opens first while the setup is
+        // unfinished; a refused or opened edit, a delete and the call log go to their own tab.
+        $steps = BuiltinAiAgentService::wizardSteps();
+        $wizard = ['steps' => $steps, 'total' => count($steps), 'done' => count(array_filter($steps, static fn ($st) => $st['done']))];
+        $tab = (string) ($_GET['tab'] ?? '');
+        if (!in_array($tab, ['wizard', 'agents', 'calls'], true)) {
+            $tab = $edit !== null || isset($_POST['delete_agent']) || $wizard['done'] === $wizard['total'] ? 'agents' : 'wizard';
+        }
+        if ($tab === 'wizard') {
+            $_SESSION['ai_wizard_return'] = 1;                    // the pages its steps open show a way back
+        }
         static::renderPage('builtin_ai_agent/index', [
             'agents' => $agents, 'edit' => $edit, 'models' => $edit !== null ? BuiltinAiAgentService::models() : [],
             'collections' => PluginManager::isEnabled('ai-knowledge') ? AiKnowledgeService::collections() : [],
@@ -89,7 +93,8 @@ final class BuiltinAiAgentController extends BaseController
             'targets' => BuiltinAiAgentService::targets(true), 'csrf_token' => getCSRFToken(),
             'stats' => $edit === null ? BuiltinAiAgentService::stats() : [],
             'detectors' => $edit !== null ? BuiltinAiAgentService::detectors() : ['vad' => false, 'turn' => false],
-            'ai_calls' => $edit === null ? LocalAiService::callLog(30) : [],
+            'ai_calls' => $tab === 'calls' ? LocalAiService::callLog(30) : [],
+            'wizard' => $wizard, 'tab' => $tab, 'plugins' => array_combine(BuiltinAiAgentService::WIZARD_PLUGINS, array_map([PluginManager::class, 'isEnabled'], BuiltinAiAgentService::WIZARD_PLUGINS)),
         ], ['title' => t('builtin_ai_agent.title'),
             'extra_js' => '<script src="' . asset('/assets/js/builtin_ai_agent.js') . '"></script>'] + $notices);
     }

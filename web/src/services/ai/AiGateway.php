@@ -4,7 +4,6 @@ require_once __DIR__ . '/CloudAiService.php';
 require_once __DIR__ . '/AssistantSettingsService.php';
 require_once dirname(__DIR__) . '/LocalAiService.php';
 require_once dirname(__DIR__, 2) . '/core/PluginManager.php';
-require_once __DIR__ . '/OllamaService.php';
 
 final class AiGatewayException extends RuntimeException
 {
@@ -86,24 +85,6 @@ final class AiGateway
     public static function connection(string $selection, array $draft = [], string $operation = 'chat'): array
     {
         $requiredCap = $operation === 'embed' ? 'embed' : 'llm';
-        if (str_starts_with($selection, 'local:')) {
-            $id = substr($selection, 6);
-            if (!preg_match('/^ollama-[a-f0-9]{32}$/', $id)) {
-                $m = LocalAiService::model($id);
-                $wantKind = $operation === 'embed' ? 'embedding' : 'llm';
-                if (($m['kind'] ?? '') !== $wantKind || ($m['state'] ?? '') !== 'ready') {
-                    throw new AiGatewayException('model_not_ready');
-                }
-                self::requireScopePlugin('local');
-                return ['scope' => 'local', 'adapter' => 'runtime', 'model' => $id, 'secret_ref' => null];
-            }
-            $m = OllamaService::model($id);
-            if ($m === null) {
-                throw new AiGatewayException('model_not_ready');
-            }
-            self::requireScopePlugin('local');
-            return ['scope' => 'local', 'adapter' => 'ollama', 'model' => $m['name'], 'secret_ref' => null];
-        }
         if (!preg_match('/^cloud:([a-z_]{2,20})$/', $selection, $m)) {
             throw new AiGatewayException('binding_unresolved');
         }
@@ -234,25 +215,11 @@ final class AiGateway
         return ['credential' => $credential];
     }
 
-    public static function localForApp(int $appId): array
-    {
-        require_once __DIR__ . '/AiAppService.php';
-        $app = AiAppService::get($appId);
-        if (!$app || !$app['is_active'] || $app['app_type'] !== AiAppService::BUILTIN_AGENT) {
-            throw new AiGatewayException('permission_denied');
-        }
-        $selection = (string) (AiAppService::config($app)['understand'] ?? '');
-        if (!str_starts_with($selection, 'local:')) {
-            throw new AiGatewayException('configuration_changed');
-        }
-        return ['connection' => self::connection($selection)];
-    }
-
     /**
      * Knowledge base lookup of a voice application's conversation: only the collection
      * the administrator chose for this active application. The text the model reads.
      */
-    public static function knowledgeForApp(int $appId, string $query): array
+    public static function knowledgeForApp(int $appId, string $query, int $sourceId = 0): array
     {
         $query = trim($query);
         if ($appId < 1 || $query === '' || mb_strlen($query) > 300) {
@@ -272,8 +239,10 @@ final class AiGateway
             throw new AiGatewayException('feature_disabled');
         }
         $config = AiAppService::config($app);
-        $collection = (int) ($config['knowledge_collection'] ?? 0);
-        if (empty($config['conversation']) || $collection < 1) {
+        $attached = array_map('intval', (array) ($config['knowledge_collections'] ?? []));
+        // One source attached: the model may leave it out. Several: it must name one, and only an attached one is searched.
+        $collection = $sourceId > 0 ? $sourceId : (count($attached) === 1 ? $attached[0] : 0);
+        if (empty($config['conversation']) || $collection < 1 || !in_array($collection, $attached, true)) {
             throw new AiGatewayException('permission_denied');
         }
         // The collection was chosen by the administrator for this application: no role filter.

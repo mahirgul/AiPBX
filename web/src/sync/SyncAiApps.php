@@ -38,17 +38,12 @@ function __syncAiAppsBody() {
         }
     }
     foreach ($apps as &$app) {
-        if ($app['app_type'] === AiAppService::BUILTIN_AGENT && PluginManager::isEnabled('ai-knowledge')) {
+        if ($app['app_type'] === AiAppService::BUILTIN_AGENT) {
             require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
-            $collectionId = (int) (AiAppService::config($app)['knowledge_collection'] ?? 0);
-            $app['agent_has_knowledge'] = $collectionId > 0 && AiKnowledgeService::collection($collectionId) !== null;
-            if (!$app['agent_has_knowledge']) {
-                continue;
-            }
             try {
-                $app['agent_tools'] = BuiltinAiAgentService::toolsForCollection($collectionId);
+                $app['agent_tools'] = BuiltinAiAgentService::toolsFromConfig(AiAppService::config($app));
             } catch (Exception $e) {
-                $app['agent_has_knowledge'] = false;
+                $app['agent_tools'] = [];
                 error_log('AI agent ' . (int) $app['id'] . ': invalid tool definitions');
             }
         }
@@ -71,8 +66,11 @@ function pushAiAppConfigs(array $apps): void {
         foreach ($apps as $a) {
             if (AiAppService::listens((string) ($a['app_type'] ?? ''))) {
                 $config = AiAppService::serviceConfig($a);
-                if ($a['app_type'] !== AiAppService::BUILTIN_AGENT
-                    || ($config['tts_model'] !== '' && $config['stt_model'] !== '' && !empty($config['conversation']) && !empty($config['knowledge']))) {
+                require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
+                // Only what can answer: an app without its models is not ready, its calls go to its destination.
+                $ready = $a['app_type'] === AiAppService::BUILTIN_AGENT ? BuiltinAiAgentService::ready($config)
+                    : ($config['tts_model'] ?? '') !== '' && ($config['stt_model'] ?? '') !== '';
+                if ($ready) {
                     $wanted[(int) $a['id']] = $config;
                 }
             }
@@ -167,12 +165,15 @@ function buildVoiceRequestsContext(array $a, string $key, ?bool $useAri = null):
     $svcCfg = AiAppService::serviceConfig($a);
     $voiceReady = ($svcCfg['tts_model'] ?? '') !== '' && ($svcCfg['stt_model'] ?? '') !== '';
     if ($builtin) {
-        $voiceReady = $voiceReady && !empty($svcCfg['conversation']) && !empty($svcCfg['knowledge']);
+        require_once dirname(__DIR__) . '/services/ai/BuiltinAiAgentService.php';
+        $voiceReady = BuiltinAiAgentService::ready($svcCfg);      // by mode: Realtime needs its account, cascade its three
     }
     $post = 'app=' . $id . '&key=' . $key . '&max=' . $max
         . '&caller=${URIENCODE(${CALLERID(num)})}&did=${URIENCODE(${CDR(did)})}&uniqueid=${UNIQUEID}'
         // What an assistant before this one handed over (a conversation's summary).
-        . '&context=${URIENCODE(${AI_SUMMARY})}';
+        . '&context=${URIENCODE(${AI_SUMMARY})}'
+        // The call's language (set by the inbound route or the IVR): the agent greets and listens in it.
+        . '&lang=${URIENCODE(${CHANNEL(language)})}';
     if (!empty($svcCfg['db_queries']) || $builtin) {
         $post .= '&linkedid=${URIENCODE(${CHANNEL(linkedid)})}';
         $post .= '&verified_customer=${URIENCODE(${AIPBX_VERIFIED_CUSTOMER_ID})}';

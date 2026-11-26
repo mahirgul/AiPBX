@@ -1,16 +1,16 @@
 {
     "slug": "ailocal",
-    "name": "Local AI",
+    "name": "Local TTS",
     "name_i18n": {
-        "tr": "Yerel AI",
-        "en": "Local AI"
+        "tr": "Yerel TTS",
+        "en": "Local TTS"
     },
     "version": "1.0.0",
     "author": "AiPBX Official Team",
     "category": "ai",
     "icon": "fas fa-microchip",
     "icon_style": "color: var(--purple);",
-    "description": "Local AI models, Ollama / local runtime connections, and local inference testing.",
+    "description": "Local text-to-speech voices and small call detectors that run on this server.",
     "description_i18n": {
         "tr": "Yerel AI modelleri, Ollama / yerel runtime bağlantıları ve yerel çıkarım denemesi.",
         "en": "Local AI models, Ollama / local runtime connections, and local inference testing."

@@ -57,34 +57,19 @@ final class AiPhase5LiveVoiceTest extends TestCase
         }
     }
 
-    public function testPerAppBindingsAndLocalNeverFallsBackToCloud(): void
+    public function testAnUnusableChoiceResolvesToNothingInsteadOfAnotherModel(): void
     {
-        AiBindingService::saveBinding('panel_default', 'tts', 'explicit', 'cloud:openai', 'default', 'cloud');
-        AiBindingService::saveBinding('panel_default', 'stt', 'explicit', 'local:vosk-tr-small', 'default', 'local');
-
-        $appId = AiAppService::save([
-            'title' => 'Phase5App 1',
-            'app_type' => 'voice_requests',
-            'model_id' => 'local_default',
-            'stt_model' => 'local_default',
-            'understand' => 'auto',
-            'greeting' => 'Merhaba',
-            'intents' => [['name' => 'Test', 'keywords' => 'test']],
-            'dest_type' => 'hangup',
-            'dest_id' => '',
-            'is_active' => '1',
-        ]);
-
-        // local_default must resolve to local STT, never cloud TTS even though cloud panel_default exists
-        $this->assertSame('vosk-tr-small', AiAppService::resolveTaskBinding($appId, 'stt', 'local_default', 'tr', true));
-        $ttsResolved = AiAppService::resolveTaskBinding($appId, 'tts', 'local_default', 'tr', true);
-        $this->assertFalse(str_starts_with($ttsResolved, 'cloud:'));
-
-        // Dependencies tracked in ai_bindings for local scope
-        $deps = AiBindingService::dependenciesForScope('local');
-        $labels = array_column($deps, 'label');
-        $this->assertContains('ai_app (tts/default)', $labels);
-        $this->assertContains('ai_app (stt/default)', $labels);
+        $db = getDB();
+        $db->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug IN ('ailocal', 'aicloud')");
+        PluginManager::resetCache();
+        // An explicit local voice stays local; cloud blocked by the caller means nothing, not a local voice.
+        $this->assertSame('ema-lightning', AiAppService::resolveTaskBinding(0, 'tts', 'local:ema-lightning', 'tr', true));
+        $this->assertSame('', AiAppService::resolveTaskBinding(0, 'tts', 'cloud:openai', 'tr', false));
+        // Local speech to text and language models no longer exist.
+        $this->assertSame('', AiAppService::resolveTaskBinding(0, 'stt', 'local:whisper-small-tr', 'tr', true));
+        // Defaults and per-language engines are gone: they resolve to nothing.
+        $this->assertSame('', AiAppService::resolveTaskBinding(0, 'tts', 'local_default', 'tr', true));
+        $this->assertSame('', AiAppService::resolveTaskBinding(0, 'tts', 'engine:tr', 'tr', true));
     }
 
     public function testPrivacyBlockStripsCloudCredentialsFromAppServiceConfig(): void
@@ -107,7 +92,7 @@ final class AiPhase5LiveVoiceTest extends TestCase
         $this->assertArrayNotHasKey('tts_cloud', $cfg);
         $this->assertArrayNotHasKey('stt_cloud', $cfg);
         $this->assertArrayNotHasKey('llm_cloud', $cfg);
-        $this->assertSame('auto', $cfg['understand']);
+        $this->assertSame('keywords', $cfg['understand']);
     }
 
 

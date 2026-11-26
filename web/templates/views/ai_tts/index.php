@@ -34,12 +34,6 @@ $tabs = [
                     <div class="form-group">
                         <label class="form-label"><?php echo t('ai_tts.field_provider'); ?></label>
                         <select id="ttsProvider" class="form-control">
-                            <?php if ($localEnabled && class_exists('AiBindingService') && AiBindingService::resolve('panel_default', 'tts', getUserLanguage(), 'local') !== null): ?>
-                                <option value="local_default" data-max="1000"><?php echo $h(t('ai_selector.local_default', 'Local default')); ?></option>
-                            <?php endif; ?>
-                            <?php if ($cloudEnabled && class_exists('AiBindingService') && AiBindingService::resolve('panel_default', 'tts', getUserLanguage(), 'cloud') !== null): ?>
-                                <option value="cloud_default" data-max="4000"><?php echo $h(t('ai_selector.cloud_default', 'Cloud default')); ?></option>
-                            <?php endif; ?>
                             <?php foreach ($configured as $p): ?>
                                 <option value="<?php echo $h($p['id']); ?>" data-max="<?php echo (int) $p['max_chars']; ?>"><?php echo $h($p['title']); ?></option>
                             <?php endforeach; ?>

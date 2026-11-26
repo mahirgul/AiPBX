@@ -24,8 +24,6 @@ final class ExternalDbQueryTest extends TestCase
             $lookup = AiAppDbLookup::parse('saved_lookup_test');
             $metadata = [['id' => 'saved_lookup_test', 'description' => 'Account status', 'params' => ['input']]];
             $this->assertSame($metadata, AiAppDbLookup::metadata($lookup));
-            $tools = BuiltinAiAgentService::parseTools("db_connection | $connection");
-            $this->assertSame($metadata, AiAppDbLookup::metadata($tools['db_lookups']));
             $step = IvrDataStepService::saveStep(['name' => 'Saved query step', 'data_source' => 'saved_query', 'saved_query_id' => $id]);
             $this->assertTrue($step['ok']);
             $this->assertSame($data['query_sql'], IvrDataStepService::sourceOf(IvrDataStepRepository::findById($step['id']))['sql']);

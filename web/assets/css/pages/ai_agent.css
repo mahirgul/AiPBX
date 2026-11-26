@@ -1,0 +1,20 @@
+/* AI Agent form: one transfer target = name, destination type, destination, when to use */
+.agent-transfer-row { display: grid; grid-template-columns: 1fr 1fr 1.4fr 2fr; }
+@media (max-width: 800px) { .agent-transfer-row { grid-template-columns: 1fr; } }
+
+/* The instruction palette: the small form of one tool word, and the live list of the tools found */
+.agent-palette { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 8px; margin-bottom: 6px;
+    border: 1px solid var(--border-color); border-radius: 6px; background: var(--bg-input); }
+.agent-palette > div { display: flex; gap: 6px; flex-wrap: wrap; }
+.agent-palette .form-control { width: auto; min-width: 160px; }
+.agent-found { padding: 6px 8px; border: 1px dashed var(--border-color); border-radius: 6px; }
+
+/* The agent form: one closed card per step; the summary line shows the current value */
+.agent-card { border: 1px solid var(--border-color); border-radius: 8px; margin-top: 10px; background: var(--bg-card, transparent); }
+.agent-card > summary { cursor: pointer; padding: 10px 14px; display: flex; gap: 8px; align-items: center; list-style: none; }
+.agent-card > summary::-webkit-details-marker { display: none; }
+.agent-card > summary::after { content: '\f078'; font-family: 'Font Awesome 6 Free', 'Font Awesome 5 Free'; font-weight: 900; margin-left: auto; font-size: 11px; opacity: .6; }
+.agent-card[open] > summary::after { content: '\f077'; }
+.agent-card[open] > summary { border-bottom: 1px solid var(--border-color); }
+.agent-card-body { padding: 12px 14px; }
+.agent-card-hint { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 55%; }

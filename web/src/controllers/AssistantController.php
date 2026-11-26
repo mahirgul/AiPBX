@@ -133,25 +133,12 @@ class AssistantController extends BaseController
         }
 
         require_once __DIR__ . '/../services/ai/CloudAiService.php';
-        require_once __DIR__ . '/../services/ai/OllamaService.php';
-        require_once __DIR__ . '/../services/LocalAiService.php';
         try {
             $roles = getDB()->query('SELECT role_key, role_name FROM sys_roles ORDER BY is_system DESC, id ASC')->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (\Throwable $e) {
             $roles = [];
         }
-        $llmOptions = [];
-        foreach (array_merge(LocalAiService::models(), OllamaService::models()) as $m) {
-            if (($m['kind'] ?? '') === 'llm') {
-                $llmOptions[] = ['ref' => 'local:' . $m['id'], 'label' => 'Local · ' . ($m['title'] ?? $m['id'])];
-            }
-        }
-        foreach (CloudAiService::withCap('llm') as $pid) {
-            if (CloudAiService::configured($pid)) {
-                $llmOptions[] = ['ref' => 'cloud:' . $pid, 'label' => 'Cloud · ' . $pid];
-            }
-        }
-
+        require_once __DIR__ . '/../services/ai/AiBindingService.php';
         $collections = [];
         if (PluginManager::isEnabled('ai-knowledge')) {
             require_once __DIR__ . '/../services/ai/AiKnowledgeService.php';
@@ -169,7 +156,6 @@ class AssistantController extends BaseController
             'csrf' => getCSRFToken(),
             'assistant_settings' => AssistantSettingsService::all(),
             'assistant_roles' => $roles,
-            'llm_options' => $llmOptions,
         ], ['title' => t('ai_settings.ast_title', 'PBX Assistant Settings'), 'message' => $message, 'error' => $error]);
     }
 }

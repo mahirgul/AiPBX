@@ -30,66 +30,6 @@ class AssistantSettingsService
             && getSystemSetting('privacy_block_cloud_ai', '0') === '1';
     }
 
-    public static function model(): string
-    {
-        if (!function_exists('getSystemSetting')) {
-            return '';
-        }
-        return trim((string) getSystemSetting('assistant.model', ''));
-    }
-
-    /**
-     * Faz 3: Returns the Assistant chat binding from `ai_bindings`,
-     * falling back to legacy `sys_settings['assistant.model']` if no row exists yet.
-     *
-     * @return array{mode: string, model_ref_id: ?string, from_binding?: bool}
-     */
-    public static function binding(): array
-    {
-        try {
-            $st = getDB()->prepare(
-                "SELECT mode, model_ref_id FROM ai_bindings WHERE feature = 'assistant' AND scope_ref = 'global' AND task = 'chat' AND language = 'default' LIMIT 1"
-            );
-            $st->execute();
-            $row = $st->fetch();
-            if ($row) {
-                return [
-                    'mode' => (string) $row['mode'],
-                    'model_ref_id' => $row['model_ref_id'] !== null ? (string) $row['model_ref_id'] : null,
-                    'from_binding' => true,
-                ];
-            }
-        } catch (\Throwable $e) {
-            // Table may not exist yet in isolated unit tests.
-        }
-
-        $legacy = self::model();
-        if ($legacy === 'rules_only') {
-            return ['mode' => 'off', 'model_ref_id' => null, 'from_binding' => false];
-        }
-        if (str_starts_with($legacy, 'cloud:') || str_starts_with($legacy, 'local:')) {
-            return ['mode' => 'explicit', 'model_ref_id' => $legacy, 'from_binding' => false];
-        }
-        // Nothing chosen (a new installation): rules only, no language model until one is chosen.
-        return ['mode' => 'off', 'model_ref_id' => null, 'from_binding' => false];
-    }
-
-    public static function isCloudModel(string $model): bool
-    {
-        return str_starts_with($model, 'cloud:');
-    }
-
-    public static function isValidModel(string $model): bool
-    {
-        if ($model === '' || $model === 'rules_only') {
-            return true;
-        }
-        if (preg_match('/^cloud:[a-z_]{2,20}$/', $model)) {
-            return true;
-        }
-        return (bool) preg_match('/^local:[a-z0-9][a-z0-9._-]{1,63}$/', $model);
-    }
-
     /**
      * @return array<string, array{ask: bool, change: bool}>
      */
@@ -282,12 +222,7 @@ class AssistantSettingsService
      */
     public static function all(): array
     {
-        $model = self::model();
-        $binding = self::binding();
-        $effectiveRef = (string) ($binding['model_ref_id'] ?? $model);
         return [
-            'model'                  => $model,
-            'binding'                => $binding,
             'roles'                  => self::rolesConfig(),
             'home_roles'             => self::homeRolesConfig(),
             'role_kb'                => self::roleCollectionsConfig(),
@@ -295,7 +230,6 @@ class AssistantSettingsService
             'suggestions'            => self::suggestions(),
             'custom_suggestions'     => self::customSuggestions(),
             'privacy_block_cloud_ai' => self::isCloudBlocked(),
-            'is_cloud_model'         => self::isCloudModel($effectiveRef),
         ];
     }
 
@@ -307,39 +241,6 @@ class AssistantSettingsService
     public static function save(array $post, ?array $roleKeys = null): void
     {
         require_once __DIR__ . '/AiBindingService.php';
-        $mode = trim((string) ($post['assistant_mode'] ?? ''));
-        $ref = trim((string) ($post['assistant_model_ref'] ?? ''));
-
-        if ($mode !== '' && in_array($mode, AiBindingService::MODES, true)) {
-            if ($mode === 'explicit') {
-                if ($ref === '' || !self::isValidModel($ref) || $ref === 'rules_only') {
-                    throw new \InvalidArgumentException(function_exists('t') ? t('ai_cloud.err_engine') : 'Invalid assistant model.');
-                }
-                $model = $ref;
-            } elseif ($mode === 'off') {
-                $ref = null;
-                $model = 'rules_only';
-            } else {
-                $ref = null;
-                $model = '';
-            }
-        } else {
-            $model = trim((string) ($post['assistant_model'] ?? ''));
-            if (!self::isValidModel($model)) {
-                throw new \InvalidArgumentException(function_exists('t') ? t('ai_cloud.err_engine') : 'Invalid assistant model.');
-            }
-            if ($model === 'rules_only') {
-                $mode = 'off';
-                $ref = null;
-            } elseif (str_starts_with($model, 'cloud:') || str_starts_with($model, 'local:')) {
-                $mode = 'explicit';
-                $ref = $model;
-            } else {
-                $mode = 'local_default';
-                $ref = null;
-            }
-        }
-
         if ($roleKeys === null) {
             $roleKeys = self::knownRoleKeys();
         }
@@ -398,12 +299,7 @@ class AssistantSettingsService
             }
         }
 
-        setSystemSetting('assistant.model', $model);
-        try {
-            AiBindingService::saveBinding('assistant', 'chat', $mode, $ref, 'default', 'global');
-        } catch (\Throwable $e) {
-            // Non-fatal if ai_bindings table is absent in isolated unit tests.
-        }
+        AiBindingService::save('assistant', 'chat', (string) ($post['assistant_model_ref'] ?? ''));
         setSystemSetting('assistant.roles', (string) json_encode($roles, JSON_UNESCAPED_UNICODE));
         setSystemSetting('assistant.home_roles', (string) json_encode($homeRoles, JSON_UNESCAPED_UNICODE));
         setSystemSetting('assistant.role_kb', (string) json_encode($roleKb, JSON_UNESCAPED_UNICODE));

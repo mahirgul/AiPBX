@@ -1,6 +1,5 @@
 <?php
 require_once __DIR__ . '/../services/AiTtsService.php';
-require_once __DIR__ . '/../services/ai/AiBindingService.php';
 
 /**
  * /ai-tts — AI → Cloud TTS: synthesize text with a cloud provider, keep the

@@ -100,18 +100,8 @@ final class AiAppDbLookup
             return ['status' => 'unavailable'];
         }
         $config = AiAppService::config($app);
-        $builtin = $app['app_type'] === AiAppService::BUILTIN_AGENT;
-        $local = $builtin && str_starts_with((string) ($config['understand'] ?? ''), 'local:');
-        if (empty($config['conversation']) || (!$local && AiAppService::isPrivacyCloudBlocked())
-            || ($builtin && !PluginManager::isEnabled('ai-knowledge'))
-            || ($local && !PluginManager::isEnabled('ailocal'))) {
+        if (empty($config['conversation']) || AiAppService::isPrivacyCloudBlocked()) {
             return ['status' => 'unavailable'];
-        }
-        if ($builtin) {
-            require_once __DIR__ . '/BuiltinAiAgentService.php';
-            $colTools = BuiltinAiAgentService::toolsForCollection((int) ($config['knowledge_collection'] ?? 0));
-            $merged = array_merge($config['db_lookups'] ?? [], $colTools['db_lookups'] ?? []);
-            $config['db_lookups'] = $merged;
         }
         $lookups = array_column($config['db_lookups'] ?? [], null, 'id');
         $lookup = isset($lookups[$queryId]) ? self::resolveDefinition($lookups[$queryId]) : null;

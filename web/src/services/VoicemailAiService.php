@@ -52,39 +52,10 @@ final class VoicemailAiService
         writeAuditLog('ai_voicemail', 'voicemail', 0, 'Voicemail AI settings', 'update', $_SESSION['user_id'] ?? null);
     }
 
-    /**
-     * Resolves the engine for `ai_voicemail` (`stt` or `chat`) via AiBindingService.
-     * Falls back to legacy `sys_settings` (`vm_stt` / `vm_llm`) ONLY when no
-     * `ai_bindings` row exists yet for `ai_voicemail`. Never falls back from local to cloud.
-     */
-    public static function resolveEngine(string $task, string $lang = 'default', ?string $legacyFeature = null): ?string
+    /** The model Voicemail AI uses for a task ('stt' or 'chat'), null when the administrator left it off. */
+    public static function resolveEngine(string $task): ?string
     {
-        $resolved = AiBindingService::resolve('ai_voicemail', $task, $lang, 'global');
-        if ($resolved !== null) {
-            return $resolved;
-        }
-        if (self::hasBindingRow('ai_voicemail', $task, $lang)
-            || ($lang !== 'default' && self::hasBindingRow('ai_voicemail', $task, 'default'))) {
-            return null;
-        }
-        if ($legacyFeature !== null && $legacyFeature !== '') {
-            $legacy = CloudAiService::engineFor($legacyFeature, $lang);
-            return $legacy !== '' ? $legacy : null;
-        }
-        return null;
-    }
-
-    private static function hasBindingRow(string $feature, string $task, string $language): bool
-    {
-        try {
-            $st = getDB()->prepare(
-                'SELECT 1 FROM ai_bindings WHERE feature = ? AND scope_ref = ? AND task = ? AND language = ? LIMIT 1'
-            );
-            $st->execute([$feature, 'global', $task, $language]);
-            return $st->fetchColumn() !== false;
-        } catch (\Throwable $e) {
-            return false;
-        }
+        return AiBindingService::resolve('ai_voicemail', $task);
     }
 
     private static function isScopeEnabled(string $scope): bool
@@ -157,7 +128,7 @@ final class VoicemailAiService
     public static function enqueue(int $voicemailId, array $payload = []): int
     {
         $lang = (string) ($payload['lang'] ?? (!empty($payload['mailbox']) ? self::languageOf((string) $payload['mailbox']) : 'default'));
-        $bindingRef = self::resolveEngine('stt', $lang, 'vm_stt');
+        $bindingRef = self::resolveEngine('stt');
         $mailbox = preg_replace('/[^0-9]/', '', (string) ($payload['mailbox'] ?? ''));
         $origtime = (int) ($payload['origtime'] ?? 0);
         $key = $mailbox !== '' && $origtime > 0 ? "vm:{$mailbox}:{$origtime}" : "vm:archive:{$voicemailId}";
@@ -274,7 +245,7 @@ final class VoicemailAiService
         }
 
         $lang = (string) ($payload['lang'] ?? self::languageOf($mailbox));
-        [$text, $engine] = self::transcribe($wav, $lang, 'vm_stt');
+        [$text, $engine] = self::transcribe($wav, $lang);
         if ($text === '') {
             throw new \RuntimeException('Voicemail transcription produced empty result');
         }
@@ -461,21 +432,13 @@ final class VoicemailAiService
     }
 
     /** @return array{0: string, 1: string} text and the engine that made it ('' when none) */
-    public static function transcribe(string $wav, string $lang, string $feature = 'vm_stt'): array
+    public static function transcribe(string $wav, string $lang): array
     {
-        $engine = $feature === 'vm_stt'
-            ? (self::resolveEngine('stt', $lang, 'vm_stt') ?? '')
-            : CloudAiService::engineFor($feature, $lang);
+        $engine = self::resolveEngine('stt') ?? '';
         if ($engine === '') {
             return ['', ''];
         }
         try {
-            if (str_starts_with($engine, 'local:')) {
-                if (!self::isScopeEnabled('local')) {
-                    return ['', ''];
-                }
-                return [trim(LocalAiService::stt(substr($engine, 6), $wav)['text']), $engine];
-            }
             if (str_starts_with($engine, 'cloud:')) {
                 $providerId = substr($engine, 6);
                 if (!self::isScopeEnabled('cloud') || getSystemSetting('privacy_block_cloud_ai', '0') === '1') {
@@ -500,7 +463,7 @@ final class VoicemailAiService
     /** One sentence: who and what they want, with numbers and times; '' when not possible. */
     public static function summarize(string $transcript, string $lang): string
     {
-        $engine = self::resolveEngine('chat', $lang, 'vm_llm');
+        $engine = self::resolveEngine('chat');
         if ($engine === null || $engine === '') {
             return '';
         }
@@ -510,13 +473,6 @@ final class VoicemailAiService
             . 'what they want, keeping names, numbers, dates and times. No introduction, no quotes. '
             . 'If nothing meaningful was said, answer with an empty line.';
         try {
-            if (str_starts_with($engine, 'local:')) {
-                if (!self::isScopeEnabled('local')) {
-                    return '';
-                }
-                $s = LocalAiService::chat(substr($engine, 6), $prompt, 120);
-                return mb_substr(trim(preg_replace('/\s+/', ' ', $s) ?? '', " \"'"), 0, 300);
-            }
             if (str_starts_with($engine, 'cloud:')) {
                 $providerId = substr($engine, 6);
                 if (!self::isScopeEnabled('cloud') || getSystemSetting('privacy_block_cloud_ai', '0') === '1') {

@@ -8,7 +8,7 @@ $wb = static fn ($v): string => htmlspecialchars((string) $v, ENT_QUOTES);
         <?php echo $wb(sprintf(t('builtin_ai_agent.wizard_progress'), $wizardBar['done'], $wizardBar['total'])); ?> ·
         <?php echo $wb(sprintf(t('builtin_ai_agent.wizard_next'), t('builtin_ai_agent.wizard_' . $wizardBar['step']))); ?></span>
     <span class="u-d-flex u-gap-8">
-        <a href="/ai-wizard" class="btn btn-primary btn-sm"><i class="fas fa-arrow-left"></i> <?php echo $wb(t('builtin_ai_agent.wizard_back')); ?></a>
+        <a href="/ai-agent?tab=wizard" class="btn btn-primary btn-sm"><i class="fas fa-arrow-left"></i> <?php echo $wb(t('builtin_ai_agent.wizard_back')); ?></a>
         <a href="?wizard_bar=off" class="btn btn-secondary btn-sm" title="<?php echo $wb(t('builtin_ai_agent.wizard_bar_close')); ?>" aria-label="<?php echo $wb(t('builtin_ai_agent.wizard_bar_close')); ?>"><i class="fas fa-xmark"></i></a>
     </span>
 </div>

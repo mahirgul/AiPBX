@@ -22,7 +22,6 @@ class SystemServicesService
         'aipbx-webhook-worker' => 'dashboard.svc_webhook',
         'aipbx-call-events' => 'dashboard.svc_call_events',
         'aipbx-ai' => 'dashboard.svc_ai',
-        'ollama' => 'dashboard.svc_ollama',
         'aipbx-mdns' => 'dashboard.svc_mdns',
         'aipbx-dnsmasq' => 'dashboard.svc_dnsmasq',
         'aipbx-syslog' => 'dashboard.svc_syslog',

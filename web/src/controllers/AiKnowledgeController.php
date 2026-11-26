@@ -4,7 +4,6 @@ require_once __DIR__ . '/../core/BaseController.php';
 require_once __DIR__ . '/../core/PluginManager.php';
 require_once __DIR__ . '/../services/ai/AiKnowledgeService.php';
 require_once __DIR__ . '/../services/ai/CloudAiService.php';
-require_once __DIR__ . '/../services/LocalAiService.php';
 
 class AiKnowledgeController extends BaseController
 {
@@ -15,10 +14,6 @@ class AiKnowledgeController extends BaseController
 
         $message = '';
         $error = '';
-        $active_tab = (string) ($_GET['tab'] ?? $_POST['_tab'] ?? 'collections');
-        if (!in_array($active_tab, ['collections', 'documents', 'ask'], true)) {
-            $active_tab = 'collections';
-        }
         $ask_result = null;
         try {
             AiKnowledgeService::ensureBuiltIn();   // the PBX Assistant's guides (en, tr)
@@ -31,81 +26,35 @@ class AiKnowledgeController extends BaseController
             } else {
                 $action = (string) ($_POST['action'] ?? '');
                 try {
-                    $changedToolsCollection = 0;
+                    $changed = 0;
                     if ($action === 'save_collection') {
                         requireModulePermission('ai_knowledge', 'edit');
-                        $active_tab = 'collections';
+                        $text = (string) ($_POST['content_text'] ?? '');
+                        if (!empty($_FILES['txt_file']['tmp_name']) && is_uploaded_file($_FILES['txt_file']['tmp_name'])) {
+                            $text = (string) file_get_contents($_FILES['txt_file']['tmp_name']);     // "fill from a TXT file"
+                        }
                         $roles = is_array($_POST['allowed_roles'] ?? null) ? array_map('strval', $_POST['allowed_roles']) : ['*'];
-                        AiKnowledgeService::saveCollection(
-                            (int) ($_POST['id'] ?? 0),
-                            (string) ($_POST['name'] ?? ''),
-                            (string) ($_POST['description'] ?? ''),
-                            $roles,
-                            (string) ($_POST['embedding_binding'] ?? '')
-                        );
+                        $changed = AiKnowledgeService::saveWithText((int) ($_POST['id'] ?? 0), (string) ($_POST['name'] ?? ''),
+                            (string) ($_POST['description'] ?? ''), $text, (string) ($_POST['embedding_binding'] ?? ''), $roles);
                         $message = t('common.saved', 'Saved.');
                     } elseif ($action === 'delete_collection') {
                         requireModulePermission('ai_knowledge', 'delete');
-                        $active_tab = 'collections';
-                        $changedToolsCollection = (int) ($_POST['id'] ?? 0);
-                        AiKnowledgeService::deleteCollection($changedToolsCollection);
+                        $changed = (int) ($_POST['id'] ?? 0);
+                        AiKnowledgeService::deleteCollection($changed);
                         $message = t('common.deleted', 'Deleted.');
                     } elseif ($action === 'reindex_collection') {
                         requireModulePermission('ai_knowledge', 'edit');
-                        $active_tab = 'collections';
-                        $cnt = AiKnowledgeService::reindexCollection((int) ($_POST['id'] ?? 0));
-                        $message = sprintf(t('ai_knowledge.msg_reindexed', 'Re-indexed %d document(s).'), $cnt);
-                    } elseif ($action === 'add_document') {
-                        requireModulePermission('ai_knowledge', 'edit');
-                        $active_tab = 'documents';
-                        $colId = (int) ($_POST['collection_id'] ?? 0);
-                        $title = (string) ($_POST['title'] ?? '');
-                        if (!empty($_FILES['txt_file']['tmp_name']) && is_uploaded_file($_FILES['txt_file']['tmp_name'])) {
-                            $filename = (string) ($_FILES['txt_file']['name'] ?? 'upload.txt');
-                            $content = (string) file_get_contents($_FILES['txt_file']['tmp_name']);
-                        } else {
-                            $filename = trim((string) ($_POST['filename'] ?? 'note.txt')) ?: 'note.txt';
-                            $content = (string) ($_POST['content_text'] ?? '');
-                        }
-                        $docId = (int) ($_POST['doc_id'] ?? 0);
-                        $expectedVersion = $docId > 0 ? (int) ($_POST['doc_version'] ?? 0) : null;
-                        require_once __DIR__ . '/../services/ai/BuiltinAiAgentService.php';
-                        $previous = $docId > 0 ? AiKnowledgeService::document($docId) : null;
-                        if (basename($filename) === BuiltinAiAgentService::TOOL_FILE) {
-                            static::requireRole('admin');
-                            BuiltinAiAgentService::parseTools($content);
-                            $changedToolsCollection = $colId;
-                        } elseif (($previous['filename'] ?? '') === BuiltinAiAgentService::TOOL_FILE) {
-                            static::requireRole('admin');
-                            $changedToolsCollection = (int) $previous['collection_id'];
-                        }
-                        AiKnowledgeService::addDocument($colId, $title, $filename, $content, $docId, $expectedVersion);
-                        $message = t('ai_knowledge.msg_doc_indexed', 'TXT document uploaded and indexed.');
-                    } elseif ($action === 'toggle_document') {
-                        requireModulePermission('ai_knowledge', 'edit');
-                        $active_tab = 'documents';
-                        $docId = (int) ($_POST['id'] ?? 0);
-                        $changedToolsCollection = self::toolDocumentCollection($docId);
-                        AiKnowledgeService::setDocumentActive($docId, !empty($_POST['active']));
+                        AiKnowledgeService::reindexCollection((int) ($_POST['id'] ?? 0));
                         $message = t('common.saved', 'Saved.');
-                    } elseif ($action === 'delete_document') {
-                        requireModulePermission('ai_knowledge', 'delete');
-                        $active_tab = 'documents';
-                        $docId = (int) ($_POST['id'] ?? 0);
-                        $changedToolsCollection = self::toolDocumentCollection($docId);
-                        AiKnowledgeService::deleteDocument($docId);
-                        $message = t('common.deleted', 'Deleted.');
                     } elseif ($action === 'ask_test') {
-                        $active_tab = 'ask';
-                        $q = trim((string) ($_POST['question'] ?? ''));
+                        requireModulePermission('ai_knowledge', 'view');
                         $colId = (int) ($_POST['collection_id'] ?? 0);
-                        $llm = trim((string) ($_POST['llm_binding'] ?? ''));
-                        $role = userEffectiveRole();
-                        $ask_result = AiKnowledgeService::askWithContext($q, $role, $colId > 0 ? $colId : null, $llm);
+                        $ask_result = AiKnowledgeService::askWithContext(trim((string) ($_POST['question'] ?? '')), userEffectiveRole(),
+                            $colId > 0 ? $colId : null, trim((string) ($_POST['llm_binding'] ?? '')));
                     }
-                    if ($changedToolsCollection > 0) {
+                    if ($changed > 0) {
                         require_once __DIR__ . '/../services/ai/BuiltinAiAgentService.php';
-                        BuiltinAiAgentService::markCollectionChanged($changedToolsCollection);
+                        BuiltinAiAgentService::markCollectionChanged($changed);
                     }
                 } catch (\Throwable $e) {
                     $error = $e instanceof AiGatewayException ? $e->userMessage() : $e->getMessage();
@@ -113,43 +62,30 @@ class AiKnowledgeController extends BaseController
             }
         }
 
-        $localModels = [];
-        try {
-            $localModels = LocalAiService::models();
-        } catch (\Throwable) {
-        }
-        $cloudProviders = [];
+        $accounts = ['embed' => [], 'llm' => []];
         try {
             foreach (CloudAiService::forPage() as $info) {
-                if (!empty($info['configured'])) {
-                    $cloudProviders[] = ['id' => $info['id'], 'title' => $info['title'], 'caps' => $info['caps']];
+                foreach (array_keys($accounts) as $cap) {
+                    if (!empty($info['configured']) && in_array($cap, $info['caps'] ?? [], true)) {
+                        $accounts[$cap]['cloud:' . $info['id']] = (string) $info['title'];
+                    }
                 }
             }
         } catch (\Throwable) {
         }
+        $collections = AiKnowledgeService::collections();
+        foreach ($collections as &$c) {
+            $c['content_text'] = AiKnowledgeService::text((int) $c['id']);
+        }
+        unset($c);
 
         static::renderPage('ai_knowledge/index', [
             'plugin_enabled' => PluginManager::isEnabled('ai-knowledge'),
-            'active_tab' => $active_tab,
-            'collections' => AiKnowledgeService::collections(),
-            'edit_collection' => isset($_GET['edit']) ? AiKnowledgeService::collection((int) $_GET['edit']) : null,
-            'edit_document' => isset($_GET['edit_doc']) ? AiKnowledgeService::document((int) $_GET['edit_doc']) : null,
-            'documents' => AiKnowledgeService::documents(),
-            'local_models' => $localModels,
-            'cloud_providers' => $cloudProviders,
+            'collections' => $collections,
+            'edit_id' => (int) ($_GET['edit'] ?? 0),
+            'accounts' => $accounts,
             'ask_result' => $ask_result,
             'csrf_token' => getCSRFToken(),
-        ], ['title' => t('ai_knowledge.title', 'Knowledge Base (TXT RAG)'), 'message' => $message, 'error' => $error]);
-    }
-
-    private static function toolDocumentCollection(int $docId): int
-    {
-        require_once __DIR__ . '/../services/ai/BuiltinAiAgentService.php';
-        $doc = AiKnowledgeService::document($docId);
-        if (($doc['filename'] ?? '') === BuiltinAiAgentService::TOOL_FILE) {
-            static::requireRole('admin');
-            return (int) $doc['collection_id'];
-        }
-        return 0;
+        ], ['title' => t('ai_knowledge.title', 'Knowledge Base'), 'message' => $message, 'error' => $error]);
     }
 }

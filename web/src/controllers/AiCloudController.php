@@ -1,17 +1,14 @@
 <?php
 require_once __DIR__ . '/../services/ai/CloudAiService.php';
 require_once __DIR__ . '/../services/ai/AiBindingService.php';
-require_once __DIR__ . '/../services/ai/AiGateway.php';
 require_once __DIR__ . '/../asterisk_sync.php';
 
 /**
  * /ai-cloud — AI -> Cloud AI (admin / ai_cloud RBAC):
- * Manages cloud provider accounts, cloud default bindings, usage limits, and cloud chat testing.
+ * Manages cloud provider accounts (one provider + one settings set each), usage limits.
  */
 class AiCloudController extends BaseController
 {
-    public const TABS = ['models', 'connections', 'languages', 'try'];
-
     public static function index(): void
     {
         static::requireLogin();
@@ -23,9 +20,7 @@ class AiCloudController extends BaseController
         $privacyBlocked = getSystemSetting('privacy_block_cloud_ai', '0') === '1';
         $message = '';
         $error = '';
-        $tryOutput = '';
 
-        $languages = CloudAiService::languages();
 
         if (static::isPost()) {
             if (!static::verifyCsrf()) {
@@ -54,6 +49,9 @@ class AiCloudController extends BaseController
                             }
                             $message = t('ai_tts.msg_provider_saved');
                         }
+                    } elseif (isset($_POST['copy_account'])) {
+                        CloudAiService::copyAccount((string) $_POST['copy_account']);
+                        $message = t('ai_cloud.msg_account_added');
                     } elseif (isset($_POST['toggle_account'])) {
                         CloudAiService::setEnabled((string) $_POST['toggle_account'], !empty($_POST['enable']));
                         $message = t('ai_tts.msg_provider_saved');
@@ -63,76 +61,19 @@ class AiCloudController extends BaseController
                         }
                         CloudAiService::deleteAccount((string) $_POST['delete_account']);
                         $message = t('ai_cloud.msg_account_deleted');
-                    } elseif (isset($_POST['save_cloud_defaults'])) {
-                        foreach (['chat', 'stt', 'tts'] as $task) {
-                            $ref = trim((string) ($_POST['model_' . $task] ?? ''));
-                            if ($ref !== '' && !str_starts_with($ref, 'cloud:')) {
-                                $ref = '';
-                            }
-                            $mode = $ref !== '' ? 'explicit' : 'off';
-                            AiBindingService::saveBinding('panel_default', $task, $mode, $ref !== '' ? $ref : null, 'default', 'cloud');
-                        }
-                        $message = t('ai_cloud.msg_engines_saved');
-                    } elseif (isset($_POST['save_cloud_languages'])) {
-                        foreach (['chat', 'stt', 'tts'] as $task) {
-                            foreach (array_keys($languages) as $langCode) {
-                                $lRef = trim((string) ($_POST['lang_model'][$langCode][$task] ?? ''));
-                                if ($lRef !== '' && !str_starts_with($lRef, 'cloud:')) {
-                                    $lRef = '';
-                                }
-                                AiBindingService::saveBinding('panel_default', $task, $lRef !== '' ? 'explicit' : 'off', $lRef !== '' ? $lRef : null, (string) $langCode, 'cloud');
-                            }
-                        }
-                        $message = t('ai_cloud.msg_engines_saved');
-                    } elseif (isset($_POST['add_language'])) {
-                        CloudAiService::addLanguage($_POST);
-                        $languages = CloudAiService::languages();
-                        $message = t('ai_cloud.msg_lang_added', 'Language added.');
-                    } elseif (isset($_POST['delete_language'])) {
-                        CloudAiService::deleteLanguage((string) $_POST['delete_language']);
-                        $languages = CloudAiService::languages();
-                        $message = t('ai_cloud.msg_lang_deleted', 'Language deleted.');
-                    } elseif (isset($_POST['try_cloud_chat'])) {
-                        $sel = trim((string) ($_POST['try_model'] ?? ''));
-                        $prompt = trim((string) ($_POST['try_prompt'] ?? ''));
-                        $tryOutput = AiGateway::chat($sel, $prompt, 'panel', 200);
                     }
-                } catch (AiGatewayException $e) {
-                    $error = $e->userMessage();
                 } catch (\Throwable $e) {
                     $error = $e->getMessage();
                 }
             }
         }
 
-        $activeTab = (string) ($_POST['_tab'] ?? $_GET['tab'] ?? 'connections');
-        if (!in_array($activeTab, self::TABS, true)) {
-            $activeTab = 'connections';
-        }
-
-        $bindings = [
-            'chat' => AiBindingService::getBinding('panel_default', 'chat', 'default', 'cloud'),
-            'stt'  => AiBindingService::getBinding('panel_default', 'stt', 'default', 'cloud'),
-            'tts'  => AiBindingService::getBinding('panel_default', 'tts', 'default', 'cloud'),
-        ];
-        $langBindings = [];
-        foreach (array_keys($languages) as $langCode) {
-            foreach (['chat', 'stt', 'tts'] as $task) {
-                $langBindings[$langCode][$task] = AiBindingService::getBinding('panel_default', $task, (string) $langCode, 'cloud');
-            }
-        }
-
         static::renderPage('ai_cloud/index', [
             'plugin_enabled'  => $pluginEnabled,
             'privacy_blocked' => $privacyBlocked,
-            'active_tab'      => $activeTab,
             'providers'       => CloudAiService::forPage(),
             'types'           => CloudAiService::typesForPage(),
-            'bindings'        => $bindings,
-            'languages'       => $languages,
-            'lang_bindings'   => $langBindings,
             'dependencies'    => AiBindingService::dependenciesForScope('cloud'),
-            'try_output'      => $tryOutput,
             'csrf_token'      => getCSRFToken(),
         ], ['title' => t('ai_cloud.title', 'Cloud AI'), 'message' => $message, 'error' => $error]);
     }
