@@ -53,7 +53,7 @@
 
 - **[AI setup wizard](docs/ai-apps.md#setup-wizard)**: the steps an AI agent needs as a checklist ticked from the system's real state, with a way back from every page it opens.
 - **[Smarter AI calls](docs/ai-apps.md#how-a-call-goes)**: the agent knows why a turn brought no words and asks again in its own words, a short goodbye ends the call, barge-in ignores a cough, and [advanced settings](docs/ai-apps.md#advanced-settings) tune the line, silences and interruptions per agent.
-- **[Optional call detectors](docs/local-ai.md#optional-call-detectors-advanced)**: Silero VAD and Smart Turn, one click on Local AI, chosen per agent.
+- **[Optional call detectors](docs/local-ai.md#optional-call-detectors-advanced)**: Silero VAD and Smart Turn, one click on Local TTS, chosen per agent.
 - **AI call log, reports, statistics and e-mail**, voice settings and GPU support for local models, and diagrams of [caller ID](docs/caller-id.md), the [AI agent](docs/ai-apps.md#how-a-call-goes) and the [PBX Assistant](docs/assistant.md); every help box links to its documentation.
 
 [Full release notes](CHANGELOG.md)
@@ -63,7 +63,7 @@
 Legacy open-source PBXs feel stuck in the 2000s or lock essential features behind per-seat licensing. **AiPBX** gives you a modern, self-hosted enterprise phone system on **native Asterisk 22** with built-in AI, call center, and unified communications — with zero vendor lock-in:
 
 - **Native Asterisk 22 + PJSIP** — extensions, trunks, IVR, dynamic routing, time conditions, BLF, parking, and fax without legacy GUI bloat.
-- **Built-in AI Voice & Analytics** — interactive Cascade and Realtime voice agents with ARI or AudioSocket media, local Ollama or cloud LLMs, Knowledge Base RAG, voicemail summaries, and call scoring.
+- **Built-in AI Voice & Analytics** — interactive Cascade and Realtime voice agents with ARI or AudioSocket media, cloud LLMs (any OpenAI-compatible server too), Knowledge Base RAG, voicemail summaries, and call scoring.
 - **Full Call Center Suite** — real-time queues, customizable break reasons & auto-unpause, agent wallboard, callbacks, and CDR/pause reporting.
 - **Unified Communications** — browser WebRTC softphone, video meetings, Go-powered team chat, and native Android & iOS apps.
 - **Enterprise Auth & Integrations** — Google, Microsoft Entra ID, OIDC, SAML 2.0, LDAP, REST API v1, webhooks, and CRM/DB connectors.
@@ -293,7 +293,7 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 
 ### 🤖 AI Voice Agent, Local/Cloud AI & Dialplan Assistant
 - **Built-in AI Voice Agent (`/ai-agent`)** — **Cascade (STT → LLM → TTS)** and **Realtime** voice, with ARI or AudioSocket media, structured prompts, Knowledge Base RAG, saved external DB queries, DTMF and outbound IVR navigation. [AI settings](docs/ai-settings.md)
-- **Local AI (`/ai-local`) & Cloud AI (`/ai-cloud`)** — run Ollama LLMs, Faster-Whisper STT, Piper TTS, and ONNX embeddings locally via `aipbx-ai`, or connect OpenAI, Google Gemini, Groq, Deepgram, ElevenLabs, Azure, Amazon Polly, and OpenAI-compatible endpoints with encrypted secrets and quota tracking
+- **Local TTS (`/ai-local`) & Cloud AI (`/ai-cloud`)** — run EMA, Piper and Kokoro voices locally via `aipbx-ai`; speech to text and language models use Cloud AI accounts (OpenAI, Google Gemini, Groq, Deepgram, ElevenLabs, Azure, Amazon Polly, and OpenAI-compatible endpoints) with encrypted secrets and quota tracking
 - **AI setup wizard (`/ai-wizard`), call log & reports** — a checklist from plugins to the first test call; the AI call log with timings, choppy-audio detection and a downloadable report per call, 30-day statistics and CSV, and an e-mail of every conversation. The agent handles silence, a quiet voice and noise in its own words, ends the call on a goodbye, and can use the optional Silero VAD and Smart Turn detectors ([how a call goes](docs/ai-apps.md#how-a-call-goes))
 - **AI TTS Studio (`/ai-tts`)**, **Voicemail AI (`/ai-voicemail`)** & **Call Analysis (`/ai-call-analysis`)** — generate and save audio announcements, transcribe/summarize voicemails, and run automated call quality scoring
 - **Dialplan Editor (`/assistant`) & Echo Reporter** — plain-language PBX change planner with dry-run preview before apply, safety validation, audit trail and one-click undo (`pbx_ai_changes`), plus the Echo diagnostic box backed by an opt-in local HEPv3 SIP signaling capture daemon (`aipbx-signaling` → `pbx_signaling_events`)
@@ -303,7 +303,7 @@ flowchart LR
     Caller["Caller / Outbound Call"] <-->|"SIP / RTP"| Ast["Asterisk 22\nARI / AudioSocket"]
     Ast <-->|"PCM Audio + DTMF"| AiSvc["aipbx-ai\nPython AI Service"]
     Portal["AiPBX Web Portal\n/ai-agent · /ai-local · /ai-cloud"] -->|"Config & Sync"| AiSvc
-    AiSvc <-->|"Local Runtime"| Local["Ollama · Whisper\nPiper · ONNX"]
+    AiSvc <-->|"Local Runtime"| Local["EMA · Piper · Kokoro\nSilero · Smart Turn"]
     AiSvc <-->|"Cloud APIs"| Cloud["OpenAI · Gemini · Groq\nDeepgram · ElevenLabs"]
     AiSvc <-->|"LLM Tools"| Tools["External DB Queries · Phonebook\nDTMF · Call Transfer"]
 ```

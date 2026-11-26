@@ -17,7 +17,7 @@ This directory contains the **official plugins** bundled with AiPBX. Community p
 | [`saml-auth`](./saml-auth/plugin.json) | `integration` | AiPBX Official Team | Enterprise Single Sign-On (SSO) via SAML 2.0 with JIT auto-provisioning for Microsoft Entra ID (Azure AD), Okta, Keycloak, Authentik, and ADFS |
 | [`ms-teams`](./ms-teams/plugin.json) | `integration` | AiPBX Official Team | Connect AiPBX as a Session Border Controller (SBC) for Microsoft Teams Direct Routing and send real-time call/fax/voicemail Adaptive Cards to Teams channels |
 | [`web-widgets`](./web-widgets/plugin.json) | `integration` | AiPBX Official Team | Embed click-to-call WebRTC audio buttons and callback forms on any website or WordPress site with origin allowlists and daily rate limits |
-| [`ailocal`](./ailocal/plugin.json) | `ai` | AiPBX Official Team | Local AI models, Ollama / local runtime connections, and local inference testing |
+| [`ailocal`](./ailocal/plugin.json) | `ai` | AiPBX Official Team | Local text-to-speech voices and small call detectors that run on this server |
 | [`aicloud`](./aicloud/plugin.json) | `ai` | AiPBX Official Team | Cloud AI provider accounts, models, usage limits, and cloud inference testing |
 | [`ai-apps`](./ai-apps/plugin.json) | `ai` | AiPBX Official Team | Build voice-driven AI IVR applications that greet callers, transcribe speech via Cloud/OpenAI-compatible STT, query external HTTP webhooks, and route calls dynamically |
 | [`ai-tts`](./ai-tts/plugin.json) | `ai` | AiPBX Official Team | Synthesize natural IVR and queue announcements from text using Cloud TTS or lightweight local TTS engines and save directly to Asterisk sounds |
