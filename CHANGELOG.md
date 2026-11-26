@@ -11,7 +11,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
-## Unreleased
+## 1.82.2
 
 ### New
 
