@@ -39,20 +39,10 @@ TTS page uses the accounts that can speak.
 
 ## Languages
 
-AI features work in the languages of this list: Turkish, German and English until it is changed.
-**Add language** takes the ISO 639 code (`fr`), the locale (`fr-FR`, `pt-BR`; empty = the code) and
-a name. The name is what language models are told to answer in ("French" or "Français" both work),
-the locale is what speech services such as Azure and Google are asked for. Every language gets its
-own rows in *Engine for each job*. A language that an AI application still uses cannot be deleted;
-deleting one also deletes its engine choices. Stored as `ai_languages` in `sys_settings` (at most
-30 languages).
-
-## Engine for each job
-
-For speech, speech to text and the **language model** in every language of the list, choose a
-running or downloaded local model or a configured cloud provider (`ai_engine.<job>.<lang>` in `sys_settings`, values
-`local:<model id>` or `cloud:<provider>`). AI features that come later (AI applications, voice
-requests) use these choices, so switching between local and cloud needs no other change.
+There is no language setting. AI features work in a built-in table of 84 languages (code, name, locale): the name is
+what language models are told to answer in ("Turkish"), the locale is what speech recognition and synthesis are asked
+for (`tr-TR`, `pt-BR`). An AI agent chooses its language with `{language, tr}` in its instructions (see
+[AI applications](ai-apps.md)); voicemail, call analysis and the PBX Assistant find it themselves.
 
 ## Features
 

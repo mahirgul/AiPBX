@@ -13,43 +13,52 @@ Changes take effect with **Apply**, like other PBX settings.
 
 ## Built-in AI Agent
 
-Open **AI → AI Agent** to create a conversational agent. Choose the conversation,
-STT and TTS models from the existing Local AI and Cloud AI services, a knowledge
-collection, and a fallback destination. Give the agent an optional internal
-number for direct calls, or select **AI Agent** as the destination of an inbound
-route. Apply the changes. Callers may interrupt the agent while it speaks by default.
+Open **AI → AI Agent** to create a conversational agent. The form starts with a switch:
 
-Keep ordinary product and service information in the collection's regular TXT
-documents. To let the model transfer calls, upload one active
-[`agent-tools.txt`](../plugins/ai-knowledge/guides/examples/agent-tools.txt) to the
-same collection. Each `call_transfer` definition maps a target ID and a usage
-description to an existing extension, queue or ring group. Use the extension
-number, queue name or ring group ID respectively. Apply after updating this file.
-The same file accepts `http_lookup | name | description | https://…` for
-an AI Apps HTTP lookup, and `get_db_value | query ID | description | database ID
-| public or verified | SELECT …` for an inline database lookup. A centrally
-registered query uses `get_db_value | query ID`. Use `db_connection | 2` to
-expose the active queries saved for connection ID 2. See [Saved
-queries](external-databases.md#saved-queries) for setup. Keep
-credentials in the connection settings. Tool definitions are read as
-configuration and excluded from document search and embeddings.
+- **Realtime** — one provider talks directly (OpenAI, Gemini Live, xAI, Qwen or an OpenAI-compatible server). Pick a
+  Realtime-capable account from **AI → Cloud AI**; its model, voice, speech detection threshold, silence before the
+  answer, noise reduction and temperature are set on the account (another voice = a copy of the account).
+- **Cascade** — speech to text, language model and text to speech, each a separate account (or an installed local
+  voice for the speech).
 
-Use optional `greeting | …` lines in the file as alternatives to the agent's
-default greeting. The greetings support `{caller_name}`. Add up to five `waiting | …`
-lines to vary what callers hear during slow lookups. The agent plays one short
-phrase per turn only if the lookup is still running after about 700 ms. With
-barge-in enabled, the caller can interrupt it and continue with a new question.
+Only the fields of the chosen mode are shown, and there is no automatic switch from Realtime to cascade. Under
+**If the AI cannot answer** choose where the call goes (default: hang up) with the same type and target selector as an
+inbound route.
 
-Turn on **Automatic announcements** to let the conversation model write both
-sentences. An optional `tone | …` line tells it how formal or warm to be. It
-receives the caller's display name when available and the example sentences
-from the file. The prepared greeting remains available if model generation is
-slow or fails.
+**Everything the agent can do is written in its instructions**, in curly brackets. The buttons above the text
+(*Transfer*, *Greeting*, *Knowledge base*, *Database query*, *HTTP lookup*, *PBX tool*, *Waiting phrase*) only insert
+them; a list under the text shows every tool found, with a ✓ or the line and the reason it is wrong. The server checks
+them again when the agent is saved and when the configuration is applied.
 
-The model chooses when to answer, ask another question, consult the collection,
-call `call_transfer`, or say goodbye and `end_call`. The PBX runs the configured
-fallback when the selected services are unavailable or when no target fits.
-The built-in agent is available independently of the AI Applications plugin.
+| Bracket | Meaning |
+|---------|---------|
+| `{transfer, sales, group:2}` | Transfer target `sales`: extension `1001`, `queue:<name>`, `group:<id>` (`extension:` too). A bare number that is both an extension and a queue is refused: write the prefix |
+| `{greeting, 1, tr, Merhaba {caller_name}, hoş geldiniz.}` | A greeting: order, language, text (commas allowed). The call's language picks the list; the lowest order is used, randomly among equals; a greeting with `{caller_name}` is skipped when the name is unknown |
+| `{knowledge, Price list}` | A knowledge base by its name (**AI → Knowledge Base**: one text, a required description, an optional embedding account; without one it searches by keywords) |
+| `{db, order_status}` | A saved database query |
+| `{http, orders, https://crm.example.com/o?no={order_no}}` | An HTTP lookup (internet addresses only) |
+| `{pbx, find_person}` | A PBX tool |
+| `{waiting, One moment, I am checking.}` | A phrase said while a lookup runs (the language's own when none) |
+| `{language, tr}` | The agent's own language, used when the call's channel has none (default: the first AI language) |
+| `{barge_in, on}` / `{barge_in, off}` | Callers may talk over the agent (default on) |
+| `{announcements, on}` | The model writes the greeting and waiting phrases itself (default off) |
+| `{email, calls@example.com}` | After every call the conversation (both sides) and its summary are mailed here; needs the mail settings |
+
+The sentence around a bracket tells the model when to use it ("Callers who want to order go to `{transfer, sales,
+group:2}`"). The model reads the brackets as names (`sales (Sales)`), greeting and waiting lines are taken out, and a
+generated *Actions you can use* list is appended. A bracket without a comma is a variable (`{caller_name}`); a bracket
+starting with any other word is plain text; `\{` writes a literal bracket. The instructions may be long (60,000
+characters; the counter warns above about 15,000 tokens, because every turn sends them).
+
+**Language.** The agent speaks the call's language (`CHANNEL(language)`, set by the inbound route or the IVR) when it
+is in the language table (84 languages), otherwise the agent's own `{language, …}`. The greeting, speech recognition and the model's
+language follow it; the cascade voice stays the account's.
+
+**Deleted targets.** A destination an agent transfers to cannot be deleted while the agent uses it. If one disappears
+anyway, only that transfer is left out at the next Apply and the agent list shows *Target missing*.
+
+Give the agent an optional internal number for direct calls, or select **AI Agent** as the destination of an inbound
+route. Apply the changes.
 
 ### How a call goes
 
@@ -57,7 +66,7 @@ The built-in agent is available independently of the AI Applications plugin.
 
 ### Setup wizard
 
-**AI → AI setup wizard** (`/ai-wizard`) lists what an agent needs, in order: plugins, speech recognition and
+**AI → AI Agent → Setup wizard** (the first tab) lists what an agent needs, in order: plugins, speech recognition and
 language model, voice, knowledge base, the agent, a phone number and a test call. Every step is ticked from the
 system as it is now, so a setting made on its own page ticks it too. The open step is the next one to do; its
 button opens the page that does it, and that page shows a bar with the progress and **Back to the wizard**. The
@@ -75,7 +84,6 @@ The folded **Advanced settings** of the agent form:
 | **Silence before asking again** | 3–10 seconds; Realtime models wait twice as long | 4 s |
 | **Longest answer** | 5–15 seconds of caller speech per turn | 10 s |
 | **Interrupting the agent** | how easily the caller stops a prompt (barge-in needs 240 ms of voice in any case) | Normal |
-| **Local model memory** | the context size of a local (Ollama) model; long instructions need more | model default |
 | **Speech detection**, **When the caller has finished** | optional detectors, see below | Standard |
 | **End the call when the caller says goodbye** | see below | on |
 | **Send each call to (e-mail)** | the conversation of every call, with the summary and the caller's last recording | empty |
@@ -101,7 +109,7 @@ question, or a longer sentence (*thanks, and one more thing…*), still goes to 
 
 ### Optional detectors
 
-Two small models change how the agent listens; they are installed with one click on **Local AI → Hugging Face**
+Two small models change how the agent listens; they are installed with one click on **Local TTS**
 and chosen per agent. *Silero VAD* tells a voice from line noise; *Smart Turn* decides from the sound whether the
 caller has finished. See [Optional call detectors](local-ai.md#optional-call-detectors-advanced) for what was
 measured and what was not.
@@ -135,8 +143,8 @@ properly: Turkish "1.234,50 TL" or "1.234,50 lira" becomes "bin iki yüz otuz d�
 Example: text "Sayın {caller_name}, borcunuz {amount}. Son ödeme tarihi {date}.", lookup
 `https://crm.example.com/aipbx/balance`, afterwards: the accounting queue.
 
-Voice: a model of *AI → Local models*, "the engine for the language" chosen on
-*AI → Cloud services*, or a cloud voice directly (OpenAI, Azure, ElevenLabs, Google Cloud — those
+Voice: a model of *AI → Local TTS*, or
+a cloud voice directly (OpenAI, Azure, ElevenLabs, Google Cloud — those
 with a key saved there). When the provider fails or is over its
 [monthly limit](cloud-ai.md#monthly-limits), a ready local voice of the language speaks instead.
 Speed 0.5–2. **Calls at the same time**: above this number, callers go straight to the destination (a small server prepares one announcement per voice at a time).

@@ -11,6 +11,24 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## Unreleased
+
+### New
+
+- **AI agent tools live in the instructions.** Everything an agent can do is written in curly brackets in its instructions, and the form's buttons only insert them: `{transfer, sales, group:2}`, `{greeting, 1, tr, Merhaba}`, `{knowledge, Price list}`, `{db, order_status}`, `{http, orders, https://…}`, `{pbx, find_person}`, `{waiting, …}`, `{language, tr}`, `{barge_in, on}`, `{announcements, on}`, `{email, calls@example.com}`. A live list under the text shows every tool found and the line and reason of a wrong one; the server checks them again on save and on Apply. A *PBX tool → all* option inserts the recommended set at once.
+- **AI Agent page:** three tabs (setup wizard, agents with their editor, recent AI calls) and the editor in five closed cards (agent, how it talks, instructions and tools, fallback, advanced) of which one is open at a time. **Realtime / Cascade** switch (only that mode's fields are shown, no automatic switch), an optional destination for calls the AI cannot answer (same selector as an inbound route), instructions up to 60,000 characters with a token counter.
+- **The call's language:** the agent speaks the language of the call (`CHANNEL(language)`, set by the inbound route or the IVR) and greets, listens and answers in it; the agent's own `{language}` is used when the call has none. Greetings have an order number (the lowest is used, randomly among equals; a greeting with `{caller_name}` is skipped when the name is unknown). The portal admin's language no longer decides it. A built-in table of 84 languages replaces the AI languages list.
+- **Safer transfers:** a destination an agent transfers to cannot be deleted while the agent uses it; if one disappears anyway, only that transfer is left out at Apply and the agent list shows *Target missing*.
+- **No default model.** Every AI feature (agent, voicemail, call analysis, PBX Assistant, reminders, TTS Studio) picks its own account; unselected means off.
+- **Cloud AI:** a page of accounts only. One account is one provider with one set of settings; the rarely changed ones (model, temperature, max tokens, and for Realtime the voice, speech detection, noise reduction) are under *Advanced*, *Copy* makes a second account for a second model or voice. The provider list is sorted by name.
+- **Knowledge base:** optional; one text and a required description per base; an agent can use several bases through one `knowledge` tool.
+- **Local TTS** (was Local AI): one table of voices (EMA, the whole Piper catalogue, Kokoro) and the Silero VAD / Smart Turn detectors.
+
+### Removed
+
+- Local speech to text (Whisper, Vosk), local language models and Ollama, the sentence-meaning model, the Hugging Face browser, the default-model and per-language layers, the AI languages list, the separate `/ai-wizard` page.
+- **Upgrade resets AI settings** (no data migration): AI agents keep their number and destination but need their settings again, knowledge-base tool files and default bindings are removed, old model files are deleted. PBX data is untouched.
+
 ## 1.82.1
 
 ### Fixes
