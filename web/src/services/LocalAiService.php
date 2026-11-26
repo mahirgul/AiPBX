@@ -118,7 +118,7 @@ class LocalAiService
     }
 
     /**
-     * Ensures the local AI ML runtime (venv with numpy/onnxruntime/ctranslate2) is
+     * Ensures the local AI ML runtime (venv with numpy/onnxruntime) is
      * installed before starting a model download or load. Starts the
      * background installer automatically if missing/failed and returns false so
      * the caller can report progress instead of failing with ModuleNotFoundError.

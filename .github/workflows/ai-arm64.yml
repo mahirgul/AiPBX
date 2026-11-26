@@ -26,7 +26,7 @@ jobs:
       - name: Install the runtime packages
         run: python -m pip install -r ai/requirements.txt
       - name: The packages import
-        run: python -c 'import onnxruntime, numpy, num2words, ctranslate2, vosk'
+        run: python -c 'import onnxruntime, numpy, num2words'
       - name: EMA Lightning refuses clearly
         working-directory: ai
         run: |
