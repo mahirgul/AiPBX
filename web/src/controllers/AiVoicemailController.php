@@ -15,7 +15,7 @@ require_once __DIR__ . '/../services/ai/AiJobService.php';
  */
 class AiVoicemailController extends BaseController
 {
-    public const TABS = ['settings', 'jobs'];
+    public const TABS = ['settings', 'history'];
 
     public static function index(): void
     {
@@ -63,7 +63,7 @@ class AiVoicemailController extends BaseController
 
         $jobs = [];
         try {
-            $jobs = AiJobService::recent('ai_voicemail', 50);
+            $jobs = VoicemailAiService::history(100);
         } catch (\Throwable $e) {
             $jobs = [];
         }
@@ -74,7 +74,8 @@ class AiVoicemailController extends BaseController
             'active_tab'     => $activeTab,
             'transcribe_on'  => getSystemSetting('ai_vm_transcribe', '0') === '1',
             'summary_on'     => getSystemSetting('ai_vm_summary', '0') === '1',
-            'jobs'           => $jobs,
+            'history'        => $jobs,
+            'summary_lang'   => (string) getSystemSetting('ai_vm_summary_lang', ''),
             'local_enabled'  => class_exists('PluginManager') ? PluginManager::isEnabled('ailocal') : true,
             'cloud_enabled'  => class_exists('PluginManager') ? PluginManager::isEnabled('aicloud') : true,
             'csrf_token'     => getCSRFToken(),

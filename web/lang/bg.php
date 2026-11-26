@@ -6561,7 +6561,6 @@ return [
     'ai_jobs.col_error' => 'Грешка',
     'ai_jobs.col_updated' => 'Обновено',
     'ai_voicemail.tab_settings' => 'Настройки',
-    'ai_voicemail.tab_jobs' => 'Задачи',
     'ai_voicemail.help_body' => 'Транскрибиране на нови гласови съобщения и по избор обобщаването им в имейл известия.',
     'ai_voicemail.plugin_disabled' => 'Плъгинът Гласова поща AI е деактивиран.',
     'ai_voicemail.enable_transcribe' => 'Транскрибиране на нови гласови съобщения',

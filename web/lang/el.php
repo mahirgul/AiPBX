@@ -6561,7 +6561,6 @@ return [
     'ai_jobs.col_error' => 'Σφάλμα',
     'ai_jobs.col_updated' => 'Ενημερώθηκε',
     'ai_voicemail.tab_settings' => 'Ρυθμίσεις',
-    'ai_voicemail.tab_jobs' => 'Εργασίες',
     'ai_voicemail.help_body' => 'Απομαγνητοφωνήστε νέα μηνύματα τηλεφωνητή και προαιρετικά συνοψίστε τα στις ειδοποιήσεις email.',
     'ai_voicemail.plugin_disabled' => 'Το πρόσθετο AI Τηλεφωνητή είναι απενεργοποιημένο.',
     'ai_voicemail.enable_transcribe' => 'Απομαγνητοφώνηση νέων μηνυμάτων τηλεφωνητή',

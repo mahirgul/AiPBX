@@ -6561,7 +6561,6 @@ return [
     'ai_jobs.col_error' => 'Помилка',
     'ai_jobs.col_updated' => 'Оновлено',
     'ai_voicemail.tab_settings' => 'Налаштування',
-    'ai_voicemail.tab_jobs' => 'Завдання',
     'ai_voicemail.help_body' => 'Транскрибувати нові повідомлення голосової пошти та за бажанням підсумовувати їх у сповіщеннях електронною поштою.',
     'ai_voicemail.plugin_disabled' => 'Плагін ШІ голосової пошти вимкнено.',
     'ai_voicemail.enable_transcribe' => 'Транскрибувати нові повідомлення голосової пошти',

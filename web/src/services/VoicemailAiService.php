@@ -14,6 +14,8 @@
 require_once __DIR__ . '/LocalAiService.php';
 require_once __DIR__ . '/ai/CloudAiService.php';
 require_once __DIR__ . '/ai/AiBindingService.php';
+require_once __DIR__ . '/ai/AiLanguages.php';
+require_once __DIR__ . '/ai/AiJobService.php';
 require_once __DIR__ . '/ai/AiGateway.php';
 require_once __DIR__ . '/ai/AiJobService.php';
 
@@ -49,6 +51,9 @@ final class VoicemailAiService
         $set = $db->prepare('INSERT INTO sys_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)');
         $set->execute(['ai_vm_transcribe', !empty($post['ai_vm_transcribe']) ? '1' : '0']);
         $set->execute(['ai_vm_summary', !empty($post['ai_vm_summary']) ? '1' : '0']);
+        // The language of the summary: the language of the message (empty) or one fixed language of the language table.
+        $lang = (string) ($post['ai_vm_summary_lang'] ?? '');
+        $set->execute(['ai_vm_summary_lang', isset(AiLanguages::TABLE[$lang]) ? $lang : '']);
         writeAuditLog('ai_voicemail', 'voicemail', 0, 'Voicemail AI settings', 'update', $_SESSION['user_id'] ?? null);
     }
 
@@ -118,6 +123,54 @@ final class VoicemailAiService
     {
         $info = @parse_ini_string((string) @file_get_contents($txtPath), false, INI_SCANNER_RAW) ?: [];
         return (int) ($info['origtime'] ?? 0);
+    }
+
+    /**
+     * Everything Voicemail AI did, one row per voicemail, newest first: the queued, running and failed jobs and the finished
+     * transcripts and summaries in one list.
+     * @return list<array{time: string, mailbox: string, origtime: int, status: string, job_id: int, engine: string, summary: string,
+     *                    transcript: string, error: string, attempts: string}>
+     */
+    public static function history(int $limit = 100): array
+    {
+        $db = getDB();
+        $rows = [];
+        foreach ($db->query('SELECT mailbox, origtime, transcript, summary, engine, created_at FROM voicemail_ai ORDER BY id DESC LIMIT ' . $limit)->fetchAll(PDO::FETCH_ASSOC) as $r) {
+            $rows[$r['mailbox'] . ':' . $r['origtime']] = ['time' => (string) $r['created_at'], 'mailbox' => (string) $r['mailbox'],
+                'origtime' => (int) $r['origtime'], 'status' => 'succeeded', 'job_id' => 0, 'engine' => (string) $r['engine'],
+                'summary' => (string) $r['summary'], 'transcript' => (string) $r['transcript'], 'error' => '', 'attempts' => ''];
+        }
+        $archive = $db->prepare('SELECT mailbox, origtime FROM voicemail_archive WHERE id = ? LIMIT 1');
+        foreach (AiJobService::recent('ai_voicemail', $limit) as $job) {
+            $payload = is_array($job['payload'] ?? null) ? $job['payload'] : [];
+            $mailbox = preg_replace('/[^0-9]/', '', (string) ($payload['mailbox'] ?? ''));
+            $origtime = (int) ($payload['origtime'] ?? 0);
+            if (($mailbox === '' || $origtime <= 0) && ctype_digit((string) $job['entity_id'])) {
+                try {
+                    $archive->execute([(int) $job['entity_id']]);
+                    if ($a = $archive->fetch(PDO::FETCH_ASSOC)) {
+                        [$mailbox, $origtime] = [(string) $a['mailbox'], (int) $a['origtime']];
+                    }
+                } catch (\Throwable $e) {
+                }
+            }
+            $key = $mailbox . ':' . $origtime;
+            $status = (string) $job['status'];
+            $have = $rows[$key] ?? null;
+            if ($have !== null && $status === 'succeeded') {
+                $rows[$key]['job_id'] = (int) $job['id'];             // the result is the row; its job only adds the id
+                $rows[$key]['attempts'] = $job['attempts'] . ' / ' . $job['max_attempts'];
+                continue;
+            }
+            if ($have !== null && $status !== 'succeeded') {
+                continue;                                              // an older failed or cancelled try of a voicemail that has its result
+            }
+            $rows[$key] = ['time' => (string) ($job['updated_at'] ?? ''), 'mailbox' => $mailbox, 'origtime' => $origtime, 'status' => $status,
+                'job_id' => (int) $job['id'], 'engine' => (string) ($job['binding_ref'] ?? ''), 'summary' => '', 'transcript' => '',
+                'error' => (string) ($job['last_error'] ?? ''), 'attempts' => $job['attempts'] . ' / ' . $job['max_attempts']];
+        }
+        usort($rows, static fn ($a, $b) => strcmp($b['time'], $a['time']));
+        return array_slice($rows, 0, $limit);
     }
 
     /**
@@ -467,6 +520,8 @@ final class VoicemailAiService
         if ($engine === null || $engine === '') {
             return '';
         }
+        $fixed = (string) getSystemSetting('ai_vm_summary_lang', '');
+        $lang = isset(AiLanguages::TABLE[$fixed]) ? $fixed : $lang;
         $prompt = 'This is the transcript of a voicemail left on a company telephone. It may contain speech '
             . "recognition errors.\n\nTranscript: \"" . str_replace('"', "'", mb_substr($transcript, 0, 4000)) . "\"\n\n"
             . 'Write ONE short sentence in ' . CloudAiService::languageName($lang) . ' saying who called (if they said it) and '

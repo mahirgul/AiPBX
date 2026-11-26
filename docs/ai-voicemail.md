@@ -1,5 +1,14 @@
 # AI Voicemail Summaries & Transcripts
 
+## The Voicemail AI page
+
+**AI Apps → Voicemail AI** (`/ai-voicemail`) has two tabs. **Settings** turns transcription and summaries on, chooses the
+speech-to-text account and the language model of the summary (**AI → Cloud AI** accounts, one per task, off by
+default) and the language of the summary (the language of the message, or one fixed language). **History** is one table
+of everything Voicemail AI did, one row per voicemail: queued, running and failed jobs (with the reason, and a button to
+cancel a waiting one) and the finished transcripts and summaries.
+
+
 The community `ai-voicemail` plugin displays completed voicemail transcripts and summaries at
 `/plugins/ai-voicemail`. AiPBX 1.72.12 includes the corrected event subscription and full transcript
 payload. See the [plugin developer guide](plugin-development.md).
