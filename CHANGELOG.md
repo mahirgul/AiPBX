@@ -21,7 +21,7 @@ the git tag message and the GitHub Release notes, and installations show it as
 - **Safer transfers:** a destination an agent transfers to cannot be deleted while the agent uses it; if one disappears anyway, only that transfer is left out at Apply and the agent list shows *Target missing*.
 - **No default model.** Every AI feature (agent, voicemail, call analysis, PBX Assistant, reminders, TTS Studio) picks its own account; unselected means off.
 - **Cloud AI:** a page of accounts only. One account is one provider with one set of settings; the rarely changed ones (model, temperature, max tokens, and for Realtime the voice, speech detection, noise reduction) are under *Advanced*, *Copy* makes a second account for a second model or voice. The provider list is sorted by name.
-- **Voicemail AI page:** two tabs, *Settings* (with the language of the summary) and *History*: one table of jobs (queued, running, failed, with the reason) and finished transcripts and summaries, one row per voicemail.
+- **Voicemail AI is one page:** the community plugin page of the same name is gone (an upgrade keeps the plugin enabled as the bundled one and removes the community copy); the page has two tabs, *Settings* (with the language of the summary) and *History*: one table of jobs (queued, running, failed, with the reason) and finished transcripts and summaries, one row per voicemail.
 - **Knowledge base:** optional; one text and a required description per base; an agent can use several bases through one `knowledge` tool.
 - **Local TTS** (was Local AI): one table of voices (EMA, the whole Piper catalogue, Kokoro) and the Silero VAD / Smart Turn detectors.
 
