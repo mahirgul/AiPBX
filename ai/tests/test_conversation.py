@@ -38,7 +38,7 @@ class SettingsTest(unittest.TestCase):
         self.assertEqual(conversation.validate({}, ok)["max_turns"], conversation.MAX_TURNS_DEFAULT)
 
     def test_refused(self):
-        for bad in ({"max_turns": 1}, {"max_turns": True}, {"instructions": "x" * 4001},
+        for bad in ({"max_turns": 1}, {"max_turns": True}, {"instructions": "x" * (conversation.MAX_INSTRUCTIONS + 1)},
                     {"tools": [{"name": "Bad Name", "description": "d", "url": "https://h.example.com"}]},
                     {"tools": [{"name": "a", "description": "", "url": "https://h.example.com"}]},
                     {"tools": [{"name": "a", "description": "d", "url": "ftp://h.example.com"}]},
@@ -48,6 +48,63 @@ class SettingsTest(unittest.TestCase):
                     {"tools": [{"name": f"t{i}", "description": "d", "url": "https://h.example.com"} for i in range(6)]}):
             with self.assertRaises(conversation.ConversationError, msg=json.dumps(bad)[:80]):
                 conversation.validate(bad, ok)
+
+
+SOURCES = [{"id": 3, "name": "Prices", "description": "price list"}, {"id": 5, "name": "Hours", "description": ""}]
+
+
+class KnowledgeSourcesTest(unittest.TestCase):
+    def test_instructions_limit_is_60000(self):
+        self.assertEqual(conversation.validate({"instructions": "x" * 60000}, ok)["instructions"], "x" * 60000)
+        with self.assertRaises(conversation.ConversationError):
+            conversation.validate({"instructions": "x" * 60001}, ok)
+
+    def test_sources_are_validated(self):
+        got = conversation.validate({"knowledge": True, "knowledge_sources": SOURCES}, ok)
+        self.assertEqual(got["knowledge_sources"], SOURCES)
+        self.assertEqual(conversation.validate({"knowledge": False, "knowledge_sources": SOURCES}, ok)["knowledge_sources"], [])
+        self.assertEqual(conversation.validate({"knowledge": True}, ok)["knowledge_sources"], [])
+        too_many = [{"id": n, "name": "n", "description": ""} for n in range(1, 10)]
+        for bad in (too_many, [{"id": 0, "name": "a"}], [{"id": True, "name": "a"}], [{"id": 1, "name": ""}],
+                    [{"id": 1, "name": "a" * 61}], [{"id": 1, "name": "a", "description": "d" * 201}],
+                    [SOURCES[0], SOURCES[0]], "x", ["x"]):
+            with self.assertRaises(conversation.ConversationError, msg=str(bad)[:60]):
+                conversation.validate({"knowledge": True, "knowledge_sources": bad}, ok)
+
+    def test_prompt_lists_sources_and_puts_the_caller_after_the_instructions(self):
+        cfg = dict(CFG, knowledge=True, knowledge_sources=SOURCES, caller_name="Ada", verified_customer="C-1")
+        text = conversation.prompt(cfg, [], "en")
+        self.assertIn("3: Prices - price list", text)
+        self.assertIn("5: Hours", text)
+        self.assertLess(text.index("We are open 9-18."), text.index("Caller display name"))
+        self.assertLess(text.index("We are open 9-18."), text.index("System-resolved Customer ID"))
+
+    def test_step_carries_the_source_and_routing_checks_it(self):
+        cfg = dict(CFG, knowledge=True, knowledge_sources=SOURCES)
+        step = conversation.parse_step(json.dumps({"action": "lookup", "tool": "knowledge", "query": "q", "source": 3}), cfg)
+        self.assertEqual(step["source"], 3)
+        asked = []
+        ask = lambda app, query, source: asked.append((app, query, source)) or "excerpt"  # noqa: E731
+        self.assertEqual(conversation.knowledge_lookup(cfg, 9, "q", 3, ask), "excerpt")
+        self.assertEqual(conversation.knowledge_lookup(cfg, 9, "q", "5", ask), "excerpt")
+        self.assertEqual(asked, [(9, "q", 3), (9, "q", 5)])
+        for source in (None, 4, "x", True):          # several sources: the id is needed, an unknown one is an error answer
+            self.assertTrue(conversation.knowledge_lookup(cfg, 9, "q", source, ask).startswith("Error: unknown knowledge source"))
+        self.assertEqual(len(asked), 2)               # never a lookup
+        one = dict(cfg, knowledge_sources=SOURCES[:1])
+        self.assertEqual(conversation.knowledge_lookup(one, 9, "q", None, ask), "excerpt")
+        self.assertEqual(asked[-1], (9, "q", 3))
+        plain = dict(CFG, knowledge=True)
+        conversation.knowledge_lookup(plain, 9, "q", None, ask)
+        self.assertEqual(asked[-1], (9, "q", None))
+
+    def test_next_step_hands_the_source_to_the_lookup(self):
+        cfg = dict(CFG, knowledge=True, knowledge_sources=SOURCES)
+        got = []
+        post = scripted({"action": "lookup", "tool": "knowledge", "query": "q", "source": 5},
+                        {"action": "reply", "say": "ok"})
+        conversation.next_step(cfg, [("caller", "hi")], "en", lambda tool, query, **kw: got.append(kw) or "text", post=post)
+        self.assertEqual(got, [{"source": 5}])
 
 
 class StepTest(unittest.TestCase):
@@ -118,7 +175,7 @@ class StepTest(unittest.TestCase):
             return json.dumps(next(completions))
 
         step = conversation.next_step(cfg, [("caller", "Where can I return a product?")], "en",
-                                      lambda tool, query: "Sales handles returns.", complete=complete)
+                                      lambda tool, query, **_: "Sales handles returns.", complete=complete)
         self.assertEqual(step["intent"], "sales")
         self.assertIn("Sales handles returns.", prompts[1])
         self.assertIn('"action": "end_call"', prompts[0])
@@ -136,10 +193,14 @@ class StepTest(unittest.TestCase):
             self.assertIn("Resmi konuş.", prompt)
             self.assertIn('"caller_display_name": "Ada"', prompt)
             return '{"greeting":"Merhaba Ada.", "waiting":"Bir saniye."}'
+        cfg["llm_cloud"] = {"provider": "openai", "api_key": "sk-test-1234567890"}
+        patcher = patch("aipbx_ai.cloud_llm.answer_text", side_effect=lambda c, prompt, **k: complete(prompt))
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
-        self.assertEqual(call.opening_audio(cfg, complete), b"Merhaba Ada.")
+        self.assertEqual(call.opening_audio(cfg), b"Merhaba Ada.")
         self.assertEqual(call.automatic_waiting_key, "waiting:0")
-        self.assertEqual(call.opening_audio(dict(cfg, automatic_announcements=False), complete), b"prepared greeting")
+        self.assertEqual(call.opening_audio(dict(cfg, automatic_announcements=False)), b"prepared greeting")
 
     def test_slow_lookup_announces_waiting_and_can_be_interrupted(self):
         call = calls.VoiceRequestsCall.__new__(calls.VoiceRequestsCall)

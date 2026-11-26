@@ -10,11 +10,10 @@ import time
 import uuid as uuid_mod
 from typing import Any
 
-from . import cloud_llm, cloud_stt, gateway, secret_refs
+from . import cloud_llm, cloud_stt
 from .calls import CallSession
-from .voice_requests import Listener, SAMPLE_RATE, pick_local_fallback
-from .vosk_backend import pcm16_from_wav
-from .wav import wav_bytes
+from .voice_requests import Listener, SAMPLE_RATE
+from .wav import pcm16_from_wav, wav_bytes
 
 log = logging.getLogger("aipbx_ai.outbound_nav")
 
@@ -58,7 +57,6 @@ def decide_ivr_action(
     target_dtmf: str,
     history: list[str],
     app_id: int = 0,
-    manager: Any = None,
 ) -> dict[str, str]:
     """Decides whether to send DTMF, mark connected to a live person, or keep listening."""
     prompt = (
@@ -77,12 +75,6 @@ def decide_ivr_action(
     try:
         if cfg.get("llm_cloud"):
             raw = cloud_llm.answer_text(cfg["llm_cloud"], prompt)
-        elif cfg.get("local_chat_app") and manager is not None:
-            conn = {**secret_refs.local_chat(int(cfg["local_chat_app"])), "json_output": True}
-            raw, _ = gateway.chat(conn, prompt, 180, time.monotonic() + 12, manager)
-        elif app_id > 0 and manager is not None:
-            conn = {**secret_refs.local_chat(app_id), "json_output": True}
-            raw, _ = gateway.chat(conn, prompt, 180, time.monotonic() + 12, manager)
     except Exception as e:
         log.warning("IVR LLM decision fallback (%s): %s", type(e).__name__, e)
         raw = ""
@@ -258,25 +250,10 @@ class OutboundNavigator:
     def _transcribe(self, cfg: dict[str, Any], pcm: bytes) -> str:
         if not pcm:
             return ""
-        stt_model = str(cfg.get("stt_model") or "")
-        mgr = self.calls.manager
         try:
-            if stt_model.startswith("cloud:") and cfg.get("stt_cloud"):
+            if str(cfg.get("stt_model") or "").startswith("cloud:") and cfg.get("stt_cloud"):
                 pcm16k, _ = pcm16_from_wav(wav_bytes(pcm, SAMPLE_RATE))
-                try:
-                    return str(cloud_stt.transcribe(cfg["stt_cloud"], wav_bytes(pcm16k, 16000)) or "").strip()
-                except Exception:
-                    lang = cfg.get("language") or "tr"
-                    fb = pick_local_fallback(mgr, "stt", lang=lang, preferred=cfg.get("stt_fallback"))
-                    if fb:
-                        return str((mgr.transcribe(fb, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text") or "").strip()
-                    return ""
-            if stt_model and mgr is not None:
-                return str((mgr.transcribe(stt_model, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text") or "").strip()
-            if mgr is not None:
-                fb = pick_local_fallback(mgr, "stt", lang=str(cfg.get("language") or "tr"))
-                if fb:
-                    return str((mgr.transcribe(fb, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text") or "").strip()
+                return str(cloud_stt.transcribe(cfg["stt_cloud"], wav_bytes(pcm16k, 16000)) or "").strip()
         except Exception as e:
             log.debug("outbound transcribe failed: %s", e)
         return ""
@@ -387,7 +364,7 @@ class OutboundNavigator:
                     decision = decide_ivr_action(
                         app_cfg, transcript, job.goal,
                         "" if sent_initial_dtmf else job.target_dtmf,
-                        history, app_id=job.app_id, manager=self.calls.manager,
+                        history, app_id=job.app_id,
                     )
                     if decision["action"] == "dtmf" and decision["digits"]:
                         self.ari.client.send_dtmf(job.outbound_channel_id, decision["digits"])

@@ -20,7 +20,7 @@ from .cloud_llm import _is_forbidden_ip
 LOG = logging.getLogger(__name__)
 
 VERSION = 1
-OPERATIONS = ('chat', 'transcribe', 'synthesize', 'embed')
+OPERATIONS = ('chat',)
 MAX_RESPONSE = 1024 * 1024
 
 
@@ -118,28 +118,8 @@ def post_json(url, headers, body, deadline, allow_private=False):
         sock.close()
 
 
-def chat(connection, prompt, max_tokens, deadline, manager=None, post=post_json):
+def chat(connection, prompt, max_tokens, deadline, post=post_json):
     adapter = connection['adapter']
-    if adapter == 'runtime':
-        if manager is None:
-            raise GatewayError('model_not_ready')
-        rem = remaining(deadline)
-        try:
-            extra = {'num_ctx': connection['num_ctx']} if connection.get('num_ctx') else {}
-            text = manager.chat(connection['model'], prompt, max_tokens, timeout=rem, **extra)
-        except TypeError:
-            text = manager.chat(connection['model'], prompt, max_tokens)
-        return text, 0
-    if adapter == 'ollama':
-        body = {'model': connection['model'], 'messages': [{'role': 'user', 'content': prompt}],
-                # Thinking models would spend the whole token budget thinking and answer nothing.
-                'stream': False, 'think': False, 'options': {'temperature': 0, 'num_predict': max_tokens}}
-        if connection.get('num_ctx'):          # the model's memory in tokens: long instructions need more
-            body['options']['num_ctx'] = connection['num_ctx']
-        if connection.get('json_output'):
-            body['format'] = 'json'
-        result = post('http://127.0.0.1:11434/api/chat', {}, body, deadline, True)
-        return result.get('message', {}).get('content', ''), result.get('eval_count', 0) + result.get('prompt_eval_count', 0)
     key = connection.get('api_key', '')
     if adapter == 'google':
         result = post(connection['url'], {'x-goog-api-key': key},
@@ -161,31 +141,7 @@ def chat(connection, prompt, max_tokens, deadline, manager=None, post=post_json)
     return result['choices'][0]['message']['content'], result.get('usage', {}).get('total_tokens', 0)
 
 
-def embed(connection, text, deadline, manager=None, post=post_json):
-    adapter = connection['adapter']
-    if adapter == 'runtime':
-        if manager is None:
-            raise GatewayError('model_not_ready')
-        vecs = manager.embed(connection['model'], [text])
-        # A numpy array has no truth value: ask for its length, as for a list.
-        vec = [float(v) for v in (vecs[0] if vecs is not None and len(vecs) else [])]
-        return vec, 0
-    if adapter == 'ollama':
-        result = post('http://127.0.0.1:11434/api/embed', {},
-                      {'model': connection['model'], 'input': text}, deadline, True)
-        embs = result.get('embeddings') or []
-        vec = [float(v) for v in (embs[0] if embs else [])]
-        return vec, int(result.get('prompt_eval_count', 0))
-    if adapter != 'openai':
-        raise GatewayError('capability_unsupported')
-    key = connection.get('api_key', '')
-    result = post(connection['url'], {'Authorization': 'Bearer ' + key} if key else {},
-                  {'model': connection['model'], 'input': text}, deadline, connection.get('allow_private', False))
-    vec = [float(v) for v in result['data'][0]['embedding']]
-    return vec, int(result.get('usage', {}).get('total_tokens', 0))
-
-
-def _execute(raw, manager=None, resolver=resolve, runner=chat, embedder=embed):
+def _execute(raw, resolver=resolve, runner=chat):
     request_id = ''
     started = time.monotonic()
     try:
@@ -198,7 +154,7 @@ def _execute(raw, manager=None, resolver=resolve, runner=chat, embedder=embed):
         if type(body.get('protocol_version')) is not int or body['protocol_version'] != VERSION:
             raise GatewayError('protocol_mismatch')
         op = body.get('operation')
-        if op not in ('chat', 'embed'):
+        if op != 'chat':
             raise GatewayError('capability_unsupported')
         if set(body) != {'protocol_version', 'request_id', 'operation', 'input', 'max_tokens', 'deadline_at'}:
             raise GatewayError('invalid_request')
@@ -213,19 +169,7 @@ def _execute(raw, manager=None, resolver=resolve, runner=chat, embedder=embed):
         deadline = started + seconds
         context = resolver(request_id, hashlib.sha256(raw).hexdigest(), deadline)
         remaining(deadline)
-        if op == 'embed':
-            vec, usage = embedder(context['connection'], prompt, deadline, manager=manager)
-            remaining(deadline)
-            if not isinstance(vec, list) or not vec:
-                raise GatewayError('empty_response')
-            if not isinstance(usage, (int, float)) or not math.isfinite(usage) or usage < 0:
-                usage = 0
-            return {'protocol_version': VERSION, 'request_id': request_id, 'status': 'succeeded',
-                    'resolved_model_ref': context['model_ref'], 'config_revision': context['config_revision'],
-                    'embedding': vec, 'dimensions': len(vec),
-                    'usage': {'unit': 'tokens', 'amount': usage, 'source': 'provider'},
-                    'timings': {'total_ms': round((time.monotonic() - started) * 1000)}}
-        answer, usage = runner(context['connection'], prompt, tokens, deadline, manager=manager)
+        answer, usage = runner(context['connection'], prompt, tokens, deadline)
         remaining(deadline)
         if not isinstance(answer, str) or not answer.strip():
             raise GatewayError('empty_response')
@@ -250,7 +194,7 @@ def _execute(raw, manager=None, resolver=resolve, runner=chat, embedder=embed):
 _SLOTS = threading.BoundedSemaphore(4)
 
 
-def execute(raw, manager=None, resolver=resolve, runner=chat):
+def execute(raw, resolver=resolve, runner=chat):
     if not _SLOTS.acquire(blocking=False):
         try:
             request_id = json.loads(raw).get('request_id', '')
@@ -259,6 +203,6 @@ def execute(raw, manager=None, resolver=resolve, runner=chat):
         return {'protocol_version': VERSION, 'request_id': request_id, 'status': 'failed',
                 'error': {'code': 'capacity_exceeded', 'retryable': False}}
     try:
-        return _execute(raw, manager, resolver, runner)
+        return _execute(raw, resolver, runner)
     finally:
         _SLOTS.release()

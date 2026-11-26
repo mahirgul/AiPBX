@@ -1,4 +1,4 @@
-"""Models the administrator adds from a catalogue search (AI -> Local models).
+"""Piper voices the administrator adds from the voice list (AI -> Local models).
 
 Piper: the index voices.json of rhasspy/piper-voices lists every voice with its
 files, sizes and MD5 sums. Adding a voice pins the repository's current
@@ -21,20 +21,10 @@ from dataclasses import asdict
 from pathlib import Path
 
 from . import hf
-from .embedding import EmbeddingBackend
 from .models import ModelSpec
-from .ollama_backend import OllamaBackend
 from .piper_backend import PiperBackend
-from .whisper_backend import WhisperBackend
 
-_CUSTOM_BACKENDS = {
-    "piper": PiperBackend,
-    "whisper": WhisperBackend,
-    "embedding": EmbeddingBackend,
-    "onnx": hf.CustomWeightsBackend,
-    "gguf": OllamaBackend,
-    "safetensors": OllamaBackend,
-}
+_CUSTOM_BACKENDS = {"piper": PiperBackend}
 
 log = logging.getLogger("aipbx_ai.custom")
 
@@ -64,80 +54,6 @@ class Catalog:
         self._mu = threading.Lock()
         self._index = None
         self._index_time = 0.0
-
-    def _hf_client(self):
-        def _fetch(url, timeout=30, token=None):
-            if token is not None and self.fetch is hf.default_fetch:
-                return self.fetch(url, timeout=timeout, token=token)
-            try:
-                return self.fetch(url, timeout=timeout, token=token)
-            except TypeError:
-                return self.fetch(url, timeout=timeout)
-        return hf.HfClient(fetch=_fetch)
-
-    # ---- Hugging Face Hub ----------------------------------------------
-
-    def hf_search(self, query="", kind="", limit=200, token=None):
-        try:
-            return self._hf_client().search(query=query, kind=kind, limit=limit, token=token)
-        except hf.HfError as e:
-            raise CatalogError(str(e)) from None
-
-    def hf_inspect(self, repo, revision=None, token=None):
-        try:
-            return self._hf_client().inspect(repo, revision=revision, token=token)
-        except hf.HfError as e:
-            raise CatalogError(str(e)) from None
-
-    def hf_spec(self, repo, revision=None, language=None, token=None):
-        info = self.hf_inspect(repo, revision=revision, token=token)
-        if not info.get("supported"):
-            raise CatalogError(info.get("reason") or "unsupported repository")
-        engine = info["engine"]
-        backend = _CUSTOM_BACKENDS.get(engine)
-        if backend is None:
-            raise CatalogError(f"unsupported engine: {engine}")
-        langs = (language.strip().replace("_", "-"),) if isinstance(language, str) and language.strip() else tuple(info.get("languages") or ("en",))
-        files = info["files"]
-        rev = info["revision"]
-        if engine == "piper":
-            source = {"repo": info["repo"], "revision": rev, "files": {f["path"]: f["sha256"] for f in files}}
-        elif engine == "whisper":
-            source = {
-                "repo": info["repo"],
-                "revision": rev,
-                "language": langs[0].split("-")[0],
-                "files": {Path(f["path"]).name: {"sha256": f["sha256"], "bytes": f["size"]} for f in files},
-            }
-        elif engine == "embedding":
-            source = {
-                "repo": info["repo"],
-                "revision": rev,
-                "files": {("model.onnx" if f["path"].endswith(".onnx") else Path(f["path"]).name): {"path": f["path"], "sha256": f["sha256"], "bytes": f["size"]} for f in files},
-            }
-        else:
-            source = {
-                "repo": info["repo"],
-                "revision": rev,
-                "files": {Path(f["path"]).name: {"path": f["path"], "sha256": f["sha256"], "bytes": f["size"]} for f in files},
-            }
-        note = f"Added from Hugging Face ({info['repo']} @ {rev[:12]}, format: {info['format']}). Licence: {info['license']}."
-        return ModelSpec(
-            id=hf.model_id_for(info["repo"]),
-            title=info["repo"],
-            kind=info["kind"],
-            languages=langs,
-            license=info["license"],
-            license_url=info["license_url"],
-            homepage=info["homepage"],
-            download_mb=max(1, info["download_mb"]),
-            backend=backend,
-            engine=engine,
-            commercial=bool(info["commercial"]),
-            note=note,
-            source=source,
-            custom=True,
-        )
 
     # ---- Piper index ---------------------------------------------------
 

@@ -65,14 +65,14 @@ import urllib.request
 import uuid
 from collections import deque
 
-from . import cloud_llm, conversation, farewell, gateway, secret_refs
+from . import cloud_llm, conversation, farewell, langs, secret_refs
 from .calllog import CallLog, clip, redact, settings
 from .cloud_llm import assert_public_url
 from .intents import match as match_intent
 from .models import NotReady, ServiceBusy, UnknownModel, WrongKind
 from .voice_requests import APP_TYPE as VOICE_REQUESTS
 from .voice_requests import BARGE_FRAMES, CALIBRATION_FRAMES, NO_SPEECH_SECONDS, PRE_ROLL_FRAMES
-from .voice_requests import AppStore, Listener, ResultStore, pick_local_fallback
+from .voice_requests import AppStore, Listener, ResultStore, call_language, choose_greeting
 
 log = logging.getLogger("aipbx_ai.calls")
 
@@ -130,7 +130,7 @@ _KEY = re.compile(r"^[A-Za-z0-9_]{1,40}$")
 _ID_FIELD = re.compile(r"^[0-9+*#A-Za-z_.-]*$")
 _UNIQUEID = re.compile(r"^[0-9A-Za-z_.-]*$")
 _CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
-_FIELDS = ("app", "key", "model", "speed", "max", "caller", "did", "uniqueid", "text", "lookup", "fallback")
+_FIELDS = ("app", "key", "model", "speed", "max", "caller", "did", "uniqueid", "text", "lookup", "fallback", "lang")
 ANNOUNCEMENT = "announcement"
 CLEANUP_EVERY = 300.0        # seconds between deletions of old voice_requests results
 
@@ -339,6 +339,10 @@ class CallSession:
         self.model = model
         self.caller = caller
         self.caller_name = ""
+        self.lang = ""                 # the call's language code (channel language when the PBX has it)
+        self.lang_name = ""
+        self.lang_locale = ""
+        self.greeting = ""             # the chosen greeting template
         self.did = did
         self.uniqueid = uniqueid
         self.linkedid = ""
@@ -399,7 +403,8 @@ class CallSession:
                 "audio_seconds": round(self.audio_seconds, 1), "played_seconds": round(played, 1),
                 "late_frames": self.late_frames, "max_late_ms": self.max_late_ms, "resyncs": self.resyncs,
                 "inbound_frames": self.inbound_frames, "intent": self.intent,
-                "transcripts": [clip(t) for t in tr[:8]], "notes": self.notes, "settings": settings(self.config)}
+                "transcripts": [clip(t) for t in tr[:8]], "notes": self.notes, "settings": settings(self.config),
+                "language": self.lang}
 
     def audio_in(self, kind, payload):
         self.inbound_bytes += len(payload)
@@ -559,17 +564,14 @@ class CallRegistry:
         config, version = self.apps.get(app)
         if config is None:
             raise Refused("no text and no voice_requests config for this application")
-        if config.get("local_chat_app", app) != app:
-            raise Refused("unexpected local model reference")
-        for name, kind in (("tts_model", "tts"), ("stt_model", "stt")):
-            model = config[name]
-            if model.startswith("cloud:"):       # a cloud provider: nothing to load here
-                continue
+        realtime = config.get("mode") == "realtime"      # the provider speaks: no voice model, no prompts here
+        model = config["tts_model"]
+        if not realtime and not model.startswith("cloud:"):       # a cloud provider: nothing to load here
             try:
                 info = self.manager.describe(model)
             except UnknownModel:
                 raise Refused(f"unknown model {model}") from None
-            if info["kind"] != kind:
+            if info["kind"] != "tts":
                 raise Refused(f"model {model} has the wrong kind")
             if info["state"] != "ready":
                 raise Refused(f"model {model} is not ready ({info['state']})")
@@ -577,6 +579,7 @@ class CallRegistry:
                               _id_field(form, "did", _ID_FIELD, MAX_ID_FIELD),
                               _id_field(form, "uniqueid", _UNIQUEID, MAX_UNIQUEID), kind=VOICE_REQUESTS)
         session.config, session.version = config, version
+        session.lang, session.lang_name, session.lang_locale = call_language(config, form.get("lang"))
         if form.get("linkedid"):
             session.linkedid = _id_field(form, "linkedid", _UNIQUEID, MAX_UNIQUEID)
         # Handed over by another assistant of a conversation: its summary (SyncAiApps.php sends AI_SUMMARY).
@@ -588,11 +591,15 @@ class CallRegistry:
         try:
             raw_name, _ = secret_refs.caller_info(session.caller)
             session.caller_name = display_name(raw_name)
+            session.greeting = choose_greeting(config, session.lang, session.caller_name)
+            if realtime:
+                session.prepare_ms = int((time.monotonic() - session.created) * 1000)
+                return session.uuid
             try:
-                template = random.choice(config["greetings"]) if config.get("greetings") else config["greeting"]
+                template = session.greeting
                 greeting = self.apps.greeting_text({"greeting": template}, session.caller_name, session.caller, session.did)
                 session.pcm = self.apps.greeting_speech(
-                    app, version, config, template, session.caller_name, session.caller, session.did
+                    app, version, config, template, session.caller_name, session.caller, session.did, session.lang
                 )
             except NotReady:
                 raise Refused(f"model {config['tts_model']} is not ready") from None
@@ -1212,13 +1219,14 @@ class VoiceRequestsCall:
                     from .deepgram_stream import DeepgramStream
                     dg_stream = DeepgramStream(
                         sc["api_key"],
-                        lang=sc.get("lang") or cfg.get("language") or "tr",
+                        lang=self.session.lang or sc.get("lang") or cfg.get("language") or "tr",
                         sample_rate=SAMPLE_RATE,
+                        **({"model": sc["model"]} if sc.get("model") else {}),
                     )
                     dg_stream.connect()
                     if listener.frames:
                         dg_stream.send_audio(b"".join(listener.frames))
-                except Exception as e:  # noqa: BLE001 - fall back cleanly to REST/local STT
+                except Exception as e:  # noqa: BLE001 - fall back cleanly to REST STT
                     log.debug("call app=%d: deepgram stream unavailable (%s)", session.app, type(e).__name__)
                     if dg_stream is not None:
                         dg_stream.close()
@@ -1290,8 +1298,7 @@ class VoiceRequestsCall:
 
     def understand(self, text, cfg):
         """The request in what the caller said (intents.match result shape)."""
-        mode = cfg.get("understand", "auto")
-        if mode == "cloud" and cfg.get("llm_cloud"):
+        if cfg.get("understand") == "cloud" and cfg.get("llm_cloud"):
             started = time.monotonic()
             try:
                 c = cloud_llm.classify(cfg["llm_cloud"], text, cfg["intents"])
@@ -1299,50 +1306,32 @@ class VoiceRequestsCall:
                          cfg["llm_cloud"]["provider"], int((time.monotonic() - started) * 1000))
                 sure = c["intent"] is not None and c["confidence"] >= cfg["threshold"]
                 return {"intent": c["intent"] if sure else None, "score": c["confidence"], "second": 0.0,
-                        "scores": {c["intent"]: c["confidence"]} if c["intent"] else {}, "method": "cloud",
-                        "meaning": {}}
-            except Exception as e:  # noqa: BLE001 - never lose the call: fall back to local matching
-                log.warning("call app=%d: cloud model failed (%s), local matching", self.session.app,
+                        "scores": {c["intent"]: c["confidence"]} if c["intent"] else {}, "method": "cloud"}
+            except Exception as e:  # noqa: BLE001 - never lose the call: fall back to keyword matching
+                log.warning("call app=%d: cloud model failed (%s), keyword matching", self.session.app,
                             type(e).__name__ + ": " + str(e)[:80])
-                self.session.note("cloud model failed, local matching: " + type(e).__name__ + ": " + str(e))
-        return match_intent(text, cfg["intents"], cfg["threshold"],
-                            embed=None if mode == "keywords" else self.embedder())
+                self.session.note("cloud model failed, keyword matching: " + type(e).__name__ + ": " + str(e))
+        return match_intent(text, cfg["intents"], cfg["threshold"])
 
-    def embedder(self):
-        """Sentence meaning for matching, when such a model is running (else None)."""
-        manager = self.registry.manager
-        model = manager.ready_embedding() if hasattr(manager, "ready_embedding") else None
-        if model is None:
-            return None
-        return lambda texts: manager.embed(model, texts)
+    def stt_config(self):
+        """The cloud speech-to-text settings with the call's language."""
+        s, cfg = self.session, dict(self.config["stt_cloud"])
+        if s.lang:
+            cfg.update(lang=s.lang, locale=s.lang_locale or langs.locale(s.lang), lang_name=s.lang_name or langs.name(s.lang))
+        return cfg
 
     def transcribe(self, pcm):
         """(text, ms); runs in a thread of its own, the reader keeps reading meanwhile."""
         from .wav import wav_bytes
 
         box = {}
-        model = self.config["stt_model"]
 
         def run():
             try:
-                if model.startswith("cloud:"):
-                    from . import cloud_stt
-                    from .vosk_backend import pcm16_from_wav
-                    pcm16k, _ = pcm16_from_wav(wav_bytes(pcm, SAMPLE_RATE))   # 16 kHz: what every provider takes
-                    try:
-                        box["text"] = cloud_stt.transcribe(self.config["stt_cloud"], wav_bytes(pcm16k, 16000))
-                        return
-                    except Exception as ce:  # noqa: BLE001
-                        lang = self.config.get("stt_cloud", {}).get("lang") or self.config.get("language") or "tr"
-                        fb = pick_local_fallback(self.registry.manager, "stt", lang=lang, preferred=self.config.get("stt_fallback"))
-                        if not fb:
-                            raise
-                        log.warning("call app=%d: cloud stt (%s) failed (%s), falling back to %s",
-                                    self.session.app, model, type(ce).__name__, fb)
-                        self.session.note(f"cloud speech to text failed ({type(ce).__name__}), using {fb}")
-                        box["text"] = (self.registry.manager.transcribe(fb, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
-                        return
-                box["text"] = (self.registry.manager.transcribe(model, wav_bytes(pcm, SAMPLE_RATE)) or {}).get("text", "")
+                from . import cloud_stt
+                from .wav import pcm16_from_wav
+                pcm16k, _ = pcm16_from_wav(wav_bytes(pcm, SAMPLE_RATE))   # 16 kHz: what every provider takes
+                box["text"] = cloud_stt.transcribe(self.stt_config(), wav_bytes(pcm16k, 16000))
             except Exception as e:  # noqa: BLE001
                 box["error"] = type(e).__name__
         started = time.monotonic()
@@ -1378,8 +1367,8 @@ class VoiceRequestsCall:
             if cfg.get("conversation"):
                 if cfg.get("realtime_cloud"):
                     from .realtime import RealtimeCall
-                    if RealtimeCall(self).run():
-                        return self.session.result or "matched"
+                    RealtimeCall(self).run()           # a failure ends the call as "hangup": no cascade fallback
+                    return self.session.result or "hangup"
                 return self._converse()
             played, pre = self.play_interruptible(session.pcm)
             if not played:
@@ -1437,11 +1426,11 @@ class VoiceRequestsCall:
             self.session.note("speech synthesis failed: " + type(e).__name__)
             return b""
 
-    def lookup(self, tool, query):
+    def lookup(self, tool, query, source=None):
         """One of the application's lookups, as the text the model reads; ValueError on failure."""
         phrases = self.config.get("waiting_phrases", [])
         if self.waiting_spoken:
-            return self.resolve_lookup(tool, query)
+            return self.resolve_lookup(tool, query, source)
         s = self.session
         clips = [self.registry.apps.cached(s.app, s.version, f"waiting:{i}") for i in range(len(phrases))]
         clips = [pcm for pcm in clips if pcm]
@@ -1451,13 +1440,13 @@ class VoiceRequestsCall:
         if preferred:
             clips = [preferred]
         if not clips:
-            return self.resolve_lookup(tool, query)
+            return self.resolve_lookup(tool, query, source)
 
         done = queue.Queue(maxsize=1)
 
         def run():
             try:
-                done.put((self.resolve_lookup(tool, query), None))
+                done.put((self.resolve_lookup(tool, query, source), None))
             except Exception as exc:
                 done.put((None, exc))
 
@@ -1475,10 +1464,10 @@ class VoiceRequestsCall:
             raise error
         return result
 
-    def resolve_lookup(self, tool, query):
+    def resolve_lookup(self, tool, query, source=None):
         s = self.session
         if tool == conversation.KNOWLEDGE_TOOL and self.config.get("knowledge"):
-            return secret_refs.knowledge(s.app, query)
+            return conversation.knowledge_lookup(self.config, s.app, query, source, secret_refs.knowledge)
         if tool == conversation.DB_TOOL and self.config.get("db_queries"):
             result = secret_refs.db_value(s.app, query, s.verified_customer, {
                 "caller_id": s.caller, "caller_name": s.caller_name, "did": s.did,
@@ -1577,7 +1566,7 @@ class VoiceRequestsCall:
         url += ("&" if "?" in url else "?") + urllib.parse.urlencode({"q": query})
         return json.dumps(fetch_values(url), ensure_ascii=False)
 
-    def opening_audio(self, cfg, complete):
+    def opening_audio(self, cfg):
         if not cfg.get("automatic_announcements"):
             return self.session.pcm
         result = queue.Queue(maxsize=1)
@@ -1586,7 +1575,7 @@ class VoiceRequestsCall:
         def prepare():
             try:
                 prompt = conversation.announcements_prompt(cfg)
-                raw = complete(prompt) if complete else cloud_llm.answer_text(cfg["llm_cloud"], prompt)
+                raw = cloud_llm.answer_text(cfg["llm_cloud"], prompt)
                 greeting, waiting = conversation.parse_announcements(raw)
                 name = cfg.get("caller_name", "").split()
                 if name and name[0].casefold() not in greeting.casefold():
@@ -1652,11 +1641,12 @@ class VoiceRequestsCall:
         }
         if session.caller_name:
             cfg["caller_name"] = session.caller_name
-        lang = cfg.get("language") or "tr"
+        lang = session.lang or cfg.get("language") or "tr"
+        if session.lang:
+            cfg["language"], cfg["language_name"] = session.lang, session.lang_name
         if session.context:
             self.history.append(("context", session.context))
-        complete = self.local_completion if cfg.get("local_chat_app") else None
-        played, pre = self.play_interruptible(self.opening_audio(cfg, complete))
+        played, pre = self.play_interruptible(self.opening_audio(cfg))
         if not played:
             return self.save("hangup")
         quiet = 0
@@ -1692,7 +1682,7 @@ class VoiceRequestsCall:
             self.waiting_spoken = False
             started = time.monotonic()
             try:
-                step = conversation.next_step(cfg, self.history, lang, self.lookup, complete=complete)
+                step = conversation.next_step(cfg, self.history, lang, self.lookup)
             except LookupInterrupted as interrupted:
                 if interrupted.pre is None:
                     return self.save("hangup")
@@ -1757,18 +1747,6 @@ class VoiceRequestsCall:
             return self._finish(self.speak(step["say"]) or self.prompt("not_understood"), "not_understood")
         heard = any(a["speech_seconds"] for a in self.attempts)
         return self._finish(self.prompt("not_understood"), "not_understood" if heard else "silence")
-
-    def local_completion(self, text):
-        try:
-            connection = {**secret_refs.local_chat(self.session.app), "json_output": True}
-            if self.config.get("local_context"):
-                connection["num_ctx"] = self.config["local_context"]
-            # A context size other than the loaded one makes Ollama reload the model (seconds on a CPU).
-            wait = 45 if connection.get("num_ctx") else 15
-            result, _ = gateway.chat(connection, text, 384, time.monotonic() + wait, self.registry.manager)
-            return result
-        except Exception as exc:  # provider errors go to the call's fallback
-            raise cloud_llm.CloudLlmError("local model unavailable") from exc
 
     saved = False
 

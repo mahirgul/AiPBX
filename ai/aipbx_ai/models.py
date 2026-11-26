@@ -35,10 +35,7 @@ from . import sysinfo
 from .ema import EmaLightningBackend
 from .kokoro_backend import KokoroBackend
 from .piper_backend import PiperBackend
-from .embedding import EmbeddingBackend
 from .onnx_models import SileroBackend, SmartTurnBackend
-from .vosk_backend import VoskBackend
-from .whisper_backend import WhisperBackend
 
 log = logging.getLogger("aipbx_ai.models")
 
@@ -52,7 +49,7 @@ ABSENT, DOWNLOADING, INSTALLED, LOADING, READY, ERROR = (
 class ModelSpec:
     id: str
     title: str
-    kind: str              # "tts", "stt", "llm", "embedding"; "vad" and "turn" (optional call detectors)
+    kind: str              # "tts"; "vad" and "turn" (optional call detectors)
     languages: tuple
     license: str
     license_url: str
@@ -89,52 +86,6 @@ def _piper(id, title, path, onnx_sha, json_sha, mb, languages, license, commerci
                      homepage="https://github.com/rhasspy/piper", download_mb=mb, backend=PiperBackend,
                      engine="piper", commercial=commercial, measured=measured or {}, note=note,
                      gender=gender, source=source)
-
-
-def _vosk(id, title, file, sha, mb, languages, measured=None, note=""):
-    return ModelSpec(id=id, title=title, kind="stt", languages=languages, license="Apache-2.0",
-                     license_url="https://alphacephei.com/vosk/models", homepage="https://alphacephei.com/vosk/",
-                     download_mb=mb, backend=VoskBackend, engine="vosk", measured=measured or {}, note=note,
-                     source={"file": file, "sha256": sha})
-
-# Whisper (OpenAI, MIT) as CTranslate2 models: Systran/faster-whisper-<size> at
-# a pinned revision, three files each checked by SHA-256 (whisper_backend.py).
-# The models are multilingual; an entry fixes the language it listens for
-# (source["language"]), so a voice-requests application that names the model
-# id gets that language without detection. Another language = another entry
-# (its own copy of the files). The base and tiny sizes were measured too and
-# are less accurate than Vosk on Turkish telephone audio, so they are not offered.
-WHISPER_VOCABULARY = {"sha256": "34ce3fe1c5041027b3f8d42912270993f986dbc4bb34cf27f951e34a1e453913", "bytes": 459861}
-WHISPER_SIZES = {
-    "small": {"repo": "Systran/faster-whisper-small", "revision": "536b0662742c02347bc0e980a01041f333bce120",
-              "config.json": ("b55496ac7940a7ae47d2c01eab40edfd8701feec1229d9cce3b40014383fb828", 2370),
-              "model.bin": ("3e305921506d8872816023e4c273e75d2419fb89b24da97b4fe7bce14170d671", 483546902)},
-}
-
-
-def _whisper(id, title, size, language, languages, measured=None, note=""):
-    s = WHISPER_SIZES[size]
-    files = {name: {"sha256": s[name][0], "bytes": s[name][1]} for name in ("config.json", "model.bin")}
-    files["vocabulary.txt"] = dict(WHISPER_VOCABULARY)
-    mb = -(-sum(f["bytes"] for f in files.values()) // (1024 * 1024))
-    return ModelSpec(id=id, title=title, kind="stt", languages=languages, license="MIT",
-                     license_url=f"https://huggingface.co/{s['repo']}/blob/{s['revision']}/README.md",
-                     homepage="https://github.com/openai/whisper", download_mb=mb, backend=WhisperBackend,
-                     engine="whisper", measured=measured or {}, note=note,
-                     source={"repo": s["repo"], "revision": s["revision"], "language": language, "files": files})
-
-
-# multilingual-e5-small (MIT) in the int8 ONNX export of Xenova, pinned.
-E5_SMALL = {
-    "repo": "Xenova/multilingual-e5-small", "revision": "761b726dd34fb83930e26aab4e9ac3899aa1fa78",
-    "upstream": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
-    "files": {
-        "model.onnx": {"path": "onnx/model_quantized.onnx", "bytes": 118308185,
-                       "sha256": "f80102d3f2a1229f387d3c81909990d8945513e347b0eab049f7de3c6f98c193"},
-        "tokenizer.json": {"path": "tokenizer.json", "bytes": 17082730,
-                           "sha256": "0b44a9d7b51c3c62626640cda0e2c2f70fdacdc25bbbd68038369d14ebdf4c39"},
-    },
-}
 
 
 # Optional call detectors: one pinned file each (SHA-256 checked before every load).
@@ -212,26 +163,6 @@ REGISTRY = (
            "Public domain", True, gender="female",
            note="Slow on a small server (high quality): fine for announcements, not for live calls.",
            measured={"realtime_factor": 2.1, "memory_mb": 228, "load_s": 2.5}),
-    _vosk("vosk-tr-small", "Vosk small (Turkish)", "vosk-model-small-tr-0.3.zip",
-          "8c8d07cec1bce31add14967c16891c84152cdf76d391e33c08278119b9ea96e5", 36, ("tr-TR",),
-          measured={"realtime_factor": 5, "memory_mb": 120, "load_s": 0.4},
-          note="Fast and small; on 8 kHz telephone audio about 1 word in 4 is wrong. Best with short requests."),
-    _vosk("vosk-de-small", "Vosk small (German)", "vosk-model-small-de-0.15.zip",
-          "b7e53c90b1f0a38456f4cd62b366ecd58803cd97cd42b06438e2c131713d5e43", 45, ("de-DE",)),
-    _vosk("vosk-en-small", "Vosk small (English, US)", "vosk-model-small-en-us-0.15.zip",
-          "30f26242c4eb449f948e42cb302dd7a686cb29a3423a8367f99ff41780942498", 40, ("en-US",)),
-    # Measured with Turkish telephone audio (one synthetic voice, docs/local-ai.md);
-    # memory_mb: growth of the process with the model loaded and transcribing.
-    _whisper("whisper-small-tr", "Whisper small (Turkish)", "small", "tr", ("tr-TR",),
-             measured={"realtime_factor": 3, "memory_mb": 630, "load_s": 2.7},
-             note="Half the word errors of Vosk on 8 kHz telephone audio (1 word in 13 wrong), "
-                  "but slower: about 0.9 s for a 3 s request on 2 cores, and 630 MB of memory."),
-    _whisper("whisper-small-de", "Whisper small (German)", "small", "de", ("de-DE",),
-             note="Same model as Whisper small (Turkish), its own copy of the files. "
-                  "About 0.9 s for a 3 s request on 2 cores, 630 MB of memory."),
-    _whisper("whisper-small-en", "Whisper small (English)", "small", "en", ("en-US", "en-GB"),
-             note="Same model as Whisper small (Turkish), its own copy of the files. "
-                  "About 0.9 s for a 3 s request on 2 cores, 630 MB of memory."),
     # memory_mb: the shared model; further running Kokoro voices add almost nothing.
     _kokoro("kokoro-en-heart", "Kokoro Heart (English, US)", "af_heart",
             "d583ccff3cdca2f7fae535cb998ac07e9fcb90f09737b9a41fa2734ec44a8f0b", ("en-US",), "female", "A",
@@ -245,7 +176,6 @@ REGISTRY = (
     _kokoro("kokoro-en-george", "Kokoro George (English, UK)", "bm_george",
             "c4b235a4c1f2cd3b939fed08b899ce9385638b763f7b73a59616c4fc9bd6c9bc", ("en-GB",), "male", "C",
             measured={"realtime_factor": 1.65, "memory_mb": 460, "load_s": 1.6}),
-    # Sentence meaning for the voice requests (embedding.py), every language.
     # Optional detectors of the call path (onnx_models.py), pinned and checked like every model.
     ModelSpec(id="silero-vad", title="Speech detection: Silero VAD", kind="vad", languages=(), license="MIT",
               license_url=f"https://huggingface.co/onnx-community/silero-vad/blob/{SILERO['revision']}/LICENSE",
@@ -262,16 +192,6 @@ REGISTRY = (
                    "them off and a finished sentence does not wait a full 800 ms. Trained on 16 kHz speech; "
                    "how well it does on your lines is yours to try (it is off until an agent selects it).",
               source={"repo": SMART_TURN["repo"], "revision": SMART_TURN["revision"], "files": SMART_TURN["files"]}),
-    ModelSpec(id="e5-small-multilingual", title="Sentence meaning: multilingual-e5-small", kind="embedding",
-              languages=("tr-TR", "de-DE", "en-US", "en-GB"), license="MIT",
-              license_url=f"https://huggingface.co/intfloat/multilingual-e5-small/blob/{E5_SMALL['upstream']}/README.md",
-              homepage="https://huggingface.co/intfloat/multilingual-e5-small",
-              download_mb=-(-sum(f["bytes"] for f in E5_SMALL["files"].values()) // (1024 * 1024)),
-              backend=EmbeddingBackend, engine="e5",
-              measured={"ms_per_sentence": 3, "memory_mb": 250, "load_s": 1},
-              note="Voice requests understand what callers mean, not only the keywords: the example "
-                   "sentences are compared by meaning. About 3 ms per sentence.",
-              source={"repo": E5_SMALL["repo"], "revision": E5_SMALL["revision"], "files": E5_SMALL["files"]}),
 )
 
 
@@ -570,13 +490,12 @@ class ModelManager:
             entry.cancel = True
         return DOWNLOADING
 
-    def add(self, spec, download_token=None, *, persist=None):
+    def add(self, spec, *, persist=None):
         """Registers a model. With persist, reserves and starts its installation."""
         with self._mu:
             if spec.id in self._entries:
                 raise ValueError(f"model {spec.id} exists")
             entry = _Entry(spec, self._make(spec))
-            entry.backend.download_token = download_token
             if persist is not None:
                 download = not entry.backend.installed()
                 if download and self._reserved_disk_mb() + spec.download_mb > self.disk_limit_mb:
@@ -638,10 +557,7 @@ class ModelManager:
                         if entry.cancel:
                             raise Cancelled(spec_id)
                         entry.progress = max(0, min(100, int(pct)))
-                try:
-                    entry.backend.download(progress)
-                finally:
-                    entry.backend.download_token = None
+                entry.backend.download(progress)
                 with self._mu:
                     if entry.cancel:
                         raise Cancelled(spec_id)
@@ -703,16 +619,6 @@ class ModelManager:
             with self._mu:
                 entry.pending -= 1
 
-    def chat(self, model_id, prompt, max_tokens=300, timeout=None, num_ctx=None):
-        kwargs = {**({"timeout": timeout} if timeout is not None else {}), **({"num_ctx": num_ctx} if num_ctx else {})}
-        return self._run_job(model_id, "llm", lambda b: b.chat(prompt, max_tokens, **kwargs))
-
-    def transcribe(self, model_id, wav):
-        return self._run_job(model_id, "stt", lambda b: b.transcribe(wav))
-
-    def embed(self, model_id, texts):
-        return self._run_job(model_id, "embedding", lambda b: b.embed(texts))
-
     def ready_backend(self, kind):
         """The loaded backend of a ready model of this kind, or None. For the detectors of the call path,
         which run beside the job queue (a call must never wait behind a synthesis)."""
@@ -721,15 +627,6 @@ class ModelManager:
                 with self._mu:
                     if self._state(entry) == READY and not entry.unloading:
                         return entry.backend
-        return None
-
-    def ready_embedding(self):
-        """Id of a running sentence-meaning model, or None."""
-        for entry in self._snapshot():
-            if entry.spec.kind == "embedding":
-                with self._mu:
-                    if self._state(entry) == READY and not entry.unloading:
-                        return entry.spec.id
         return None
 
     def synthesize(self, model_id, text, speed, sample_rate):

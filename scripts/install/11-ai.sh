@@ -4,9 +4,8 @@
 # ============================================================================
 step "11. Local AI Service"
 
-# Install the standard-library gateway for every installation. Local inference
-# dependencies remain opt-in through aipbx-ai-setup; cloud-only installs need no venv.
-install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-ollama-setup" /usr/local/sbin/aipbx-ollama-setup
+# Install the standard-library gateway for every installation. The local runtime (text to speech
+# and two call detectors) stays opt-in through aipbx-ai-setup; cloud-only installs need no venv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-ai-run" /usr/local/sbin/aipbx-ai-run
 AI_BASE=/opt/aipbx-ai
 AI_VENV="$AI_BASE/venv"
@@ -15,6 +14,16 @@ if ! id -u aipbx-ai >/dev/null 2>&1; then
         --shell /usr/sbin/nologin --user-group aipbx-ai
 fi
 install -d -o aipbx-ai -g aipbx-ai -m 0755 /var/lib/aipbx-ai
+# Speech to text and language models are cloud only: remove what older releases downloaded (speech and
+# sentence-meaning models, voices added from other engines, the old Hugging Face and index caches). Idempotent.
+rm -rf /var/lib/aipbx-ai/models/whisper-* /var/lib/aipbx-ai/models/vosk-* /var/lib/aipbx-ai/models/e5-* \
+    /var/lib/aipbx-ai/hf /var/lib/aipbx-ai/cache
+for AI_MANIFEST in /var/lib/aipbx-ai/models/*/manifest.json; do
+    if [[ -f "$AI_MANIFEST" ]] && ! grep -q '"engine": *"piper"' "$AI_MANIFEST"; then
+        rm -rf "$(dirname "$AI_MANIFEST")"
+    fi
+done
+unset AI_MANIFEST
 install -d -o root -g root -m 0755 "$AI_BASE"
 # Code: replaced on every install/upgrade (root-owned; the service only reads it).
 rm -rf "$AI_BASE/app.new"

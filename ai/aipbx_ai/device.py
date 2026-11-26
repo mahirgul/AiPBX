@@ -1,8 +1,7 @@
 """Where the local models run: the GPU when this server has a usable one, else the CPU.
 
 Decided once per process and never an error: onnxruntime falls back to the CPU by itself
-when the CUDA libraries are missing, and the Whisper loader retries on the CPU (see
-whisper_backend.load). AIPBX_AI_DEVICE=cpu in the service environment forces the CPU.
+when the CUDA libraries are missing. AIPBX_AI_DEVICE=cpu in the service environment forces the CPU.
 """
 import os
 
@@ -30,13 +29,3 @@ def onnx_providers():
                 _providers = CPU
     return list(_providers)
 
-
-def ct2_device():
-    """"cuda" when CTranslate2 sees a GPU, else "cpu"."""
-    if forced_cpu():
-        return "cpu"
-    try:
-        import ctranslate2
-        return "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
-    except Exception:  # noqa: BLE001
-        return "cpu"

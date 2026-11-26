@@ -28,7 +28,8 @@ import time
 from . import cloud_llm
 
 MAX_TOOLS = 5
-MAX_INSTRUCTIONS = 4000
+MAX_INSTRUCTIONS = 60000
+MAX_SOURCES = 8
 MAX_TURNS_MIN, MAX_TURNS_MAX, MAX_TURNS_DEFAULT = 2, 12, 6
 LOOKUPS_PER_TURN = 2
 RESULT_CHARS = 2000          # of a lookup answer, for the model
@@ -97,6 +98,7 @@ def validate(data, url_ok):
     knowledge = data.get("knowledge", False) is True
     if knowledge and KNOWLEDGE_TOOL in seen:
         raise ConversationError(f'tool {KNOWLEDGE_TOOL}: the name is taken by the knowledge base')
+    sources = _sources(data.get("knowledge_sources")) if knowledge else []
     queries = data.get("db_queries", [])
     if not isinstance(queries, list) or len(queries) > 10 or (queries and DB_TOOL in seen):
         raise ConversationError("invalid database lookup list")
@@ -115,7 +117,55 @@ def validate(data, url_ok):
             raise ConversationError("database lookup description is empty")
         db_queries[query_id] = {"id": query_id, "description": description, "params": params}
     return {"instructions": instructions, "max_turns": turns, "tools": out, "knowledge": knowledge,
-            "db_queries": list(db_queries.values())}
+            "knowledge_sources": sources, "db_queries": list(db_queries.values())}
+
+
+def _sources(value):
+    """The knowledge sources the agent may choose from: [{id, name, description}], at most MAX_SOURCES."""
+    if value in (None, ""):
+        return []
+    if not isinstance(value, list) or len(value) > MAX_SOURCES:
+        raise ConversationError(f"knowledge_sources: at most {MAX_SOURCES}")
+    out, seen = [], set()
+    for n, item in enumerate(value, 1):
+        if not isinstance(item, dict):
+            raise ConversationError(f"knowledge source {n}: must be an object")
+        sid = item.get("id")
+        if type(sid) is not int or sid < 1 or sid in seen:
+            raise ConversationError(f"knowledge source {n}: id must be a positive whole number, once")
+        seen.add(sid)
+        try:
+            name, description = _clean(item.get("name"), 60), _clean(item.get("description"), 200)
+        except ConversationError as e:
+            raise ConversationError(f"knowledge source {sid}: {e}") from None
+        if not name:
+            raise ConversationError(f"knowledge source {sid}: name is empty")
+        out.append({"id": sid, "name": name, "description": description})
+    return out
+
+
+def source_lines(config):
+    """One line per knowledge source: "<id>: <name> - <description>"."""
+    return [f'{s["id"]}: {s["name"]}' + (f' - {s["description"]}' if s.get("description") else "")
+            for s in config.get("knowledge_sources") or []]
+
+
+def knowledge_lookup(config, app, query, source, ask):
+    """The excerpts of the chosen knowledge source: ask(app, query, source_id) answers (ValueError when the
+    knowledge base is unavailable). An unknown source is an error text for the model, never a lookup."""
+    sources = config.get("knowledge_sources") or []
+    if not sources:
+        return ask(app, query, None)
+    ids = {s["id"] for s in sources}
+    if source in (None, "") and len(sources) == 1:
+        source = sources[0]["id"]
+    try:
+        sid = int(source) if type(source) is not bool else None
+    except (TypeError, ValueError):
+        sid = None
+    if sid not in ids:
+        return "Error: unknown knowledge source. Choose one of: " + "; ".join(source_lines(config))
+    return ask(app, query, sid)
 
 
 def render_instructions(template, config, lang="tr"):
@@ -149,7 +199,9 @@ def prompt(config, history, lang):
     if config.get("knowledge"):
         tools.append(f'- "{KNOWLEDGE_TOOL}": the company\'s own documents (policies, prices, opening hours, products); '
                      "search using the caller's original words for the topic, preserving their language; "
-                     "answer only from the excerpts it returns")
+                     "answer only from the excerpts it returns"
+                     + (' (set "source" to one of the ids below)' if config.get("knowledge_sources") else ""))
+        tools.extend(f'  - source {line}' for line in source_lines(config))
     db_queries = config.get("db_queries", [])
     db_step = ""
     if db_queries:
@@ -211,14 +263,15 @@ def prompt(config, history, lang):
         "quieter, or whether they can hear you) and repeat your last question in fewer words; from the second "
         "time on, offer pressing a key when the answer is a simple choice. Follow the company's instructions "
         "for this if they say otherwise.\n\n"
-        + caller_context
         + "Company instructions:\n" + (rendered_instructions or "(none)") + "\n\n"
-        "Destinations you may transfer the call to (use only these IDs):\n" + (requests or "(none)") + "\n\n"
+        + caller_context
+        + "Destinations you may transfer the call to (use only these IDs):\n" + (requests or "(none)") + "\n\n"
         "Lookups you may use (the query is sent to the company's system):\n" + tools + "\n\n"
         "Conversation so far:\n" + "\n".join(lines) + "\n\n"
         "Reply with JSON only, one of:\n"
         '{"action": "reply", "say": "<your answer>"}\n'
-        '{"action": "lookup", "tool": "<lookup name>", "query": "<what to look up>"}\n' + db_step +
+        '{"action": "lookup", "tool": "<lookup name>", "query": "<what to look up>"'
+        + (', "source": <knowledge source id>' if config.get("knowledge_sources") else "") + '}\n' + db_step +
         actions + '  (end only when the caller has nothing more to ask)'
     )
 
@@ -262,6 +315,9 @@ def parse_step(raw, config):
         if tool not in names:
             raise cloud_llm.CloudLlmError("unknown lookup")
         step["tool"] = tool
+        if tool == KNOWLEDGE_TOOL:
+            source = data.get("source")
+            step["source"] = source if type(source) is int or (isinstance(source, str) and source.strip().isdigit()) else None
         raw_q = data.get("args") if (tool in pbx_names and isinstance(data.get("args"), dict)) else data.get("query")
         if isinstance(raw_q, dict):
             step["query"] = json.dumps(raw_q, ensure_ascii=False)[:400]
@@ -327,7 +383,7 @@ def next_step(config, history, lang, lookup, post=None, complete=None):
         if n == LOOKUPS_PER_TURN:
             break
         try:
-            result = lookup(step["tool"], step["query"])
+            result = lookup(step["tool"], step["query"], **({"source": step["source"]} if "source" in step else {}))
         except ValueError as e:
             if config.get("builtin_agent"):
                 raise cloud_llm.CloudLlmError("agent lookup unavailable") from e

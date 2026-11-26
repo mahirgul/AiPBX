@@ -5,17 +5,15 @@ decide which request the caller meant: its config then has
 "understand": "cloud" and "llm_cloud": {"provider", "api_key", "model"},
 sent by the portal from AI -> Cloud services.
 
-Why: the small local models choose well between the configured requests,
-but they cannot tell that a caller wants something else entirely ("I'd like
-to order a pizza" lands on the closest department). A language model reads
-the list and may answer "none". Large models are not run on the PBX itself:
-most PBX servers cannot carry them, so they are used from the cloud.
+A language model reads the list and may answer "none" when the caller wants
+something else entirely ("I'd like to order a pizza"). Language models are
+not run on the PBX itself, they are used from the cloud.
 
 The model gets the requests (id, name, keywords, examples) and what the
 caller said, and must answer with JSON {"intent": "<id>" | "none",
 "confidence": 0..1}. Temperature 0. When the provider does not answer in
 time, answers something else, or names an unknown id, ``classify`` raises
-CloudLlmError and the caller falls back to the local matching.
+CloudLlmError and the caller falls back to keyword matching.
 
 The key is stored with the app config ($AIPBX_AI_DATA/apps/<id>.json, mode
 0600) like the cloud speech-to-text key, and never returned by the API.
@@ -125,13 +123,42 @@ class CloudLlmError(Exception):
     pass
 
 
+def check_model(value, label):
+    """A model name of the account settings; ValueError when it is not a safe name."""
+    if not isinstance(value, str) or not _MODEL.match(value):
+        raise ValueError(f"{label}.model is not valid")
+    return value
+
+
+def check_number(value, label, lo, hi, integer=False):
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not lo <= value <= hi \
+            or (integer and value != int(value)):
+        raise ValueError(f"{label} must be {'a whole number' if integer else 'a number'} from {lo} to {hi}")
+    return int(value) if integer else float(value)
+
+
+def _settings(cfg):
+    """The per-account settings of llm_cloud that are present: temperature 0..2, max_tokens 16..4096."""
+    out = {}
+    if cfg.get("temperature") is not None:
+        out["temperature"] = check_number(cfg["temperature"], "llm_cloud.temperature", 0, 2)
+    if cfg.get("max_tokens") is not None:
+        out["max_tokens"] = check_number(cfg["max_tokens"], "llm_cloud.max_tokens", 16, 4096, integer=True)
+    return out
+
+
 def validate(cfg):
     """Normalised llm_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
         raise ValueError("llm_cloud must be an object")
     if 'secret_ref' in cfg:
         from .secret_refs import validate_reference
-        return validate_reference(cfg, "llm")
+        out = validate_reference(cfg, "llm")
+        if cfg.get("model"):
+            out["model"] = check_model(cfg["model"], "llm_cloud")
+        if cfg.get("base_url") and cfg["provider"] in OWN_ADDRESS:
+            out["base_url"] = _check_base(cfg["base_url"], cfg["provider"])
+        return {**out, **_settings(cfg)}
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("llm_cloud.provider is not supported")
@@ -143,20 +170,24 @@ def validate(cfg):
     model = cfg.get("model") or DEFAULT_MODELS.get(provider)
     if not isinstance(model, str) or not _MODEL.match(model):
         raise ValueError("llm_cloud.model is not valid")
-    out = {"provider": provider, "api_key": key.strip(), "model": model}
+    out = {"provider": provider, "api_key": key.strip(), "model": model, **_settings(cfg)}
     base = cfg.get("base_url")
     if provider in OWN_ADDRESS and base:
-        if not isinstance(base, str) or len(base) > 200 or not _BASE_URL.match(base.rstrip("/")):
-            raise ValueError("llm_cloud.base_url is not valid")
-        allow = ALLOW_PRIVATE_URLS or provider == "openai_compat"
-        try:
-            assert_public_url(base.rstrip("/"), resolve=False, allow_private=allow, allow_loopback=allow)
-        except ValueError:
-            raise ValueError("llm_cloud.base_url is not valid") from None
-        out["base_url"] = base.rstrip("/")
+        out["base_url"] = _check_base(base, provider)
     elif provider == "openai_compat":
         raise ValueError("llm_cloud.base_url is missing")
     return out
+
+
+def _check_base(base, provider):
+    if not isinstance(base, str) or len(base) > 200 or not _BASE_URL.match(base.rstrip("/")):
+        raise ValueError("llm_cloud.base_url is not valid")
+    allow = ALLOW_PRIVATE_URLS or provider == "openai_compat"
+    try:
+        assert_public_url(base.rstrip("/"), resolve=False, allow_private=allow, allow_loopback=allow)
+    except ValueError:
+        raise ValueError("llm_cloud.base_url is not valid") from None
+    return base.rstrip("/")
 
 
 def prompt(transcript, intents):
@@ -202,24 +233,29 @@ def _answer_text(cfg, text, post):
     except ValueError:
         raise CloudLlmError("credential unavailable") from None
     provider, model = cfg["provider"], cfg["model"]
+    temperature = cfg.get("temperature", 0)
     if provider == "google_ai":
+        generation = {"temperature": temperature, "responseMimeType": "application/json"}
+        if cfg.get("max_tokens"):
+            generation["maxOutputTokens"] = cfg["max_tokens"]
         d = post(ENDPOINTS[provider].format(model=model), {"x-goog-api-key": cfg["api_key"]},
-                 {"contents": [{"parts": [{"text": text}]}],
-                  "generationConfig": {"temperature": 0, "responseMimeType": "application/json"}})
+                 {"contents": [{"parts": [{"text": text}]}], "generationConfig": generation})
         try:
             return d["candidates"][0]["content"]["parts"][0]["text"]
         except (KeyError, IndexError, TypeError):
             raise CloudLlmError("no answer") from None
     if provider == "claude":
         d = post(ENDPOINTS[provider], {"x-api-key": cfg["api_key"], "anthropic-version": "2023-06-01"},
-                 {"model": model, "max_tokens": 512, "temperature": 0,
+                 {"model": model, "max_tokens": cfg.get("max_tokens", 512), "temperature": temperature,
                   "messages": [{"role": "user", "content": text}]})
         try:
             return d["content"][0]["text"]
         except (KeyError, IndexError, TypeError):
             raise CloudLlmError("no answer") from None
     url = cfg["base_url"] + "/chat/completions" if cfg.get("base_url") else ENDPOINTS[provider]
-    body = {"model": model, "temperature": 0, "messages": [{"role": "user", "content": text}]}
+    body = {"model": model, "temperature": temperature, "messages": [{"role": "user", "content": text}]}
+    if cfg.get("max_tokens"):
+        body["max_tokens"] = cfg["max_tokens"]
     if provider in JSON_MODE:
         body["response_format"] = {"type": "json_object"}
     req_headers = {"Authorization": "Bearer " + cfg["api_key"]} if cfg["api_key"] else {}

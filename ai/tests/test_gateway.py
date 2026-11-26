@@ -33,23 +33,11 @@ class GatewayTest(unittest.TestCase):
         runner.assert_not_called()
 
     def test_success_records_resolved_model_and_usage(self):
-        ctx = {'connection': {'adapter': 'ollama', 'model':'test'}, 'model_ref':'local:test', 'config_revision':'v1'}
+        ctx = {'connection': {'adapter': 'openai', 'model':'test'}, 'model_ref':'local:test', 'config_revision':'v1'}
         result = g.execute(self.payload(), resolver=Mock(return_value=ctx), runner=Mock(return_value=(' OK ',12)))
         self.assertEqual(result['output'],'OK')
         self.assertEqual(result['resolved_model_ref'],'local:test')
         self.assertEqual(result['usage']['amount'],12)
-
-    def test_chat_passes_the_local_context_size(self):
-        sent = []
-        post = lambda url, headers, body, deadline, *a: sent.append(body) or {'message': {'content': 'hi'}}
-        g.chat({'adapter': 'ollama', 'model': 'm', 'num_ctx': 8192}, 'p', 50, time.monotonic() + 5, post=post)
-        g.chat({'adapter': 'ollama', 'model': 'm'}, 'p', 50, time.monotonic() + 5, post=post)
-        self.assertEqual(sent[0]['options']['num_ctx'], 8192)
-        self.assertNotIn('num_ctx', sent[1]['options'])
-        manager = Mock()
-        manager.chat.return_value = 'ok'
-        g.chat({'adapter': 'runtime', 'model': 'x', 'num_ctx': 4096}, 'p', 50, time.monotonic() + 5, manager)
-        self.assertEqual(manager.chat.call_args.kwargs['num_ctx'], 4096)
 
     def test_empty_answer_and_provider_exception_are_sanitized(self):
         ctx = {'connection':{}, 'model_ref':'test', 'config_revision':'v1'}
@@ -150,66 +138,12 @@ class GatewayTest(unittest.TestCase):
         self.assertEqual(seen[0][1]['x-api-key'], 'sk-ant-123')
         self.assertEqual(seen[0][1]['anthropic-version'], '2023-06-01')
 
-    def test_embed_operation_returns_vector_and_dimensions(self):
-        class FakeMgr:
-            def embed(self, model_id, texts):
-                return [[0.25, 0.5, 0.75]]
-        payload = json.dumps({
-            'protocol_version': 1, 'request_id': 'b' * 32, 'operation': 'embed',
-            'input': 'Merhaba AiPBX', 'max_tokens': 1, 'deadline_at': int(time.time()) + 30
-        }).encode()
-        ctx = {'connection': {'adapter': 'runtime', 'model': 'e5-small-multilingual'},
-               'model_ref': 'local:e5-small-multilingual', 'config_revision': 'v1'}
-        res = g.execute(payload, manager=FakeMgr(), resolver=Mock(return_value=ctx))
-        self.assertEqual(res['status'], 'succeeded')
-        self.assertEqual(res['embedding'], [0.25, 0.5, 0.75])
-        self.assertEqual(res['dimensions'], 3)
-        self.assertEqual(res['resolved_model_ref'], 'local:e5-small-multilingual')
-
-    def test_embed_accepts_the_numpy_array_a_local_model_returns(self):
-        try:
-            import numpy as np
-        except ImportError:
-            self.skipTest('numpy not installed')
-
-        class FakeMgr:
-            def embed(self, model_id, texts):
-                return np.array([[0.25, 0.5, 0.75]], dtype=np.float32)
-        payload = json.dumps({
-            'protocol_version': 1, 'request_id': 'c' * 32, 'operation': 'embed',
-            'input': 'Merhaba', 'max_tokens': 1, 'deadline_at': int(time.time()) + 30
-        }).encode()
-        ctx = {'connection': {'adapter': 'runtime', 'model': 'e5-small-multilingual'},
-               'model_ref': 'local:e5-small-multilingual', 'config_revision': 'v1'}
-        res = g.execute(payload, manager=FakeMgr(), resolver=Mock(return_value=ctx))
-        self.assertEqual(res['status'], 'succeeded', res)
-        self.assertEqual(res['embedding'], [0.25, 0.5, 0.75])
-
-    def test_runtime_adapter_passes_remaining_deadline_as_timeout(self):
-        seen = []
-
-        class FakeMgr:
-            def chat(self, model_id, prompt, max_tokens, timeout=None):
-                seen.append((model_id, prompt, max_tokens, timeout))
-                return 'OK'
-
-        ctx = {'connection': {'adapter': 'runtime', 'model': 'qwen'}, 'model_ref': 'local:qwen', 'config_revision': 'v1'}
-        res = g.execute(self.payload(), manager=FakeMgr(), resolver=Mock(return_value=ctx))
-        self.assertEqual(res['status'], 'succeeded')
-        self.assertEqual(len(seen), 1)
-        self.assertIsNotNone(seen[0][3])
-        self.assertGreater(seen[0][3], 0)
-        self.assertLessEqual(seen[0][3], 35)
-
-    def test_runtime_adapter_timeout_maps_to_deadline_exceeded(self):
-        class TimeoutMgr:
-            def chat(self, model_id, prompt, max_tokens, timeout=None):
-                raise TimeoutError('timed out')
-
-        ctx = {'connection': {'adapter': 'runtime', 'model': 'qwen'}, 'model_ref': 'local:qwen', 'config_revision': 'v1'}
-        res = g.execute(self.payload(), manager=TimeoutMgr(), resolver=Mock(return_value=ctx))
-        self.assertEqual(res['status'], 'failed')
-        self.assertEqual(res['error']['code'], 'deadline_exceeded')
+    def test_embed_and_local_adapters_are_gone(self):
+        res = g.execute(self.payload(operation='embed'), resolver=Mock())
+        self.assertEqual(res['error']['code'], 'capability_unsupported')
+        for adapter in ('runtime', 'ollama'):
+            with self.assertRaises(g.GatewayError):
+                g.chat({'adapter': adapter, 'model': 'm'}, 'p', 50, time.monotonic() + 5)
 
 
 if __name__ == '__main__':unittest.main()

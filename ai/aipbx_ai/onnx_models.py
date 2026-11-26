@@ -13,8 +13,14 @@ silence when there is none.
   16 kHz speech of many languages, Turkish included; telephone audio is 8 kHz widened to 16 kHz, so
   how well it does on our lines is measured, not assumed (docs/local-ai.md).
 """
-from .embedding import EmbeddingBackend
+import hashlib
+import os
+import shutil
+from pathlib import Path
 
+from . import hf
+
+REPO_URL = "https://huggingface.co/"
 SILERO_WINDOW = 256          # samples at 8 kHz (32 ms)
 SILERO_CONTEXT = 32          # the end of the previous window, in front of the next one
 SMART_TURN_SECONDS = 8
@@ -27,8 +33,57 @@ def _np():
     return numpy
 
 
-class _OnnxBackend(EmbeddingBackend):
-    """The download, checksum and removal of EmbeddingBackend; one model.onnx loaded on the CPU."""
+def _sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(1 << 20), b""):
+            h.update(block)
+    return h.hexdigest()
+
+
+class _OnnxBackend:
+    """One pinned model.onnx: download with SHA-256 check, removal, loaded on the CPU.
+
+    spec.source = {"repo", "revision", "files": {name: {"path", "sha256", "bytes"}}}."""
+
+    def __init__(self, spec, data_dir):
+        self.spec = spec
+        self.dir = Path(data_dir) / "models" / spec.id
+        self.session = None
+        self.np = None
+
+    def installed(self):
+        return all((self.dir / name).is_file() for name in self.spec.source["files"])
+
+    def disk_bytes(self):
+        return sum(f.stat().st_size for f in self.dir.rglob("*") if f.is_file()) if self.dir.exists() else 0
+
+    def download(self, progress):
+        src = self.spec.source
+        self.dir.mkdir(parents=True, exist_ok=True)
+        total = max(1, sum(f["bytes"] for f in src["files"].values()))
+        done = 0
+        for name, info in src["files"].items():
+            part = self.dir / (name + ".part")
+            url = f"{REPO_URL}{src['repo']}/resolve/{src['revision']}/{info['path']}"
+            try:
+                with hf.open_download(url) as resp, open(part, "wb") as out:
+                    while block := resp.read(1 << 16):
+                        out.write(block)
+                        done += len(block)
+                        progress(min(99, 99 * done // total))
+                got = _sha256(part)
+                if got != info["sha256"]:
+                    raise RuntimeError(f"{name}: checksum mismatch ({got[:12]}…)")
+                os.replace(part, self.dir / name)
+            except BaseException:
+                part.unlink(missing_ok=True)
+                raise
+        progress(100)
+
+    def delete_files(self):
+        self.unload()
+        shutil.rmtree(self.dir, ignore_errors=True)
 
     def load(self):
         import onnxruntime as ort

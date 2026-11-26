@@ -65,7 +65,7 @@ class PiperBackend:
             part = self.dir / (name + ".part")
             req = urllib.request.Request(base + remote, headers={"User-Agent": "aipbx-ai"})
             try:
-                with hf.open_download(req.full_url, token=getattr(self, "download_token", None)) as resp, open(part, "wb") as out:
+                with hf.open_download(req.full_url) as resp, open(part, "wb") as out:
                     while block := resp.read(1 << 16):
                         out.write(block)
                         done += len(block)

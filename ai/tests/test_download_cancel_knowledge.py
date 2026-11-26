@@ -10,7 +10,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from aipbx_ai import cloud_llm, conversation, ollama_backend, secret_refs  # noqa: E402
+from aipbx_ai import cloud_llm, conversation, secret_refs  # noqa: E402
 from aipbx_ai.models import ABSENT, DOWNLOADING, ERROR, ModelBusy, ModelManager, ModelSpec  # noqa: E402
 from test_server import SPEC, FakeBackend  # noqa: E402
 
@@ -71,14 +71,14 @@ class CancelTest(unittest.TestCase):
 
     def test_cancel_handles_delete_files_runtime_error(self):
         custom_spec = ModelSpec(
-            id="custom-llm", title="Custom LLM", kind="llm", languages=("en",),
+            id="custom-llm", title="Custom LLM", kind="tts", languages=("en",),
             license="MIT", license_url="https://example.com", homepage="https://example.com",
             download_mb=1, backend=FakeBackend, custom=True,
         )
 
         class BrokenDeleteBackend(FakeBackend):
             def delete_files(self):
-                raise RuntimeError("Ollama HTTP 404")
+                raise RuntimeError("backend gone")
 
         fake = BrokenDeleteBackend(custom_spec)
         fake.download_gate.clear()
@@ -115,36 +115,19 @@ class CancelTest(unittest.TestCase):
         self.assertTrue(deleted)
         self.assertFalse(fake.files)
 
-    def test_ollama_backend_delete_files_ignores_runtime_error(self):
-        spec = ModelSpec(
-            id="test-gguf", title="Test GGUF", kind="llm", languages=("en",),
-            license="MIT", license_url="https://example.com", homepage="https://example.com",
-            download_mb=1, backend=ollama_backend.OllamaBackend,
-            source={"repo": "example/test", "revision": "main", "files": {"model.gguf": {"sha256": "0" * 64, "bytes": 4}}},
-        )
-        with tempfile.TemporaryDirectory() as tmp:
-            backend = ollama_backend.OllamaBackend(spec, tmp)
-            backend.dir.mkdir(parents=True, exist_ok=True)
-            (backend.dir / "model.gguf.part").write_bytes(b"partial")
-            backend.loaded = True
-            with mock.patch.object(ollama_backend, "request", side_effect=RuntimeError("Ollama HTTP 404")):
-                backend.delete_files()
-            self.assertFalse(backend.dir.exists())
-            self.assertFalse(backend.loaded)
-
     def test_remove_ignores_unload_and_delete_runtime_error(self):
         custom_spec = ModelSpec(
-            id="custom-rm", title="Custom RM", kind="llm", languages=("en",),
+            id="custom-rm", title="Custom RM", kind="tts", languages=("en",),
             license="MIT", license_url="https://example.com", homepage="https://example.com",
             download_mb=1, backend=FakeBackend, custom=True,
         )
 
         class BrokenRemoveBackend(FakeBackend):
             def unload(self):
-                raise RuntimeError("Ollama unavailable")
+                raise RuntimeError("backend unavailable")
 
             def delete_files(self):
-                raise RuntimeError("Ollama HTTP 404")
+                raise RuntimeError("backend gone")
 
         fake = BrokenRemoveBackend(custom_spec)
         fake.files = True
@@ -178,7 +161,7 @@ class KnowledgeToolTest(unittest.TestCase):
         os.environ["AIPBX_AI_RESOLVER_SOCKET"] = "/nonexistent/resolve.sock"
         try:
             with self.assertRaises(ValueError):
-                secret_refs.knowledge(1, "opening hours")
+                secret_refs.knowledge(1, "opening hours", 3)
         finally:
             del os.environ["AIPBX_AI_RESOLVER_SOCKET"]
 

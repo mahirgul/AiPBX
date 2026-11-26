@@ -72,7 +72,7 @@ class FakeBackend:
 SPEC = ModelSpec(id="ema-lightning", title="EMA Lightning", kind="tts", languages=("tr",),
                  license="Apache-2.0", license_url="https://github.com/mahirgul/AiPBX/releases/tag/models-ema-lightning-1",
                  homepage="https://github.com/canberk7/ema-lightning", download_mb=36, backend=FakeBackend)
-EMB = ModelSpec(id="fake-embed", title="Fake embedding", kind="embedding", languages=("tr",),
+EMB = ModelSpec(id="fake-embed", title="Fake detector", kind="vad", languages=("tr",),
                 license="Apache-2.0", license_url="https://example.invalid", homepage="https://example.invalid",
                 download_mb=1, backend=FakeBackend)
 
@@ -266,13 +266,11 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(status, 507)
         self.assertEqual(self.manager.state("ema-lightning"), "absent")
 
-    def test_stt_endpoint(self):
-        status, body, _ = self.request("POST", "/v1/stt?model=ema-lightning", b"RIFF....", headers={"Content-Type": "audio/wav"})
-        self.assertEqual((status, body["error"]), (400, "model is not a speech-to-text model"))
-        status, body, _ = self.request("POST", "/v1/stt", b"x", headers={"Content-Type": "audio/wav"})
-        self.assertEqual(status, 400)
-        status, body, _ = self.request("POST", "/v1/stt?model=ema-lightning", b"x", headers={"Content-Type": "text/plain"})
-        self.assertEqual((status, body["error"]), (400, "send the audio as audio/wav"))
+    def test_removed_local_endpoints_are_gone(self):
+        for method, path in (("POST", "/v1/stt?model=ema-lightning"), ("POST", "/v1/chat"), ("POST", "/v1/hf/search"),
+                             ("POST", "/v1/hf/inspect")):
+            status, body, _ = self.request(method, path, {})
+            self.assertEqual(status, 404, path)
 
     def test_start_loads_installed_models(self):
         self.fake.files = True

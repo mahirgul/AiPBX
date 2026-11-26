@@ -42,13 +42,49 @@ class CloudTtsError(Exception):
     pass
 
 
+def _base_url(value):
+    base_url = value or ""
+    if not isinstance(base_url, str) or len(base_url.strip()) > 200 or not _BASE_URL.match(base_url.strip().rstrip("/")):
+        raise ValueError("tts_cloud.base_url is invalid")
+    clean_base = base_url.strip().rstrip("/")
+    try:
+        assert_public_url(clean_base, resolve=False, allow_private=True, allow_loopback=True)
+    except ValueError:
+        raise ValueError("tts_cloud.base_url is invalid") from None
+    if urllib.parse.urlsplit(clean_base).scheme == "http" and not (ALLOW_PRIVATE_URLS or _is_local_http(clean_base)):
+        raise ValueError("tts_cloud.base_url is invalid")
+    return clean_base
+
+
+def _settings(cfg, provider, with_base=True):
+    """The per-account settings of tts_cloud that are present: model, voice, format (pcm or wav), base_url."""
+    out = {}
+    model = cfg.get("model")
+    if model is not None and str(model).strip() != "":
+        if not isinstance(model, str) or not _MODEL.match(model.strip()):
+            raise ValueError("tts_cloud.model is invalid")
+        out["model"] = model.strip()
+    voice = cfg.get("voice")
+    if voice is not None and str(voice).strip() != "":
+        if not isinstance(voice, str) or not _VOICE.match(voice.strip()):
+            raise ValueError("tts_cloud.voice is invalid")
+        out["voice"] = voice.strip()
+    if cfg.get("format") not in (None, ""):
+        if cfg["format"] not in ("pcm", "wav"):
+            raise ValueError("tts_cloud.format must be pcm or wav")
+        out["format"] = cfg["format"]
+    if with_base and provider == "openai_compat" and cfg.get("base_url"):
+        out["base_url"] = _base_url(cfg["base_url"])
+    return out
+
+
 def validate(cfg):
     """Normalised tts_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
         raise ValueError("tts_cloud must be an object")
     if 'secret_ref' in cfg:
         from .secret_refs import validate_reference
-        return validate_reference(cfg, "tts")
+        return {**validate_reference(cfg, "tts"), **_settings(cfg, cfg.get("provider"))}
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("tts_cloud.provider is not supported")
@@ -78,17 +114,7 @@ def validate(cfg):
             raise ValueError("tts_cloud.region is invalid")
         out["region"] = region.strip()
 
-    model = cfg.get("model")
-    if model is not None and str(model).strip() != "":
-        if not isinstance(model, str) or not _MODEL.match(model.strip()):
-            raise ValueError("tts_cloud.model is invalid")
-        out["model"] = model.strip()
-
-    voice = cfg.get("voice")
-    if voice is not None and str(voice).strip() != "":
-        if not isinstance(voice, str) or not _VOICE.match(voice.strip()):
-            raise ValueError("tts_cloud.voice is invalid")
-        out["voice"] = voice.strip()
+    out.update(_settings(cfg, provider, with_base=False))
 
     endpoint = cfg.get("endpoint")
     if endpoint is not None and str(endpoint).strip() != "":
@@ -102,17 +128,7 @@ def validate(cfg):
         out["endpoint"] = clean_ep
 
     if provider == "openai_compat":
-        base_url = cfg.get("base_url") or ""
-        if not isinstance(base_url, str) or len(base_url.strip()) > 200 or not _BASE_URL.match(base_url.strip().rstrip("/")):
-            raise ValueError("tts_cloud.base_url is invalid")
-        clean_base = base_url.strip().rstrip("/")
-        try:
-            assert_public_url(clean_base, resolve=False, allow_private=True, allow_loopback=True)
-        except ValueError:
-            raise ValueError("tts_cloud.base_url is invalid") from None
-        if urllib.parse.urlsplit(clean_base).scheme == "http" and not (ALLOW_PRIVATE_URLS or _is_local_http(clean_base)):
-            raise ValueError("tts_cloud.base_url is invalid")
-        out["base_url"] = clean_base
+        out["base_url"] = _base_url(cfg.get("base_url"))
 
     return out
 
@@ -221,7 +237,7 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
             "model": cfg.get("model") or "tts-1",
             "voice": cfg.get("voice") or "alloy",
             "input": text,
-            "response_format": "pcm",
+            "response_format": cfg.get("format") or "pcm",
         }
         if abs(speed_val - 1.0) > 1e-4:
             body["speed"] = max(0.25, min(4.0, round(speed_val, 2)))
@@ -231,7 +247,7 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
             "User-Agent": "aipbx-ai",
         }
         raw = post("https://api.openai.com/v1/audio/speech", headers, json.dumps(body).encode("utf-8"))
-        return _resample_8k(raw, 24000)
+        return _wav_to_pcm_8k(raw) if raw.startswith(b"RIFF") else _resample_8k(raw, 24000)
 
     if provider == "openai_compat":
         base = (cfg.get("base_url") or "").rstrip("/")
@@ -239,7 +255,7 @@ def synthesize(cfg: dict, text: str, lang: str = "tr", speed: float = 1.0, reque
             "model": cfg.get("model") or "tts-1",
             "voice": cfg.get("voice") or "alloy",
             "input": text,
-            "response_format": "wav",
+            "response_format": cfg.get("format") or "wav",
         }
         if abs(speed_val - 1.0) > 1e-4:
             body["speed"] = max(0.25, min(4.0, round(speed_val, 2)))

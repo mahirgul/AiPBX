@@ -1,8 +1,8 @@
 """Cloud speech to text for voice requests (stdlib only).
 
-A voice-requests application may use a cloud provider instead of a local
-model: its config then has "stt_model": "cloud:<provider>" and
-"stt_cloud": {"provider", "api_key", "region", "lang"}, sent by the portal
+A voice-requests application listens through a cloud provider: its config has
+"stt_model": "cloud:<provider>" and "stt_cloud": {"provider", "api_key",
+"region", "lang", "model"}, sent by the portal
 from AI -> Cloud services. The same requests as the portal's
 CloudAiService::stt() (web/src/services/ai/CloudAiService.php).
 
@@ -19,7 +19,7 @@ import urllib.parse
 import urllib.request
 
 from . import langs
-from .cloud_llm import ALLOW_PRIVATE_URLS, DEFAULT_MODELS, ENDPOINTS, _BASE_URL, _MODEL, assert_public_url
+from .cloud_llm import ALLOW_PRIVATE_URLS, DEFAULT_MODELS, ENDPOINTS, _BASE_URL, assert_public_url, check_model
 
 PROVIDERS = ("openai", "groq", "deepgram", "azure", "elevenlabs", "google_ai", "openai_compat")
 TIMEOUT = 15
@@ -41,13 +41,32 @@ def _is_local_http(url):
         return False
 
 
+def _base_url(value):
+    base_url = value or ""
+    if not isinstance(base_url, str) or len(base_url) > 200 or not _BASE_URL.match(base_url.rstrip("/")):
+        raise ValueError("stt_cloud.base_url is not valid")
+    clean_base = base_url.rstrip("/")
+    try:
+        assert_public_url(clean_base, resolve=False, allow_private=True, allow_loopback=True)
+    except ValueError:
+        raise ValueError("stt_cloud.base_url is not valid") from None
+    if urllib.parse.urlsplit(clean_base).scheme == "http" and not (ALLOW_PRIVATE_URLS or _is_local_http(clean_base)):
+        raise ValueError("stt_cloud.base_url is not valid")
+    return base_url
+
+
 def validate(cfg):
     """Normalised stt_cloud settings, or ValueError."""
     if not isinstance(cfg, dict):
         raise ValueError("stt_cloud must be an object")
     if 'secret_ref' in cfg:
         from .secret_refs import validate_reference
-        return validate_reference(cfg, "stt")
+        out = validate_reference(cfg, "stt")
+        if cfg.get("model"):
+            out["model"] = check_model(cfg["model"], "stt_cloud")
+        if cfg.get("base_url") and cfg["provider"] == "openai_compat":
+            out["base_url"] = _base_url(cfg["base_url"])
+        return out
     provider = cfg.get("provider")
     if provider not in PROVIDERS:
         raise ValueError("stt_cloud.provider is not supported")
@@ -62,22 +81,11 @@ def validate(cfg):
         raise ValueError("stt_cloud.region is not valid")
     out = {"provider": provider, "api_key": key.strip(), "lang": lang, "region": region,
            "locale": langs.locale(lang, cfg.get("locale")), "lang_name": langs.name(lang, cfg.get("lang_name"))}
+    if cfg.get("model") is not None:
+        out["model"] = check_model(cfg["model"], "stt_cloud")
     if provider == "openai_compat":
-        base_url = cfg.get("base_url") or ""
-        model = cfg.get("model") or "whisper-1"
-        if not isinstance(base_url, str) or len(base_url) > 200 or not _BASE_URL.match(base_url.rstrip("/")):
-            raise ValueError("stt_cloud.base_url is not valid")
-        clean_base = base_url.rstrip("/")
-        try:
-            assert_public_url(clean_base, resolve=False, allow_private=True, allow_loopback=True)
-        except ValueError:
-            raise ValueError("stt_cloud.base_url is not valid") from None
-        if urllib.parse.urlsplit(clean_base).scheme == "http" and not (ALLOW_PRIVATE_URLS or _is_local_http(clean_base)):
-            raise ValueError("stt_cloud.base_url is not valid")
-        if not isinstance(model, str) or not _MODEL.match(model):
-            raise ValueError("stt_cloud.model is not valid")
-        out["base_url"] = base_url
-        out["model"] = model
+        out["base_url"] = _base_url(cfg.get("base_url"))
+        out["model"] = out.get("model") or "whisper-1"
     return out
 
 
@@ -121,10 +129,10 @@ def transcribe(cfg, wav, request=_request):
     if p in ("openai", "groq", "openai_compat"):
         if p == "openai":
             url = "https://api.openai.com/v1/audio/transcriptions"
-            model = "gpt-4o-mini-transcribe"
+            model = cfg.get("model") or "gpt-4o-mini-transcribe"
         elif p == "groq":
             url = "https://api.groq.com/openai/v1/audio/transcriptions"
-            model = "whisper-large-v3-turbo"
+            model = cfg.get("model") or "whisper-large-v3-turbo"
         else:
             url = f"{cfg.get('base_url', '').rstrip('/')}/audio/transcriptions"
             model = cfg.get("model") or "whisper-1"
@@ -138,7 +146,7 @@ def transcribe(cfg, wav, request=_request):
             d = request(url, headers, body)
         return str(d.get("text") or "").strip()
     if p == "deepgram":
-        d = request(f"https://api.deepgram.com/v1/listen?model=nova-3&smart_format=true&language={lang}",
+        d = request(f"https://api.deepgram.com/v1/listen?model={cfg.get('model') or 'nova-3'}&smart_format=true&language={lang}",
                     {"Authorization": "Token " + key, "Content-Type": "audio/wav"}, wav)
         try:
             return str(d["results"]["channels"][0]["alternatives"][0]["transcript"] or "").strip()
@@ -150,7 +158,7 @@ def transcribe(cfg, wav, request=_request):
                     {"Ocp-Apim-Subscription-Key": key, "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000"}, wav)
         return str(d.get("DisplayText") or "").strip()
     if p == "elevenlabs":
-        body, ctype = _multipart({"model_id": "scribe_v1", "language_code": lang}, wav)
+        body, ctype = _multipart({"model_id": cfg.get("model") or "scribe_v1", "language_code": lang}, wav)
         d = request("https://api.elevenlabs.io/v1/speech-to-text", {"xi-api-key": key, "Content-Type": ctype}, body)
         return str(d.get("text") or "").strip()
     if p == "google_ai":
@@ -159,7 +167,7 @@ def transcribe(cfg, wav, request=_request):
         req = {"contents": [{"parts": [{"text": prompt},
                                        {"inline_data": {"mime_type": "audio/wav", "data": base64.b64encode(wav).decode()}}]}],
                "generationConfig": {"temperature": 0}}
-        d = request(ENDPOINTS[p].format(model=DEFAULT_MODELS[p]),
+        d = request(ENDPOINTS[p].format(model=cfg.get("model") or DEFAULT_MODELS[p]),
                     {"x-goog-api-key": key, "Content-Type": "application/json"}, json.dumps(req).encode())
         try:
             return str(d["candidates"][0]["content"]["parts"][0]["text"] or "").strip()

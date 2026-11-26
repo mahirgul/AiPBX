@@ -30,7 +30,7 @@ _DIGITS = re.compile(r"(?:\d[ -]?){6,}")
 # The settings that handled a call, for a support report: names and numbers only, never a key or a text.
 SETTING_KEYS = ("language", "stt_lang", "stt_model", "tts_model", "understand", "speed", "listen_seconds", "retries",
                 "silence_seconds", "line_profile", "barge_profile", "barge_in", "speech_detection", "end_of_turn",
-                "end_on_goodbye", "local_context", "max_turns", "conversation", "builtin_agent", "knowledge",
+                "end_on_goodbye", "mode", "max_turns", "conversation", "builtin_agent", "knowledge",
                 "automatic_announcements")
 
 
@@ -42,8 +42,6 @@ def settings(config):
         account = config.get(key)
         if isinstance(account, dict) and account.get("provider"):
             out[key] = "/".join(str(account[k]) for k in ("provider", "model") if account.get(k))
-    if config.get("local_chat_app"):
-        out["local_chat"] = True
     return out
 
 

@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import queue
+import re
 import socket
 import ssl
 import struct
@@ -21,6 +22,7 @@ import time
 import urllib.parse
 from typing import Any
 
+from .conversation import LANG_NAMES, source_lines
 from .ws_reader import WebSocketReader
 
 log = logging.getLogger("aipbx_ai.realtime")
@@ -260,6 +262,9 @@ class RealtimeSocket:
             pass
 
 
+GEMINI_DEFAULT_MODEL = "gemini-3.1-flash-live-preview"
+
+
 class RealtimeCall:
     """Bridges an AudioSocket VoiceRequestsCall with an OpenAI Realtime session."""
 
@@ -330,18 +335,19 @@ class RealtimeCall:
                     },
                 })
         if self.cfg.get("tools") or self.cfg.get("knowledge"):
+            properties: dict[str, Any] = {"tool": {"type": "string"}, "query": {"type": "string"}}
+            description = "Look up information in the knowledge base or connected database/API."
+            sources = self.cfg.get("knowledge_sources") or []
+            if self.cfg.get("knowledge") and sources:
+                properties["source"] = {"type": "integer", "enum": [s["id"] for s in sources],
+                                        "description": "Knowledge source for tool \"knowledge\""}
+                description += " Knowledge sources (set \"source\" when tool is \"knowledge\"): " \
+                    + "; ".join(source_lines(self.cfg))
             tools.append({
                 "type": "function",
                 "name": "lookup",
-                "description": "Look up information in the knowledge base or connected database/API.",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "tool": {"type": "string"},
-                        "query": {"type": "string"},
-                    },
-                    "required": ["query"],
-                },
+                "description": description,
+                "parameters": {"type": "object", "properties": properties, "required": ["query"]},
             })
         pbx_tools = self.cfg.get("pbx_tools") or []
         if pbx_tools:
@@ -353,37 +359,42 @@ class RealtimeCall:
         return tools
 
     def _instructions(self) -> str:
+        """The company instructions first (the same text on every call, so a provider can cache it),
+        then what is known about this call."""
         from .conversation import render_instructions
 
         parts: list[str] = []
-        lang = str(self.rc.get("lang") or self.cfg.get("stt_lang") or "tr")
-        if self.cfg.get("greeting"):
-            from .voice_requests import AppStore
-            greeting = AppStore.greeting_text(
-                self.cfg,
-                getattr(self.call.session, "caller_name", ""),
-                getattr(self.call.session, "caller", ""),
-                getattr(self.call.session, "did", ""),
-            )
-            if greeting:
-                parts.append(f"Start by greeting the caller: {greeting}")
-        if self.call.session.caller_name:
-            parts.append(f"Caller name: {self.call.session.caller_name}")
-        cust_id = getattr(self.call.session, "verified_customer", "")
-        if cust_id:
-            parts.append(f"System-resolved Customer ID: {cust_id}")
+        session = self.call.session
+        lang = str(getattr(session, "lang", "") or self.rc.get("lang") or self.cfg.get("stt_lang") or "tr")
+        lang_name = str(getattr(session, "lang_name", "") or self.cfg.get("language_name") or LANG_NAMES.get(lang, lang))
+        cust_id = getattr(session, "verified_customer", "")
         if self.cfg.get("instructions"):
             ctx_cfg = {
                 **self.cfg,
-                "caller": getattr(self.call.session, "caller", ""),
-                "caller_name": getattr(self.call.session, "caller_name", ""),
+                "caller": getattr(session, "caller", ""),
+                "caller_name": getattr(session, "caller_name", ""),
                 "verified_customer": cust_id,
-                "did": getattr(self.call.session, "did", ""),
+                "did": getattr(session, "did", ""),
+                "language_name": lang_name,
             }
             parts.append(render_instructions(str(self.cfg["instructions"]), ctx_cfg, lang))
         if self.cfg.get("db_queries"):
             parts.append("For customer, invoice, or service records, use `get_db_value` with exact string params (if params list is none, pass {}).")
-        parts.append(f"Respond concisely in language '{lang}' suitable for a phone call.")
+        parts.append(f"Speak {lang_name} (language code '{lang}'), concisely, as suits a phone call.")
+        if session.caller_name:
+            parts.append(f"Caller name: {session.caller_name}")
+        if cust_id:
+            parts.append(f"System-resolved Customer ID: {cust_id}")
+        if self.cfg.get("greeting"):
+            from .voice_requests import AppStore
+            greeting = AppStore.greeting_text(
+                {"greeting": getattr(session, "greeting", "") or self.cfg["greeting"]},
+                getattr(session, "caller_name", ""),
+                getattr(session, "caller", ""),
+                getattr(session, "did", ""),
+            )
+            if greeting:
+                parts.append(f"Start by greeting the caller: {greeting}")
         return "\n".join(parts)
 
     def _clear_playback(self) -> None:
@@ -559,7 +570,7 @@ class RealtimeCall:
             tool = str(args.get("tool") or "knowledge")
             query = str(args.get("query") or "")
             try:
-                answer = str(self.call.resolve_lookup(tool, query))
+                answer = str(self.call.resolve_lookup(tool, query, args.get("source")))
             except Exception as e:
                 answer = f"Lookup error: {e}"
             return False, answer
@@ -749,11 +760,12 @@ class RealtimeCall:
 
     def _run_openai_protocol(self, ws: RealtimeSocket) -> None:
         voice = str(self.rc.get("voice") or "alloy")
+        cfg_vad = self.rc.get("vad") or {}
         vad = {
             "type": "server_vad",
-            "threshold": 0.5,
+            "threshold": cfg_vad.get("threshold", 0.5),
             "prefix_padding_ms": 300,
-            "silence_duration_ms": 500,
+            "silence_duration_ms": cfg_vad.get("silence_ms", 500),
         }
         session = {"instructions": self._instructions(), "tools": self._build_tools()}
         if _uses_openai_ga(self.rc):
@@ -769,6 +781,9 @@ class RealtimeCall:
                     "output": {"format": {"type": "audio/pcmu"}, "voice": voice},
                 },
             })
+            noise = self.rc.get("noise_reduction")
+            if noise in ("near_field", "far_field") and (self.rc.get("provider") or "openai") == "openai":
+                session["audio"]["input"]["noise_reduction"] = {"type": noise}
         else:
             session.update({
                 "modalities": ["audio", "text"],
@@ -778,6 +793,8 @@ class RealtimeCall:
                 "input_audio_transcription": {"model": "whisper-1"},
                 "turn_detection": vad,
             })
+            if self.rc.get("temperature") is not None:     # the GA protocol has no temperature setting
+                session["temperature"] = self.rc["temperature"]
         ws.send_json({"type": "session.update", "session": session})
         self._upstream_ready.set()
         ws.send_json({"type": "response.create"})
@@ -826,11 +843,14 @@ class RealtimeCall:
 
     def _run_gemini(self, ws: RealtimeSocket) -> None:
         model = str(self.rc.get("model") or "").removeprefix("models/")
-        if model in ("", "gemini-2.0-flash-live-001"):
-            model = "gemini-3.8-live"
+        if not model:
+            # Google's English guide names this model; UNVERIFIED against a live call. The model is editable
+            # in the agent (realtime_cloud.model), so a wrong default is a one-field change.
+            model = GEMINI_DEFAULT_MODEL
         model_path = f"models/{model}"
         voice_key = str(self.rc.get("voice") or "alloy")
-        voice_name = _GEMINI_VOICES.get(voice_key, "Puck")
+        # An OpenAI voice name maps to a Gemini one; a Gemini voice name (Kore, Puck ...) is used as it is.
+        voice_name = _GEMINI_VOICES.get(voice_key) or (voice_key if re.fullmatch(r"[A-Z][A-Za-z]{2,20}", voice_key) else "Puck")
         decls = [
             {
                 "name": t["name"],
@@ -849,8 +869,12 @@ class RealtimeCall:
                     },
                 },
                 "systemInstruction": {"parts": [{"text": self._instructions()}]},
+                "realtimeInputConfig": {"automaticActivityDetection": {
+                    "silenceDurationMs": (self.rc.get("vad") or {}).get("silence_ms", 500)}},
             }
         }
+        if self.rc.get("temperature") is not None:
+            setup["setup"]["generationConfig"]["temperature"] = self.rc["temperature"]
         if decls:
             setup["setup"]["tools"] = [{"functionDeclarations": decls}]
         ws.send_json(setup)
@@ -901,18 +925,35 @@ class RealtimeCall:
                             if cleaned:
                                 self._transcript_lines.append(f"Assistant: {cleaned}")
 
+    def _unreachable(self, reason: str) -> bool:
+        """The provider could not be reached: the call ends as "hangup" (the dialplan continues with the agent's
+        fallback destination) and says why in the call log. There is no switch to speech to text, language
+        model and text to speech."""
+        log.warning("Realtime provider unreachable: %s", reason)
+        self.call.session.note(f"Realtime provider unreachable: {reason}")
+        self.call._stop_pump.set()
+        self.call._pump_thread.join(0.5)
+        self.call.save("hangup")
+        self.call.session.result = "hangup"
+        if getattr(self.call, "conn", None) is not None:
+            try:
+                self.call.conn.sendall(b"\x00\x00\x00")
+            except OSError:
+                pass
+        return False
+
     def run(self) -> bool:
-        """Runs the Realtime session. Returns False only if initial connection failed."""
+        """Runs the Realtime session. False only when the connection could not be made (the call is then
+        already saved as "hangup"); a failure during the session also ends as "hangup" and returns True."""
         provider = str(self.rc.get("provider") or "openai")
         ws_url, headers = _resolve_ws_endpoint(self.rc)
         if not ws_url or (not self.rc.get("api_key") and not self.rc.get("ws_url") and provider != "openai_compat"):
-            return False
+            return self._unreachable("no endpoint or API key")
 
         try:
             ws = RealtimeSocket(ws_url, headers)
         except Exception as e:
-            log.warning("Realtime connect failed (%s), falling back to STT->LLM->TTS", e)
-            return False
+            return self._unreachable(f"{type(e).__name__}: {str(e)[:100]}")
 
         # Stop the default silence pump so we control the 20 ms AudioSocket stream.
         self.call._stop_pump.set()
@@ -944,6 +985,7 @@ class RealtimeCall:
             return True
         except Exception as e:
             log.warning("Realtime session error: %s", e)
+            self.call.session.note(f"Realtime session failed: {type(e).__name__}: {str(e)[:100]}")
             self.call.save("hangup")
             self.call.session.result = "hangup"
             return True

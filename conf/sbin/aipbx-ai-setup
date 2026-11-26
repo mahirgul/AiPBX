@@ -1,7 +1,7 @@
 #!/bin/bash
 # aipbx-ai-setup — installs / removes the runtime of the local AI service
-# (roadmap 5, AI -> Local models): a Python venv with ONNX Runtime and the model
-# packages, which most PBXs never need. install.sh only copies the service code
+# (roadmap 5, AI -> Local models): a Python venv with ONNX Runtime, numpy and the
+# voice packages (text to speech), which most PBXs never need. install.sh only copies the service code
 # and writes the unit; the large runtime comes from here, on request.
 #
 #   aipbx-ai-setup install   create/refresh /opt/aipbx-ai/venv, then enable
@@ -154,6 +154,8 @@ if [[ "$HAVE_GPU" == 0 ]] && "${PIP[@]}" show onnxruntime-gpu >/dev/null 2>&1; t
 fi
 
 step models
+# Speech to text moved to the cloud: the packages of the old local models go.
+"${PIP[@]}" uninstall -y ctranslate2 vosk >>"$LOG_FILE" 2>&1 || true
 "${PIP[@]}" install -r "$APP_DIR/requirements.txt" >>"$LOG_FILE" 2>&1 \
     || fail "the model packages could not be installed — see $LOG_FILE"
 
@@ -190,7 +192,7 @@ if [[ "$HAVE_GPU" == 0 || ! -f "/etc/systemd/system/$UNIT.d/gpu.conf" ]] \
 fi
 
 step check
-IMPORTS='onnxruntime, numpy, num2words, ctranslate2'
+IMPORTS='onnxruntime, numpy, num2words'
 # requirements.txt leaves normalizer-tr out on arm64 (only EMA Lightning needs it).
 [[ "$(uname -m)" == aarch64 ]] || IMPORTS+=', normalizer_tr'
 "$VENV/bin/python" -c "import $IMPORTS" >>"$LOG_FILE" 2>&1 \

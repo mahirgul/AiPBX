@@ -5,6 +5,12 @@ import re
 import socket
 
 
+# The per-account settings that travel beside a credential reference (validated by cloud_llm/stt/tts).
+SETTINGS = ('model', 'base_url', 'temperature', 'max_tokens', 'voice', 'format')
+# Set by a call for its own language, over what the resolver returns.
+CALL_KEYS = ('lang', 'locale', 'lang_name')
+
+
 def validate_reference(cfg, task):
     ref = cfg.get('secret_ref')
     match = re.fullmatch(r'app:([1-9][0-9]{0,6}):(llm|stt|tts):([a-z_]{2,20})', ref or '')
@@ -49,10 +55,14 @@ def caller_name(number):
     return caller_info(number)[0]
 
 
-def knowledge(app_id, query):
-    """The knowledge base excerpts for a conversation lookup; ValueError when unavailable."""
+def knowledge(app_id, query, source_id=None):
+    """The excerpts of one knowledge source (or of all when source_id is None) for a conversation lookup;
+    ValueError when unavailable."""
+    request = {'knowledge_app': int(app_id), 'query': str(query)[:300]}
+    if source_id is not None:
+        request['source_id'] = int(source_id)
     try:
-        result = _ask({'knowledge_app': int(app_id), 'query': str(query)[:300]})
+        result = _ask(request)
         if not result.get('ok') or not isinstance(result.get('text'), str):
             raise ValueError
         return result['text']
@@ -77,14 +87,6 @@ def db_value(app_id, query, verified_customer, call_context=None):
     return '{"status":"unavailable"}'
 
 
-def local_chat(app_id):
-    result = _ask({'local_app': app_id})
-    connection = result.get('connection')
-    if not result.get('ok') or not isinstance(connection, dict) or connection.get('scope') != 'local':
-        raise ValueError('local model unavailable')
-    return connection
-
-
 def resolve(cfg):
     if 'secret_ref' not in cfg:
         return cfg
@@ -95,13 +97,13 @@ def resolve(cfg):
         credential = result['credential']
         if credential.get('provider') != cfg['provider'] or 'secret_ref' in credential:
             raise ValueError('credential unavailable')
-        return credential
+        return {**credential, **{k: cfg[k] for k in SETTINGS + CALL_KEYS if cfg.get(k) is not None}}
     except (OSError, ValueError, KeyError, TypeError):
         raise ValueError('credential unavailable') from None
 
 
 def reference_config(app_id, config):
-    """Upgrade old on-disk configs without retaining secrets or endpoint overrides."""
+    """Upgrade old on-disk configs without retaining secrets; the account settings (model, voice ...) stay."""
     out = dict(config)
     if not out.get('language'):
         for name in ('stt_cloud', 'tts_cloud'):
@@ -112,5 +114,8 @@ def reference_config(app_id, config):
         key = task + '_cloud'
         if isinstance(out.get(key), dict) and out[key].get('provider'):
             provider = out[key]['provider']
-            out[key] = {'provider': provider, 'secret_ref': f'app:{app_id}:{task}:{provider}'}
+            kept = {k: out[key][k] for k in SETTINGS if out[key].get(k) is not None}
+            if provider not in ('openai_compat', 'qwen'):      # only these have an address of their own
+                kept.pop('base_url', None)
+            out[key] = {**kept, 'provider': provider, 'secret_ref': f'app:{app_id}:{task}:{provider}'}
     return out

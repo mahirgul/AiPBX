@@ -32,3 +32,9 @@ def name(lang, given=None):
     if isinstance(given, str) and _NAME.match(given.strip()):
         return given.strip()
     return KNOWN.get(lang, ("", lang))[1] or lang
+
+
+def channel(value):
+    """The language of a channel (${CHANNEL(language)}: "pt_BR", "en", "") as a plain code: "pt", "en", or ""."""
+    match = re.match(r"^([a-z]{2,3})(?:[_.@-]|$)", str(value or "").strip().lower())
+    return match.group(1) if match else ""

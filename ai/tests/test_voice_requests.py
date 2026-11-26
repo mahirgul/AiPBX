@@ -27,7 +27,10 @@ import io
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+from unittest import mock  # noqa: E402
+
 from aipbx_ai import voice_requests  # noqa: E402
+from aipbx_ai.wav import wav_bytes  # noqa: E402
 from aipbx_ai.calls import AudioSocketServer, CallRegistry, dialplan_key  # noqa: E402
 from aipbx_ai.models import ModelManager, ModelSpec  # noqa: E402
 from aipbx_ai.server import AiServer  # noqa: E402
@@ -50,9 +53,8 @@ def prompt_value(text):
 class FakeBackend:
     def __init__(self, spec, data_dir=None):
         self.spec = spec
-        self.files = spec.id != "absent-stt"
-        self.calls = []             # TTS: texts; STT: WAV bytes
-        self.texts = []             # STT: transcripts to return, in order
+        self.files = spec.id != "other-tts"
+        self.calls = []             # the texts of the TTS
         self.fail = False
 
     def installed(self):
@@ -79,11 +81,28 @@ class FakeBackend:
             raise RuntimeError("model crashed")
         return struct.pack("<h", prompt_value(text)) * int(sample_rate * PROMPT_SECONDS)
 
-    def transcribe(self, wav):
-        self.calls.append(wav)
+
+
+class FakeStt:
+    """The cloud speech to text: records the caller's utterance (8 kHz WAV) and answers from `texts`."""
+
+    def __init__(self):
+        self.calls = []
+        self.texts = []             # transcripts to return, in order
+        self.fail = False
+
+    def transcribe(self, cfg, wav):
+        w = wave.open(io.BytesIO(wav))
+        self.calls.append(wav_bytes(w.readframes(w.getnframes()), 8000))
         if self.fail:
-            raise RuntimeError("model crashed")
-        return {"text": self.texts.pop(0) if self.texts else "", "seconds": 1.0}
+            raise RuntimeError("provider down")
+        return self.texts.pop(0) if self.texts else ""
+
+
+def _no_resample(wav):
+    """The test runs without numpy: the utterance goes to the fake provider at its own rate."""
+    w = wave.open(io.BytesIO(wav))
+    return w.readframes(w.getnframes()), 0.0
 
 
 def cloud_llm_error():
@@ -99,7 +118,8 @@ def spec(id, kind):
 
 def hotel_config(**over):
     config = {
-        "type": "voice_requests", "tts_model": "ema-lightning", "stt_model": "vosk-tr-small", "speed": 1.0,
+        "type": "voice_requests", "tts_model": "ema-lightning", "stt_model": "cloud:openai",
+        "stt_cloud": {"provider": "openai", "api_key": "k" * 12, "lang": "tr"}, "speed": 1.0,
         "greeting": "Merhaba, nasıl yardımcı olabilirim?",
         "retry": "Anlayamadım, isteğinizi tekrar söyler misiniz?",
         "not_understood": "Sizi resepsiyona aktarıyorum.",
@@ -251,17 +271,19 @@ class VoiceRequestsTest(unittest.TestCase):
             self.backends[s.id] = FakeBackend(s)
             return self.backends[s.id]
 
-        self.manager = ModelManager((spec("ema-lightning", "tts"), spec("vosk-tr-small", "stt"),
-                                     spec("absent-stt", "stt"), spec("other-tts", "tts")),
+        self.manager = ModelManager((spec("ema-lightning", "tts"), spec("other-tts", "tts")),
                                     self.tmp, backend_factory=factory)
-        for mid in ("ema-lightning", "vosk-tr-small"):
-            self.manager.install(mid)
+        self.manager.install("ema-lightning")
         deadline = time.monotonic() + 5
-        while time.monotonic() < deadline and any(self.manager.state(m) != "ready"
-                                                  for m in ("ema-lightning", "vosk-tr-small")):
+        while time.monotonic() < deadline and self.manager.state("ema-lightning") != "ready":
             time.sleep(0.01)
         self.tts = self.backends["ema-lightning"]
-        self.stt = self.backends["vosk-tr-small"]
+        self.stt = FakeStt()
+        for target, new in (("aipbx_ai.cloud_stt.transcribe", self.stt.transcribe),
+                            ("aipbx_ai.wav.pcm16_from_wav", _no_resample)):
+            patcher = mock.patch(target, new)
+            patcher.start()
+            self.addCleanup(patcher.stop)
         self.registry = CallRegistry(self.manager, TOKEN, data_dir=self.tmp)
         self.server = AiServer(("127.0.0.1", 0), TOKEN, self.manager, calls=self.registry)
         self.port = self.server.server_address[1]
@@ -370,8 +392,8 @@ class VoiceRequestsTest(unittest.TestCase):
     def test_validation(self):
         intent = hotel_config()["intents"][0]
         bad = [
-            {"type": "announcement"}, {"tts_model": "nope"}, {"tts_model": "vosk-tr-small"},
-            {"stt_model": "ema-lightning"}, {"stt_model": "../x"}, {"greeting": ""}, {"greeting": "a" * 1001},
+            {"type": "announcement"}, {"tts_model": "nope"}, {"tts_model": "cloud:nope"},
+            {"stt_model": "ema-lightning"}, {"stt_model": "../x"}, {"stt_model": "cloud:nope"}, {"greeting": ""}, {"greeting": "a" * 1001},
             {"retry": 5}, {"listen_seconds": 1}, {"listen_seconds": 16}, {"listen_seconds": 7.5},
             {"retries": 3}, {"retries": -1}, {"retries": True}, {"threshold": 1.1}, {"threshold": "0.5"},
             {"speed": 3}, {"intents": []}, {"intents": "x"}, {"intents": [intent] * 2},
@@ -391,8 +413,8 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual(self.request("PUT", "/v1/apps/5", raw=b"[1]",
                                       headers={"Content-Type": "application/json"})[0], 400)
         self.assertFalse(os.path.exists(os.path.join(self.tmp, "apps", "902.json")))
-        # limits are inclusive; a model that is not ready is accepted
-        ok = self.put_app(listen_seconds=15, retries=2, threshold=0, stt_model="absent-stt",
+        # limits are inclusive
+        ok = self.put_app(listen_seconds=15, retries=2, threshold=0,
                           intents=[dict(intent, id=f"i-{n}_x", keywords=[f"k{k}" for k in range(30)])
                                    for n in range(30)])
         self.assertEqual(ok[0], 200)
@@ -401,6 +423,152 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertNotIn("unknown_field", config)
         with self.assertRaises(ConfigError):
             validate_config(None, self.manager)
+
+    def _agent(self, **over):
+        base = dict(builtin_agent=True, conversation=True, understand="cloud",
+                    llm_cloud={"provider": "openai", "api_key": "k" * 12}, intents=[])
+        return hotel_config(**{**base, **over})
+
+    def test_builtin_agent_modes(self):
+        rt = {"provider": "openai", "api_key": "sk-test-123456", "model": "gpt-realtime"}
+        for bad in ({}, {"mode": "x"}):                         # mode is required
+            with self.assertRaises(ConfigError):
+                validate_config(self._agent(**bad), self.manager)
+        with self.assertRaises(ConfigError):                    # realtime needs realtime_cloud
+            validate_config(self._agent(mode="realtime"), self.manager)
+        with self.assertRaises(ConfigError):                    # cascade needs a cloud language model
+            validate_config(self._agent(mode="cascade", understand="keywords"), self.manager)
+        with self.assertRaises(ConfigError):                    # ... and a cloud STT
+            validate_config(self._agent(mode="cascade", stt_model="ema-lightning"), self.manager)
+        cascade = validate_config(self._agent(mode="cascade"), self.manager)     # knowledge is optional
+        self.assertEqual((cascade["mode"], cascade["knowledge"], cascade["knowledge_sources"]), ("cascade", False, []))
+        # realtime: nothing about stt/tts/llm models
+        cfg = self._agent(mode="realtime", realtime_cloud=rt)
+        for key in ("tts_model", "stt_model", "stt_cloud", "llm_cloud"):
+            cfg.pop(key, None)
+        rtc = validate_config(cfg, self.manager)
+        self.assertEqual((rtc["mode"], rtc["tts_model"], rtc["stt_model"], rtc["understand"]), ("realtime", "", "", "keywords"))
+        self.assertNotIn("llm_cloud", rtc)
+
+    def test_knowledge_sources_and_instructions_reach_the_config(self):
+        sources = [{"id": 2, "name": "FAQ", "description": "answers"}]
+        cfg = validate_config(self._agent(mode="cascade", knowledge=True, knowledge_sources=sources,
+                                          instructions="y" * 60000), self.manager)
+        self.assertEqual((cfg["knowledge_sources"], len(cfg["instructions"])), (sources, 60000))
+        with self.assertRaises(ConfigError):
+            validate_config(self._agent(mode="cascade", instructions="y" * 60001), self.manager)
+
+    def test_realtime_tuning_keys(self):
+        def conf(**rc):
+            cfg = self._agent(mode="realtime", realtime_cloud={"provider": "openai", "api_key": "sk-test-123456", **rc})
+            return validate_config(cfg, self.manager)["realtime_cloud"]
+        default = conf()
+        self.assertEqual((default["vad"], default["noise_reduction"], default["temperature"]),
+                         ({"threshold": 0.5, "silence_ms": 500}, "off", None))
+        tuned = conf(vad={"threshold": 0.8, "silence_ms": 1200}, noise_reduction="near_field", temperature=0.6,
+                     model="gemini-3.1-flash-live-preview")
+        self.assertEqual((tuned["vad"], tuned["noise_reduction"], tuned["temperature"]),
+                         ({"threshold": 0.8, "silence_ms": 1200}, "near_field", 0.6))
+        for bad in ({"vad": {"threshold": 0.05}}, {"vad": {"threshold": 1}}, {"vad": {"silence_ms": 100}},
+                    {"vad": {"silence_ms": 3001}}, {"vad": {"silence_ms": 500.5}}, {"noise_reduction": "loud"},
+                    {"temperature": 0.1}, {"temperature": 1.3}, {"temperature": "hot"}, {"model": "bad model!"}):
+            with self.assertRaises(ConfigError, msg=str(bad)):
+                conf(**bad)
+
+    def test_realtime_call_starts_without_a_voice_model(self):
+        cfg = self._agent(mode="realtime", realtime_cloud={"provider": "openai", "api_key": "sk-test-123456"})
+        for key in ("tts_model", "stt_model", "stt_cloud", "llm_cloud"):
+            cfg.pop(key, None)
+        self.assertEqual(self.request("PUT", "/v1/apps/903", cfg)[0], 200)
+        self.assertEqual(len(self.start(app="903")), 36)
+        self.assertEqual(self.tts.calls, [])                   # no greeting was synthesised
+
+    # ---- per-call language -------------------------------------------------
+
+    def test_channel_language_is_normalised(self):
+        from aipbx_ai import langs
+        for raw, want in (("pt_BR", "pt"), ("EN", "en"), ("de-AT", "de"), ("tr", "tr"), ("", ""), (None, ""),
+                          ("x", ""), ("en_US.UTF-8", "en"), ("12", ""), ("toolonglang", "")):
+            self.assertEqual(langs.channel(raw), want, raw)
+
+    def _lang_agent(self, **over):
+        base = dict(mode="cascade", language="tr", greeting="Merhaba (varsayilan)",
+                    greetings=["Merhaba {caller_name}, hos geldiniz.", "Hos geldiniz."],
+                    greetings_by_lang={"tr": ["Merhaba {caller_name}", "Hos geldiniz"],
+                                       "en": [{"order": 0, "text": "Hello {caller_name}"}, "Welcome",
+                                              {"order": 3, "text": "Late"}]},
+                    languages={"tr": {"name": "Turkish", "locale": "tr-TR"},
+                               "en": {"name": "English", "locale": "en-US"}})
+        return self._agent(**{**base, **over})
+
+    def test_greetings_by_lang_and_languages_are_validated(self):
+        cfg = validate_config(self._lang_agent(), self.manager)
+        self.assertEqual(cfg["greetings_by_lang"]["en"], [{"order": 0, "text": "Hello {caller_name}"},
+                                                          {"order": 0, "text": "Welcome"}, {"order": 3, "text": "Late"}])
+        self.assertEqual(cfg["languages"]["en"], {"name": "English", "locale": "en-US"})
+        for bad in ({"tr": ["a"] * 6}, {"tr": ["a" * 251]}, {"tr": "x"}, {"tr": [{"order": 100, "text": "a"}]},
+                    {"tr": [{"order": -1, "text": "a"}]}, {"tr": [{"order": "1", "text": "a"}]}, {"tr": [{"order": 1}]}, {"turkish": ["a"]}, "x"):
+            with self.assertRaises(ConfigError, msg=str(bad)[:40]):
+                validate_config(self._lang_agent(greetings_by_lang=bad), self.manager)
+
+    def test_call_language_follows_the_channel_when_the_pbx_has_it(self):
+        cfg = validate_config(self._lang_agent(), self.manager)
+        self.assertEqual(voice_requests.call_language(cfg, "en_GB"), ("en", "English", "en-US"))
+        self.assertEqual(voice_requests.call_language(cfg, "pt_BR")[0], "tr")      # not an AI language here
+        self.assertEqual(voice_requests.call_language(cfg, "")[0], "tr")
+
+    def test_greeting_choice_by_language_with_fallback_and_nameless_preference(self):
+        cfg = validate_config(self._lang_agent(), self.manager)
+        choose = voice_requests.choose_greeting
+        for _ in range(10):
+            self.assertIn(choose(cfg, "en", "Ada"), ("Hello {caller_name}", "Welcome"))   # "Late" has a higher order
+            self.assertEqual(choose(cfg, "en", ""), "Welcome")                     # no name: the one without it
+            self.assertEqual(choose(cfg, "tr", ""), "Hos geldiniz")
+        self.assertIn(choose(cfg, "de", "Ada"), cfg["greetings"])                  # no German list: the app's own
+        self.assertEqual({choose(cfg, "en", "Ada") for _ in range(60)}, {"Hello {caller_name}", "Welcome"})
+        ordered = dict(cfg, greetings=["Second", "First"], greeting_orders=[5, 2], greetings_by_lang={})
+        self.assertEqual({choose(ordered, "de", "") for _ in range(10)}, {"First"})   # lowest order wins
+        later = dict(cfg, greetings_by_lang={"en": [{"order": 1, "text": "Hello {caller_name}"},
+                                                    {"order": 4, "text": "Plain"}]})
+        self.assertEqual(choose(later, "en", ""), "Plain")                           # only a name-less one remains: it wins
+        only_named = dict(cfg, greetings_by_lang={"en": [{"order": 0, "text": "Hello {caller_name}"}]})
+        self.assertEqual(choose(only_named, "en", ""), "Hello {caller_name}")       # blank-filling takes over later
+        bare = dict(cfg, greetings=[], greetings_by_lang={})
+        self.assertEqual(choose(bare, "en", "Ada"), "Merhaba (varsayilan)")
+
+    def test_greeting_cache_is_per_language(self):
+        store = self.registry.apps
+        cfg = validate_config(self._lang_agent(tts_model="ema-lightning"), self.manager)
+        a = store.greeting_speech(1, 1, cfg, "Hello", lang="en")
+        b = store.greeting_speech(1, 1, cfg, "Hello", lang="de")
+        self.assertEqual(a, b)
+        key = lambda lang: store._phrase_key({**cfg, "call_language": lang}, "Hello")  # noqa: E731
+        self.assertNotEqual(key("en"), key("de"))
+        self.assertTrue(store._phrase_get(key("en")) and store._phrase_get(key("de")))
+        before = len(self.tts.calls)
+        store.greeting_speech(1, 1, cfg, "Hello", lang="en")
+        self.assertEqual(len(self.tts.calls), before)                              # cached
+        own = store.greeting_speech(1, 1, cfg, cfg["greeting"], lang="tr")         # the app's language: the "greeting" prompt
+        self.assertTrue(own)
+
+    def test_stt_and_session_follow_the_call_language(self):
+        seen = []
+        patcher = mock.patch("aipbx_ai.cloud_stt.transcribe",
+                             lambda cfg, wav: seen.append((cfg["lang"], cfg["locale"])) or "havlu")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        cfg = self._lang_agent(retries=0)
+        cfg["stt_cloud"] = {"provider": "openai", "api_key": "k" * 12, "lang": "tr"}
+        self.assertEqual(self.request("PUT", "/v1/apps/904", cfg)[0], 200)
+        u = self.start(app="904", lang="en_GB")
+        c = Caller(self.audio.server_address[1], u)
+        self.callers.append(c)
+        self.assertTrue(c.wait_prompts(1))
+        c.speak(0.8)
+        self.wait_done(c)
+        self.assertEqual(seen[0], ("en", "en-US"))
+        self.assertTrue(self.poll(lambda: self.registry.log.recent(1)))
+        self.assertEqual(self.registry.log.recent(1)[0]["language"], "en")
 
     def test_load_skips_broken_files(self):
         apps = os.path.join(self.tmp, "apps")
@@ -418,8 +586,6 @@ class VoiceRequestsTest(unittest.TestCase):
 
     def test_start_refused(self):
         self.assertEqual(self.start(), "")                         # no config
-        self.assertEqual(self.put_app(stt_model="absent-stt")[0], 200)
-        self.assertEqual(self.start(), "")                         # STT not ready
         self.assertEqual(self.put_app(tts_model="other-tts")[0], 200)
         self.assertEqual(self.start(), "")                         # TTS not ready (not installed... loaded)
         self.assertEqual(self.put_app()[0], 200)
@@ -700,10 +866,10 @@ class VoiceRequestsTest(unittest.TestCase):
         self.assertEqual((config["speech_detection"], config["end_of_turn"]), ("silero", "smart"))
         config = validate_config(hotel_config(speech_detection="x", end_of_turn=1), self.manager)
         self.assertEqual((config["speech_detection"], config["end_of_turn"]), ("standard", "fixed"))
-        config = validate_config(hotel_config(local_context=8192, barge_profile="noisy"), self.manager)
-        self.assertEqual((config["local_context"], config["barge_profile"]), (8192, "noisy"))
-        config = validate_config(hotel_config(local_context=999, barge_profile="x"), self.manager)
-        self.assertEqual((config["local_context"], config["barge_profile"]), (0, None))
+        config = validate_config(hotel_config(barge_profile="noisy"), self.manager)
+        self.assertEqual(config["barge_profile"], "noisy")
+        config = validate_config(hotel_config(barge_profile="x"), self.manager)
+        self.assertIsNone(config["barge_profile"])
 
     def test_without_barge_in_the_greeting_plays_out(self):
         self.long_prompts()

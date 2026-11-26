@@ -1,17 +1,15 @@
-"""aipbx-ai — AI models that run on the PBX itself (roadmap 5, AI -> Local models).
+"""aipbx-ai — the AI gateway of the PBX: live AI calls, and local text-to-speech.
 
-Audio and text never leave the server: the models are downloaded once (from
-AiPBX's own model releases, checked by SHA-256) and then run locally on the
-CPU with ONNX Runtime. The first model is
-EMA Lightning, a Turkish text-to-speech model (Apache-2.0); further models
-(e.g. EmbeddingGemma 2 for audio/text embeddings) are new entries in
-``models.REGISTRY`` with their own backend class.
+Speech to text and language models are cloud services (cloud_stt.py, cloud_llm.py,
+realtime.py). What runs on the PBX itself is text to speech (EMA Lightning, Piper,
+Kokoro) and two tiny call detectors (Silero VAD, Smart Turn). The models are downloaded
+once (checked by SHA-256) and run on ONNX Runtime; each is a ``models.REGISTRY`` entry
+with its own backend class.
 
 Layout on a PBX (written by install.sh and conf/sbin/aipbx-ai-setup):
 
     /opt/aipbx-ai/app          this package (copied from the repo's ai/)
-    /opt/aipbx-ai/venv         Python venv with ONNX Runtime, numpy and the model
-                               packages; created only by `aipbx-ai-setup install`
+    /opt/aipbx-ai/venv         Python venv with ONNX Runtime and numpy; created only by `aipbx-ai-setup install`
     /var/lib/aipbx-ai          home of the aipbx-ai user: downloaded models
                                (models/<id>/), runtime.json
     /etc/aipbx/ai.token        shared secret of the portal and this service
@@ -28,7 +26,6 @@ X-Forwarded-For or Forwarded:
     POST /v1/models/{id}/benchmark     speed test (model must be ready)
     POST /v1/tts                       {"model","text","speed","sample_rate"}
                                        -> audio/wav, 16-bit mono PCM
-    POST /v1/stt?model=<id>            audio/wav -> {"text", ...}
     GET  /v1/calls                     live and recently finished AI calls
     GET  /v1/calls/{uuid}              result of a voice_requests call (JSON;
                                        bearer token or ?key=<dialplan key>)

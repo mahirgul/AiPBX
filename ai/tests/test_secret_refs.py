@@ -24,6 +24,34 @@ class SecretReferencesTest(unittest.TestCase):
         self.assertNotIn('secret',json.dumps(out).replace('secret_ref',''))
         self.assertEqual(cfg['llm_cloud']['api_key'],'secret')
 
+    def test_account_settings_stay_beside_the_reference(self):
+        cfg = {'llm_cloud': {'provider': 'openai', 'api_key': 'secret', 'model': 'gpt-4.1', 'temperature': 0.3,
+                             'max_tokens': 200, 'base_url': 'https://private.example'},
+               'tts_cloud': {'provider': 'openai_compat', 'key': 'x', 'voice': 'nova', 'format': 'wav',
+                             'base_url': 'http://10.0.0.5:8000/v1'}}
+        out = reference_config(7, cfg)
+        self.assertEqual(out['llm_cloud'], {'provider': 'openai', 'secret_ref': 'app:7:llm:openai', 'model': 'gpt-4.1',
+                                            'temperature': 0.3, 'max_tokens': 200})       # no address of its own: dropped
+        self.assertEqual(out['tts_cloud']['base_url'], 'http://10.0.0.5:8000/v1')
+        self.assertEqual((out['tts_cloud']['voice'], out['tts_cloud']['format']), ('nova', 'wav'))
+
+    def test_resolved_credential_takes_the_account_settings(self):
+        state = {'ok': True, 'credential': {'provider': 'openai', 'api_key': 'first', 'model': 'old'}}
+        class Handler(socketserver.StreamRequestHandler):
+            def handle(self):
+                self.rfile.readline()
+                self.wfile.write(json.dumps(state).encode())
+        with tempfile.TemporaryDirectory() as tmp:
+            path = tmp + '/resolver.sock'
+            server = socketserver.UnixStreamServer(path, Handler)
+            threading.Thread(target=server.serve_forever, daemon=True).start()
+            try:
+                with patch.dict(os.environ, {'AIPBX_AI_RESOLVER_SOCKET': path}):
+                    got = resolve({'provider': 'openai', 'secret_ref': 'app:7:llm:openai', 'model': 'gpt-4.1'})
+            finally:
+                server.shutdown(); server.server_close()
+        self.assertEqual((got['api_key'], got['model']), ('first', 'gpt-4.1'))
+
     def test_each_invocation_resolves_current_credential_and_revocation(self):
         state={'ok':True,'credential':{'provider':'nvidia','api_key':'first'}}
         seen=[]

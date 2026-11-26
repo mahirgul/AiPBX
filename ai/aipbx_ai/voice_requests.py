@@ -25,6 +25,7 @@ import json
 import logging
 import math
 import os
+import random
 import re
 import sys
 import threading
@@ -46,9 +47,9 @@ MAX_WORDS = 30               # keywords, and examples, per intent
 MAX_TEXT = 1000
 LISTEN_MIN, LISTEN_MAX, LISTEN_DEFAULT = 2, 15, 7
 RETRIES_MAX, RETRIES_DEFAULT = 2, 1
-LOCAL_CONTEXTS = (2048, 4096, 8192, 16384)
 SILENCE_MIN, SILENCE_MAX = 3, 10   # silence_seconds: nothing said by then is silence
 THRESHOLD_DEFAULT = 0.5
+REALTIME_VAD_THRESHOLD, REALTIME_VAD_SILENCE_MS = 0.5, 500   # the provider's turn detection, as before
 SPEED_MIN, SPEED_MAX = 0.5, 2.0
 
 _INTENT_ID = re.compile(r"^[a-z0-9_-]{1,40}$")
@@ -144,8 +145,10 @@ def _words(intent, name, where):
 
 def _model(data, name, kind, manager):
     value = data.get(name)
-    # Speech to text and text to speech may also use a configured cloud provider ("cloud:<provider>").
-    if kind == "stt" and isinstance(value, str) and value.startswith("cloud:"):
+    # Speech to text is a cloud provider ("cloud:<provider>"); text to speech may be one too.
+    if kind == "stt":
+        if not isinstance(value, str) or not value.startswith("cloud:"):
+            raise ConfigError(f"{name}: speech to text uses a cloud provider (cloud:<provider>)")
         if value[6:] not in cloud_stt.PROVIDERS:
             raise ConfigError(f"{name}: unknown cloud provider")
         return value
@@ -161,11 +164,12 @@ def _model(data, name, kind, manager):
         except UnknownModel:
             raise ConfigError(f"{name}: unknown model {value}") from None
         if info["kind"] != kind:
-            raise ConfigError(f"{name}: {value} is not a {'text-to-speech' if kind == 'tts' else 'speech-to-text'} model")
+            raise ConfigError(f"{name}: {value} is not a text-to-speech model")
     return value
 
 
-UNDERSTAND = ("auto", "keywords", "cloud", "local")
+UNDERSTAND = ("keywords", "cloud")
+MODES = ("realtime", "cascade")
 
 
 def validate_config(data, manager=None):
@@ -174,10 +178,15 @@ def validate_config(data, manager=None):
         raise ConfigError("the config must be a JSON object")
     if data.get("type") != APP_TYPE:
         raise ConfigError(f"type must be {APP_TYPE}")
+    builtin = data.get("builtin_agent") is True
+    mode = data.get("mode") if builtin else None
+    if builtin and mode not in MODES:
+        raise ConfigError("a built-in voice agent needs a mode: realtime or cascade")
+    realtime_only = mode == "realtime"      # the provider hears and speaks: no speech or language models here
     config = {
         "type": APP_TYPE,
-        "tts_model": _model(data, "tts_model", "tts", manager),
-        "stt_model": _model(data, "stt_model", "stt", manager),
+        "tts_model": "" if realtime_only else _model(data, "tts_model", "tts", manager),
+        "stt_model": "" if realtime_only else _model(data, "stt_model", "stt", manager),
         "speed": _number(data, "speed", SPEED_MIN, SPEED_MAX, 1.0),
         "greeting": _text(data, "greeting", required=True),
         "retry": _text(data, "retry"),
@@ -193,8 +202,6 @@ def validate_config(data, manager=None):
         "retries": _number(data, "retries", 0, RETRIES_MAX, RETRIES_DEFAULT, integer=True),
         "silence_seconds": _number(data, "silence_seconds", SILENCE_MIN, SILENCE_MAX, int(NO_SPEECH_SECONDS), integer=True),
         "line_profile": data.get("line_profile") if data.get("line_profile") in PROFILES else "normal",
-        # A local model's memory in tokens (Ollama num_ctx); 0 = the model's own default.
-        "local_context": data.get("local_context") if data.get("local_context") in LOCAL_CONTEXTS else 0,
         # How easily the caller's voice stops a prompt (barge-in): noisy = harder, faint = easier.
         "barge_profile": data.get("barge_profile") if data.get("barge_profile") in PROFILES else None,
         "threshold": _number(data, "threshold", 0.0, 1.0, THRESHOLD_DEFAULT),
@@ -202,37 +209,38 @@ def validate_config(data, manager=None):
         # the prompt stops and what they say is the request. Off by default, as
         # a line with echo would stop the prompt by itself.
         "barge_in": data.get("barge_in") is True,
-        # How the request is recognised: "auto" = keywords plus the local
-        # sentence-meaning model when one runs; "keywords" = keywords and
-        # letters only; "cloud" = a cloud language model (llm_cloud), falling
-        # back to "auto" when it does not answer.
-        "understand": data.get("understand") if data.get("understand") in UNDERSTAND else "auto",
+        # How the request is recognised: "keywords" = keywords and letters only;
+        # "cloud" = a cloud language model (llm_cloud), falling back to keywords when it does not answer.
+        "understand": "cloud" if data.get("understand") == "cloud" and not realtime_only else "keywords",
     }
-    builtin = data.get("builtin_agent") is True
     if builtin:
         config["builtin_agent"] = True
-        if data.get("conversation") is not True or data.get("knowledge") is not True:
-            raise ConfigError("a built-in voice agent needs conversation and a knowledge base")
+        config["mode"] = mode
+        if data.get("conversation") is not True:
+            raise ConfigError("a built-in voice agent needs conversation")
+        if mode == "realtime" and not isinstance(data.get("realtime_cloud"), dict):
+            raise ConfigError("realtime mode needs realtime_cloud")
+        if mode == "cascade" and data.get("understand") != "cloud":
+            raise ConfigError("cascade mode needs a cloud language model (understand: cloud)")
         config["automatic_announcements"] = data.get("automatic_announcements") is True
         config["announcement_tone"] = _text(data, "announcement_tone")
+        config["greetings_by_lang"] = _greetings_by_lang(data.get("greetings_by_lang"))
+        own = _greeting_items(data.get("greetings", []), "greetings")
+        config["greeting_orders"] = [o for o, _ in own]
         for key, limit in (("greetings", 250), ("waiting_phrases", 120)):
-            phrases = data.get(key, [])
+            phrases = [t for _, t in own] if key == "greetings" else data.get(key, [])
             if not isinstance(phrases, list) or len(phrases) > 5:
                 raise ConfigError(f"{key}: at most five phrases")
             config[key] = [_text({"phrase": phrase}, "phrase", required=True) for phrase in phrases]
             if any(len(phrase) > limit for phrase in config[key]):
                 raise ConfigError(f"{key}: at most {limit} characters per phrase")
-    if config["understand"] == "local":
-        ref = data.get("local_chat_app")
-        if not builtin or type(ref) is not int or not 1 <= ref <= APP_MAX:
-            raise ConfigError("invalid local chat reference")
-        config["local_chat_app"] = ref
+    config["languages"] = _languages(data.get("languages"))
     if config["understand"] == "cloud":
         try:
             config["llm_cloud"] = cloud_llm.validate(data.get("llm_cloud"))
         except ValueError as e:
             raise ConfigError(str(e)) from None
-    if config["stt_model"].startswith("cloud:"):
+    if config["stt_model"]:
         try:
             config["stt_cloud"] = cloud_stt.validate(data.get("stt_cloud"))
         except ValueError as e:
@@ -253,12 +261,11 @@ def validate_config(data, manager=None):
             raise ConfigError(str(e)) from None
         config["language_name"] = langs.name(config["language"], data.get("language_name"))
         config["language_locale"] = langs.locale(config["language"], data.get("language_locale"))
-    for fb_key, kind in (("tts_fallback", "tts"), ("stt_fallback", "stt")):
-        fb_val = data.get(fb_key)
-        if isinstance(fb_val, str) and fb_val.strip():
-            if fb_val.strip().startswith("cloud:"):
-                raise ConfigError(f"{fb_key} must be a local model")
-            config[fb_key] = _model({fb_key: fb_val.strip()}, fb_key, kind, manager)
+    fb_val = data.get("tts_fallback")
+    if not realtime_only and isinstance(fb_val, str) and fb_val.strip():
+        if fb_val.strip().startswith("cloud:"):
+            raise ConfigError("tts_fallback must be a local model")
+        config["tts_fallback"] = _model({"tts_fallback": fb_val.strip()}, "tts_fallback", "tts", manager)
     intents = data.get("intents")
     if not isinstance(intents, list) or (not intents and not builtin):
         raise ConfigError("intents must be a non-empty list")
@@ -291,10 +298,13 @@ def validate_config(data, manager=None):
         out.append(item)
     config["intents"] = out
     rc = data.get("realtime_cloud")
-    has_realtime = isinstance(rc, dict) and bool(rc.get("api_key") or rc.get("ws_url") or rc.get("base_url"))
+    has_realtime = isinstance(rc, dict) and bool(rc.get("api_key") or rc.get("ws_url") or rc.get("base_url")) \
+        and (not builtin or mode == "realtime")
+    if realtime_only and not has_realtime:
+        raise ConfigError("realtime mode needs realtime_cloud with an api_key, ws_url or base_url")
     # Conversation: several turns with the language model (conversation.py).
     if data.get("conversation") is True:
-        if not config.get("llm_cloud") and not config.get("local_chat_app") and not has_realtime:
+        if not config.get("llm_cloud") and not has_realtime:
             raise ConfigError("a conversation needs a language model")
         try:
             config.update(conversation.validate(
@@ -303,21 +313,7 @@ def validate_config(data, manager=None):
             raise ConfigError(str(e)) from None
         config["conversation"] = True
     if has_realtime:
-        config["realtime_cloud"] = {
-            "provider": str(rc.get("provider") or "openai"),
-            "api_key": str(rc.get("api_key") or ""),
-            "model": str(rc.get("model") or ""),
-            "voice": str(rc.get("voice") or "alloy"),
-            "lang": str(rc.get("lang") or config.get("language") or "tr"),
-        }
-        if rc.get("ws_url"):
-            config["realtime_cloud"]["ws_url"] = str(rc["ws_url"])
-        if rc.get("base_url"):
-            config["realtime_cloud"]["base_url"] = str(rc["base_url"])
-        if config["realtime_cloud"]["provider"] == "openai_compat" and rc.get("protocol"):
-            if rc["protocol"] not in ("openai_ga", "openai_beta"):
-                raise ConfigError("invalid Realtime protocol")
-            config["realtime_cloud"]["protocol"] = rc["protocol"]
+        config["realtime_cloud"] = _realtime(rc, config)
     pbx_tools = data.get("pbx_tools")
     if isinstance(pbx_tools, list) and pbx_tools:
         config["pbx_tools"] = [
@@ -327,6 +323,125 @@ def validate_config(data, manager=None):
         if isinstance(data.get("pbx_tools_key"), str) and data["pbx_tools_key"].strip():
             config["pbx_tools_key"] = data["pbx_tools_key"].strip()
     return config
+
+
+def _greeting_items(phrases, label):
+    """[(order, text)]: each greeting is a text (order 0) or {"order": 0..99, "text": ...}; at most five,
+    each at most 250 characters."""
+    if not isinstance(phrases, list) or len(phrases) > 5:
+        raise ConfigError(f"{label}: at most five greetings")
+    out = []
+    for item in phrases:
+        order = 0
+        if isinstance(item, dict):
+            order = item.get("order", 0)
+            if type(order) is not int or not 0 <= order <= 99:
+                raise ConfigError(f"{label}: order must be a whole number from 0 to 99")
+            item = item.get("text")
+        text = _text({"phrase": item}, "phrase", required=True)
+        if len(text) > 250:
+            raise ConfigError(f"{label}: at most 250 characters per greeting")
+        out.append((order, text))
+    return out
+
+
+def _greetings_by_lang(value):
+    """{"tr": [{"order": 0, "text": "Merhaba {caller_name}"}, ...], ...}: up to five greetings per language."""
+    if value in (None, ""):
+        return {}
+    if not isinstance(value, dict):
+        raise ConfigError("greetings_by_lang must be an object")
+    out = {}
+    for code, phrases in value.items():
+        try:
+            code = langs.code(code, "greetings_by_lang language")
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        items = _greeting_items(phrases, f"greetings_by_lang {code}")
+        if items:
+            out[code] = [{"order": o, "text": t} for o, t in items]
+    return out
+
+
+def _languages(value):
+    """{"tr": {"name": "Turkish", "locale": "tr-TR"}, ...}: the AI languages of the PBX."""
+    if not isinstance(value, dict):
+        return {}
+    out = {}
+    for code, info in value.items():
+        try:
+            code = langs.code(code, "languages")
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        info = info if isinstance(info, dict) else {}
+        out[code] = {"name": langs.name(code, info.get("name")), "locale": langs.locale(code, info.get("locale"))}
+    return out
+
+
+def call_language(config, channel_language):
+    """(code, name, locale) of a call: the channel's language when the PBX has it among its AI languages,
+    else the application's own."""
+    code = langs.channel(channel_language)
+    known = config.get("languages") or {}
+    if code not in known:
+        code = config.get("language") or ""
+    info = known.get(code) or {}
+    return (code, info.get("name") or config.get("language_name") or (langs.name(code) if code else ""),
+            info.get("locale") or config.get("language_locale") or (langs.locale(code) if code else ""))
+
+
+def choose_greeting(config, lang, caller_name="", rng=random):
+    """The greeting template of a call. Candidates: the greetings of the call's language, else the application's
+    own; without {caller_name} when the name is unknown (if one remains); of those the lowest order number,
+    one of them at random."""
+    pool = [(g["order"], g["text"]) for g in (config.get("greetings_by_lang") or {}).get(lang) or []]
+    if not pool:
+        own = config.get("greetings") or []
+        orders = config.get("greeting_orders") or []
+        pool = [(orders[i] if i < len(orders) else 0, t) for i, t in enumerate(own)] or [(0, config["greeting"])]
+    if not caller_name:
+        plain = [g for g in pool if not re.search(r"\{caller_name\}|\$name\b", g[1])]
+        pool = plain or pool
+    lowest = min(o for o, _ in pool)
+    return rng.choice([t for o, t in pool if o == lowest])
+
+
+def _realtime(rc, config):
+    """The realtime_cloud block: provider, model, voice, language, endpoint, and the tuning keys."""
+    out = {
+        "provider": str(rc.get("provider") or "openai"),
+        "api_key": str(rc.get("api_key") or ""),
+        "model": str(rc.get("model") or ""),
+        "voice": str(rc.get("voice") or "alloy"),
+        "lang": str(rc.get("lang") or config.get("language") or "tr"),
+    }
+    if out["model"]:
+        try:
+            cloud_llm.check_model(out["model"], "realtime_cloud")
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+    if rc.get("ws_url"):
+        out["ws_url"] = str(rc["ws_url"])
+    if rc.get("base_url"):
+        out["base_url"] = str(rc["base_url"])
+    if out["provider"] == "openai_compat" and rc.get("protocol"):
+        if rc["protocol"] not in ("openai_ga", "openai_beta"):
+            raise ConfigError("invalid Realtime protocol")
+        out["protocol"] = rc["protocol"]
+    vad = rc.get("vad") if isinstance(rc.get("vad"), dict) else {}
+    try:
+        out["vad"] = {
+            "threshold": _number(vad, "threshold", 0.1, 0.99, REALTIME_VAD_THRESHOLD),
+            "silence_ms": _number(vad, "silence_ms", 200, 3000, REALTIME_VAD_SILENCE_MS, integer=True),
+        }
+        out["temperature"] = None if rc.get("temperature") is None else _number(rc, "temperature", 0.2, 1.2, None)
+    except ConfigError as e:
+        raise ConfigError(f"realtime_cloud: {e}") from None
+    noise = rc.get("noise_reduction", "off")
+    if noise not in ("off", "near_field", "far_field"):
+        raise ConfigError("realtime_cloud: noise_reduction must be off, near_field or far_field")
+    out["noise_reduction"] = noise
+    return out
 
 
 def pick_local_fallback(manager, kind, lang="tr", preferred=None):
@@ -344,7 +459,7 @@ def pick_local_fallback(manager, kind, lang="tr", preferred=None):
     ready = [m for m in manager.describe_all() if m.get("kind") == kind and m.get("state") == READY]
     if not ready:
         return None
-    default_id = "piper-tr-dfki" if kind == "tts" else "vosk-tr-small"
+    default_id = "piper-tr-dfki"
     for m in ready:
         if m["id"] == default_id:
             return m["id"]
@@ -567,7 +682,7 @@ class AppStore:
         norm = " ".join(text.split())
         model = str(config.get("tts_model") or "")
         speed = f"{float(config.get('speed', 1.0)):.2f}"
-        lang = str(config.get("language") or "")
+        lang = str(config.get("call_language") or config.get("language") or "")
         if model.startswith("cloud:"):
             tc = config.get("tts_cloud") or {}
             voice_id = f"{tc.get('provider', '')}:{tc.get('model', '')}:{tc.get('voice', '')}:{tc.get('lang', '')}"
@@ -665,13 +780,17 @@ class AppStore:
                 merged.append((is_dyn, text))
         return [t for _, t in merged if t]
 
-    def greeting_speech(self, app_id, version, config, template, caller_name="", caller_number="", did=""):
-        """Synthesises a greeting (single cached prompt when static, or stitched cached segments when dynamic)."""
+    def greeting_speech(self, app_id, version, config, template, caller_name="", caller_number="", did="", lang=""):
+        """Synthesises a greeting (single cached prompt when static, or stitched cached segments when dynamic).
+        The cache is per language: `lang` is the call's language."""
+        own = not lang or lang == config.get("language")
+        if not own:
+            config = {**config, "call_language": lang}
         segments = self.split_greeting_segments(template, caller_name, caller_number, did)
         if not segments:
             return b""
         if len(segments) == 1:
-            if segments[0] == self.greeting_text(config):
+            if own and segments[0] == self.greeting_text(config):
                 return self.prompt(app_id, version, config, "greeting")
             return self.speech(app_id, config, segments[0])
         parts = [self.speech(app_id, config, seg) for seg in segments]

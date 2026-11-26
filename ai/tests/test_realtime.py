@@ -66,12 +66,15 @@ class _FakeCall:
             summary="",
             transcript="",
             result="",
+            notes=[],
+            note=lambda text: self.session.notes.append(text),
         )
         self.reader = SimpleNamespace(audio=queue.Queue())
         self._stop_pump = threading.Event()
         self._pump_thread = threading.Thread(target=lambda: None)
         self._pump_thread.start()
         self.sent_pcm: list[bytes] = []
+        self.conn = None
         self.saved_result = ""
         self._gone = False
 
@@ -451,7 +454,7 @@ class RealtimeTest(unittest.TestCase):
             call.config["realtime_cloud"] = {
                 "provider": "google_ai",
                 "api_key": "g-test-1234",
-                "model": "gemini-2.0-flash-live-001",
+                "model": "",
                 "voice": "coral",
                 "lang": "tr",
                 "ws_url": f"ws://127.0.0.1:{port}/ws",
@@ -463,7 +466,7 @@ class RealtimeTest(unittest.TestCase):
             self.assertEqual("Satış talebi Gemini", call.session.summary)
             self.assertIn("Assistant: Hoş geldiniz, hemen bağlıyorum.", call.session.transcript)
             self.assertIn("setup", received[0])
-            self.assertEqual("models/gemini-3.8-live", received[0]["setup"]["model"])
+            self.assertEqual("models/gemini-3.1-flash-live-preview", received[0]["setup"]["model"])
             self.assertIn("text", received[1]["realtimeInput"])
             self.assertEqual("audio/pcm;rate=16000", received[2]["realtimeInput"]["audio"]["mimeType"])
             self.assertEqual("Kore", received[0]["setup"]["generationConfig"]["speechConfig"]["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"])
@@ -547,6 +550,78 @@ class RealtimeTest(unittest.TestCase):
         call.save("matched")
         saved = registry.results.save.call_args.args[0]
         self.assertEqual("7891", saved["intent"])
+
+
+
+class _RecordingSocket:
+    def __init__(self) -> None:
+        self.sent: list[dict] = []
+
+    def send_json(self, obj: dict) -> None:
+        self.sent.append(obj)
+
+    def recv_json(self):
+        return None
+
+
+class RealtimeSettingsTest(unittest.TestCase):
+    def _session(self, **rc) -> dict:
+        call = _FakeCall("ws://127.0.0.1:1/rt")
+        call.config["realtime_cloud"].update(rc)
+        ws = _RecordingSocket()
+        RealtimeCall(call)._run_openai_protocol(ws)
+        return ws.sent[0]["session"]
+
+    def test_vad_noise_reduction_and_temperature_come_from_the_config(self) -> None:
+        default = self._session()
+        self.assertEqual((0.5, 500), (default["audio"]["input"]["turn_detection"]["threshold"],
+                                      default["audio"]["input"]["turn_detection"]["silence_duration_ms"]))
+        self.assertNotIn("noise_reduction", default["audio"]["input"])
+        tuned = self._session(vad={"threshold": 0.7, "silence_ms": 900}, noise_reduction="far_field")
+        turn = tuned["audio"]["input"]["turn_detection"]
+        self.assertEqual((0.7, 900), (turn["threshold"], turn["silence_duration_ms"]))
+        self.assertEqual({"type": "far_field"}, tuned["audio"]["input"]["noise_reduction"])
+        beta = self._session(provider="openai_compat", protocol="openai_beta", temperature=0.8, noise_reduction="near_field")
+        self.assertEqual(0.8, beta["temperature"])
+        self.assertNotIn("noise_reduction", beta)       # OpenAI only
+
+    def test_company_instructions_come_before_the_caller_context(self) -> None:
+        call = _FakeCall("ws://127.0.0.1:1/rt")
+        call.session.verified_customer = "CUST-1"
+        text = RealtimeCall(call)._instructions()
+        self.assertLess(text.index("Help the caller."), text.index("Caller name: Ali"))
+        self.assertLess(text.index("Help the caller."), text.index("Start by greeting"))
+
+    def test_call_language_goes_into_the_instructions_and_the_greeting(self) -> None:
+        call = _FakeCall("ws://127.0.0.1:1/rt")
+        call.session.lang, call.session.lang_name = "en", "English"
+        call.session.greeting = "Hello {caller_name}, welcome."
+        text = RealtimeCall(call)._instructions()
+        self.assertIn("Speak English", text)
+        self.assertIn("Start by greeting the caller: Hello Ali, welcome.", text)
+        self.assertNotIn("Merhaba", text)
+        del call.session.lang, call.session.lang_name, call.session.greeting      # an older session: the app's own
+        self.assertIn("Start by greeting the caller: Merhaba", RealtimeCall(call)._instructions())
+
+    def test_knowledge_sources_in_the_tool_and_routed_by_source(self) -> None:
+        call = _FakeCall("ws://127.0.0.1:1/rt")
+        call.config.update(knowledge=True, knowledge_sources=[
+            {"id": 3, "name": "Prices", "description": "price list"}, {"id": 5, "name": "Hours", "description": ""}])
+        seen: list[tuple] = []
+        call.resolve_lookup = lambda tool, query, source=None: seen.append((tool, query, source)) or "ok"
+        rt = RealtimeCall(call)
+        lookup = next(t for t in rt._build_tools() if t["name"] == "lookup")
+        self.assertEqual([3, 5], lookup["parameters"]["properties"]["source"]["enum"])
+        self.assertIn("3: Prices - price list", lookup["description"])
+        rt._execute_tool("lookup", {"tool": "knowledge", "query": "price", "source": 3})
+        self.assertEqual([("knowledge", "price", 3)], seen)
+
+    def test_unreachable_provider_ends_as_hangup_without_a_cascade(self) -> None:
+        call = _FakeCall("ws://127.0.0.1:1/rt")           # nothing listens there
+        self.assertFalse(RealtimeCall(call).run())
+        self.assertEqual("hangup", call.saved_result)
+        self.assertEqual("hangup", call.session.result)
+        self.assertTrue(any("Realtime provider unreachable" in n for n in call.session.notes))
 
 
 if __name__ == "__main__":
