@@ -171,9 +171,9 @@ window.DASHBOARD_PAGE = {
             </div>
         </div>
         <div class="u-d-grid u-gtc-repeat-auto-fill-minmax-260-1fr u-gap-8-16">
-            <?php foreach ($services as $svc): $color = ['on' => 'var(--success)', 'failed' => 'var(--danger)'][$svc['state']] ?? 'var(--text-muted)'; ?>
+            <?php foreach ($services as $svc): $color = ['on' => 'var(--success)', 'failed' => 'var(--danger)'][$svc['state']] ?? 'var(--text-muted)'; $restartLabel = sprintf(t('dashboard.restart_service'), $svc['label']); ?>
                 <div class="u-d-flex u-ai-center u-gap-8 u-minw-0">
-                    <i class="fas fa-circle" style="font-size: 9px; color: <?php echo $color; ?>;" title="<?php echo htmlspecialchars(t('dashboard.svc_state_' . $svc['state'])); ?>"></i>
+                    <i class="fas fa-circle" aria-hidden="true" style="font-size: 9px; color: <?php echo $color; ?>;" title="<?php echo htmlspecialchars(t('dashboard.svc_state_' . $svc['state'])); ?>"></i>
                     <div class="u-flex-1 u-minw-0">
                         <div class="u-fs-12 u-fw-700"><?php echo htmlspecialchars($svc['label']); ?></div>
                         <div class="u-muted u-fs-11"><?php echo htmlspecialchars($svc['unit']); ?> · <?php echo t('dashboard.svc_state_' . $svc['state']); ?></div>
@@ -182,7 +182,7 @@ window.DASHBOARD_PAGE = {
                         <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                         <input type="hidden" name="system_action" value="restart_service">
                         <input type="hidden" name="service_name" value="<?php echo htmlspecialchars($svc['unit']); ?>">
-                        <button type="submit" class="btn btn-icon btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('dashboard.restart')); ?>"><i class="fas fa-rotate"></i></button>
+                        <button type="submit" class="btn btn-icon btn-secondary btn-sm" title="<?php echo htmlspecialchars($restartLabel, ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars($restartLabel, ENT_QUOTES); ?>"><i class="fas fa-rotate" aria-hidden="true"></i></button>
                     </form>
                 </div>
             <?php endforeach; ?>

@@ -80,9 +80,6 @@ if ($is_spa_request) {
 
     <!-- Sticky Fixed Bottom Notification & Status Footer Bar -->
     <footer class="app-footer-bar" id="app-footer-bar">
-        <!-- Centered Floating Toast Notification Pill Container -->
-        <div class="footer-toast-container" id="footer-toast-container"></div>
-
         <!-- Left: version & GitHub repository -->
         <div class="footer-left-group">
             <button type="button" class="footer-stat-pill u-muted u-fs-11" onclick="openAipbxLicenseModal()" style="border:none; cursor:pointer; background:transparent;" title="<?php echo htmlspecialchars(t('license.modal_title', 'Open Source License & Disclaimer')); ?>">
@@ -156,6 +153,9 @@ if ($is_spa_request) {
         </div>
     </footer>
 </div>
+
+<!-- Centered Floating Toast Notification Pill Container (direct child of body so footer stacking context never traps it behind modals) -->
+<div class="footer-toast-container" id="footer-toast-container"></div>
 
 <?php
 $_licAcceptedAt = function_exists('getSystemSetting') ? (string)getSystemSetting('license_accepted_at', '') : '';

@@ -6,8 +6,8 @@
                 <form method="POST" autocomplete="off" class="u-inline">
                     <input type="hidden" name="csrf_token" value="<?php echo getCSRFToken(); ?>">
                     <input type="hidden" name="sync_all_extensions" value="1">
-                    <button type="submit" class="btn btn-icon btn-secondary btn-sm" title="<?php echo t('extensions.sync_all_tooltip'); ?>">
-                        <i class="fas fa-sync-alt"></i>
+                    <button type="submit" class="btn btn-icon btn-secondary btn-sm" title="<?php echo htmlspecialchars(t('extensions.sync_all_tooltip'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('extensions.sync_all_tooltip'), ENT_QUOTES); ?>">
+                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
                     </button>
                 </form>
                 <button class="btn btn-primary btn-sm" onclick="openCreateExtensionModal()" title="<?php echo t('extensions.new_tooltip'); ?>">
@@ -82,11 +82,11 @@
                                 <?php else: ?>
                                     <div class="u-d-inline-flex u-ai-center u-gap-6">
                                         <code class="u-letter-spacing-1" data-pw="<?php echo htmlspecialchars((string) ($e['sip_password'] ?? '')); ?>">••••••</code>
-                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleRowPassword(this)" title="<?php echo t('extensions.show_hide_password_tooltip'); ?>">
-                                            <i class="fas fa-eye"></i>
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleRowPassword(this)" title="<?php echo htmlspecialchars(t('extensions.show_hide_password_tooltip'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('extensions.show_hide_password_tooltip'), ENT_QUOTES); ?>">
+                                            <i class="fas fa-eye" aria-hidden="true"></i>
                                         </button>
-                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="copyRowPassword(this)" title="<?php echo t('extensions.copy_password_tooltip'); ?>">
-                                            <i class="fas fa-copy"></i>
+                                        <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="copyRowPassword(this)" title="<?php echo htmlspecialchars(t('extensions.copy_password_tooltip'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('extensions.copy_password_tooltip'), ENT_QUOTES); ?>">
+                                            <i class="fas fa-copy" aria-hidden="true"></i>
                                         </button>
                                     </div>
                                 <?php endif; ?>
@@ -118,7 +118,7 @@
                             <td class="text-right">
                                 <?php // Status toggle in the pinned actions column: as its own column it ended up under that column whenever the table was wider than the screen. ?>
                                 <?php if (($e['extension_type'] ?? 'sip') === 'sip' && hasModulePermission('phones', 'view')): ?>
-                                    <a class="btn btn-icon btn-secondary btn-sm" href="/phone-keys?user=<?php echo (int) $e['id']; ?>" title="<?php echo t('phones.keys_title'); ?>"><i class="fas fa-th"></i></a>
+                                    <a class="btn btn-icon btn-secondary btn-sm" href="/phone-keys?user=<?php echo (int) $e['id']; ?>" title="<?php echo htmlspecialchars(t('phones.keys_title'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('phones.keys_title'), ENT_QUOTES); ?>"><i class="fas fa-th" aria-hidden="true"></i></a>
                                 <?php endif; ?>
                                 <?php echo uiStatusToggleForm($e['id'], $e['is_active'], 'user_id'); ?>
                                 <?php echo uiRowActions($e, 'openEditExtensionModal', 'user_id', 'remove_extension', sprintf(t('extensions.remove_confirm'), $e['full_name'], $e['extension']), t('extensions.remove_action_title'), 'fa-phone-slash'); ?>
@@ -133,8 +133,8 @@
 <div class="modal-overlay" id="extensionModal">
     <div class="modal-card u-maxw-680">
         <div class="modal-header">
-            <h3 class="u-title" id="extensionModalTitle"><i class="fas fa-plus-circle u-primary"></i> <?php echo t('extensions.modal_new_title'); ?></h3>
-            <button class="btn btn-icon btn-secondary u-btn-pad" onclick="closeExtensionModal()"><i class="fas fa-times"></i></button>
+            <h3 class="u-title" id="extensionModalTitle"><i class="fas fa-plus-circle u-primary" aria-hidden="true"></i> <?php echo t('extensions.modal_new_title'); ?></h3>
+            <button type="button" class="btn btn-icon btn-secondary u-btn-pad" onclick="closeExtensionModal()" title="<?php echo htmlspecialchars(t('common.close'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('common.close'), ENT_QUOTES); ?>"><i class="fas fa-times" aria-hidden="true"></i></button>
         </div>
         <div class="modal-body">
             <form method="POST" autocomplete="off">
@@ -172,11 +172,11 @@
                         <label class="form-label u-d-flex u-jc-space-between u-ai-center u-mb-8">
                             <span><?php echo t('extensions.field_sip_password'); ?></span>
                             <span class="u-d-inline-flex u-gap-6">
-                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="document.getElementById('modal_sip_password').value = generateSipPassword(); document.getElementById('modal_sip_password').type = 'text';" title="<?php echo t('extensions.gen_password_tooltip'); ?>">
-                                    <i class="fas fa-magic"></i>
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="document.getElementById('modal_sip_password').value = generateSipPassword(); document.getElementById('modal_sip_password').type = 'text';" title="<?php echo htmlspecialchars(t('extensions.gen_password_tooltip'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('extensions.gen_password_tooltip'), ENT_QUOTES); ?>">
+                                    <i class="fas fa-magic" aria-hidden="true"></i>
                                 </button>
-                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleSipPasswordField()" title="<?php echo t('extensions.toggle_password_tooltip'); ?>">
-                                    <i class="fas fa-eye"></i>
+                                <button type="button" class="btn btn-icon btn-secondary btn-sm" onclick="toggleSipPasswordField()" title="<?php echo htmlspecialchars(t('extensions.toggle_password_tooltip'), ENT_QUOTES); ?>" aria-label="<?php echo htmlspecialchars(t('extensions.toggle_password_tooltip'), ENT_QUOTES); ?>">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
                                 </button>
                             </span>
                         </label>

@@ -10,6 +10,47 @@
     const realFetch = window.fetch.bind(window);
     const demoRoot = location.pathname.match(/^\/demo\/(en|tr|de)(?:\/|$)/)?.[1];
     const languages = new Set(['en', 'tr', 'de']);
+    const READ_ONLY_MSG = {
+        en: 'Read-only demo — changes are not saved.',
+        tr: 'Salt okunur demo — değişiklikler kaydedilmez.',
+        de: 'Schreibgeschützte Demo — Änderungen werden nicht gespeichert.',
+    };
+    const readOnlyText = () => READ_ONLY_MSG[demoRoot] || READ_ONLY_MSG.en;
+    let lastNoticeAt = 0;
+    let lastUserAction = 0;
+    const markUserAction = () => { lastUserAction = Date.now(); };
+    document.addEventListener('pointerdown', markUserAction, true);
+    document.addEventListener('keydown', markUserAction, true);
+    document.addEventListener('click', markUserAction, true);
+    document.addEventListener('submit', markUserAction, true);
+
+    function notifyReadOnly() {
+        const nowMs = Date.now();
+        if (nowMs - lastNoticeAt < 400) return;
+        lastNoticeAt = nowMs;
+        const msg = readOnlyText();
+        const container = document.getElementById('footer-toast-container');
+        if (container && container.parentElement && container.parentElement.id === 'app-footer-bar') {
+            document.body.appendChild(container);
+        }
+        if (typeof window.showFooterToast === 'function') {
+            window.showFooterToast(msg, 'info', 4500);
+            return;
+        }
+        let el = document.getElementById('demo-readonly-toast');
+        if (!el) {
+            el = document.createElement('div');
+            el.id = 'demo-readonly-toast';
+            el.setAttribute('role', 'status');
+            el.setAttribute('aria-live', 'polite');
+            el.style.cssText = 'position:fixed;left:50%;bottom:56px;transform:translateX(-50%);z-index:1300;background:#0f172a;color:#f8fafc;border:1px solid #38bdf8;border-radius:999px;padding:8px 16px;font-size:12px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.35);max-width:90vw;';
+            document.body.appendChild(el);
+        }
+        el.textContent = msg;
+        el.style.display = 'block';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => { el.style.display = 'none'; }, 4500);
+    }
 
     // --- a small call centre that keeps moving ---
     const agents = [
@@ -116,9 +157,13 @@
     function canned(method, url) {
         const read = method === 'GET' || method === 'HEAD';
         const local = new URL(url, location.href).origin === location.origin;
-        return read && local
-            ? { status: 200, text: body(answer(method, url)) }
-            : { status: 403, text: body({ success: false, error: 'Read-only demo' }) };
+        if (read && local) {
+            return { status: 200, text: body(answer(method, url)) };
+        }
+        if (!read && Date.now() - lastUserAction < 1500) {
+            notifyReadOnly();
+        }
+        return { status: 403, text: body({ success: false, error: readOnlyText() }) };
     }
 
     window.fetch = function (input, init) {
@@ -164,9 +209,17 @@
             location.assign('/demo/' + lang + path + location.search);
         }
     }
-    HTMLFormElement.prototype.submit = function () { changeLanguage(this); };
+    HTMLFormElement.prototype.submit = function () {
+        if (this.matches('.user-lang-form')) {
+            changeLanguage(this);
+            return;
+        }
+        if ((this.method || 'get').toLowerCase() !== 'get') {
+            notifyReadOnly();
+        }
+    };
 
-    // Forms that would save do nothing; a search form (GET) still works on the page it is on.
+    // Forms that would save are blocked with a visible read-only notice; GET search forms still work locally.
     document.addEventListener('submit', function (e) {
         const f = e.target;
         if (f.matches('.user-lang-form')) {
@@ -175,11 +228,19 @@
             changeLanguage(f);
             return;
         }
-        if ((f.method || 'get').toLowerCase() !== 'get') { e.preventDefault(); e.stopImmediatePropagation(); }
+        if ((f.method || 'get').toLowerCase() !== 'get') {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            notifyReadOnly();
+        }
     }, true);
-    // Sign-out and downloads stay where they are.
+    // Sign-out and server downloads stay on the demo page with a read-only notice.
     document.addEventListener('click', function (e) {
         const a = e.target.closest && e.target.closest('a[href]');
-        if (a && /\/(logout|api\/)/.test(a.getAttribute('href'))) { e.preventDefault(); e.stopImmediatePropagation(); }
+        if (a && /\/(logout|api\/)/.test(a.getAttribute('href'))) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            notifyReadOnly();
+        }
     }, true);
 })();

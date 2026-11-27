@@ -65,7 +65,9 @@ const clean = (html, csrf = '') => {
         .replace(/("sip_password"\s*:\s*")[^"]*(")/g, '$1demo-only$2')
         .replace(/(&quot;sip_password&quot;\s*:\s*&quot;).*?(&quot;)/g, '$1demo-only$2')
         .replace(/<link\b[^>]*rel="manifest"[^>]*>/gi, '')
-        .replace(/\ssrc="\/api\/[^"]*"/g, '');
+        .replace(/\ssrc="\/api\/[^"]*"/g, '')
+        .replace(/window\.WEBRTC_RING_(INCOMING|OUTGOING)_URL\s*=\s*"[^"]*";/g, 'window.WEBRTC_RING_$1_URL = "";')
+        .replace(/if\s*\("serviceWorker"\s+in\s+navigator\b[\s\S]*?navigator\.serviceWorker\.register\([^;]*;\s*\}\);\s*\}\s*\}/g, '');
     if (csrf) value = value.replaceAll(csrf, 'demo-only');
     return value;
 };

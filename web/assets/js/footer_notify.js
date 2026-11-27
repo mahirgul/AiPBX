@@ -33,18 +33,12 @@
         let container = document.getElementById('footer-toast-container');
         let legacyToast = document.getElementById('footer-center-toast');
 
-        // Create the main container if missing
+        // Create the main container directly on body so fixed footer stacking contexts never trap it below modals
         if (!container) {
             container = document.createElement('div');
             container.id = 'footer-toast-container';
             container.className = 'footer-toast-container';
-            
-            const footerBar = document.getElementById('app-footer-bar');
-            if (footerBar) {
-                footerBar.appendChild(container);
-            } else {
-                document.body.appendChild(container);
-            }
+            document.body.appendChild(container);
         }
 
         // Simge Belirleme
@@ -53,12 +47,13 @@
         else if (type === 'warning') icon = 'fa-exclamation-triangle';
         else if (type === 'info') icon = 'fa-info-circle';
 
+        const closeLabel = (typeof __ === 'function') ? __('js.common.close') : 'Close';
         const toastItem = document.createElement('div');
         toastItem.className = `footer-center-toast toast-${type} toast-enter`;
         toastItem.innerHTML = `
-            <i class="fas ${icon} toast-icon"></i>
+            <i class="fas ${icon} toast-icon" aria-hidden="true"></i>
             <span class="toast-text">${escapeHtml(msg)}</span>
-            <button type="button" class="toast-close-btn" title="${__('js.common.close')}">&times;</button>
+            <button type="button" class="toast-close-btn" title="${escapeHtml(closeLabel)}" aria-label="${escapeHtml(closeLabel)}">&times;</button>
         `;
 
         // Close button event

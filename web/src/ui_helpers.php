@@ -67,8 +67,9 @@ function uiPageHeader(string $icon, string $title, string $help = ''): string {
 
 /** The round "?" that opens a help box. */
 function uiHelpButton(string $boxId): string {
+    $label = htmlspecialchars(t('common.module_guide'), ENT_QUOTES);
     return '<button type="button" class="btn-help" onclick="toggleModuleHelp(\'' . htmlspecialchars($boxId, ENT_QUOTES) . '\')" title="'
-        . htmlspecialchars(t('common.module_guide'), ENT_QUOTES) . '"><i class="fas fa-question-circle"></i></button>';
+        . $label . '" aria-label="' . $label . '"><i class="fas fa-question-circle" aria-hidden="true"></i></button>';
 }
 
 /** A help box, closed until its button is pressed. The body goes between Open and Close. */
@@ -183,7 +184,7 @@ function uiDeleteForm($id, $idFieldName, $deleteField, $confirmMessage = null, $
         . '<input type="hidden" name="' . htmlspecialchars($deleteField) . '" value="1">'
         . '<input type="hidden" name="' . htmlspecialchars($idFieldName) . '" value="' . htmlspecialchars($id) . '">'
         . $extraHtml
-        . '<button type="submit" class="btn btn-danger btn-sm" title="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas ' . htmlspecialchars($icon) . '"></i></button>'
+        . '<button type="submit" class="btn btn-danger btn-sm" title="' . htmlspecialchars($title, ENT_QUOTES) . '" aria-label="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas ' . htmlspecialchars($icon) . '" aria-hidden="true"></i></button>'
         . '</form>';
 }
 
@@ -202,7 +203,8 @@ function uiEditButton(array $row, $editJsFn, $title = null, $icon = 'fa-edit', $
         $icon = 'fa-eye';
     }
     $safeFn = preg_replace('/[^a-zA-Z0-9_$.]/', '', (string) $editJsFn);
-    return '<button class="btn ' . htmlspecialchars($btnClass) . ' btn-sm" onclick=\'' . $safeFn . '(' . jsArg($row) . ')\' title="' . htmlspecialchars($title, ENT_QUOTES) . '"><i class="fas ' . htmlspecialchars($icon) . '"></i></button>';
+    $label = htmlspecialchars($title, ENT_QUOTES);
+    return '<button class="btn ' . htmlspecialchars($btnClass) . ' btn-sm" onclick=\'' . $safeFn . '(' . jsArg($row) . ')\' title="' . $label . '" aria-label="' . $label . '"><i class="fas ' . htmlspecialchars($icon) . '" aria-hidden="true"></i></button>';
 }
 
 /**

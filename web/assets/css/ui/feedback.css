@@ -94,10 +94,8 @@
 
 /* Footer Toast Notifications */
 .footer-toast-container {
-    /* Appended inside .app-footer-bar (position:fixed, 40px) (see
-       footer_notify.js) — "position:absolute; bottom:4px" put it INSIDE that
-       bar, overlapping the footer text. Now it sits COMPLETELY ABOVE the
-       footer, in its own fixed position. */
+    /* Rendered directly on <body> at z-index 1200 so fixed header/footer bars
+       (1000/1050) and open modal overlays (1150) never trap it underneath. */
     position: fixed;
     left: 50%;
     transform: translateX(-50%);
@@ -141,6 +139,18 @@
     background: var(--bg-sidebar);
     border-color: rgba(239, 68, 68, 0.5);
     color: var(--danger);
+}
+
+.footer-center-toast.toast-info {
+    background: var(--bg-sidebar);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.footer-center-toast.toast-warning {
+    background: var(--bg-sidebar);
+    border-color: var(--warning);
+    color: var(--warning);
 }
 
 .footer-center-toast .toast-text {
