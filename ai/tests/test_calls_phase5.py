@@ -1,7 +1,9 @@
 import time
 import unittest
 
-from aipbx_ai.calls import CallRegistry, CallSession, PLAYING, Refused
+from aipbx_ai.call_registry import CallRegistry
+from aipbx_ai.call_session import CallSession, PLAYING
+from aipbx_ai.call_text import Refused
 
 
 class _FakeManager:

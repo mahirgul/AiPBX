@@ -67,6 +67,13 @@ data, password-reset tokens and phones' admin passwords are left out of every re
   - `GET /api/v1/system/audit-log`
 - **PBX Provisioning**:
   - `GET|POST /api/v1/extensions`, `GET|PATCH|DELETE /api/v1/extensions/{id}`
+  - `POST /api/v1/extensions/{id}/pairing` (scope `users:write`; `{id}` is the id or the extension number) —
+    a one-time mobile sign-in for an account a billing or provisioning system has just created: `url`
+    (opens the app, or shows the QR on a computer), `qr_data_uri` (the QR as an SVG), `server_url` and
+    `expires_at` (7 days). The link works once, never carries a password and cancels the earlier link of
+    that extension. Only for extension users and call-center agents: administrators, managers, accounts with
+    two-factor and extensions without a user get `403`/`404`/`422`. Each one is written to the audit log
+    with the API key's name.
   - `GET|POST /api/v1/trunks`, `GET|PATCH|DELETE /api/v1/trunks/{id}`
   - `GET|POST /api/v1/did-routes`, `GET|PATCH|DELETE /api/v1/did-routes/{id}`
   - `GET|POST /api/v1/outbound-routes`, `GET|PATCH|DELETE /api/v1/outbound-routes/{id}`

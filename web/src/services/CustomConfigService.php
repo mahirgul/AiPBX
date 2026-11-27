@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/../asterisk_helper.php';
-require_once __DIR__ . '/../asterisk_sync.php';
+require_once __DIR__ . '/../sync/ConfWriter.php';      // writePBXConf(): the write layer, not the orchestrator
 
 /**
  * Manages Issabel-style *_custom.conf Asterisk include files (/etc/asterisk/pbx/*_custom.conf).

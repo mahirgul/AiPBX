@@ -349,21 +349,7 @@ class AssistantChatService
     /** Delete chats older than configured retention days (default 10). */
     public static function pruneOldChats(?int $days = null): int
     {
-        $days ??= AssistantSettingsService::historyDays();
-        $days = max(0, min(365, $days));
-        $db = getDB();
-        if ($days === 0) {
-            $db->exec('DELETE FROM assistant_messages');
-            return $db->exec('DELETE FROM assistant_chats');
-        }
-        // Expire individual messages even in a chat that is used every day.
-        $db->prepare('DELETE FROM assistant_messages WHERE created_at < DATE_SUB(NOW(), INTERVAL ? DAY)')
-            ->execute([$days]);
-        $del = $db->prepare(
-            'DELETE FROM assistant_chats WHERE updated_at < DATE_SUB(NOW(), INTERVAL ? DAY)'
-        );
-        $del->execute([$days]);
-        return $del->rowCount();
+        return AssistantSettingsService::pruneOldChats($days);
     }
 
     /**

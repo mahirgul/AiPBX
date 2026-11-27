@@ -11,7 +11,7 @@ import uuid as uuid_mod
 from typing import Any
 
 from . import cloud_llm, cloud_stt
-from .calls import CallSession
+from .call_session import CallSession
 from .voice_requests import Listener, SAMPLE_RATE
 from .wav import pcm16_from_wav, wav_bytes
 

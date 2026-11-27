@@ -11,20 +11,16 @@ require_once __DIR__ . '/CloudAiService.php';
  */
 final class AiJobService
 {
-    /** @var array<string, int> */
-    private static array $activeReservations = [];
-
+    // The quota a running job has reserved is kept by AiUsageMeter, which the usage count reads: the job queue above
+    // it writes there. These two forward for the code and the tests that ask the job service.
     public static function activeReservedQuota(string $providerId, string $col): int
     {
-        return self::$activeReservations[$providerId . ':' . $col] ?? 0;
+        return AiUsageMeter::activeReservedQuota($providerId, $col);
     }
 
     public static function consumeReservedQuota(string $providerId, string $col): int
     {
-        $k = $providerId . ':' . $col;
-        $v = self::$activeReservations[$k] ?? 0;
-        unset(self::$activeReservations[$k]);
-        return $v;
+        return AiUsageMeter::consumeReservedQuota($providerId, $col);
     }
 
     public static function releaseReservedQuota(string $providerId, string $col): void
@@ -407,8 +403,7 @@ final class AiJobService
             if ($units > 0) {
                 $upd = $db->prepare("UPDATE ai_cloud_usage SET {$col} = {$col} + ? WHERE provider = ? AND month = ?");
                 $upd->execute([$units, $providerId, $month]);
-                $k = $providerId . ':' . $col;
-                self::$activeReservations[$k] = (self::$activeReservations[$k] ?? 0) + $units;
+                AiUsageMeter::addReservation($providerId, $col, (int) $units);
             }
 
             if ($ownTx) {

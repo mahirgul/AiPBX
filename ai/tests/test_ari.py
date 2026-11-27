@@ -194,7 +194,8 @@ class AriSessionManagerTest(unittest.TestCase):
 
     def test_call_registry_on_finish_releases_ari_call(self) -> None:
         from unittest.mock import MagicMock
-        from aipbx_ai.calls import CallRegistry, CallSession
+        from aipbx_ai.call_registry import CallRegistry
+        from aipbx_ai.call_session import CallSession
 
         cli = FakeAriClient()
         mgr = AriSessionManager(cli)

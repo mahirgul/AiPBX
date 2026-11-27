@@ -4,6 +4,8 @@
  * Consolidates all active call center queues into a single master configuration file reading from `queues_details` key-value table.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/../queue_helper.php';
 require_once __DIR__ . '/../services/QueueCallbackService.php';
 

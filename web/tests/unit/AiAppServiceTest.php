@@ -443,7 +443,13 @@ final class AiAppServiceTest extends TestCase
             $this->assertSame('openai', $cfg['realtime_cloud']['provider'] ?? null);
             $this->assertSame('gpt-realtime', $cfg['realtime_cloud']['model'] ?? null);
             $this->assertSame('coral', $cfg['realtime_cloud']['voice'] ?? null);
-            $this->assertSame('sk-test-realtime-123', $cfg['realtime_cloud']['api_key'] ?? null);
+            $this->assertSame('app:99:realtime:openai', $cfg['realtime_cloud']['secret_ref'] ?? null);
+            $this->assertArrayNotHasKey('api_key', $cfg['realtime_cloud']);
+            $resolved = AiAppService::serviceConfig([
+                'id' => 99, 'title' => 'RT Agent', 'app_type' => AiAppService::BUILTIN_AGENT, 'model_id' => 'realtime',
+                'speed' => '1', 'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:openai']),
+            ], true);
+            $this->assertSame('sk-test-realtime-123', $resolved['realtime_cloud']['api_key'] ?? null);
             CloudAiService::save('openai', ['realtime_model' => 'gpt-realtime-mini']);
             $overridden = AiAppService::serviceConfig([
                 'id' => 99, 'title' => 'RT Agent', 'app_type' => AiAppService::BUILTIN_AGENT, 'model_id' => 'realtime',
@@ -451,7 +457,8 @@ final class AiAppServiceTest extends TestCase
                 'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:openai']),
             ]);
             $this->assertSame('gpt-realtime-mini', $overridden['realtime_cloud']['model']);
-            $this->assertSame('sk-test-realtime-123', $overridden['realtime_cloud']['api_key']);
+            $this->assertSame('app:99:realtime:openai', $overridden['realtime_cloud']['secret_ref'] ?? null);
+            $this->assertArrayNotHasKey('api_key', $overridden['realtime_cloud']);
 
             require_once dirname(__DIR__, 2) . '/src/services/ai/BuiltinAiAgentService.php';
             CloudAiService::save('google_ai', ['api_key' => 'g-test-realtime-123']);
@@ -466,7 +473,7 @@ final class AiAppServiceTest extends TestCase
                 'config' => json_encode(['mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:google_ai', 'realtime_voice' => 'coral']),
             ]);
             $this->assertSame('google_ai', $gCfg['realtime_cloud']['provider'] ?? null);
-            $this->assertSame('gemini-3.1-flash-live-preview', $gCfg['realtime_cloud']['model'] ?? null);
+            $this->assertSame('gemini-3.8-live', $gCfg['realtime_cloud']['model'] ?? null);
         } finally {
             SecretBox::useKey(null);
             $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%' OR setting_key LIKE 'ai_tts.google_ai.%'");

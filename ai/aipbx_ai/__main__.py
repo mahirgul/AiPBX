@@ -43,7 +43,8 @@ def main():
     audiosocket_port = int(os.environ.get("AIPBX_AI_AUDIOSOCKET_PORT", "8791"))
 
     from .ari import AriClient, AriRunner, AriSessionManager
-    from .calls import AudioSocketServer, CallRegistry
+    from .audiosocket import AudioSocketServer
+    from .call_registry import CallRegistry
     from .custom import Catalog
     from .models import REGISTRY, ModelManager
     from .server import AiServer

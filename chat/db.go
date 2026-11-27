@@ -22,7 +22,7 @@ type User struct {
 	FullName  string `json:"full_name"`
 	Role      string `json:"role"`
 	IsActive  bool   `json:"is_active"`
-	// Token revocation counter (sys_users.token_epoch); used only in signature verification.
+	// Token revocation counter (v_chat_users.token_epoch); used only in signature verification.
 	TokenEpoch int64 `json:"-"`
 }
 
@@ -172,7 +172,7 @@ func GetUserByID(id int) (*User, error) {
 	if db == nil {
 		return nil, fmt.Errorf("database not connected")
 	}
-	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM sys_users WHERE id = ? AND is_active = 1 AND is_device = 0 AND role != 'fax_user' LIMIT 1", id)
+	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active, token_epoch FROM v_chat_users WHERE id = ? AND is_active = 1 AND is_device = 0 AND role != 'fax_user' LIMIT 1", id)
 	var u User
 	var active int
 	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active, &u.TokenEpoch)
@@ -190,7 +190,7 @@ func GetUserByID(id int) (*User, error) {
 }
 
 func GetUserByExt(ext string) (*User, error) {
-	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active FROM sys_users WHERE extension = ? AND is_active = 1 AND is_device = 0 LIMIT 1", ext)
+	row := db.QueryRow("SELECT id, username, COALESCE(extension, ''), COALESCE(full_name, ''), role, is_active FROM v_chat_users WHERE extension = ? AND is_active = 1 AND is_device = 0 LIMIT 1", ext)
 	var u User
 	var active int
 	err := row.Scan(&u.ID, &u.Username, &u.Extension, &u.FullName, &u.Role, &active)
@@ -215,7 +215,7 @@ func GetContacts(currentExt string) ([]Contact, error) {
 		           JOIN chat_messages m ON m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext = u.extension AND m.is_deleted = 0
 		           WHERE p.extension = ? AND p.left_at IS NULL
 		       ), 0) AS unread_count
-		FROM sys_users u
+		FROM v_chat_users u
 		WHERE u.is_active = 1 AND u.is_device = 0 AND u.extension IS NOT NULL AND u.extension != '' AND u.extension != ? AND u.role != 'fax_user'
 		ORDER BY (u.extension REGEXP '^[0-9]+$') DESC, CAST(u.extension AS UNSIGNED) ASC, u.extension ASC
 	`
@@ -246,7 +246,7 @@ func GetConversations(ext string) ([]Conversation, error) {
 		       COALESCE(c.last_message_text, ''), c.last_message_at, c.created_at,
 		       (SELECT COUNT(*) FROM chat_messages m WHERE m.conversation_id = c.id AND m.id > p.last_read_message_id AND m.sender_ext != p.extension AND m.is_deleted = 0) AS unread_count,
 		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT p2.extension FROM chat_participants p2 WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_ext,
-		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT COALESCE(u.full_name, u.username, p2.extension) FROM chat_participants p2 LEFT JOIN sys_users u ON u.id = (SELECT su.id FROM sys_users su WHERE su.extension = p2.extension AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1) WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_name,
+		       CASE WHEN c.type = 'group' THEN '' ELSE COALESCE((SELECT COALESCE(u.full_name, u.username, p2.extension) FROM chat_participants p2 LEFT JOIN v_chat_users u ON u.id = (SELECT su.id FROM v_chat_users su WHERE su.extension = p2.extension AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1) WHERE p2.conversation_id = c.id AND p2.extension != p.extension AND p2.left_at IS NULL LIMIT 1), '') END AS target_name,
 		       (SELECT COUNT(*) FROM chat_participants cp WHERE cp.conversation_id = c.id AND cp.left_at IS NULL) AS member_count,
 		       COALESCE(p.role, 'member') AS my_role
 		FROM chat_conversations c
@@ -423,8 +423,8 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			       COALESCE(m.file_name, ''), m.file_size, COALESCE(m.mime_type, ''),
 			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at, m.is_deleted
 			FROM chat_messages m
-			LEFT JOIN sys_users u ON u.id = (
-                SELECT su.id FROM sys_users su WHERE su.extension = m.sender_ext
+			LEFT JOIN v_chat_users u ON u.id = (
+                SELECT su.id FROM v_chat_users su WHERE su.extension = m.sender_ext
                     AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1
             )
 			WHERE m.conversation_id = ? AND m.id < ?
@@ -439,8 +439,8 @@ func GetMessages(convID int, limit int, beforeID int64) ([]Message, error) {
 			       COALESCE(m.file_name, ''), m.file_size, COALESCE(m.mime_type, ''),
 			       COALESCE(m.system_event, ''), COALESCE(m.system_meta, ''), m.created_at, m.is_deleted
 			FROM chat_messages m
-			LEFT JOIN sys_users u ON u.id = (
-                SELECT su.id FROM sys_users su WHERE su.extension = m.sender_ext
+			LEFT JOIN v_chat_users u ON u.id = (
+                SELECT su.id FROM v_chat_users su WHERE su.extension = m.sender_ext
                     AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1
             )
 			WHERE m.conversation_id = ?
@@ -784,7 +784,7 @@ func CreateGroupConversation(title, creatorExt, avatarURL, description string, m
 		return nil, nil, userError("A group can have at most 256 members")
 	}
 
-	// CH-G2: sys_users validation
+	// CH-G2: v_chat_users validation
 	for m := range memberMap {
 		u, err := GetUserByExt(m)
 		if err != nil || u == nil || !u.IsActive || u.Role == "fax_user" {
@@ -910,8 +910,8 @@ func GetGroupDetails(convID int, requesterExt string) (*Conversation, error) {
 		SELECT p.extension, COALESCE(u.full_name, u.username, p.extension) AS full_name,
 		       COALESCE(p.role, 'member') AS role, p.joined_at
 		FROM chat_participants p
-		LEFT JOIN sys_users u ON u.id = (
-                SELECT su.id FROM sys_users su WHERE su.extension = p.extension
+		LEFT JOIN v_chat_users u ON u.id = (
+                SELECT su.id FROM v_chat_users su WHERE su.extension = p.extension
                     AND su.is_active = 1 AND su.is_device = 0 ORDER BY su.id LIMIT 1
             )
 		WHERE p.conversation_id = ? AND p.left_at IS NULL

@@ -3,6 +3,8 @@
  * UDPTL (T.38 fax media ports & FEC) sync (/etc/asterisk/udptl.conf)
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 define('UDPTL_CONF_PATH', ASTERISK_CONF_DIR . '/udptl.conf');
 
 function syncUdptlSettings()

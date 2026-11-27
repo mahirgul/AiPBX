@@ -2,6 +2,9 @@
 /**
  * Sync Inbound DIDs Dialplan (/etc/asterisk/pbx/extensions_inbound.conf)
  */
+
+require_once __DIR__ . '/ConfWriter.php';
+
 /**
  * The contexts of Inbound Call Normalization: one extension per rule, so Asterisk picks the most
  * specific pattern. A trunk's own context includes the rules for all trunks, and its own rules win.

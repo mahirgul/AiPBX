@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/services/RecordingStorage.php';
+require_once dirname(__DIR__, 2) . '/services/MobilePairingService.php';
 
 /**
  * PBX, Routing, Queue, and Call/CDR domain handlers for REST API v1 (`/api/v1/*`).
@@ -13,6 +14,16 @@ final class ApiV1PbxHandlers
 
     public static function handleExtensions(string $method, ?string $idStr, ?string $subAction = null): never
     {
+        if ($subAction === 'pairing' && $method === 'POST' && $idStr !== null) {
+            // The mobile sign-in link and QR of an extension: a key that can set passwords may ask for it.
+            ApiRequestContext::requireScope('users:write');
+            $res = MobilePairingService::issue($idStr);
+            if (!$res['success']) {
+                ApiResponse::error('PAIRING_REFUSED', $res['error'], $res['status']);
+            }
+            ApiResponse::success($res['data']);
+        }
+
         if ($subAction !== null) {
             ApiResponse::error('NOT_FOUND', "Sub-resource not found: {$subAction}", 404);
         }

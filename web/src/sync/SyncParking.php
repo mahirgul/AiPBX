@@ -5,6 +5,8 @@
  * generated part in: the web server cannot write /etc/asterisk itself.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/../helpers.php';
 require_once __DIR__ . '/DialplanDestinationBuilder.php';
 

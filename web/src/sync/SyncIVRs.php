@@ -4,6 +4,8 @@
  * Consolidates all active IVR menus into a single master dialplan file.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 function syncIVR($ivr_id) {
     return syncAllIVRs();
 }

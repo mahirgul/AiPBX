@@ -2,6 +2,9 @@
 /**
  * Sync Music on Hold (/etc/asterisk/pbx/musiconhold_pbx.conf)
  */
+
+require_once __DIR__ . '/ConfWriter.php';
+
 function syncAsteriskMOH() {
     return withSyncLock('moh', '__syncAsteriskMOHBody');
 }

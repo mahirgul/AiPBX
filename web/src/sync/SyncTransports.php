@@ -4,6 +4,8 @@
  * Generates global PJSIP transports (UDP, TCP, TLS, WSS, WS) reading strictly from `pjsipsettings` key-value DB table.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 /**
  * A transport the administrator added (Transports page). symmetric_transport makes Asterisk answer
  * and call a phone from the port it registered on: with two transports of a protocol it would

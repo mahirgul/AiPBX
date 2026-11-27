@@ -98,4 +98,38 @@ final class AiLanguages
 
     /** Codes some places write differently. */
     public const ALIASES = ['no' => 'nb', 'nn' => 'nb', 'tl' => 'fil', 'iw' => 'he', 'in' => 'id'];
+
+    /**
+     * The languages AI jobs run in (AiLanguages::TABLE): code => locale and name. The name is what language models are
+     * told to speak or write, the locale goes to speech recognition and synthesis.
+     * @return array<string, array{locale: string, name: string}>
+     */
+    public static function languages(): array
+    {
+        return AiLanguages::TABLE;
+    }
+
+    /** The language of a code ("tr", "tr_TR", "pt-BR", an alias) when the table has it; else the PBX's own language, else English. */
+    public static function resolve(string $lang): string
+    {
+        $lang = strtolower(str_replace('_', '-', trim($lang)));
+        foreach ([substr($lang, 0, 3), substr($lang, 0, 2)] as $code) {
+            $code = AiLanguages::ALIASES[$code] ?? $code;
+            if (isset(AiLanguages::TABLE[$code])) {
+                return $code;
+            }
+        }
+        $own = class_exists('MailTemplateService') ? (string) MailTemplateService::systemLanguage() : '';
+        return isset(AiLanguages::TABLE[$own]) ? $own : 'en';
+    }
+
+    public static function nameOf(string $lang): string
+    {
+        return AiLanguages::TABLE[self::resolve($lang)]['name'];
+    }
+
+    public static function localeOf(string $lang): string
+    {
+        return AiLanguages::TABLE[self::resolve($lang)]['locale'];
+    }
 }

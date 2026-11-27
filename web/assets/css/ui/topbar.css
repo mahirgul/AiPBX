@@ -19,6 +19,18 @@
     color: var(--primary);
 }
 
+/* Every control of the top bar is as high as the sidebar button and has its corners (the phone layout makes them
+   square as well, see responsive.css). */
+.top-bar {
+    --topbar-control-size: 36px;
+}
+
+.top-bar :is(.sidebar-toggle-btn, .header-phone-status-pill, .topbar-btn, .header-sync-btn, .header-quick-dial-input) {
+    box-sizing: border-box;
+    height: var(--topbar-control-size);
+    border-radius: 10px;
+}
+
 .header-phone-status-pill {
     display: inline-flex;
     align-items: center;

@@ -6,6 +6,7 @@
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/ai/CloudAiService.php';
+require_once __DIR__ . '/../src/services/ai/AiAccountTester.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -36,7 +37,7 @@ try {
         $res = CloudAiService::discoverModels($id, $_POST, !empty($_POST['refresh']), $isNew);
         echo json_encode(['success' => true, 'models' => $res['models'], 'kinds' => (object) $res['kinds'], 'cached' => $res['cached']], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(['success' => true, 'message' => CloudAiService::test($id, $_POST, $isNew)], JSON_UNESCAPED_UNICODE);
+        echo json_encode(['success' => true, 'message' => AiAccountTester::test($id, $_POST, $isNew)], JSON_UNESCAPED_UNICODE);
     }
 } catch (\Throwable $e) {
     echo json_encode(['success' => false, 'error' => mb_substr($e instanceof AiGatewayException ? $e->userMessage() : $e->getMessage(), 0, 300)], JSON_UNESCAPED_UNICODE);

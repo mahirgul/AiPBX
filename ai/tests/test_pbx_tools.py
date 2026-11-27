@@ -101,7 +101,8 @@ class PbxToolsTest(unittest.TestCase):
         from types import SimpleNamespace
         from unittest.mock import Mock, patch
         import queue
-        from aipbx_ai.calls import CallSession, VoiceRequestsCall
+        from aipbx_ai.call_session import CallSession
+        from aipbx_ai.calls import VoiceRequestsCall
 
         session = CallSession(1, "test", "100", "200", "uuid-pbx-1")
         session.did = "02129998877"

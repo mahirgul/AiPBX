@@ -85,7 +85,7 @@ func newLdapEntry(uid, display, first, last, company, work, mobile, other, mail 
 // loadLdapEntries reads the directory: extensions first, then the contacts.
 func loadLdapEntries(d *sql.DB) ([]ldapEntry, error) {
 	var out []ldapEntry
-	rows, err := d.Query(`SELECT extension, full_name, COALESCE(email, '') FROM sys_users
+	rows, err := d.Query(`SELECT extension, full_name, COALESCE(email, '') FROM v_chat_users
 		WHERE extension IS NOT NULL AND extension != '' AND is_active = 1
 		  AND (extension_type IS NULL OR extension_type != 'fax') ORDER BY extension`)
 	if err != nil {

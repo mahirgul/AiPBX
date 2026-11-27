@@ -18,7 +18,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-from . import langs
+from . import langs, providers
 from .cloud_llm import ALLOW_PRIVATE_URLS, DEFAULT_MODELS, ENDPOINTS, _BASE_URL, assert_public_url, check_model
 
 PROVIDERS = ("openai", "groq", "deepgram", "azure", "elevenlabs", "google_ai", "openai_compat")
@@ -85,7 +85,7 @@ def validate(cfg):
         out["model"] = check_model(cfg["model"], "stt_cloud")
     if provider == "openai_compat":
         out["base_url"] = _base_url(cfg.get("base_url"))
-        out["model"] = out.get("model") or "whisper-1"
+        out["model"] = out.get("model") or providers.stt_model("openai_compat")
     return out
 
 
@@ -124,18 +124,19 @@ def _multipart(fields, wav):
 def transcribe(cfg, wav, request=_request):
     """Text of a WAV (16-bit, any of the usual rates) with the configured provider."""
     from .secret_refs import resolve
+    keyterms = cfg.get("keyterms") or []     # a recognition hint of this call: not a credential, kept out of resolve()
     cfg = resolve(cfg)
     p, key, lang = cfg["provider"], cfg["api_key"], cfg["lang"]
     if p in ("openai", "groq", "openai_compat"):
         if p == "openai":
             url = "https://api.openai.com/v1/audio/transcriptions"
-            model = cfg.get("model") or "gpt-4o-mini-transcribe"
+            model = cfg.get("model") or providers.stt_model("openai")
         elif p == "groq":
             url = "https://api.groq.com/openai/v1/audio/transcriptions"
-            model = cfg.get("model") or "whisper-large-v3-turbo"
+            model = cfg.get("model") or providers.stt_model("groq")
         else:
             url = f"{cfg.get('base_url', '').rstrip('/')}/audio/transcriptions"
-            model = cfg.get("model") or "whisper-1"
+            model = cfg.get("model") or providers.stt_model("openai_compat")
         body, ctype = _multipart({"model": model, "language": lang, "response_format": "json"}, wav)
         headers = {"Content-Type": ctype}
         if key:
@@ -147,9 +148,9 @@ def transcribe(cfg, wav, request=_request):
         return str(d.get("text") or "").strip()
     if p == "deepgram":
         from .deepgram_stream import keyterms_for
-        model = cfg.get("model") or "nova-3"
+        model = cfg.get("model") or providers.stt_model("deepgram")
         query = urllib.parse.urlencode({"model": model, "smart_format": "true", "language": lang,
-                                        "keyterm": keyterms_for(model, cfg.get("keyterms") or [])}, doseq=True)
+                                        "keyterm": keyterms_for(model, keyterms)}, doseq=True)
         d = request(f"https://api.deepgram.com/v1/listen?{query}",
                     {"Authorization": "Token " + key, "Content-Type": "audio/wav"}, wav)
         try:
@@ -162,7 +163,7 @@ def transcribe(cfg, wav, request=_request):
                     {"Ocp-Apim-Subscription-Key": key, "Content-Type": "audio/wav; codecs=audio/pcm; samplerate=16000"}, wav)
         return str(d.get("DisplayText") or "").strip()
     if p == "elevenlabs":
-        body, ctype = _multipart({"model_id": cfg.get("model") or "scribe_v1", "language_code": lang}, wav)
+        body, ctype = _multipart({"model_id": cfg.get("model") or providers.stt_model("elevenlabs"), "language_code": lang}, wav)
         d = request("https://api.elevenlabs.io/v1/speech-to-text", {"xi-api-key": key, "Content-Type": ctype}, body)
         return str(d.get("text") or "").strip()
     if p == "google_ai":

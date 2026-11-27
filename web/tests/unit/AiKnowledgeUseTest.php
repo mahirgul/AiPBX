@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 
 require_once dirname(__DIR__, 2) . '/src/services/ai/AssistantChatService.php';
 require_once dirname(__DIR__, 2) . '/src/services/ai/AiAppService.php';
+require_once dirname(__DIR__, 2) . '/src/services/ai/AiAppResolver.php';
 
 /** The knowledge base where it is used: the Assistant and voice application conversations. */
 final class AiKnowledgeUseTest extends TestCase
@@ -141,7 +142,7 @@ final class AiKnowledgeUseTest extends TestCase
     {
         foreach ([[0, 'x'], [1, ''], [1, str_repeat('a', 301)]] as [$app, $q]) {
             try {
-                AiGateway::knowledgeForApp($app, $q);
+                AiAppResolver::knowledgeForApp($app, $q);
                 $this->fail('expected a refusal');
             } catch (AiGatewayException $e) {
                 $this->assertSame('invalid_request', $e->errorCode);

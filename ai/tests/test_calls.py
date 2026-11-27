@@ -23,8 +23,10 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from aipbx_ai.calllog import CallLog
-from aipbx_ai import calls  # noqa: E402
-from aipbx_ai.calls import AudioSocketServer, CallRegistry, dialplan_key, render  # noqa: E402
+from aipbx_ai import call_media, call_registry, call_text, calls  # noqa: E402
+from aipbx_ai.audiosocket import AudioSocketServer  # noqa: E402
+from aipbx_ai.call_registry import CallRegistry  # noqa: E402
+from aipbx_ai.call_text import dialplan_key, render  # noqa: E402
 from aipbx_ai.models import ModelManager, ModelSpec  # noqa: E402
 from aipbx_ai.server import AiServer  # noqa: E402
 
@@ -114,7 +116,7 @@ class Lookup(BaseHTTPRequestHandler):
 class CallsTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        calls.ALLOW_PRIVATE_LOOKUP = True
+        call_text.ALLOW_PRIVATE_LOOKUP = True
         cls.lookup = ThreadingHTTPServer(("127.0.0.1", 0), Lookup)
         cls.lookup.daemon_threads = True
         threading.Thread(target=cls.lookup.serve_forever, daemon=True).start()
@@ -122,7 +124,7 @@ class CallsTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        calls.ALLOW_PRIVATE_LOOKUP = False
+        call_text.ALLOW_PRIVATE_LOOKUP = False
         cls.lookup.shutdown()
         cls.lookup.server_close()
 
@@ -524,12 +526,12 @@ class CallsTest(unittest.TestCase):
         s2.close()
 
     def test_finished_list_is_bounded(self):
-        for i in range(calls.FINISHED_KEEP + 5):
+        for i in range(call_registry.FINISHED_KEEP + 5):
             u = self.start(app=str(i + 1))
             self.registry.finish(self.registry.claim(u), "played")
         body = self.get_calls()[1]
-        self.assertEqual(len(body["calls"]), calls.FINISHED_KEEP)
-        self.assertEqual(body["calls"][0]["app"], calls.FINISHED_KEEP + 5)   # newest first
+        self.assertEqual(len(body["calls"]), call_registry.FINISHED_KEEP)
+        self.assertEqual(body["calls"][0]["app"], call_registry.FINISHED_KEEP + 5)   # newest first
 
     def test_deepgram_stream_resolves_secret_ref_and_collect_dtmf_skips_thinking_sound(self):
         from types import SimpleNamespace
@@ -553,7 +555,6 @@ class CallsTest(unittest.TestCase):
         vcall.waiting_spoken = False
         vcall.automatic_waiting_pcm = b""
         vcall.automatic_waiting_key = ""
-        vcall.lookup_seconds = 0.0
         vcall.gone = lambda: False
         vcall.detectors = lambda: (None, None)
 
@@ -578,7 +579,7 @@ class CallsTest(unittest.TestCase):
             fake_listener = SimpleNamespace(frames=[], turn_notes=[], heard=False, faint=lambda: False)
             pre = (queue.Queue(), fake_listener, time.monotonic(), [], "silence")
             vcall.listen(pre=pre)
-        self.assertEqual(seen_dg, [("dg-resolved", "tr", calls.SAMPLE_RATE, ["destek"], "nova-3")])
+        self.assertEqual(seen_dg, [("dg-resolved", "tr", call_media.SAMPLE_RATE, ["destek"], "nova-3")])
 
         # collect_dtmf must bypass play_interruptible/thinking_sound
         played = []

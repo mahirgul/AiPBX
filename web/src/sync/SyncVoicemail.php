@@ -3,6 +3,8 @@
  * Sync Voicemail Mailboxes (/etc/asterisk/pbx/voicemail_pbx.conf)
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 function syncVoicemail() {
     return withSyncLock('voicemail', '__syncVoicemailBody');
 }

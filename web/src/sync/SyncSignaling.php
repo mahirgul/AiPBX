@@ -13,6 +13,8 @@
  * stored; the file is removed here.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 const SIGNALING_CONF = 'hep_aipbx.conf';
 const SIGNALING_LEGACY_PLUGIN_CONF = 'hep_plugin_signaling-capture.conf';
 

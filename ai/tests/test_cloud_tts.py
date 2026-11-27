@@ -15,7 +15,9 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from aipbx_ai import cloud_tts  # noqa: E402
-from aipbx_ai.calls import AudioSocketServer, CallRegistry, dialplan_key  # noqa: E402
+from aipbx_ai.audiosocket import AudioSocketServer  # noqa: E402
+from aipbx_ai.call_registry import CallRegistry  # noqa: E402
+from aipbx_ai.call_text import dialplan_key  # noqa: E402
 from aipbx_ai.models import ModelManager, ModelSpec  # noqa: E402
 from aipbx_ai import voice_requests  # noqa: E402
 

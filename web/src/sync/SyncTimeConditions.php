@@ -3,6 +3,8 @@
  * Time Condition Sync Module (/etc/asterisk/pbx/extensions_timecondition_<id>.conf)
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 function syncTimeCondition($tc_id) {
     // Unlike the other domains, every time condition writes ITS OWN file
     // (extensions_timecondition_<id>.conf) — so the lock is per ID:

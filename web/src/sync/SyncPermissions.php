@@ -3,6 +3,8 @@
  * Sync Calling Permissions Dialplan (/etc/asterisk/pbx/extensions_permissions.conf)
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 function syncPermissions() {
     return withSyncLock('permissions', '__syncPermissionsBody');
 }

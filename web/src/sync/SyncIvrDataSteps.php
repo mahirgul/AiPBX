@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once dirname(__DIR__) . '/services/DataSourceService.php';
 require_once dirname(__DIR__) . '/services/AgiScriptService.php';
 require_once dirname(__DIR__) . '/services/IvrDataStepService.php';

@@ -26,43 +26,20 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-# OpenAI-compatible chat completions, and Google's Gemini API. NVIDIA NIM and
-# Qwen (Alibaba Cloud Model Studio) speak the OpenAI API too; "openai_compat"
-# is any other such service at an address the administrator gives (DeepSeek,
-# Mistral, Together, an Ollama or vLLM server ...).
-ENDPOINTS = {
-    "openai": "https://api.openai.com/v1/chat/completions",
-    "groq": "https://api.groq.com/openai/v1/chat/completions",
-    "openrouter": "https://openrouter.ai/api/v1/chat/completions",
-    "google_ai": "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-    "claude": "https://api.anthropic.com/v1/messages",
-    "mistral": "https://api.mistral.ai/v1/chat/completions",
-    "cohere": "https://api.cohere.com/compatibility/v1/chat/completions",
-    "nvidia": "https://integrate.api.nvidia.com/v1/chat/completions",
-    "qwen": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-    "ollama": None,                 # base_url + /chat/completions
-    "nvidia_local": None,           # base_url + /chat/completions
-    "openai_compat": None,          # base_url + /chat/completions
-}
+from . import providers
+
+# The addresses, default models and provider rules come from providers.json (providers.py): the portal reads the
+# same file. OpenAI-compatible chat completions and Google's Gemini API; NVIDIA NIM and Qwen speak the OpenAI API
+# too; "openai_compat" is any other such service at an address the administrator gives (DeepSeek, Mistral,
+# Together, an Ollama or vLLM server ...).
+ENDPOINTS = providers.LLM_ENDPOINTS
 # Small, fast and cheap models that follow a JSON instruction reliably.
-DEFAULT_MODELS = {
-    "openai": "gpt-4.1-mini",
-    "groq": "llama-3.3-70b-versatile",
-    "openrouter": "google/gemini-2.5-flash",
-    "google_ai": "gemini-3.5-flash-lite",
-    "claude": "claude-haiku-5-5",
-    "mistral": "mistral-small-latest",
-    "cohere": "command-a-03-2025",
-    "nvidia": "meta/llama-3.3-70b-instruct",
-    "qwen": "qwen-plus",
-    "ollama": "llama3.2",
-    "nvidia_local": "meta/llama-3.3-70b-instruct",
-}
+DEFAULT_MODELS = providers.LLM_MODELS
 # Providers known to accept response_format {"type": "json_object"}; for the
 # others the prompt asks for JSON and the answer is searched for it.
-JSON_MODE = ("openai", "groq", "openrouter", "mistral", "qwen")
+JSON_MODE = providers.JSON_MODE
 # Providers whose address may be given (Qwen: international or mainland China).
-OWN_ADDRESS = ("qwen", "openai_compat", "ollama", "nvidia_local")
+OWN_ADDRESS = providers.OWN_ADDRESS
 PROVIDERS = tuple(ENDPOINTS)
 _BASE_URL = re.compile(r"^https?://[^\s/?#@]+(/[^\s?#]*)?$")
 TIMEOUT = 6           # the caller is waiting on the line
@@ -167,7 +144,7 @@ def validate(cfg):
     if provider not in PROVIDERS:
         raise ValueError("llm_cloud.provider is not supported")
     key = cfg.get("api_key") or ""
-    keyless = provider in ("openai_compat", "ollama", "nvidia_local")
+    keyless = provider in providers.KEYLESS
     if not isinstance(key, str) or any(c in key for c in "\r\n") or len(key.strip()) > 400 \
             or (not keyless and len(key.strip()) < 8):
         raise ValueError("llm_cloud.api_key is missing")
@@ -178,7 +155,7 @@ def validate(cfg):
     base = cfg.get("base_url")
     if provider in OWN_ADDRESS and base:
         out["base_url"] = _check_base(base, provider)
-    elif provider in ("openai_compat", "ollama", "nvidia_local"):
+    elif provider in providers.KEYLESS:
         raise ValueError("llm_cloud.base_url is missing")
     return out
 
@@ -186,7 +163,7 @@ def validate(cfg):
 def _check_base(base, provider):
     if not isinstance(base, str) or len(base) > 200 or not _BASE_URL.match(base.rstrip("/")):
         raise ValueError("llm_cloud.base_url is not valid")
-    allow = ALLOW_PRIVATE_URLS or provider in ("openai_compat", "ollama", "nvidia_local")
+    allow = ALLOW_PRIVATE_URLS or provider in providers.PRIVATE_OK
     try:
         assert_public_url(base.rstrip("/"), resolve=False, allow_private=allow, allow_loopback=allow)
     except ValueError:
@@ -287,7 +264,7 @@ def _answer_text(cfg, text, post):
         body["response_format"] = {"type": "json_object"}
     req_headers = {"Authorization": "Bearer " + cfg["api_key"]} if cfg["api_key"] else {}
     if post is _post:
-        d = _post(url, req_headers, body, allow_private=(ALLOW_PRIVATE_URLS or provider in ("openai_compat", "ollama", "nvidia_local")))
+        d = _post(url, req_headers, body, allow_private=(ALLOW_PRIVATE_URLS or provider in providers.PRIVATE_OK))
     else:
         d = post(url, req_headers, body)
     try:

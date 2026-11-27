@@ -3,6 +3,8 @@
  * Sync Conference Rooms Dialplan (/etc/asterisk/pbx/extensions_conferences.conf)
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/../helpers.php';
 
 function syncConferences() {

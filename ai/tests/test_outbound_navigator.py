@@ -2,7 +2,7 @@ import time
 import unittest
 from unittest.mock import MagicMock
 
-from aipbx_ai.calls import CallRegistry
+from aipbx_ai.call_registry import CallRegistry
 from aipbx_ai.outbound_navigator import OutboundNavigator, decide_ivr_action, parse_ivr_decision
 
 

@@ -19,6 +19,8 @@
  * endpoint: it can only enter [widget-<id>].
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 function syncWidgets() {
     return withSyncLock('widgets', '__syncWidgetsBody');
 }

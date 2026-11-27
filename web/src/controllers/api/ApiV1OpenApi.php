@@ -40,6 +40,7 @@ final class ApiV1OpenApi
                 '/users/{id}'              => ['get' => ['summary' => 'Get user', 'tags' => ['Users']], 'patch' => ['summary' => 'Update user', 'tags' => ['Users']], 'delete' => ['summary' => 'Delete user', 'tags' => ['Users']]],
                 '/roles'                   => ['get' => ['summary' => 'List roles and RBAC permissions', 'tags' => ['Users']]],
                 '/extensions'              => ['get' => ['summary' => 'List SIP/Fax extensions', 'tags' => ['PBX']], 'post' => ['summary' => 'Create extension', 'tags' => ['PBX']]],
+                '/extensions/{id}/pairing' => ['post' => ['summary' => 'One-time mobile sign-in link and QR for an extension (scope users:write; extension users and agents only)', 'tags' => ['PBX']]],
                 '/extensions/{id}'         => ['get' => ['summary' => 'Get extension', 'tags' => ['PBX']], 'patch' => ['summary' => 'Update extension', 'tags' => ['PBX']], 'delete' => ['summary' => 'Remove extension', 'tags' => ['PBX']]],
                 '/trunks'                  => ['get' => ['summary' => 'List SIP trunks', 'tags' => ['PBX']], 'post' => ['summary' => 'Create SIP trunk', 'tags' => ['PBX']]],
                 '/trunks/{id}'             => ['get' => ['summary' => 'Get SIP trunk', 'tags' => ['PBX']], 'patch' => ['summary' => 'Update SIP trunk', 'tags' => ['PBX']], 'delete' => ['summary' => 'Delete SIP trunk', 'tags' => ['PBX']]],

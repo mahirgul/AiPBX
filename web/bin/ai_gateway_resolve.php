@@ -26,9 +26,11 @@ try {
         $result = AiAppDbLookup::run((int) $data['db_app'], (string) ($data['query_id'] ?? ''),
             $data['params'] ?? [], (string) ($data['verified_customer'] ?? ''), $data['call_context'] ?? []);
     } elseif (isset($data['knowledge_app'])) {
-        $result = AiGateway::knowledgeForApp((int) $data['knowledge_app'], (string) ($data['query'] ?? ''), (int) ($data['source_id'] ?? 0));
+        require_once dirname(__DIR__) . '/src/services/ai/AiAppResolver.php';
+        $result = AiAppResolver::knowledgeForApp((int) $data['knowledge_app'], (string) ($data['query'] ?? ''), (int) ($data['source_id'] ?? 0));
     } elseif (isset($data['secret_ref'])) {
-        $result = AiGateway::resolveApp((string) $data['secret_ref']);
+        require_once dirname(__DIR__) . '/src/services/ai/AiAppResolver.php';
+        $result = AiAppResolver::resolveApp((string) $data['secret_ref']);
     } else {
         $result = AiGateway::resolve((string) ($data['request_id'] ?? ''), (string) ($data['payload_hash'] ?? ''));
     }

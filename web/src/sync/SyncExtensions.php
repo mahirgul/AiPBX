@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once dirname(__DIR__) . '/services/ExtensionSipOptions.php';
 /**
  * Single Master File Extension Sync Module (/etc/asterisk/pbx/pjsip_endpoints.conf)

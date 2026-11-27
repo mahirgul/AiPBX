@@ -6,7 +6,8 @@ import time
 import unittest
 
 from aipbx_ai.calllog import CallLog, redact
-from aipbx_ai.calls import CallRegistry, CallSession
+from aipbx_ai.call_registry import CallRegistry
+from aipbx_ai.call_session import CallSession
 from aipbx_ai.models import ModelManager
 from aipbx_ai.server import AiServer
 

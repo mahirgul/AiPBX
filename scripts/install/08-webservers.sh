@@ -413,6 +413,14 @@ systemctl daemon-reload
 # to one fixed operation with validated arguments (see conf/sbin/aipbx-priv).
 # Copied (not symlinked) so it stays root-owned and outside anything www-data can write.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-priv" /usr/local/sbin/aipbx-priv
+# The handlers of its larger subcommands (conf/sbin/aipbx-priv.d): root's, and nobody else may write them; aipbx-priv
+# refuses one that is not. Installed with the script itself, so the pair is never out of step; one this release
+# no longer has is removed.
+install -d -o root -g root -m 0755 /usr/local/lib/aipbx-priv
+install -o root -g root -m 0644 "$INSTALL_DIR"/conf/sbin/aipbx-priv.d/*.sh /usr/local/lib/aipbx-priv/
+for handler in /usr/local/lib/aipbx-priv/*.sh; do
+    [[ -e "$INSTALL_DIR/conf/sbin/aipbx-priv.d/${handler##*/}" ]] || rm -f "$handler"
+done
 # Update command (sudo aipbx-update); the portal calls it through aipbx-priv.
 install -o root -g root -m 0755 "$INSTALL_DIR/conf/sbin/aipbx-update" /usr/local/sbin/aipbx-update
 # Daily database/configuration backup (cron below).

@@ -16,6 +16,8 @@
  * Asterisk restart (see AsteriskHelper::reloadRTP).
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 define('RTP_CONF_PATH', ASTERISK_CONF_DIR . '/rtp.conf');
 if (!defined('CODECS_CONF_PATH')) {
     define('CODECS_CONF_PATH', ASTERISK_CONF_DIR . '/codecs.conf');

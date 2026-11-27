@@ -21,7 +21,7 @@ final class ApiV1CrmEndpointsTest extends TestCase
     {
         $this->db = getDB();
         $this->cleanUp();
-        foreach (['all' => ['*'], 'calls' => ['calls:read'], 'contacts' => ['contacts:read', 'contacts:write']] as $k => $scopes) {
+        foreach (['all' => ['*'], 'calls' => ['calls:read'], 'contacts' => ['contacts:read', 'contacts:write'], 'pbxw' => ['pbx:write'], 'users' => ['users:write']] as $k => $scopes) {
             $raw = ApiTokenService::generateRawToken();
             $this->db->prepare("INSERT INTO sys_api_tokens (name, token_prefix, token_hash, scopes_json, allowed_ips, rate_limit_per_min, is_active, created_at)
                 VALUES ('zz_crm_token', ?, ?, ?, '*', 1000, 1, NOW())")->execute([substr($raw, 0, 13) . '…', hash('sha256', $raw), json_encode($scopes)]);
@@ -40,7 +40,7 @@ final class ApiV1CrmEndpointsTest extends TestCase
         $this->db->exec("DELETE FROM phonebook_contacts WHERE display_name LIKE 'zz CRM%'");
         $this->db->exec("DELETE FROM asteriskcdr WHERE uniqueid LIKE 'zzcrm.%'");
         $this->db->exec('DELETE FROM api_idempotency_keys');
-        $this->db->exec("DELETE FROM sys_users WHERE extension = '79801'");
+        $this->db->exec("DELETE FROM sys_users WHERE extension IN ('79801', '79802', '79803', '79804')");
     }
 
     /** @return array{status: int, json: array<string, mixed>|null, raw: string} */
@@ -148,6 +148,56 @@ ApiV1Controller::serve(" . var_export("/api/v1/" . $path, true) . ");";
         require_once dirname(__DIR__, 2) . '/src/services/RecordingStorage.php';
         $this->assertFalse(RecordingStorage::send('s3:faxes/2026/secret.pdf'), 'S3 outside recordings/ must be refused');
         $this->assertFalse(RecordingStorage::send('s3:recordings/../faxes/secret.pdf'), 'S3 traversal must be refused');
+    }
+
+    private function zzUser(string $ext, string $role, int $twoFactor = 0, int $device = 0): int
+    {
+        $this->db->prepare("INSERT INTO sys_users (username, password_hash, full_name, email, role, is_active, is_device, token_epoch, extension, two_factor_enabled)
+            VALUES (?, '', 'Pairing', '', ?, 1, ?, 0, ?, ?)")->execute(['zz_pair_' . $ext, $role, $device, $ext, $twoFactor]);
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function testAnExtensionGetsAOneTimeMobileLinkNotAPassword(): void
+    {
+        $id = $this->zzUser('79802', 'user');
+        $this->assertSame(403, $this->api('POST', "extensions/{$id}/pairing", [], [], 'pbxw')['status'], 'pbx:write may create accounts, not sign in as them');
+
+        $r = $this->api('POST', "extensions/{$id}/pairing", [], [], 'users');
+        $this->assertSame(200, $r['status'], $r['raw']);
+        $d = $r['json']['data'];
+        $this->assertStringContainsString('/mobile-login?token=', $d['url']);
+        $this->assertStringStartsWith('data:image/svg+xml', $d['qr_data_uri']);
+        $this->assertSame('79802', $d['extension']);
+        $this->assertStringNotContainsString('assword', $r['raw']);
+
+        parse_str((string) parse_url($d['url'], PHP_URL_QUERY), $q);
+        $this->assertTrue(QrLoginService::inspectToken($q['token'])['valid']);
+        $spent = $this->db->prepare('UPDATE sys_user_qr_tokens SET used_at = NOW() WHERE token = ?');
+        $spent->execute([$q['token']]);
+        $this->assertSame('used', QrLoginService::inspectToken($q['token'])['reason'], 'a spent link is refused');
+        $this->assertSame(200, $this->api('POST', 'extensions/79802/pairing', [], [], 'users')['status'], 'the extension number works as the id');
+    }
+
+    public function testNoLinkForAdministratorsManagersTwoFactorOrDevices(): void
+    {
+        foreach ([['79803', 'admin', 0], ['79804', 'cc_manager', 0]] as [$ext, $role, $tf]) {
+            $this->assertSame(403, $this->api('POST', "extensions/{$this->zzUser($ext, $role, $tf)}/pairing", [], [], 'users')['status'], $role);
+        }
+        $tf = $this->zzUser('79801', 'user', 1);
+        $this->assertSame(403, $this->api('POST', "extensions/{$tf}/pairing", [], [], 'users')['status'], 'two-factor needs the web sign-in');
+        $this->assertSame(404, $this->api('POST', 'extensions/79899/pairing', [], [], 'users')['status']);
+        $this->assertSame(404, $this->api('POST', 'extensions/nonexistent-abc/pairing', [], [], 'users')['status']);
+
+        // When a numeric extension equals another user's row id, the extension match wins deterministically.
+        $adminId = $this->zzUser('79805', 'admin', 0);
+        $extUser = $this->zzUser((string) $adminId, 'user', 0);
+        try {
+            $match = $this->api('POST', "extensions/{$adminId}/pairing", [], [], 'users');
+            $this->assertSame(200, $match['status'], $match['raw']);
+            $this->assertSame((string) $adminId, $match['json']['data']['extension']);
+        } finally {
+            $this->db->prepare('DELETE FROM sys_users WHERE id IN (?, ?)')->execute([$adminId, $extUser]);
+        }
     }
 
     public function testARetriedClickToCallIsNotPlacedTwice(): void

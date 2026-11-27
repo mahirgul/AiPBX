@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once dirname(__DIR__) . '/services/TrunkService.php';
 require_once dirname(__DIR__) . '/services/PrivacyService.php';
 require_once dirname(__DIR__) . '/services/TrunkUsageService.php';

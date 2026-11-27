@@ -2,7 +2,7 @@
 /** @var bool $plugin_enabled @var bool $privacy_blocked  @var array $providers @var array $types @var array $dependencies @var string $csrf_token */
 $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES);
 $csrf = '<input type="hidden" name="csrf_token" value="' . $h($csrf_token) . '">';
-$realtimeTypes = array_keys(CloudAiService::REALTIME_MODELS);
+$realtimeTypes = array_keys(AiProviderManifest::realtimeModels());
 ?>
 <div class="card">
     <?php echo uiPageHeaderOpen('fa-cloud', t('ai_cloud.title', 'Cloud AI'), 'aiCloudHelpBox'); ?>

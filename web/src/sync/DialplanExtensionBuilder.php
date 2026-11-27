@@ -7,6 +7,8 @@
  * FCM/APNs mobile push wake-up wait loops) in a dedicated module.
  */
 
+require_once __DIR__ . '/DialplanLines.php';     // jitterBufferLine()
+
 /**
  * Added before dialing an extension (Dial): Busy when DND is on, Goto to the
  * forwarding target when there is one — both are "terminal" (no Dial block is

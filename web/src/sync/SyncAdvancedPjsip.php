@@ -12,6 +12,8 @@
  * that no longer exist. Applying a changed list is the only place a new list is tried.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 const ADVANCED_PJSIP_FILE = 'pjsip_zz_advanced.conf';
 const ADVANCED_PJSIP_APPLIED = 'advanced_pjsip_applied';
 

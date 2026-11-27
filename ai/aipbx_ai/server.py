@@ -19,7 +19,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from . import __version__, sysinfo
-from .calls import CallRegistry
+from .call_registry import CallRegistry
 from .voice_requests import APP_MAX, ConfigError
 from .models import (ERROR, INSTALLED, LOADING, READY, DiskLimit, ModelBusy,
                      NotReady, ServiceBusy, UnknownModel, WrongKind)

@@ -130,6 +130,7 @@
         height: var(--topbar-control-size);
         box-sizing: border-box;
         padding: 0 10px;
+        border-radius: 10px;      /* the same corners as the buttons beside it */
         font-size: 12px;
     }
 

@@ -252,7 +252,7 @@ final class CloudAiServiceTest extends TestCase
         CloudAiService::save('qwen', ['api_key' => 'sk-qwen-123', 'model' => 'qwen-turbo']);
         CloudAiService::chat('qwen', 'hi');
         $c = end($this->calls);
-        $this->assertSame(CloudAiService::QWEN_ENDPOINT . '/chat/completions', $c['url']);
+        $this->assertSame(AiProviderManifest::llmBase('qwen') . '/chat/completions', $c['url']);
         $this->assertSame('qwen-turbo', json_decode($c['body'], true)['model']);
 
         // Own address without a key (e.g. Ollama): no Authorization header.
@@ -345,5 +345,14 @@ final class CloudAiServiceTest extends TestCase
         // Clearing provider removes its limits too.
         CloudAiService::save('deepgram', ['clear' => '1']);
         $this->assertSame(['stt_min' => 0, 'tts_chars' => 0, 'llm_tokens' => 0], CloudAiService::limits('deepgram'));
+    }
+
+    public function testPrivateEndpointsAreRefusedOnPublicOwnAddressProvidersOnly(): void
+    {
+        CloudAiService::save('ollama', ['base_url' => 'http://127.0.0.1:11434/v1']);
+        $this->assertSame('http://127.0.0.1:11434/v1', CloudAiService::config('ollama')['base_url']);
+
+        $this->expectException(CloudAiException::class);
+        CloudAiService::save('qwen', ['api_key' => 'sk-qwen-123', 'base_url' => 'http://127.0.0.1:8080/v1']);
     }
 }

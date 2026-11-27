@@ -3,6 +3,8 @@
  * Sync Ring Groups Dialplan (/etc/asterisk/pbx/extensions_ringgroups.conf)
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/DialplanBuilders.php';
 
 function syncRingGroups() {

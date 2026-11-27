@@ -2,6 +2,8 @@
 /**
  * Sync General Dialplan (/etc/asterisk/pbx/extensions_general.conf)
  */
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/DialplanBuilders.php';
 require_once dirname(__DIR__) . '/services/LampService.php';
 

@@ -184,6 +184,8 @@ Asterisk feature codes (*81 queue login, *80 queue logout, *60 DND, *72 forward)
 - Changes made in the portal are saved to the database and listed as pending (`sys_pending_sync`, grouped by domain: extensions, trunks, inbound/outbound dialplan, queues, …).
 - **Apply** runs the generator of each pending domain (`web/src/sync/`), writes the `.conf` files under `/etc/asterisk/pbx/` atomically and reloads the matching Asterisk modules.
 - If a file cannot be written or Asterisk reports a reload failure, the previous working file is restored and reloaded; the domain stays pending and the error is recorded in the audit log.
+- **Layers** (checked by `SyncLayersTest`): `web/src/sync/ConfWriter.php` (write, roll back, lock) < the `Sync*.php` modules < `web/src/asterisk_sync.php` (the orchestrator). A module never calls the orchestrator. The order of `PENDING_SYNC_DOMAIN_MAP` is the order Apply runs the domains in.
+- **Cloud AI accounts** (checked by `AiLayersTest`): `AiProviderManifest` (reads `ai/aipbx_ai/providers.json`, which the AI service reads too) < `AiEndpointGuard`, `AiUsageMeter`, `AiProviderCatalog` < `AiAccountStore` < `AiProviderClient` < `CloudAiService`, the one entry the rest of the portal calls. `AiAccountTester` (the Test button) sits above `AiGateway`.
 
 ### 4.3 Role-Based Access Control (RBAC)
 Granular security policies are enforced via the `sys_role_permissions` database matrix:
@@ -255,7 +257,7 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 
 ## 6. Real-Time Messaging Engine (Go)
 
-- High-throughput WebSocket server built in Go (`aipbx-chat`), running as a systemd service on `127.0.0.1:8086`.
+- High-throughput WebSocket server built in Go (`aipbx-chat`), running as a systemd service on `127.0.0.1:8086`. It reads users through the view `v_chat_users` (the ten columns it needs from `sys_users`), never the table.
 - Proxied via `/chat/ws` with TLS termination at Nginx / Apache.
 - Capabilities:
   - **Direct & Group Messaging**: 1-to-1 direct messaging and multi-user group chat rooms.
@@ -310,7 +312,7 @@ Granular security policies are enforced via the `sys_role_permissions` database 
 2. **Strict Environment Isolation**: All production secrets, AMI passwords, and TLS paths are stored in `/etc/ai-pbx.env` (`640 root:asterisk`), completely detached from source code.
 3. **fail2ban Protection**: Pre-configured jails monitor Asterisk SIP registration failures, Web Portal login brute-force attacks, and Nginx rate limit triggers.
 4. **HSTS & TLS Hardening**: TLS 1.2 and TLS 1.3 only, modern cipher suites, and mandatory HTTP-to-HTTPS redirection.
-5. **Single Root Entry Point**: the portal reaches root only through `sudo /usr/local/sbin/aipbx-priv`, whose subcommands map to fixed operations with validated arguments.
+5. **Single Root Entry Point**: the portal reaches root only through `sudo /usr/local/sbin/aipbx-priv`, whose subcommands map to fixed operations with validated arguments. The larger subcommands are handlers in `/usr/local/lib/aipbx-priv` (`conf/sbin/aipbx-priv.d`), installed with the script as `root:root`; the script reads only a handler named in its own `case`, and only if root owns it and nobody else may write it.
 6. **Apache Sandbox**: Ubuntu's hardened `apache2.service` is kept; the installer's override only makes `/etc/sudoers*` readable and `/etc/asterisk`, `/etc/postfix`, `/etc/fail2ban/jail.d` writable.
 7. **Optional Global Privacy & Telecom Compliance Engine (`/privacy`)**: 100% opt-in compliance controls (`PrivacyService` + `PrivacyDataSubjectHelper`) supporting KVKK, GDPR, US CCPA/FCC, HIPAA, PCI-DSS v4.0, and LGPD presets, `[sub-privacy-consent]` pre-call disclosure/opt-in/opt-out dialplan generation, `MixMonitor B(n)` periodic recording beeps, live AGI/AI transcript Luhn payment card & PII redaction (`[REDACTED-CARD]`), nightly dual-DB (`asteriskcdr` + `cdrs`) retention purge (`privacy_purge.php`), SAR JSON export, Right to Erasure (`PRIVACY_ERASURE`), and Cross-Border Cloud AI Lock.
 

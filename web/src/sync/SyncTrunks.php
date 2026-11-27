@@ -4,6 +4,8 @@
  * Consolidates all active SIP trunks into a single master configuration file reading from `sip` key-value table.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/../sip_helper.php';
 
 function syncTrunk($trunk_id) {
