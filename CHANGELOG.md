@@ -11,6 +11,28 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.82.3
+
+### Added
+
+- **REST API:** `POST /api/v1/extensions/{id}/pairing` (scope `users:write`) gives a billing or provisioning system a one-time mobile sign-in link and QR for an extension it has just created (suggested in #167). It never returns a password and refuses administrators, managers and accounts with two-factor. See `docs/rest-api-v1.md`.
+- **AI Agent call recording:** per-agent *Record calls handled by this agent* option under *Advanced* (works for both Realtime and Cascade agents), plus `MixMonitor` recording in `[aipbx-ai-app-<id>]` honoring caller `AIPBX_REC_POLICY=always` while respecting privacy opt-out and existing recordings.
+- **CDR visibility for AI Agents:** internal destination numbers (`SyncInternalNumbers`) now record the dialed number in `CDR(did)` when empty, and CDR reports / Call Journey / search / PDF & XLSX exports recognize AI Agent (`Stasis` / `AudioSocket`) sessions by agent title and number.
+
+### Changed
+
+- **Gemini Live** defaults to `gemini-3.8-live` again (1.82.2 had the older `gemini-3.1-flash-live-preview`).
+- **Top bar:** every control (menu button, quick-dial field, phone status, break, apply, bell, meeting and hang-up buttons) is now 36 px high with the same corner radius, on the desktop as well as on a phone (they had different heights and shapes).
+- **One provider list:** the addresses, default models and rules that say which providers take an address of their own, may be on the local network or need no key are in `ai/aipbx_ai/providers.json`, read by both the AI service and the portal (they used to be kept twice and had drifted: the default model of a local NIM container differed).
+- **Internal structure** (no change in behaviour): `CloudAiService` is split into an account store, a catalogue, a provider client, a usage meter and an address guard; `calls.py` into media, turn, tools, session, registry and AudioSocket parts; the Asterisk sync modules no longer include the orchestrator that calls them; the chat service reads users through the view `v_chat_users`; the larger subcommands of `aipbx-priv` are handlers in `/usr/local/lib/aipbx-priv`. Tests keep these layers one-way.
+
+### Fixes
+
+- **Apply order:** pending changes are applied in the order the generated files need one another (for example the numbers' contexts before the general dialplan that includes them, and the PJSIP options after the extensions and trunks they are checked against), not alphabetically.
+- **Gemini Live & Realtime voice agents:** send `speechConfig.languageCode` with strict language-lock instructions to prevent unwanted language switching on 8 kHz phone audio; capture streaming input/output transcriptions into call history and `ai_requests`; add stateful 8→16 kHz Catmull-Rom upsampling, 5-tap LPF 24→8 kHz downsampling, tuned VAD (`prefixPaddingMs: 300`, `silenceDurationMs >= 700`), opening stale-frame draining, thread-safe TLS socket locking, close-reason/error logging, and `secret_ref` credential resolution for Realtime accounts.
+- **Graceful transfer & goodbye handovers:** wait for a closing handover/goodbye sentence (skipping stale tool-call completion frames and avoiding duplicate announcements when the model already spoke in the same turn) and drain queued playback audio before tearing down `Stasis`, add polite default rules for unavailable departments or empty lookups, and provide explicit local date/time/timezone context (`never UTC`).
+- **Built-in AI Agent & call logs:** preserve saved database queries (`db_lookups`) in `BuiltinAiAgentService::toolsFromConfig()`, resolve built-in transfer names in `ai_request.php`, load *Recent AI calls* when switching tabs on `/ai-agent`, log caller hangup calls into `ai_requests` via `exten => h,1` (with bounded 404 retry in `ai_request.php`), and prevent ARI `AudioSocket/` external media channels from overwriting the caller or appearing as ghost legs in grouped CDRs.
+
 ## 1.82.2
 
 ### New
