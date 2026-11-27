@@ -17,6 +17,8 @@
  * which is the intended behaviour.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 require_once __DIR__ . '/DialplanBuilders.php';
 require_once __DIR__ . '/../internal_numbers.php';
 
@@ -99,6 +101,7 @@ function buildInternalNumbersConf(array $entries): string
         $conf .= "\n; " . $e['dest_type'] . " #" . $e['dest_id'] . " ({$label})\n";
         $conf .= "exten => {$num},1,NoOp(Internal number {$num} -> " . $e['dest_type'] . "/" . $e['dest_id'] . " - {$label})\n";
         $conf .= " same => n,Set(CDR(direction)=internal)\n";
+        $conf .= " same => n,ExecIf(\$[\"\${CDR(did)}\" = \"\"]?Set(CDR(did)={$num}))\n";
         if (internalNumberNeedsAnswer($e['dest_type'], $e['dest_id'])) {
             $conf .= " same => n,Answer()\n";
             $conf .= " same => n,Wait(1)\n";

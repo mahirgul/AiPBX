@@ -175,6 +175,7 @@ final class BuiltinAiAgentService
             'goodbye' => langStrings($lang)['ai_apps.default_agent_goodbye'] ?? langStrings('en')['ai_apps.default_agent_goodbye'],
         ] + self::listening($data) + [
             'automatic_announcements' => $parsed['options']['announcements'] ?? false,
+            'record_call' => !empty($data['record_call']),
             'max_turns' => 12, 'greeting' => $greeting, 'stt_lang' => $lang,
             'stt_model' => $mode === 'cascade' ? (string) $data['stt_model'] : '',
             'understand' => $mode === 'cascade' ? (string) $data['understand'] : '',
@@ -377,7 +378,7 @@ final class BuiltinAiAgentService
             error_log('AI agent: HTTP lookups left out: ' . $e->getMessage());
         }
         $out = ['waiting_phrases' => array_values((array) ($c['waiting_phrases'] ?? [])), 'intents' => $tools,
-            'tools' => array_values($http), 'db_lookups' => []];
+            'tools' => array_values($http), 'db_lookups' => array_values((array) ($c['db_lookups'] ?? []))];
         if (!empty($c['greetings'])) {
             $out += ['greeting' => $c['greetings'][0], 'greetings' => array_values($c['greetings'])];
         }
@@ -567,7 +568,7 @@ final class BuiltinAiAgentService
             }
         }
         if (!$resolveCredentials) {
-            foreach (['tts', 'stt', 'llm'] as $task) {
+            foreach (['tts', 'stt', 'llm', 'realtime'] as $task) {
                 $key = $task . '_cloud';
                 if (isset($out[$key])) {
                     $provider = (string) ($out[$key]['provider'] ?? '');
@@ -587,7 +588,7 @@ final class BuiltinAiAgentService
         }
         $id = substr($account, 6);
         $type = CloudAiService::typeIfKnown($id);
-        if ($type === '' || !isset(CloudAiService::REALTIME_MODELS[$type]) || !CloudAiService::configured($id) || CloudAiService::overLimit($id, 'llm')) {
+        if ($type === '' || !isset(AiProviderManifest::realtimeModels()[$type]) || !CloudAiService::configured($id) || CloudAiService::overLimit($id, 'llm')) {
             return null;
         }
         $pc = CloudAiService::config($id);
@@ -600,7 +601,7 @@ final class BuiltinAiAgentService
         if ($model === '') {
             $model = $type === 'openai_compat'
                 ? ($protocol === 'openai_ga' ? 'gpt-realtime' : (trim((string) ($pc['model'] ?? '')) ?: 'gpt-4o-realtime-preview'))
-                : CloudAiService::REALTIME_MODELS[$type];
+                : AiProviderManifest::realtimeModels()[$type];
         }
         $payload = [
             'provider' => $type, 'api_key' => (string) ($pc['api_key'] ?? ''), 'model' => $model,

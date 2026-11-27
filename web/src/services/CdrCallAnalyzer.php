@@ -31,8 +31,9 @@ final class CdrCallAnalyzer
     /**
      * @param array<string, string> $trunkTitles trunk_name => title
      * @param array<string, string> $userNames   extension => full name
+     * @param array<string, array{title: string, number: string}> $aiApps app_id => {title, number}
      */
-    public function __construct(private array $trunkTitles = [], private array $userNames = [])
+    public function __construct(private array $trunkTitles = [], private array $userNames = [], private array $aiApps = [])
     {
     }
 
@@ -67,6 +68,38 @@ final class CdrCallAnalyzer
         return $this->trunkTitles[$name] ?? $name;
     }
 
+    public static function isInternalMediaChannel(string $channel): bool
+    {
+        return str_starts_with($channel, 'AudioSocket/') || str_starts_with($channel, 'UnicastRTP/');
+    }
+
+    /** @param array<string, mixed> $leg */
+    public static function aiAppIdFromLeg(array $leg): string
+    {
+        if (self::isInternalMediaChannel((string) ($leg['channel'] ?? ''))) {
+            return '';
+        }
+        $app = (string) ($leg['lastapp'] ?? '');
+        if (!in_array($app, ['Stasis', 'AudioSocket'], true)) {
+            return '';
+        }
+        $dcontext = (string) ($leg['dcontext'] ?? '');
+        if (preg_match('/^aipbx-ai-app-(\d+)$/', $dcontext, $m)) {
+            return $m[1];
+        }
+        $lastdata = (string) ($leg['lastdata'] ?? '');
+        if ($app === 'Stasis' && preg_match('/^aipbx-ai,(\d+),/', $lastdata, $m)) {
+            return $m[1];
+        }
+        return '';
+    }
+
+    public function aiTitle(string $id): string
+    {
+        $title = trim((string) ($this->aiApps[$id]['title'] ?? ''));
+        return $title !== '' ? $title : '#' . $id;
+    }
+
     /**
      * @param list<array<string, mixed>> $legs CDR rows of one call
      * @return array<string, mixed>
@@ -75,10 +108,23 @@ final class CdrCallAnalyzer
     {
         // CDR rows are written when a leg ends, so ids are not chronological:
         // queue member (Local/) legs often get a smaller id than the leg that
-        // started the call. Order by start time, originating legs first.
-        usort($legs, fn($a, $b) => [(string) ($a['calldate'] ?? ''), str_starts_with((string) $a['channel'], 'Local/'), (int) $a['id']]
-            <=> [(string) ($b['calldate'] ?? ''), str_starts_with((string) $b['channel'], 'Local/'), (int) $b['id']]);
-        $first = $legs[0] ?? [];
+        // started the call, and ARI AudioSocket media legs carry no caller info.
+        $rank = static fn(array $l): int => self::isInternalMediaChannel((string) ($l['channel'] ?? ''))
+            ? 2
+            : (str_starts_with((string) ($l['channel'] ?? ''), 'Local/') ? 1 : 0);
+        usort($legs, static fn($a, $b) => [
+            $rank($a) === 2 ? 1 : 0,
+            (string) ($a['calldate'] ?? ''),
+            $rank($a),
+            (int) $a['id'],
+        ] <=> [
+            $rank($b) === 2 ? 1 : 0,
+            (string) ($b['calldate'] ?? ''),
+            $rank($b),
+            (int) $b['id'],
+        ]);
+        $realLegs = array_values(array_filter($legs, static fn($l) => !self::isInternalMediaChannel((string) ($l['channel'] ?? ''))));
+        $first = $realLegs[0] ?? ($legs[0] ?? []);
         $src = trim((string) ($first['src'] ?? ''));
 
         $in = $this->endpoint($first['channel'] ?? '');
@@ -91,9 +137,20 @@ final class CdrCallAnalyzer
             $callerName = $this->userNames[$src];
         }
 
-        // Every Dial/Queue attempt and what it reached.
+        // Every Dial/Queue attempt and what it reached, plus AI agent sessions.
         $steps = [];
         foreach ($legs as $leg) {
+            $aiId = self::aiAppIdFromLeg($leg);
+            if ($aiId !== '') {
+                $steps[] = [
+                    'kind' => 'ai',
+                    'id' => $aiId,
+                    'number' => (string) ($this->aiApps[$aiId]['number'] ?? ''),
+                    'device' => '',
+                    'answered' => ($leg['disposition'] ?? '') === 'ANSWERED',
+                ];
+                continue;
+            }
             if (!in_array($leg['lastapp'] ?? '', ['Dial', 'Queue'], true)) {
                 continue;
             }
@@ -119,6 +176,8 @@ final class CdrCallAnalyzer
         $trunkSteps = array_values(array_filter($steps, fn($s) => $s['kind'] === 'trunk'));
         $answeredTrunks = array_values(array_filter($answered, fn($s) => $s['kind'] === 'trunk'));
         $answeredExts = array_values(array_filter($answered, fn($s) => $s['kind'] === 'ext'));
+        $answeredAi = array_values(array_filter($answered, fn($s) => $s['kind'] === 'ai'));
+        $aiAnswer = $answeredAi[0] ?? null;
 
         $out = $answeredTrunks ? end($answeredTrunks) : ($trunkSteps ? end($trunkSteps) : null);
         $extAnswer = $answeredExts[0] ?? null;
@@ -198,6 +257,11 @@ final class CdrCallAnalyzer
             'answered_ext' => $extAnswer['id'] ?? '',
             'answered_name' => $extAnswer ? ($this->userNames[$extAnswer['id']] ?? '') : '',
             'answered_device' => $extAnswer['device'] ?? '',
+            'answered_ai' => $aiAnswer ? [
+                'id' => $aiAnswer['id'],
+                'title' => $this->aiTitle($aiAnswer['id']),
+                'number' => $aiAnswer['number'],
+            ] : null,
             'path' => $path,
         ];
     }
@@ -208,6 +272,7 @@ final class CdrCallAnalyzer
         $label = match ($kind) {
             'trunk' => $this->trunkTitle($id),
             'ext' => $this->userNames[$id] ?? '',
+            'ai' => $this->aiTitle($id),
             default => '',
         };
         return ['kind' => $kind, 'id' => $id, 'number' => $number, 'label' => $label, 'answered' => $answered, 'device' => $device];

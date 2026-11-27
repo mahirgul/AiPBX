@@ -93,7 +93,7 @@ final class BuiltinAiAgentController extends BaseController
             'targets' => BuiltinAiAgentService::targets(true), 'csrf_token' => getCSRFToken(),
             'stats' => $edit === null ? BuiltinAiAgentService::stats() : [],
             'detectors' => $edit !== null ? BuiltinAiAgentService::detectors() : ['vad' => false, 'turn' => false],
-            'ai_calls' => $tab === 'calls' ? LocalAiService::callLog(30) : [],
+            'ai_calls' => LocalAiService::callLog(30),
             'wizard' => $wizard, 'tab' => $tab, 'plugins' => array_combine(BuiltinAiAgentService::WIZARD_PLUGINS, array_map([PluginManager::class, 'isEnabled'], BuiltinAiAgentService::WIZARD_PLUGINS)),
         ], ['title' => t('builtin_ai_agent.title'),
             'extra_js' => '<script src="' . asset('/assets/js/builtin_ai_agent.js') . '"></script>'] + $notices);

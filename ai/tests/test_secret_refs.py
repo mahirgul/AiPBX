@@ -52,6 +52,25 @@ class SecretReferencesTest(unittest.TestCase):
                 server.shutdown(); server.server_close()
         self.assertEqual((got['api_key'], got['model']), ('first', 'gpt-4.1'))
 
+    def test_realtime_secret_ref_and_settings_preserved(self):
+        cfg = {'provider': 'google_ai', 'secret_ref': 'app:7:realtime:google_ai'}
+        self.assertEqual(validate_reference(cfg, 'realtime'), cfg)
+        with self.assertRaises(ValueError):
+            validate_reference({'provider': 'google_ai', 'secret_ref': 'app:7:llm:google_ai'}, 'realtime')
+        upgraded = reference_config(7, {
+            'realtime_cloud': {
+                'provider': 'google_ai', 'api_key': 'secret', 'model': 'gemini-3.8-live',
+                'voice': 'coral', 'lang': 'tr', 'vad': {'threshold': 0.5, 'silence_ms': 500},
+                'noise_reduction': 'off', 'ws_url': 'wss://blocked.example/ws',
+            }
+        })
+        rt = upgraded['realtime_cloud']
+        self.assertEqual(rt['secret_ref'], 'app:7:realtime:google_ai')
+        self.assertNotIn('api_key', rt)
+        self.assertNotIn('ws_url', rt)
+        self.assertEqual((rt['model'], rt['voice'], rt['lang'], rt['vad'], rt['noise_reduction']),
+                         ('gemini-3.8-live', 'coral', 'tr', {'threshold': 0.5, 'silence_ms': 500}, 'off'))
+
     def test_each_invocation_resolves_current_credential_and_revocation(self):
         state={'ok':True,'credential':{'provider':'nvidia','api_key':'first'}}
         seen=[]

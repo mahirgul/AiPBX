@@ -41,7 +41,15 @@ try {
     if ($app === null) {
         exit(0);
     }
-    [$status, $body] = $get('/v1/calls/' . $uuid);
+    $status = 0;
+    $body = '';
+    for ($try = 0; $try < 10; $try++) {
+        [$status, $body] = $get('/v1/calls/' . $uuid);
+        if ($status !== 404) {
+            break;
+        }
+        usleep(500000);
+    }
     $call = $status === 200 ? json_decode($body, true) : null;
     if (!is_array($call)) {
         fwrite(STDERR, "ai_request: no result for {$uuid} (HTTP {$status})\n");
@@ -49,12 +57,21 @@ try {
     }
     $intentId = (string) ($call['intent'] ?? '');
     $intent = null;
-    foreach (AiAppService::config($app)['intents'] ?? [] as $i) {
+    $cfg = AiAppService::config($app);
+    foreach ($cfg['intents'] ?? [] as $i) {
         if ($i['id'] === $intentId) {
             $intent = $i;
         }
     }
     $builtin = ($app['app_type'] ?? '') === AiAppService::BUILTIN_AGENT;
+    if ($intent === null && $builtin && $intentId !== '') {
+        foreach ($cfg['transfers'] ?? [] as $t) {
+            if (($t['id'] ?? '') === $intentId) {
+                $intent = ['id' => $intentId, 'name' => (string) ($t['usage'] ?? $intentId)];
+                break;
+            }
+        }
+    }
     $transcript = PrivacyService::redactTranscriptIfEnabled(AiAppService::callText($call, $builtin, MailTemplateService::systemLanguage()));
     $caller = mb_substr((string) ($call['caller'] ?? ''), 0, 40);
     $callerName = mb_substr((string) ($call['caller_name'] ?? ''), 0, 80);

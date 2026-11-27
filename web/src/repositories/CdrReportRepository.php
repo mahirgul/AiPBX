@@ -23,10 +23,42 @@ class CdrReportRepository extends BaseRepository
     }
 
     protected static ?array $lookupMaps = null;
+    protected static ?array $aiAppMap = null;
 
     public static function resetLookupMaps(): void
     {
         static::$lookupMaps = null;
+        static::$aiAppMap = null;
+    }
+
+    public static function hasAiAppsTable(): bool
+    {
+        try {
+            return static::db()->query("SHOW TABLES LIKE 'pbx_ai_apps'")->fetchColumn() !== false;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /** @return array<string, array{title: string, number: string}> */
+    protected static function aiAppMap(): array
+    {
+        if (static::$aiAppMap !== null) {
+            return static::$aiAppMap;
+        }
+        $map = [];
+        try {
+            $rows = static::db()->query("SELECT id, title, internal_number FROM pbx_ai_apps")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $a) {
+                $map[(string) $a['id']] = [
+                    'title' => (string) $a['title'],
+                    'number' => (string) ($a['internal_number'] ?? ''),
+                ];
+            }
+        } catch (\Throwable $e) {
+            // table absent in minimal schemas
+        }
+        return static::$aiAppMap = $map;
     }
 
     /**
@@ -207,7 +239,7 @@ class CdrReportRepository extends BaseRepository
     public static function analyzer(): CdrCallAnalyzer
     {
         [$userMap] = static::getLookupMaps();
-        return new CdrCallAnalyzer(static::trunkTitles(), $userMap);
+        return new CdrCallAnalyzer(static::trunkTitles(), $userMap, static::aiAppMap());
     }
 
     /**
@@ -242,8 +274,12 @@ class CdrReportRepository extends BaseRepository
             $aiSql = '';
             $aiParams = [];
             if (static::hasCdrAiTable()) {
-                $aiSql = " OR EXISTS (SELECT 1 FROM cdr_ai ca WHERE (ca.cdr_id = c.id OR (ca.call_id != '' AND (ca.call_id = c.uniqueid OR ca.call_id = c.linkedid))) AND (ca.transcript LIKE ? OR ca.summary LIKE ?))";
-                $aiParams = ["%$searchQuery%", "%$searchQuery%"];
+                $aiSql .= " OR EXISTS (SELECT 1 FROM cdr_ai ca WHERE (ca.cdr_id = c.id OR (ca.call_id != '' AND (ca.call_id = c.uniqueid OR ca.call_id = c.linkedid))) AND (ca.transcript LIKE ? OR ca.summary LIKE ?))";
+                array_push($aiParams, "%$searchQuery%", "%$searchQuery%");
+            }
+            if (static::hasAiAppsTable()) {
+                $aiSql .= " OR EXISTS (SELECT 1 FROM pbx_ai_apps a WHERE c.dcontext = CONCAT('aipbx-ai-app-', a.id) AND (a.title LIKE ? OR a.internal_number LIKE ?))";
+                array_push($aiParams, "%$searchQuery%", "%$searchQuery%");
             }
             $where .= " AND (c.src LIKE ? OR c.dst LIKE ? OR c.did LIKE ? OR c.clid LIKE ? OR c.uniqueid LIKE ? OR c.linkedid LIKE ? OR n.customer_name LIKE ? OR n.phone LIKE ? OR n.notes LIKE ?{$aiSql})";
             for ($i = 0; $i < 9; $i++) {
@@ -271,11 +307,12 @@ class CdrReportRepository extends BaseRepository
             COUNT(*) AS total_legs,
             COALESCE(
                 MAX(CASE WHEN c.userfield IS NOT NULL AND c.userfield != '' THEN c.id END),
+                MAX(CASE WHEN c.disposition = 'ANSWERED' AND c.channel NOT LIKE 'AudioSocket/%' AND c.channel NOT LIKE 'UnicastRTP/%' THEN c.id END),
                 MAX(CASE WHEN c.disposition = 'ANSWERED' THEN c.id END),
                 MAX(c.id)
             ) AS id,
-            SUBSTRING_INDEX(GROUP_CONCAT(c.src ORDER BY c.calldate, (c.channel LIKE 'Local/%'), c.id SEPARATOR '\\n'), '\\n', 1) AS caller_num,
-            SUBSTRING_INDEX(GROUP_CONCAT(c.channel ORDER BY c.calldate, (c.channel LIKE 'Local/%'), c.id SEPARATOR '\\n'), '\\n', 1) AS first_channel,
+            SUBSTRING_INDEX(GROUP_CONCAT(c.src ORDER BY (c.channel LIKE 'AudioSocket/%' OR c.channel LIKE 'UnicastRTP/%'), c.calldate, (c.channel LIKE 'Local/%'), c.id SEPARATOR '\n'), '\n', 1) AS caller_num,
+            SUBSTRING_INDEX(GROUP_CONCAT(c.channel ORDER BY (c.channel LIKE 'AudioSocket/%' OR c.channel LIKE 'UnicastRTP/%'), c.calldate, (c.channel LIKE 'Local/%'), c.id SEPARATOR '\n'), '\n', 1) AS first_channel,
             GROUP_CONCAT(c.dstchannel ORDER BY c.id SEPARATOR '\\n') AS dst_channels,
             MAX(c.lastapp IN ('Dial', 'Queue') AND " . $isTrunk('c.dstchannel') . ") AS out_trunk,
             MAX(c.disposition = 'ANSWERED' AND c.lastapp IN ('Dial', 'Queue')
@@ -377,7 +414,7 @@ class CdrReportRepository extends BaseRepository
             $r['answer_time'] = date('Y-m-d H:i:s', strtotime($r['start_time']) + $r['ring_sec']);
 
             $r['legs'] = $legsByLinkedId[$lid] ?? [];
-            if (empty($r['total_legs']) || count($r['legs']) > (int)$r['total_legs']) {
+            if ($r['legs'] !== []) {
                 $r['total_legs'] = count($r['legs']);
             }
 
@@ -391,13 +428,15 @@ class CdrReportRepository extends BaseRepository
             $r['agent_name'] = !empty($ext) && isset($userMap[$ext]) ? $userMap[$ext] : '';
             $r['device_type'] = $flow['answered_device'] ?? '';
 
-            // Route: the queue, or the DID's title, of what was dialed.
+            // Route: the queue, the DID's title, or the AI agent (when handed over) of what was dialed.
             $did = $flow['dialed_number'] ?? ($r['did'] ?? '');
             $q = $r['queue_name'] ?? '';
             if ($q !== '') {
                 $r['route'] = static::queueTitles()[$q] ?? $q;
             } elseif ($did !== '' && isset($didMap[$did])) {
                 $r['route'] = $didMap[$did];
+            } elseif (!empty($flow['answered_ai']) && !empty($r['agent_extension'])) {
+                $r['route'] = (string) $flow['answered_ai']['title'];
             } else {
                 $r['route'] = '';
             }
@@ -435,7 +474,7 @@ class CdrReportRepository extends BaseRepository
                        END AS device_type
                 FROM asteriskcdr c
                 WHERE c.linkedid IN ($in) OR c.uniqueid IN ($in)
-                ORDER BY c.calldate ASC, (c.channel LIKE 'Local/%') ASC, c.id ASC";
+                ORDER BY (c.channel LIKE 'AudioSocket/%' OR c.channel LIKE 'UnicastRTP/%') ASC, c.calldate ASC, (c.channel LIKE 'Local/%') ASC, c.id ASC";
 
         $stmt = static::db()->prepare($sql);
         $stmt->execute(array_merge($linkedIds, $linkedIds));
@@ -449,6 +488,15 @@ class CdrReportRepository extends BaseRepository
             $leg['agent_name'] = !empty($dst) && isset($userMap[$dst]) ? $userMap[$dst] : '';
             $leg['leg_info'] = static::formatLegDescription($leg, $analyzer, $userMap);
             $grouped[$lid][] = $leg;
+        }
+        foreach ($grouped as $lid => $legs) {
+            $real = array_values(array_filter(
+                $legs,
+                static fn(array $l): bool => !CdrCallAnalyzer::isInternalMediaChannel((string) ($l['channel'] ?? ''))
+            ));
+            if ($real !== []) {
+                $grouped[$lid] = $real;
+            }
         }
 
         return $grouped;
@@ -532,6 +580,10 @@ class CdrReportRepository extends BaseRepository
             $icon = 'fa-phone-slash';
             $title = t('cdr_reports.leg_hangup');
             $detail = t('cdr_reports.leg_hangup_detail');
+        } elseif (($aiId = CdrCallAnalyzer::aiAppIdFromLeg($leg)) !== '') {
+            $icon = 'fa-robot';
+            $title = sprintf(t('cdr_reports.leg_ai_agent'), $analyzer->aiTitle($aiId));
+            $detail = $bill > 0 ? sprintf(t('cdr_reports.leg_talk_detail'), $bill) : sprintf(t('cdr_reports.leg_app_detail'), $dur, $bill);
         } else {
             $title = $app !== '' ? sprintf(t('cdr_reports.leg_app'), $app, (string)($leg['dst'] ?? '')) : t('cdr_reports.leg_step');
             $detail = sprintf(t('cdr_reports.leg_app_detail'), $dur, $bill);

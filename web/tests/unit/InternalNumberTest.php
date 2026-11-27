@@ -123,4 +123,17 @@ final class InternalNumberTest extends TestCase
         $this->assertNotNull(internalNumberRouteWarning('4500'));
         $this->assertNull(internalNumberRouteWarning('1500'));
     }
+
+    public function testInternalNumbersPreserveExistingDidAndSetDialedDidWhenEmpty(): void
+    {
+        require_once dirname(__DIR__, 2) . '/src/sync/SyncInternalNumbers.php';
+        $conf = buildInternalNumbersConf([[
+            'number' => '976286',
+            'dest_type' => 'ai_app',
+            'dest_id' => '7',
+            'label' => 'Turkce Ajan',
+        ]]);
+        $this->assertStringContainsString('exten => 976286,1,NoOp', $conf);
+        $this->assertStringContainsString('ExecIf($["${CDR(did)}" = ""]?Set(CDR(did)=976286))', $conf);
+    }
 }

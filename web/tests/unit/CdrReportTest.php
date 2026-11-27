@@ -206,4 +206,48 @@ final class CdrReportTest extends TestCase
         $remaining = (int)$db->query("SELECT COUNT(*) FROM asteriskcdr WHERE linkedid = '{$linkedid}'")->fetchColumn();
         $this->assertEquals(0, $remaining, 'All legs belonging to the linkedid should be deleted');
     }
+
+    public function testAiAgentCallRecognizedAndSearchableWithoutAudioSocketGhostLeg(): void
+    {
+        $db = getDB();
+        $db->prepare("INSERT INTO pbx_ai_apps (title, internal_number, app_type, model_id, speed, max_concurrent, text_template, dest_type, dest_id, config, is_active)
+            VALUES (?, ?, 'builtin_agent', 'realtime', 1.0, 5, 'Hi', 'hangup', '', '{}', 1)")
+            ->execute(['Test AI Ajan', '979797']);
+        $aiId = (int) $db->lastInsertId();
+        CdrReportRepository::resetLookupMaps();
+
+        try {
+            $linkedid = 'test-cdr-group-ai-1';
+            $now = date('Y-m-d H:i:s');
+            // Insert AudioSocket leg first so its id is smaller than the caller leg.
+            $db->prepare("INSERT INTO asteriskcdr
+                (calldate, clid, src, dst, did, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid)
+                VALUES (?, '\"\" <>', '', 's', NULL, 'default', 'AudioSocket/127.0.0.1:8791-test-uuid', '', 'Stasis', 'aipbx-ai,test-uuid', 0, 0, 'ANSWERED', ?, ?)")
+                ->execute([$now, $linkedid, 'test-uuid']);
+            $audioLegId = (int) $db->lastInsertId();
+
+            $db->prepare("INSERT INTO asteriskcdr
+                (calldate, clid, src, dst, did, dcontext, channel, dstchannel, lastapp, lastdata, billsec, duration, disposition, linkedid, uniqueid)
+                VALUES (?, '\"Temsilci Bir\" <9931>', '9931', 's', NULL, ?, 'PJSIP/9931-webrtc-0001', 'AudioSocket/127.0.0.1:8791-test-uuid', 'Stasis', ?, 22, 22, 'ANSWERED', ?, ?)")
+                ->execute([$now, "aipbx-ai-app-{$aiId}", "aipbx-ai,{$aiId},test-uuid", $linkedid, $linkedid]);
+            $realLegId = (int) $db->lastInsertId();
+
+            $byTitle = CdrReportRepository::search(true, '', null, null, '', '', 'Test AI Ajan', 1, 10, '', 'grouped');
+            $this->assertCount(1, $byTitle);
+            $byNumber = CdrReportRepository::search(true, '', null, null, '', '', '979797', 1, 10, '', 'grouped');
+            $this->assertCount(1, $byNumber);
+
+            $row = $byTitle[0];
+            $this->assertSame('9931', $row['caller_num']);
+            $this->assertSame($realLegId, (int) $row['id']);
+            $this->assertNotSame($audioLegId, (int) $row['id']);
+            $this->assertSame(1, (int) $row['total_legs']);
+            $this->assertSame('Test AI Ajan', $row['flow']['answered_ai']['title'] ?? '');
+            $this->assertSame('979797', $row['flow']['dialed_number'] ?? '');
+            $this->assertSame('fa-robot', $row['legs'][0]['leg_info']['icon'] ?? '');
+        } finally {
+            $db->prepare("DELETE FROM pbx_ai_apps WHERE id = ?")->execute([$aiId]);
+            CdrReportRepository::resetLookupMaps();
+        }
+    }
 }

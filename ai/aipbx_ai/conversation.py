@@ -21,9 +21,11 @@ application's destination.
 
 from __future__ import annotations
 
+import datetime
 import json
 import re
 import time
+import zoneinfo
 
 from . import cloud_llm
 
@@ -186,17 +188,29 @@ def knowledge_lookup(config, app, query, source, ask):
     return ask(app, query, sid)
 
 
+def local_now(tz_name: str = "") -> datetime.datetime:
+    """Returns current timezone-aware local time (or `tz_name` when valid)."""
+    tz = str(tz_name or "").strip()
+    if tz:
+        try:
+            return datetime.datetime.now(zoneinfo.ZoneInfo(tz))
+        except Exception:
+            pass
+    return datetime.datetime.now().astimezone()
+
+
 def render_instructions(template, config, lang="tr"):
     """Interpolates dynamic instruction variables ({caller_name}, {customer_id}, etc.)."""
     if not template:
         return ""
+    now = local_now(str(config.get("timezone") or ""))
     values = {
         "{caller_name}": str(config.get("caller_name") or ""),
         "{caller_id}": str(config.get("caller") or ""),
         "{customer_id}": str(config.get("verified_customer") or ""),
         "{did}": str(config.get("did") or ""),
-        "{date}": time.strftime("%Y-%m-%d"),
-        "{time}": time.strftime("%H:%M"),
+        "{date}": now.strftime("%Y-%m-%d"),
+        "{time}": now.strftime("%H:%M"),
         "{language}": str(config.get("language_name") or LANG_NAMES.get(lang, lang) or ""),
     }
 
@@ -274,7 +288,10 @@ def prompt(config, history, lang):
         f"Speak {config.get('language_name') or LANG_NAMES.get(lang, lang)}, in at most two short sentences, as said aloud on the "
         "phone: no lists, no markdown, no emoji.\n"
         "Use only the company's instructions and lookup results below; never invent facts, prices, "
-        "times or promises. When you cannot help, the caller asks for a person, or you are unsure, "
+        "times or promises. When a lookup returns no matching data or fails, or when a requested "
+        "department or action is unavailable, apologize politely and say you cannot perform that "
+        "request right now instead of guessing. When transferring, always put a short polite "
+        "handover sentence in \"say\". When you cannot help, the caller asks for a person, or you are unsure, "
         f'{transfer} when no listed destination fits.\n'
         "A \"Phone line note\" is from the phone system, not the caller: when it says nothing usable was "
         "heard, reply with one short sentence that fits the reason (ask them to speak up, to move somewhere "

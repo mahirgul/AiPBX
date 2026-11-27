@@ -282,6 +282,8 @@ $filter_url = function (array $override) {
                                     <?php if (!empty($c['agent_name'])): ?>
                                         <small class="u-muted u-fs-11" style="display: block;"><?php echo htmlspecialchars($c['agent_name']); ?></small>
                                     <?php endif; ?>
+                                <?php elseif (!empty($f['answered_ai'])): ?>
+                                    <span class="u-fs-12 u-fw-600"><i class="fas fa-robot u-primary u-mr-4"></i><?php echo htmlspecialchars($f['answered_ai']['title']); ?></span>
                                 <?php elseif ($f && $f['direction'] === CdrCallAnalyzer::TRANSIT && $c['status'] === 'ANSWERED'): ?>
                                     <span class="u-fs-12"><i class="fas fa-right-from-bracket u-muted"></i> <?php echo htmlspecialchars(t('cdr_reports.answered_external')); ?></span>
                                 <?php else: ?>
@@ -399,10 +401,17 @@ $filter_url = function (array $override) {
                                         <!-- Call path: origin, then everyone who answered -->
                                         <div class="u-d-flex u-ai-center u-gap-6 u-wrap u-mb-12">
                                             <?php foreach ($c['flow']['path'] as $pi => $node):
-                                                $nicon = $node['kind'] === 'trunk' ? 'fa-tower-broadcast' : ($node['kind'] === 'ext' ? 'fa-user' : 'fa-hashtag');
-                                                $ntext = $node['kind'] === 'trunk'
-                                                    ? $node['label'] . ($node['number'] !== '' ? ': ' . $node['number'] : '')
-                                                    : $node['id'] . ($node['label'] !== '' ? ' ' . $node['label'] : '');
+                                                $nicon = match ($node['kind']) {
+                                                    'trunk' => 'fa-tower-broadcast',
+                                                    'ext' => 'fa-user',
+                                                    'ai' => 'fa-robot',
+                                                    default => 'fa-hashtag',
+                                                };
+                                                $ntext = match ($node['kind']) {
+                                                    'trunk' => $node['label'] . ($node['number'] !== '' ? ': ' . $node['number'] : ''),
+                                                    'ai' => $node['label'],
+                                                    default => $node['id'] . ($node['label'] !== '' ? ' ' . $node['label'] : ''),
+                                                };
                                             ?>
                                                 <?php if ($pi > 0): ?><i class="fas fa-arrow-right-long u-muted u-fs-11"></i><?php endif; ?>
                                                 <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-input); <?php echo $node['answered'] ? '' : 'opacity: 0.6; border-style: dashed;'; ?>">

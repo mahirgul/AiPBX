@@ -20,6 +20,8 @@
  * own destination, e.g. reception.
  */
 
+require_once __DIR__ . '/ConfWriter.php';
+
 const AI_APP_SERVICE_URL = 'http://127.0.0.1:8790/v1/calls/start';
 const AI_APP_AUDIOSOCKET = '127.0.0.1:8791';
 
@@ -160,13 +162,27 @@ function buildAiAppsDialplan(array $apps, string $key, ?bool $useAri = null): st
     return $conf;
 }
 
+function aiAppRecordingLines(int $id, bool $recordCall): string {
+    require_once dirname(__DIR__) . '/services/PrivacyService.php';
+    $c  = " same => n,GotoIf(\$[\"\${MIXMONITOR_FILENAME}\" != \"\" | \"\${PRIVACY_NO_RECORD}\" = \"1\" | \"\${AIPBX_FAX}\" = \"1\"]?rec_skip)\n";
+    if (!$recordCall) {
+        $c .= " same => n,GotoIf(\$[\"\${AIPBX_REC_POLICY}\" != \"always\"]?rec_skip)\n";
+    }
+    $c .= " same => n,Set(REC_FILE=/var/spool/asterisk/monitor/ai_agent_\${STRFTIME(\${EPOCH},,%Y%m%d_%H%M%S)}_\${FILTER(0-9+,\${CALLERID(num)})}_app{$id}.wav)\n";
+    $c .= " same => n,MixMonitor(\${REC_FILE}" . PrivacyService::mixMonitorOptionSuffix() . ")\n";
+    $c .= " same => n,Set(CDR(userfield)=\${REC_FILE})\n";
+    $c .= " same => n(rec_skip),NoOp()\n";
+    return $c;
+}
+
 /** [aipbx-ai-app-<id>] of a voice-requests application. */
 function buildVoiceRequestsContext(array $a, string $key, ?bool $useAri = null): string {
     $id = (int) $a['id'];
     $name = dialplanText((string) $a['title']);
     $max = max(1, min(50, (int) $a['max_concurrent']));
     $builtin = ($a['app_type'] ?? '') === AiAppService::BUILTIN_AGENT;
-    $intents = $builtin ? ($a['agent_tools']['intents'] ?? []) : (AiAppService::config($a)['intents'] ?? []);
+    $appCfg = AiAppService::config($a);
+    $intents = $builtin ? ($a['agent_tools']['intents'] ?? []) : ($appCfg['intents'] ?? []);
     $svcCfg = [];
     $voiceReady = false;
     try {
@@ -198,24 +214,26 @@ function buildVoiceRequestsContext(array $a, string $key, ?bool $useAri = null):
         $c .= " same => n,GotoIf(\$[\"\${AI_AGENT_VISITED_{$id}}\" = \"1\"]?reentry)\n";
         $c .= " same => n,Set(__AI_AGENT_VISITED_{$id}=1)\n";
     }
+    $c .= aiAppRecordingLines($id, !empty($appCfg['record_call']));
     if ($key !== '' && $voiceReady) {
         $c .= " same => n,Set(CURLOPT(httptimeout)=5)\n";
         $c .= " same => n,Set(AI_CALL=\${CURL(" . AI_APP_SERVICE_URL . ",{$post})})\n";
         $c .= " same => n,GotoIf(\$[\"\${LEN(\${AI_CALL})}\" != \"36\"]?fallback)\n";
         $c .= aiAppMediaLine($id, $useAri);
         $c .= " same => n,Set(AI_INTENT=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/result?key={$key})})\n";
-        if (!empty(AiAppService::config($a)['conversation'])) {
+        if (!empty($appCfg['conversation'])) {
             // Its summary goes with the call: to the next assistant (above) and into the request log.
             $c .= " same => n,Set(__AI_SUMMARY=\${CURL(http://127.0.0.1:8790/v1/calls/\${AI_CALL}/summary?key={$key})})\n";
         }
         // The request worker reads the resolved name from the AI call result.
+        $c .= " same => n,Set(AI_REQ_LOGGED=1)\n";
         $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} >/dev/null 2>&1 &)\n";
         foreach ($intents as $i) {
             $iid = preg_replace('/[^a-z0-9_]/', '', (string) ($i['route_id'] ?? $i['id']));
             $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"{$iid}\"]?req_{$iid})\n";
         }
     }
-    $conversation = $key !== '' && !empty(AiAppService::config($a)['conversation']);
+    $conversation = $key !== '' && !empty($appCfg['conversation']);
     if ($conversation) {
         // The conversation said goodbye: nothing more to do.
         $c .= " same => n,GotoIf(\$[\"\${AI_INTENT}\" = \"_end\"]?conv_end)\n";
@@ -241,6 +259,13 @@ function buildVoiceRequestsContext(array $a, string $key, ?bool $useAri = null):
     if ($builtin) {
         $c .= " same => n(reentry),GotoIf(\$[\"\${AIPBX_PRE_QUEUE_Q}\" != \"\"]?aipbx-queue-resume-\${AIPBX_PRE_QUEUE_Q},s,1)\n";
         $c .= " same => n,Hangup()\n";
+    }
+    if ($key !== '' && $voiceReady) {
+        // If the caller hangs up inside Stasis()/AudioSocket(), exten => s never continues: log via h once.
+        $c .= "exten => h,1,GotoIf(\$[\"\${AI_REQ_LOGGED}\" = \"1\" | \"\${LEN(\${AI_CALL})}\" != \"36\"]?h_done)\n";
+        $c .= " same => n,Set(AI_REQ_LOGGED=1)\n";
+        $c .= " same => n,System(/usr/local/bin/ai_request.php {$id} \${FILTER(0-9a-f-,\${AI_CALL})} {$key} >/dev/null 2>&1 &)\n";
+        $c .= " same => n(h_done),NoOp()\n";
     }
     return $c . "\n";
 }

@@ -4,16 +4,19 @@ import os
 import re
 import socket
 
+from . import providers
 
-# The per-account settings that travel beside a credential reference (validated by cloud_llm/stt/tts).
-SETTINGS = ('model', 'base_url', 'temperature', 'max_tokens', 'voice', 'format')
+
+# The per-account settings that travel beside a credential reference (validated by cloud_llm/stt/tts/realtime).
+SETTINGS = ('model', 'base_url', 'temperature', 'max_tokens', 'voice', 'format',
+            'vad', 'noise_reduction', 'protocol', 'ws_url')
 # Set by a call for its own language, over what the resolver returns.
-CALL_KEYS = ('lang', 'locale', 'lang_name', 'keyterms')
+CALL_KEYS = ('lang', 'locale', 'lang_name')
 
 
 def validate_reference(cfg, task):
     ref = cfg.get('secret_ref')
-    match = re.fullmatch(r'app:([1-9][0-9]{0,6}):(llm|stt|tts):([a-z_]{2,20})', ref or '')
+    match = re.fullmatch(r'app:([1-9][0-9]{0,6}):(llm|stt|tts|realtime):([a-z_]{2,20})', ref or '')
     if not match or match[2] != task or match[3] != cfg.get('provider'):
         raise ValueError('invalid credential reference')
     return {'provider': match[3], 'secret_ref': ref}
@@ -110,12 +113,14 @@ def reference_config(app_id, config):
             if isinstance(out.get(name), dict) and out[name].get('lang'):
                 out['language'] = out[name]['lang']
                 break
-    for task in ('llm', 'stt', 'tts'):
+    for task in ('llm', 'stt', 'tts', 'realtime'):
         key = task + '_cloud'
         if isinstance(out.get(key), dict) and out[key].get('provider'):
             provider = out[key]['provider']
-            kept = {k: out[key][k] for k in SETTINGS if out[key].get(k) is not None}
-            if provider not in ('openai_compat', 'qwen', 'ollama', 'nvidia_local'):      # only these have an address of their own
+            keys = SETTINGS + (('lang',) if task == 'realtime' else ())
+            kept = {k: out[key][k] for k in keys if out[key].get(k) is not None}
+            if provider not in providers.OWN_ADDRESS:      # only these have an address of their own
                 kept.pop('base_url', None)
+                kept.pop('ws_url', None)
             out[key] = {**kept, 'provider': provider, 'secret_ref': f'app:{app_id}:{task}:{provider}'}
     return out

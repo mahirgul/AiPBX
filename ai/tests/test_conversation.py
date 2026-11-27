@@ -5,7 +5,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from aipbx_ai import calls, cloud_llm, conversation, voice_requests
+from aipbx_ai import call_text, call_tools, calls, cloud_llm, conversation, voice_requests
 
 INTENTS = [
     {"id": "sales", "name": "Sales", "keywords": ["price"], "examples": ["I want to buy"]},
@@ -159,8 +159,8 @@ class StepTest(unittest.TestCase):
         self.assertNotIn("Çağla", conversation.prompt(config, [], "tr"))
 
     def test_phonebook_names_keep_unicode_orthography(self):
-        self.assertEqual(calls.display_name("  C\u0327ağla  Şen\n"), "Çağla Şen")
-        self.assertEqual(calls.display_name("Jörg Müller‑Łukasz D’Angelo"), "Jörg Müller‑Łukasz D’Angelo")
+        self.assertEqual(call_text.display_name("  C\u0327ağla  Şen\n"), "Çağla Şen")
+        self.assertEqual(call_text.display_name("Jörg Müller‑Łukasz D’Angelo"), "Jörg Müller‑Łukasz D’Angelo")
 
     def test_builtin_agent_uses_knowledge_then_transfers_through_an_allowed_tool(self):
         cfg = dict(CFG, builtin_agent=True, knowledge=True)
@@ -218,8 +218,8 @@ class StepTest(unittest.TestCase):
             return True, speech
 
         call.play_interruptible = interrupt
-        with patch.object(calls, "LOOKUP_PROMPT_DELAY", 0.01):
-            with self.assertRaises(calls.LookupInterrupted) as raised:
+        with patch.object(call_tools, "LOOKUP_PROMPT_DELAY", 0.01):
+            with self.assertRaises(call_tools.LookupInterrupted) as raised:
                 call.lookup("knowledge", "payment")
         self.assertIs(raised.exception.pre, speech)
         self.assertTrue(call.waiting_spoken)
@@ -254,6 +254,17 @@ class StepTest(unittest.TestCase):
         self.assertEqual(conversation.speakable("15. Mayıs'ta açığız."), "15. Mayıs'ta açığız.")
         self.assertEqual(conversation.speakable("2. Stock rechts."), "2. Stock rechts.")
         self.assertEqual(conversation.speakable("Seçenekler:\n1. Satış\n2. Destek"), "Seçenekler: Satış. Destek")
+
+    def test_render_instructions_uses_configured_timezone_with_safe_fallback(self):
+        out_tr = conversation.render_instructions("{date} {time}", {"timezone": "Europe/Istanbul"})
+        self.assertRegex(out_tr, r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$")
+        out_utc = conversation.render_instructions("{time}", {"timezone": "UTC"})
+        self.assertNotEqual(
+            conversation.render_instructions("{time}", {"timezone": "Europe/Istanbul"}),
+            out_utc,
+        )
+        out_bad = conversation.render_instructions("{date}", {"timezone": "Invalid/NoSuchZone"})
+        self.assertRegex(out_bad, r"^\d{4}-\d{2}-\d{2}$")
 
 
 if __name__ == "__main__":

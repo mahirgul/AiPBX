@@ -129,4 +129,61 @@ final class CdrCallAnalyzerTest extends TestCase
         $this->assertSame(['3001', '3002'], array_column(array_slice($f['path'], 1), 'id'));
         $this->assertFalse($f['path'][1]['answered']);
     }
+
+    public function testAiAgentStandaloneAndAudioSocketDoesNotOverwriteCaller(): void
+    {
+        $an = new CdrCallAnalyzer(
+            [],
+            ['19000' => 'Mahir', '3002' => 'Ayşe'],
+            ['7' => ['title' => 'Demo - Turkce Ajan', 'number' => '976286']]
+        );
+        $f = $an->analyze([
+            // ARI AudioSocket external-media leg finishes first with a smaller id and empty caller.
+            self::leg(10, [
+                'calldate' => '2026-11-27 16:44:25', 'src' => '', 'dst' => 's', 'dcontext' => 'default',
+                'channel' => 'AudioSocket/127.0.0.1:8791-442659db', 'lastapp' => 'Stasis',
+                'lastdata' => 'aipbx-ai,442659db',
+            ]),
+            self::leg(11, [
+                'calldate' => '2026-11-27 16:44:24', 'clid' => '"Mahir" <19000>', 'src' => '19000', 'dst' => 's',
+                'dcontext' => 'aipbx-ai-app-7', 'channel' => 'PJSIP/19000-mob-webrtc-00000003',
+                'dstchannel' => 'AudioSocket/127.0.0.1:8791-442659db', 'lastapp' => 'Stasis',
+                'lastdata' => 'aipbx-ai,7,442659db',
+            ]),
+        ]);
+        $this->assertSame(CdrCallAnalyzer::INTERNAL, $f['direction']);
+        $this->assertSame('19000', $f['caller_number']);
+        $this->assertSame('Mahir', $f['caller_name']);
+        $this->assertSame('976286', $f['dialed_number']);
+        $this->assertSame(['id' => '7', 'title' => 'Demo - Turkce Ajan', 'number' => '976286'], $f['answered_ai']);
+        $this->assertSame('', $f['answered_ext']);
+        $this->assertFalse($f['transferred']);
+        $this->assertSame(['ext:19000', 'ai:7'], array_map(fn($n) => $n['kind'] . ':' . $n['id'], $f['path']));
+        $this->assertSame('Demo - Turkce Ajan', $f['path'][1]['label']);
+    }
+
+    public function testAiAgentTransferredToExtension(): void
+    {
+        $an = new CdrCallAnalyzer(
+            [],
+            ['3001' => 'Ayşe', '3002' => 'Mahir'],
+            ['7' => ['title' => 'Demo - Turkce Ajan', 'number' => '976286']]
+        );
+        $f = $an->analyze([
+            self::leg(1, [
+                'src' => '3001', 'dst' => 's', 'did' => '976286', 'dcontext' => 'aipbx-ai-app-7',
+                'channel' => 'PJSIP/3001-webrtc-0001', 'lastapp' => 'Stasis',
+                'lastdata' => 'aipbx-ai,7,uuid-1', 'disposition' => 'ANSWERED',
+            ]),
+            self::leg(2, [
+                'src' => '3001', 'dst' => '3002', 'did' => '976286', 'dcontext' => 'from-internal-pbx-ortak',
+                'channel' => 'PJSIP/3001-webrtc-0001', 'dstchannel' => 'PJSIP/3002-sip-0002',
+                'lastapp' => 'Dial', 'disposition' => 'ANSWERED',
+            ]),
+        ]);
+        $this->assertSame('3002', $f['answered_ext']);
+        $this->assertSame('7', $f['answered_ai']['id'] ?? '');
+        $this->assertTrue($f['transferred']);
+        $this->assertSame(['ext:3001', 'ai:7', 'ext:3002'], array_map(fn($n) => $n['kind'] . ':' . $n['id'], $f['path']));
+    }
 }

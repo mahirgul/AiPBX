@@ -315,10 +315,10 @@ def validate_config(data, manager=None):
         out.append(item)
     config["intents"] = out
     rc = data.get("realtime_cloud")
-    has_realtime = isinstance(rc, dict) and bool(rc.get("api_key") or rc.get("ws_url") or rc.get("base_url")) \
+    has_realtime = isinstance(rc, dict) and bool(rc.get("api_key") or rc.get("secret_ref") or rc.get("ws_url") or rc.get("base_url")) \
         and (not builtin or mode == "realtime")
     if realtime_only and not has_realtime:
-        raise ConfigError("realtime mode needs realtime_cloud with an api_key, ws_url or base_url")
+        raise ConfigError("realtime mode needs realtime_cloud with an api_key, secret_ref, ws_url or base_url")
     # Conversation: several turns with the language model (conversation.py).
     if data.get("conversation") is True:
         if not config.get("llm_cloud") and not has_realtime:
@@ -438,11 +438,19 @@ def _realtime(rc, config):
     """The realtime_cloud block: provider, model, voice, language, endpoint, and the tuning keys."""
     out = {
         "provider": str(rc.get("provider") or "openai"),
-        "api_key": str(rc.get("api_key") or ""),
         "model": str(rc.get("model") or ""),
         "voice": str(rc.get("voice") or "alloy"),
         "lang": str(rc.get("lang") or config.get("language") or "tr"),
     }
+    if "secret_ref" in rc:
+        from . import secret_refs
+        try:
+            ref = secret_refs.validate_reference(rc, "realtime")
+        except ValueError as e:
+            raise ConfigError(str(e)) from None
+        out["secret_ref"] = ref["secret_ref"]
+    else:
+        out["api_key"] = str(rc.get("api_key") or "")
     if out["model"]:
         try:
             cloud_llm.check_model(out["model"], "realtime_cloud")

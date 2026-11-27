@@ -254,6 +254,15 @@ $instrValue = array_key_exists('instructions', $edit) ? (string) $edit['instruct
         </details>
         <details class="agent-card" id="builtinAgentAdvanced" data-card="advanced"<?php echo $openAll ? ' open' : ''; ?>>
             <summary><i class="fas fa-sliders u-primary"></i> <strong><?php echo $h(t('builtin_ai_agent.card_advanced')); ?></strong></summary>
+            <div class="agent-card-body">
+                <div class="form-group u-mb-0">
+                    <label class="u-check-label">
+                        <input type="checkbox" class="u-accent" name="record_call" value="1" aria-describedby="builtinAgentRecordHelp"<?php echo !empty($edit['record_call']) ? ' checked' : ''; ?>>
+                        <?php echo $h(t('builtin_ai_agent.record_call')); ?>
+                    </label>
+                    <small class="u-hint" id="builtinAgentRecordHelp"><?php echo $h(t('builtin_ai_agent.record_call_help')); ?></small>
+                </div>
+            </div>
             <div data-agent-pane="cascade"<?php echo $mode === 'cascade' ? '' : ' hidden'; ?>>
             <div class="agent-card-body">
             <?php $listen = BuiltinAiAgentService::listening(is_array($edit) ? $edit : []);

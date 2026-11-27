@@ -10,9 +10,20 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from aipbx_ai.calls import CallSession, VoiceRequestsCall
+from aipbx_ai.call_session import CallSession
+from aipbx_ai.calls import VoiceRequestsCall
 
-from aipbx_ai.realtime import SILENCE_NUDGE_SECONDS, RealtimeCall, _resolve_ws_endpoint, pcm16_to_ulaw, resample_pcm16, ulaw_to_pcm16
+from aipbx_ai.realtime import (
+    SILENCE_NUDGE_SECONDS,
+    RealtimeCall,
+    RealtimeSocket,
+    _Downsampler24to8,
+    _Upsampler8to16,
+    _resolve_ws_endpoint,
+    pcm16_to_ulaw,
+    resample_pcm16,
+    ulaw_to_pcm16,
+)
 
 _WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -354,7 +365,7 @@ class RealtimeTest(unittest.TestCase):
         self.assertEqual(16, len(pcm16))
         pcm24 = struct.pack("<6h", 100, 101, 102, 200, 201, 202)
         down8 = struct.unpack("<2h", resample_pcm16(pcm24, 24000, 8000))
-        self.assertEqual((100, 200), down8)
+        self.assertEqual((101, 201), down8)
 
         url, headers = _resolve_ws_endpoint({"model": "gpt-4o-realtime-preview", "api_key": "fixture"})
         self.assertEqual("wss://api.openai.com/v1/realtime?model=gpt-realtime", url)
@@ -466,7 +477,7 @@ class RealtimeTest(unittest.TestCase):
             self.assertEqual("Satış talebi Gemini", call.session.summary)
             self.assertIn("Assistant: Hoş geldiniz, hemen bağlıyorum.", call.session.transcript)
             self.assertIn("setup", received[0])
-            self.assertEqual("models/gemini-3.1-flash-live-preview", received[0]["setup"]["model"])
+            self.assertEqual("models/gemini-3.8-live", received[0]["setup"]["model"])
             self.assertIn("text", received[1]["realtimeInput"])
             self.assertEqual("audio/pcm;rate=16000", received[2]["realtimeInput"]["audio"]["mimeType"])
             self.assertEqual("Kore", received[0]["setup"]["generationConfig"]["speechConfig"]["voiceConfig"]["prebuiltVoiceConfig"]["voiceName"])
@@ -526,6 +537,7 @@ class RealtimeTest(unittest.TestCase):
         }
         registry = SimpleNamespace(results=Mock())
         call = VoiceRequestsCall(registry, Mock(), session, SimpleNamespace(audio=queue.Queue(), gone=threading.Event()))
+        call._pump_thread.start()
         rt = RealtimeCall(call)
 
         tool_names = [t["name"] for t in rt._build_tools()]
@@ -646,6 +658,273 @@ class RealtimeSettingsTest(unittest.TestCase):
         source_prop = lookup_decl["parameters"]["properties"]["source"]
         self.assertEqual(source_prop["type"], "string")
         self.assertEqual(source_prop["enum"], ["3"])
+        self.assertEqual(sent[0]["setup"]["generationConfig"]["speechConfig"]["languageCode"], "tr-TR")
+        self.assertEqual(sent[0]["setup"]["inputAudioTranscription"], {})
+        self.assertEqual(sent[0]["setup"]["outputAudioTranscription"], {})
+        self.assertEqual(sent[0]["setup"]["realtimeInputConfig"]["automaticActivityDetection"]["silenceDurationMs"], 700)
+        self.assertEqual(sent[0]["setup"]["realtimeInputConfig"]["automaticActivityDetection"]["prefixPaddingMs"], 300)
+        self.assertEqual(sent[0]["setup"]["realtimeInputConfig"]["activityHandling"], "START_OF_ACTIVITY_INTERRUPTS")
+        sys_txt = sent[0]["setup"]["systemInstruction"]["parts"][0]["text"]
+        self.assertIn("CRITICAL LANGUAGE RULE: Always speak and reply ONLY in Turkish", sys_txt)
+
+    def test_gemini_streaming_transcriptions_fill_history_heard_and_transcript(self) -> None:
+        session = CallSession(7, "realtime", "19000", "", "gem-tr-call")
+        session.config = {
+            "language": "tr",
+            "language_name": "Turkish",
+            "conversation": True,
+            "intents": [],
+            "realtime_cloud": {"provider": "google_ai", "api_key": "g-test", "lang": "tr"},
+        }
+        registry = SimpleNamespace(results=Mock())
+        call = VoiceRequestsCall(registry, Mock(), session, SimpleNamespace(audio=queue.Queue(), gone=threading.Event()))
+        call._pump_thread.start()
+        rt = RealtimeCall(call)
+        events = [
+            {"setupComplete": {}},
+            {"serverContent": {"inputTranscription": {"text": "Fatura "}}},
+            {"serverContent": {"inputTranscription": {"text": "durumum nedir?"}}},
+            {"serverContent": {"outputTranscription": {"text": "Hemen kontrol "}}},
+            {"serverContent": {"outputTranscription": {"text": "ediyorum."}}},
+            {"serverContent": {"turnComplete": True}},
+            None,
+        ]
+        sent = []
+
+        class _FakeWs:
+            close_code = 1000
+            close_reason = ""
+            def send_json(self, obj):
+                sent.append(obj)
+            def recv_json(self):
+                return events.pop(0) if events else None
+            def close(self):
+                pass
+
+        with patch("aipbx_ai.realtime.RealtimeSocket", return_value=_FakeWs()):
+            self.assertTrue(rt.run())
+        self.assertEqual(call.history, [("caller", "Fatura durumum nedir?"), ("assistant", "Hemen kontrol ediyorum.")])
+        self.assertEqual(session.heard, ["Fatura durumum nedir?"])
+        self.assertIn("Caller: Fatura durumum nedir?", session.transcript)
+        self.assertIn("Assistant: Hemen kontrol ediyorum.", session.transcript)
+
+    def test_stateful_resamplers_secret_ref_close_reason_and_silence_accounting(self) -> None:
+        up = _Upsampler8to16()
+        c1 = struct.pack("<4h", 0, 1000, 2000, 3000)
+        c2 = struct.pack("<4h", 4000, 5000, 6000, 7000)
+        out1 = struct.unpack("<6h", up.process(c1))
+        out2 = struct.unpack("<8h", up.process(c2))
+        self.assertEqual(out1[:4], (0, 500, 1000, 1500))
+        self.assertEqual(out2[:2], (3000, 3500))
+
+        down = _Downsampler24to8()
+        d1 = struct.unpack("<2h", down.process(struct.pack("<7h", 100, 100, 100, 200, 200, 200, 300)))
+        d2 = struct.unpack("<1h", down.process(struct.pack("<2h", 300, 300)))
+        d3 = struct.unpack("<1h", down.process(struct.pack("<3h", 300, 300, 300)))
+        self.assertEqual((len(d1), len(d2), len(d3)), (2, 1, 1))
+        self.assertEqual(d2[0], 289)   # 5-tap LPF smooths the 200->300 transition across chunks
+        self.assertEqual(d3[0], 300)
+
+        # Secret reference resolution does not mutate cfg["realtime_cloud"].
+        session = CallSession(7, "realtime", "19000", "", "gem-ref-call")
+        session.config = {
+            "language": "tr",
+            "conversation": True,
+            "intents": [],
+            "realtime_cloud": {"provider": "google_ai", "secret_ref": "app:7:realtime:google_ai", "lang": "tr"},
+        }
+        call = VoiceRequestsCall(SimpleNamespace(results=Mock()), Mock(), session, SimpleNamespace(audio=queue.Queue(), gone=threading.Event()))
+        call._pump_thread.start()
+        rt = RealtimeCall(call)
+
+        def check_ws(url, headers):
+            self.assertIn("key=resolved-g-key", url)
+            return SimpleNamespace(send_json=lambda _o: None, recv_json=lambda: {"setupComplete": {}}, close=lambda: None, close_code=1000, close_reason="")
+
+        with patch("aipbx_ai.secret_refs.resolve", return_value={"provider": "google_ai", "api_key": "resolved-g-key"}) as m_res, \
+                patch("aipbx_ai.realtime.RealtimeSocket", side_effect=check_ws), \
+                patch.object(rt, "_run_gemini", return_value=None):
+            self.assertTrue(rt.run())
+        self.assertEqual(m_res.call_count, 1)
+        self.assertNotIn("api_key", call.config["realtime_cloud"])
+
+        # Silence frames in _pump_playback do not inflate session.sent_bytes.
+        session.sent_bytes = 0
+        call.conn = SimpleNamespace(sendall=lambda data: None)
+        rt2 = RealtimeCall(call)
+        rt2._enqueue_pcm(b"\x01\x00" * 160)
+        threading.Timer(0.08, rt2._stop.set).start()
+        rt2._pump_playback()
+        self.assertEqual(session.sent_bytes, 320)
+
+        # RealtimeSocket parses close code and reason on opcode 0x8.
+        sock = RealtimeSocket.__new__(RealtimeSocket)
+        sock.close_code = None
+        sock.close_reason = ""
+        sock.reader = SimpleNamespace(read_frame=lambda: (0x8, struct.pack("!H", 1007) + b"Invalid language"))
+        self.assertIsNone(sock.recv_json())
+        self.assertEqual((sock.close_code, sock.close_reason), (1007, "Invalid language"))
+
+    def test_closing_turn_speaks_handover_and_drains_audio_before_transfer(self) -> None:
+        # Gemini Live: after transfer_call, waits for model's closing speech & drains _out_q before exit.
+        session = CallSession(7, "realtime", "19000", "976286", "gem-xfer-close")
+        session.config = {
+            "language": "tr",
+            "language_name": "Turkish",
+            "conversation": True,
+            "intents": [{"id": "muhasebe", "name": "Muhasebe"}],
+            "realtime_cloud": {"provider": "google_ai", "api_key": "g-test", "lang": "tr"},
+        }
+        registry = SimpleNamespace(results=Mock())
+        call = VoiceRequestsCall(registry, Mock(), session, SimpleNamespace(audio=queue.Queue(), gone=threading.Event()))
+        call.sent_pcm = []
+        call._send_pcm = lambda frame: call.sent_pcm.append(frame)
+        call._pump_thread.start()
+        rt = RealtimeCall(call)
+        audio24_b64 = base64.b64encode(struct.pack("<480h", *([600, -600] * 240))).decode("ascii")
+        tool_resp_seen = threading.Event()
+        sent_to_ws: list[dict] = []
+
+        class _GeminiClosingWs:
+            close_code = 1000
+            close_reason = ""
+
+            def __init__(self) -> None:
+                self._step = 0
+
+            def send_json(self, obj: dict) -> None:
+                sent_to_ws.append(obj)
+                if "toolResponse" in obj:
+                    tool_resp_seen.set()
+
+            def recv_json(self):
+                self._step += 1
+                if self._step == 1:
+                    return {"setupComplete": {}}
+                if self._step == 2:
+                    return {"toolCall": {"functionCalls": [{"id": "c1", "name": "transfer_call", "args": {"target": "muhasebe", "summary": "Muhasebe talebi"}}]}}
+                if self._step == 3:
+                    return {"serverContent": {"generationComplete": True}}
+                if self._step == 4:
+                    return {"serverContent": {"turnComplete": True}}
+                if self._step == 5:
+                    tool_resp_seen.wait(timeout=1.0)
+                    return {"serverContent": {
+                        "modelTurn": {"parts": [{"inlineData": {"mimeType": "audio/pcm;rate=24000", "data": audio24_b64}}]},
+                        "outputTranscription": {"text": "Hemen muhasebe birimine aktarıyorum, iyi günler."},
+                    }}
+                if self._step == 6:
+                    return {"serverContent": {"generationComplete": True}}
+                raise AssertionError("Should exit cleanly on post-audio generationComplete without waiting for socket close")
+
+            def close(self) -> None:
+                pass
+
+        t0 = time.monotonic()
+        with patch("aipbx_ai.realtime.RealtimeSocket", return_value=_GeminiClosingWs()):
+            self.assertTrue(rt.run())
+        self.assertLess(time.monotonic() - t0, 2.0)
+        self.assertTrue(tool_resp_seen.is_set())
+        tool_resp = next(m["toolResponse"]["functionResponses"][0]["response"]["result"] for m in sent_to_ws if "toolResponse" in m)
+        self.assertEqual("transferring", json.loads(tool_resp)["status"])
+        self.assertEqual("muhasebe", session.intent)
+        self.assertEqual("matched", session.result)
+        self.assertIn("Assistant: Hemen muhasebe birimine aktarıyorum, iyi günler.", session.transcript)
+        self.assertTrue(any(frame != b"\x00" * 320 for frame in call.sent_pcm))
+
+        # OpenAI Realtime: after transfer_call, sends response.create and waits for closing audio + response.done.
+        call2 = _FakeCall("ws://127.0.0.1:1/rt")
+        rt2 = RealtimeCall(call2)
+        rt2._upstream_ready.set()
+        oa_sent: list[dict] = []
+        audio_ulaw = base64.b64encode(b"\x55" * 160).decode("ascii")
+        oa_events = [
+            {"type": "response.function_call_arguments.done", "name": "transfer_call", "call_id": "oc1",
+             "arguments": json.dumps({"target": "sales", "summary": "Satış talebi"})},
+            {"type": "response.done"},
+            {"type": "response.output_audio.delta", "item_id": "i2", "delta": audio_ulaw},
+            {"type": "response.output_audio_transcript.done", "transcript": "Hemen aktarıyorum."},
+            {"type": "response.done"},
+            {"type": "error", "error": {"message": "unreachable after response.done"}},
+        ]
+
+        class _OpenAiClosingWs:
+            def send_json(self, obj: dict) -> None:
+                oa_sent.append(obj)
+
+            def recv_json(self):
+                return oa_events.pop(0) if oa_events else None
+
+        rt2._run_openai_protocol(_OpenAiClosingWs())
+        self.assertEqual("sales", call2.session.intent)
+        self.assertEqual(["Assistant: Hemen aktarıyorum."], rt2._transcript_lines)
+        self.assertEqual([m.get("type") for m in oa_sent][-2:], ["conversation.item.create", "response.create"])
+        self.assertFalse(rt2._out_q.empty())
+        rt2._drain_playback(timeout=0.05)
+
+        # Instructions and tool descriptions carry transfer/unavailable politeness rules & local time.
+        instr = rt._instructions()
+        self.assertIn("TRANSFER & UNAVAILABLE RULES", instr)
+        self.assertIn("Current local date and time:", instr)
+        self.assertIn("never UTC", instr)
+        call.config["timezone"] = "Europe/Istanbul"
+        instr_tr = RealtimeCall(call)._instructions()
+        self.assertIn("+03:00", instr_tr)
+        xfer_tool = next(t for t in rt._build_tools() if t["name"] == "transfer_call")
+        self.assertIn("do NOT call transfer_call", xfer_tool["description"])
+
+    def test_closing_turn_skips_duplicate_prompt_when_model_already_spoke_in_same_turn(self) -> None:
+        session = CallSession(7, "realtime", "19000", "976286", "gem-xfer-already-spoke")
+        session.config = {
+            "language": "tr",
+            "language_name": "Turkish",
+            "conversation": True,
+            "intents": [{"id": "muhasebe", "name": "Muhasebe"}],
+            "realtime_cloud": {"provider": "google_ai", "api_key": "g-test", "lang": "tr"},
+        }
+        registry = SimpleNamespace(results=Mock())
+        call = VoiceRequestsCall(registry, Mock(), session, SimpleNamespace(audio=queue.Queue(), gone=threading.Event()))
+        call.sent_pcm = []
+        call._send_pcm = lambda frame: call.sent_pcm.append(frame)
+        call._pump_thread.start()
+        rt = RealtimeCall(call)
+        audio24_b64 = base64.b64encode(struct.pack("<480h", *([700, -700] * 240))).decode("ascii")
+        sent_to_ws: list[dict] = []
+
+        class _GeminiAlreadySpokeWs:
+            close_code = 1000
+            close_reason = ""
+
+            def __init__(self) -> None:
+                self._step = 0
+
+            def send_json(self, obj: dict) -> None:
+                sent_to_ws.append(obj)
+
+            def recv_json(self):
+                self._step += 1
+                if self._step == 1:
+                    return {"setupComplete": {}}
+                if self._step == 2:
+                    return {"serverContent": {
+                        "modelTurn": {"parts": [{"inlineData": {"mimeType": "audio/pcm;rate=24000", "data": audio24_b64}}]},
+                        "outputTranscription": {"text": "Sizi hemen muhasebeye aktarıyorum."},
+                    }}
+                if self._step == 3:
+                    return {"toolCall": {"functionCalls": [{"id": "c2", "name": "transfer_call", "args": {"target": "muhasebe", "summary": "Muhasebe"}}]}}
+                raise AssertionError("Should break immediately after sending toolResponse when already spoken in turn")
+
+            def close(self) -> None:
+                pass
+
+        with patch("aipbx_ai.realtime.RealtimeSocket", return_value=_GeminiAlreadySpokeWs()):
+            self.assertTrue(rt.run())
+        tool_resp = next(m["toolResponse"]["functionResponses"][0]["response"]["result"] for m in sent_to_ws if "toolResponse" in m)
+        self.assertEqual({"ok": True, "status": "transferring"}, json.loads(tool_resp))
+        self.assertEqual("muhasebe", session.intent)
+        self.assertEqual("matched", session.result)
+        self.assertEqual(["Assistant: Sizi hemen muhasebeye aktarıyorum."], rt._transcript_lines)
+        self.assertTrue(any(frame != b"\x00" * 320 for frame in call.sent_pcm))
 
 
 if __name__ == "__main__":

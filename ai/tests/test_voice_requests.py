@@ -31,7 +31,9 @@ from unittest import mock  # noqa: E402
 
 from aipbx_ai import voice_requests  # noqa: E402
 from aipbx_ai.wav import wav_bytes  # noqa: E402
-from aipbx_ai.calls import AudioSocketServer, CallRegistry, dialplan_key  # noqa: E402
+from aipbx_ai.audiosocket import AudioSocketServer  # noqa: E402
+from aipbx_ai.call_registry import CallRegistry  # noqa: E402
+from aipbx_ai.call_text import dialplan_key  # noqa: E402
 from aipbx_ai.models import ModelManager, ModelSpec  # noqa: E402
 from aipbx_ai.server import AiServer  # noqa: E402
 from aipbx_ai.voice_requests import Listener, validate_config, ConfigError  # noqa: E402
@@ -929,7 +931,7 @@ class VoiceRequestsTest(unittest.TestCase):
         from unittest import mock
         self.stt.texts = ["oda 12 temizlendi mi"]
         asked = []
-        with mock.patch("aipbx_ai.calls.fetch_values", side_effect=lambda url: asked.append(url) or {"temiz": "evet"}):
+        with mock.patch("aipbx_ai.call_tools.fetch_values", side_effect=lambda url: asked.append(url) or {"temiz": "evet"}):
             u, c, prompts = self.conversation_call([
                 {"action": "lookup", "tool": "oda", "query": "12"},
                 {"action": "end", "say": "Odanız temiz. İyi günler."}])

@@ -195,10 +195,18 @@ class CdrReportController extends BaseController
         $rows = [];
         foreach ($calls as $c) {
             $f = $c['flow'] ?? null;
-            $path = $f ? implode(' → ', array_map(fn($n) => $n['kind'] === 'trunk'
-                ? $n['label'] . ($n['number'] !== '' ? ': ' . $n['number'] : '')
-                : $n['id'] . ($n['label'] !== '' ? ' ' . $n['label'] : ''), $f['path'])) : '';
+            $path = $f ? implode(' → ', array_map(fn($n) => match ($n['kind']) {
+                'trunk' => $n['label'] . ($n['number'] !== '' ? ': ' . $n['number'] : ''),
+                'ai' => $n['label'],
+                default => $n['id'] . ($n['label'] !== '' ? ' ' . $n['label'] : ''),
+            }, $f['path'])) : '';
             $note = trim(implode(' · ', array_filter([$c['note_disposition'] ?? '', $c['note_customer_name'] ?? '', $c['note_text'] ?? ''])));
+            $ansExt = $c['agent_extension'] ?? '';
+            $ansName = $c['agent_name'] ?? '';
+            if ($ansExt === '' && !empty($f['answered_ai'])) {
+                $ansExt = $f['answered_ai']['number'] !== '' ? $f['answered_ai']['number'] : 'AI';
+                $ansName = $f['answered_ai']['title'];
+            }
             $rows[] = [
                 strtotime((string) $c['start_time']),
                 $f ? t('cdr_reports.dir_' . $f['direction']) : '',
@@ -209,8 +217,8 @@ class CdrReportController extends BaseController
                 CdrReportRepository::formatRouteLabel($c['route'] ?? ($c['queue_name'] ?? '')),
                 $f['out_trunk_title'] ?? '',
                 $f['out_number'] ?? '',
-                $c['agent_extension'] ?? '',
-                $c['agent_name'] ?? '',
+                $ansExt,
+                $ansName,
                 $c['device_type'] ?? '',
                 (int) ($c['ring_sec'] ?? 0),
                 (int) ($c['billsec'] ?? 0),

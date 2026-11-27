@@ -34,6 +34,34 @@ final class BuiltinAiAgentModeTest extends TestCase
         $this->assertSame('Hello', $tools['greeting']);
     }
 
+    public function testServiceConfigPreservesSavedDbLookups(): void
+    {
+        $db = getDB();
+        $db->beginTransaction();
+        try {
+            $db->exec("INSERT INTO pbx_external_dbs (name, driver, host, port, database_name, username, password_encrypted, is_active, allow_write)
+                       VALUES ('Lookup Test DB', 'mysql', '127.0.0.1', 3306, 'testdb', 'ro', 'enc', 1, 0)");
+            $extId = (int) $db->lastInsertId();
+            $db->prepare("INSERT INTO pbx_external_db_queries (query_key, description, external_db_id, query_sql, access_mode, is_active)
+                          VALUES ('invoice_check', 'Check invoice', ?, 'SELECT status FROM inv WHERE no = :var_no LIMIT 1', 'public', 1)")
+                ->execute([$extId]);
+            $app = [
+                'id' => 88, 'title' => 'DB Agent', 'app_type' => AiAppService::BUILTIN_AGENT,
+                'model_id' => 'realtime', 'speed' => '1',
+                'config' => json_encode([
+                    'mode' => 'realtime', 'conversation' => true,
+                    'db_lookups' => [['id' => 'invoice_check', 'saved' => true]],
+                ]),
+            ];
+            $tools = BuiltinAiAgentService::toolsFromConfig(AiAppService::config($app));
+            $this->assertSame([['id' => 'invoice_check', 'saved' => true]], $tools['db_lookups']);
+            $svc = BuiltinAiAgentService::serviceConfig($app);
+            $this->assertSame([['id' => 'invoice_check', 'description' => 'Check invoice', 'params' => ['no']]], $svc['db_queries']);
+        } finally {
+            $db->rollBack();
+        }
+    }
+
     public function testInstructionsMayBeLong(): void
     {
         $this->assertSame(60000, BuiltinAiAgentService::MAX_INSTRUCTIONS);
@@ -73,6 +101,54 @@ final class BuiltinAiAgentModeTest extends TestCase
             $this->assertStringContainsString('&lang=${URIENCODE(${CHANNEL(language)})}', $conf, 'the call language goes to the AI service');
         } finally {
             $db->rollBack();
+            $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%'");
+            SecretBox::useKey(null);
+        }
+    }
+
+    public function testDialplanIncludesHangupLoggingAndConditionalOrForcedRecording(): void
+    {
+        require_once __DIR__ . '/../../src/sync/SyncAiApps.php';
+        SecretBox::useKey(str_repeat('k', 32));
+        $db = getDB();
+        $db->exec("UPDATE sys_plugins SET enabled = 1 WHERE slug = 'aicloud'");
+        PluginManager::resetCache();
+        CloudAiService::save('openai', ['api_key' => 'sk-mode-test-456']);
+
+        try {
+            $baseApp = [
+                'id' => 91,
+                'title' => 'Rec Test',
+                'internal_number' => '979701',
+                'app_type' => AiAppService::BUILTIN_AGENT,
+                'model_id' => 'realtime',
+                'speed' => '1.0',
+                'max_concurrent' => 5,
+                'text_template' => 'Hi',
+                'dest_type' => 'hangup',
+                'dest_id' => '',
+                'is_active' => 1,
+                'agent_tools' => BuiltinAiAgentService::toolsFromConfig([]),
+            ];
+
+            $policyOnly = $baseApp + ['config' => json_encode([
+                'mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:openai', 'record_call' => false,
+            ])];
+            $confPolicy = buildAiAppsDialplan([$policyOnly], str_repeat('ab', 32));
+            $this->assertStringContainsString('${AIPBX_REC_POLICY}" != "always"', $confPolicy);
+            $this->assertStringContainsString('MixMonitor(${REC_FILE}', $confPolicy);
+            $this->assertStringContainsString('Set(CDR(userfield)=${REC_FILE})', $confPolicy);
+            $this->assertStringContainsString('Set(AI_REQ_LOGGED=1)', $confPolicy);
+            $this->assertStringContainsString('exten => h,1,GotoIf($["${AI_REQ_LOGGED}" = "1"', $confPolicy);
+
+            $alwaysAgent = $baseApp + ['config' => json_encode([
+                'mode' => 'realtime', 'conversation' => true, 'realtime_account' => 'cloud:openai', 'record_call' => true,
+            ])];
+            $confAlways = buildAiAppsDialplan([$alwaysAgent], str_repeat('ab', 32));
+            $this->assertStringNotContainsString('AIPBX_REC_POLICY', $confAlways);
+            $this->assertStringContainsString('MixMonitor(${REC_FILE}', $confAlways);
+            $this->assertStringContainsString('exten => h,1,GotoIf($["${AI_REQ_LOGGED}" = "1"', $confAlways);
+        } finally {
             $db->exec("DELETE FROM sys_settings WHERE setting_key LIKE 'ai_tts.openai.%'");
             SecretBox::useKey(null);
         }
