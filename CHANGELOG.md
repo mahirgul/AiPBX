@@ -11,6 +11,15 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.82.4
+
+### Fixed & Improved
+
+- **Accessibility:** added per-service descriptive `title` and `aria-label` attributes (`dashboard.restart_service`) on all dashboard service restart buttons, `aria-label` attributes across extension management icon controls (`extensions/index.php`) and shared `ui_helpers.php` action buttons (`uiHelpButton`, `uiDeleteForm`, `uiEditButton`), and `aria-hidden="true"` on decorative icons.
+- **Toast layering over modals:** moved `#footer-toast-container` directly onto `<body>` so footer notifications (`z-index: 1200`) always render above open modal overlays (`z-index: 1150`) instead of being trapped inside `.app-footer-bar`'s stacking context, and added themed `.toast-info` / `.toast-warning` styles.
+- **Translations:** completed all missing UI strings across all 22 non-English language files (`7167/7167` strings per language, 100% coverage in `scripts/i18n.py check --strict`).
+- **Static showcase demo:** added localized (`en`/`tr`/`de`) read-only toast feedback when visitors attempt write/save/sync/download actions in the static demo (`scripts/showcase/showcase.js`), and cleared runtime `/api/sound_play.php` and `/sw.js` references during static export (`scripts/showcase/export.mjs`) to eliminate browser console and CSP errors.
+
 ## 1.82.3
 
 ### Added
