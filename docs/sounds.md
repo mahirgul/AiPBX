@@ -16,9 +16,15 @@ announcements and Turkish prompts fail with *"File … does not exist in any for
 up. The links live outside dpkg-owned files, so package upgrades keep them.
 
 Asterisk plays 8 kHz mono WAV (16-bit PCM). Uploads (announcements, IVR prompts, music on hold) may be
-WAV, MP3 or another common format and are converted to that on upload. A file may be up to 64 MB; a
-refused upload says why (too large, or the upload broke off). Uploaded files with the same name as a
-shipped file are never overwritten by updates.
+WAV, MP3 or another common format and are converted to that on upload. directory are refused with a clear error message. Uploaded files with the same name as a shipped file are never overwritten by updates.
+
+## AI-generated announcements and Hold Music
+
+When the `ai-tts` plugin is enabled, **Sounds → Announcements** provides a shortcut to
+[AI → Cloud TTS](cloud-tts.md) (`/ai-tts`) with 8 built-in Asterisk/PBX prompt templates and custom
+speech synthesis, and **Sounds → Music on Hold** links to the **Hold Music (MOH)** tab
+(`/ai-tts?tab=music`) to generate instrumental Hold Music tracks via the ElevenLabs Music API and
+save them straight into any MOH class as 8 kHz 16-bit mono WAV.
 
 ## Queue callback announcements
 

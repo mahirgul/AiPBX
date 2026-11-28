@@ -2,17 +2,17 @@
 
 The **AI** and **AI Settings** menus organize voice agents, local models, cloud providers, and per-feature tools into dedicated tabbed pages:
 
-- **AI Voice Agent (`/ai-agent`):** Built-in voice agents bridged via Asterisk ARI or AudioSocket, supporting **Cascade (STT → LLM → TTS)** and **Realtime** modes, structured prompts, Knowledge Base RAG, saved external DB queries, inbound and outbound DTMF (`collect_dtmf`, `send_dtmf`), and outbound IVR navigation (`dial_and_navigate`) with phonebook `sub_extension` lookup. The navigator gives up on an answering machine or a "number cannot be reached" announcement instead of connecting, and on a menu that keeps repeating itself it tries another key first and stops after the fourth time.
+- **AI Voice Agent (`/ai-agent`):** Built-in voice agents bridged via Asterisk ARI or AudioSocket, supporting **Cascade (STT → LLM → TTS)** and **Realtime** modes, structured prompts, Knowledge Base RAG, saved external DB queries, optional per-agent call recording with CDR playback, inbound and outbound DTMF (`collect_dtmf`, `send_dtmf`), and outbound IVR navigation (`dial_and_navigate`) with phonebook `sub_extension` lookup. The navigator gives up on an answering machine or a "number cannot be reached" announcement instead of connecting, and on a menu that keeps repeating itself it tries another key first and stops after the fourth time.
 - **Local TTS (`/ai-local`):** One table of the voices and small detectors that run on the PBX (EMA, Piper, Kokoro, Silero VAD, Smart Turn); install or remove the local runtime (`aipbx-ai`), download, run and stop them. Speech to text and language models are cloud only.
 - **Cloud AI (`/ai-cloud`):** Accounts only, no tabs: one account is one provider with one set of settings (model, voice, language, temperature ...; the rarely changed ones under *Advanced*); *Copy* makes a second account of the same provider for a second model. There is no default account: every AI feature (agent, voicemail, call analysis, PBX Assistant, reminders) picks its own.
-- **AI TTS Studio (`/ai-tts`):** Generate speech from text and save directly as PBX announcements, with synthesis history.
+- **AI TTS Studio (`/ai-tts`):** Generate speech announcements (including 8 built-in Asterisk/PBX prompt templates) with cloud/local TTS and compose instrumental **Hold Music (MOH)** via ElevenLabs Music API, saving directly to **Sounds** or **Music on Hold** classes with synthesis history.
 - **AI Voicemail (`/ai-voicemail`):** Enable/disable voicemail transcription and summary, choose per-feature engines, and inspect recent `ai_jobs` entries.
 - **Call Quality Analysis (`/ai-call-analysis`):** Configure automated Call Quality Review (Auto-QA), review criteria, and inspect recent `ai_jobs` entries.
 - **Knowledge Base (`/ai-knowledge`) & PBX Assistant (`/pbx-assistant`):** Assistant model binding, TXT/RAG knowledge base, and chat retention (defaults to 10 days; nightly pruning).
 
 Legacy URLs `/ai-models` and `/ai-settings` permanently redirect (`301`) to `/ai-local` (with `?tab=cloud` → `/ai-cloud`, `?tab=assistant` → `/pbx-assistant`, `?tab=voicemail` → `/ai-voicemail`, `?tab=cdr` → `/ai-call-analysis`).
 
-See also: [Cloud AI](cloud-ai.md) · [Local AI](local-ai.md)
+See also: [Cloud AI](cloud-ai.md) · [Cloud TTS](cloud-tts.md) · [Local AI](local-ai.md)
 
 ## Realtime voice and the Asterisk media bridge
 

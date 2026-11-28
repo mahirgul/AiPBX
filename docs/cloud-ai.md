@@ -18,7 +18,7 @@ chooses, for each job and language, which engine AI features use: a local model 
 | Microsoft Azure AI Speech | ✓ | ✓ | | | ✓ |
 | Google Cloud Text-to-Speech | ✓ | | | | ✓ |
 | Amazon Polly | ✓ | | | | ✓ |
-| ElevenLabs | ✓ | ✓ (Scribe) | | | ✓ |
+| ElevenLabs | ✓ (TTS & Music) | ✓ (Scribe) | | | ✓ |
 | Deepgram | | ✓ (Nova-3) | | | ✓ |
 | Groq | | ✓ (Whisper large v3 turbo) | ✓ (Llama, Gemma, …) | | ✓ |
 | OpenRouter | | | ✓ (hundreds of models) | | some models |

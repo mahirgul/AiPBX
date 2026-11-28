@@ -49,12 +49,12 @@
 
 ---
 
-## What's new in v1.82.0
+## What's new in v1.82.5
 
-- **[AI setup wizard](docs/ai-apps.md#setup-wizard)**: the steps an AI agent needs as a checklist ticked from the system's real state, with a way back from every page it opens.
-- **[Smarter AI calls](docs/ai-apps.md#how-a-call-goes)**: the agent knows why a turn brought no words and asks again in its own words, a short goodbye ends the call, barge-in ignores a cough, and [advanced settings](docs/ai-apps.md#advanced-settings) tune the line, silences and interruptions per agent.
-- **[Optional call detectors](docs/local-ai.md#optional-call-detectors-advanced)**: Silero VAD and Smart Turn, one click on Local TTS, chosen per agent.
-- **AI call log, reports, statistics and e-mail**, voice settings and GPU support for local models, and diagrams of [caller ID](docs/caller-id.md), the [AI agent](docs/ai-apps.md#how-a-call-goes) and the [PBX Assistant](docs/assistant.md); every help box links to its documentation.
+- **[ElevenLabs Hold Music (MOH) & PBX prompt templates](docs/cloud-tts.md):** generate instrumental Music on Hold tracks via the ElevenLabs Music API (`POST /v1/music`, 5 style presets, `30–180 s`), save directly into any MOH class as 8 kHz mono WAV, or synthesize announcements from 8 built-in Asterisk/PBX prompt templates.
+- **[AI setup wizard, call recording & smarter voice agents](docs/ai-apps.md#setup-wizard):** guided setup checklist ticked from live system state, per-agent call recording with CDR playback, optional [Silero VAD and Smart Turn](docs/local-ai.md#optional-call-detectors-advanced) detectors, detailed AI call log, 30-day statistics, and conversation e-mails.
+- **[ERPNext / Frappe connector](docs/crm-integrations.md) & [mobile pairing API](docs/rest-api-v1.md):** official [AiPBX Connector for ERPNext / Frappe](https://github.com/mahirgul/AiPBX-Frappe) alongside Odoo 17/18/19, plus `POST /api/v1/extensions/{id}/pairing` for one-time mobile QR sign-in.
+- **23 languages at 100% parity & iOS WebRTC/CallKit fixes (`AiPBX-ios v1.50.36`):** all 23 portal languages fully translated (`7,211` keys each), alongside native iOS microphone permission, custom-scheme WebRTC host, and TURN fixes.
 
 [Full release notes](CHANGELOG.md)
 
@@ -278,10 +278,10 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 
 - **Android** (Kotlin) — [AiPBX-Android](https://github.com/mahirgul/AiPBX-Android): WebRTC calling with push wake-up and a foreground service, chat,
   directory with presence, call history, DND / call forward, in-app log viewer. Available on [Google Play](https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX).
-- **iOS** (SwiftUI, CallKit) — [AiPBX-ios](https://github.com/mahirgul/AiPBX-ios): calling with native incoming-call screen, chat, directory, features.
-- **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, or with the
-  one-time link in the invitation e-mail
-- **Same version as the server** — the Android app of release 1.50.1 is 1.50.1 too
+- **iOS** (SwiftUI, CallKit) — [AiPBX-ios](https://github.com/mahirgul/AiPBX-ios): calling with native CallKit incoming-call screen, chat, directory, features ([Releases / IPA & Simulator builds](https://github.com/mahirgul/AiPBX-ios/releases)).
+- **Sign-in** with username + password (+ 2FA code), by scanning a QR code on the portal, with the
+  one-time link in the invitation e-mail, or via `POST /api/v1/extensions/{id}/pairing`
+- **Dedicated releases** — Android and iOS apps ship from their own repositories with automated GitHub Releases (and Google Play for Android)
 
 <p align="center">
   <img src="docs/img/app_dialer.jpg" width="18%" alt="Dialer">
@@ -292,19 +292,19 @@ release first; `aipbx-update` does both steps in one run. See [INSTALL.md](INSTA
 </p>
 
 ### 🤖 AI Voice Agent, Local/Cloud AI & Dialplan Assistant
-- **Built-in AI Voice Agent (`/ai-agent`)** — **Cascade (STT → LLM → TTS)** and **Realtime** voice, with ARI or AudioSocket media, structured prompts, Knowledge Base RAG, saved external DB queries, DTMF and outbound IVR navigation. [AI settings](docs/ai-settings.md)
+- **Built-in AI Voice Agent (`/ai-agent`)** — **Cascade (STT → LLM → TTS)** and **Realtime** voice, with ARI or AudioSocket media, structured prompts, optional per-agent call recording with CDR playback, Knowledge Base RAG, saved external DB queries, DTMF and outbound IVR navigation. [AI settings](docs/ai-settings.md)
 - **Local TTS (`/ai-local`) & Cloud AI (`/ai-cloud`)** — run EMA, Piper and Kokoro voices locally via `aipbx-ai`; speech to text and language models use Cloud AI accounts (OpenAI, Google Gemini, Groq, Deepgram, ElevenLabs, Azure, Amazon Polly, and OpenAI-compatible endpoints) with encrypted secrets and quota tracking
 - **AI setup wizard (`/ai-wizard`), call log & reports** — a checklist from plugins to the first test call; the AI call log with timings, choppy-audio detection and a downloadable report per call, 30-day statistics and CSV, and an e-mail of every conversation. The agent handles silence, a quiet voice and noise in its own words, ends the call on a goodbye, and can use the optional Silero VAD and Smart Turn detectors ([how a call goes](docs/ai-apps.md#how-a-call-goes))
-- **AI TTS Studio (`/ai-tts`)**, **Voicemail AI (`/ai-voicemail`)** & **Call Analysis (`/ai-call-analysis`)** — generate and save audio announcements, transcribe/summarize voicemails, and run automated call quality scoring
+- **AI TTS Studio (`/ai-tts`)**, **Voicemail AI (`/ai-voicemail`)** & **Call Analysis (`/ai-call-analysis`)** — generate speech announcements (including 8 built-in Asterisk/PBX prompt templates) and instrumental **Hold Music (MOH)** via ElevenLabs Music API, save directly to Sounds or MOH classes, transcribe/summarize voicemails, and run automated call quality scoring
 - **Dialplan Editor (`/assistant`) & Echo Reporter** — plain-language PBX change planner with dry-run preview before apply, safety validation, audit trail and one-click undo (`pbx_ai_changes`), plus the Echo diagnostic box backed by an opt-in local HEPv3 SIP signaling capture daemon (`aipbx-signaling` → `pbx_signaling_events`)
 
 ```mermaid
 flowchart LR
     Caller["Caller / Outbound Call"] <-->|"SIP / RTP"| Ast["Asterisk 22\nARI / AudioSocket"]
     Ast <-->|"PCM Audio + DTMF"| AiSvc["aipbx-ai\nPython AI Service"]
-    Portal["AiPBX Web Portal\n/ai-agent · /ai-local · /ai-cloud"] -->|"Config & Sync"| AiSvc
+    Portal["AiPBX Web Portal\n/ai-agent · /ai-local · /ai-cloud · /ai-tts"] -->|"Config & Sync"| AiSvc
     AiSvc <-->|"Local Runtime"| Local["EMA · Piper · Kokoro\nSilero · Smart Turn"]
-    AiSvc <-->|"Cloud APIs"| Cloud["OpenAI · Gemini · Groq\nDeepgram · ElevenLabs"]
+    AiSvc <-->|"Cloud APIs"| Cloud["OpenAI · Gemini · Groq\nDeepgram · ElevenLabs (TTS/Music)"]
     AiSvc <-->|"LLM Tools"| Tools["External DB Queries · Phonebook\nDTMF · Call Transfer"]
 ```
 
@@ -316,6 +316,7 @@ flowchart LR
 
 ### 🔌 REST API v1, Outbound Webhooks & Plugin System
 - **Odoo 17 / 18 / 19** — free **AiPBX Connector** on the Odoo App Store: click-to-call, caller pop-up, call history with recordings; [AiPBX Connector - CRM](https://apps.odoo.com/apps/modules/19.0/aipbx_connector_crm) puts calls on opportunities ([App Store](https://apps.odoo.com/apps/modules/19.0/aipbx_connector), [source](https://github.com/mahirgul/AiPBX-Odoo), [docs/crm-integrations.md](docs/crm-integrations.md))
+- **ERPNext / Frappe** (self-hosted or Frappe Cloud) — free **AiPBX Connector**: click-to-call, caller pop-up, Call Log with recordings and AI summaries, missed-call ToDo, and phonebook sync ([source](https://github.com/mahirgul/AiPBX-Frappe), [docs/crm-integrations.md](docs/crm-integrations.md))
 - **Stateless REST API (`/api/v1/*`) & OpenAPI 3.1** — 100+ endpoints covering extensions, trunks, inbound/outbound routes, queues, ring groups, IVRs, time conditions, conferences, dial permissions, call center, CDRs, recordings, voicemails, faxes, phones, sounds, AI, chat, system settings, and sync
 - **Scoped Bearer API Keys (`apbx_...`)** — per-token granular scopes (`extensions:read`, `calls:write`, `system:read`, …), IPv4/IPv6 CIDR allowlists, and per-minute sliding-window rate limits (`/api-keys`)
 - **Outbound Webhooks (`/webhooks`)** — real-time event subscriptions (`call.started`, `call.answered`, `call.ended`, `voicemail.received`, `fax.received`, `sync.applied`, …) with `X-AiPBX-Signature` (`HMAC-SHA256`), exponential retry worker (`aipbx-webhook-worker`), and DNS-pinned SSRF protection
@@ -367,7 +368,7 @@ flowchart LR
   Apache kept in Ubuntu's systemd sandbox with only the paths the portal needs opened
 
 ### 🌍 Multi-language & Mobile-Ready Portal
-- **23 interface languages** including Turkish 🇹🇷 and English 🇬🇧 (6,300+ keys per language; a text not yet translated shows in English)
+- **23 interface languages** including Turkish 🇹🇷 and English 🇬🇧 (7,200+ keys per language, 100% translated across all 23 languages)
 - **Universal Live Filtering & Pagination** across all multi-record tables (extensions, trunks, routes, system users, audit log, call reports) and responsive mobile drawer/table layout
 
 ---

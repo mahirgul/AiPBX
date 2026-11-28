@@ -23,7 +23,7 @@ AiPBX separates untrusted public networks from internal telephony cores via stri
      ├─► Asterisk WSS (127.0.0.1:8088/ws, isolated from public binding)              │
      ├─► MariaDB Database (127.0.0.1:3306, strict permissions) ◄────────────────────┘
      ├─► Go Instant Messaging Core (127.0.0.1:8086/ws)
-     └─► Local AI Inference Engine (Whisper STT / Piper TTS / Ollama on loopback)
+     └─► Local AI Service aipbx-ai (127.0.0.1:8790 HTTP / :8791 AudioSocket — Local TTS & VAD)
 ```
 
 ---
@@ -81,7 +81,7 @@ AiPBX mobile softphones (Android and iOS) utilize push notifications for backgro
 Integrating AI assistants into communications systems requires strict boundaries to prevent data leakage and privilege escalation (following the principle of Least Privilege / AI-OS workflow isolation):
 
 - **Local-First Execution:**
-  AiPBX defaults to entirely on-premise AI models: Whisper for speech recognition, Piper for text-to-speech, and local LLMs (via Ollama) running on loopback. Audio and transcriptions never leave the local PBX host.
+  Local TTS voices (EMA Lightning, Piper, Kokoro) and call detectors (Silero VAD, Smart Turn) run entirely on-premise inside `aipbx-ai` on loopback (`127.0.0.1:8790` / `:8791`), so local voice synthesis never leaves the PBX host. Speech-to-text and language models use administrator-configured Cloud AI accounts or OpenAI-compatible endpoints (including a self-hosted Ollama server).
 - **Cross-Border Cloud AI Lock:**
   Checking **Lock outbound Cloud AI services** in `/privacy` hard-disables all external Cloud AI providers. Any attempt by dialplan or background workers to query third-party APIs is blocked at the code level.
 - **Real-Time PII & Payment Card Redaction:**

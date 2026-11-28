@@ -8,8 +8,8 @@ flowchart TB
 %% @classes
   browser["`**Browser, mobile app**`"]:::client
   phones["`**Desk phones**`"]:::client
-  providers["`**SMS providers**
-  webhooks`"]:::client
+  providers["`**CRM, SMS & API**
+  Odoo, ERPNext, webhooks`"]:::client
 
   nginx["`**nginx** :443
   picks by ALPN, SNI`"]:::edge
@@ -35,7 +35,8 @@ flowchart TB
   SIP 5060, TLS 5061`"]:::core
   priv["`**aipbx-priv**
   root helper`"]:::core
-  ai["`**Local AI**
+  ai["`**aipbx-ai**
+  Local TTS, Voice Agents
   :8790, :8791`"]:::svc
   db[("`**MariaDB**`")]:::db
 
@@ -51,7 +52,7 @@ flowchart TB
   chatp --> chat
   portal <-->|"AMI :5038"| ast
   portal -->|sudo| priv
-  ast -->|AudioSocket| ai
+  ast -->|"ARI, AudioSocket"| ai
   portal --> db
   plug --> db
   ast -->|"CDR, queue log"| db

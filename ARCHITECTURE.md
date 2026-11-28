@@ -5,7 +5,8 @@
 - **Nginx / Apache 2.4** as the high-concurrency ingress, TLS termination, and WebSocket multiplexing layer
 - **PHP 8.5 MVC** as the strictly layered, secure administration and self-service management portal
 - **Go** as the lightweight, high-performance instant messaging WebSocket service
-- **Android Client (Kotlin)** with JsSIP/WebRTC calling and background persistence
+- **Mobile Clients (Android Kotlin / iOS SwiftUI & CallKit)** with WebRTC calling and push wakeup
+- **Python AI Service (`aipbx-ai`)** for Local TTS (EMA Lightning, Piper, Kokoro), VAD / Smart Turn detection, and AI Voice Agents
 - **coturn** for enterprise-grade STUN/TURN NAT traversal
 
 ---
@@ -16,8 +17,8 @@
 ┌─────────────────────────────────────────────────────────────────────────────────────────┐
 │                                      CLIENT LAYER                                       │
 │   ┌───────────────────────────────┐               ┌─────────────────────────────────┐   │
-│   │     Android Mobile App        │               │      Web Browser Client         │   │
-│   │     (Kotlin + WebRTC/SIP)     │               │   (WebRTC Softphone + Portal)   │   │
+│   │  Mobile Apps (Android & iOS)  │               │      Web Browser Client         │   │
+│   │    (Kotlin / Swift + WebRTC)  │               │   (WebRTC Softphone + Portal)   │   │
 │   └───────────────┬───────────────┘               └────────────────┬────────────────┘   │
 └───────────────────┼────────────────────────────────────────────────┼────────────────────┘
                     │ HTTPS / WSS / TURNS                            │ HTTPS / WSS / TURNS
@@ -53,7 +54,7 @@
 ┌─────────────────────┐  ┌─────────────────────┐          ┌─────────────────────┐
 │     PHP 8 MVC       │  │     Asterisk 22     │          │       coturn        │
 │     Web Portal      │  │     VoIP Engine     │          │     TURN / STUN     │
-│     (Runtime)       │  │    (PJSIP/WebRTC)   │          │     (Port 5349)     │
+│     (Runtime)       │  │  (PJSIP/WebRTC/ARI) │          │     (Port 5349)     │
 └──────────┬──────────┘  └──────────┬──────────┘          └─────────────────────┘
            │                        │
            │    AMI (Port 5038)     │

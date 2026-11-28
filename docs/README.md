@@ -55,7 +55,7 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | 🎧 [Queues and the agent screen](queues.md) | Queue setup, static and dynamic agents, breaks, waiting calls and callbacks |
 | ☎️ [Queue callbacks](queue-callbacks.md) | Press 1 while waiting, manual callbacks, agent-first automatic callbacks and retry behavior |
 | 📊 [Reports](reports.md) | Call reports with trunks and direction, Queue Report Centre, PDF and Excel export |
-| 🔊 [Sounds & languages](sounds.md) | Custom sounds, the Turkish prompt packages (six formats), regenerating a prompt |
+| 🔊 [Sounds & languages](sounds.md) | Custom sounds, AI-generated announcements and hold music, the Turkish prompt packages (six formats), regenerating a prompt |
 | 🌍 [Translating](translating.md) | Interface languages, adding or correcting a translation with `scripts/i18n.py`, mobile app texts, prompts in other languages |
 | 📹 [Video calls](video-calls.md) | Video between the web phone, the Android app and desk video phones; the one video codec; bandwidth |
 | 🗓️ [Video meetings](meetings.md) | Scheduled browser rooms, SFU/Follow-Talker, guest links, invitations, join windows and calendar downloads |
@@ -82,8 +82,8 @@ Administrator documentation for AiPBX on 64-bit Linux (Ubuntu 26.04 LTS+, Debian
 | ✉️ [E-mail](mail.md) | Mail relay and e-mail templates (fax, voicemail, invitations, password e-mails) |
 | 🗄️ [File storage](file-storage.md) | Chat attachments on the local disk or in an S3-compatible bucket (AWS S3, MinIO, Wasabi, Backblaze B2), moving existing files |
 | 🔑 [REST API v1 & outbound webhooks](rest-api-v1.md) | Stateless `/api/v1/*` endpoints, OpenAPI 3.1 spec, Bearer API keys (`apbx_...`), scopes, IP allowlists, and HMAC-SHA256 signed webhooks |
-| 🔗 [Connections (Odoo, CRM)](connections.md) | One outside system per connection: its own API key and signed webhook for the live call events, handed over once as a connection pack |
-| 🤝 [CRM integrations](crm-integrations.md) | Odoo app; HubSpot, Zoho, Pipedrive, Bitrix24 through n8n; a signed receiver of your own |
+| 🔗 [Connections (Odoo, ERPNext, CRM)](connections.md) | One outside system per connection: its own API key and signed webhook for the live call events, handed over once as a connection pack |
+| 🤝 [CRM integrations](crm-integrations.md) | Odoo & ERPNext/Frappe connectors; HubSpot, Zoho, Pipedrive, Bitrix24 through n8n; a signed receiver of your own |
 | ⏱️ [Scheduled tasks](scheduled-tasks.md) | Sandboxed background shell, PHP and Python scripts on a cron schedule (`aipbx-task`, systemd-run), run history, bell alarms |
 | 🛠️ [Troubleshooting](troubleshooting.md) | The Troubleshooting menu (SIP traffic `.pcap`/calls/ladder/live, problem recording, registrations, call quality, phone logs), changes not applied, calls hung up, sounds not found |
 
@@ -104,8 +104,8 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 | 🌐 [SIP Provider Templates (Plugin)](provider-templates.md) | `provider-templates` | 1-click SIP trunk creation from community carrier profiles (Twilio, Telnyx, A1, Drei, etc.) with pre-configured PJSIP NAT, timers, and codec flags |
 | 🌐 [Website call widget (Plugin)](web-widgets.md) | `web-widgets` | "Call us" button for websites (WebRTC in the browser), call-back form, allowed websites and limits, WordPress plugin |
 | ☁️ [Cloud AI services (Plugin)](cloud-ai.md) | `aicloud`, `ai-voicemail` | Accounts of cloud AI providers (Gemini/Gemma, OpenAI, Azure, Deepgram, Groq, NVIDIA NIM, Qwen, any OpenAI-compatible service), cloud speech to text, language models, voicemail transcription |
-| 🗣️ [Cloud TTS (Plugin)](cloud-tts.md) | `ai-tts` | Text to speech with Google, Amazon Polly, Azure, ElevenLabs or OpenAI; saving announcements |
-| 🧠 [Local AI models (Plugin)](local-ai.md) | `ailocal` | Local AI runtime (`aipbx-ai`), Ollama LLMs, Whisper STT, Piper TTS, and ONNX embeddings |
+| 🗣️ [Cloud TTS (Plugin)](cloud-tts.md) | `ai-tts` | Text to speech (Google, Amazon Polly, Azure, ElevenLabs, OpenAI) with PBX prompt templates, ElevenLabs Hold Music (MOH) generator, saving to Sounds/MOH |
+| 🧠 [Local TTS (Plugin)](local-ai.md) | `ailocal` | Local TTS & detectors (`aipbx-ai`): EMA Lightning, Piper and Kokoro voices, plus Silero VAD and Smart Turn |
 | 🤖 [AI Voice Agent & Settings](ai-settings.md) | Built-in `/ai-agent` | Cascade and Realtime voice agents, ARI and AudioSocket, external DB tools, DTMF and outbound IVR navigation |
 | ✨ [PBX Assistant (experimental)](assistant.md) | `pbx-assistant` | Plain-language PBX changes with a preview before apply, the audit trail, undo, read-only reports, shortcuts to pages and settings, and answers from the Knowledge Base |
 | 📡 [Signaling capture](signaling.md) | Troubleshooting → SIP capture settings | What `res_hep` sends to the local `aipbx-signaling` daemon, the `pbx_signaling_events` table, `.pcap` capture files, and retention (off by default) |
@@ -114,10 +114,16 @@ catalog or as uploaded ZIPs. See each guide for its minimum version and installa
 
 ## 📱 Mobile apps
 
-The 🤖 **Android** and 🍎 **iOS** apps are built by GitHub Actions and attached to each
-[GitHub Release](https://github.com/mahirgul/AiPBX/releases). Users sign in with their portal
-username and password (plus 2FA when enabled), by scanning the QR code on *My Phone*, or with the
-link in their invitation e-mail.
+The 🤖 **Android** and 🍎 **iOS** apps ship from their own repositories with automated builds via
+GitHub Actions:
+
+- **Android:** [Google Play](https://play.google.com/store/apps/details?id=com.mhrgl.AiPBX) ·
+  [AiPBX-Android Releases](https://github.com/mahirgul/AiPBX-Android/releases)
+- **iOS:** [AiPBX-ios Releases](https://github.com/mahirgul/AiPBX-ios/releases)
+
+Users sign in with their portal username and password (plus 2FA when enabled), by scanning the QR
+code on *My Phone*, with the link in their invitation e-mail, or via a one-time pairing token from
+`POST /api/v1/extensions/{id}/pairing`.
 
 ## 🗺️ Roadmap & Specifications
 

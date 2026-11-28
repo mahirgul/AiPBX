@@ -83,7 +83,7 @@
     <circle cx="28" cy="28" r="5.5" fill="#ef4444" opacity="0.8"/>
     <circle cx="48" cy="28" r="5.5" fill="#f59e0b" opacity="0.8"/>
     <circle cx="68" cy="28" r="5.5" fill="#22c55e" opacity="0.8"/>
-    <text x="376" y="33" text-anchor="end" fill="#64748b" font-family="ui-monospace, monospace" font-size="12">AudioSocket · 8kHz</text>
+    <text x="376" y="33" text-anchor="end" fill="#64748b" font-family="ui-monospace, monospace" font-size="12">ARI · AudioSocket · 8kHz</text>
     <line x1="20" y1="50" x2="384" y2="50" stroke="#1e293b" stroke-width="1.5"/>
 
     <!-- Node 1: Asterisk -->
@@ -111,9 +111,9 @@
     <circle cx="62" cy="320" r="18" fill="#10b981" fill-opacity="0.25"/>
     <text x="62" y="326" text-anchor="middle" fill="#6ee7b7" font-family="Inter, sans-serif" font-size="14" font-weight="700">API</text>
     <text x="94" y="314" fill="#f8fafc" font-family="Inter, sans-serif" font-size="17" font-weight="700">Portal, CRM &amp; SSO</text>
-    <text x="94" y="336" fill="#94a3b8" font-family="Inter, sans-serif" font-size="13">Google · Microsoft · OIDC · REST</text>
+    <text x="94" y="336" fill="#94a3b8" font-family="Inter, sans-serif" font-size="13">Odoo · ERPNext · SSO · REST</text>
 
     <!-- Bottom status -->
-    <text x="202" y="384" text-anchor="middle" fill="#64748b" font-family="Inter, sans-serif" font-size="12" font-weight="600">LOCAL OLLAMA  ·  CLOUD AI  ·  PLUGINS</text>
+    <text x="202" y="384" text-anchor="middle" fill="#64748b" font-family="Inter, sans-serif" font-size="12" font-weight="600">LOCAL TTS  ·  CLOUD AI  ·  PLUGINS</text>
   </g>
 </svg>
