@@ -11,6 +11,18 @@ the git tag message and the GitHub Release notes, and installations show it as
 
 ---
 
+## 1.82.5
+
+### Added
+
+- **ElevenLabs Hold Music (MOH) generator:** added a *Hold Music (MOH)* tab to AI → Cloud TTS (`/ai-tts?tab=music`) powered by the ElevenLabs Music API (`POST /v1/music`), featuring instrumental-only generation, 5 hold-music style presets, duration (`30–180 s`) and model (`music_v1` / `music_v2` / `music_v2_5`) selectors, MP3 playback/download, and one-click saving into any Asterisk MOH class (converted to 8 kHz 16-bit mono WAV and marked for MOH sync; requested in #171).
+- **Asterisk / PBX prompt templates & Save-to-MOH:** added 8 ready-to-use PBX/IVR/queue/voicemail prompt templates in Cloud TTS Studio, Save-to-MOH support on any generated speech or music history entry, and AI Studio shortcuts on the Sounds & Announcements page (`/sounds`).
+
+### Fixed & Improved
+
+- **Translations:** added all 44 new UI keys across all 23 portal languages (`7211/7211` strings per language, 100% coverage in `scripts/i18n.py check --strict`).
+- **CLI safety:** guarded `AiTtsService::scopedUserId()` with `function_exists('userEffectiveRole')` for standalone CLI and unit-test execution.
+
 ## 1.82.4
 
 ### Fixed & Improved
