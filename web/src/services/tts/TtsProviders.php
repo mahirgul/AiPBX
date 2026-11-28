@@ -442,6 +442,9 @@ final class AzureTts extends TtsProvider
 final class ElevenLabsTts extends TtsProvider
 {
     private const BASE = 'https://api.elevenlabs.io/v1';
+    public const MUSIC_MODELS = ['music_v1', 'music_v2', 'music_v2_5'];
+    public const MUSIC_MIN_MS = 10000;
+    public const MUSIC_MAX_MS = 300000;
 
     public static function id(): string { return 'elevenlabs'; }
     public static function title(): string { return 'ElevenLabs'; }
@@ -480,6 +483,31 @@ final class ElevenLabsTts extends TtsProvider
             'xi-api-key' => $this->cfg('api_key'), 'Content-Type' => 'application/json', 'Accept' => 'audio/mpeg',
         ], $body);
         return self::audio($r, 'ElevenLabs');
+    }
+
+    /** Generates hold music / background audio via ElevenLabs Music API (MP3 bytes). */
+    public function generateMusic(string $prompt, int $lengthMs = 60000, bool $instrumental = true, string $modelId = 'music_v1'): string
+    {
+        $prompt = trim($prompt);
+        if ($prompt === '') {
+            throw new TtsException('ElevenLabs Music: empty prompt');
+        }
+        if (!in_array($modelId, self::MUSIC_MODELS, true)) {
+            throw new TtsException('ElevenLabs Music: invalid model');
+        }
+        $lengthMs = max(self::MUSIC_MIN_MS, min(self::MUSIC_MAX_MS, $lengthMs));
+        $body = json_encode([
+            'prompt' => $prompt,
+            'music_length_ms' => $lengthMs,
+            'model_id' => $modelId,
+            'force_instrumental' => $instrumental,
+        ], JSON_UNESCAPED_UNICODE);
+        $r = TtsHttp::request('POST', self::BASE . '/music?output_format=mp3_44100_128', [
+            'xi-api-key' => $this->cfg('api_key'),
+            'Content-Type' => 'application/json',
+            'Accept' => 'audio/mpeg',
+        ], $body, 180);
+        return self::audio($r, 'ElevenLabs Music');
     }
 }
 

@@ -275,6 +275,41 @@ class SoundService {
     }
 
     /**
+     * Converts any local audio file (such as a TTS/music MP3) to 8 kHz mono WAV
+     * and installs it into the requested Music on Hold class directory.
+     *
+     * @return array{class: string, file: string, path: string}
+     */
+    public static function installMohAudioFile(string $srcPath, string $mohClass, string $baseName): array
+    {
+        $mohClass = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($mohClass)) ?: 'default';
+        if ($mohClass !== 'default') {
+            $stmt = getDB()->prepare('SELECT 1 FROM pbx_moh_classes WHERE name = ? LIMIT 1');
+            $stmt->execute([$mohClass]);
+            if (!$stmt->fetchColumn()) {
+                throw new \RuntimeException(t('srv_sound.err_moh_name'));
+            }
+        }
+        $baseName = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($baseName)) ?? '';
+        if ($baseName === '' || strlen($baseName) > 60) {
+            throw new \RuntimeException(t('ai_tts.err_sound_name'));
+        }
+
+        $targetDir = ($mohClass === 'default') ? MOH_BASE_DIR : MOH_BASE_DIR . '/' . $mohClass;
+        self::mohDir($targetDir);
+
+        $fileName = $baseName . '.wav';
+        $targetPath = $targetDir . '/' . $fileName;
+        self::convertToAsteriskWav($srcPath, $targetPath);
+        @chown($targetPath, 'asterisk');
+        @chgrp($targetPath, 'asterisk');
+        @chmod($targetPath, 0664);
+
+        markPendingSync('moh', 'moh_class', $mohClass, "MOH class: {$mohClass} (new file: {$fileName})", 'update', $_SESSION['user_id'] ?? null);
+        return ['class' => $mohClass, 'file' => $fileName, 'path' => $targetPath];
+    }
+
+    /**
      * A hold-music folder the portal can write into: group-writable, group
      * asterisk (www-data is a member). The setgid bit comes from the MOH folder
      * (install sets 2775): Apache runs with RestrictSUIDSGID, so asking for it

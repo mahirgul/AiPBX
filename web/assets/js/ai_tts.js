@@ -1,24 +1,29 @@
 /**
- * AI → Cloud TTS page: voices per provider/language, synthesis, playback,
- * saving a result as an announcement. Talks to /api/ai_tts.php.
+ * AI → Cloud TTS page: voices per provider/language, synthesis, ElevenLabs
+ * hold music generation, playback, and saving as announcement or MOH track.
+ * Talks to /api/ai_tts.php.
  */
 (function () {
     'use strict';
     const T = window.TTS || {};
     let voices = [];
     let current = null;   // history id of the result on screen
+    let selectedTemplate = null;
+    let selectedMusicPreset = null;
 
     const $ = id => document.getElementById(id);
     const langName = code => {
         if (code === '*') return T.text.all_voices;
         try { return new Intl.DisplayNames([T.lang || 'en'], { type: 'language' }).of(code) + ' (' + code + ')'; } catch (e) { return code; }
     };
-    const status = (msg, kind) => {
-        const el = $('ttsStatus');
+    const setStatus = (elId, msg, kind) => {
+        const el = $(elId);
         if (!el) return;
         el.textContent = msg || '';
-        el.style.color = kind === 'error' ? 'var(--danger)' : (kind === 'ok' ? 'var(--success)' : 'var(--text-muted)');
+        el.className = 'u-fs-12 u-mt-10 ' + (kind === 'error' ? 'u-danger' : (kind === 'ok' ? 'u-success' : 'u-muted'));
     };
+    const status = (msg, kind) => setStatus('ttsStatus', msg, kind);
+    const musicStatus = (msg, kind) => setStatus('musicStatus', msg, kind);
     const post = (data) => {
         const body = new URLSearchParams(Object.assign({ csrf_token: T.csrf }, data));
         return fetch('/api/ai_tts.php', { method: 'POST', body: body }).then(r => r.json());
@@ -70,19 +75,30 @@
         $('ttsChunks').textContent = parts > 1 ? T.text.chunks.replace('%d', parts) : '';
     }
 
-    function showResult(id, title) {
+    function updateMusicCount() {
+        const el = $('musicPrompt');
+        const out = $('musicCount');
+        if (!el || !out) return;
+        out.textContent = T.text.chars.replace('%d', el.value.length.toLocaleString(T.lang));
+    }
+
+    function showResult(id, title, opts) {
+        const cfg = opts || {};
         current = id;
-        $('ttsResult').style.display = '';
+        const box = $('ttsResult');
+        box.hidden = false;
+        box.classList.remove('d-none');
         $('ttsResultTitle').textContent = T.text.result.replace('%s', title);
         $('ttsAudio').src = '/api/ai_tts.php?action=audio&id=' + id;
         $('ttsDownload').href = '/api/ai_tts.php?action=audio&id=' + id + '&download=1';
-        if ($('ttsSoundName')) $('ttsSoundName').value = 'tts_' + id;
-        if ($('ttsSoundTitle')) $('ttsSoundTitle').value = title;
+        if ($('ttsSoundName')) $('ttsSoundName').value = cfg.soundName || ('tts_' + id);
+        if ($('ttsSoundTitle')) $('ttsSoundTitle').value = cfg.soundTitle || title;
+        if ($('ttsMohFileName')) $('ttsMohFileName').value = cfg.mohName || ('moh_' + id);
     }
 
-    window.ttsShow = function (id, title) {
+    window.ttsShow = function (id, title, opts) {
         if (!$('ttsResult')) { window.open('/api/ai_tts.php?action=audio&id=' + id, '_blank'); return; }
-        showResult(id, title);
+        showResult(id, title, opts);
         $('ttsAudio').play().catch(() => {});
         $('ttsResult').scrollIntoView({ behavior: 'smooth', block: 'center' });
     };
@@ -100,10 +116,38 @@
                 btn.disabled = false;
                 if (!d.success) { status(d.error || T.text.error, 'error'); return; }
                 status('');
-                showResult(d.item.id, text.slice(0, 60));
+                const soundName = selectedTemplate ? selectedTemplate.sound_name : null;
+                const soundTitle = selectedTemplate ? selectedTemplate.title : text.slice(0, 60);
+                showResult(d.item.id, soundTitle, { soundName: soundName, soundTitle: soundTitle });
                 $('ttsAudio').play().catch(() => {});
             })
             .catch(() => { btn.disabled = false; status(T.text.error, 'error'); });
+    };
+
+    window.ttsGenerateMusic = function () {
+        const btn = $('musicGo');
+        const promptEl = $('musicPrompt');
+        if (!promptEl) return;
+        const prompt = promptEl.value.trim();
+        if (!prompt) { promptEl.focus(); return; }
+        btn.disabled = true;
+        musicStatus(T.text.music_working || T.text.working);
+        post({
+            action: 'generate_music',
+            provider: $('musicProvider').value,
+            prompt: prompt,
+            duration_sec: $('musicDuration').value,
+            model_id: $('musicModel').value,
+            instrumental: $('musicInstrumental').checked ? '1' : '0'
+        }).then(d => {
+            btn.disabled = false;
+            if (!d.success) { musicStatus(d.error || T.text.error, 'error'); return; }
+            musicStatus('');
+            const title = selectedMusicPreset ? selectedMusicPreset.label : prompt.slice(0, 60);
+            const mohName = selectedMusicPreset ? (selectedMusicPreset.file_name + '_' + d.item.id) : ('moh_' + d.item.id);
+            showResult(d.item.id, title, { mohName: mohName, soundTitle: title });
+            $('ttsAudio').play().catch(() => {});
+        }).catch(() => { btn.disabled = false; musicStatus(T.text.error, 'error'); });
     };
 
     window.ttsSaveAnnouncement = function () {
@@ -112,6 +156,20 @@
             .then(d => {
                 const msg = d.success ? d.message : (d.error || T.text.error);
                 if (window.showFooterToast) window.showFooterToast(msg, d.success ? 'success' : 'error'); else status(msg, d.success ? 'ok' : 'error');
+            });
+    };
+
+    window.ttsSaveMoh = function () {
+        if (!current || !$('ttsMohClass') || !$('ttsMohFileName')) return;
+        const fileName = $('ttsMohFileName').value.trim();
+        if (!fileName) { $('ttsMohFileName').focus(); return; }
+        post({ action: 'save_moh', id: current, moh_class: $('ttsMohClass').value, file_name: fileName })
+            .then(d => {
+                const msg = d.success ? d.message : (d.error || T.text.error);
+                if (window.showFooterToast) window.showFooterToast(msg, d.success ? 'success' : 'error'); else musicStatus(msg, d.success ? 'ok' : 'error');
+            })
+            .catch(() => {
+                if (window.showFooterToast) window.showFooterToast(T.text.error, 'error'); else musicStatus(T.text.error, 'error');
             });
     };
 
@@ -128,12 +186,40 @@
     };
 
     function init() {
-        if (!$('ttsProvider')) return;
-        $('ttsProvider').addEventListener('change', () => { window.ttsLoadVoices(false); updateCount(); });
-        $('ttsLanguage').addEventListener('change', fillVoices);
-        $('ttsText').addEventListener('input', updateCount);
-        window.ttsLoadVoices(false);
-        updateCount();
+        if ($('ttsProvider')) {
+            $('ttsProvider').addEventListener('change', () => { window.ttsLoadVoices(false); updateCount(); });
+            $('ttsLanguage').addEventListener('change', fillVoices);
+            $('ttsText').addEventListener('input', () => {
+                if (!$('ttsText').value.trim()) selectedTemplate = null;
+                updateCount();
+            });
+            if ($('ttsTemplate')) {
+                $('ttsTemplate').addEventListener('change', () => {
+                    const id = $('ttsTemplate').value;
+                    selectedTemplate = (T.templates || []).find(t => t.id === id) || null;
+                    if (selectedTemplate) {
+                        $('ttsText').value = selectedTemplate.text;
+                        updateCount();
+                    }
+                });
+            }
+            window.ttsLoadVoices(false);
+            updateCount();
+        }
+        if ($('musicPrompt')) {
+            $('musicPrompt').addEventListener('input', updateMusicCount);
+            if ($('musicPreset')) {
+                $('musicPreset').addEventListener('change', () => {
+                    const id = $('musicPreset').value;
+                    selectedMusicPreset = (T.musicPresets || []).find(p => p.id === id) || null;
+                    if (selectedMusicPreset) {
+                        $('musicPrompt').value = selectedMusicPreset.prompt;
+                        updateMusicCount();
+                    }
+                });
+            }
+            updateMusicCount();
+        }
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
 })();

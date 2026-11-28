@@ -171,4 +171,53 @@ final class TtsProvidersTest extends TestCase
         $this->expectException(TtsException::class);
         GoogleTts::validateServiceAccount('{"type":"authorized_user"}');
     }
+
+    public function testElevenLabsGenerateMusic(): void
+    {
+        $e = new ElevenLabsTts(['api_key' => 'XI-MUSIC']);
+        $this->answer(200, 'ID3MUSIC', 'audio/mpeg');
+        $bytes = $e->generateMusic('Calm acoustic hold music', 45000, true, 'music_v1');
+        $this->assertSame('ID3MUSIC', $bytes);
+        $this->assertSame('POST', $this->sent[0]['method']);
+        $this->assertSame('https://api.elevenlabs.io/v1/music?output_format=mp3_44100_128', $this->sent[0]['url']);
+        $this->assertSame('XI-MUSIC', $this->sent[0]['headers']['xi-api-key']);
+        $payload = json_decode((string) $this->sent[0]['body'], true);
+        $this->assertSame([
+            'prompt' => 'Calm acoustic hold music',
+            'music_length_ms' => 45000,
+            'model_id' => 'music_v1',
+            'force_instrumental' => true,
+        ], $payload);
+
+        // Duration bounds are clamped between MUSIC_MIN_MS and MUSIC_MAX_MS.
+        $this->answer(200, 'ID3SHORT', 'audio/mpeg');
+        $e->generateMusic('Short loop', 1000, false, 'music_v2_5');
+        $shortPayload = json_decode((string) $this->sent[0]['body'], true);
+        $this->assertSame(ElevenLabsTts::MUSIC_MIN_MS, $shortPayload['music_length_ms']);
+        $this->assertFalse($shortPayload['force_instrumental']);
+
+        $this->answer(200, 'ID3LONG', 'audio/mpeg');
+        $e->generateMusic('Long loop', 999999, true, 'music_v2');
+        $this->assertSame(ElevenLabsTts::MUSIC_MAX_MS, json_decode((string) $this->sent[0]['body'], true)['music_length_ms']);
+
+        // Provider API error propagates cleanly.
+        $this->answer(403, json_encode(['detail' => ['message' => 'Music tier required']]));
+        try {
+            $e->generateMusic('Jazz', 30000);
+            $this->fail('expected TtsException');
+        } catch (TtsException $ex) {
+            $this->assertSame('ElevenLabs Music 403: Music tier required', $ex->getMessage());
+        }
+
+        // Empty prompt and unknown model are rejected locally before network call.
+        try {
+            $e->generateMusic('   ');
+            $this->fail('expected empty prompt exception');
+        } catch (TtsException $ex) {
+            $this->assertStringContainsString('empty prompt', $ex->getMessage());
+        }
+
+        $this->expectException(TtsException::class);
+        $e->generateMusic('Valid prompt', 30000, true, 'music_invalid');
+    }
 }

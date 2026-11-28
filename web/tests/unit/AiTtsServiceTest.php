@@ -44,6 +44,9 @@ final class AiTtsServiceTest extends TestCase
             if (str_contains($url, '/voices')) {
                 return ['status' => 200, 'type' => 'application/json', 'body' => json_encode(['voices' => [['name' => 'tr-TR-Standard-A', 'languageCodes' => ['tr-TR'], 'ssmlGender' => 'FEMALE']]])];
             }
+            if (str_contains($url, '/v1/music')) {
+                return ['status' => 200, 'type' => 'audio/mpeg', 'body' => self::$mp3];
+            }
             return ['status' => 200, 'type' => 'application/json', 'body' => json_encode(['audioContent' => base64_encode(self::$mp3)])];
         };
     }
@@ -155,5 +158,65 @@ final class AiTtsServiceTest extends TestCase
         }
         $out = (string) shell_exec($env . 'php -r ' . escapeshellarg($code) . ' 2>&1');
         $this->assertStringContainsString('openai', $out, $out);
+    }
+
+    public function testPromptTemplatesAndMusicSupportFlags(): void
+    {
+        $templates = AiTtsService::promptTemplates();
+        $presets = AiTtsService::musicPresets();
+        $this->assertNotEmpty($templates);
+        $this->assertNotEmpty($presets);
+        $this->assertArrayHasKey('sound_name', $templates[0]);
+        $this->assertArrayHasKey('prompt', $presets[0]);
+
+        AiTtsService::saveProvider('elevenlabs', ['api_key' => 'XI-1234']);
+        AiTtsService::saveProvider('google', ['api_key' => 'AIza-5678']);
+        $byId = array_column(AiTtsService::providersForPage(), null, 'id');
+        $this->assertTrue($byId['elevenlabs']['supports_music']);
+        $this->assertFalse($byId['google']['supports_music']);
+    }
+
+    public function testGenerateMusicAndSaveAsMoh(): void
+    {
+        if (!str_starts_with(self::$mp3, "\xFF") && !str_starts_with(self::$mp3, 'ID3') || strlen(self::$mp3) < 100) {
+            $this->markTestSkipped('sox cannot write MP3 here');
+        }
+        AiTtsService::saveProvider('elevenlabs', ['api_key' => 'XI-TEST-KEY']);
+        AiTtsService::saveProvider('google', ['api_key' => 'AIza-TEST-KEY']);
+
+        $row = AiTtsService::generateMusic('elevenlabs', 'Warm ambient piano hold music', 30, true, 'music_v1');
+        $this->assertSame('elevenlabs', $row['provider']);
+        $this->assertSame('music:music_v1', $row['voice']);
+        $this->assertSame('inst', $row['language']);
+        $this->assertStringEqualsFile(AiTtsService::audioPath((int) $row['id']), self::$mp3);
+
+        // Save into default MOH class and verify 8 kHz WAV output.
+        $saved = AiTtsService::saveAsMoh((int) $row['id'], 'default', 'ai_hold_test');
+        $this->assertSame('default/ai_hold_test.wav', $saved);
+        $wav = MOH_BASE_DIR . '/ai_hold_test.wav';
+        $this->assertFileExists($wav);
+        $this->assertStringContainsString('8000', (string) shell_exec('soxi -r ' . escapeshellarg($wav)));
+        $this->assertSame('moh:default/ai_hold_test', AiTtsService::get((int) $row['id'])['announcement']);
+        @unlink($wav);
+
+        // Non-ElevenLabs provider is rejected.
+        try {
+            AiTtsService::generateMusic('google', 'Calm piano', 30, true);
+            $this->fail('expected TtsException for non-ElevenLabs provider');
+        } catch (TtsException $e) {
+            $this->assertNotSame('', $e->getMessage());
+        }
+
+        // Unknown MOH class is rejected.
+        try {
+            AiTtsService::saveAsMoh((int) $row['id'], 'nonexistent_moh_class_xyz', 'ai_hold_test');
+            $this->fail('expected TtsException for unknown MOH class');
+        } catch (TtsException $e) {
+            $this->assertNotSame('', $e->getMessage());
+        }
+
+        // Path traversal yields empty sanitized base name and is rejected.
+        $this->expectException(TtsException::class);
+        AiTtsService::saveAsMoh((int) $row['id'], 'default', '../..');
     }
 }

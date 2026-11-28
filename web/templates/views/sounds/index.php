@@ -20,6 +20,11 @@
             <div class="card-title"><i class="fas fa-volume-up u-primary"></i> <?php echo t('sounds.announcements_title'); ?></div>
             <div class="u-flex-gap">
                 <?php echo uiHelpButton('soundHelpBox'); ?>
+                <?php if (hasModulePermission('ai_tts', 'view')): ?>
+                    <a href="/ai-tts" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-wand-magic-sparkles"></i> <?php echo t('sounds.btn_ai_tts'); ?>
+                    </a>
+                <?php endif; ?>
                 <?php if (hasModulePermission('sounds', 'edit')): ?>
                     <button class="btn btn-primary btn-sm" onclick="openUploadSoundModal()" title="<?php echo t('sounds.new_tooltip'); ?>">
                         <i class="fas fa-file-audio"></i> <?php echo t('sounds.new_tooltip'); ?>
@@ -102,6 +107,11 @@
             </div>
             <div class="u-flex-gap">
                 <?php echo uiHelpButton('mohHelpBox'); ?>
+                <?php if (hasModulePermission('ai_tts', 'view')): ?>
+                    <a href="/ai-tts?tab=music" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-wand-magic-sparkles"></i> <?php echo t('sounds.btn_ai_moh'); ?>
+                    </a>
+                <?php endif; ?>
                 <?php if (hasModulePermission('sounds', 'edit')): ?>
                     <button class="btn btn-icon btn-primary btn-sm" onclick="openMohModal()" title="<?php echo t('sounds.new_moh_tooltip'); ?>">
                         <i class="fas fa-plus-circle"></i>

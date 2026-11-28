@@ -17,8 +17,67 @@ class AiTtsService
 {
     public const AUDIO_DIR = '/var/lib/aipbx/tts';
     public const MAX_TEXT = 20000;
+    public const MAX_MUSIC_PROMPT = 2000;
     /** @var list<class-string<TtsProvider>> */
     public const PROVIDERS = [LocalTts::class, GoogleTts::class, PollyTts::class, AzureTts::class, ElevenLabsTts::class, OpenAiTts::class];
+
+    /**
+     * Built-in Asterisk / PBX prompt templates that can be loaded directly into TTS Studio.
+     * @return list<array{id: string, sound_name: string, title: string, text: string}>
+     */
+    public static function promptTemplates(): array
+    {
+        return [
+            ['id' => 'welcome_ivr', 'sound_name' => 'welcome_ivr', 'title' => t('ai_tts.tpl_welcome_title'), 'text' => t('ai_tts.tpl_welcome_text')],
+            ['id' => 'after_hours', 'sound_name' => 'after_hours', 'title' => t('ai_tts.tpl_after_hours_title'), 'text' => t('ai_tts.tpl_after_hours_text')],
+            ['id' => 'queue_wait', 'sound_name' => 'queue_wait', 'title' => t('ai_tts.tpl_queue_wait_title'), 'text' => t('ai_tts.tpl_queue_wait_text')],
+            ['id' => 'voicemail_greeting', 'sound_name' => 'voicemail_greeting', 'title' => t('ai_tts.tpl_voicemail_title'), 'text' => t('ai_tts.tpl_voicemail_text')],
+            ['id' => 'holiday_closed', 'sound_name' => 'holiday_closed', 'title' => t('ai_tts.tpl_holiday_title'), 'text' => t('ai_tts.tpl_holiday_text')],
+            ['id' => 'recording_notice', 'sound_name' => 'recording_notice', 'title' => t('ai_tts.tpl_recording_title'), 'text' => t('ai_tts.tpl_recording_text')],
+            ['id' => 'invalid_option', 'sound_name' => 'invalid_option', 'title' => t('ai_tts.tpl_invalid_title'), 'text' => t('ai_tts.tpl_invalid_text')],
+            ['id' => 'goodbye', 'sound_name' => 'goodbye', 'title' => t('ai_tts.tpl_goodbye_title'), 'text' => t('ai_tts.tpl_goodbye_text')],
+        ];
+    }
+
+    /**
+     * Built-in instrumental hold music style presets for ElevenLabs Music API.
+     * @return list<array{id: string, file_name: string, label: string, prompt: string}>
+     */
+    public static function musicPresets(): array
+    {
+        return [
+            [
+                'id' => 'acoustic_lounge',
+                'file_name' => 'moh_acoustic_lounge',
+                'label' => t('ai_tts.music_preset_acoustic'),
+                'prompt' => 'Warm instrumental acoustic guitar and soft electric piano lounge music for telephone hold, calm steady tempo, gentle dynamics, smooth loopable feel, clear midrange suitable for 8kHz phone audio, no percussion harshness, no vocals.',
+            ],
+            [
+                'id' => 'corporate_piano',
+                'file_name' => 'moh_corporate_piano',
+                'label' => t('ai_tts.music_preset_corporate'),
+                'prompt' => 'Modern uplifting corporate background instrumental with clean felt piano, subtle warm strings, and soft muted pulse, reassuring professional mood for business phone hold music, balanced frequencies, no vocals.',
+            ],
+            [
+                'id' => 'ambient_lofi',
+                'file_name' => 'moh_ambient_lofi',
+                'label' => t('ai_tts.music_preset_ambient'),
+                'prompt' => 'Soft ambient lo-fi instrumental pad and mellow Rhodes chords for customer support hold music, peaceful atmospheric texture, gentle groove without sharp high frequencies or vinyl crackle, no vocals.',
+            ],
+            [
+                'id' => 'smooth_jazz',
+                'file_name' => 'moh_smooth_jazz',
+                'label' => t('ai_tts.music_preset_jazz'),
+                'prompt' => 'Relaxed instrumental smooth jazz trio with soft clean archtop guitar, upright bass, and subtle brush rhythm, warm boutique hotel lobby hold music vibe, steady energy, no brass spikes, no vocals.',
+            ],
+            [
+                'id' => 'classical_strings',
+                'file_name' => 'moh_classical_strings',
+                'label' => t('ai_tts.music_preset_classical'),
+                'prompt' => 'Elegant chamber strings and harp instrumental for executive phone hold music, warm baroque-inspired melody, calm and refined pacing, rich midrange tones suitable for telephony playback, no vocals.',
+            ],
+        ];
+    }
 
     public static function audioDir(): string
     {
@@ -153,7 +212,16 @@ class AiTtsService
                 $fields[] = $f + ['value' => $f['secret'] ? '' : $v, 'masked' => $f['secret'] ? $masked : ''];
             }
             $configured = (new $cls($cfg))->configured() && ($cls::local() || CloudAiService::configured($id));
-            $out[] = ['id' => $id, 'title' => $title, 'local' => $cls::local(), 'configured' => $configured, 'fields' => $fields, 'max_chars' => $cls::maxChars()];
+            $out[] = [
+                'id' => $id,
+                'type' => $cls::id(),
+                'title' => $title,
+                'local' => $cls::local(),
+                'supports_music' => $cls === ElevenLabsTts::class,
+                'configured' => $configured,
+                'fields' => $fields,
+                'max_chars' => $cls::maxChars(),
+            ];
         }
         return $out;
     }
@@ -336,7 +404,7 @@ class AiTtsService
 
     private static function scopedUserId(): ?int
     {
-        $role = userEffectiveRole();
+        $role = function_exists('userEffectiveRole') ? userEffectiveRole() : (string) ($_SESSION['role'] ?? '');
         if ($role === 'admin') {
             return null;
         }
@@ -418,5 +486,88 @@ class AiTtsService
         }
         writeAuditLog(null, 'ai_tts', (string) $id, "Saved as announcement custom/{$soundName}", 'create', $uid);
         return 'custom/' . $soundName;
+    }
+
+    /**
+     * Generates hold music using an ElevenLabs provider account, stores the MP3
+     * in TTS Studio history, and returns the created history record.
+     *
+     * @return array<string, mixed>
+     */
+    public static function generateMusic(string $provider, string $prompt, int $durationSec = 60, bool $instrumental = true, string $modelId = 'music_v1'): array
+    {
+        $prompt = trim($prompt);
+        if ($prompt === '') {
+            throw new TtsException(t('ai_tts.err_empty'));
+        }
+        if (mb_strlen($prompt) > self::MAX_MUSIC_PROMPT) {
+            throw new TtsException(sprintf(t('ai_tts.err_too_long'), self::MAX_MUSIC_PROMPT));
+        }
+
+        $durationSec = max(10, min(300, $durationSec));
+        $lengthMs = $durationSec * 1000;
+        $provider = self::resolveProvider($provider);
+        $client = self::client($provider);
+        if (!$client instanceof ElevenLabsTts) {
+            throw new TtsException(t('ai_tts.err_music_provider'));
+        }
+        if (!in_array($modelId, ElevenLabsTts::MUSIC_MODELS, true)) {
+            $modelId = 'music_v1';
+        }
+
+        require_once __DIR__ . '/ai/CloudAiService.php';
+        if (CloudAiService::overLimit($provider, 'tts')) {
+            throw new TtsException(t('ai_cloud.err_quota_exceeded'));
+        }
+
+        $audio = $client->generateMusic($prompt, $lengthMs, $instrumental, $modelId);
+
+        $db = getDB();
+        $voiceTag = 'music:' . $modelId;
+        $langTag = $instrumental ? 'inst' : 'vocal';
+        $db->prepare('INSERT INTO ai_tts_history (provider, voice, language, speed, text, chars, bytes, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+            ->execute([$provider, $voiceTag, $langTag, 1.00, $prompt, mb_strlen($prompt), strlen($audio), $_SESSION['user_id'] ?? null]);
+        $id = (int) $db->lastInsertId();
+        $path = self::writableDir() . '/' . $id . '.mp3';
+        if (file_put_contents($path, $audio) === false) {
+            $db->prepare('DELETE FROM ai_tts_history WHERE id = ?')->execute([$id]);
+            throw new TtsException(t('ai_tts.err_store'));
+        }
+        $ms = self::durationMs($path) ?? $lengthMs;
+        $db->prepare('UPDATE ai_tts_history SET duration_ms = ? WHERE id = ?')->execute([$ms, $id]);
+
+        $uid = $_SESSION['user_id'] ?? null;
+        writeAuditLog(null, 'ai_tts', (string) $id, "ElevenLabs Music · {$durationSec}s · " . ($instrumental ? 'instrumental' : 'vocal'), 'create', $uid);
+        CloudAiService::count($provider, 'tts_chars', mb_strlen($prompt));
+        return self::get($id);
+    }
+
+    /**
+     * Converts a TTS Studio history entry to 8 kHz Asterisk WAV and adds it
+     * to a Music on Hold class.
+     */
+    public static function saveAsMoh(int $id, string $mohClass, string $fileName): string
+    {
+        $row = self::get($id);
+        $src = self::audioPath($id);
+        if (!$row || !is_file($src)) {
+            throw new TtsException(t('ai_tts.err_not_found'));
+        }
+
+        try {
+            $installed = SoundService::installMohAudioFile($src, $mohClass, $fileName);
+        } catch (TtsException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            throw new TtsException($e->getMessage(), 0, $e);
+        }
+
+        $base = pathinfo($installed['file'], PATHINFO_FILENAME);
+        $marker = 'moh:' . $installed['class'] . '/' . $base;
+        getDB()->prepare('UPDATE ai_tts_history SET announcement = ? WHERE id = ?')->execute([$marker, $id]);
+
+        $uid = $_SESSION['user_id'] ?? null;
+        writeAuditLog(null, 'ai_tts', (string) $id, "Saved to MOH {$installed['class']}/{$installed['file']}", 'create', $uid);
+        return $installed['class'] . '/' . $installed['file'];
     }
 }

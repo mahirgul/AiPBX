@@ -3,8 +3,10 @@
  * AI → Cloud TTS API (module ai_tts).
  *   GET  ?action=voices&provider=ID[&refresh=1]   voices of a configured provider
  *   GET  ?action=audio&id=N[&download=1]          the MP3 of a history entry
- *   POST action=synthesize  provider, voice, language, text, speed
+ *   POST action=synthesize         provider, voice, language, text, speed
+ *   POST action=generate_music     provider, prompt, duration_sec, instrumental, model_id
  *   POST action=save_announcement  id, sound_name, title
+ *   POST action=save_moh           id, moh_class, file_name
  */
 require_once __DIR__ . '/_bootstrap.php';
 require_once __DIR__ . '/../src/services/AiTtsService.php';
@@ -81,9 +83,28 @@ try {
         );
         aiTtsJson(['success' => true, 'item' => $row]);
     }
+    if ($action === 'generate_music') {
+        @set_time_limit(300);
+        $row = AiTtsService::generateMusic(
+            (string) ($_POST['provider'] ?? ''),
+            (string) ($_POST['prompt'] ?? ''),
+            (int) ($_POST['duration_sec'] ?? 60),
+            ($_POST['instrumental'] ?? '1') !== '0',
+            (string) ($_POST['model_id'] ?? 'music_v1')
+        );
+        aiTtsJson(['success' => true, 'item' => $row]);
+    }
     if ($action === 'save_announcement') {
         $file = AiTtsService::saveAsAnnouncement((int) ($_POST['id'] ?? 0), (string) ($_POST['sound_name'] ?? ''), (string) ($_POST['title'] ?? ''));
         aiTtsJson(['success' => true, 'announcement' => $file, 'message' => sprintf(t('ai_tts.msg_saved_announcement'), $file)]);
+    }
+    if ($action === 'save_moh') {
+        $saved = AiTtsService::saveAsMoh(
+            (int) ($_POST['id'] ?? 0),
+            (string) ($_POST['moh_class'] ?? 'default'),
+            (string) ($_POST['file_name'] ?? '')
+        );
+        aiTtsJson(['success' => true, 'moh' => $saved, 'message' => sprintf(t('ai_tts.msg_saved_moh'), $saved)]);
     }
 } catch (\Throwable $e) {
     aiTtsJson(['success' => false, 'error' => $e->getMessage()]);

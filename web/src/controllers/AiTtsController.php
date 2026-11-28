@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../services/AiTtsService.php';
+require_once __DIR__ . '/../repositories/SoundRepository.php';
 
 /**
  * /ai-tts — AI → Cloud TTS: synthesize text with a cloud provider, keep the
@@ -35,7 +36,7 @@ class AiTtsController extends BaseController
         }
 
         $activeTab = (string) ($_POST['_tab'] ?? $_GET['tab'] ?? 'tts');
-        if (!in_array($activeTab, ['tts', 'history'], true)) {
+        if (!in_array($activeTab, ['tts', 'music', 'history'], true)) {
             $activeTab = 'tts';
         }
 
@@ -43,6 +44,11 @@ class AiTtsController extends BaseController
             'active_tab' => $activeTab,
             'providers' => AiTtsService::providersForPage(),
             'history' => AiTtsService::history(100),
+            'moh_classes' => SoundRepository::allMohClasses(),
+            'prompt_templates' => AiTtsService::promptTemplates(),
+            'music_presets' => AiTtsService::musicPresets(),
+            'music_models' => ElevenLabsTts::MUSIC_MODELS,
+            'max_music_prompt' => AiTtsService::MAX_MUSIC_PROMPT,
             'csrf_token' => getCSRFToken(),
             'can_edit' => hasModulePermission('ai_tts', 'edit'),
             'can_delete' => hasModulePermission('ai_tts', 'delete'),
